@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -400,7 +401,8 @@ func (c *Client) GetDefaultBranch(ctx context.Context) (string, error) {
 		return repo.MainBranch.Name, nil
 	}
 
-	return "main", nil // Default fallback
+	// Don't assume "main" - return error so caller can handle it appropriately
+	return "", errors.New("repository has no default branch configured; set target_branch in config")
 }
 
 // --- Pull Request API ---

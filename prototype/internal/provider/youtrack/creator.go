@@ -2,6 +2,7 @@ package youtrack
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -12,10 +13,18 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	// Map priority and type to custom fields
 	customFields := p.buildCustomFields(opts)
 
-	// For project ID, use a default or extract from custom fields
-	projectID := "0-0" // Default project ID, should be configurable
-	if pid, ok := opts.CustomFields["project_id"].(string); ok {
-		projectID = pid
+	// Get project ID from custom fields, config, or return error
+	var projectID string
+	switch {
+	case opts.CustomFields != nil && opts.CustomFields["project_id"] != nil:
+		if pid, ok := opts.CustomFields["project_id"].(string); ok && pid != "" {
+			projectID = pid
+		}
+	case p.config.DefaultProject != "":
+		projectID = p.config.DefaultProject
+	}
+	if projectID == "" {
+		return nil, errors.New("project_id required: set default_project in config or pass project_id in custom fields")
 	}
 
 	issue, err := p.client.CreateIssue(ctx, projectID, opts.Title, opts.Description, customFields)

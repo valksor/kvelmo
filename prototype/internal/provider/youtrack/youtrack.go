@@ -20,6 +20,7 @@ type Provider struct {
 func New(_ context.Context, cfg provider.Config) (any, error) {
 	token := cfg.GetString("token")
 	host := cfg.GetString("host")
+	defaultProject := cfg.GetString("default_project")
 
 	resolvedToken, err := ResolveToken(token)
 	if err != nil {
@@ -27,8 +28,9 @@ func New(_ context.Context, cfg provider.Config) (any, error) {
 	}
 
 	config := &Config{
-		Token: resolvedToken,
-		Host:  host,
+		Token:          resolvedToken,
+		Host:           host,
+		DefaultProject: defaultProject,
 	}
 
 	return &Provider{
