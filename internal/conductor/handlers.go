@@ -236,7 +236,8 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	}
 
 	// Create checkpoint if git is available
-	c.createCheckpointIfNeeded(ctx, taskID, fmt.Sprintf("Add specification-%d for task %s", nextNum, taskID))
+	commitMsg := c.generateCommitMessage(ctx, fmt.Sprintf("planning (spec-%d)", nextNum))
+	c.createCheckpointIfNeeded(ctx, taskID, commitMsg)
 
 	// Update state back to idle
 	c.activeTask.State = "idle"
@@ -397,7 +398,8 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	}
 
 	// Create checkpoint if git is available
-	if event := c.createCheckpointIfNeeded(ctx, taskID, "Implement task "+taskID); event != nil {
+	commitMsg := c.generateCommitMessage(ctx, "implementation")
+	if event := c.createCheckpointIfNeeded(ctx, taskID, commitMsg); event != nil {
 		c.eventBus.PublishRaw(*event)
 	}
 
@@ -569,7 +571,8 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 		}
 
 		// Create checkpoint for review fixes
-		c.createCheckpointIfNeeded(ctx, taskID, "Apply review fixes for task "+taskID)
+		commitMsg := c.generateCommitMessage(ctx, "review fixes")
+		c.createCheckpointIfNeeded(ctx, taskID, commitMsg)
 	}
 
 	// Update state back to idle
@@ -629,4 +632,64 @@ func (c *Conductor) buildHistoricalContext(taskID string, fullContext bool) stri
 	}
 
 	return context.String()
+}
+
+// generateCommitMessage asks the agent to generate a descriptive commit message
+// based on the git changes. Returns the generated message or falls back to phase name.
+func (c *Conductor) generateCommitMessage(ctx context.Context, phase string) string {
+	if c.git == nil {
+		return phase
+	}
+
+	// Get git change summary
+	changes, err := c.git.GetChangeSummary(ctx)
+	if err != nil || changes.Total == 0 {
+		return phase
+	}
+
+	// Build prompt for commit message generation
+	var prompt strings.Builder
+	prompt.WriteString("Generate a concise git commit message (max 72 characters) describing the following changes.\n\n")
+	prompt.WriteString(fmt.Sprintf("Phase: %s\n\n", phase))
+	prompt.WriteString("Files changed:\n")
+
+	if len(changes.Added) > 0 {
+		prompt.WriteString(fmt.Sprintf("Added: %s\n", strings.Join(changes.Added, ", ")))
+	}
+	if len(changes.Modified) > 0 {
+		prompt.WriteString(fmt.Sprintf("Modified: %s\n", strings.Join(changes.Modified, ", ")))
+	}
+	if len(changes.Deleted) > 0 {
+		prompt.WriteString(fmt.Sprintf("Deleted: %s\n", strings.Join(changes.Deleted, ", ")))
+	}
+
+	prompt.WriteString(`
+Return ONLY the commit message text, nothing else. Use imperative mood ("add" not "added").
+Be specific about what was changed based on the file names. Focus on the most important change.`)
+
+	// Get agent for commit message generation (can use cheaper model via config)
+	commitAgent, err := c.GetAgentForStep(ctx, workflow.StepCheckpointing)
+	if err != nil {
+		c.logError(fmt.Errorf("get checkpointing agent for commit message: %w", err))
+
+		return phase
+	}
+
+	// Call agent to generate commit message
+	response, err := commitAgent.Run(ctx, prompt.String())
+	if err != nil {
+		c.logError(fmt.Errorf("generate commit message: %w", err))
+
+		return phase
+	}
+
+	// Extract the commit message from response
+	if len(response.Messages) > 0 {
+		msg := strings.TrimSpace(response.Messages[0])
+		if msg != "" {
+			return msg
+		}
+	}
+
+	return phase
 }
