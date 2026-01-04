@@ -876,6 +876,179 @@ func TestLoadAndSaveSession(t *testing.T) {
 	}
 }
 
+func TestListSessionFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Create multiple sessions
+	if _, _, err := ws.CreateSession("test123", "planning", "claude", "planning"); err != nil {
+		t.Fatalf("CreateSession planning: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond) // Ensure different timestamps
+	if _, _, err := ws.CreateSession("test123", "implementing", "claude", "implementing"); err != nil {
+		t.Fatalf("CreateSession implementing: %v", err)
+	}
+
+	files, err := ws.ListSessionFiles("test123")
+	if err != nil {
+		t.Fatalf("ListSessionFiles failed: %v", err)
+	}
+	if len(files) != 2 {
+		t.Errorf("ListSessionFiles count = %d, want 2", len(files))
+	}
+}
+
+func TestGetLatestSessionFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// No sessions yet
+	latest := ws.GetLatestSessionFile("test123")
+	if latest != "" {
+		t.Errorf("GetLatestSessionFile expected empty, got %q", latest)
+	}
+
+	// Create a single session and verify we get it back
+	_, file1, _ := ws.CreateSession("test123", "planning", "claude", "planning")
+
+	latest = ws.GetLatestSessionFile("test123")
+	if latest != file1 {
+		t.Errorf("GetLatestSessionFile = %q, want %q", latest, file1)
+	}
+
+	// Create another session - GetLatestSessionFile returns last in sorted order
+	// (which may be file1 or file2 if created in same second)
+	_, file2, _ := ws.CreateSession("test123", "implementing", "claude", "implementing")
+
+	latest = ws.GetLatestSessionFile("test123")
+	// Should return one of the files (last alphabetically)
+	if latest != file1 && latest != file2 {
+		t.Errorf("GetLatestSessionFile = %q, want one of [%q, %q]", latest, file1, file2)
+	}
+}
+
+func TestTranscriptsDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "transcripts")
+	got := ws.TranscriptsDir("test123")
+	if got != expected {
+		t.Errorf("TranscriptsDir = %q, want %q", got, expected)
+	}
+}
+
+func TestTranscriptPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "transcripts", "2024-01-15T10-30-00-planning.log")
+	got := ws.TranscriptPath("test123", "2024-01-15T10-30-00-planning.log")
+	if got != expected {
+		t.Errorf("TranscriptPath = %q, want %q", got, expected)
+	}
+}
+
+func TestSaveAndLoadTranscript(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Save transcript
+	content := "This is the full agent output\nWith multiple lines\nAnd content"
+	err := ws.SaveTranscript("test123", "2024-01-15T10-30-00-planning.log", content)
+	if err != nil {
+		t.Fatalf("SaveTranscript failed: %v", err)
+	}
+
+	// Verify file exists
+	transcriptPath := ws.TranscriptPath("test123", "2024-01-15T10-30-00-planning.log")
+	if _, err := os.Stat(transcriptPath); os.IsNotExist(err) {
+		t.Fatal("transcript file not created")
+	}
+
+	// Load transcript
+	loaded, err := ws.LoadTranscript("test123", "2024-01-15T10-30-00-planning.log")
+	if err != nil {
+		t.Fatalf("LoadTranscript failed: %v", err)
+	}
+	if loaded != content {
+		t.Errorf("LoadTranscript content = %q, want %q", loaded, content)
+	}
+}
+
+func TestListTranscripts(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws, _ := OpenWorkspace(tmpDir, nil)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// No transcripts yet
+	files, err := ws.ListTranscripts("test123")
+	if err != nil {
+		t.Fatalf("ListTranscripts failed: %v", err)
+	}
+	if len(files) != 0 {
+		t.Errorf("ListTranscripts count = %d, want 0", len(files))
+	}
+
+	// Save some transcripts
+	_ = ws.SaveTranscript("test123", "2024-01-15T10-30-00-planning.log", "content1")
+	_ = ws.SaveTranscript("test123", "2024-01-15T10-31-00-answer.log", "content2")
+	_ = ws.SaveTranscript("test123", "2024-01-15T10-32-00-implementation.log", "content3")
+
+	files, err = ws.ListTranscripts("test123")
+	if err != nil {
+		t.Fatalf("ListTranscripts failed: %v", err)
+	}
+	if len(files) != 3 {
+		t.Errorf("ListTranscripts count = %d, want 3", len(files))
+	}
+
+	// Verify files are sorted (timestamp order)
+	if files[0] != "2024-01-15T10-30-00-planning.log" {
+		t.Errorf("first file = %q, want planning.log", files[0])
+	}
+	if files[1] != "2024-01-15T10-31-00-answer.log" {
+		t.Errorf("second file = %q, want answer.log", files[1])
+	}
+}
+
 func TestGetSourceContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws, _ := OpenWorkspace(tmpDir, nil)

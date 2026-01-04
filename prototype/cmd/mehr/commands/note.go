@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 var noteCmd = &cobra.Command{
@@ -76,6 +78,31 @@ func runNote(cmd *cobra.Command, args []string) error {
 			if err := ws.AppendNote(taskID, note, "answer"); err != nil {
 				return fmt.Errorf("save answer: %w", err)
 			}
+
+			// Persist answer to latest session for context recovery
+			latestSessionFile := ws.GetLatestSessionFile(taskID)
+			if latestSessionFile != "" {
+				session, err := ws.LoadSession(taskID, latestSessionFile)
+				if err == nil && session != nil {
+					now := time.Now()
+					// Record the user's answer
+					session.Exchanges = append(session.Exchanges, storage.Exchange{
+						Role:      "user",
+						Content:   "ANSWER: " + message,
+						Timestamp: now,
+					})
+					_ = ws.SaveSession(taskID, latestSessionFile, session)
+				}
+			}
+
+			// Archive full context to transcript if available
+			if q.FullContext != "" {
+				transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-answer.log"
+				fullEntry := fmt.Sprintf("=== Question ===\n%s\n\n=== Answer ===\n%s\n\n=== Context ===\n%s",
+					q.Question, message, q.FullContext)
+				_ = ws.SaveTranscript(taskID, transcriptFile, fullEntry)
+			}
+
 			_ = ws.ClearPendingQuestion(taskID)
 
 			return nil

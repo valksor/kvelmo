@@ -98,6 +98,97 @@ func (w *Workspace) ListSessions(taskID string) ([]*Session, error) {
 	return sessions, nil
 }
 
+// ListSessionFiles returns all session filenames for a task (sorted by name/timestamp).
+func (w *Workspace) ListSessionFiles(taskID string) ([]string, error) {
+	sessDir := w.SessionsDir(taskID)
+	entries, err := os.ReadDir(sessDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+		files = append(files, entry.Name())
+	}
+
+	return files, nil
+}
+
+// GetLatestSessionFile returns the most recent session filename for a task.
+// Returns empty string if no sessions exist.
+func (w *Workspace) GetLatestSessionFile(taskID string) string {
+	files, err := w.ListSessionFiles(taskID)
+	if err != nil || len(files) == 0 {
+		return ""
+	}
+	// Files are sorted by name (timestamp prefix), so last is most recent
+	return files[len(files)-1]
+}
+
+// Transcript methods - full agent output archive
+
+const transcriptsDirName = "transcripts"
+
+// TranscriptsDir returns the transcripts directory path.
+func (w *Workspace) TranscriptsDir(taskID string) string {
+	return filepath.Join(w.WorkPath(taskID), transcriptsDirName)
+}
+
+// TranscriptPath returns the path for a transcript file.
+func (w *Workspace) TranscriptPath(taskID, filename string) string {
+	return filepath.Join(w.TranscriptsDir(taskID), filename)
+}
+
+// SaveTranscript saves full agent output to a transcript file.
+func (w *Workspace) SaveTranscript(taskID, filename, content string) error {
+	dir := w.TranscriptsDir(taskID)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create transcripts dir: %w", err)
+	}
+
+	return os.WriteFile(w.TranscriptPath(taskID, filename), []byte(content), 0o644)
+}
+
+// LoadTranscript loads a transcript by filename.
+func (w *Workspace) LoadTranscript(taskID, filename string) (string, error) {
+	data, err := os.ReadFile(w.TranscriptPath(taskID, filename))
+	if err != nil {
+		return "", fmt.Errorf("read transcript: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// ListTranscripts returns all transcript filenames for a task (sorted by name/timestamp).
+func (w *Workspace) ListTranscripts(taskID string) ([]string, error) {
+	dir := w.TranscriptsDir(taskID)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		files = append(files, entry.Name())
+	}
+
+	return files, nil
+}
+
 // GetSourceContent returns combined source content for prompts
 // Reads from actual files in source/ directory (hybrid storage).
 func (w *Workspace) GetSourceContent(taskID string) (string, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
@@ -79,6 +80,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		_ = c.workspace.ClearPendingQuestion(taskID)
 	}
 
+	// Load historical Q&A context from sessions (for when pending question was already answered)
+	historicalContext := c.buildHistoricalContext(taskID, c.opts.IncludeFullContext)
+
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
@@ -86,9 +90,13 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
+	if historicalContext != "" {
+		prompt += "\n\n## Previous Q&A History\nThe following questions were asked and answered in previous planning sessions:\n\n" + historicalContext
+	}
 
-	// Run agent with streaming
+	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent analyzing task...", 20)
+	var transcriptBuilder strings.Builder
 	response, err := planningAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
 		c.eventBus.PublishRaw(events.Event{
@@ -98,6 +106,10 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		// Also track progress if not dry-run
 		if statusLine != nil {
 			_ = statusLine.OnEvent(event)
+		}
+		// Accumulate content for transcript archive
+		if event.Text != "" {
+			transcriptBuilder.WriteString(event.Text)
 		}
 
 		return nil
@@ -124,6 +136,38 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 			response.Usage.CostUSD,
 		); err != nil {
 			c.logError(fmt.Errorf("record planning usage: %w", err))
+		}
+	}
+
+	// Save full transcript for archive (--full-context recovery)
+	if transcript := transcriptBuilder.String(); transcript != "" {
+		transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-planning.log"
+		if err := c.workspace.SaveTranscript(taskID, transcriptFile, transcript); err != nil {
+			c.logError(fmt.Errorf("save planning transcript: %w", err))
+		}
+	}
+
+	// Record exchanges to session for context recovery
+	if c.currentSession != nil {
+		now := time.Now()
+		// Record the prompt (truncated for summary)
+		promptSummary := prompt
+		if len(promptSummary) > 500 {
+			promptSummary = promptSummary[:500] + "..."
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   promptSummary,
+			Timestamp: now,
+		})
+		// Record agent response summary
+		responseSummary := extractContextSummary(response)
+		if responseSummary != "" {
+			c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+				Role:      "agent",
+				Content:   responseSummary,
+				Timestamp: now,
+			})
 		}
 	}
 
@@ -154,6 +198,16 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 			}
 			if err := c.workspace.SavePendingQuestion(taskID, pendingQuestion); err != nil {
 				c.logError(fmt.Errorf("save pending question: %w", err))
+			}
+			// Record question in session exchanges for later recovery
+			if c.currentSession != nil {
+				c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+					Role:      "agent",
+					Content:   "QUESTION: " + response.Question.Text,
+					Timestamp: time.Now(),
+				})
+				// Save session before returning (question state)
+				c.saveCurrentSession(taskID)
 			}
 			// Dispatch EventWait to properly transition FSM to StateWaiting
 			_ = c.machine.Dispatch(ctx, workflow.EventWait)
@@ -254,8 +308,9 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
 	prompt := buildImplementationPrompt(c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions)
 
-	// Run agent with streaming
+	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent implementing...", 20)
+	var transcriptBuilder strings.Builder
 	response, err := implementingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
 		c.eventBus.PublishRaw(events.Event{
@@ -265,6 +320,10 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 		// Also track progress if not dry-run
 		if statusLine != nil {
 			_ = statusLine.OnEvent(event)
+		}
+		// Accumulate content for transcript archive
+		if event.Text != "" {
+			transcriptBuilder.WriteString(event.Text)
 		}
 
 		return nil
@@ -291,6 +350,40 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 			response.Usage.CostUSD,
 		); err != nil {
 			c.logError(fmt.Errorf("record implementation usage: %w", err))
+		}
+	}
+
+	// Save full transcript for archive
+	if transcript := transcriptBuilder.String(); transcript != "" {
+		transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-implementation.log"
+		if err := c.workspace.SaveTranscript(taskID, transcriptFile, transcript); err != nil {
+			c.logError(fmt.Errorf("save implementation transcript: %w", err))
+		}
+	}
+
+	// Record exchanges to session
+	if c.currentSession != nil {
+		now := time.Now()
+		promptSummary := prompt
+		if len(promptSummary) > 500 {
+			promptSummary = promptSummary[:500] + "..."
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   promptSummary,
+			Timestamp: now,
+		})
+		// Record files changed
+		if len(response.Files) > 0 {
+			var fileList []string
+			for _, f := range response.Files {
+				fileList = append(fileList, f.Path)
+			}
+			c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+				Role:      "agent",
+				Content:   fmt.Sprintf("Modified %d files: %s", len(response.Files), strings.Join(fileList, ", ")),
+				Timestamp: now,
+			})
 		}
 	}
 
@@ -374,8 +467,9 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	customInstructions := buildCombinedInstructions(workspaceCfg, "reviewing")
 	prompt := buildReviewPromptWithLint(c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, customInstructions)
 
-	// Run agent
+	// Run agent, accumulate output for transcript
 	c.publishProgress("Agent reviewing...", 20)
+	var transcriptBuilder strings.Builder
 	response, err := reviewAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
 		c.eventBus.PublishRaw(events.Event{
@@ -385,6 +479,10 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 		// Also track progress if not dry-run
 		if statusLine != nil {
 			_ = statusLine.OnEvent(event)
+		}
+		// Accumulate content for transcript archive
+		if event.Text != "" {
+			transcriptBuilder.WriteString(event.Text)
 		}
 
 		return nil
@@ -411,6 +509,43 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 			response.Usage.CostUSD,
 		); err != nil {
 			c.logError(fmt.Errorf("record review usage: %w", err))
+		}
+	}
+
+	// Save full transcript for archive
+	if transcript := transcriptBuilder.String(); transcript != "" {
+		transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-review.log"
+		if err := c.workspace.SaveTranscript(taskID, transcriptFile, transcript); err != nil {
+			c.logError(fmt.Errorf("save review transcript: %w", err))
+		}
+	}
+
+	// Record exchanges to session
+	if c.currentSession != nil {
+		now := time.Now()
+		promptSummary := prompt
+		if len(promptSummary) > 500 {
+			promptSummary = promptSummary[:500] + "..."
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   promptSummary,
+			Timestamp: now,
+		})
+		// Record review summary
+		reviewSummary := response.Summary
+		if reviewSummary == "" && len(response.Messages) > 0 {
+			reviewSummary = response.Messages[0]
+		}
+		if reviewSummary != "" {
+			if len(reviewSummary) > 500 {
+				reviewSummary = reviewSummary[:500] + "..."
+			}
+			c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+				Role:      "agent",
+				Content:   reviewSummary,
+				Timestamp: now,
+			})
 		}
 	}
 
@@ -452,4 +587,46 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	c.publishProgress("Review complete", 100)
 
 	return nil
+}
+
+// buildHistoricalContext reconstructs Q&A history from previous sessions or transcripts.
+// With fullContext=true, loads from transcripts; otherwise uses session exchange summaries.
+func (c *Conductor) buildHistoricalContext(taskID string, fullContext bool) string {
+	var context strings.Builder
+
+	if fullContext {
+		// Load from transcripts for full context
+		transcripts, err := c.workspace.ListTranscripts(taskID)
+		if err != nil || len(transcripts) == 0 {
+			return ""
+		}
+		for _, t := range transcripts {
+			// Only include answer transcripts (Q&A context)
+			if !strings.Contains(t, "-answer.log") {
+				continue
+			}
+			content, err := c.workspace.LoadTranscript(taskID, t)
+			if err != nil {
+				continue
+			}
+			context.WriteString(content)
+			context.WriteString("\n\n---\n\n")
+		}
+	} else {
+		// Load from session exchanges (summaries)
+		sessions, err := c.workspace.ListSessions(taskID)
+		if err != nil || len(sessions) == 0 {
+			return ""
+		}
+		for _, sess := range sessions {
+			for _, ex := range sess.Exchanges {
+				// Only include Q&A exchanges (marked with QUESTION: or ANSWER:)
+				if strings.HasPrefix(ex.Content, "QUESTION:") || strings.HasPrefix(ex.Content, "ANSWER:") {
+					context.WriteString(fmt.Sprintf("[%s] %s\n", ex.Role, ex.Content))
+				}
+			}
+		}
+	}
+
+	return context.String()
 }
