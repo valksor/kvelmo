@@ -28,7 +28,8 @@ func Info() provider.ProviderInfo {
 		Schemes:     []string{"file"},
 		Priority:    10,
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead: true,
+			provider.CapRead:     true,
+			provider.CapSnapshot: true,
 		},
 	}
 }

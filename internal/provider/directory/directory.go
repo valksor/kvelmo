@@ -30,8 +30,9 @@ func Info() provider.ProviderInfo {
 		Schemes:     []string{"dir"},
 		Priority:    15, // Higher than file provider
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead: true,
-			provider.CapList: true,
+			provider.CapRead:     true,
+			provider.CapList:     true,
+			provider.CapSnapshot: true,
 		},
 	}
 }
