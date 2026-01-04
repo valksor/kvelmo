@@ -29,8 +29,10 @@ azure_devops:
   project: "MyProject"
   area_path: "MyProject\\Area"      # Optional: default area path
   branch_pattern: "feature/{key}-{slug}"
-  target_branch: "main"
+  target_branch: "main"             # Auto-detected from repository if not set
 ```
+
+> **Note:** If `target_branch` is not configured, Mehrhof will query the Azure DevOps API for the repository's default branch.
 
 ## Token Resolution
 
