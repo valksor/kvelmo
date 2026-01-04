@@ -114,10 +114,13 @@ func (g *Git) GetBaseBranch(ctx context.Context) (string, error) {
 		}
 	}
 
-	// Try to find from remote
-	for _, name := range candidates {
-		if g.RemoteBranchExists(ctx, "origin", name) {
-			return name, nil
+	// Try to find from remote (use detected remote, not hardcoded "origin")
+	remote, _ := g.GetDefaultRemote(ctx)
+	if remote != "" {
+		for _, name := range candidates {
+			if g.RemoteBranchExists(ctx, remote, name) {
+				return name, nil
+			}
 		}
 	}
 
