@@ -175,10 +175,11 @@ type AzurePullRequest struct {
 
 // Repository represents an Azure DevOps repository.
 type Repository struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	URL     string   `json:"url"`
-	Project *Project `json:"project"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	URL           string   `json:"url"`
+	DefaultBranch string   `json:"defaultBranch"` // e.g., "refs/heads/main"
+	Project       *Project `json:"project"`
 }
 
 // Project represents an Azure DevOps project.
@@ -467,6 +468,23 @@ func (c *Client) GetRepositories(ctx context.Context) ([]Repository, error) {
 	}
 
 	return resp.Value, nil
+}
+
+// GetRepository gets a single repository by name.
+func (c *Client) GetRepository(ctx context.Context, repoName string) (*Repository, error) {
+	url := c.buildURL("/git/repositories/" + repoName)
+
+	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var repo Repository
+	if err := json.Unmarshal(body, &repo); err != nil {
+		return nil, fmt.Errorf("unmarshal repository: %w", err)
+	}
+
+	return &repo, nil
 }
 
 // CreateWorkItem creates a new work item of the specified type.

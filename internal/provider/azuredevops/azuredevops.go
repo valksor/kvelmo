@@ -290,7 +290,16 @@ func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequ
 		targetBranch = p.config.TargetBranch
 	}
 	if targetBranch == "" {
-		targetBranch = "main"
+		// Query the repository for its default branch instead of assuming "main"
+		repo, err := p.client.GetRepository(ctx, repoName)
+		if err != nil {
+			return nil, fmt.Errorf("get repository for default branch: %w", err)
+		}
+		// Azure DevOps returns default branch as "refs/heads/main"
+		targetBranch = strings.TrimPrefix(repo.DefaultBranch, "refs/heads/")
+		if targetBranch == "" {
+			return nil, errors.New("repository has no default branch; set target_branch in config")
+		}
 	}
 
 	// Extract work item IDs from title/body for auto-linking (AB#123 or #123 format)

@@ -25,8 +25,9 @@ const (
 
 // Config holds client configuration.
 type Config struct {
-	Token string
-	Host  string // Optional: override default API base URL
+	Token          string
+	Host           string // Optional: override default API base URL
+	DefaultProject string // Default project ID for creating work units
 }
 
 // Client wraps the YouTrack API client.

@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -71,7 +72,8 @@ func (p *Provider) GetDefaultBranch(ctx context.Context) (string, error) {
 	repoSlug := p.config.RepoSlug
 
 	if workspace == "" || repoSlug == "" {
-		return "main", nil
+		// Don't assume "main" - require explicit configuration
+		return "", errors.New("workspace and repo_slug required to detect default branch; set target_branch in config")
 	}
 
 	p.client.SetWorkspaceRepo(workspace, repoSlug)
