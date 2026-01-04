@@ -63,6 +63,5 @@ changelog:
             - '\[skip ci\]'
 
 release:
-    # Release already exists (created by nightly.yml or GitHub UI)
-    # GoReleaser just uploads artifacts to it
-    mode: keep-existing
+    # Append changelog to existing release notes (keeps "Full Changelog" link and custom text)
+    mode: append
