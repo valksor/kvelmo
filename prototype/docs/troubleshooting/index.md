@@ -10,6 +10,7 @@ Solutions for common issues with Mehrhof.
 | Claude not working | Ensure Claude CLI is installed: `claude --version` |
 | No active task | `mehr start file:task.md` |
 | Bad implementation | `mehr undo` |
+| Implement says done but no code | `mehr update` (older versions had permission mode bug) |
 | Merge conflict | Resolve manually, `git add .`, `git commit` |
 | Timeout | Increase `agent.timeout` in `.mehrhof/config.yaml` |
 | Start fresh | `mehr abandon --yes && mehr start file:task.md` |
@@ -77,6 +78,16 @@ Mehrhof calls Claude CLI, so authentication is handled by Claude:
 ```bash
 claude "Hello"
 
+```
+
+### "Implementation complete" but no code written
+
+**Cause:** Older Mehrhof versions didn't pass `--permission-mode acceptEdits` to Claude during implementation. Claude would default to plan mode, plan the work, exit plan mode, and Mehrhof interpreted this as completion.
+
+**Fix:** Update to latest Mehrhof version which automatically sets the correct permission mode.
+
+```bash
+mehr update
 ```
 
 ### "Rate limited"

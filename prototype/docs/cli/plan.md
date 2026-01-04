@@ -29,7 +29,7 @@ specification files are saved to `.mehrhof/work/<id>/specifications/`.
 | `--seed`           | `-s`  | string |         | Initial topic for standalone planning |
 | `--verbose`        | `-v`  | bool   | false   | Show agent output in real-time       |
 | `--agent-plan`     |       | string |         | Override agent for planning step     |
-| `--full-context`   |       | bool   | false   | Include full exploration context     |
+| `--full-context`   |       | bool   | false   | Load full transcripts instead of summaries |
 
 **Note:** For standalone mode, you can also provide the seed topic as a positional argument:
 ```bash
@@ -61,6 +61,14 @@ mehr plan --verbose
 ```
 
 Shows the agent's reasoning and progress in real-time.
+
+### Resume with Full Context
+
+```bash
+mehr plan --full-context
+```
+
+When resuming after answering an agent question, use `--full-context` to load the complete exploration transcript instead of summaries. This provides more context to the agent but uses more tokens.
 
 ### Standalone Planning
 
@@ -100,6 +108,7 @@ Use a specific agent for this planning session. See [AI Agents](../agents/index.
    - Reads source from `.mehrhof/work/<id>/`
    - Includes notes from `notes.md`
    - Reviews any existing specifications
+   - Loads Q&A history from previous sessions (if any)
 
 2. **Agent Execution**
    - Prompts agent with context
@@ -108,7 +117,8 @@ Use a specific agent for this planning session. See [AI Agents](../agents/index.
 
 3. **Output**
    - specification files written to `specifications/` directory
-   - Session logged to `sessions/`
+   - Session logged to `sessions/` (with Q&A exchanges)
+   - Full transcript archived to `transcripts/`
    - Checkpoint created for undo support
 
 ### For Standalone Planning

@@ -19,3 +19,18 @@ codex --version
 ```bash
 mehr start --agent codex file:task.md
 ```
+
+## Workflow Behavior
+
+Mehrhof automatically configures Codex's approval mode based on the workflow step:
+
+| Step | Flag | Description |
+|------|------|-------------|
+| `planning` | Default | Codex analyzes without modifications |
+| `implementing` | `--full-auto` | Workspace-write sandbox + on-request approval |
+| `reviewing` | `--full-auto` | Can apply review fixes |
+| `checkpointing` | Default | Summary generation only |
+
+The `--full-auto` flag is a shortcut for `--sandbox workspace-write --ask-for-approval on-request`, allowing Codex to write files within the workspace without prompting for each operation.
+
+> **Note**: Agent aliases that extend Codex inherit this behavior automatically.

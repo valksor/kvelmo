@@ -44,6 +44,21 @@ Or specify via CLI:
 mehr start --agent gemini file:task.md
 ```
 
+## Workflow Behavior
+
+Mehrhof automatically configures Gemini's approval mode based on the workflow step:
+
+| Step | Flag | Description |
+|------|------|-------------|
+| `planning` | Default | Gemini analyzes without modifications |
+| `implementing` | `--yolo` | Auto-approves all tool calls (sandbox enabled) |
+| `reviewing` | `--yolo` | Can apply review fixes |
+| `checkpointing` | Default | Summary generation only |
+
+The `--yolo` flag auto-approves all tool calls including file writes, and enables sandbox by default for safety.
+
+> **Note**: Agent aliases that extend Gemini inherit this behavior automatically.
+
 ## Available Models
 
 | Model | Description |
