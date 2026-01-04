@@ -27,7 +27,10 @@ mehr start yt:https://youtrack.cloud/issue/ABC-123
 youtrack:
   token: "${YOUTRACK_TOKEN}"
   host: "https://company.myjetbrains.com/youtrack"  # Optional: override host
+  default_project: "PROJECT-ID"                      # Required for issue creation
 ```
+
+> **Note:** The `default_project` is required when using `CreateWorkUnit` capability. You can find the project ID in YouTrack's project settings or API.
 
 ## Token Resolution
 

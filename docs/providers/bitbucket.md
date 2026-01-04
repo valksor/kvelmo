@@ -28,9 +28,11 @@ bitbucket:
   workspace: "myworkspace"
   repo: "myrepo"
   branch_pattern: "issue/{key}-{slug}"
-  target_branch: "main"
+  target_branch: "main"             # Auto-detected from repository if not set
   draft_pr: false
 ```
+
+> **Note:** If `target_branch` is not configured, Mehrhof will query the Bitbucket API for the repository's default branch. If the repository has no default branch configured, an explicit `target_branch` is required.
 
 ## Token Resolution
 
