@@ -79,3 +79,14 @@ type AgentCapabilities struct {
 	SystemPrompt   bool     // Accepts system prompts
 	AllowedTools   []string // List of available tools, empty = all
 }
+
+// StepArgsProvider is implemented by agents that need step-specific CLI args.
+// This allows agents to customize their behavior based on the workflow step
+// (e.g., planning, implementing, reviewing) without hardcoding agent-specific
+// logic in the conductor.
+type StepArgsProvider interface {
+	// StepArgs returns additional CLI args for a workflow step.
+	// Returns nil if no special args are needed for this step.
+	// Step values: "planning", "implementing", "reviewing", "checkpointing"
+	StepArgs(step string) []string
+}

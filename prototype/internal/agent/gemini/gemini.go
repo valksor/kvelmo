@@ -372,11 +372,28 @@ func Register(r *agent.Registry) error {
 	return r.Register(New())
 }
 
+// StepArgs returns step-specific CLI args for Gemini.
+// For implementing and reviewing steps, we use --yolo to auto-approve
+// tool calls (including file writes) without prompting.
+func (a *Agent) StepArgs(step string) []string {
+	switch step {
+	case "implementing", "reviewing":
+		// --yolo auto-approves all tool calls and enables sandbox by default
+		// This allows Gemini to write files without prompting for each operation
+		return []string{"--yolo"}
+	default:
+		return nil
+	}
+}
+
 // Ensure Agent implements agent.Agent.
 var _ agent.Agent = (*Agent)(nil)
 
 // Ensure Agent implements agent.MetadataProvider.
 var _ agent.MetadataProvider = (*Agent)(nil)
+
+// Ensure Agent implements agent.StepArgsProvider.
+var _ agent.StepArgsProvider = (*Agent)(nil)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gemini-specific parser for stream-json output
