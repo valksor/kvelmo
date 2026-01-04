@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // buildPlanningPrompt creates the prompt for specification generation.
-func buildPlanningPrompt(title, sourceContent, notes, existingSpecs string) string {
+func buildPlanningPrompt(title, sourceContent, notes, existingSpecs, customInstructions string) string {
 	prompt := fmt.Sprintf(`You are a software architect. Analyze this task and create a detailed implementation specification.
 
 ## Task
@@ -40,6 +41,14 @@ Your new specification should acknowledge what was already planned and either:
 `, notes)
 	}
 
+	// Inject custom instructions before static instructions
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
 	prompt += `
 ## Instructions
 Create a detailed specification that includes:
@@ -56,7 +65,7 @@ Output your specification in a structured format with clear sections.`
 }
 
 // buildImplementationPrompt creates the prompt for implementation.
-func buildImplementationPrompt(title, sourceContent, specsContent, notes string) string {
+func buildImplementationPrompt(title, sourceContent, specsContent, notes, customInstructions string) string {
 	prompt := fmt.Sprintf(`You are a software engineer. Implement the following task according to the specifications.
 
 ## Task
@@ -76,6 +85,14 @@ func buildImplementationPrompt(title, sourceContent, specsContent, notes string)
 `, notes)
 	}
 
+	// Inject custom instructions before static instructions
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
 	prompt += `
 ## Instructions
 Implement this task according to the specifications. For each file you create or modify:
@@ -92,12 +109,12 @@ Output each file change in a yaml:file block.`
 
 // buildReviewPrompt creates the prompt for code review.
 func buildReviewPrompt(title, sourceContent, specsContent string) string {
-	return buildReviewPromptWithLint(title, sourceContent, specsContent, "")
+	return buildReviewPromptWithLint(title, sourceContent, specsContent, "", "")
 }
 
 // buildReviewPromptWithLint creates the prompt for code review including lint results.
 // If lintResults is empty, it falls back to the standard review prompt.
-func buildReviewPromptWithLint(title, sourceContent, specsContent, lintResults string) string {
+func buildReviewPromptWithLint(title, sourceContent, specsContent, lintResults, customInstructions string) string {
 	prompt := fmt.Sprintf(`You are a senior software engineer conducting a code review.
 
 ## Task
@@ -115,6 +132,14 @@ func buildReviewPromptWithLint(title, sourceContent, specsContent, lintResults s
 		prompt += fmt.Sprintf(`
 %s
 `, lintResults)
+	}
+
+	// Inject custom instructions before static instructions
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
 	}
 
 	prompt += `
@@ -211,4 +236,33 @@ func extractExploredFiles(response *agent.Response) []string {
 	}
 
 	return files
+}
+
+// buildCombinedInstructions combines global and step-specific instructions from workspace config.
+// Global instructions are included first, then step-specific instructions are appended.
+// Returns empty string if no instructions are configured.
+func buildCombinedInstructions(cfg *storage.WorkspaceConfig, step string) string {
+	if cfg == nil {
+		return ""
+	}
+
+	var parts []string
+
+	// Global instructions (apply to all steps)
+	if global := strings.TrimSpace(cfg.Agent.Instructions); global != "" {
+		parts = append(parts, global)
+	}
+
+	// Step-specific instructions (combined with global)
+	if stepCfg, ok := cfg.Agent.Steps[step]; ok {
+		if stepInstr := strings.TrimSpace(stepCfg.Instructions); stepInstr != "" {
+			parts = append(parts, stepInstr)
+		}
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return strings.Join(parts, "\n\n")
 }

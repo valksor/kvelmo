@@ -105,7 +105,7 @@ func (c *Conductor) createBranchOrWorktree(ctx context.Context, taskID string, n
 		return &gitInfo{}, nil
 	}
 
-	baseBranch, _ := c.git.GetBaseBranch(ctx)
+	baseBranch, _ := c.git.CurrentBranch(ctx)
 	branchName := ni.branchName // Use resolved branch name from naming
 
 	if c.opts.UseWorktree {
@@ -159,9 +159,15 @@ func (c *Conductor) resolveTargetBranch(ctx context.Context, requested string) s
 	}
 
 	// Fallback to detecting base branch
-	baseBranch, _ := c.git.GetBaseBranch(ctx)
+	baseBranch, err := c.git.GetBaseBranch(ctx)
+	if err == nil && baseBranch != "" {
+		return baseBranch
+	}
 
-	return baseBranch
+	// Last resort: use current branch (better than empty string)
+	currentBranch, _ := c.git.CurrentBranch(ctx)
+
+	return currentBranch
 }
 
 // performMerge handles the merge operation (squash or regular).

@@ -85,6 +85,8 @@ Controls AI agent behavior:
 | `default` | `claude` | Default agent |
 | `timeout` | `300` | Timeout in seconds |
 | `max_retries` | `3` | Retry attempts |
+| `instructions` | (empty) | Global instructions for all steps |
+| `steps` | (empty) | Per-step agent configuration |
 
 **Per-step configuration:**
 
@@ -109,6 +111,45 @@ agent:
 | `implementing` | Agent for `mehr implement` |
 | `reviewing` | Agent for `mehr review` |
 | `checkpointing` | Agent for checkpoint summaries |
+
+**Default instructions:**
+
+Provide custom instructions to guide AI agents during each workflow step:
+
+```yaml
+agent:
+  default: claude
+
+  # Global instructions (apply to ALL steps)
+  instructions: |
+    Follow existing code patterns.
+    Include comprehensive error handling.
+    Write clean, maintainable code.
+
+  # Per-step instructions (combined with global)
+  steps:
+    planning:
+      name: claude
+      instructions: |
+        Focus on architectural decisions.
+        Consider scalability implications.
+    implementing:
+      name: claude-sonnet
+      instructions: |
+        Follow TDD - write tests alongside implementation.
+        Ensure backward compatibility.
+    reviewing:
+      name: claude
+      instructions: |
+        Be thorough but constructive.
+        Focus on security and performance issues.
+```
+
+**Combination behavior:**
+- Global `instructions` apply to all steps
+- Step-specific `instructions` are **appended** to global (not replaced)
+- Empty or whitespace-only instructions are ignored
+- Instructions appear as "Custom Instructions" section in agent prompts
 
 ### providers
 

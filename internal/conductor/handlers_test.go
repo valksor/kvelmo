@@ -116,7 +116,7 @@ func TestBuildPlanningPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildPlanningPrompt(tt.title, tt.sourceContent, tt.notes, tt.existingSpecs)
+			got := buildPlanningPrompt(tt.title, tt.sourceContent, tt.notes, tt.existingSpecs, "")
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
 					t.Errorf("buildPlanningPrompt() missing %q", want)
@@ -128,6 +128,17 @@ func TestBuildPlanningPrompt(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBuildPlanningPromptWithCustomInstructions(t *testing.T) {
+	got := buildPlanningPrompt("Task", "Source", "", "", "Focus on security.")
+
+	if !strings.Contains(got, "## Custom Instructions") {
+		t.Error("buildPlanningPrompt() should contain custom instructions section")
+	}
+	if !strings.Contains(got, "Focus on security.") {
+		t.Error("buildPlanningPrompt() should contain custom instruction content")
 	}
 }
 
@@ -162,7 +173,7 @@ func TestBuildImplementationPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildImplementationPrompt(tt.title, tt.source, tt.specs, tt.notes)
+			got := buildImplementationPrompt(tt.title, tt.source, tt.specs, tt.notes, "")
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
 					t.Errorf("buildImplementationPrompt() missing %q", want)
@@ -174,6 +185,17 @@ func TestBuildImplementationPrompt(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBuildImplementationPromptWithCustomInstructions(t *testing.T) {
+	got := buildImplementationPrompt("Task", "Source", "Specs", "", "Write tests first.")
+
+	if !strings.Contains(got, "## Custom Instructions") {
+		t.Error("buildImplementationPrompt() should contain custom instructions section")
+	}
+	if !strings.Contains(got, "Write tests first.") {
+		t.Error("buildImplementationPrompt() should contain custom instruction content")
 	}
 }
 
@@ -196,6 +218,132 @@ func TestBuildReviewPrompt(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("buildReviewPrompt() missing %q", want)
 		}
+	}
+}
+
+func TestBuildReviewPromptWithCustomInstructions(t *testing.T) {
+	got := buildReviewPromptWithLint("Task", "Source", "Specs", "", "Focus on security issues.")
+
+	if !strings.Contains(got, "## Custom Instructions") {
+		t.Error("buildReviewPromptWithLint() should contain custom instructions section")
+	}
+	if !strings.Contains(got, "Focus on security issues.") {
+		t.Error("buildReviewPromptWithLint() should contain custom instruction content")
+	}
+}
+
+func TestBuildCombinedInstructions(t *testing.T) {
+	tests := []struct {
+		name   string
+		cfg    *storage.WorkspaceConfig
+		step   string
+		want   string
+		wantIn []string
+	}{
+		{
+			name: "nil config returns empty",
+			cfg:  nil,
+			step: "planning",
+			want: "",
+		},
+		{
+			name: "global only",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{
+					Instructions: "Follow best practices.",
+				},
+			},
+			step:   "planning",
+			wantIn: []string{"Follow best practices."},
+		},
+		{
+			name: "step only",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{
+					Steps: map[string]storage.StepAgentConfig{
+						"planning": {
+							Instructions: "Focus on architecture.",
+						},
+					},
+				},
+			},
+			step:   "planning",
+			wantIn: []string{"Focus on architecture."},
+		},
+		{
+			name: "global and step combined",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{
+					Instructions: "Follow best practices.",
+					Steps: map[string]storage.StepAgentConfig{
+						"planning": {
+							Instructions: "Focus on architecture.",
+						},
+					},
+				},
+			},
+			step:   "planning",
+			wantIn: []string{"Follow best practices.", "Focus on architecture."},
+		},
+		{
+			name: "step not configured",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{
+					Instructions: "Global only.",
+					Steps: map[string]storage.StepAgentConfig{
+						"implementing": {
+							Instructions: "Not planning.",
+						},
+					},
+				},
+			},
+			step:   "planning",
+			wantIn: []string{"Global only."},
+		},
+		{
+			name: "whitespace only trimmed",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{
+					Instructions: "   ",
+					Steps: map[string]storage.StepAgentConfig{
+						"planning": {
+							Instructions: "   Valid instructions.   ",
+						},
+					},
+				},
+			},
+			step:   "planning",
+			wantIn: []string{"Valid instructions."},
+		},
+		{
+			name: "neither global nor step",
+			cfg: &storage.WorkspaceConfig{
+				Agent: storage.AgentSettings{},
+			},
+			step: "planning",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildCombinedInstructions(tt.cfg, tt.step)
+
+			if tt.want != "" && got != tt.want {
+				t.Errorf("buildCombinedInstructions() = %q, want %q", got, tt.want)
+			}
+
+			for _, want := range tt.wantIn {
+				if !strings.Contains(got, want) {
+					t.Errorf("buildCombinedInstructions() missing %q in %q", want, got)
+				}
+			}
+
+			// Verify empty expectations
+			if tt.want == "" && len(tt.wantIn) == 0 && got != "" {
+				t.Errorf("buildCombinedInstructions() = %q, want empty", got)
+			}
+		})
 	}
 }
 

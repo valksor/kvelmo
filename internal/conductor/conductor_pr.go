@@ -24,8 +24,14 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 	taskID := c.activeTask.ID
 	sourceBranch := c.activeTask.Branch
 
+	// Get the default remote (don't assume "origin")
+	remote, err := c.git.GetDefaultRemote(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get default remote: %w", err)
+	}
+
 	// Push the branch to remote first
-	if err := c.git.PushBranch(ctx, sourceBranch, "origin", true); err != nil {
+	if err := c.git.PushBranch(ctx, sourceBranch, remote, true); err != nil {
 		return nil, fmt.Errorf("push branch: %w", err)
 	}
 

@@ -364,8 +364,12 @@ func (c *Conductor) finishWithMerge(ctx context.Context, opts FinishOptions) err
 
 	// Push if requested
 	if opts.PushAfter {
+		remote, err := c.git.GetDefaultRemote(ctx)
+		if err != nil {
+			return fmt.Errorf("get default remote: %w", err)
+		}
 		targetBranch := c.resolveTargetBranch(ctx, opts.TargetBranch)
-		if err := c.git.PushBranch(ctx, targetBranch, "origin", false); err != nil {
+		if err := c.git.PushBranch(ctx, targetBranch, remote, false); err != nil {
 			return fmt.Errorf("push: %w", err)
 		}
 	}

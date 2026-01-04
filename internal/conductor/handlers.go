@@ -79,8 +79,10 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		_ = c.workspace.ClearPendingQuestion(taskID)
 	}
 
-	// Build planning prompt
-	prompt := buildPlanningPrompt(c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications)
+	// Build planning prompt with custom instructions
+	workspaceCfg, _ := c.workspace.LoadConfig()
+	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
+	prompt := buildPlanningPrompt(c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions)
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
@@ -247,8 +249,10 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	// Get notes (missing notes is acceptable, returns empty string)
 	notes, _ := c.workspace.ReadNotes(taskID)
 
-	// Build implementation prompt with latest spec
-	prompt := buildImplementationPrompt(c.taskWork.Metadata.Title, sourceContent, specContent, notes)
+	// Build implementation prompt with latest spec and custom instructions
+	workspaceCfg, _ := c.workspace.LoadConfig()
+	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
+	prompt := buildImplementationPrompt(c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions)
 
 	// Run agent with streaming
 	c.publishProgress("Agent implementing...", 20)
@@ -365,8 +369,10 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	c.publishProgress("Running automated linters...", 10)
 	lintResults := c.runLinters(ctx)
 
-	// Build review prompt with lint results
-	prompt := buildReviewPromptWithLint(c.taskWork.Metadata.Title, sourceContent, specContent, lintResults)
+	// Build review prompt with lint results and custom instructions
+	workspaceCfg, _ := c.workspace.LoadConfig()
+	customInstructions := buildCombinedInstructions(workspaceCfg, "reviewing")
+	prompt := buildReviewPromptWithLint(c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, customInstructions)
 
 	// Run agent
 	c.publishProgress("Agent reviewing...", 20)
