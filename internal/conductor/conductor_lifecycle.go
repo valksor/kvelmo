@@ -264,8 +264,12 @@ func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *
 // snapshotSource creates a snapshot of the source content.
 func (c *Conductor) snapshotSource(ctx context.Context, p any, reference string, workUnit *provider.WorkUnit) *provider.Snapshot {
 	if snapshotter, ok := p.(provider.Snapshotter); ok {
-		snapshot, err := snapshotter.Snapshot(ctx, workUnit.ID)
-		if err == nil && snapshot != nil {
+		// Use ExternalID which contains the full reference (e.g., file path, issue URL).
+		// workUnit.ID may be a generated short identifier that providers can't resolve.
+		snapshot, err := snapshotter.Snapshot(ctx, workUnit.ExternalID)
+		if err != nil {
+			c.logError(fmt.Errorf("snapshot source (non-fatal): %w", err))
+		} else if snapshot != nil {
 			return snapshot
 		}
 	}
