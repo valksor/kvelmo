@@ -8,7 +8,7 @@
 .mehrhof/.env
 .mehrhof/work/
 .wrangler/
-CLAUDE.md
+/CLAUDE.md
 build/
 bun.lock
 covprofile
