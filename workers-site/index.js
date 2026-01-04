@@ -7,6 +7,15 @@ export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
 
+        // Redirect directory paths without trailing slash (fixes relative path resolution)
+        if (
+            url.pathname.startsWith("/docs") &&
+            !url.pathname.endsWith("/") &&
+            !url.pathname.split("/").pop().includes(".")
+        ) {
+            return Response.redirect(url.origin + url.pathname + "/", 301);
+        }
+
         // Strip /docs prefix for asset lookup
         if (url.pathname.startsWith("/docs")) {
             url.pathname = url.pathname.replace(/^\/docs/, "") || "/";
