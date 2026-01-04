@@ -19,7 +19,12 @@
                 --theme-color: #960018;
                 --color-bg: #f0eee9;
                 --color-text: #2b2c30;
-                scrollbar-color: color-mix(in oklch, var(--theme-color) 100%, transparent) var(--color-bg);
+                scrollbar-color: color-mix(
+                        in oklch,
+                        var(--theme-color) 100%,
+                        transparent
+                    )
+                    var(--color-bg);
             }
 
             .anchor span {
@@ -34,7 +39,8 @@
                 border: 1px solid var(--color-text);
             }
 
-            .markdown-section pre, .markdown-section code {
+            .markdown-section pre,
+            .markdown-section code {
                 background-color: var(--color-bg);
             }
 
