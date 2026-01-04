@@ -21,6 +21,19 @@ func applyAgentEnv(agentInst agent.Agent, env map[string]string) agent.Agent {
 	return coordination.ApplyEnvs(agentInst, env)
 }
 
+// applyStepArgs applies step-specific CLI args from the agent if it implements StepArgsProvider.
+// This allows agents like Claude to customize their behavior per workflow step
+// (e.g., using --permission-mode acceptEdits for implementing/reviewing steps).
+func applyStepArgs(agentInst agent.Agent, step string) agent.Agent {
+	if provider, ok := agentInst.(agent.StepArgsProvider); ok {
+		if args := provider.StepArgs(step); len(args) > 0 {
+			return agentInst.WithArgs(args...)
+		}
+	}
+
+	return agentInst
+}
+
 // resolveAgentForTask resolves the agent based on priority:
 // CLI flag > Task config > Workspace default > Auto-detect
 // Returns the resolved agent, the source identifier, and any error.
@@ -125,6 +138,8 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 				if len(stepInfo.Args) > 0 {
 					agentInst = agentInst.WithArgs(stepInfo.Args...)
 				}
+				// Apply step-specific args from the agent
+				agentInst = applyStepArgs(agentInst, stepStr)
 
 				return agentInst, nil
 			}
@@ -138,13 +153,16 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 		return nil, err
 	}
 
+	// Apply step-specific args from the agent
+	agentInst := applyStepArgs(resolution.Agent, stepStr)
+
 	// Cache the resolution in taskWork for persistence
 	if c.taskWork != nil {
 		if c.taskWork.Agent.Steps == nil {
 			c.taskWork.Agent.Steps = make(map[string]storage.StepAgentInfo)
 		}
 		c.taskWork.Agent.Steps[stepStr] = storage.StepAgentInfo{
-			Name:      resolution.Agent.Name(),
+			Name:      agentInst.Name(),
 			Source:    resolution.Source,
 			InlineEnv: resolution.InlineEnv,
 			Args:      resolution.Args,
@@ -156,7 +174,7 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 		}
 	}
 
-	return resolution.Agent, nil
+	return agentInst, nil
 }
 
 // registerAliasAgents registers user-defined agent aliases from workspace config.

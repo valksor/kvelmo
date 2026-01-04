@@ -345,5 +345,25 @@ func Register(r *agent.Registry) error {
 	return r.Register(New())
 }
 
+// StepArgs returns step-specific CLI args for Claude.
+// We explicitly set permission mode for each step to ensure consistent behavior
+// regardless of user's default settings.
+func (a *Agent) StepArgs(step string) []string {
+	switch step {
+	case "planning":
+		// Ensure Claude stays in read-only mode during planning, even if user
+		// has acceptEdits as their default. Planning should only analyze, not modify.
+		return []string{"--permission-mode", "plan"}
+	case "implementing", "reviewing":
+		// Ensure Claude can write files instead of defaulting to plan mode
+		return []string{"--permission-mode", "acceptEdits"}
+	default:
+		return nil
+	}
+}
+
 // Ensure Agent implements agent.Agent.
 var _ agent.Agent = (*Agent)(nil)
+
+// Ensure Agent implements agent.StepArgsProvider.
+var _ agent.StepArgsProvider = (*Agent)(nil)

@@ -321,5 +321,22 @@ func Register(r *agent.Registry) error {
 	return r.Register(New())
 }
 
+// StepArgs returns step-specific CLI args for Codex.
+// For implementing and reviewing steps, we use --full-auto to allow
+// file operations without constant approval prompts.
+func (a *Agent) StepArgs(step string) []string {
+	switch step {
+	case "implementing", "reviewing":
+		// --full-auto = --sandbox workspace-write --ask-for-approval on-request
+		// This allows Codex to write files within the workspace without prompting
+		return []string{"--full-auto"}
+	default:
+		return nil
+	}
+}
+
 // Ensure Agent implements agent.Agent.
 var _ agent.Agent = (*Agent)(nil)
+
+// Ensure Agent implements agent.StepArgsProvider.
+var _ agent.StepArgsProvider = (*Agent)(nil)

@@ -107,5 +107,19 @@ func (a *AliasAgent) WithArgs(args ...string) Agent {
 	}
 }
 
+// StepArgs delegates to the base agent if it implements StepArgsProvider.
+// This ensures aliases like "glm" (which extends "claude") get the same
+// step-specific args as their base agent.
+func (a *AliasAgent) StepArgs(step string) []string {
+	if provider, ok := a.base.(StepArgsProvider); ok {
+		return provider.StepArgs(step)
+	}
+
+	return nil
+}
+
 // Ensure AliasAgent implements Agent interface.
 var _ Agent = (*AliasAgent)(nil)
+
+// Ensure AliasAgent implements StepArgsProvider interface.
+var _ StepArgsProvider = (*AliasAgent)(nil)
