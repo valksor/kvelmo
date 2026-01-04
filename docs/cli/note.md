@@ -81,15 +81,21 @@ All notes are included when the agent runs during planning.
    - Input appended to `notes.md`
    - Timestamp and current state added
 
-2. **No Agent Interaction**
+2. **Answer Persistence** (when answering agent questions)
+   - Q&A pair saved to `notes.md`
+   - Answer recorded in latest session file (`sessions/`)
+   - Full context archived to `transcripts/` for recovery
+
+3. **No Agent Interaction**
    - The AI agent is NOT called
    - No tokens are consumed
    - Note is saved directly to disk
 
-3. **Future Impact**
+4. **Future Impact**
    - Notes included in `plan` prompts
    - Notes included in `implement` prompts
    - Notes included in `review` prompts
+   - Q&A history from sessions available on resume
 
 ## Notes File
 

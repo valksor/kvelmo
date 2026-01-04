@@ -4,9 +4,9 @@
 
 **Schemes:** `dir:`
 
-**Capabilities:** `read`, `list`
+**Capabilities:** `read`, `list`, `snapshot`
 
-Reads tasks from markdown files in a local directory. Can list all available task files.
+Reads tasks from markdown files in a local directory. Can list all available task files. All directory files are copied to the task's `source/` directory as read-only snapshots.
 
 ## Usage
 

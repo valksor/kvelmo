@@ -4,9 +4,9 @@
 
 **Schemes:** `file:`
 
-**Capabilities:** `read`
+**Capabilities:** `read`, `snapshot`
 
-Reads tasks from local markdown files.
+Reads tasks from local markdown files. The original file is copied to the task's `source/` directory as a read-only snapshot.
 
 ## Usage
 
