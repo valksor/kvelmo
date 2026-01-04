@@ -356,6 +356,41 @@ func (g *Git) RemoteURL(ctx context.Context, name string) (string, error) {
 	return strings.TrimSpace(out), nil
 }
 
+// GetDefaultRemote returns the default remote for the repository.
+// It checks in order: current branch's tracking remote, "origin" if it exists,
+// then falls back to the first available remote.
+func (g *Git) GetDefaultRemote(ctx context.Context) (string, error) {
+	// Try to get the remote for the current branch's tracking configuration
+	currentBranch, err := g.CurrentBranch(ctx)
+	if err == nil && currentBranch != "" && currentBranch != "HEAD" {
+		remote, err := g.run(ctx, "config", "--get", "branch."+currentBranch+".remote")
+		if err == nil {
+			remote = strings.TrimSpace(remote)
+			if remote != "" {
+				return remote, nil
+			}
+		}
+	}
+
+	// Check if "origin" remote exists (most common case)
+	if _, err := g.run(ctx, "remote", "get-url", "origin"); err == nil {
+		return "origin", nil
+	}
+
+	// Fall back to the first available remote
+	out, err := g.run(ctx, "remote")
+	if err != nil {
+		return "", fmt.Errorf("list remotes: %w", err)
+	}
+
+	remotes := strings.Fields(out)
+	if len(remotes) > 0 {
+		return remotes[0], nil
+	}
+
+	return "", errors.New("no remote configured")
+}
+
 // Fetch fetches from a remote.
 func (g *Git) Fetch(ctx context.Context, remote string, args ...string) error {
 	cmdArgs := append([]string{"fetch", remote}, args...)
