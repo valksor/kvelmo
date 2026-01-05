@@ -307,6 +307,317 @@ func TestMatch(t *testing.T) {
 	}
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		name        string
+		input       string
+		want        string
+		errContains string
+		wantErr     bool
+	}{
+		{
+			name:  "notion scheme with page ID",
+			input: "notion:a1b2c3d4e5f678901234567890abcdef",
+			want:  "a1b2c3d4e5f678901234567890abcdef",
+		},
+		{
+			name:  "nt scheme with page ID",
+			input: "nt:a1b2c3d4e5f678901234567890abcdef",
+			want:  "a1b2c3d4e5f678901234567890abcdef",
+		},
+		{
+			name:  "bare page ID",
+			input: "a1b2c3d4e5f678901234567890abcdef",
+			want:  "a1b2c3d4e5f678901234567890abcdef",
+		},
+		{
+			name:  "UUID with dashes",
+			input: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+			want:  "a1b2c3d4e5f678901234567890abcdef",
+		},
+		{
+			name:        "empty input",
+			input:       "",
+			wantErr:     true,
+			errContains: "empty",
+		},
+		{
+			name:        "invalid input",
+			input:       "notion:invalid",
+			wantErr:     true,
+			errContains: "invalid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+				if tt.errContains != "" && err != nil {
+					if !containsString(err.Error(), tt.errContains) {
+						t.Errorf("Provider.Parse(%q) error = %v, want to contain %q", tt.input, err, tt.errContains)
+					}
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// extractTitle tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestExtractTitle(t *testing.T) {
+	tests := []struct {
+		name string
+		page Page
+		want string
+	}{
+		{
+			name: "title property",
+			page: Page{
+				Properties: map[string]Property{
+					"Name": {
+						Type: "title",
+						Title: &TitleProp{
+							Type:  "title",
+							Title: []RichText{{PlainText: "Task Title"}},
+						},
+					},
+				},
+			},
+			want: "Task Title",
+		},
+		{
+			name: "case-insensitive Name match",
+			page: Page{
+				Properties: map[string]Property{
+					"name": {
+						Type: "title",
+						Title: &TitleProp{
+							Type:  "title",
+							Title: []RichText{{PlainText: "From Name"}},
+						},
+					},
+				},
+			},
+			want: "From Name",
+		},
+		{
+			name: "Title property (different name)",
+			page: Page{
+				Properties: map[string]Property{
+					"Title": {
+						Type: "title",
+						Title: &TitleProp{
+							Type:  "title",
+							Title: []RichText{{PlainText: "From Title"}},
+						},
+					},
+				},
+			},
+			want: "From Title",
+		},
+		{
+			name: "fallback to URL",
+			page: Page{
+				URL:        "https://notion.so/page-123",
+				Properties: map[string]Property{},
+			},
+			want: "https://notion.so/page-123",
+		},
+		{
+			name: "untitled when no title property or URL",
+			page: Page{
+				Properties: map[string]Property{},
+			},
+			want: "Untitled",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractTitle(tt.page); got != tt.want {
+				t.Errorf("extractTitle() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// extractDescription tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestExtractDescription(t *testing.T) {
+	tests := []struct {
+		name                string
+		page                Page
+		blocks              []Block
+		descriptionProperty string
+		want                string
+	}{
+		{
+			name: "from configured description property",
+			page: Page{
+				Properties: map[string]Property{
+					"Description": {
+						Type: "rich_text",
+						RichText: &RichTextProp{
+							Type:     "rich_text",
+							RichText: []RichText{{PlainText: "Task description"}},
+						},
+					},
+				},
+			},
+			blocks:              []Block{},
+			descriptionProperty: "Description",
+			want:                "Task description",
+		},
+		{
+			name: "fallback to blocks",
+			page: Page{
+				Properties: map[string]Property{},
+			},
+			blocks: []Block{
+				{
+					Type: "paragraph",
+					Paragraph: &ParagraphBlock{
+						Type:     "paragraph",
+						RichText: []RichText{{PlainText: "Block content"}},
+					},
+				},
+			},
+			descriptionProperty: "Description",
+			want:                "Block content\n\n",
+		},
+		{
+			name: "empty when no property or blocks",
+			page: Page{
+				Properties: map[string]Property{},
+			},
+			blocks:              []Block{},
+			descriptionProperty: "Description",
+			want:                "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractDescription(tt.page, tt.blocks, tt.descriptionProperty); got != tt.want {
+				t.Errorf("extractDescription() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// extractAssignees tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestExtractAssignees(t *testing.T) {
+	tests := []struct {
+		name string
+		page Page
+		want int
+	}{
+		{
+			name: "single assignee",
+			page: Page{
+				Properties: map[string]Property{
+					"Assignee": {
+						Type: "people",
+						People: &PeopleProp{
+							Type: "people",
+							People: []User{
+								{
+									ID:   "user-123",
+									Name: "John Doe",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "multiple assignees",
+			page: Page{
+				Properties: map[string]Property{
+					"Assignees": {
+						Type: "people",
+						People: &PeopleProp{
+							Type: "people",
+							People: []User{
+								{ID: "user-1", Name: "Alice"},
+								{ID: "user-2", Name: "Bob"},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "no assignees",
+			page: Page{
+				Properties: map[string]Property{},
+			},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractAssignees(tt.page)
+			if len(got) != tt.want {
+				t.Errorf("extractAssignees() returned %d assignees, want %d", len(got), tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helper function
+// ──────────────────────────────────────────────────────────────────────────────
+
+func containsString(haystack, needle string) bool {
+	return len(haystack) >= len(needle) && (haystack == needle || len(needle) == 0 ||
+		(len(haystack) > 0 && len(needle) > 0 && findInString(haystack, needle)))
+}
+
+func findInString(haystack, needle string) bool {
+	for i := 0; i <= len(haystack)-len(needle); i++ {
+		if haystack[i:i+len(needle)] == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
 func TestInfo(t *testing.T) {
 	info := Info()
 
