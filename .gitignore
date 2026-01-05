@@ -13,3 +13,4 @@ build/
 bun.lock
 covprofile
 node_modules/
+*.out
