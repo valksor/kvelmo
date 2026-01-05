@@ -152,7 +152,7 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Open workspace to find config path
-	ws, err := storage.OpenWorkspace(wd, nil)
+	ws, err := storage.OpenWorkspace(context.Background(), wd, nil)
 	if err != nil {
 		return fmt.Errorf("open workspace: %w", err)
 	}

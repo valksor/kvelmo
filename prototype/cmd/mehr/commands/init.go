@@ -44,7 +44,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		root = git.Root()
 	}
 
-	ws, err := storage.OpenWorkspace(root, nil)
+	ws, err := storage.OpenWorkspace(ctx, root, nil)
 	if err != nil {
 		return fmt.Errorf("open workspace: %w", err)
 	}
@@ -104,6 +104,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintf(out, "  4. Implement the specifications:\n")
 	_, _ = fmt.Fprintf(out, "     mehr implement\n")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Note: Workspace data is stored in your home directory:")
+	_, _ = fmt.Fprintf(out, "     %s\n", ws.TaskRoot())
 	_, _ = fmt.Fprintln(out)
 
 	return nil

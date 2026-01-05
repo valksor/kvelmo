@@ -58,7 +58,7 @@ func (g *Git) CreateCheckpointWithPrefix(ctx context.Context, taskID, message, c
 		if err := g.AddAll(ctx); err != nil {
 			return nil, fmt.Errorf("stage changes: %w", err)
 		}
-		commitMsg := fmt.Sprintf("%s checkpoint %d: %s", commitPrefix, number, message)
+		commitMsg := fmt.Sprintf("%s %s", commitPrefix, message)
 		commitHash, err = g.Commit(ctx, commitMsg)
 		if err != nil {
 			return nil, fmt.Errorf("create commit: %w", err)

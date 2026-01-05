@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -192,7 +193,7 @@ func runStandalonePlan() error {
 	}
 
 	// Open workspace
-	ws, err := storage.OpenWorkspace(cwd, nil)
+	ws, err := storage.OpenWorkspace(context.Background(), cwd, nil)
 	if err != nil {
 		return fmt.Errorf("open workspace: %w", err)
 	}
