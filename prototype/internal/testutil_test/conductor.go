@@ -1,5 +1,5 @@
-// Package testutil provides shared testing utilities for go-mehrhof tests.
-package testutil
+// Package testutil_test provides shared testing utilities for go-mehrhof tests.
+package testutil_test
 
 import (
 	"context"
@@ -21,10 +21,12 @@ func NewTestConductor(t *testing.T, opts ...conductor.Option) *conductor.Conduct
 	t.Helper()
 
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 
 	// Set default options for testing
 	defaultOpts := []conductor.Option{
 		conductor.WithWorkDir(tmpDir),
+		conductor.WithHomeDir(homeDir), // Use temporary home directory to prevent pollution
 		conductor.WithAutoInit(true),
 		conductor.WithDryRun(true), // Don't make actual changes during tests
 		conductor.WithStdout(io.Discard),
@@ -68,7 +70,7 @@ func SetupTestTask(t *testing.T, c *conductor.Conductor, title string) *storage.
 	if ws == nil {
 		// Create workspace if not initialized
 		var err error
-		ws, err = storage.OpenWorkspace(tmpDir, nil)
+		ws, err = storage.OpenWorkspace(context.Background(), tmpDir, nil)
 		if err != nil {
 			t.Fatalf("Open workspace: %v", err)
 		}

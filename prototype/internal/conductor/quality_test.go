@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
@@ -80,10 +79,8 @@ func TestHasQualityTarget_NoWorkspace(t *testing.T) {
 func TestHasQualityTarget_NoMakefile(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	// Explicit type annotation to ensure storage package is recognized as used
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -109,10 +106,7 @@ quality:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -138,10 +132,7 @@ build:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -154,10 +145,7 @@ build:
 func TestRunQuality_NoTarget(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -191,10 +179,7 @@ quality:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -234,10 +219,7 @@ quality:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -273,10 +255,7 @@ quality:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()
@@ -315,10 +294,7 @@ lint:
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	c := &Conductor{workspace: ws}
 	ctx := context.Background()

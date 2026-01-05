@@ -206,8 +206,8 @@ func TestOptionsApply(t *testing.T) {
 func TestDefaultFinishOptions(t *testing.T) {
 	opts := DefaultFinishOptions()
 
-	if opts.SquashMerge != true {
-		t.Errorf("SquashMerge = %v, want true", opts.SquashMerge)
+	if opts.SquashMerge != false {
+		t.Errorf("SquashMerge = %v, want false (regular merge by default)", opts.SquashMerge)
 	}
 	if opts.DeleteBranch != false {
 		t.Errorf("DeleteBranch = %v, want false (don't delete by default)", opts.DeleteBranch)
@@ -543,10 +543,7 @@ func TestStatus_WithActiveTask(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1274,10 +1271,7 @@ func TestResolveAgentForTask(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace with config
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}
@@ -1455,10 +1449,7 @@ func TestResolveAgentForStep(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}
@@ -1702,10 +1693,7 @@ func TestGetAgentForStep(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}
@@ -1864,10 +1852,7 @@ func TestResolveNaming(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}
@@ -1965,10 +1950,7 @@ func TestBuildWorkUnit_WithSpecs(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}

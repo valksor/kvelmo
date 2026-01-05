@@ -1,5 +1,5 @@
-// Package testutil provides shared testing utilities for go-mehrhof tests.
-package testutil
+// Package testutil_test provides shared testing utilities for go-mehrhof tests.
+package testutil_test
 
 import (
 	"fmt"

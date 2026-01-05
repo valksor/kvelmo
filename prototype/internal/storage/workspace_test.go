@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,32 +10,47 @@ import (
 	"time"
 )
 
+// openTestWorkspace opens a workspace for testing with a temporary home directory.
+// This prevents tests from polluting the real ~/.mehrhof directory.
+func openTestWorkspace(tb testing.TB, repoRoot string) *Workspace {
+	tb.Helper()
+	homeDir := tb.TempDir()
+	cfg := NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+	ws, err := OpenWorkspace(context.Background(), repoRoot, cfg)
+	if err != nil {
+		tb.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	return ws
+}
+
 func TestOpenWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace failed: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	if ws.Root() != tmpDir {
 		t.Errorf("Root() = %q, want %q", ws.Root(), tmpDir)
 	}
 
+	// TaskRoot is in project directory
 	expectedTaskRoot := filepath.Join(tmpDir, ".mehrhof")
 	if ws.TaskRoot() != expectedTaskRoot {
 		t.Errorf("TaskRoot() = %q, want %q", ws.TaskRoot(), expectedTaskRoot)
 	}
 
-	expectedWorkRoot := filepath.Join(tmpDir, ".mehrhof", "work")
-	if ws.WorkRoot() != expectedWorkRoot {
-		t.Errorf("WorkRoot() = %q, want %q", ws.WorkRoot(), expectedWorkRoot)
+	// WorkRoot is in home directory (not in project directory anymore)
+	// With openTestWorkspace, it's in a temporary home directory
+	// Just verify it ends with /work
+	if !strings.HasSuffix(ws.WorkRoot(), string(filepath.Separator)+"work") {
+		t.Errorf("WorkRoot() = %q, want suffix %s", ws.WorkRoot(), string(filepath.Separator)+"work")
 	}
 }
 
 func TestWorkspaceConfigPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	expected := filepath.Join(tmpDir, ".mehrhof", "config.yaml")
 	if ws.ConfigPath() != expected {
@@ -44,7 +60,7 @@ func TestWorkspaceConfigPath(t *testing.T) {
 
 func TestHasConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Initially no config
 	if ws.HasConfig() {
@@ -98,7 +114,7 @@ func TestNewDefaultWorkspaceConfig(t *testing.T) {
 
 func TestSaveAndLoadConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	cfg := NewDefaultWorkspaceConfig()
 	cfg.Git.CommitPrefix = "[custom]"
@@ -123,7 +139,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 
 func TestLoadConfigDefaults(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	// No config file exists, should return defaults
 	cfg, err := ws.LoadConfig()
@@ -138,7 +154,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 
 func TestEnsureInitialized(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized failed: %v", err)
@@ -160,7 +176,7 @@ func TestEnsureInitialized(t *testing.T) {
 
 func TestUpdateGitignore(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Test with no existing .gitignore
 	if err := ws.UpdateGitignore(); err != nil {
@@ -174,17 +190,15 @@ func TestUpdateGitignore(t *testing.T) {
 	}
 
 	content := string(data)
-	if !contains(content, ".mehrhof/") {
-		t.Error(".gitignore does not contain .mehrhof/")
-	}
-	if !contains(content, ".active_task") {
-		t.Error(".gitignore does not contain .active_task")
+	// Only .mehrhof/.env should be added (work and active_task are in home dir now)
+	if !contains(content, ".mehrhof/.env") {
+		t.Error(".gitignore does not contain .mehrhof/.env")
 	}
 }
 
 func TestUpdateGitignoreExisting(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Create existing .gitignore
 	gitignorePath := filepath.Join(tmpDir, ".gitignore")
@@ -202,14 +216,14 @@ func TestUpdateGitignoreExisting(t *testing.T) {
 	if !contains(content, "node_modules/") {
 		t.Error("existing .gitignore content was lost")
 	}
-	if !contains(content, ".mehrhof/") {
-		t.Error(".gitignore does not contain .mehrhof/")
+	if !contains(content, ".mehrhof/.env") {
+		t.Error(".gitignore does not contain .mehrhof/.env")
 	}
 }
 
 func TestUpdateGitignoreIdempotent(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Call UpdateGitignore twice - second call should not duplicate entries
 	if err := ws.UpdateGitignore(); err != nil {
@@ -224,48 +238,44 @@ func TestUpdateGitignoreIdempotent(t *testing.T) {
 	data, _ := os.ReadFile(gitignorePath)
 	lines := strings.Split(string(data), "\n")
 
-	// Count exact line matches for ".mehrhof/work/" (not substring matches)
+	// Count exact line matches for ".mehrhof/.env" (the only entry now)
 	count := 0
 	for _, line := range lines {
-		if strings.TrimSpace(line) == ".mehrhof/work/" {
+		if strings.TrimSpace(line) == ".mehrhof/.env" {
 			count++
 		}
 	}
 	if count != 1 {
-		t.Errorf(".mehrhof/work/ appears %d times as exact line in .gitignore, want 1", count)
-	}
-
-	// Also verify .active_task appears exactly once
-	activeTaskCount := 0
-	for _, line := range lines {
-		if strings.TrimSpace(line) == ".active_task" {
-			activeTaskCount++
-		}
-	}
-	if activeTaskCount != 1 {
-		t.Errorf(".active_task appears %d times in .gitignore, want 1", activeTaskCount)
+		t.Errorf(".mehrhof/.env appears %d times as exact line in .gitignore, want 1", count)
 	}
 }
 
 func TestActiveTaskPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".active_task")
-	if ws.ActiveTaskPath() != expected {
-		t.Errorf("ActiveTaskPath() = %q, want %q", ws.ActiveTaskPath(), expected)
+	// ActiveTaskPath is in the workspace data directory (home)
+	path := ws.ActiveTaskPath()
+	if !strings.HasSuffix(path, ".active_task") {
+		t.Errorf("ActiveTaskPath() = %q, want suffix .active_task", path)
 	}
 }
 
 func TestHasActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
 
 	if ws.HasActiveTask() {
 		t.Error("HasActiveTask() = true, want false (no active task)")
 	}
 
-	// Create active task file
+	// Create active task file (need to create parent dir first)
+	if err := os.MkdirAll(filepath.Dir(ws.ActiveTaskPath()), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
 	if err := os.WriteFile(ws.ActiveTaskPath(), []byte("id: test"), 0o644); err != nil {
 		t.Fatalf("WriteFile active task: %v", err)
 	}
@@ -277,7 +287,10 @@ func TestHasActiveTask(t *testing.T) {
 
 func TestSaveAndLoadActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
 
 	active := &ActiveTask{
 		ID:      "test123",
@@ -314,9 +327,15 @@ func TestSaveAndLoadActiveTask(t *testing.T) {
 
 func TestClearActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
 
-	// Create active task
+	// Create active task file (need to create parent dir first)
+	if err := os.MkdirAll(filepath.Dir(ws.ActiveTaskPath()), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
 	if err := os.WriteFile(ws.ActiveTaskPath(), []byte("id: test"), 0o644); err != nil {
 		t.Fatalf("WriteFile active task: %v", err)
 	}
@@ -337,7 +356,10 @@ func TestClearActiveTask(t *testing.T) {
 
 func TestUpdateActiveTaskState(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
 
 	active := &ActiveTask{
 		ID:    "test123",
@@ -359,17 +381,18 @@ func TestUpdateActiveTaskState(t *testing.T) {
 
 func TestWorkPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "abc123")
-	if ws.WorkPath("abc123") != expected {
-		t.Errorf("WorkPath() = %q, want %q", ws.WorkPath("abc123"), expected)
+	// WorkPath is in the workspace data directory (home)
+	path := ws.WorkPath("abc123")
+	if !strings.HasSuffix(path, "/abc123") {
+		t.Errorf("WorkPath() = %q, want suffix /abc123", path)
 	}
 }
 
 func TestWorkExists(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	if ws.WorkExists("nonexistent") {
 		t.Error("WorkExists() = true for non-existent work")
@@ -402,7 +425,7 @@ func TestGenerateTaskID(t *testing.T) {
 
 func TestCreateWork(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -447,7 +470,7 @@ func TestCreateWork(t *testing.T) {
 
 func TestLoadAndSaveWork(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -480,7 +503,7 @@ func TestLoadAndSaveWork(t *testing.T) {
 
 func TestDeleteWork(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -501,7 +524,7 @@ func TestDeleteWork(t *testing.T) {
 
 func TestListWorks(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -535,17 +558,18 @@ func TestListWorks(t *testing.T) {
 
 func TestNotesPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "notes.md")
-	if ws.NotesPath("test123") != expected {
-		t.Errorf("NotesPath() = %q, want %q", ws.NotesPath("test123"), expected)
+	// NotesPath is in the workspace data directory (home)
+	path := ws.NotesPath("test123")
+	if !strings.HasSuffix(path, "/test123/notes.md") {
+		t.Errorf("NotesPath() = %q, want suffix /test123/notes.md", path)
 	}
 }
 
 func TestAppendAndReadNotes(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -581,27 +605,29 @@ func TestAppendAndReadNotes(t *testing.T) {
 
 func TestSpecsDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "specifications")
-	if ws.SpecificationsDir("test123") != expected {
-		t.Errorf("SpecsDir() = %q, want %q", ws.SpecificationsDir("test123"), expected)
+	// SpecsDir is in the workspace data directory (home)
+	path := ws.SpecificationsDir("test123")
+	if !strings.HasSuffix(path, "/test123/specifications") {
+		t.Errorf("SpecsDir() = %q, want suffix /test123/specifications", path)
 	}
 }
 
 func TestSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "specifications", "specification-1.md")
-	if ws.SpecificationPath("test123", 1) != expected {
-		t.Errorf("SpecPath() = %q, want %q", ws.SpecificationPath("test123", 1), expected)
+	// SpecPath is in the workspace data directory (home)
+	path := ws.SpecificationPath("test123", 1)
+	if !strings.HasSuffix(path, "/test123/specifications/specification-1.md") {
+		t.Errorf("SpecPath() = %q, want suffix /test123/specifications/specification-1.md", path)
 	}
 }
 
 func TestSaveAndLoadSpec(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -628,7 +654,7 @@ func TestSaveAndLoadSpec(t *testing.T) {
 
 func TestListSpecs(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -673,7 +699,7 @@ func TestListSpecs(t *testing.T) {
 
 func TestNextSpecNumber(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -713,7 +739,7 @@ func TestNextSpecNumber(t *testing.T) {
 
 func TestGatherSpecsContent(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -748,7 +774,7 @@ func TestGatherSpecsContent(t *testing.T) {
 
 func TestGetLatestSpecContent(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -789,27 +815,29 @@ func TestGetLatestSpecContent(t *testing.T) {
 
 func TestSessionsDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "sessions")
-	if ws.SessionsDir("test123") != expected {
-		t.Errorf("SessionsDir() = %q, want %q", ws.SessionsDir("test123"), expected)
+	// SessionsDir is in the workspace data directory (home)
+	path := ws.SessionsDir("test123")
+	if !strings.HasSuffix(path, "/test123/sessions") {
+		t.Errorf("SessionsDir() = %q, want suffix /test123/sessions", path)
 	}
 }
 
 func TestSessionPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "sessions", "session.yaml")
-	if ws.SessionPath("test123", "session.yaml") != expected {
-		t.Errorf("SessionPath() = %q, want %q", ws.SessionPath("test123", "session.yaml"), expected)
+	// SessionPath is in the workspace data directory (home)
+	path := ws.SessionPath("test123", "session.yaml")
+	if !strings.HasSuffix(path, "/test123/sessions/session.yaml") {
+		t.Errorf("SessionPath() = %q, want suffix /test123/sessions/session.yaml", path)
 	}
 }
 
 func TestCreateSession(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -840,7 +868,7 @@ func TestCreateSession(t *testing.T) {
 
 func TestLoadAndSaveSession(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -878,7 +906,7 @@ func TestLoadAndSaveSession(t *testing.T) {
 
 func TestListSessionFiles(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -908,7 +936,7 @@ func TestListSessionFiles(t *testing.T) {
 
 func TestGetLatestSessionFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -945,35 +973,35 @@ func TestGetLatestSessionFile(t *testing.T) {
 
 func TestTranscriptsDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "transcripts")
+	// TranscriptsDir should be within the workspace work directory
 	got := ws.TranscriptsDir("test123")
-	if got != expected {
-		t.Errorf("TranscriptsDir = %q, want %q", got, expected)
+	if !strings.HasSuffix(got, "/test123/transcripts") {
+		t.Errorf("TranscriptsDir = %q, want suffix /test123/transcripts", got)
 	}
 }
 
 func TestTranscriptPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "transcripts", "2024-01-15T10-30-00-planning.log")
+	// TranscriptPath should be within the workspace work directory
 	got := ws.TranscriptPath("test123", "2024-01-15T10-30-00-planning.log")
-	if got != expected {
-		t.Errorf("TranscriptPath = %q, want %q", got, expected)
+	if !strings.HasSuffix(got, "/test123/transcripts/2024-01-15T10-30-00-planning.log") {
+		t.Errorf("TranscriptPath = %q, want suffix /test123/transcripts/2024-01-15T10-30-00-planning.log", got)
 	}
 }
 
 func TestSaveAndLoadTranscript(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1008,7 +1036,7 @@ func TestSaveAndLoadTranscript(t *testing.T) {
 
 func TestListTranscripts(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1051,7 +1079,7 @@ func TestListTranscripts(t *testing.T) {
 
 func TestGetSourceContent(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1110,17 +1138,18 @@ func TestGetSourceContent(t *testing.T) {
 
 func TestPendingQuestionPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
-	expected := filepath.Join(tmpDir, ".mehrhof", "work", "test123", "pending_question.yaml")
-	if ws.PendingQuestionPath("test123") != expected {
-		t.Errorf("PendingQuestionPath() = %q, want %q", ws.PendingQuestionPath("test123"), expected)
+	// PendingQuestionPath should be within the workspace work directory
+	got := ws.PendingQuestionPath("test123")
+	if !strings.HasSuffix(got, "/test123/pending_question.yaml") {
+		t.Errorf("PendingQuestionPath() = %q, want suffix /test123/pending_question.yaml", got)
 	}
 }
 
 func TestHasPendingQuestion(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1151,7 +1180,7 @@ func TestHasPendingQuestion(t *testing.T) {
 
 func TestSaveAndLoadPendingQuestion(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1193,7 +1222,7 @@ func TestSaveAndLoadPendingQuestion(t *testing.T) {
 
 func TestClearPendingQuestion(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1296,7 +1325,7 @@ func TestNewSession(t *testing.T) {
 
 func TestParseSpec(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1330,7 +1359,7 @@ func TestParseSpec(t *testing.T) {
 
 func TestParseSpecWithFrontmatter(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1371,7 +1400,7 @@ This is the spec content.`
 
 func TestSaveSpecWithMeta(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1408,7 +1437,7 @@ func TestSaveSpecWithMeta(t *testing.T) {
 
 func TestUpdateSpecStatus(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1452,7 +1481,7 @@ func TestUpdateSpecStatus(t *testing.T) {
 
 func TestListSpecsWithStatus(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1503,7 +1532,7 @@ func TestListSpecsWithStatus(t *testing.T) {
 
 func TestGetSpecsSummary(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1547,7 +1576,7 @@ func TestGetSpecsSummary(t *testing.T) {
 
 func TestPlannedRoot(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	expected := filepath.Join(tmpDir, ".mehrhof", "planned")
 	if ws.PlannedRoot() != expected {
@@ -1557,7 +1586,7 @@ func TestPlannedRoot(t *testing.T) {
 
 func TestPlannedPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 
 	expected := filepath.Join(tmpDir, ".mehrhof", "planned", "plan123")
 	if ws.PlannedPath("plan123") != expected {
@@ -1579,7 +1608,7 @@ func TestGeneratePlanID(t *testing.T) {
 
 func TestCreatePlan(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1620,7 +1649,7 @@ func TestCreatePlan(t *testing.T) {
 
 func TestSaveAndLoadPlan(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1647,7 +1676,7 @@ func TestSaveAndLoadPlan(t *testing.T) {
 
 func TestAppendPlanHistory(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1697,7 +1726,7 @@ func TestAppendPlanHistory(t *testing.T) {
 
 func TestListPlans(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1730,7 +1759,7 @@ func TestListPlans(t *testing.T) {
 
 func TestDeletePlan(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2089,40 +2118,42 @@ func TestAgentInfoStruct(t *testing.T) {
 // Tests for custom work directory configuration
 
 func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
+	homeDir := t.TempDir()
+
 	tests := []struct {
-		name         string
-		cfg          *WorkspaceConfig
-		wantWorkRoot string // relative to tmpDir
+		name            string
+		cfg             *WorkspaceConfig
+		wantWorkRootSfx string // expected suffix of WorkRoot
 	}{
 		{
-			name:         "nil config uses default",
-			cfg:          nil,
-			wantWorkRoot: ".mehrhof/work",
+			name:            "nil config uses default",
+			cfg:             nil,
+			wantWorkRootSfx: "/work",
 		},
 		{
-			name:         "empty work_dir uses default",
-			cfg:          &WorkspaceConfig{Storage: StorageSettings{}},
-			wantWorkRoot: ".mehrhof/work",
+			name:            "empty work_dir uses default",
+			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir}},
+			wantWorkRootSfx: "/work",
 		},
 		{
-			name:         "explicit default path",
-			cfg:          &WorkspaceConfig{Storage: StorageSettings{WorkDir: ".mehrhof/work"}},
-			wantWorkRoot: ".mehrhof/work",
+			name:            "explicit default path",
+			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: ".mehrhof/work"}},
+			wantWorkRootSfx: "/work",
 		},
 		{
-			name:         "custom nested path",
-			cfg:          &WorkspaceConfig{Storage: StorageSettings{WorkDir: "tasks/work"}},
-			wantWorkRoot: "tasks/work",
+			name:            "custom nested path",
+			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: "tasks/work"}},
+			wantWorkRootSfx: "/tasks/work",
 		},
 		{
-			name:         "simple path",
-			cfg:          &WorkspaceConfig{Storage: StorageSettings{WorkDir: "work"}},
-			wantWorkRoot: "work",
+			name:            "simple path",
+			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: "work"}},
+			wantWorkRootSfx: "/work",
 		},
 		{
-			name:         "hidden directory",
-			cfg:          &WorkspaceConfig{Storage: StorageSettings{WorkDir: ".task-work"}},
-			wantWorkRoot: ".task-work",
+			name:            "hidden directory",
+			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: ".task-work"}},
+			wantWorkRootSfx: "/.task-work",
 		},
 	}
 
@@ -2130,17 +2161,17 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 
-			ws, err := OpenWorkspace(tmpDir, tt.cfg)
+			ws, err := OpenWorkspace(context.Background(), tmpDir, tt.cfg)
 			if err != nil {
 				t.Fatalf("OpenWorkspace: %v", err)
 			}
 
-			expectedWorkRoot := filepath.Join(tmpDir, tt.wantWorkRoot)
-			if ws.WorkRoot() != expectedWorkRoot {
-				t.Errorf("WorkRoot() = %q, want %q", ws.WorkRoot(), expectedWorkRoot)
+			// WorkRoot is in ~/.mehrhof/workspaces/<project-id>/<workDir>
+			if !strings.HasSuffix(ws.WorkRoot(), tt.wantWorkRootSfx) {
+				t.Errorf("WorkRoot() = %q, want suffix %q", ws.WorkRoot(), tt.wantWorkRootSfx)
 			}
 
-			// Verify TaskRoot is always .mehrhof regardless of work dir
+			// Verify TaskRoot is always .mehrhof in project directory
 			expectedTaskRoot := filepath.Join(tmpDir, ".mehrhof")
 			if ws.TaskRoot() != expectedTaskRoot {
 				t.Errorf("TaskRoot() = %q, want %q", ws.TaskRoot(), expectedTaskRoot)
@@ -2151,12 +2182,13 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 
 func TestCreateWork_CustomWorkDir(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{WorkDir: "custom/tasks"},
+		Storage: StorageSettings{HomeDir: homeDir, WorkDir: "custom/tasks"},
 	}
 
-	ws, err := OpenWorkspace(tmpDir, cfg)
+	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
 	if err != nil {
 		t.Fatalf("OpenWorkspace: %v", err)
 	}
@@ -2171,14 +2203,14 @@ func TestCreateWork_CustomWorkDir(t *testing.T) {
 		t.Fatalf("CreateWork: %v", err)
 	}
 
-	// Verify work was created in custom location
-	expectedPath := filepath.Join(tmpDir, "custom/tasks/task123")
-	if ws.WorkPath("task123") != expectedPath {
-		t.Errorf("WorkPath() = %q, want %q", ws.WorkPath("task123"), expectedPath)
+	// Verify work was created in custom location within workspace data dir
+	workPath := ws.WorkPath("task123")
+	if !strings.HasSuffix(workPath, "/custom/tasks/task123") {
+		t.Errorf("WorkPath() = %q, want suffix /custom/tasks/task123", workPath)
 	}
 
 	// Verify work directory actually exists
-	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+	if _, err := os.Stat(workPath); os.IsNotExist(err) {
 		t.Error("work directory was not created at custom path")
 	}
 
@@ -2194,12 +2226,13 @@ func TestCreateWork_CustomWorkDir(t *testing.T) {
 
 func TestEnsureInitialized_CustomWorkDir(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{WorkDir: "deeply/nested/tasks/work"},
+		Storage: StorageSettings{HomeDir: homeDir, WorkDir: "deeply/nested/tasks/work"},
 	}
 
-	ws, err := OpenWorkspace(tmpDir, cfg)
+	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
 	if err != nil {
 		t.Fatalf("OpenWorkspace: %v", err)
 	}
@@ -2208,14 +2241,14 @@ func TestEnsureInitialized_CustomWorkDir(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Verify custom work directory was created
-	workRoot := filepath.Join(tmpDir, "deeply/nested/tasks/work")
+	// Verify custom work directory was created within workspace data dir
+	workRoot := ws.WorkRoot()
 	if _, err := os.Stat(workRoot); os.IsNotExist(err) {
 		t.Error("custom work directory was not created")
 	}
-
-	// Note: .mehrhof is NOT created when using a custom work directory
-	// outside of .mehrhof. The workRoot is created independently.
+	if !strings.HasSuffix(workRoot, "/deeply/nested/tasks/work") {
+		t.Errorf("WorkRoot() = %q, want suffix /deeply/nested/tasks/work", workRoot)
+	}
 }
 
 func TestListWorks_CustomWorkDir(t *testing.T) {
@@ -2225,7 +2258,7 @@ func TestListWorks_CustomWorkDir(t *testing.T) {
 		Storage: StorageSettings{WorkDir: "my-tasks"},
 	}
 
-	ws, err := OpenWorkspace(tmpDir, cfg)
+	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
 	if err != nil {
 		t.Fatalf("OpenWorkspace: %v", err)
 	}
@@ -2259,7 +2292,7 @@ func TestDeleteWork_CustomWorkDir(t *testing.T) {
 		Storage: StorageSettings{WorkDir: "my-work"},
 	}
 
-	ws, err := OpenWorkspace(tmpDir, cfg)
+	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
 	if err != nil {
 		t.Fatalf("OpenWorkspace: %v", err)
 	}
@@ -2295,7 +2328,7 @@ func TestDeleteWork_CustomWorkDir(t *testing.T) {
 
 func TestAddUsage_SingleCall(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2362,7 +2395,7 @@ func TestAddUsage_SingleCall(t *testing.T) {
 
 func TestAddUsage_MultipleCallsAccumulate(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2410,7 +2443,7 @@ func TestAddUsage_MultipleCallsAccumulate(t *testing.T) {
 
 func TestAddUsage_MultipleSteps(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2477,7 +2510,7 @@ func TestAddUsage_MultipleSteps(t *testing.T) {
 
 func TestAddUsage_AutoFlushOnThreshold(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2509,7 +2542,7 @@ func TestAddUsage_AutoFlushOnThreshold(t *testing.T) {
 
 func TestFlushUsage_EmptyBuffer(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2522,7 +2555,7 @@ func TestFlushUsage_EmptyBuffer(t *testing.T) {
 
 func TestAddUsage_MultipleTasks(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -2572,7 +2605,7 @@ func TestAddUsage_MultipleTasks(t *testing.T) {
 
 func TestAddUsage_InvalidTask(t *testing.T) {
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(tmpDir, nil)
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}

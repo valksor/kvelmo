@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"os"
 	"slices"
 	"strings"
@@ -8,6 +9,22 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
+
+// openTestWorkspace creates a test workspace with a temporary home directory.
+func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
+	tb.Helper()
+
+	homeDir := tb.TempDir()
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+
+	ws, err := storage.OpenWorkspace(context.Background(), repoRoot, cfg)
+	if err != nil {
+		tb.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	return ws
+}
 
 func TestResultAddError(t *testing.T) {
 	r := NewResult()
@@ -646,10 +663,7 @@ func TestValidatorValidate(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create a minimal workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -672,10 +686,7 @@ func TestValidatorValidate_StrictMode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create workspace with config that has warnings
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -697,10 +708,7 @@ func TestValidatorValidate_NoConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create workspace without config file
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	// Just create the directory structure without config
 	if err := os.MkdirAll(ws.TaskRoot(), 0o755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
