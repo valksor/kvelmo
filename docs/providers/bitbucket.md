@@ -24,21 +24,23 @@ mehr start bb:https://bitbucket.org/workspace/repo/issues/123
 
 ```yaml
 bitbucket:
-  token: "${BITBUCKET_TOKEN}"       # App password
+  username: "${BITBUCKET_USERNAME}"       # Bitbucket username
+  app_password: "${BITBUCKET_APP_PASSWORD}" # App password (not account password)
   workspace: "myworkspace"
   repo: "myrepo"
   branch_pattern: "issue/{key}-{slug}"
-  target_branch: "main"             # Auto-detected from repository if not set
-  draft_pr: false
+  commit_prefix: "[#{key}]"               # Commit message prefix
+  target_branch: "main"                   # Auto-detected from repository if not set
+  close_source_branch: false              # Delete source branch when PR is merged
 ```
 
 > **Note:** If `target_branch` is not configured, Mehrhof will query the Bitbucket API for the repository's default branch. If the repository has no default branch configured, an explicit `target_branch` is required.
 
-## Token Resolution
+## Credential Resolution
 
-1. `MEHR_BITBUCKET_TOKEN` environment variable
-2. `BITBUCKET_TOKEN` environment variable
-3. Token from `config.yaml`
+1. `MEHR_BITBUCKET_USERNAME` / `MEHR_BITBUCKET_APP_PASSWORD` environment variables
+2. `BITBUCKET_USERNAME` / `BITBUCKET_APP_PASSWORD` environment variables
+3. Credentials from `config.yaml`
 
 ## Authentication
 
