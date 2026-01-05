@@ -68,6 +68,7 @@ func DefaultOptions() Options {
 		Stderr:            os.Stderr,
 		WorkDir:           ".",
 		MaxQualityRetries: 3,
+		AutoPopStash:      true, // Default to true for better UX when stashing
 	}
 }
 
