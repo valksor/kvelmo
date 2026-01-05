@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -37,22 +36,9 @@ func NewClient(organization, project, token string) *Client {
 	}
 }
 
-// ResolveToken finds Azure DevOps token from multiple sources
-// Priority:
-//  1. MEHR_AZURE_DEVOPS_TOKEN
-//  2. AZURE_DEVOPS_TOKEN
-//  3. SYSTEM_ACCESSTOKEN (for Azure Pipelines)
-//  4. Config value
+// ResolveToken resolves the Azure DevOps API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if t := os.Getenv("MEHR_AZURE_DEVOPS_TOKEN"); t != "" {
-		return t, nil
-	}
-	if t := os.Getenv("AZURE_DEVOPS_TOKEN"); t != "" {
-		return t, nil
-	}
-	if t := os.Getenv("SYSTEM_ACCESSTOKEN"); t != "" {
-		return t, nil
-	}
 	if configToken != "" {
 		return configToken, nil
 	}

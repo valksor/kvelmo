@@ -865,13 +865,13 @@ func TestWrapAPIError(t *testing.T) {
 }
 
 func TestResolveToken(t *testing.T) {
+	// Note: Token resolution no longer checks env vars directly.
+	// Config.yaml is the source of truth - use ${VAR} syntax there.
 	tests := []struct {
-		name         string
-		configToken  string
-		setMehrEnv   string
-		setGitlabEnv string
-		want         string
-		wantErr      bool
+		name        string
+		configToken string
+		want        string
+		wantErr     bool
 	}{
 		{
 			name:    "no token available",
@@ -882,47 +882,10 @@ func TestResolveToken(t *testing.T) {
 			configToken: "config-token-123",
 			want:        "config-token-123",
 		},
-		{
-			name:        "MEHR_GITLAB_TOKEN overrides config",
-			configToken: "config-token",
-			setMehrEnv:  "mehr-token",
-			want:        "mehr-token",
-		},
-		{
-			name:         "GITLAB_TOKEN used when MEHR not set",
-			configToken:  "config-token",
-			setGitlabEnv: "gitlab-token",
-			want:         "gitlab-token",
-		},
-		{
-			name:         "MEHR_GITLAB_TOKEN overrides GITLAB_TOKEN",
-			setMehrEnv:   "mehr-token",
-			setGitlabEnv: "gitlab-token",
-			want:         "mehr-token",
-		},
-		{
-			name:         "GITLAB_TOKEN used as fallback",
-			setGitlabEnv: "gitlab-token",
-			want:         "gitlab-token",
-		},
-		{
-			name:         "empty strings are ignored",
-			setMehrEnv:   "",
-			setGitlabEnv: "gitlab-token",
-			want:         "gitlab-token",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set env vars as specified
-			if tt.setMehrEnv != "" {
-				t.Setenv("MEHR_GITLAB_TOKEN", tt.setMehrEnv)
-			}
-			if tt.setGitlabEnv != "" {
-				t.Setenv("GITLAB_TOKEN", tt.setGitlabEnv)
-			}
-
 			got, err := ResolveToken(tt.configToken)
 
 			if tt.wantErr {

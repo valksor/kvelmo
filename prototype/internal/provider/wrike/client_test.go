@@ -57,36 +57,7 @@ func TestNewClientWithTrailingSlashHost(t *testing.T) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 func TestResolveToken(t *testing.T) {
-	t.Run("MEHR_WRIKE_TOKEN priority", func(t *testing.T) {
-		t.Setenv("MEHR_WRIKE_TOKEN", "mehr-token")
-		t.Setenv("WRIKE_TOKEN", "wrike-token")
-
-		token, err := ResolveToken("config-token")
-		if err != nil {
-			t.Fatalf("ResolveToken error = %v", err)
-		}
-		if token != "mehr-token" {
-			t.Errorf("token = %q, want %q", token, "mehr-token")
-		}
-	})
-
-	t.Run("WRIKE_TOKEN fallback", func(t *testing.T) {
-		t.Setenv("MEHR_WRIKE_TOKEN", "")
-		t.Setenv("WRIKE_TOKEN", "wrike-token")
-
-		token, err := ResolveToken("config-token")
-		if err != nil {
-			t.Fatalf("ResolveToken error = %v", err)
-		}
-		if token != "wrike-token" {
-			t.Errorf("token = %q, want %q", token, "wrike-token")
-		}
-	})
-
-	t.Run("config token fallback", func(t *testing.T) {
-		t.Setenv("MEHR_WRIKE_TOKEN", "")
-		t.Setenv("WRIKE_TOKEN", "")
-
+	t.Run("config token is used", func(t *testing.T) {
 		token, err := ResolveToken("config-token")
 		if err != nil {
 			t.Fatalf("ResolveToken error = %v", err)
@@ -96,13 +67,23 @@ func TestResolveToken(t *testing.T) {
 		}
 	})
 
-	t.Run("no token available", func(t *testing.T) {
-		t.Setenv("MEHR_WRIKE_TOKEN", "")
-		t.Setenv("WRIKE_TOKEN", "")
-
+	t.Run("empty config token returns ErrNoToken", func(t *testing.T) {
 		_, err := ResolveToken("")
 		if !errors.Is(err, token.ErrNoToken) {
 			t.Errorf("error = %v, want %v", err, token.ErrNoToken)
+		}
+	})
+
+	t.Run("${VAR} syntax is passed through as-is (expansion happens at config layer)", func(t *testing.T) {
+		// Note: ${VAR} expansion happens at the config loading layer, not in ResolveToken
+		token, err := ResolveToken("${TEST_WRIKE_TOKEN}")
+		if err != nil {
+			t.Fatalf("ResolveToken error = %v", err)
+		}
+		/* #nosec G101 -- Test placeholder, not a real credential */
+		const expectedToken = "${TEST_WRIKE_TOKEN}"
+		if token != expectedToken {
+			t.Errorf("token = %q, want %q (${VAR} is passed through)", token, expectedToken)
 		}
 	})
 }

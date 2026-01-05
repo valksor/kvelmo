@@ -45,6 +45,18 @@ func TestParseReference(t *testing.T) {
 			wantPermalink: "https://www.wrike.com/open.htm?id=1234567890",
 		},
 		{
+			name:          "wrike scheme with permalink URL (FIXED BUG)",
+			input:         "wrike:https://www.wrike.com/open.htm?id=4341623772",
+			wantTaskID:    "4341623772",
+			wantPermalink: "https://www.wrike.com/open.htm?id=4341623772",
+		},
+		{
+			name:          "wk short scheme with permalink URL (FIXED BUG)",
+			input:         "wk:https://www.wrike.com/open.htm?id=4341623772",
+			wantTaskID:    "4341623772",
+			wantPermalink: "https://www.wrike.com/open.htm?id=4341623772",
+		},
+		{
 			name:          "permalink with more digits",
 			input:         "https://www.wrike.com/open.htm?id=12345678901234",
 			wantTaskID:    "12345678901234",
@@ -59,6 +71,16 @@ func TestParseReference(t *testing.T) {
 			name:       "bare API ID with numbers",
 			input:      "IEAAJ123456789",
 			wantTaskID: "IEAAJ123456789",
+		},
+		{
+			name:       "new Wrike API ID format (v4)",
+			input:      "MAAAAAECx-vc",
+			wantTaskID: "MAAAAAECx-vc",
+		},
+		{
+			name:       "wrike scheme with new API ID format (v4)",
+			input:      "wrike:MAAAAAECx-vc",
+			wantTaskID: "MAAAAAECx-vc",
 		},
 		{
 			name:       "bare numeric ID (10 digits)",
@@ -119,20 +141,20 @@ func TestParseReference(t *testing.T) {
 			errContains: "unrecognized",
 		},
 		{
-			name:        "API ID with lowercase",
+			name:        "API ID with lowercase (must start with uppercase)",
 			input:       "ieaajxxxxxxxx",
 			wantErr:     true,
 			errContains: "unrecognized",
 		},
 		{
-			name:        "API ID starting with wrong prefix",
-			input:       "XXAAJXXXXXXXX",
+			name:        "API ID starting with number (must start with uppercase letter)",
+			input:       "1AAAJXXXXXXXX",
 			wantErr:     true,
 			errContains: "unrecognized",
 		},
 		{
-			name:        "API ID too short",
-			input:       "IEA",
+			name:        "API ID too short (needs at least 2 chars)",
+			input:       "A",
 			wantErr:     true,
 			errContains: "unrecognized",
 		},
@@ -234,6 +256,67 @@ func TestExtractNumericID(t *testing.T) {
 			got := ExtractNumericID(tt.permalink)
 			if got != tt.want {
 				t.Errorf("ExtractNumericID(%q) = %q, want %q", tt.permalink, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BuildPermalinkURL tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestBuildPermalinkURL(t *testing.T) {
+	tests := []struct {
+		name      string
+		numericID string
+		want      string
+	}{
+		{
+			name:      "valid 10-digit ID",
+			numericID: "1234567890",
+			want:      "https://www.wrike.com/open.htm?id=1234567890",
+		},
+		{
+			name:      "valid longer numeric ID",
+			numericID: "4341623772",
+			want:      "https://www.wrike.com/open.htm?id=4341623772",
+		},
+		{
+			name:      "very long numeric ID",
+			numericID: "123456789012345",
+			want:      "https://www.wrike.com/open.htm?id=123456789012345",
+		},
+		{
+			name:      "API ID format - returns empty",
+			numericID: "IEAAJXXXXXXXX",
+			want:      "",
+		},
+		{
+			name:      "too short - returns empty",
+			numericID: "123456789",
+			want:      "",
+		},
+		{
+			name:      "empty string - returns empty",
+			numericID: "",
+			want:      "",
+		},
+		{
+			name:      "mixed alphanumeric - returns empty",
+			numericID: "123abc5678",
+			want:      "",
+		},
+		{
+			name:      "just letters - returns empty",
+			numericID: "abcdefghij",
+			want:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := BuildPermalinkURL(tt.numericID); got != tt.want {
+				t.Errorf("BuildPermalinkURL(%q) = %q, want %q", tt.numericID, got, tt.want)
 			}
 		})
 	}

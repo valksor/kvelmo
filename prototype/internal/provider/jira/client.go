@@ -70,14 +70,10 @@ func (c *Client) SetBaseURL(baseURL string) {
 	}
 }
 
-// ResolveToken finds the Jira token from multiple sources.
-// Priority order:
-//  1. MEHR_JIRA_TOKEN env var
-//  2. JIRA_TOKEN env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the Jira API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	return token.ResolveToken(token.Config("JIRA", configToken).
-		WithEnvVars("JIRA_TOKEN"))
+	return token.ResolveToken(token.Config("JIRA", configToken))
 }
 
 // buildAPIURL constructs the full API URL for a given endpoint.

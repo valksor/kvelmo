@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -41,39 +40,17 @@ func NewClient(username, appPassword, workspace, repoSlug string) *Client {
 	}
 }
 
-// ResolveCredentials finds Bitbucket credentials from multiple sources
-// Priority:
-//  1. MEHR_BITBUCKET_USERNAME / MEHR_BITBUCKET_APP_PASSWORD
-//  2. BITBUCKET_USERNAME / BITBUCKET_APP_PASSWORD
-//  3. Config values
+// ResolveCredentials resolves Bitbucket credentials from config.
+// The config values should be from config.yaml and may use ${VAR} syntax.
 func ResolveCredentials(configUsername, configAppPassword string) (string, string, error) {
-	var username, appPassword string
-	// Username resolution
-	if u := os.Getenv("MEHR_BITBUCKET_USERNAME"); u != "" {
-		username = u
-	} else if u := os.Getenv("BITBUCKET_USERNAME"); u != "" {
-		username = u
-	} else if configUsername != "" {
-		username = configUsername
-	}
-
-	// App password resolution
-	if p := os.Getenv("MEHR_BITBUCKET_APP_PASSWORD"); p != "" {
-		appPassword = p
-	} else if p := os.Getenv("BITBUCKET_APP_PASSWORD"); p != "" {
-		appPassword = p
-	} else if configAppPassword != "" {
-		appPassword = configAppPassword
-	}
-
-	if username == "" {
+	if configUsername == "" {
 		return "", "", ErrNoUsername
 	}
-	if appPassword == "" {
+	if configAppPassword == "" {
 		return "", "", ErrNoToken
 	}
 
-	return username, appPassword, nil
+	return configUsername, configAppPassword, nil
 }
 
 // SetWorkspaceRepo updates the workspace and repo for the client.

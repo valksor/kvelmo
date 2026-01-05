@@ -3,7 +3,6 @@ package gitlab
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -45,23 +44,9 @@ func NewClient(token, host, projectPath string, projectID int64) *Client {
 	}
 }
 
-// ResolveToken finds the GitLab token from multiple sources
-// Priority order:
-//  1. MEHR_GITLAB_TOKEN env var
-//  2. GITLAB_TOKEN env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the GitLab API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	// 1. Check MEHR_GITLAB_TOKEN
-	if token := os.Getenv("MEHR_GITLAB_TOKEN"); token != "" {
-		return token, nil
-	}
-
-	// 2. Check GITLAB_TOKEN
-	if token := os.Getenv("GITLAB_TOKEN"); token != "" {
-		return token, nil
-	}
-
-	// 3. Check config token
 	if configToken != "" {
 		return configToken, nil
 	}

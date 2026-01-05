@@ -19,14 +19,27 @@ type SubtaskInfo struct {
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
 // It retrieves all subtasks for a given work unit as full WorkUnit objects.
 func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
-	// First fetch the parent task to get subtask IDs
-	task, err := p.client.GetTask(ctx, workUnitID)
+	ref, err := ParseReference(workUnitID)
 	if err != nil {
-		// Try by permalink
-		task, err = p.client.GetTaskByPermalink(ctx, workUnitID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch parent task: %w", err)
-		}
+		return nil, fmt.Errorf("parse reference: %w", err)
+	}
+
+	var task *Task
+
+	switch {
+	case ref.Permalink != "":
+		task, err = p.client.GetTaskByPermalinkParam(ctx, ref.Permalink)
+	case apiIDPattern.MatchString(ref.TaskID):
+		task, err = p.client.GetTask(ctx, ref.TaskID)
+	case numericIDPattern.MatchString(ref.TaskID):
+		permalink := BuildPermalinkURL(ref.TaskID)
+		task, err = p.client.GetTaskByPermalinkParam(ctx, permalink)
+	default:
+		return nil, fmt.Errorf("%w: unrecognized task ID format: %s", ErrInvalidReference, ref.TaskID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("fetch parent task: %w", err)
 	}
 
 	if len(task.SubTaskIDs) == 0 {
