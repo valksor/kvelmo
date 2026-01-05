@@ -513,3 +513,183 @@ func TestParseAzureTime(t *testing.T) {
 		})
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// Scheme prefixes
+		{"azdo:123", true},
+		{"azure:456", true},
+		// URL patterns
+		{"https://dev.azure.com/org/project/_workitems/edit/789", true},
+		{"dev.azure.com/org/project/_workitems/edit/101", true},
+		{"https://myorg.visualstudio.com/project/_workitems/edit/202", true},
+		// Numeric input is valid (ParseReference succeeds)
+		{"123", true},
+		{"org/project#456", true},
+		// Empty and invalid
+		{"", false},
+		{"github:123", false},
+		{"https://github.com/org/repo/issues/42", false},
+		{"abc", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		org         string
+		project     string
+		want        string
+		errContains string
+		wantErr     bool
+	}{
+		{
+			name:    "work item ID only",
+			input:   "123",
+			org:     "myorg",
+			project: "myproject",
+			want:    "123",
+		},
+		{
+			name:    "org/project#ID format",
+			input:   "myorg/myproject#456",
+			org:     "",
+			project: "",
+			want:    "456",
+		},
+		{
+			name:    "with azdo prefix",
+			input:   "azdo:789",
+			org:     "",
+			project: "",
+			want:    "789",
+		},
+		{
+			name:    "with azure prefix",
+			input:   "azure:101",
+			org:     "",
+			project: "",
+			want:    "101",
+		},
+		{
+			name:    "dev.azure.com URL",
+			input:   "https://dev.azure.com/myorg/myproject/_workitems/edit/202",
+			org:     "",
+			project: "",
+			want:    "202",
+		},
+		{
+			name:        "invalid input",
+			input:       "abc",
+			org:         "",
+			project:     "",
+			errContains: "invalid azure devops reference",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Provider{
+				config: &Config{
+					Organization: tt.org,
+					Project:      tt.project,
+				},
+			}
+
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+				if tt.errContains != "" && err != nil {
+					if !containsString(err.Error(), tt.errContains) {
+						t.Errorf("Provider.Parse(%q) error = %v, want to contain %q", tt.input, err, tt.errContains)
+					}
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// mapToAzureState tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestMapToAzureState(t *testing.T) {
+	tests := []struct {
+		status provider.Status
+		want   string
+	}{
+		{provider.StatusOpen, "New"},
+		{provider.StatusInProgress, "Active"},
+		{provider.StatusReview, "Resolved"},
+		{provider.StatusDone, "Done"},
+		{provider.StatusClosed, "Done"},
+		{provider.Status("unknown"), ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.status), func(t *testing.T) {
+			got := mapToAzureState(tt.status)
+			if got != tt.want {
+				t.Errorf("mapToAzureState(%v) = %q, want %q", tt.status, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helper functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+func containsString(haystack, needle string) bool {
+	return len(haystack) >= len(needle) && (haystack == needle || len(needle) == 0 ||
+		(len(haystack) > 0 && len(needle) > 0 && findInString(haystack, needle)))
+}
+
+func findInString(haystack, needle string) bool {
+	for i := 0; i <= len(haystack)-len(needle); i++ {
+		if haystack[i:i+len(needle)] == needle {
+			return true
+		}
+	}
+
+	return false
+}
