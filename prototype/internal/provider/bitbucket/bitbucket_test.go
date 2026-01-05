@@ -335,6 +335,145 @@ func TestMapBitbucketPriority(t *testing.T) {
 	}
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"bitbucket:123", true},
+		{"bb:456", true},
+		{"bitbucket:workspace/repo#789", true},
+		{"bb:myworkspace/myrepo#100", true},
+		{"123", false},
+		{"#456", false},
+		{"workspace/repo#789", false},
+		{"https://bitbucket.org/workspace/repo/issues/42", false},
+		{"", false},
+		{"github:123", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		workspace   string
+		repoSlug    string
+		want        string
+		errContains string
+		wantErr     bool
+	}{
+		{
+			name:      "explicit workspace/repo",
+			input:     "myworkspace/myrepo#42",
+			workspace: "",
+			repoSlug:  "",
+			want:      "myworkspace/myrepo#42",
+		},
+		{
+			name:      "uses configured workspace/repo",
+			input:     "123",
+			workspace: "myworkspace",
+			repoSlug:  "myrepo",
+			want:      "myworkspace/myrepo#123",
+		},
+		{
+			name:        "error when workspace/repo not configured",
+			input:       "123",
+			workspace:   "",
+			repoSlug:    "",
+			errContains: "not configured",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Provider{
+				config: &Config{
+					Workspace: tt.workspace,
+					RepoSlug:  tt.repoSlug,
+				},
+			}
+
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+				if tt.errContains != "" && err != nil {
+					if !containsString(err.Error(), tt.errContains) {
+						t.Errorf("Provider.Parse(%q) error = %v, want to contain %q", tt.input, err, tt.errContains)
+					}
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// mapBitbucketKind tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestMapBitbucketKind(t *testing.T) {
+	tests := []struct {
+		kind string
+		want string
+	}{
+		{"bug", "fix"},
+		{"enhancement", "feature"},
+		{"proposal", "feature"},
+		{"task", "task"},
+		{"unknown", "issue"},
+		{"", "issue"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.kind, func(t *testing.T) {
+			got := mapBitbucketKind(tt.kind)
+			if got != tt.want {
+				t.Errorf("mapBitbucketKind(%q) = %q, want %q", tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helper functions
+// ──────────────────────────────────────────────────────────────────────────────
+
 func containsString(haystack, needle string) bool {
 	return len(haystack) >= len(needle) && (haystack == needle || len(needle) == 0 ||
 		(len(haystack) > 0 && len(needle) > 0 && findString(haystack, needle)))
