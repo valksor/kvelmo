@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -18,6 +20,7 @@ var (
 	startAgent         string
 	startNoBranch      bool
 	startWorktree      bool
+	startStash         bool   // Stash uncommitted changes before creating branch
 	startKey           string // External key override (e.g., "FEATURE-123")
 	startTitle         string // Title override for the task
 	startSlug          string // Slug override for branch naming
@@ -61,6 +64,7 @@ AGENT SELECTION (highest to lowest priority):
 GIT OPTIONS:
   --no-branch               Do not create a git branch
   --worktree                Create isolated git worktree (allows parallel tasks)
+  --stash                   Stash uncommitted changes before creating branch
 
 PER-STEP AGENT FLAGS:
   --agent-plan              Agent for planning step (overrides default)
@@ -94,6 +98,7 @@ func init() {
 	startCmd.Flags().StringVarP(&startAgent, "agent", "A", "", "Agent to use (default: auto-detect)")
 	startCmd.Flags().BoolVar(&startNoBranch, "no-branch", false, "Do not create a git branch")
 	startCmd.Flags().BoolVarP(&startWorktree, "worktree", "w", false, "Create a separate git worktree for this task")
+	startCmd.Flags().BoolVar(&startStash, "stash", false, "Stash uncommitted changes before creating branch")
 
 	// Naming override flags
 	startCmd.Flags().StringVarP(&startKey, "key", "k", "", "External key for branch/commit naming (e.g., FEATURE-123)")
@@ -152,6 +157,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		conductor.WithVerbose(verbose),
 		conductor.WithCreateBranch(createBranch),
 		conductor.WithUseWorktree(startWorktree),
+		conductor.WithStashChanges(startStash),
 		conductor.WithAutoInit(true),
 	}
 
@@ -172,9 +178,22 @@ func runStart(cmd *cobra.Command, args []string) error {
 
 	// Pass default provider from workspace config
 	if wd, err := os.Getwd(); err == nil {
-		if ws, err := storage.OpenWorkspace(wd, nil); err == nil {
-			if wsCfg, err := ws.LoadConfig(); err == nil && wsCfg.Providers.Default != "" {
-				opts = append(opts, conductor.WithDefaultProvider(wsCfg.Providers.Default))
+		if ws, err := storage.OpenWorkspace(context.Background(), wd, nil); err == nil {
+			if wsCfg, err := ws.LoadConfig(); err == nil {
+				// Apply default provider from config if not set via flag
+				if wsCfg.Providers.Default != "" {
+					opts = append(opts, conductor.WithDefaultProvider(wsCfg.Providers.Default))
+				}
+				// Apply stash-on-start from config if not explicitly set via flag
+				if !startStash && wsCfg.Git.StashOnStart {
+					opts = append(opts, conductor.WithStashChanges(true))
+					// Also apply auto-pop-stash setting from config
+					opts = append(opts, conductor.WithAutoPopStash(wsCfg.Git.AutoPopStash))
+				}
+				// If stash was explicitly set via flag, apply auto-pop-stash from config
+				if startStash {
+					opts = append(opts, conductor.WithAutoPopStash(wsCfg.Git.AutoPopStash))
+				}
 			}
 		}
 	}
@@ -205,6 +224,88 @@ func runStart(cmd *cobra.Command, args []string) error {
 	// Check for existing task
 	if cond.GetActiveTask() != nil {
 		return fmt.Errorf("task already active: %s\n\nOptions:\n  mehr status   - View task details\n  mehr finish   - Complete the task\n  mehr abandon  - Cancel and start fresh", cond.GetActiveTask().ID)
+	}
+
+	// Check for existing work directories from finished tasks
+	workDirs, err := cond.ListExistingWorkDirs()
+	if err == nil && len(workDirs) > 0 {
+		fmt.Printf("Found %d existing work director(ies) from previous tasks:\n", len(workDirs))
+		for _, taskID := range workDirs {
+			// Try to load work to get title
+			if work, err := cond.GetWorkspace().LoadWork(taskID); err == nil {
+				fmt.Printf("  - %s: %s\n", taskID, work.Metadata.Title)
+			} else {
+				fmt.Printf("  - %s\n", taskID)
+			}
+		}
+
+		fmt.Println("\nOptions:")
+		fmt.Println("  [d]elete and archive - Archive old work, start fresh")
+		fmt.Println("  [c]ontinue with existing - Reuse directory, reset to idle state")
+
+		// Read user choice
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("\nYour choice [d/c]: ")
+		choice, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("read choice: %w", err)
+		}
+		choice = strings.ToLower(strings.TrimSpace(choice))
+
+		switch choice {
+		case "d", "delete":
+			// Archive all existing work directories
+			for _, taskID := range workDirs {
+				if err := cond.ArchiveWorkDir(taskID); err != nil {
+					fmt.Printf("Warning: failed to archive %s: %v\n", taskID, err)
+				}
+			}
+			fmt.Println("\nArchived existing work directories")
+		case "c", "continue":
+			// Continue with first existing work directory
+			existingTaskID := workDirs[0]
+			fmt.Printf("\nReusing existing work directory: %s\n", existingTaskID)
+
+			if err := cond.ContinueWithExisting(ctx, reference, existingTaskID); err != nil {
+				return fmt.Errorf("continue with existing: %w", err)
+			}
+
+			// Get status and display
+			status, err := cond.Status()
+			if err != nil {
+				return err
+			}
+
+			info := display.TaskInfo{
+				TaskID:      status.TaskID,
+				Title:       status.Title,
+				ExternalKey: status.ExternalKey,
+				State:       status.State,
+				Source:      status.Ref,
+				Branch:      status.Branch,
+				Worktree:    status.WorktreePath,
+			}
+			displayOpts := display.DefaultTaskInfoOptions()
+			displayOpts.ShowStarted = false
+			displayOpts.Compact = true
+			fmt.Print(display.FormatTaskInfo("Task resumed", info, displayOpts))
+
+			// Show next steps
+			steps := []display.NextStep{
+				{Command: "mehr plan", Description: "Create implementation specifications"},
+				{Command: "mehr note", Description: "Add notes to the task"},
+			}
+			if status.WorktreePath != "" {
+				steps = append([]display.NextStep{
+					{Command: "cd " + status.WorktreePath, Description: "Switch to the worktree"},
+				}, steps...)
+			}
+			fmt.Print(display.FormatNextSteps(steps))
+
+			return nil
+		default:
+			return fmt.Errorf("invalid choice: %s (please run 'mehr start' again)", choice)
+		}
 	}
 
 	// Start (register) task

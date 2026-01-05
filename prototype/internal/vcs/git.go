@@ -278,9 +278,9 @@ func (g *Git) Clean(ctx context.Context, force bool) error {
 	return err
 }
 
-// Stash saves changes to stash.
+// Stash saves changes to stash (including untracked files).
 func (g *Git) Stash(ctx context.Context, message string) error {
-	args := []string{"stash", "push"}
+	args := []string{"stash", "push", "-u"}
 	if message != "" {
 		args = append(args, "-m", message)
 	}
@@ -294,6 +294,23 @@ func (g *Git) StashPop(ctx context.Context) error {
 	_, err := g.run(ctx, "stash", "pop")
 
 	return err
+}
+
+// StashList returns all stash entries.
+func (g *Git) StashList(ctx context.Context) ([]string, error) {
+	output, err := g.run(ctx, "stash", "list")
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse output - each line is a stash entry
+	// Format: stash@{0}: message
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) == 1 && lines[0] == "" {
+		return []string{}, nil
+	}
+
+	return lines, nil
 }
 
 // run executes a git command in the repo root with context.
