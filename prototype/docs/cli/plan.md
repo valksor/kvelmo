@@ -19,7 +19,7 @@ The `plan` command runs the planning phase where the AI agent:
 3. Analyzes requirements
 4. Generates specification files with implementation details
 
-specification files are saved to `.mehrhof/work/<id>/specifications/`.
+specification files are saved to `~/.mehrhof/workspaces/<project-id>/work/<id>/specifications/`.
 
 ## Flags
 

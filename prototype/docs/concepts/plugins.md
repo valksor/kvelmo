@@ -46,7 +46,7 @@ Plugins are discovered from two directories:
 .mehrhof/plugins/       # Project-local (overrides global)
 ```
 
-Project-local plugins take precedence when both exist with the same name.
+The global plugins directory is in your home directory, while project-local plugins are stored in your project's `.mehrhof/` directory (alongside `config.yaml` and `.env`). Project-local plugins take precedence when both exist with the same name.
 
 ## Managing Plugins
 
@@ -207,7 +207,7 @@ mehr --verbose start my:task
 Check the plugin manifest for required variables:
 
 ```bash
-cat ~/.mehrhof/plugins/jira/plugin.yaml
+cat .mehrhof/plugins/jira/plugin.yaml
 ```
 
 ## Developing Plugins

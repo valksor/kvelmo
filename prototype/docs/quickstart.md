@@ -62,7 +62,7 @@ cd your-project
 mehr init
 ```
 
-This creates `.mehrhof/` for task storage.
+This creates `.mehrhof/` for configuration (task data is stored in `~/.mehrhof/workspaces/<project-id>/`).
 
 ### 2. Create a Task File
 

@@ -31,7 +31,7 @@ The `finish` command completes the current task by:
 | `--merge`          |       | bool   | false   | Force local merge instead of creating PR    |
 | `--delete`         |       | bool   | false   | Delete task branch after merge              |
 | `--push`           |       | bool   | false   | Push to remote after local merge            |
-| `--no-squash`      |       | bool   | false   | Regular merge (no squash)                   |
+| `--squash`         |       | bool   | false   | Squash merge (single commit)                |
 | `--target`         | `-t`  | string | auto    | Target branch to merge into                 |
 | `--no-quality`     |       | bool   | false   | Skip quality checks                         |
 | `--quality-target` |       | string | quality | Make target for quality checks              |
@@ -119,13 +119,13 @@ mehr finish --pr-title "Fix: Authentication bug" --pr-body "Resolves login flow 
 
 Override the auto-generated PR title and body.
 
-### Regular Merge (No Squash)
+### Squash Merge
 
 ```bash
-mehr finish --merge --no-squash
+mehr finish --merge --squash
 ```
 
-Preserve individual commits instead of squashing.
+Create a single commit instead of preserving individual commits.
 
 ### Different Target Branch
 
@@ -197,7 +197,7 @@ Continue with modified files? [y/N]
 
 1. **Quality Checks** (unless skipped)
 2. **Switch** to target branch
-3. **Merge** (squash by default)
+3. **Merge** (regular merge with `--no-ff` by default, use `--squash` for squash merge)
 4. **Push** (if `--push` flag used)
 5. **Cleanup** (if `--delete` flag used)
 6. **Task marked done**
@@ -247,7 +247,7 @@ Closes #123
 
 ## Merge Commit
 
-When using local merge with squash, creates a single commit:
+When using local merge with `--squash`, creates a single commit:
 
 ```
 [#123] Complete: Add authentication feature
@@ -259,6 +259,8 @@ Implemented JWT-based authentication with:
 
 Task: a1b2c3d4
 ```
+
+**Default behavior** (without `--squash`): Creates a merge commit that preserves the full branch history using `git merge --no-ff`.
 
 ## Error Handling
 

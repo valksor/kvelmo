@@ -65,7 +65,7 @@ Found 3 issues:
   - src/api/auth.go:23 - Potential nil pointer
   - src/api/routes.go:12 - Unused import
 
-Review saved to: .mehrhof/work/a1b2c3d4/reviews/REVIEW-1.txt
+Review saved to: ~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4/reviews/REVIEW-1.txt
 ```
 
 ### Custom Output File
@@ -162,7 +162,7 @@ mehr finish
 Multiple reviews are saved with incremental names:
 
 ```
-.mehrhof/work/<id>/reviews/
+~/.mehrhof/workspaces/<project-id>/work/<id>/reviews/
 ├── REVIEW-1.txt    # First review
 ├── REVIEW-2.txt    # After fixes
 └── REVIEW-3.txt    # Final review

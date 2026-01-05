@@ -18,37 +18,38 @@ The `mehr <provider> login` commands provide an interactive way to configure aut
 
 ```bash
 mehr github login
-
-mehr notion login
-
+mehr gitlab login
 mehr jira login
 ```
 
 ## What Happens When You Run Login
 
 1. **Check for existing tokens**: The command checks if a token is already configured in:
-   - Environment variables
    - `.mehrhof/.env` file
    - `config.yaml`
 
 2. **Prompt for override**: If a token exists, you'll be asked if you want to replace it.
 
-3. **Enter your token**: Paste your token when prompted.
+3. **Enter your token**: Paste your token when prompted. **Token input is hidden** and displayed as asterisks (`****`) for security.
 
 4. **Save to .env**: The token is saved to `.mehrhof/.env` with secure permissions (`0o600`).
+
+5. **Update config.yaml**: A reference to the environment variable is added to `config.yaml` using `${VAR}` syntax.
 
 ## Example Session
 
 ```bash
 $ mehr github login
 
-Enter your GitHub API token
 Get a token at: https://github.com/settings/tokens
-Token will be saved to .mehrhof/.env
-Leave empty to cancel: ghp_xxxxxxxxxxxxxxxxxxxx
+Token will be saved to .mehrhof/.env and referenced in config.yaml
+? Enter your GitHub API token (leave empty to cancel): ********
 
 Token saved to /project/.mehrhof/.env
+Token reference added to config.yaml
 ```
+
+> **Note**: Your token input is masked with asterisks (`****`) for security. The token is not visible in the terminal while typing or pasting.
 
 ### When Token Already Exists
 
@@ -57,21 +58,48 @@ $ mehr github login
 Token already configured via .mehrhof/.env file: ghp_...abcd
 Override? [y/N]: y
 
-Enter your GitHub API token
-...
+Get a token at: https://github.com/settings/tokens
+Token will be saved to .mehrhof/.env and referenced in config.yaml
+? Enter your GitHub API token (leave empty to cancel): ********
+
+Token saved to /project/.mehrhof/.env
+Token reference added to config.yaml
 ```
 
 ## Token Storage
 
-Tokens are stored in `.mehrhof/.env` (which is gitignored) with file permissions `0o600` (read/write for owner only).
+Tokens are stored using a two-file approach:
 
-Example `.env` file:
+### 1. `.mehrhof/.env` (gitignored)
+Stores the actual token values with secure permissions (`0o600`).
 
 ```bash
-
+# .mehrhof/.env
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+GITLAB_TOKEN=glpat_xxxxxxxxxxxxxxxxxxxx
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxx
 ```
+
+### 2. `.mehrhof/config.yaml` (safe to commit)
+References the environment variables using `${VAR}` syntax.
+
+```yaml
+# .mehrhof/config.yaml
+github:
+  token: ${GITHUB_TOKEN}
+
+gitlab:
+  token: ${GITLAB_TOKEN}
+
+notion:
+  token: ${NOTION_TOKEN}
+```
+
+**Benefits:**
+- ✅ **Single source of truth**: `config.yaml` shows all token references
+- ✅ **Security**: Actual secrets never committed to git
+- ✅ **Clarity**: Easy to see what's configured
+- ✅ **Flexibility**: Can override with system environment variables
 
 ## Provider Aliases
 
@@ -88,6 +116,20 @@ Some providers have short aliases:
 mehr github login
 mehr gh login
 ```
+
+## Migration from Old Format
+
+If you have plaintext tokens in `config.yaml` from an older version, migrate them:
+
+```bash
+mehr migrate-tokens
+```
+
+This command:
+1. Reads your `config.yaml`
+2. Finds plaintext tokens (not using `${VAR}` syntax)
+3. Moves token values to `.mehrhof/.env`
+4. Updates `config.yaml` to use `${VAR}` references
 
 ## Getting Tokens
 
@@ -123,3 +165,4 @@ Visit: https://www.wrike.com/workspace.htm
 ### YouTrack
 Visit: https://www.jetbrains.com/help/youtrack/manage-user-token.html
 - Create a permanent token in your profile
+

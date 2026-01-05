@@ -12,9 +12,10 @@ mehr init
 
 The `init` command sets up the Mehrhof workspace in your project. It:
 
-1. Creates the `.mehrhof/` directory for task storage
-2. Creates a default `config.yaml` with sensible defaults
-3. Updates `.gitignore` to exclude task-specific files
+1. Creates the `.mehrhof/` directory for configuration (config.yaml, .env)
+2. Creates workspace directories in `~/.mehrhof/workspaces/<project-id>/` for task data
+3. Creates a default `config.yaml` with sensible defaults
+4. Updates `.gitignore` to exclude `.mehrhof/.env` but keeps `config.yaml` for sharing
 
 This is typically a one-time setup per project. Running `init` again is safe - it won't overwrite existing configuration.
 
@@ -94,12 +95,24 @@ Workspace initialized in /path/to/my-project
 
 ### Directory Structure
 
+**In project** (`.mehrhof/`):
 ```
 .mehrhof/
-├── config.yaml    # Workspace configuration
-├── work/          # Task work directories (created as needed)
-├── locks/         # File locks for concurrent access
-└── planned/       # Standalone planning sessions
+├── config.yaml    # Workspace configuration (safe to commit)
+└── .env           # Secrets (gitignored)
+```
+
+**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+```
+~/.mehrhof/workspaces/<project-id>/
+├── .active_task   # Current task reference
+└── work/          # Task work directories (created as needed)
+    └── <task-id>/
+        ├── work.yaml
+        ├── notes.md
+        ├── source/
+        ├── specifications/
+        └── sessions/
 ```
 
 ### Default Configuration
@@ -130,9 +143,7 @@ workflow:
 
 The command ensures `.gitignore` excludes:
 
-- `.mehrhof/work/` - Task work directories
-- `.mehrhof/locks/` - Lock files
-- `.mehrhof/.active_task` - Active task reference
+- `.mehrhof/.env` - Secrets (task data is in home directory)
 
 But keeps:
 
