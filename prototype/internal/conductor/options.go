@@ -18,6 +18,8 @@ type Options struct {
 	Verbose      bool // Enable verbose output
 	CreateBranch bool // Create git branch for task
 	UseWorktree  bool // Create git worktree for task
+	StashChanges bool // Stash uncommitted changes before creating branch
+	AutoPopStash bool // Automatically pop stash after branch creation (default: true)
 	AutoInit     bool // Auto-initialize workspace if needed
 
 	// Auto mode (full automation)
@@ -34,6 +36,7 @@ type Options struct {
 
 	// Paths
 	WorkDir string // Working directory (default: current dir)
+	HomeDir string // Override for mehrhof home directory (default: user home, for testing)
 
 	// Provider configuration
 	DefaultProvider string // Default provider for bare references (e.g., "file")
@@ -121,6 +124,20 @@ func WithUseWorktree(enabled bool) Option {
 		if enabled {
 			o.CreateBranch = true
 		}
+	}
+}
+
+// WithStashChanges enables stashing uncommitted changes before branch creation.
+func WithStashChanges(enabled bool) Option {
+	return func(o *Options) {
+		o.StashChanges = enabled
+	}
+}
+
+// WithAutoPopStash configures whether to automatically pop stash after branch creation.
+func WithAutoPopStash(enabled bool) Option {
+	return func(o *Options) {
+		o.AutoPopStash = enabled
 	}
 }
 
@@ -246,6 +263,13 @@ func WithErrorCallback(fn func(err error)) Option {
 	}
 }
 
+// WithHomeDir sets the mehrhof home directory override (for testing).
+func WithHomeDir(dir string) Option {
+	return func(o *Options) {
+		o.HomeDir = dir
+	}
+}
+
 // Apply applies options to the Options struct.
 func (o *Options) Apply(opts ...Option) {
 	for _, opt := range opts {
@@ -271,7 +295,7 @@ type FinishOptions struct {
 // DefaultFinishOptions returns default finish options.
 func DefaultFinishOptions() FinishOptions {
 	return FinishOptions{
-		SquashMerge:  true,
+		SquashMerge:  false,
 		DeleteBranch: false, // Don't delete by default
 		TargetBranch: "",    // Auto-detect base branch
 		PushAfter:    false, // Don't push by default

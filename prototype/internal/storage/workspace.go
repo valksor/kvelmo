@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,9 +38,10 @@ type usageBuffer struct {
 
 // Workspace manages task storage within a repository.
 type Workspace struct {
-	root     string // Repository root
-	taskRoot string // .mehrhof directory
-	workRoot string // .mehrhof/work directory
+	root          string // Repository root
+	taskRoot      string // .mehrhof directory in project (config, .env)
+	workspaceRoot string // ~/.mehrhof/workspaces/<project-id>/ (work/, .active_task)
+	workRoot      string // ~/.mehrhof/workspaces/<project-id>/work/
 
 	// Usage buffering for reducing I/O
 	usageMu   sync.RWMutex
@@ -48,29 +50,49 @@ type Workspace struct {
 }
 
 // OpenWorkspace opens or creates a workspace in the given directory.
+// Split structure:
+//   - .mehrhof/ in project: config.yaml, .env
+//   - ~/.mehrhof/workspaces/<project-id>/: work/, .active_task
+//
 // If cfg is nil, defaults are used for work directory path.
-func OpenWorkspace(repoRoot string, cfg *WorkspaceConfig) (*Workspace, error) {
+func OpenWorkspace(ctx context.Context, repoRoot string, cfg *WorkspaceConfig) (*Workspace, error) {
 	absRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("resolve path: %w", err)
 	}
 
+	// taskRoot is in project directory (for config and .env)
 	taskRoot := filepath.Join(absRoot, taskDirName)
 
+	// Extract home directory override from config (for tests and custom setups)
+	homeDirOverride := ""
+	if cfg != nil && cfg.Storage.HomeDir != "" {
+		homeDirOverride = cfg.Storage.HomeDir
+	}
+
+	// workspaceRoot is in home directory (for work/ and .active_task)
+	workspaceRoot, err := GetWorkspaceDataDir(ctx, absRoot, homeDirOverride)
+	if err != nil {
+		return nil, fmt.Errorf("get workspace data directory: %w", err)
+	}
+
 	// Determine work directory path from config or default
-	workDir := ".mehrhof/work" // default
+	workDir := "work" // default - relative to workspaceRoot
 	if cfg != nil && cfg.Storage.WorkDir != "" {
 		workDir = cfg.Storage.WorkDir
+		// If workDir starts with ".mehrhof/", make it relative to new location
+		workDir = strings.TrimPrefix(workDir, ".mehrhof/")
 	}
-	// Work directory is relative to project root (absRoot), not taskRoot
-	workRoot := filepath.Join(absRoot, workDir)
+	// Work directory is relative to workspaceRoot (in home directory)
+	workRoot := filepath.Join(workspaceRoot, workDir)
 
 	return &Workspace{
-		root:      absRoot,
-		taskRoot:  taskRoot,
-		workRoot:  workRoot,
-		usageBuf:  make(map[string]map[string]*usageBuffer),
-		lastFlush: time.Now(),
+		root:          absRoot,       // Repository root (for git operations)
+		taskRoot:      taskRoot,      // .mehrhof in project (config, .env)
+		workspaceRoot: workspaceRoot, // ~/.mehrhof/workspaces/<project-id>/ (work/, .active_task)
+		workRoot:      workRoot,      // ~/.mehrhof/workspaces/<project-id>/work/
+		usageBuf:      make(map[string]map[string]*usageBuffer),
+		lastFlush:     time.Now(),
 	}, nil
 }
 
@@ -79,7 +101,7 @@ func (w *Workspace) Root() string {
 	return w.root
 }
 
-// TaskRoot returns the .mehrhof directory path.
+// TaskRoot returns the .mehrhof directory path (in project, for config/.env).
 func (w *Workspace) TaskRoot() string {
 	return w.taskRoot
 }
@@ -136,18 +158,28 @@ func (w *Workspace) LoadEnv() (map[string]string, error) {
 	return result, nil
 }
 
-// EnsureInitialized ensures that the workspace directory exists.
+// EnsureInitialized ensures that the workspace directories exist.
+// Creates both:
+// - .mehrhof/ in project (for config.yaml and .env)
+// - work/ in home directory (for task data)
 // Note: Does NOT update .gitignore - use UpdateGitignore() for that (typically only in init command).
 func (w *Workspace) EnsureInitialized() error {
-	// Create .mehrhof/work directory (also creates .mehrhof/)
+	// Create .mehrhof/ in project directory (for config.yaml and .env)
+	if err := os.MkdirAll(w.taskRoot, 0o755); err != nil {
+		return fmt.Errorf("create project .mehrhof directory: %w", err)
+	}
+
+	// Create work/ in home directory (for task data)
 	if err := os.MkdirAll(w.workRoot, 0o755); err != nil {
-		return fmt.Errorf("create workspace directories: %w", err)
+		return fmt.Errorf("create workspace data directory: %w", err)
 	}
 
 	return nil
 }
 
-// UpdateGitignore adds standard mehrhof entries to .gitignore.
+// UpdateGitignore updates .gitignore with mehrhof entries.
+// Adds .mehrhof/.env (gitignored) but NOT .active_task or .mehrhof/work/
+// since those are now stored in the home directory.
 // This should only be called from the init command.
 func (w *Workspace) UpdateGitignore() error {
 	gitignorePath := filepath.Join(w.root, ".gitignore")
@@ -162,30 +194,46 @@ func (w *Workspace) UpdateGitignore() error {
 		content = string(data)
 	}
 
-	// Load config to get work directory setting
-	workDirEntry := ".mehrhof/work/" // default
-	cfg, err := w.LoadConfig()
-	if err == nil && cfg.Storage.WorkDir != "" {
-		workDirEntry = cfg.Storage.WorkDir
-		// Ensure trailing slash for directory
-		if !strings.HasSuffix(workDirEntry, "/") {
-			workDirEntry += "/"
-		}
+	// Entries to ADD
+	entriesToAdd := []string{
+		taskDirName + "/.env", // .mehrhof/.env
 	}
 
-	// Define entries to add
-	entries := []string{
-		workDirEntry,
-		taskDirName + "/" + envFileName,
-		activeTaskFile,
+	// Entries to REMOVE (legacy - no longer in project)
+	entriesToRemove := []string{
+		taskDirName + "/work/", // .mehrhof/work/ (moved to home)
+		activeTaskFile,         // .active_task (moved to home)
 	}
 
 	modified := false
 	lines := strings.Split(content, "\n")
+	var newLines []string
 
-	for _, entry := range entries {
+	// First pass: remove legacy entries
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		shouldRemove := false
+		for _, entry := range entriesToRemove {
+			if trimmed == entry {
+				shouldRemove = true
+
+				break
+			}
+		}
+		if !shouldRemove {
+			newLines = append(newLines, line)
+		} else {
+			modified = true
+		}
+	}
+
+	// Rebuild content
+	content = strings.Join(newLines, "\n")
+
+	// Second pass: add new entries if not present
+	for _, entry := range entriesToAdd {
 		found := false
-		for _, line := range lines {
+		for _, line := range newLines {
 			if strings.TrimSpace(line) == entry {
 				found = true
 
@@ -196,19 +244,35 @@ func (w *Workspace) UpdateGitignore() error {
 		if !found {
 			if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 				content += "\n"
-				lines = append(lines, "")
 			}
 			content += entry + "\n"
-			lines = append(lines, entry)
 			modified = true
 		}
 	}
 
 	if modified {
+		// Ensure trailing newline
+		if !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+
 		if err := os.WriteFile(gitignorePath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("write .gitignore: %w", err)
 		}
 	}
 
 	return nil
+}
+
+// NeedsMigration checks if the old .mehrhof directory exists in repo root.
+func (w *Workspace) NeedsMigration() bool {
+	oldTaskRoot := filepath.Join(w.root, taskDirName)
+	info, err := os.Stat(oldTaskRoot)
+
+	return err == nil && info.IsDir()
+}
+
+// GetLegacyTaskRoot returns the old .mehrhof path for migration.
+func (w *Workspace) GetLegacyTaskRoot() string {
+	return filepath.Join(w.root, taskDirName)
 }

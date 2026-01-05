@@ -120,6 +120,8 @@ type GitSettings struct {
 	BranchPattern string `yaml:"branch_pattern"`
 	AutoCommit    bool   `yaml:"auto_commit"`
 	SignCommits   bool   `yaml:"sign_commits"`
+	StashOnStart  bool   `yaml:"stash_on_start"` // Auto-stash changes before creating task branch
+	AutoPopStash  bool   `yaml:"auto_pop_stash"` // Auto-pop stash after branch creation (if stashed)
 }
 
 // StepAgentConfig holds agent configuration for a specific workflow step.
@@ -155,6 +157,7 @@ type UpdateSettings struct {
 
 // StorageSettings holds storage-related configuration.
 type StorageSettings struct {
+	HomeDir string `yaml:"home_dir,omitempty"` // Override for mehrhof home directory (default: ~/.mehrhof)
 	WorkDir string `yaml:"work_dir,omitempty"` // Path to work directory (relative to project root)
 }
 
@@ -171,6 +174,8 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			CommitPrefix:  "[{key}]",
 			BranchPattern: "{type}/{key}--{slug}",
 			SignCommits:   false,
+			StashOnStart:  false, // Default off, require explicit --stash or config
+			AutoPopStash:  true,  // Default on for better UX when stashing
 		},
 		Agent: AgentSettings{
 			Default:    "claude",
@@ -191,7 +196,7 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			CheckInterval: 24,
 		},
 		Storage: StorageSettings{
-			WorkDir: ".mehrhof/work", // Default: .mehrhof/work (relative to project root)
+			WorkDir: "work", // Default: work/ (relative to global workspace location)
 		},
 		Env: make(map[string]string),
 	}
@@ -298,15 +303,15 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 	}
 
 	// Add storage section comment if storage work_dir is default/empty
-	if cfg.Storage.WorkDir == "" || cfg.Storage.WorkDir == ".mehrhof/work" {
+	if cfg.Storage.WorkDir == "" || cfg.Storage.WorkDir == "work" {
 		content += `
 # Storage settings
-# Configure where task work directories are stored (relative to project root)
-# Example:
+# Workspace is stored in: ~/.mehrhof/workspaces/<project-id>/
+# Work directories are stored in: ~/.mehrhof/workspaces/<project-id>/work/
+# You can customize the work directory path (relative to workspace):
 # storage:
-#     work_dir: .mehrhof/work    # Default location
-#     work_dir: tasks/           # Alternative: store in project root tasks/ directory
-#     work_dir: .task-work       # Alternative: hidden directory in project root
+#     work_dir: work    # Default location
+#     work_dir: tasks   # Alternative: store in tasks/ subdirectory
 `
 	}
 
@@ -329,7 +334,150 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 	return nil
 }
 
+// expandEnvInString expands ${VAR} and $VAR environment variable references in a string.
+func expandEnvInString(s string) string {
+	if s == "" {
+		return s
+	}
+
+	return os.ExpandEnv(s)
+}
+
+// expandEnvInMap recursively expands env vars in map[string]string.
+func expandEnvInMap(m map[string]string) map[string]string {
+	if m == nil {
+		return nil
+	}
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		result[k] = expandEnvInString(v)
+	}
+
+	return result
+}
+
+// expandEnvInStringSlice expands env vars in []string.
+func expandEnvInStringSlice(s []string) []string {
+	if s == nil {
+		return nil
+	}
+	result := make([]string, len(s))
+	for i, v := range s {
+		result[i] = expandEnvInString(v)
+	}
+
+	return result
+}
+
+// expandEnvInAgentAliasConfig expands env vars in agent alias config.
+func expandEnvInAgentAliasConfig(cfg AgentAliasConfig) AgentAliasConfig {
+	return AgentAliasConfig{
+		Extends:     expandEnvInString(cfg.Extends),
+		Description: expandEnvInString(cfg.Description),
+		Env:         expandEnvInMap(cfg.Env),
+		Args:        expandEnvInStringSlice(cfg.Args),
+	}
+}
+
+// expandEnvInGitHubSettings expands env vars in GitHub config.
+func expandEnvInGitHubSettings(cfg *GitHubSettings) *GitHubSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Owner = expandEnvInString(result.Owner)
+	result.Repo = expandEnvInString(result.Repo)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+	result.TargetBranch = expandEnvInString(result.TargetBranch)
+
+	return &result
+}
+
+// expandEnvInWrikeSettings expands env vars in Wrike config.
+func expandEnvInWrikeSettings(cfg *WrikeSettings) *WrikeSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Host = expandEnvInString(result.Host)
+	result.Folder = expandEnvInString(result.Folder)
+
+	return &result
+}
+
+// expandEnvInGitLabSettings expands env vars in GitLab config.
+func expandEnvInGitLabSettings(cfg *GitLabSettings) *GitLabSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Host = expandEnvInString(result.Host)
+	result.ProjectPath = expandEnvInString(result.ProjectPath)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+
+	return &result
+}
+
+// expandEnvInNotionSettings expands env vars in Notion config.
+func expandEnvInNotionSettings(cfg *NotionSettings) *NotionSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.DatabaseID = expandEnvInString(result.DatabaseID)
+	result.StatusProperty = expandEnvInString(result.StatusProperty)
+	result.DescriptionProperty = expandEnvInString(result.DescriptionProperty)
+	result.LabelsProperty = expandEnvInString(result.LabelsProperty)
+
+	return &result
+}
+
+// expandEnvInJiraSettings expands env vars in Jira config.
+func expandEnvInJiraSettings(cfg *JiraSettings) *JiraSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Email = expandEnvInString(result.Email)
+	result.BaseURL = expandEnvInString(result.BaseURL)
+	result.Project = expandEnvInString(result.Project)
+
+	return &result
+}
+
+// expandEnvInLinearSettings expands env vars in Linear config.
+func expandEnvInLinearSettings(cfg *LinearSettings) *LinearSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Team = expandEnvInString(result.Team)
+
+	return &result
+}
+
+// expandEnvInYouTrackSettings expands env vars in YouTrack config.
+func expandEnvInYouTrackSettings(cfg *YouTrackSettings) *YouTrackSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Host = expandEnvInString(result.Host)
+
+	return &result
+}
+
 // LoadConfig loads the workspace configuration from .mehrhof/config.yaml.
+// Environment variable references like ${VAR} and $VAR are expanded in all string values.
 func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 	data, err := os.ReadFile(w.ConfigPath())
 	if err != nil {
@@ -344,6 +492,27 @@ func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 	cfg := NewDefaultWorkspaceConfig()
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parse config file: %w", err)
+	}
+
+	// Expand environment variable references
+	cfg.Env = expandEnvInMap(cfg.Env)
+
+	// Expand provider settings
+	cfg.GitHub = expandEnvInGitHubSettings(cfg.GitHub)
+	cfg.GitLab = expandEnvInGitLabSettings(cfg.GitLab)
+	cfg.Notion = expandEnvInNotionSettings(cfg.Notion)
+	cfg.Jira = expandEnvInJiraSettings(cfg.Jira)
+	cfg.Linear = expandEnvInLinearSettings(cfg.Linear)
+	cfg.Wrike = expandEnvInWrikeSettings(cfg.Wrike)
+	cfg.YouTrack = expandEnvInYouTrackSettings(cfg.YouTrack)
+
+	// Expand agent aliases
+	if cfg.Agents != nil {
+		expanded := make(map[string]AgentAliasConfig, len(cfg.Agents))
+		for k, v := range cfg.Agents {
+			expanded[k] = expandEnvInAgentAliasConfig(v)
+		}
+		cfg.Agents = expanded
 	}
 
 	return cfg, nil
