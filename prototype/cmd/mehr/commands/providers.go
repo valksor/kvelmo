@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -39,7 +38,8 @@ func init() {
 }
 
 func runProvidersList(cmd *cobra.Command, args []string) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	out := cmd.OutOrStdout()
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(w, "SCHEME\tSHORTHAND\tPROVIDER\tDESCRIPTION")
 	_, _ = fmt.Fprintln(w, "------\t---------\t--------\t-----------")
 
@@ -70,62 +70,63 @@ func runProvidersList(cmd *cobra.Command, args []string) error {
 
 	_ = w.Flush()
 
-	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  mehr start <scheme>:<reference>  # Use provider with scheme or shorthand")
-	fmt.Println()
-	fmt.Println("Examples:")
-	fmt.Println("  mehr start file:task.md")
-	fmt.Println("  mehr start f:task.md              # shorthand also works")
-	fmt.Println("  mehr start dir:./tasks/")
-	fmt.Println("  mehr start github:owner/repo#123")
-	fmt.Println("  mehr start gh:owner/repo#123       # shorthand also works")
-	fmt.Println("  mehr start youtrack:PROJECT-123")
-	fmt.Println("  mehr start yt:PROJECT-123         # shorthand also works")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Usage:")
+	_, _ = fmt.Fprintln(out, "  mehr start <scheme>:<reference>  # Use provider with scheme or shorthand")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Examples:")
+	_, _ = fmt.Fprintln(out, "  mehr start file:task.md")
+	_, _ = fmt.Fprintln(out, "  mehr start f:task.md              # shorthand also works")
+	_, _ = fmt.Fprintln(out, "  mehr start dir:./tasks/")
+	_, _ = fmt.Fprintln(out, "  mehr start github:owner/repo#123")
+	_, _ = fmt.Fprintln(out, "  mehr start gh:owner/repo#123       # shorthand also works")
+	_, _ = fmt.Fprintln(out, "  mehr start youtrack:PROJECT-123")
+	_, _ = fmt.Fprintln(out, "  mehr start yt:PROJECT-123         # shorthand also works")
 
 	return nil
 }
 
 func runProvidersInfo(cmd *cobra.Command, args []string) error {
+	out := cmd.OutOrStdout()
 	providerName := strings.ToLower(args[0])
 
 	info := getProviderInfo(providerName)
 	if info == nil {
-		fmt.Printf("Unknown provider: %s\n\n", providerName)
-		fmt.Println("Run 'mehr providers list' to see available providers.")
+		_, _ = fmt.Fprintf(out, "Unknown provider: %s\n\n", providerName)
+		_, _ = fmt.Fprintln(out, "Run 'mehr providers list' to see available providers.")
 
 		return nil
 	}
 
-	fmt.Printf("Provider: %s\n\n", info.Name)
-	fmt.Printf("Scheme: %s\n\n", info.Scheme)
-	fmt.Printf("Description:\n  %s\n\n", info.Description)
+	_, _ = fmt.Fprintf(out, "Provider: %s\n\n", info.Name)
+	_, _ = fmt.Fprintf(out, "Scheme: %s\n\n", info.Scheme)
+	_, _ = fmt.Fprintf(out, "Description:\n  %s\n\n", info.Description)
 
 	if len(info.Setup) > 0 {
-		fmt.Println("Setup:")
+		_, _ = fmt.Fprintln(out, "Setup:")
 		for _, step := range info.Setup {
-			fmt.Printf("  %s\n", step)
+			_, _ = fmt.Fprintf(out, "  %s\n", step)
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(out)
 	}
 
 	if len(info.EnvVars) > 0 {
-		fmt.Println("Required environment variables:")
+		_, _ = fmt.Fprintln(out, "Required environment variables:")
 		for _, env := range info.EnvVars {
-			fmt.Printf("  %s\n", env)
+			_, _ = fmt.Fprintf(out, "  %s\n", env)
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(out)
 	}
 
 	if len(info.Config) > 0 {
-		fmt.Println("Configuration (in .mehrhof/config.yaml):")
+		_, _ = fmt.Fprintln(out, "Configuration (in .mehrhof/config.yaml):")
 		for _, cfg := range info.Config {
-			fmt.Printf("  %s\n", cfg)
+			_, _ = fmt.Fprintf(out, "  %s\n", cfg)
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(out)
 	}
 
-	fmt.Printf("Usage:\n  %s\n\n", info.Usage)
+	_, _ = fmt.Fprintf(out, "Usage:\n  %s\n\n", info.Usage)
 
 	return nil
 }
