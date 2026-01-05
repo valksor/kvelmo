@@ -21,6 +21,7 @@ build: ## Compile the binary
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
 
 test: ## Run tests with coverage
+	${MAKE} quality
 	go test -v -cover ./...
 
 coverage: ## Run tests with race detection and coverage profile
