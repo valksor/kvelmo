@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,22 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
+
+// openTestWorkspace creates a test workspace with a temporary home directory.
+func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
+	tb.Helper()
+
+	homeDir := tb.TempDir()
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+
+	ws, err := storage.OpenWorkspace(context.Background(), repoRoot, cfg)
+	if err != nil {
+		tb.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	return ws
+}
 
 // TestProviderRegistry ensures all expected providers are registered.
 func TestProviderRegistry(t *testing.T) {
@@ -295,10 +312,7 @@ func TestGetConfigToken(t *testing.T) {
 func TestLoadEnv(t *testing.T) {
 	t.Run("non-existent file", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ws, err := storage.OpenWorkspace(tmpDir, nil)
-		if err != nil {
-			t.Fatalf("OpenWorkspace: %v", err)
-		}
+		ws := openTestWorkspace(t, tmpDir)
 
 		env, err := ws.LoadEnv()
 		if err != nil {
@@ -311,10 +325,7 @@ func TestLoadEnv(t *testing.T) {
 
 	t.Run("parse env file", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ws, err := storage.OpenWorkspace(tmpDir, nil)
-		if err != nil {
-			t.Fatalf("OpenWorkspace: %v", err)
-		}
+		ws := openTestWorkspace(t, tmpDir)
 
 		// Ensure directory exists
 		if err := ws.EnsureInitialized(); err != nil {

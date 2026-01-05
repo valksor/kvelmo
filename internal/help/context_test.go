@@ -1,10 +1,36 @@
 package help
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
+
+// setTestHome sets HOME to a temp directory.
+// This ensures workspace data is stored in a predictable location during tests.
+func setTestHome(t *testing.T, tmpDir string) {
+	t.Helper()
+	t.Setenv("HOME", tmpDir)
+}
+
+// openTestWorkspace creates a test workspace with a temporary home directory.
+func openTestWorkspace(tb testing.TB, repoRoot string, homeDir string) *storage.Workspace {
+	tb.Helper()
+
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+
+	ws, err := storage.OpenWorkspace(context.Background(), repoRoot, cfg)
+	if err != nil {
+		tb.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	return ws
+}
 
 func TestLoadContext_NoWorkspace(t *testing.T) {
 	// Create an isolated directory structure where parent traversal won't find .mehrhof
@@ -52,51 +78,42 @@ func TestLoadContext_WithWorkspaceNoTask(t *testing.T) {
 }
 
 func TestLoadContext_WithActiveTask(t *testing.T) {
-	// Create a temp directory with .mehrhof and an active task
+	// Create a temp directory structure for the new workspace architecture
 	tmpDir := t.TempDir()
-	mehrhofDir := filepath.Join(tmpDir, ".mehrhof")
-	if err := os.MkdirAll(mehrhofDir, 0o755); err != nil {
+	setTestHome(t, tmpDir)
+
+	// Create project directory
+	projectDir := filepath.Join(tmpDir, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	// Create work directory
-	workDir := filepath.Join(mehrhofDir, "work")
-	taskDir := filepath.Join(workDir, "test-task-id")
-	if err := os.MkdirAll(taskDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+	// Use storage package to properly set up workspace and active task
+	ws := openTestWorkspace(t, projectDir, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Create .active_task file in the PROJECT ROOT (tmpDir), not in .mehrhof
-	// This is where storage expects it
-	activeTaskYaml := `id: test-task-id
-ref: file:task.md
-work_dir: .mehrhof/work/test-task-id
-state: implementing
-use_git: true
-started: 2024-01-01T00:00:00Z
-`
-	activeTaskFile := filepath.Join(tmpDir, ".active_task")
-	if err := os.WriteFile(activeTaskFile, []byte(activeTaskYaml), 0o644); err != nil {
-		t.Fatalf("write .active_task: %v", err)
+	// Create a work entry
+	source := storage.SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test-task-id", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
 	}
 
-	// Create work.yaml with task metadata
-	workYaml := `version: "1"
-metadata:
-  id: test-task-id
-  title: Test Task
-  created_at: 2024-01-01T00:00:00Z
-  updated_at: 2024-01-01T00:00:00Z
-source:
-  type: file
-  ref: task.md
-  read_at: 2024-01-01T00:00:00Z
-`
-	if err := os.WriteFile(filepath.Join(taskDir, "work.yaml"), []byte(workYaml), 0o644); err != nil {
-		t.Fatalf("write work.yaml: %v", err)
+	// Create active task
+	activeTask := &storage.ActiveTask{
+		ID:      "test-task-id",
+		Ref:     "file:task.md",
+		WorkDir: ws.WorkPath("test-task-id"),
+		State:   "implementing",
+		UseGit:  true,
+		Started: time.Now(),
+	}
+	if err := ws.SaveActiveTask(activeTask); err != nil {
+		t.Fatalf("SaveActiveTask: %v", err)
 	}
 
-	t.Chdir(tmpDir)
+	t.Chdir(projectDir)
 
 	ctx := LoadContext()
 
@@ -118,62 +135,47 @@ source:
 }
 
 func TestLoadContext_WithSpecifications(t *testing.T) {
-	// Create a temp directory with .mehrhof, active task, and specifications
+	// Create a temp directory structure for the new workspace architecture
 	tmpDir := t.TempDir()
-	mehrhofDir := filepath.Join(tmpDir, ".mehrhof")
-	if err := os.MkdirAll(mehrhofDir, 0o755); err != nil {
+	setTestHome(t, tmpDir)
+
+	// Create project directory
+	projectDir := filepath.Join(tmpDir, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	// Create work directory
-	workDir := filepath.Join(mehrhofDir, "work")
-	taskDir := filepath.Join(workDir, "test-task-id")
-	if err := os.MkdirAll(taskDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+	// Use storage package to properly set up workspace
+	ws := openTestWorkspace(t, projectDir, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Create specifications directory
-	specsDir := filepath.Join(taskDir, "specifications")
-	if err := os.Mkdir(specsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+	// Create a work entry
+	source := storage.SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test-task-id", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
 	}
 
-	// Create a specification file
-	specFile := filepath.Join(specsDir, "specification-1.md")
-	if err := os.WriteFile(specFile, []byte("# Specification"), 0o644); err != nil {
-		t.Fatalf("write spec file: %v", err)
+	// Create a specification
+	if err := ws.SaveSpecification("test-task-id", 1, "# Specification"); err != nil {
+		t.Fatalf("SaveSpecification: %v", err)
 	}
 
-	// Create .active_task file in the PROJECT ROOT
-	activeTaskYaml := `id: test-task-id
-ref: file:task.md
-work_dir: .mehrhof/work/test-task-id
-state: planning
-use_git: false
-started: 2024-01-01T00:00:00Z
-`
-	activeTaskFile := filepath.Join(tmpDir, ".active_task")
-	if err := os.WriteFile(activeTaskFile, []byte(activeTaskYaml), 0o644); err != nil {
-		t.Fatalf("write .active_task: %v", err)
+	// Create active task
+	activeTask := &storage.ActiveTask{
+		ID:      "test-task-id",
+		Ref:     "file:task.md",
+		WorkDir: ws.WorkPath("test-task-id"),
+		State:   "planning",
+		UseGit:  false,
+		Started: time.Now(),
+	}
+	if err := ws.SaveActiveTask(activeTask); err != nil {
+		t.Fatalf("SaveActiveTask: %v", err)
 	}
 
-	// Create work.yaml
-	workYaml := `version: "1"
-metadata:
-  id: test-task-id
-  title: Test Task
-  created_at: 2024-01-01T00:00:00Z
-  updated_at: 2024-01-01T00:00:00Z
-source:
-  type: file
-  ref: task.md
-  read_at: 2024-01-01T00:00:00Z
-`
-	if err := os.WriteFile(filepath.Join(taskDir, "work.yaml"), []byte(workYaml), 0o644); err != nil {
-		t.Fatalf("write work.yaml: %v", err)
-	}
-
-	t.Chdir(tmpDir)
+	t.Chdir(projectDir)
 
 	ctx := LoadContext()
 
@@ -189,45 +191,53 @@ source:
 }
 
 func TestLoadContext_BadWorkYaml(t *testing.T) {
-	// Create a temp directory with .mehrhof and active task but bad work.yaml
+	// Create a temp directory structure for the new workspace architecture
 	tmpDir := t.TempDir()
-	mehrhofDir := filepath.Join(tmpDir, ".mehrhof")
-	if err := os.MkdirAll(mehrhofDir, 0o755); err != nil {
+	setTestHome(t, tmpDir)
+
+	// Create project directory
+	projectDir := filepath.Join(tmpDir, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	// Create work directory
-	workDir := filepath.Join(mehrhofDir, "work")
-	taskDir := filepath.Join(workDir, "test-task-id")
-	if err := os.MkdirAll(taskDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+	// Use storage package to properly set up workspace
+	ws := openTestWorkspace(t, projectDir, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Create .active_task file in the PROJECT ROOT
-	activeTaskYaml := `id: test-task-id
-ref: file:task.md
-work_dir: .mehrhof/work/test-task-id
-state: planning
-use_git: false
-started: 2024-01-01T00:00:00Z
-`
-	activeTaskFile := filepath.Join(tmpDir, ".active_task")
-	if err := os.WriteFile(activeTaskFile, []byte(activeTaskYaml), 0o644); err != nil {
-		t.Fatalf("write .active_task: %v", err)
+	// Create a work entry first (to get the directory created)
+	source := storage.SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test-task-id", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
 	}
 
-	// Create invalid work.yaml (not valid YAML)
-	if err := os.WriteFile(filepath.Join(taskDir, "work.yaml"), []byte("not valid yaml: [["), 0o644); err != nil {
-		t.Fatalf("write work.yaml: %v", err)
+	// Corrupt the work.yaml file
+	workYamlPath := filepath.Join(ws.WorkPath("test-task-id"), "work.yaml")
+	if err := os.WriteFile(workYamlPath, []byte("not valid yaml: [["), 0o644); err != nil {
+		t.Fatalf("write bad work.yaml: %v", err)
 	}
 
-	t.Chdir(tmpDir)
+	// Create active task
+	activeTask := &storage.ActiveTask{
+		ID:      "test-task-id",
+		Ref:     "file:task.md",
+		WorkDir: ws.WorkPath("test-task-id"),
+		State:   "planning",
+		UseGit:  false,
+		Started: time.Now(),
+	}
+	if err := ws.SaveActiveTask(activeTask); err != nil {
+		t.Fatalf("SaveActiveTask: %v", err)
+	}
+
+	t.Chdir(projectDir)
 
 	ctx := LoadContext()
 
 	// LoadContext only reads .active_task file, not work.yaml
 	// So even with bad work.yaml, HasActiveTask should be true
-	// The LoadActiveTask function successfully parses the .active_task file
 	if !ctx.HasActiveTask {
 		t.Error("expected HasActiveTask to be true (LoadContext doesn't read work.yaml)")
 	}

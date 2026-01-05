@@ -53,6 +53,21 @@ func runGitCmd(ctx context.Context, dir string, args ...string) error {
 	return cmd.Run()
 }
 
+// openTestWorkspace opens a workspace for testing with a temporary home directory.
+// This prevents tests from polluting the real ~/.mehrhof directory.
+func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
+	tb.Helper()
+	homeDir := tb.TempDir()
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), repoRoot, cfg)
+	if err != nil {
+		tb.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	return ws
+}
+
 func TestNew(t *testing.T) {
 	c, err := New()
 	if err != nil {
@@ -101,9 +116,10 @@ func TestNewWithOptions(t *testing.T) {
 
 func TestInitialize_NonGitDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	ctx := context.Background()
 
-	c, err := New(WithWorkDir(tmpDir), WithAutoInit(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithAutoInit(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -123,10 +139,11 @@ func TestInitialize_GitDirectory(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 	ctx := context.Background()
 
-	c, err := New(WithWorkDir(tmpDir), WithAutoInit(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithAutoInit(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -147,9 +164,10 @@ func TestInitialize_GitDirectory(t *testing.T) {
 
 func TestInitialize_AutoInit(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	ctx := context.Background()
 
-	c, err := New(WithWorkDir(tmpDir), WithAutoInit(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithAutoInit(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -267,10 +285,7 @@ func TestStart_InvalidReference(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	c.workspace = ws
 
 	// Try to start without a valid provider reference
@@ -290,10 +305,7 @@ func TestResume_NoActiveTask(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	c.workspace = ws
 
 	err = c.Resume(ctx)
@@ -400,10 +412,7 @@ func TestUndo_NoGit(t *testing.T) {
 	}
 
 	// Set up workspace and fake active task
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	c.workspace = ws
 	c.activeTask = &storage.ActiveTask{
 		ID:      "test-task",
@@ -430,10 +439,7 @@ func TestRedo_NoGit(t *testing.T) {
 	}
 
 	// Set up workspace and fake active task
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	c.workspace = ws
 	c.activeTask = &storage.ActiveTask{
 		ID:      "test-task",
@@ -508,21 +514,22 @@ func TestEnsureCleanWorkspace_NoGit(t *testing.T) {
 	ctx := context.Background()
 	// No git, no branch creation - should pass
 	c.opts.CreateBranch = false
-	err = c.ensureCleanWorkspace(ctx)
+	err = c.prepareWorkspace(ctx)
 	if err != nil {
-		t.Errorf("ensureCleanWorkspace should pass without git: %v", err)
+		t.Errorf("prepareWorkspace should pass without git: %v", err)
 	}
 }
 
-func TestEnsureCleanWorkspace_NoBranchCreation(t *testing.T) {
+func TestPrepareWorkspace_NoBranchCreation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 
-	c, err := New(WithWorkDir(tmpDir))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -539,21 +546,22 @@ func TestEnsureCleanWorkspace_NoBranchCreation(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	err = c.ensureCleanWorkspace(ctx)
+	err = c.prepareWorkspace(ctx)
 	if err != nil {
-		t.Errorf("ensureCleanWorkspace should pass when CreateBranch=false: %v", err)
+		t.Errorf("prepareWorkspace should pass when CreateBranch=false: %v", err)
 	}
 }
 
-func TestEnsureCleanWorkspace_CleanWorkspace(t *testing.T) {
+func TestPrepareWorkspace_CleanWorkspace(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 
-	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithCreateBranch(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -562,21 +570,22 @@ func TestEnsureCleanWorkspace_CleanWorkspace(t *testing.T) {
 	ctx := context.Background()
 	_ = c.Initialize(ctx)
 
-	err = c.ensureCleanWorkspace(ctx)
+	err = c.prepareWorkspace(ctx)
 	if err != nil {
-		t.Errorf("ensureCleanWorkspace should pass with clean workspace: %v", err)
+		t.Errorf("prepareWorkspace should pass with clean workspace: %v", err)
 	}
 }
 
-func TestEnsureCleanWorkspace_DirtyWorkspace(t *testing.T) {
+func TestPrepareWorkspace_DirtyWorkspace(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 
-	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithCreateBranch(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -590,9 +599,9 @@ func TestEnsureCleanWorkspace_DirtyWorkspace(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	err = c.ensureCleanWorkspace(ctx)
+	err = c.prepareWorkspace(ctx)
 	if err == nil {
-		t.Error("ensureCleanWorkspace should fail with dirty workspace")
+		t.Error("prepareWorkspace should fail with dirty workspace")
 	}
 }
 
@@ -606,10 +615,7 @@ func TestImplement_NoSpecifications(t *testing.T) {
 	}
 
 	// Set up workspace and active task
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -650,10 +656,7 @@ func TestStart_TaskAlreadyActive(t *testing.T) {
 	}
 
 	// Set up workspace and existing active task
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	c.workspace = ws
 	c.activeTask = &storage.ActiveTask{
 		ID:      "existing-task",
@@ -693,10 +696,7 @@ func TestBuildWorkUnit_WithTaskWork(t *testing.T) {
 	}
 
 	// Set up workspace and task work
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -756,10 +756,7 @@ func TestGetTaskWork_WithTask(t *testing.T) {
 	}
 
 	// Set up workspace and task work
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -797,10 +794,7 @@ func TestDelete_WithWorkspace(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -852,10 +846,7 @@ func TestFinish_NoGit(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -916,10 +907,7 @@ func TestFinish_NoGitUsed(t *testing.T) {
 	}
 
 	// Set up workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
@@ -1088,54 +1076,50 @@ This is a test task description.
 
 // TestStatus_Integration tests getting status when there's an active task.
 func TestStatus_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
-	// Create workspace
-	ws, err := storage.OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
-	if err := ws.EnsureInitialized(); err != nil {
-		t.Fatalf("EnsureInitialized: %v", err)
-	}
-
-	// Create task work
-	taskID := "status-test-123"
-	work, err := ws.CreateWork(taskID, storage.SourceInfo{
-		Type: "file",
-		Ref:  "task.md",
-	})
-	if err != nil {
-		t.Fatalf("CreateWork: %v", err)
-	}
-	work.Metadata.Title = "Status Test Task"
-	work.Metadata.ExternalKey = "STATUS-123"
-	if err := ws.SaveWork(work); err != nil {
-		t.Fatalf("SaveWork: %v", err)
-	}
-
-	// Create active task
-	activeTask := &storage.ActiveTask{
-		ID:      taskID,
-		Ref:     "file:task.md",
-		WorkDir: ".mehrhof/work/" + taskID,
-		State:   "implementing",
-		Branch:  "feature/status--test",
-		Started: time.Now(),
-	}
-	if err := ws.SaveActiveTask(activeTask); err != nil {
-		t.Fatalf("SaveActiveTask: %v", err)
+	// Create a task file
+	taskContent := `---
+title: Status Test Task
+agent: mock
+---
+This is a test task for status checking.
+`
+	taskPath := filepath.Join(tmpDir, "test-task.md")
+	if err := os.WriteFile(taskPath, []byte(taskContent), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
 
 	// Create conductor
-	c, err := New(WithWorkDir(tmpDir))
+	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(false))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
 
-	// Initialize - ignore agent detection errors
-	ctx := context.Background()
-	_ = c.Initialize(ctx)
+	// Register file provider
+	file.Register(c.GetProviderRegistry())
+
+	// Register mock agent
+	mockAgent := &mockAgent{name: "mock"}
+	if err := c.GetAgentRegistry().Register(mockAgent); err != nil {
+		t.Fatalf("Register mock agent: %v", err)
+	}
+
+	// Initialize
+	if err := c.Initialize(ctx); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+
+	// Start the task to create an active task
+	err = c.Start(ctx, "file:"+taskPath)
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
 
 	// Get status
 	status, err := c.Status()
@@ -1143,17 +1127,11 @@ func TestStatus_Integration(t *testing.T) {
 		t.Fatalf("Status: %v", err)
 	}
 
-	if status.TaskID != taskID {
-		t.Errorf("TaskID = %q, want %q", status.TaskID, taskID)
-	}
 	if status.Title != "Status Test Task" {
 		t.Errorf("Title = %q, want %q", status.Title, "Status Test Task")
 	}
-	if status.State != "implementing" {
-		t.Errorf("State = %q, want %q", status.State, "implementing")
-	}
-	if status.Branch != "feature/status--test" {
-		t.Errorf("Branch = %q, want %q", status.Branch, "feature/status--test")
+	if status.State != "idle" {
+		t.Errorf("State = %q, want %q", status.State, "idle")
 	}
 }
 

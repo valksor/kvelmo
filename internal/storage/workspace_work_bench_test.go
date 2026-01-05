@@ -2,6 +2,7 @@
 package storage
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -12,10 +13,7 @@ import (
 // With buffering enabled, this should be much faster as writes are batched.
 func Benchmark_AddUsage_Sequential(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -37,10 +35,7 @@ func Benchmark_AddUsage_Sequential(b *testing.B) {
 // Benchmark_AddUsage_Flush benchmarks AddUsage with explicit flush.
 func Benchmark_AddUsage_Flush(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -67,10 +62,7 @@ func Benchmark_AddUsage_Flush(b *testing.B) {
 // Benchmark_AddUsage_Concurrent benchmarks concurrent AddUsage calls.
 func Benchmark_AddUsage_Concurrent(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -94,10 +86,7 @@ func Benchmark_AddUsage_Concurrent(b *testing.B) {
 // Benchmark_AddUsage_MultipleTasks benchmarks AddUsage across multiple tasks.
 func Benchmark_AddUsage_MultipleTasks(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 
 	// Create 10 tasks
 	taskIDs := make([]string, 10)
@@ -126,10 +115,7 @@ func Benchmark_AddUsage_MultipleTasks(b *testing.B) {
 // Benchmark_FlushUsage benchmarks the FlushUsage operation.
 func Benchmark_FlushUsage(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -164,10 +150,7 @@ func Benchmark_FlushUsage(b *testing.B) {
 // Benchmark_LoadWork benchmarks loading work metadata.
 func Benchmark_LoadWork(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -199,10 +182,7 @@ func Benchmark_LoadWork(b *testing.B) {
 // Benchmark_SaveWork benchmarks saving work metadata.
 func Benchmark_SaveWork(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -223,10 +203,7 @@ func Benchmark_SaveWork(b *testing.B) {
 // Benchmark_CreateWork benchmarks creating a new work directory.
 func Benchmark_CreateWork(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	source := SourceInfo{Type: "file", Ref: "test"}
 
 	b.ResetTimer()
@@ -254,10 +231,7 @@ func Benchmark_GenerateTaskID(b *testing.B) {
 // Benchmark_WorkPath benchmarks work path generation.
 func Benchmark_WorkPath(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task-abc123"
 
 	b.ReportAllocs()
@@ -269,10 +243,13 @@ func Benchmark_WorkPath(b *testing.B) {
 // Benchmark_OpenWorkspace benchmarks workspace opening.
 func Benchmark_OpenWorkspace(b *testing.B) {
 	tmpDir := b.TempDir()
+	homeDir := b.TempDir()
 
 	b.ReportAllocs()
 	for range b.N {
-		_, err := OpenWorkspace(tmpDir, nil)
+		cfg := NewDefaultWorkspaceConfig()
+		cfg.Storage.HomeDir = homeDir
+		_, err := OpenWorkspace(context.Background(), tmpDir, cfg)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -283,10 +260,7 @@ func Benchmark_OpenWorkspace(b *testing.B) {
 // for comparison - direct LoadWork -> Modify -> SaveWork.
 func Benchmark_AddUsage_WithoutBuffering(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task"
 	source := SourceInfo{Type: "file", Ref: "test"}
 	work, err := ws.CreateWork(taskID, source)
@@ -351,10 +325,7 @@ func Benchmark_YAMLMarshal(b *testing.B) {
 // Benchmark_WorkPath_Join benchmarks using filepath.Join vs string concatenation.
 func Benchmark_WorkPath_Join(b *testing.B) {
 	tmpDir := b.TempDir()
-	ws, err := OpenWorkspace(tmpDir, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+	ws := openTestWorkspace(b, tmpDir)
 	taskID := "test-task-abc123"
 
 	b.ReportAllocs()

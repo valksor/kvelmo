@@ -1,7 +1,8 @@
-// Package testutil provides testing utilities, including must-style helpers.
-package testutil
+// Package testutil_test provides testing utilities, including must-style helpers.
+package testutil_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -99,7 +100,7 @@ func CreateTempWorkspace(t *testing.T) (string, *storage.Workspace, func()) {
 		t.Fatal(err)
 	}
 
-	ws := T(storage.OpenWorkspace(path, nil))
+	ws := T(storage.OpenWorkspace(context.Background(), path, nil))
 
 	return path, ws, cleanup
 }
