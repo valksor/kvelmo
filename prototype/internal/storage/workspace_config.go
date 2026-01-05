@@ -10,22 +10,27 @@ import (
 
 // WorkspaceConfig holds workspace-specific configuration that users can customize.
 type WorkspaceConfig struct {
-	Git       GitSettings                 `yaml:"git"`
-	Agent     AgentSettings               `yaml:"agent"`
-	Workflow  WorkflowSettings            `yaml:"workflow"`
-	Providers ProvidersSettings           `yaml:"providers,omitempty"`
-	Env       map[string]string           `yaml:"env,omitempty"`
-	Agents    map[string]AgentAliasConfig `yaml:"agents,omitempty"`
-	GitHub    *GitHubSettings             `yaml:"github,omitempty"`
-	GitLab    *GitLabSettings             `yaml:"gitlab,omitempty"`
-	Notion    *NotionSettings             `yaml:"notion,omitempty"`
-	Jira      *JiraSettings               `yaml:"jira,omitempty"`
-	Linear    *LinearSettings             `yaml:"linear,omitempty"`
-	Wrike     *WrikeSettings              `yaml:"wrike,omitempty"`
-	YouTrack  *YouTrackSettings           `yaml:"youtrack,omitempty"`
-	Plugins   PluginsConfig               `yaml:"plugins,omitempty"`
-	Update    UpdateSettings              `yaml:"update,omitempty"`
-	Storage   StorageSettings             `yaml:"storage,omitempty"`
+	Git         GitSettings                 `yaml:"git"`
+	Agent       AgentSettings               `yaml:"agent"`
+	Workflow    WorkflowSettings            `yaml:"workflow"`
+	Providers   ProvidersSettings           `yaml:"providers,omitempty"`
+	Env         map[string]string           `yaml:"env,omitempty"`
+	Agents      map[string]AgentAliasConfig `yaml:"agents,omitempty"`
+	GitHub      *GitHubSettings             `yaml:"github,omitempty"`
+	GitLab      *GitLabSettings             `yaml:"gitlab,omitempty"`
+	Notion      *NotionSettings             `yaml:"notion,omitempty"`
+	Jira        *JiraSettings               `yaml:"jira,omitempty"`
+	Linear      *LinearSettings             `yaml:"linear,omitempty"`
+	Wrike       *WrikeSettings              `yaml:"wrike,omitempty"`
+	YouTrack    *YouTrackSettings           `yaml:"youtrack,omitempty"`
+	Bitbucket   *BitbucketSettings          `yaml:"bitbucket,omitempty"`
+	Asana       *AsanaSettings              `yaml:"asana,omitempty"`
+	ClickUp     *ClickUpSettings            `yaml:"clickup,omitempty"`
+	AzureDevOps *AzureDevOpsSettings        `yaml:"azure_devops,omitempty"`
+	Trello      *TrelloSettings             `yaml:"trello,omitempty"`
+	Plugins     PluginsConfig               `yaml:"plugins,omitempty"`
+	Update      UpdateSettings              `yaml:"update,omitempty"`
+	Storage     StorageSettings             `yaml:"storage,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -103,6 +108,56 @@ type LinearSettings struct {
 type YouTrackSettings struct {
 	Token string `yaml:"token,omitempty"` // YouTrack token (env vars take priority)
 	Host  string `yaml:"host,omitempty"`  // YouTrack host
+}
+
+// BitbucketSettings holds Bitbucket provider configuration.
+type BitbucketSettings struct {
+	Username          string `yaml:"username,omitempty"`            // Bitbucket username
+	AppPassword       string `yaml:"app_password,omitempty"`        // Bitbucket app password (env vars take priority)
+	Workspace         string `yaml:"workspace,omitempty"`           // Bitbucket workspace
+	RepoSlug          string `yaml:"repo,omitempty"`                // Repository slug
+	BranchPattern     string `yaml:"branch_pattern,omitempty"`      // Git branch template
+	CommitPrefix      string `yaml:"commit_prefix,omitempty"`       // Commit message prefix
+	TargetBranch      string `yaml:"target_branch,omitempty"`       // Target branch for PRs
+	CloseSourceBranch bool   `yaml:"close_source_branch,omitempty"` // Delete source branch when PR is merged
+}
+
+// AsanaSettings holds Asana provider configuration.
+type AsanaSettings struct {
+	Token          string `yaml:"token,omitempty"`           // Asana token (env vars take priority)
+	WorkspaceGID   string `yaml:"workspace_gid,omitempty"`   // Asana workspace GID
+	DefaultProject string `yaml:"default_project,omitempty"` // Default project GID for list operations
+	BranchPattern  string `yaml:"branch_pattern,omitempty"`  // Git branch template
+	CommitPrefix   string `yaml:"commit_prefix,omitempty"`   // Commit message prefix
+}
+
+// ClickUpSettings holds ClickUp provider configuration.
+type ClickUpSettings struct {
+	Token         string `yaml:"token,omitempty"`          // ClickUp API token (env vars take priority)
+	TeamID        string `yaml:"team_id,omitempty"`        // Team/Workspace ID
+	DefaultList   string `yaml:"default_list,omitempty"`   // Default list ID for list operations
+	BranchPattern string `yaml:"branch_pattern,omitempty"` // Git branch template
+	CommitPrefix  string `yaml:"commit_prefix,omitempty"`  // Commit message prefix
+}
+
+// AzureDevOpsSettings holds Azure DevOps provider configuration.
+type AzureDevOpsSettings struct {
+	Token         string `yaml:"token,omitempty"`          // Azure DevOps PAT (env vars take priority)
+	Organization  string `yaml:"organization,omitempty"`   // Azure DevOps organization
+	Project       string `yaml:"project,omitempty"`        // Project name
+	AreaPath      string `yaml:"area_path,omitempty"`      // Filter by area path
+	IterationPath string `yaml:"iteration_path,omitempty"` // Filter by iteration
+	RepoName      string `yaml:"repo_name,omitempty"`      // Default repository for PR creation
+	TargetBranch  string `yaml:"target_branch,omitempty"`  // Default target branch for PRs
+	BranchPattern string `yaml:"branch_pattern,omitempty"` // Git branch template
+	CommitPrefix  string `yaml:"commit_prefix,omitempty"`  // Commit message prefix
+}
+
+// TrelloSettings holds Trello provider configuration.
+type TrelloSettings struct {
+	APIKey string `yaml:"api_key,omitempty"` // Trello API key (env vars take priority)
+	Token  string `yaml:"token,omitempty"`   // Trello token (env vars take priority)
+	Board  string `yaml:"board,omitempty"`   // Default board ID
 }
 
 // AgentAliasConfig defines a user-defined agent alias that wraps an existing agent
@@ -476,6 +531,85 @@ func expandEnvInYouTrackSettings(cfg *YouTrackSettings) *YouTrackSettings {
 	return &result
 }
 
+// expandEnvInBitbucketSettings expands env vars in Bitbucket config.
+func expandEnvInBitbucketSettings(cfg *BitbucketSettings) *BitbucketSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Username = expandEnvInString(result.Username)
+	result.AppPassword = expandEnvInString(result.AppPassword)
+	result.Workspace = expandEnvInString(result.Workspace)
+	result.RepoSlug = expandEnvInString(result.RepoSlug)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+	result.TargetBranch = expandEnvInString(result.TargetBranch)
+
+	return &result
+}
+
+// expandEnvInAsanaSettings expands env vars in Asana config.
+func expandEnvInAsanaSettings(cfg *AsanaSettings) *AsanaSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.WorkspaceGID = expandEnvInString(result.WorkspaceGID)
+	result.DefaultProject = expandEnvInString(result.DefaultProject)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+
+	return &result
+}
+
+// expandEnvInClickUpSettings expands env vars in ClickUp config.
+func expandEnvInClickUpSettings(cfg *ClickUpSettings) *ClickUpSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.TeamID = expandEnvInString(result.TeamID)
+	result.DefaultList = expandEnvInString(result.DefaultList)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+
+	return &result
+}
+
+// expandEnvInAzureDevOpsSettings expands env vars in Azure DevOps config.
+func expandEnvInAzureDevOpsSettings(cfg *AzureDevOpsSettings) *AzureDevOpsSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.Token = expandEnvInString(result.Token)
+	result.Organization = expandEnvInString(result.Organization)
+	result.Project = expandEnvInString(result.Project)
+	result.AreaPath = expandEnvInString(result.AreaPath)
+	result.IterationPath = expandEnvInString(result.IterationPath)
+	result.RepoName = expandEnvInString(result.RepoName)
+	result.TargetBranch = expandEnvInString(result.TargetBranch)
+	result.BranchPattern = expandEnvInString(result.BranchPattern)
+	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
+
+	return &result
+}
+
+// expandEnvInTrelloSettings expands env vars in Trello config.
+func expandEnvInTrelloSettings(cfg *TrelloSettings) *TrelloSettings {
+	if cfg == nil {
+		return nil
+	}
+	result := *cfg // Copy
+	result.APIKey = expandEnvInString(result.APIKey)
+	result.Token = expandEnvInString(result.Token)
+	result.Board = expandEnvInString(result.Board)
+
+	return &result
+}
+
 // LoadConfig loads the workspace configuration from .mehrhof/config.yaml.
 // Environment variable references like ${VAR} and $VAR are expanded in all string values.
 func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
@@ -505,6 +639,11 @@ func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 	cfg.Linear = expandEnvInLinearSettings(cfg.Linear)
 	cfg.Wrike = expandEnvInWrikeSettings(cfg.Wrike)
 	cfg.YouTrack = expandEnvInYouTrackSettings(cfg.YouTrack)
+	cfg.Bitbucket = expandEnvInBitbucketSettings(cfg.Bitbucket)
+	cfg.Asana = expandEnvInAsanaSettings(cfg.Asana)
+	cfg.ClickUp = expandEnvInClickUpSettings(cfg.ClickUp)
+	cfg.AzureDevOps = expandEnvInAzureDevOpsSettings(cfg.AzureDevOps)
+	cfg.Trello = expandEnvInTrelloSettings(cfg.Trello)
 
 	// Expand agent aliases
 	if cfg.Agents != nil {
