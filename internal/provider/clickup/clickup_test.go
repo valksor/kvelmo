@@ -478,3 +478,118 @@ func TestParseTimestamp(t *testing.T) {
 		})
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// Scheme prefixes
+		{"clickup:abc1234", true},
+		{"cu:PROJ-123", true},
+		// URL patterns
+		{"https://app.clickup.com/t/abc1234", true},
+		{"sharing.clickup.com/t/abc1234", true},
+		// Bare task IDs (ParseReference succeeds)
+		{"abc1234", true},
+		{"PROJ-123", true},
+		// Invalid inputs (ParseReference fails)
+		{"", false},
+		{"abc", false},
+		{"hello-world", false},
+		// Other providers
+		{"github:123", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		name        string
+		input       string
+		want        string
+		errContains string
+		wantErr     bool
+	}{
+		{
+			name:  "task ID with scheme",
+			input: "clickup:abc1234",
+			want:  "abc1234",
+		},
+		{
+			name:  "custom ID with scheme",
+			input: "cu:PROJ-123",
+			want:  "PROJ-123",
+		},
+		{
+			name:  "bare task ID",
+			input: "abc1234",
+			want:  "abc1234",
+		},
+		{
+			name:  "bare custom ID",
+			input: "PROJ-456",
+			want:  "PROJ-456",
+		},
+		{
+			name:  "app URL with team",
+			input: "https://app.clickup.com/t/12345/abc1234",
+			want:  "abc1234",
+		},
+		{
+			name:        "invalid input",
+			input:       "abc",
+			wantErr:     true,
+			errContains: "invalid clickup reference",
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
