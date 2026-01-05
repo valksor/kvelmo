@@ -277,3 +277,27 @@ func (w *Workspace) ListWorks() ([]string, error) {
 
 	return taskIDs, nil
 }
+
+// ArchiveWorkDir moves a work directory to archive.
+func (w *Workspace) ArchiveWorkDir(taskID string) error {
+	workPath := w.WorkPath(taskID)
+
+	// Create archive directory in workspace root
+	archiveRoot := filepath.Join(w.workspaceRoot, "archive")
+	if err := os.MkdirAll(archiveRoot, 0o755); err != nil {
+		return fmt.Errorf("create archive directory: %w", err)
+	}
+
+	// Create timestamped archive path
+	timestamp := time.Now().Format("20060102-150405")
+	archivePath := filepath.Join(archiveRoot, fmt.Sprintf("%s-%s", taskID, timestamp))
+
+	// Move work directory to archive
+	if err := os.Rename(workPath, archivePath); err != nil {
+		return fmt.Errorf("archive work directory: %w", err)
+	}
+
+	slog.Info("archived work directory", "task_id", taskID, "path", archivePath)
+
+	return nil
+}

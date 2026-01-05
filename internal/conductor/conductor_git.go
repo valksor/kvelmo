@@ -3,6 +3,7 @@ package conductor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -99,6 +100,22 @@ func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *n
 	}
 }
 
+// generateUniqueBranchName generates a unique branch name by appending a numeric suffix
+// if the base name already exists. Returns the first available name.
+func (c *Conductor) generateUniqueBranchName(ctx context.Context, baseName string) string {
+	if !c.git.BranchExists(ctx, baseName) {
+		return baseName
+	}
+
+	// Try suffixes -2, -3, -4, etc. until we find an available name
+	for i := 2; ; i++ {
+		candidate := fmt.Sprintf("%s-%d", baseName, i)
+		if !c.git.BranchExists(ctx, candidate) {
+			return candidate
+		}
+	}
+}
+
 // createBranchOrWorktree creates a git branch or worktree for the task.
 func (c *Conductor) createBranchOrWorktree(ctx context.Context, taskID string, ni *namingInfo) (*gitInfo, error) {
 	if c.git == nil || !c.opts.CreateBranch {
@@ -106,7 +123,8 @@ func (c *Conductor) createBranchOrWorktree(ctx context.Context, taskID string, n
 	}
 
 	baseBranch, _ := c.git.CurrentBranch(ctx)
-	branchName := ni.branchName // Use resolved branch name from naming
+	// Generate unique branch name (adds suffix if already exists)
+	branchName := c.generateUniqueBranchName(ctx, ni.branchName)
 
 	if c.opts.UseWorktree {
 		worktreePath := c.git.GetWorktreePath(taskID)
@@ -137,6 +155,18 @@ func (c *Conductor) createBranchOrWorktree(ctx context.Context, taskID string, n
 		_ = c.git.DeleteBranch(ctx, branchName, false)
 
 		return nil, fmt.Errorf("checkout branch: %w", err)
+	}
+
+	// Pop stash if we stashed earlier AND auto-pop is enabled (only for regular branches, not worktrees)
+	if c.opts.StashChanges {
+		if c.opts.AutoPopStash {
+			if err := c.popStashIfExists(ctx); err != nil {
+				return nil, fmt.Errorf("failed to restore stashed changes: %w", err)
+			}
+			c.publishProgress("Restored stashed changes", 10)
+		} else {
+			c.publishProgress("Stashed changes preserved (use 'git stash pop' to restore)", 10)
+		}
 	}
 
 	return &gitInfo{
@@ -235,4 +265,20 @@ func (c *Conductor) cleanupAfterMerge(ctx context.Context, opts FinishOptions) {
 	if err := c.git.DeleteBranch(ctx, currentBranch, true); err != nil {
 		c.logError(fmt.Errorf("delete branch: %w", err))
 	}
+}
+
+// popStashIfExists pops the stash if it exists, handles errors gracefully.
+func (c *Conductor) popStashIfExists(ctx context.Context) error {
+	err := c.git.StashPop(ctx)
+	if err != nil {
+		// If no stash exists, that's OK (might have been empty or only untracked files)
+		// Git returns "No stash entries found" when stash list is empty
+		if strings.Contains(err.Error(), "No stash") {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }

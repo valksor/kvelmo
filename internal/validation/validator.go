@@ -40,7 +40,7 @@ func (v *Validator) Validate(ctx context.Context) (*Result, error) {
 	result := NewResult()
 
 	// Validate workspace config
-	wsResult, err := v.validateWorkspace()
+	wsResult, err := v.validateWorkspace(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("workspace validation: %w", err)
 	}
@@ -55,10 +55,10 @@ func (v *Validator) Validate(ctx context.Context) (*Result, error) {
 }
 
 // validateWorkspace validates the workspace configuration.
-func (v *Validator) validateWorkspace() (*Result, error) {
+func (v *Validator) validateWorkspace(ctx context.Context) (*Result, error) {
 	result := NewResult()
 
-	ws, err := storage.OpenWorkspace(v.workspacePath, nil)
+	ws, err := storage.OpenWorkspace(ctx, v.workspacePath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("open workspace: %w", err)
 	}

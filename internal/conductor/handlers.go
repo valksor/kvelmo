@@ -687,6 +687,12 @@ Be specific about what was changed based on the file names. Focus on the most im
 	if len(response.Messages) > 0 {
 		msg := strings.TrimSpace(response.Messages[0])
 		if msg != "" {
+			// Strip any leading [taskID] pattern that AI might have included
+			// since the commit prefix is already added by the caller
+			if idx := strings.Index(msg, "] "); idx != -1 && strings.HasPrefix(msg, "[") {
+				msg = strings.TrimSpace(msg[idx+2:])
+			}
+
 			return msg
 		}
 	}

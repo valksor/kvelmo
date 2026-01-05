@@ -15,7 +15,7 @@ var (
 	finishMerge         bool
 	finishDelete        bool
 	finishPush          bool
-	finishNoSquash      bool
+	finishSquash        bool
 	finishTargetBranch  string
 	finishSkipQuality   bool
 	finishQualityTarget string
@@ -52,7 +52,7 @@ By default, this:
 - Does NOT push after local merge (use --push to enable)
 
 When using --merge, this performs a local merge instead of creating a PR:
-- Performs a squash merge to keep the history clean
+- Performs a regular merge (--no-ff) to preserve history (use --squash for squash merge)
 - Does NOT delete the task branch by default
 - Does NOT push to remote by default
 
@@ -65,7 +65,7 @@ FLAG COMBINATIONS:
     --merge is NOT allowed with these flags
 
   Merge mode (--merge):
-    --delete, --push, --no-squash, --target are allowed
+    --delete, --push, --squash, --target are allowed
     --draft, --pr-title, --pr-body are NOT allowed
 
 Examples:
@@ -74,7 +74,7 @@ Examples:
   mehr finish --merge              # Force local merge instead of PR
   mehr finish --merge --delete     # Merge and delete task branch
   mehr finish --merge --push       # Merge and push to remote
-  mehr finish --no-squash          # Regular merge instead of squash
+  mehr finish --merge --squash     # Squash merge instead of regular merge
   mehr finish --target develop     # Merge to specific branch
   mehr finish --skip-quality       # Skip quality checks
   mehr finish --quality-target lint # Use custom make target
@@ -91,7 +91,7 @@ func init() {
 	finishCmd.Flags().BoolVar(&finishMerge, "merge", false, "Force local merge instead of creating PR")
 	finishCmd.Flags().BoolVar(&finishDelete, "delete", false, "Delete branch after merge")
 	finishCmd.Flags().BoolVar(&finishPush, "push", false, "Push to remote after local merge")
-	finishCmd.Flags().BoolVar(&finishNoSquash, "no-squash", false, "Use regular merge instead of squash")
+	finishCmd.Flags().BoolVar(&finishSquash, "squash", false, "Use squash merge instead of regular merge")
 	finishCmd.Flags().StringVarP(&finishTargetBranch, "target", "t", "", "Target branch to merge into")
 	finishCmd.Flags().BoolVar(&finishSkipQuality, "skip-quality", false, "Skip quality checks (make quality)")
 	finishCmd.Flags().StringVar(&finishQualityTarget, "quality-target", "quality", "Make target for quality checks")
@@ -202,7 +202,7 @@ func runFinish(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := conductor.FinishOptions{
-		SquashMerge:  !finishNoSquash,
+		SquashMerge:  finishSquash,
 		DeleteBranch: finishDelete,
 		TargetBranch: finishTargetBranch,
 		PushAfter:    finishPush,

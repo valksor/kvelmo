@@ -49,7 +49,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ws, err := storage.OpenWorkspace(res.Root, nil)
+	ws, err := storage.OpenWorkspace(ctx, res.Root, nil)
 	if err != nil {
 		return fmt.Errorf("open workspace: %w", err)
 	}

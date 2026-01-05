@@ -2,12 +2,14 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -204,17 +206,16 @@ func confirmOverride(cmd *cobra.Command, source, maskedValue string) (bool, erro
 
 // promptForToken interactively prompts the user for a token.
 func promptForToken(cmd *cobra.Command, cfg providerLoginConfig) (string, error) {
-	out := cmd.OutOrStdout()
-	in := bufio.NewReader(cmd.InOrStdin())
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Get a token at: %s\n", cfg.HelpURL)
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Token will be saved to .mehrhof/.env and referenced in config.yaml")
 
-	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintf(out, "Enter your %s API token\n", cfg.Name)
-	_, _ = fmt.Fprintf(out, "Get a token at: %s\n", cfg.HelpURL)
-	_, _ = fmt.Fprintln(out, "Token will be saved to .mehrhof/.env")
-	_, _ = fmt.Fprint(out, "Leave empty to cancel: ")
+	var token string
+	prompt := &survey.Password{
+		Message: fmt.Sprintf("Enter your %s API token (leave empty to cancel):", cfg.Name),
+	}
 
-	token, err := in.ReadString('\n')
-	if err != nil {
+	if err := survey.AskOne(prompt, &token); err != nil {
 		return "", fmt.Errorf("read input: %w", err)
 	}
 
@@ -225,7 +226,7 @@ func promptForToken(cmd *cobra.Command, cfg providerLoginConfig) (string, error)
 
 	// Optional: validate token prefix
 	if cfg.TokenPrefix != "" && !strings.HasPrefix(token, cfg.TokenPrefix) {
-		_, _ = fmt.Fprintf(out, "Warning: Token doesn't start with expected prefix '%s'\n", cfg.TokenPrefix)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Warning: Token doesn't start with expected prefix '%s'\n", cfg.TokenPrefix)
 	}
 
 	return token, nil
@@ -284,6 +285,62 @@ func writeTokenToEnv(envPath, key, value string) error {
 	return nil
 }
 
+// writeTokenReferenceToConfig adds ${VAR} reference to config.yaml.
+// Creates provider section if it doesn't exist.
+func writeTokenReferenceToConfig(ws *storage.Workspace, providerName, envVar string) error {
+	// Load existing config
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	// Set the token reference based on provider name
+	switch providerName {
+	case "github":
+		if cfg.GitHub == nil {
+			cfg.GitHub = &storage.GitHubSettings{}
+		}
+		cfg.GitHub.Token = "${" + envVar + "}"
+	case "gitlab":
+		if cfg.GitLab == nil {
+			cfg.GitLab = &storage.GitLabSettings{}
+		}
+		cfg.GitLab.Token = "${" + envVar + "}"
+	case "notion":
+		if cfg.Notion == nil {
+			cfg.Notion = &storage.NotionSettings{}
+		}
+		cfg.Notion.Token = "${" + envVar + "}"
+	case "jira":
+		if cfg.Jira == nil {
+			cfg.Jira = &storage.JiraSettings{}
+		}
+		cfg.Jira.Token = "${" + envVar + "}"
+	case "linear":
+		if cfg.Linear == nil {
+			cfg.Linear = &storage.LinearSettings{}
+		}
+		cfg.Linear.Token = "${" + envVar + "}"
+	case "wrike":
+		if cfg.Wrike == nil {
+			cfg.Wrike = &storage.WrikeSettings{}
+		}
+		cfg.Wrike.Token = "${" + envVar + "}"
+	case "youtrack":
+		if cfg.YouTrack == nil {
+			cfg.YouTrack = &storage.YouTrackSettings{}
+		}
+		cfg.YouTrack.Token = "${" + envVar + "}"
+	}
+
+	// Save config
+	if err := ws.SaveConfig(cfg); err != nil {
+		return fmt.Errorf("save config: %w", err)
+	}
+
+	return nil
+}
+
 // runProviderLogin executes the login flow for a provider.
 func runProviderLogin(providerName string) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -298,7 +355,7 @@ func runProviderLogin(providerName string) func(*cobra.Command, []string) error 
 			return fmt.Errorf("get working directory: %w", err)
 		}
 
-		ws, err := storage.OpenWorkspace(root, nil)
+		ws, err := storage.OpenWorkspace(context.Background(), root, nil)
 		if err != nil {
 			return fmt.Errorf("open workspace: %w", err)
 		}
@@ -335,7 +392,13 @@ func runProviderLogin(providerName string) func(*cobra.Command, []string) error 
 			return fmt.Errorf("write token to .env: %w", err)
 		}
 
+		// Write ${VAR} reference to config.yaml
+		if err := writeTokenReferenceToConfig(ws, providerName, cfg.EnvVar); err != nil {
+			return fmt.Errorf("write token reference to config: %w", err)
+		}
+
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nToken saved to %s\n", envPath)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Token reference added to config.yaml\n")
 
 		return nil
 	}

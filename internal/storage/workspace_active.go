@@ -10,8 +10,10 @@ import (
 )
 
 // ActiveTaskPath returns the path to .active_task file.
+// NOW: Returns ~/.mehrhof/workspaces/<project-id>/.active_task.
+// PREVIOUSLY: Returned <repo-root>/.active_task.
 func (w *Workspace) ActiveTaskPath() string {
-	return filepath.Join(w.root, activeTaskFile)
+	return filepath.Join(w.workspaceRoot, activeTaskFile)
 }
 
 // HasActiveTask checks if there's an active task.

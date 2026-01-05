@@ -920,16 +920,13 @@ func TestSaveCurrentSession(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create workspace
-			ws, err := storage.OpenWorkspace(tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 			if err := ws.EnsureInitialized(); err != nil {
 				t.Fatalf("EnsureInitialized: %v", err)
 			}
 
 			// Create task work
-			_, err = ws.CreateWork(tt.taskID, storage.SourceInfo{
+			_, err := ws.CreateWork(tt.taskID, storage.SourceInfo{
 				Type: "file",
 				Ref:  "task.md",
 			})

@@ -2,6 +2,7 @@
 package help
 
 import (
+	"context"
 	"os"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
@@ -30,7 +31,7 @@ func LoadContext() *HelpContext {
 	}
 
 	// Try to open workspace
-	ws, err := storage.OpenWorkspace(cwd, nil)
+	ws, err := storage.OpenWorkspace(context.Background(), cwd, nil)
 	if err != nil {
 		return ctx
 	}
