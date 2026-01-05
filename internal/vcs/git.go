@@ -285,22 +285,28 @@ func (g *Git) Stash(ctx context.Context, message string) error {
 		args = append(args, "-m", message)
 	}
 	_, err := g.run(ctx, args...)
+	if err != nil {
+		return fmt.Errorf("git stash: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // StashPop applies and removes the top stash entry.
 func (g *Git) StashPop(ctx context.Context) error {
 	_, err := g.run(ctx, "stash", "pop")
+	if err != nil {
+		return fmt.Errorf("git stash pop: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // StashList returns all stash entries.
 func (g *Git) StashList(ctx context.Context) ([]string, error) {
 	output, err := g.run(ctx, "stash", "list")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("git stash list: %w", err)
 	}
 
 	// Parse output - each line is a stash entry
