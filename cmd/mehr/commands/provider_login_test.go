@@ -359,3 +359,197 @@ VAR2=value2
 		}
 	})
 }
+
+// TestWriteTokenReferenceToConfig tests writing ${VAR} references to config.
+func TestWriteTokenReferenceToConfig(t *testing.T) {
+	tests := []struct {
+		name       string
+		provider   string
+		envVar     string
+		tokenValue string // Dummy value for env var expansion
+		setup      func(*storage.WorkspaceConfig)
+		verify     func(*testing.T, *storage.WorkspaceConfig)
+		wantErr    bool
+	}{
+		{
+			name:       "github - creates provider section",
+			provider:   "github",
+			envVar:     "GITHUB_TOKEN",
+			tokenValue: "test_gh_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.GitHub == nil {
+					t.Error("GitHub config should not be nil")
+
+					return
+				}
+				if cfg.GitHub.Token != "test_gh_token" {
+					t.Errorf("GitHub.Token = %q, want test_gh_token", cfg.GitHub.Token)
+				}
+			},
+		},
+		{
+			name:       "gitlab - creates provider section",
+			provider:   "gitlab",
+			envVar:     "GITLAB_TOKEN",
+			tokenValue: "test_gl_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.GitLab == nil {
+					t.Error("GitLab config should not be nil")
+
+					return
+				}
+				if cfg.GitLab.Token != "test_gl_token" {
+					t.Errorf("GitLab.Token = %q, want test_gl_token", cfg.GitLab.Token)
+				}
+			},
+		},
+		{
+			name:       "notion - creates provider section",
+			provider:   "notion",
+			envVar:     "NOTION_TOKEN",
+			tokenValue: "test_notion_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Notion == nil {
+					t.Error("Notion config should not be nil")
+
+					return
+				}
+				if cfg.Notion.Token != "test_notion_token" {
+					t.Errorf("Notion.Token = %q, want test_notion_token", cfg.Notion.Token)
+				}
+			},
+		},
+		{
+			name:       "jira - creates provider section",
+			provider:   "jira",
+			envVar:     "JIRA_TOKEN",
+			tokenValue: "test_jira_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Jira == nil {
+					t.Error("Jira config should not be nil")
+
+					return
+				}
+				if cfg.Jira.Token != "test_jira_token" {
+					t.Errorf("Jira.Token = %q, want test_jira_token", cfg.Jira.Token)
+				}
+			},
+		},
+		{
+			name:       "linear - creates provider section",
+			provider:   "linear",
+			envVar:     "LINEAR_API_KEY",
+			tokenValue: "test_linear_key",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Linear == nil {
+					t.Error("Linear config should not be nil")
+
+					return
+				}
+				if cfg.Linear.Token != "test_linear_key" {
+					t.Errorf("Linear.Token = %q, want test_linear_key", cfg.Linear.Token)
+				}
+			},
+		},
+		{
+			name:       "wrike - creates provider section",
+			provider:   "wrike",
+			envVar:     "WRIKE_TOKEN",
+			tokenValue: "test_wrike_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Wrike == nil {
+					t.Error("Wrike config should not be nil")
+
+					return
+				}
+				if cfg.Wrike.Token != "test_wrike_token" {
+					t.Errorf("Wrike.Token = %q, want test_wrike_token", cfg.Wrike.Token)
+				}
+			},
+		},
+		{
+			name:       "youtrack - creates provider section",
+			provider:   "youtrack",
+			envVar:     "YOUTRACK_TOKEN",
+			tokenValue: "test_yt_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.YouTrack == nil {
+					t.Error("YouTrack config should not be nil")
+
+					return
+				}
+				if cfg.YouTrack.Token != "test_yt_token" {
+					t.Errorf("YouTrack.Token = %q, want test_yt_token", cfg.YouTrack.Token)
+				}
+			},
+		},
+		{
+			name:       "github - replaces existing token",
+			provider:   "github",
+			envVar:     "GITHUB_TOKEN",
+			tokenValue: "new_token_value",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.GitHub = &storage.GitHubSettings{Token: "old_plaintext_token"}
+			},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.GitHub.Token != "new_token_value" {
+					t.Errorf("GitHub.Token = %q, want new_token_value", cfg.GitHub.Token)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			ws := openTestWorkspace(t, tmpDir)
+
+			// Load and modify config
+			cfg, err := ws.LoadConfig()
+			if err != nil {
+				t.Fatalf("LoadConfig: %v", err)
+			}
+
+			tt.setup(cfg)
+
+			// Save modified config
+			if err := ws.SaveConfig(cfg); err != nil {
+				t.Fatalf("SaveConfig: %v", err)
+			}
+
+			// Run writeTokenReferenceToConfig
+			err = writeTokenReferenceToConfig(ws, tt.provider, tt.envVar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("writeTokenReferenceToConfig() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
+			}
+
+			// Set env var so LoadConfig will expand it correctly
+			t.Setenv(tt.envVar, tt.tokenValue)
+
+			// Verify the change
+			updatedCfg, err := ws.LoadConfig()
+			if err != nil {
+				t.Fatalf("LoadConfig after update: %v", err)
+			}
+
+			tt.verify(t, updatedCfg)
+		})
+	}
+}
