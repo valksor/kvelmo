@@ -23,9 +23,10 @@ mehr start cu:TASK-123
 ```yaml
 clickup:
   token: "${CLICKUP_TOKEN}"
-  workspace: "123456"            # Optional: workspace ID
-  default_list: "987654"         # Optional: default list for operations
-  custom_task_ids: true          # Enable PROJ-123 format
+  team_id: "123456"                    # Team/Workspace ID (required for custom task IDs)
+  default_list: "987654"               # Optional: default list for operations
+  branch_pattern: "task/{key}-{slug}"  # Git branch template
+  commit_prefix: "[cu:{key}]"          # Commit message prefix
 ```
 
 ## Token Resolution

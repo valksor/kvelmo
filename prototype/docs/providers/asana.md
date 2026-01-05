@@ -21,8 +21,10 @@ mehr plan as:1234567890123456
 ```yaml
 asana:
   token: "${ASANA_TOKEN}"
-  workspace: "123456789"           # Optional: default workspace GID
-  default_project: "987654321"     # Optional: default project for listing
+  workspace_gid: "123456789"           # Optional: default workspace GID
+  default_project: "987654321"         # Optional: default project for listing
+  branch_pattern: "task/{key}-{slug}"  # Git branch template
+  commit_prefix: "[asana:{key}]"       # Commit message prefix
 ```
 
 ## Token Resolution

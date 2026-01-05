@@ -24,12 +24,15 @@ mehr start azdo:https://dev.azure.com/org/project/_workitems/edit/123
 
 ```yaml
 azure_devops:
-  token: "${AZURE_DEVOPS_TOKEN}"    # Personal Access Token
+  token: "${AZURE_DEVOPS_TOKEN}"      # Personal Access Token
   organization: "myorg"
   project: "MyProject"
-  area_path: "MyProject\\Area"      # Optional: default area path
-  branch_pattern: "feature/{key}-{slug}"
-  target_branch: "main"             # Auto-detected from repository if not set
+  area_path: "MyProject\\Area"        # Optional: default area path
+  iteration_path: "MyProject\\Sprint1" # Optional: filter by iteration
+  repo_name: "MyRepo"                 # Default repository for PR creation
+  branch_pattern: "ab{key}-{slug}"    # Git branch template
+  commit_prefix: "AB#{key}"           # Commit message prefix
+  target_branch: "main"               # Auto-detected from repository if not set
 ```
 
 > **Note:** If `target_branch` is not configured, Mehrhof will query the Azure DevOps API for the repository's default branch.
