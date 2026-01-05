@@ -113,6 +113,54 @@ func runMigrateTokens(cmd *cobra.Command, args []string) error {
 		fmt.Println("Migrated YouTrack token to ${YOUTRACK_TOKEN}")
 	}
 
+	// Migrate Bitbucket credentials
+	if cfg.Bitbucket != nil && cfg.Bitbucket.AppPassword != "" && !strings.Contains(cfg.Bitbucket.AppPassword, "${") {
+		envVarsToAdd["BITBUCKET_APP_PASSWORD"] = cfg.Bitbucket.AppPassword
+		cfg.Bitbucket.AppPassword = "${BITBUCKET_APP_PASSWORD}"
+		modified = true
+		fmt.Println("Migrated Bitbucket app_password to ${BITBUCKET_APP_PASSWORD}")
+	}
+
+	// Migrate Asana token
+	if cfg.Asana != nil && cfg.Asana.Token != "" && !strings.Contains(cfg.Asana.Token, "${") {
+		envVarsToAdd["ASANA_TOKEN"] = cfg.Asana.Token
+		cfg.Asana.Token = "${ASANA_TOKEN}"
+		modified = true
+		fmt.Println("Migrated Asana token to ${ASANA_TOKEN}")
+	}
+
+	// Migrate ClickUp token
+	if cfg.ClickUp != nil && cfg.ClickUp.Token != "" && !strings.Contains(cfg.ClickUp.Token, "${") {
+		envVarsToAdd["CLICKUP_TOKEN"] = cfg.ClickUp.Token
+		cfg.ClickUp.Token = "${CLICKUP_TOKEN}"
+		modified = true
+		fmt.Println("Migrated ClickUp token to ${CLICKUP_TOKEN}")
+	}
+
+	// Migrate Azure DevOps token
+	if cfg.AzureDevOps != nil && cfg.AzureDevOps.Token != "" && !strings.Contains(cfg.AzureDevOps.Token, "${") {
+		envVarsToAdd["AZURE_DEVOPS_TOKEN"] = cfg.AzureDevOps.Token
+		cfg.AzureDevOps.Token = "${AZURE_DEVOPS_TOKEN}"
+		modified = true
+		fmt.Println("Migrated Azure DevOps token to ${AZURE_DEVOPS_TOKEN}")
+	}
+
+	// Migrate Trello credentials
+	if cfg.Trello != nil {
+		if cfg.Trello.APIKey != "" && !strings.Contains(cfg.Trello.APIKey, "${") {
+			envVarsToAdd["TRELLO_API_KEY"] = cfg.Trello.APIKey
+			cfg.Trello.APIKey = "${TRELLO_API_KEY}"
+			modified = true
+			fmt.Println("Migrated Trello api_key to ${TRELLO_API_KEY}")
+		}
+		if cfg.Trello.Token != "" && !strings.Contains(cfg.Trello.Token, "${") {
+			envVarsToAdd["TRELLO_TOKEN"] = cfg.Trello.Token
+			cfg.Trello.Token = "${TRELLO_TOKEN}"
+			modified = true
+			fmt.Println("Migrated Trello token to ${TRELLO_TOKEN}")
+		}
+	}
+
 	if !modified {
 		fmt.Println("\nNo migration needed. Tokens already use ${VAR} syntax or are not configured.")
 

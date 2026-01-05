@@ -90,8 +90,55 @@ func buildProviderConfig(workspaceCfg *storage.WorkspaceConfig, providerName str
 			cfg.Set("host", workspaceCfg.YouTrack.Host)
 		}
 
-		// Note: asana, clickup, azuredevops, bitbucket, trello are not currently
-		// represented in WorkspaceConfig but could be added in the future
+	case "bitbucket", "bb":
+		if workspaceCfg.Bitbucket != nil {
+			cfg.Set("username", workspaceCfg.Bitbucket.Username)
+			cfg.Set("app_password", workspaceCfg.Bitbucket.AppPassword)
+			cfg.Set("workspace", workspaceCfg.Bitbucket.Workspace)
+			cfg.Set("repo", workspaceCfg.Bitbucket.RepoSlug)
+			cfg.Set("branch_pattern", workspaceCfg.Bitbucket.BranchPattern)
+			cfg.Set("commit_prefix", workspaceCfg.Bitbucket.CommitPrefix)
+			cfg.Set("target_branch", workspaceCfg.Bitbucket.TargetBranch)
+			cfg.Set("close_source_branch", workspaceCfg.Bitbucket.CloseSourceBranch)
+		}
+
+	case "asana", "as":
+		if workspaceCfg.Asana != nil {
+			cfg.Set("token", workspaceCfg.Asana.Token)
+			cfg.Set("workspace_gid", workspaceCfg.Asana.WorkspaceGID)
+			cfg.Set("default_project", workspaceCfg.Asana.DefaultProject)
+			cfg.Set("branch_pattern", workspaceCfg.Asana.BranchPattern)
+			cfg.Set("commit_prefix", workspaceCfg.Asana.CommitPrefix)
+		}
+
+	case "clickup", "cu":
+		if workspaceCfg.ClickUp != nil {
+			cfg.Set("token", workspaceCfg.ClickUp.Token)
+			cfg.Set("team_id", workspaceCfg.ClickUp.TeamID)
+			cfg.Set("default_list", workspaceCfg.ClickUp.DefaultList)
+			cfg.Set("branch_pattern", workspaceCfg.ClickUp.BranchPattern)
+			cfg.Set("commit_prefix", workspaceCfg.ClickUp.CommitPrefix)
+		}
+
+	case "azuredevops", "azdo", "azure":
+		if workspaceCfg.AzureDevOps != nil {
+			cfg.Set("token", workspaceCfg.AzureDevOps.Token)
+			cfg.Set("organization", workspaceCfg.AzureDevOps.Organization)
+			cfg.Set("project", workspaceCfg.AzureDevOps.Project)
+			cfg.Set("area_path", workspaceCfg.AzureDevOps.AreaPath)
+			cfg.Set("iteration_path", workspaceCfg.AzureDevOps.IterationPath)
+			cfg.Set("repo_name", workspaceCfg.AzureDevOps.RepoName)
+			cfg.Set("target_branch", workspaceCfg.AzureDevOps.TargetBranch)
+			cfg.Set("branch_pattern", workspaceCfg.AzureDevOps.BranchPattern)
+			cfg.Set("commit_prefix", workspaceCfg.AzureDevOps.CommitPrefix)
+		}
+
+	case "trello", "tr":
+		if workspaceCfg.Trello != nil {
+			cfg.Set("api_key", workspaceCfg.Trello.APIKey)
+			cfg.Set("token", workspaceCfg.Trello.Token)
+			cfg.Set("board", workspaceCfg.Trello.Board)
+		}
 	}
 
 	return cfg
