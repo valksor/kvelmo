@@ -39,7 +39,7 @@ Output:
 ```
 Task: a1b2c3d4
 Branch: task/a1b2c3d4
-Work: .mehrhof/work/a1b2c3d4/
+Work: ~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4/
 
 This will delete:
   - Git branch task/a1b2c3d4
@@ -84,14 +84,14 @@ Only delete the branch. Work directory remains for reference.
 
 ### By Default
 
-| Item             | Location                             | Deleted |
-| ---------------- | ------------------------------------ | ------- |
-| Git branch       | `task/<id>`                          | Yes     |
-| Work directory   | `.mehrhof/work/<id>/`                | Yes     |
-| Specifications   | `.mehrhof/work/<id>/specifications/` | Yes     |
-| Session logs     | `.mehrhof/work/<id>/sessions/`       | Yes     |
-| Notes            | `.mehrhof/work/<id>/notes.md`        | Yes     |
-| Active reference | `.mehrhof/.active_task`              | Cleared |
+| Item             | Location                                      | Deleted |
+| ---------------- | --------------------------------------------- | ------- |
+| Git branch       | `task/<id>`                                   | Yes     |
+| Work directory   | `~/.mehrhof/workspaces/<project-id>/work/<id>/` | Yes     |
+| Specifications   | `~/.mehrhof/workspaces/<project-id>/work/<id>/specifications/` | Yes     |
+| Session logs     | `~/.mehrhof/workspaces/<project-id>/work/<id>/sessions/` | Yes     |
+| Notes            | `~/.mehrhof/workspaces/<project-id>/work/<id>/notes.md` | Yes     |
+| Active reference | `~/.mehrhof/workspaces/<project-id>/.active_task` | Cleared |
 
 **Note:** The default behavior for work directory deletion can be configured in `config.yaml`:
 

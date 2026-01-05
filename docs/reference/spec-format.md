@@ -9,7 +9,7 @@ Specification files are markdown documents with optional YAML frontmatter. They 
 ## Location
 
 ```
-.mehrhof/work/<task-id>/specifications/
+~/.mehrhof/workspaces/<project-id>/work/<task-id>/specifications/
 ├── specification-1.md
 ├── specification-2.md
 └── specification-3.md
@@ -255,7 +255,7 @@ Creating: internal/api/health.go
 You can edit specification files manually:
 
 ```bash
-vim .mehrhof/work/*/specifications/specification-1.md
+vim ~/.mehrhof/workspaces/*/work/*/specifications/specification-1.md
 ```
 
 **Cautions:**

@@ -41,7 +41,7 @@ What happens:
 
 - Task ID is generated
 - Git branch `task/<id>` is created
-- Work directory `.mehrhof/work/<id>/` is initialized
+- Work directory `~/.mehrhof/workspaces/<project-id>/work/<id>/` is initialized
 - Source content is stored (read-only)
 
 ### 2. Planning Phase
@@ -56,7 +56,7 @@ What happens:
 
 - AI reads the source content and any notes
 - Specifications (specification files) are generated
-- Files are saved to `.mehrhof/work/<id>/specifications/`
+- Files are saved to `~/.mehrhof/workspaces/<project-id>/work/<id>/specifications/`
 - Git checkpoint is created for undo support
 
 ### 3. Implementation Phase
@@ -89,7 +89,7 @@ mehr review
 What happens:
 
 - CodeRabbit analyzes the changes
-- Review saved to `.mehrhof/work/<id>/reviews/`
+- Review saved to `~/.mehrhof/workspaces/<project-id>/work/<id>/reviews/`
 - Issues are reported for your attention
 
 ### 5. Finish Phase

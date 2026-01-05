@@ -68,8 +68,9 @@ You should see:
 
 ```
 Initialized task workspace
-Created: .mehrhof/
+Created: .mehrhof/ (configuration)
 Updated: .gitignore
+Note: Workspace data is stored in your home directory
 ```
 
 ## Step 3: Start the Task
@@ -130,7 +131,7 @@ Specifications:
 Read the specification:
 
 ```bash
-cat .mehrhof/work/*/specifications/specification-1.md
+cat ~/.mehrhof/workspaces/*/work/*/specifications/specification-1.md
 ```
 
 You'll see a detailed implementation plan:

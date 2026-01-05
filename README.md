@@ -150,7 +150,7 @@ mehr finish
 
 | Command | Description |
 |---------|-------------|
-| `mehr init` | Initialize workspace (creates `.mehrhof/` directory) |
+| `mehr init` | Initialize workspace (creates `.mehrhof/` for config, task data in home dir) |
 | `mehr start <ref>` | Start task from file, directory, or provider |
 | `mehr auto <ref>` | Full automation: plan → implement → review → finish |
 | `mehr plan` | Generate AI implementation specifications |
@@ -169,6 +169,8 @@ mehr finish
 ## Task Providers
 
 Mehrhof supports 15+ task sources. Use provider schemes to load tasks:
+
+> **Security**: Provider login commands (`mehr github login`, etc.) use secure password-style input. Tokens are masked with asterisks (`****`) when entered and never displayed in the terminal.
 
 | Provider | Scheme | Example | Docs |
 |----------|--------|---------|------|
@@ -229,8 +231,7 @@ Mehrhof supports multiple AI backends:
 
 ## Configuration
 
-Project-level configuration in `.mehrhof/config.yaml`:
-
+**Project-level** (`.mehrhof/config.yaml`):
 ```yaml
 # Git integration
 git:
@@ -253,6 +254,8 @@ update:
   enabled: true
   check_interval: 24  # hours
 ```
+
+**Note**: Task data (specifications, sessions, notes) is stored in `~/.mehrhof/workspaces/<project-id>/` to keep project directories clean.
 
 **See [Configuration Guide](https://mehrhof.valksor.com/docs/#/configuration/index) for all options including agent aliases, per-step agents, and provider settings.**
 

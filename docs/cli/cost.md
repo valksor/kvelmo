@@ -132,7 +132,7 @@ Output:
 
 ## Cost Data Location
 
-Cost data is stored in `.mehrhof/work/<task-id>/work.yaml`:
+Cost data is stored in `~/.mehrhof/workspaces/<project-id>/work/<task-id>/work.yaml`:
 
 ```yaml
 costs:

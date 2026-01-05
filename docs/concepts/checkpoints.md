@@ -132,9 +132,9 @@ Commit messages include:
 Example commit messages:
 
 ```
-[feature] checkpoint 1: Add user authentication with JWT
-[bug] checkpoint 2: Fix null pointer in login handler
-[PROJ-123] checkpoint 3: Update API schema for user endpoints
+[feature] Add user authentication with JWT
+[bug] Fix null pointer in login handler
+[PROJ-123] Update API schema for user endpoints
 ```
 
 ### Customizing Commit Messages

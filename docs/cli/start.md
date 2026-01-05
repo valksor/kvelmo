@@ -59,6 +59,7 @@ providers:
 | `--agent-review`       |       | string |                        | Agent for review step                                 |
 | `--no-branch`          |       | bool   | false                  | Skip creating a git branch                            |
 | `--worktree`           | `-w`  | bool   | false                  | Create a separate git worktree                        |
+| `--stash`              |       | bool   | false                  | Stash uncommitted changes before creating branch      |
 | `--key`                | `-k`  | string | auto                   | External key for branch/commit naming                 |
 | `--title`              |       | string | auto                   | Task title override                                   |
 | `--slug`               |       | string | auto                   | Branch slug override                                  |
@@ -217,6 +218,50 @@ mehr list
 
 **Note:** New tasks must be started from the main repository, not from within a worktree.
 
+### Start with Stash (Uncommitted Changes)
+
+If you have uncommitted changes, use `--stash` to automatically stash them before creating the branch:
+
+```bash
+mehr start --stash task.md
+```
+
+This is useful when:
+- You have work-in-progress changes that aren't ready to commit
+- You want to start a new task without losing your current work
+- You need to context-switch to a different task
+
+**Behavior:**
+1. Stashes uncommitted changes **including untracked files** (displays stash reference, e.g., `stash@{0}`)
+2. Creates new branch
+3. Restores stashed changes into the new branch (regular mode, if `auto_pop_stash: true`)
+4. For `--worktree` mode: Stash stays in main repo (not popped into isolated worktree)
+
+**Error Handling:**
+- Stash restoration failures are now **fatal** (prevents silent data loss)
+- If stash pop fails, the operation will error and you can manually recover using the displayed stash reference
+
+**Configuration:**
+You can enable stash-on-start by default in `.mehrhof/config.yaml`:
+
+```yaml
+git:
+  stash_on_start: true  # Auto-stash changes before creating task branch
+  auto_pop_stash: true  # Auto-pop stash after branch creation (default: true)
+  # Set to false to preserve stash for manual restoration
+```
+
+When `stash_on_start` is enabled in config, the `--stash` flag is not required.
+
+If `auto_pop_stash` is set to `false`, the stash will be preserved and you'll need to manually run `git stash pop` to restore the changes.
+
+**Equivalent to:**
+```bash
+git stash push -u -m "mehrhof: stash before task 2026-01-05T10:30:00"
+mehr start task.md
+git stash pop  # Only if auto_pop_stash: true (not for worktrees)
+```
+
 ### Specify Agent
 
 ```bash
@@ -284,7 +329,7 @@ Brief description of what needs to be done.
    - Base branch: current HEAD
 
 4. **Work Directory**
-   - Created at `.mehrhof/work/<id>/`
+   - Created at `~/.mehrhof/workspaces/<project-id>/work/<id>/`
    - Source content copied (read-only)
    - `work.yaml` metadata file created
 
@@ -306,6 +351,47 @@ Continue to planning:
 ```bash
 mehr plan
 ```
+
+## Existing Work Directories
+
+If you've previously finished a task (and chose to save the work directory), running `mehr start` again will detect the existing work:
+
+```bash
+mehr start task.md
+```
+
+Output:
+
+```
+Found 1 existing work director(ies) from previous tasks:
+  - a1b2c3d4: Add user authentication
+
+Options:
+  [d]elete and archive - Archive old work, start fresh
+  [c]ontinue with existing - Reuse directory, reset to idle state
+
+Your choice [d/c]:
+```
+
+### Options
+
+- **Delete and archive**: Moves the old work directory to `~/.mehrhof/workspaces/<project-id>/archive/<taskID>-timestamp/` and creates a fresh task
+- **Continue with existing**: Reuses the existing work directory, fetches updated content from the provider, resets state to idle, and keeps all existing files (specs, sessions, checkpoints)
+
+### Continue Workflow
+
+When continuing with an existing work directory:
+
+1. Updated content is fetched from the provider (e.g., Wrike, GitHub issue)
+2. Source files are updated in the existing work directory
+3. Task state is reset to `idle`
+4. All existing specifications, sessions, and checkpoints are preserved
+5. Task is set as active and ready for planning
+
+This is useful when:
+- A task has been updated with new requirements
+- You want to revisit a previously completed task
+- You need to continue work on a task that was finished but not merged
 
 ## See Also
 
