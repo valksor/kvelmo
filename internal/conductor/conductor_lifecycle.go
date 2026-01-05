@@ -53,8 +53,17 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 		}
 	}
 
+	// Apply HomeDir override from options (for testing)
+	// If cfg is nil (no config file), create a default config to set HomeDir
+	if c.opts.HomeDir != "" {
+		if cfg == nil {
+			cfg = storage.NewDefaultWorkspaceConfig()
+		}
+		cfg.Storage.HomeDir = c.opts.HomeDir
+	}
+
 	// Initialize workspace with config
-	ws, err := storage.OpenWorkspace(root, cfg)
+	ws, err := storage.OpenWorkspace(ctx, root, cfg)
 	if err != nil {
 		return fmt.Errorf("initialize workspace: %w", err)
 	}
@@ -65,6 +74,15 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 		if err := ws.EnsureInitialized(); err != nil {
 			return fmt.Errorf("auto-initialize workspace: %w", err)
 		}
+	}
+
+	// Auto-migrate legacy workspace if detected
+	if ws.NeedsMigration() {
+		c.publishProgress("Migrating workspace to home directory...", 0)
+		if err := ws.MigrateFromLegacy(); err != nil {
+			return fmt.Errorf("migrate workspace: %w", err)
+		}
+		c.publishProgress("Workspace migrated successfully", 100)
 	}
 
 	// Handle task detection differently based on context
@@ -183,7 +201,7 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 	}
 
 	// If git is available and branch creation requested, check for clean workspace FIRST
-	if err := c.ensureCleanWorkspace(ctx); err != nil {
+	if err := c.prepareWorkspace(ctx); err != nil {
 		return err
 	}
 
@@ -221,8 +239,104 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 	return nil
 }
 
-// ensureCleanWorkspace checks if workspace is clean when branch creation is requested.
-func (c *Conductor) ensureCleanWorkspace(ctx context.Context) error {
+// ContinueWithExisting reuses an existing work directory for an updated task.
+// This is used when a user wants to continue work on a previously finished task
+// with new/updated content from the provider.
+func (c *Conductor) ContinueWithExisting(ctx context.Context, reference string, existingTaskID string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check for existing active task
+	if c.activeTask != nil {
+		return fmt.Errorf("task already active: %s (use 'task status' to check)", c.activeTask.ID)
+	}
+
+	// Fetch updated work unit from provider
+	p, workUnit, err := c.fetchWorkUnit(ctx, reference)
+	if err != nil {
+		return fmt.Errorf("fetch updated work unit: %w", err)
+	}
+
+	// Capture task agent config from workUnit
+	c.taskAgentConfig = workUnit.AgentConfig
+
+	// Load existing work
+	work, err := c.workspace.LoadWork(existingTaskID)
+	if err != nil {
+		return fmt.Errorf("load existing work: %w", err)
+	}
+
+	// Snapshot the updated source
+	snapshot := c.snapshotSource(ctx, p, reference, workUnit)
+
+	// Write updated source files to existing directory
+	if err := c.writeSourceFiles(existingTaskID, snapshot); err != nil {
+		return fmt.Errorf("write updated source files: %w", err)
+	}
+
+	// Update source info in work
+	sourceInfo := c.buildSourceInfo(snapshot)
+	work.Source = sourceInfo
+
+	// Update metadata from work unit
+	work.Metadata.Title = workUnit.Title
+	if workUnit.ExternalKey != "" {
+		work.Metadata.ExternalKey = workUnit.ExternalKey
+	}
+
+	// Resolve and update agent for this task
+	agentInst, agentSource, err := c.resolveAgentForTask()
+	if err != nil {
+		return fmt.Errorf("resolve agent: %w", err)
+	}
+	c.activeAgent = agentInst
+	work.Agent = storage.AgentInfo{
+		Name:   agentInst.Name(),
+		Source: agentSource,
+	}
+	if c.taskAgentConfig != nil && len(c.taskAgentConfig.Env) > 0 {
+		work.Agent.InlineEnv = c.taskAgentConfig.Env
+	}
+
+	// Save updated work
+	if err := c.workspace.SaveWork(work); err != nil {
+		return fmt.Errorf("save updated work: %w", err)
+	}
+
+	// Create active task reference with state="idle"
+	active := storage.NewActiveTask(existingTaskID, reference, c.workspace.WorkPath(existingTaskID))
+
+	// Preserve git info if it exists
+	if c.git != nil {
+		active.UseGit = true
+		if work.Git.Branch != "" {
+			active.Branch = work.Git.Branch
+		}
+		if work.Git.WorktreePath != "" {
+			active.WorktreePath = work.Git.WorktreePath
+		}
+	}
+
+	// Save active task
+	if err := c.workspace.SaveActiveTask(active); err != nil {
+		return fmt.Errorf("save active task: %w", err)
+	}
+
+	c.activeTask = active
+	c.taskWork = work
+
+	// Set up state machine with idle state
+	c.machine.SetWorkUnit(c.buildWorkUnit())
+
+	c.publishProgress("Resumed with existing work directory", 100)
+
+	return nil
+}
+
+// prepareWorkspace ensures workspace is ready for branch creation.
+// If StashChanges is enabled, uncommitted changes are stashed.
+// Otherwise, returns an error if workspace has uncommitted changes.
+func (c *Conductor) prepareWorkspace(ctx context.Context) error {
 	if c.git == nil || !c.opts.CreateBranch {
 		return nil
 	}
@@ -231,11 +345,31 @@ func (c *Conductor) ensureCleanWorkspace(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("check git status: %w", err)
 	}
-	if hasChanges {
-		return errors.New("workspace has uncommitted changes\nPlease commit or stash your changes, or use --no-branch to work on the current branch")
+
+	if !hasChanges {
+		return nil
 	}
 
-	return nil
+	if c.opts.StashChanges {
+		message := "mehrhof: stash before task " + time.Now().Format("2006-01-02T15:04:05")
+		if err := c.git.Stash(ctx, message); err != nil {
+			return fmt.Errorf("stash changes: %w", err)
+		}
+
+		// Verify stash was created and display reference for manual recovery
+		stashes, err := c.git.StashList(ctx)
+		if err == nil && len(stashes) > 0 {
+			// Display stash reference (e.g., "stash@{0}")
+			stashRef := strings.Split(stashes[0], ":")[0]
+			c.publishProgress(fmt.Sprintf("Stashed uncommitted changes (%s)", stashRef), 5)
+		} else {
+			c.publishProgress("Stashed uncommitted changes", 5)
+		}
+
+		return nil
+	}
+
+	return errors.New("workspace has uncommitted changes\nPlease commit or stash your changes, or use --no-branch to work on the current branch")
 }
 
 // fetchWorkUnit resolves the provider and fetches the work unit.
@@ -243,7 +377,13 @@ func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *
 	resolveOpts := provider.ResolveOptions{
 		DefaultProvider: c.opts.DefaultProvider,
 	}
-	p, id, err := c.providers.Resolve(ctx, reference, provider.Config{}, resolveOpts)
+
+	// Load workspace config and build provider config
+	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
+	scheme := parseScheme(reference)
+	providerCfg := buildProviderConfig(workspaceCfg, scheme)
+
+	p, id, err := c.providers.Resolve(ctx, reference, providerCfg, resolveOpts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve provider: %w", err)
 	}
@@ -580,6 +720,16 @@ func (c *Conductor) Status() (*TaskStatus, error) {
 	}
 
 	return status, nil
+}
+
+// ListExistingWorkDirs returns all task IDs with existing work directories.
+func (c *Conductor) ListExistingWorkDirs() ([]string, error) {
+	return c.workspace.ListWorks()
+}
+
+// ArchiveWorkDir archives a specific work directory.
+func (c *Conductor) ArchiveWorkDir(taskID string) error {
+	return c.workspace.ArchiveWorkDir(taskID)
 }
 
 // TaskStatus represents the current task state.

@@ -15,23 +15,32 @@ Mehrhof calls Claude CLI as a subprocess:
 | Method | Use Case | Location |
 |--------|----------|----------|
 | CLI flags | Per-command overrides | `mehr --verbose plan` |
-| Workspace config | Project settings | `.mehrhof/config.yaml` |
-| Environment file | Secrets (gitignored) | `.mehrhof/.env` |
+| Workspace config | Project settings | `.mehrhof/config.yaml` (in project) |
+| Environment file | Secrets (gitignored) | `.mehrhof/.env` (in project) |
 | User settings | Personal preferences | `~/.mehrhof/settings.json` |
 
 ## File Locations
 
+**In project** (`.mehrhof/`):
+- `config.yaml` - Workspace configuration (safe to commit)
+- `.env` - Project-specific secrets (gitignored)
+
+**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+- `work/` - Task data (specifications, sessions, notes, etc.)
+- `.active_task` - Current task state
+
 | File | Purpose |
 |------|---------|
-| `.mehrhof/config.yaml` | Workspace configuration |
-| `.mehrhof/.env` | Secrets (gitignored) |
-| `.mehrhof/.active_task` | Current task (managed) |
+| `.mehrhof/config.yaml` | Workspace configuration (in project) |
+| `.mehrhof/.env` | Secrets (in project, gitignored) |
+| `~/.mehrhof/workspaces/<project-id>/work/` | Task data |
+| `~/.mehrhof/workspaces/<project-id>/.active_task` | Current task state |
 | `~/.mehrhof/settings.json` | User preferences |
 | `~/.mehrhof/plugins/` | Global plugins |
 
 ## Workspace Configuration
 
-**Location:** `.mehrhof/config.yaml`
+**Location:** `.mehrhof/config.yaml` (in project)
 
 ```yaml
 git:
@@ -66,6 +75,26 @@ Controls version control integration:
 | `commit_prefix` | `[{key}]` | Commit message prefix template |
 | `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template |
 | `sign_commits` | `false` | GPG-sign commits |
+| `stash_on_start` | `false` | Auto-stash changes before creating task branch |
+| `auto_pop_stash` | `true` | Auto-pop stash after branch creation |
+
+**Stash behavior:**
+
+When `stash_on_start` is enabled, Mehrhof automatically stashes uncommitted changes (including untracked files) before creating a new task branch. The `auto_pop_stash` setting controls whether the stash is automatically restored:
+
+- `auto_pop_stash: true` (default) - Stash is automatically restored after branch creation
+- `auto_pop_stash: false` - Stash is preserved for manual restoration (use `git stash pop`)
+
+This is useful when you have work-in-progress changes that aren't ready to commit.
+
+```yaml
+git:
+  stash_on_start: true  # Auto-stash changes before creating branch
+  auto_pop_stash: true  # Auto-pop stash after branch (default: true)
+  # Set to false to preserve stash for manual restoration
+```
+
+See [`mehr start --stash`](../cli/start.md#start-with-stash-uncommitted-changes) for CLI usage.
 
 **Template variables:**
 
@@ -172,8 +201,44 @@ workflow:
 
 ```yaml
 storage:
-  work_dir: .mehrhof/work  # Path relative to project root
+  work_dir: work  # Relative to workspace data directory
 ```
+
+**Storage structure:**
+
+```
+project/
+├── .mehrhof/
+│   ├── config.yaml    # Workspace configuration (safe to commit)
+│   └── .env           # Project-specific secrets (gitignored)
+
+~/.mehrhof/workspaces/<project-id>/
+├── .active_task       # Current task state
+└── work/              # Task work directories
+    ├── abc123/
+    │   ├── work.yaml
+    │   ├── notes.md
+    │   ├── source/
+    │   ├── specifications/
+    │   └── sessions/
+    └── def456/
+        └── ...
+```
+
+The `<project-id>` is automatically derived from your git remote:
+
+| Git Remote URL | Project ID |
+|----------------|------------|
+| `https://github.com/user/repo` | `github.com-user-repo` |
+| `git@github.com:user/project.git` | `github.com-user-project` |
+| `https://gitlab.com/group/subgroup/project` | `gitlab.com-group-subgroup-project` |
+| No remote (local) | `local-<hash>` |
+
+**Migration:**
+
+If you have an existing `.mehrhof/work/` directory or `.active_task` file in your project,
+they will be automatically migrated to `~/.mehrhof/workspaces/<project-id>/` when you run any mehrhof command.
+The `config.yaml` and `.env` files remain in the project.
 
 ### cache
 
@@ -203,23 +268,101 @@ Variables are filtered by agent name prefix, stripped when passed.
 
 Store secrets locally without committing to git.
 
-**Location:** `.mehrhof/.env` (gitignored)
+**Location:** `.mehrhof/.env` (in project, gitignored)
+
+### Provider Authentication
+
+Provider tokens should be stored in `.mehrhof/.env` and referenced in `config.yaml` using `${VAR}` syntax:
 
 ```bash
+# .mehrhof/.env
 ANTHROPIC_API_KEY=sk-ant-...
 GLM_API_KEY=your-glm-key
 
 GITHUB_TOKEN=ghp_...
+GITLAB_TOKEN=glpat-...
+NOTION_TOKEN=your-notion-token
 JIRA_TOKEN=your-jira-token
+LINEAR_API_KEY=your-linear-key
+WRIKE_TOKEN=your-wrike-token
+YOUTRACK_TOKEN=your-youtrack-token
+```
+
+**Reference in config.yaml:**
+
+```yaml
+# .mehrhof/config.yaml (in project)
+github:
+  token: ${GITHUB_TOKEN}
+  owner: myorg
+  repo: myrepo
+
+gitlab:
+  token: ${GITLAB_TOKEN}
+  host: https://gitlab.com
+
+notion:
+  token: ${NOTION_TOKEN}
+  database_id: abc123...
+
+jira:
+  token: ${JIRA_TOKEN}
+  email: user@example.com
+  base_url: https://company.atlassian.net
 ```
 
 **How it works:**
 
-1. Loaded at CLI startup before other initialization
-2. Variables available to `${VAR}` syntax in config.yaml
-3. System environment variables take priority
+1. `.mehrhof/.env` stores actual token values (gitignored)
+2. `.mehrhof/config.yaml` references tokens using `${VAR}` syntax (safe to commit)
+3. At startup, `${VAR}` references are replaced with values from `.env` or system environment
+4. Provider receives the expanded token value
 
-**Usage with agent aliases:**
+**Benefits:**
+
+- **Single source of truth**: `config.yaml` shows all token references
+- **Security**: Secrets never committed to git
+- **Flexibility**: Can override with system environment variables
+- **Clarity**: Easy to see what's configured without checking multiple sources
+
+### Setting Up Provider Tokens
+
+**Option 1: Using login commands (recommended)**
+
+```bash
+mehr github login    # Prompts for token, writes to .env and config.yaml
+mehr gitlab login    # Prompts for token, writes to .env and config.yaml
+```
+
+The login command will:
+1. Prompt for the API token
+2. Save it to `.mehrhof/.env`
+3. Add `${VAR}` reference to `config.yaml`
+
+**Option 2: Manual setup**
+
+1. Add token to `.mehrhof/.env`:
+   ```bash
+   GITHUB_TOKEN=ghp_your_token_here
+   ```
+
+2. Add reference to `config.yaml`:
+   ```yaml
+   github:
+     token: ${GITHUB_TOKEN}
+   ```
+
+**Option 3: Migration from old format**
+
+If you have plaintext tokens in `config.yaml`, migrate them:
+
+```bash
+mehr migrate-tokens
+```
+
+This moves token values to `.env` and updates `config.yaml` to use `${VAR}` syntax.
+
+### Usage with Agent Aliases
 
 ```yaml
 # .mehrhof/config.yaml
@@ -231,9 +374,10 @@ agents:
 ```
 
 **Security:**
-- Created with `0600` permissions
+- Created with `0600` permissions (user read/write only)
 - Automatically added to `.gitignore` by `mehr init`
-- Never commit to version control
+- Never commit `.env` to version control
+- `config.yaml` with `${VAR}` references is safe to commit
 
 ## User Settings
 
@@ -269,8 +413,8 @@ The `NO_COLOR` environment variable is also respected.
 |----------|-------------|
 | `NO_COLOR` | Disable colored output |
 | `ANTHROPIC_API_KEY` | Claude API key (used by Claude CLI) |
-| `GITHUB_TOKEN` | GitHub API token |
-| `MEHR_GITHUB_TOKEN` | GitHub token (takes priority) |
+
+**Note:** Provider tokens (GitHub, GitLab, Notion, etc.) should be configured in `.mehrhof/.env` and referenced in `.mehrhof/config.yaml` using `${VAR}` syntax. See [Provider Authentication](#provider-authentication) above for details.
 
 ## Quick Reference
 
@@ -293,9 +437,7 @@ The `NO_COLOR` environment variable is also respected.
 ### What to Gitignore
 
 ```
-.mehrhof/work/          # Task data
-.mehrhof/.env           # Secrets
-.mehrhof/.active_task   # Current task state
+.mehrhof/.env           # Secrets (work/ and .active_task are in home dir)
 ```
 
 ### Validate Configuration

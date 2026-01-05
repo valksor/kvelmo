@@ -1,34 +1,44 @@
 # Storage Structure
 
-Complete reference for the `.mehrhof/` directory structure.
+Complete reference for mehrhof storage layout.
 
 ## Overview
 
-All task data is stored in the `.mehrhof/` directory:
+Mehrhof uses a split storage structure:
+
+**In project** (`.mehrhof/`):
+- `config.yaml` - Workspace configuration (safe to commit)
+- `.env` - Project-specific secrets (gitignored)
+
+**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+- `.active_task` - Current active task reference
+- `work/` - Task work directories
 
 ```
-.mehrhof/
-├── config.yaml              # Workspace configuration
-├── .active_task             # Current active task reference
-├── work/                    # Task work directories (default: .mehrhof/work/)
-│   └── <task-id>/
-│       ├── work.yaml        # Task metadata
-│       ├── notes.md         # User notes
-│       ├── source/          # Source files (task content)
-│       ├── specifications/  # Specifications
-│       ├── reviews/         # Code reviews
-│       └── sessions/        # Agent conversation logs
-└── planned/                 # Standalone planning sessions
-    └── <plan-id>/
+project/
+└── .mehrhof/
+    ├── config.yaml              # Workspace configuration
+    └── .env                     # Secrets (gitignored)
+
+~/.mehrhof/workspaces/<project-id>/
+├── .active_task                # Current active task reference
+└── work/                       # Task work directories
+    └── <task-id>/
+        ├── work.yaml            # Task metadata
+        ├── notes.md             # User notes
+        ├── source/              # Source files (task content)
+        ├── specifications/      # Specifications
+        ├── reviews/             # Code reviews
+        └── sessions/            # Agent conversation logs
 ```
 
-**Note:** The work directory location is configurable. See [Configuration Guide](../configuration/index.md#storage) for details.
+The `<project-id>` is automatically derived from your git remote (e.g., `github.com-user-repo`).
 
-## Root Files
+## Project Files
 
 ### config.yaml
 
-Workspace-level configuration:
+Workspace-level configuration (in project):
 
 ```yaml
 git:
@@ -44,14 +54,25 @@ workflow:
   session_retention_days: 30
 ```
 
+### .env
+
+Project-specific secrets (in project, gitignored):
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+GITHUB_TOKEN=ghp_...
+```
+
+## Home Directory Files
+
 ### .active_task
 
-Currently active task reference (YAML):
+Currently active task reference (in home directory, YAML):
 
 ```yaml
 id: cb9a54db
 ref: file:task.md
-work_dir: .mehrhof/work/cb9a54db
+work_dir: ~/.mehrhof/workspaces/github.com-user-repo/work/cb9a54db
 state: idle
 branch: task/cb9a54db
 use_git: true
@@ -65,7 +86,7 @@ started: 2025-01-15T10:30:00Z
 | --------------- | ---------------------------------- |
 | `id`            | 8-character task identifier        |
 | `ref`           | Source reference (file:, dir:)     |
-| `work_dir`      | Path to work directory             |
+| `work_dir`      | Path to work directory (in home)    |
 | `state`         | Current workflow state             |
 | `branch`        | Git branch name                    |
 | `use_git`       | Whether git operations are enabled |
@@ -74,7 +95,7 @@ started: 2025-01-15T10:30:00Z
 
 ## Work Directory
 
-Each task has a work directory. By default, this is at `.mehrhof/work/<task-id>/`, but the location is configurable via `storage.work_dir` in `config.yaml`.
+Each task has a work directory in `~/.mehrhof/workspaces/<project-id>/work/<task-id>/`.
 
 ### work.yaml
 
@@ -313,13 +334,11 @@ JWT tokens are a good choice...
 
 ## Gitignore Recommendations
 
-Add to `.gitignore` (adjust work directory path if using a custom `storage.work_dir`):
+Add to `.gitignore`:
 
 ```gitignore
-# Mehrhof task data
-.mehrhof/work/           # Or custom work_dir from config
-.mehrhof/planned/
-.mehrhof/.active_task
+# Mehrhof secrets (task data is in home directory)
+.mehrhof/.env
 ```
 
 Keep tracked:
@@ -333,13 +352,13 @@ Keep tracked:
 ### Backup Task Data
 
 ```bash
-cp -r .mehrhof/work/abc12345 ~/backup/
+cp -r ~/.mehrhof/workspaces/<project-id>/work/abc12345 ~/backup/
 ```
 
 ### Recovery
 
 1. Restore work directory
-2. Update `.active_task` manually
+2. Update `.active_task` in home directory manually
 3. Checkout task branch
 
 ## Cleanup
@@ -349,7 +368,7 @@ cp -r .mehrhof/work/abc12345 ~/backup/
 Sessions older than `session_retention_days` can be cleaned:
 
 ```bash
-find .mehrhof/work/*/sessions/ -mtime +30 -delete
+find ~/.mehrhof/workspaces/*/work/*/sessions/ -mtime +30 -delete
 ```
 
 ### Remove Completed Tasks
@@ -357,7 +376,7 @@ find .mehrhof/work/*/sessions/ -mtime +30 -delete
 After `mehr finish`, work directories are removed based on the `workflow.delete_work_on_finish` config setting (default: `false`/keep). For manual cleanup:
 
 ```bash
-rm -rf .mehrhof/work/abc12345/
+rm -rf ~/.mehrhof/workspaces/<project-id>/work/abc12345/
 ```
 
 For automatic cleanup on finish, configure:
