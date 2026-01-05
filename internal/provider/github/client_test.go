@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 
 	gh "github.com/google/go-github/v67/github"
@@ -99,49 +98,20 @@ func TestClientOwnerRepo(t *testing.T) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 func TestResolveToken(t *testing.T) {
-	t.Run("MEHR_GITHUB_TOKEN priority", func(t *testing.T) {
-		t.Setenv("MEHR_GITHUB_TOKEN", "mehr-token")
-		t.Setenv("GITHUB_TOKEN", "github-token")
+	// Note: Token resolution no longer checks env vars directly.
+	// Config.yaml is the source of truth - use ${VAR} syntax there.
 
-		token, err := ResolveToken("config-token")
+	t.Run("config token used directly", func(t *testing.T) {
+		tok, err := ResolveToken("config-token")
 		if err != nil {
 			t.Fatalf("ResolveToken error = %v", err)
 		}
-		if token != "mehr-token" {
-			t.Errorf("token = %q, want %q", token, "mehr-token")
+		if tok != "config-token" {
+			t.Errorf("token = %q, want %q", tok, "config-token")
 		}
 	})
 
-	t.Run("GITHUB_TOKEN fallback", func(t *testing.T) {
-		t.Setenv("MEHR_GITHUB_TOKEN", "")
-		t.Setenv("GITHUB_TOKEN", "github-token")
-
-		token, err := ResolveToken("config-token")
-		if err != nil {
-			t.Fatalf("ResolveToken error = %v", err)
-		}
-		if token != "github-token" {
-			t.Errorf("token = %q, want %q", token, "github-token")
-		}
-	})
-
-	t.Run("config token fallback", func(t *testing.T) {
-		t.Setenv("MEHR_GITHUB_TOKEN", "")
-		t.Setenv("GITHUB_TOKEN", "")
-
-		token, err := ResolveToken("config-token")
-		if err != nil {
-			t.Fatalf("ResolveToken error = %v", err)
-		}
-		if token != "config-token" {
-			t.Errorf("token = %q, want %q", token, "config-token")
-		}
-	})
-
-	t.Run("empty config no env - tries gh CLI", func(t *testing.T) {
-		_ = os.Unsetenv("MEHR_GITHUB_TOKEN")
-		_ = os.Unsetenv("GITHUB_TOKEN")
-
+	t.Run("empty config - tries gh CLI", func(t *testing.T) {
 		// This will try gh CLI and likely fail (returns token.ErrNoToken)
 		// unless gh is installed and authenticated
 		_, err := ResolveToken("")

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -34,18 +33,9 @@ func NewClient(token string) *Client {
 	}
 }
 
-// ResolveToken finds ClickUp token from multiple sources
-// Priority:
-//  1. MEHR_CLICKUP_TOKEN
-//  2. CLICKUP_TOKEN
-//  3. Config value
+// ResolveToken resolves the ClickUp API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if t := os.Getenv("MEHR_CLICKUP_TOKEN"); t != "" {
-		return t, nil
-	}
-	if t := os.Getenv("CLICKUP_TOKEN"); t != "" {
-		return t, nil
-	}
 	if configToken != "" {
 		return configToken, nil
 	}

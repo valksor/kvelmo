@@ -72,14 +72,10 @@ type ClientConfig struct {
 	SpaceID  string
 }
 
-// ResolveToken finds the Wrike token from multiple sources.
-// Priority order:
-//  1. MEHR_WRIKE_TOKEN env var
-//  2. WRIKE_TOKEN env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the Wrike API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	return token.ResolveToken(token.Config("WRIKE", configToken).
-		WithEnvVars("WRIKE_TOKEN"))
+	return token.ResolveToken(token.Config("WRIKE", configToken))
 }
 
 // doRequest performs an HTTP request to the Wrike API.
@@ -155,6 +151,24 @@ func (c *Client) GetTaskByPermalink(ctx context.Context, permalink string) (*Tas
 	// The Wrike API v4 doesn't document a ?permalink= query parameter,
 	// so we extract the numeric ID and use the standard /tasks/{id} endpoint
 	return c.GetTask(ctx, numericID)
+}
+
+// GetTaskByPermalinkParam fetches a task by permalink URL using query parameter.
+// Uses GET /tasks?permalink=... which is the official Wrike API method.
+func (c *Client) GetTaskByPermalinkParam(ctx context.Context, permalink string) (*Task, error) {
+	// Build query string with permalink parameter
+	path := "/tasks?permalink=" + url.QueryEscape(permalink)
+
+	var response taskResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
+		return nil, err
+	}
+
+	if len(response.Data) == 0 {
+		return nil, ErrTaskNotFound
+	}
+
+	return &response.Data[0], nil
 }
 
 // GetTasks fetches multiple tasks by IDs.

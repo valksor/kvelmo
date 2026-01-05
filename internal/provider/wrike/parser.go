@@ -25,8 +25,9 @@ var (
 	// Matches: https://www.wrike.com/open.htm?id=1234567890
 	// Also handles additional query params.
 	permalinkPattern = regexp.MustCompile(`^https://www\.wrike\.com/open\.htm\?id=(\d+)`)
-	// Matches Wrike API IDs (IEAAJXXXXXXXX format) - requires at least 5 chars.
-	apiIDPattern = regexp.MustCompile(`^IE[A-Z0-9]{3,}$`)
+	// Matches Wrike API IDs (e.g., MAAAAAECx-vc, IEAAJXXXXXXXX format).
+	// Pattern: starts with uppercase letter, followed by alphanumeric chars, hyphens, mixed case.
+	apiIDPattern = regexp.MustCompile(`^[A-Z][A-Za-z0-9-]+$`)
 	// Matches numeric IDs (10 digits).
 	numericIDPattern = regexp.MustCompile(`^\d{10,}$`)
 )
@@ -50,11 +51,11 @@ func ParseReference(input string) (*Ref, error) {
 	schemeStripped := strings.TrimPrefix(input, "wrike:")
 	schemeStripped = strings.TrimPrefix(schemeStripped, "wk:")
 
-	// Check for permalink
-	if matches := permalinkPattern.FindStringSubmatch(input); matches != nil {
+	// Check for permalink (FIXED: check schemeStripped version)
+	if matches := permalinkPattern.FindStringSubmatch(schemeStripped); matches != nil {
 		return &Ref{
 			TaskID:    matches[1],
-			Permalink: input,
+			Permalink: schemeStripped, // Store the URL without scheme
 		}, nil
 	}
 
@@ -79,6 +80,16 @@ func ParseReference(input string) (*Ref, error) {
 func ExtractNumericID(permalink string) string {
 	if matches := permalinkPattern.FindStringSubmatch(permalink); matches != nil {
 		return matches[1]
+	}
+
+	return ""
+}
+
+// BuildPermalinkURL constructs a Wrike permalink URL from a numeric ID.
+// Returns empty string if numericID is not a valid numeric ID format.
+func BuildPermalinkURL(numericID string) string {
+	if numericIDPattern.MatchString(numericID) {
+		return "https://www.wrike.com/open.htm?id=" + numericID
 	}
 
 	return ""

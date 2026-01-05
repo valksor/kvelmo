@@ -137,19 +137,8 @@ func ResolveAPIKey(provided string) string {
 	return ""
 }
 
-// ResolveToken resolves the Trello token from environment.
+// ResolveToken resolves the Trello API token from config.
+// The provided value should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(provided string) string {
-	if provided != "" {
-		return provided
-	}
-
-	// Try environment variables
-	if token := os.Getenv("MEHR_TRELLO_TOKEN"); token != "" {
-		return token
-	}
-	if token := os.Getenv("TRELLO_TOKEN"); token != "" {
-		return token
-	}
-
-	return ""
+	return provided
 }

@@ -37,14 +37,10 @@ func NewClient(token string) *Client {
 	}
 }
 
-// ResolveToken finds the Notion token from multiple sources.
-// Priority order:
-//  1. MEHR_NOTION_TOKEN env var
-//  2. NOTION_TOKEN env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the Notion API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	return token.ResolveToken(token.Config("NOTION", configToken).
-		WithEnvVars("NOTION_TOKEN"))
+	return token.ResolveToken(token.Config("NOTION", configToken))
 }
 
 // doRequest performs an HTTP request to the Notion API.

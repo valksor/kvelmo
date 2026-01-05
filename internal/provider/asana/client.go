@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -37,18 +36,9 @@ func NewClient(token, workspaceGID string) *Client {
 	}
 }
 
-// ResolveToken finds Asana token from multiple sources
-// Priority:
-//  1. MEHR_ASANA_TOKEN
-//  2. ASANA_TOKEN
-//  3. Config value
+// ResolveToken resolves the Asana API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if t := os.Getenv("MEHR_ASANA_TOKEN"); t != "" {
-		return t, nil
-	}
-	if t := os.Getenv("ASANA_TOKEN"); t != "" {
-		return t, nil
-	}
 	if configToken != "" {
 		return configToken, nil
 	}

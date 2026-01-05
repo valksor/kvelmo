@@ -809,97 +809,23 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestResolveToken(t *testing.T) {
-	tests := []struct {
-		name         string
-		configToken  string
-		setMehrToken string
-		setYtToken   string
-		wantErr      bool
-	}{
-		{
-			name:         "MEHR_YOUTRACK_TOKEN priority",
-			configToken:  "config-token",
-			setMehrToken: "mehr-token",
-			setYtToken:   "yt-token",
-			wantErr:      false,
-		},
-		{
-			name:         "YOUTRACK_TOKEN fallback",
-			configToken:  "config-token",
-			setMehrToken: "",
-			setYtToken:   "yt-token",
-			wantErr:      false,
-		},
-		{
-			name:         "config token fallback",
-			configToken:  "config-token",
-			setMehrToken: "",
-			setYtToken:   "",
-			wantErr:      false,
-		},
-		{
-			name:         "no token available",
-			configToken:  "",
-			setMehrToken: "",
-			setYtToken:   "",
-			wantErr:      true,
-		},
-	}
+	// Note: Token resolution no longer checks env vars directly.
+	// Config.yaml is the source of truth - use ${VAR} syntax there.
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set test values
-			if tt.setMehrToken != "" {
-				t.Setenv("MEHR_YOUTRACK_TOKEN", tt.setMehrToken)
-			}
-			if tt.setYtToken != "" {
-				t.Setenv("YOUTRACK_TOKEN", tt.setYtToken)
-			}
-
-			got, err := ResolveToken(tt.configToken)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ResolveToken() error = %v, wantErr %v", err, tt.wantErr)
-
-				return
-			}
-			if !tt.wantErr {
-				// Verify we got some non-empty token
-				if got == "" {
-					t.Error("ResolveToken() returned empty token, want non-empty")
-				}
-			}
-		})
-	}
-
-	// Test token priority
-	t.Run("priority order", func(t *testing.T) {
-		// Only config token
-		got, err := ResolveToken("config-token")
-		if err != nil {
-			t.Errorf("ResolveToken() with config token error = %v", err)
-		}
-		if got != "config-token" {
-			t.Errorf("ResolveToken() = %q, want \"config-token\"", got)
-		}
-
-		// Set YOUTRACK_TOKEN - should take priority
-		t.Setenv("YOUTRACK_TOKEN", "yt-token")
-		got, err = ResolveToken("config-token")
+	t.Run("config token used directly", func(t *testing.T) {
+		tok, err := ResolveToken("config-token")
 		if err != nil {
 			t.Errorf("ResolveToken() error = %v", err)
 		}
-		if got != "yt-token" {
-			t.Errorf("ResolveToken() = %q, want \"yt-token\"", got)
+		if tok != "config-token" {
+			t.Errorf("ResolveToken() = %q, want \"config-token\"", tok)
 		}
+	})
 
-		// Set MEHR_YOUTRACK_TOKEN - should take highest priority
-		t.Setenv("MEHR_YOUTRACK_TOKEN", "mehr-token")
-		got, err = ResolveToken("config-token")
-		if err != nil {
-			t.Errorf("ResolveToken() error = %v", err)
-		}
-		if got != "mehr-token" {
-			t.Errorf("ResolveToken() = %q, want \"mehr-token\"", got)
+	t.Run("no token available", func(t *testing.T) {
+		_, err := ResolveToken("")
+		if err == nil {
+			t.Error("ResolveToken() expected error for empty token")
 		}
 	})
 }

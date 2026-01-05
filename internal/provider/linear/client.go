@@ -37,14 +37,10 @@ func NewClient(token string) *Client {
 	}
 }
 
-// ResolveToken finds the Linear token from multiple sources.
-// Priority order:
-//  1. MEHR_LINEAR_API_KEY env var
-//  2. LINEAR_API_KEY env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the Linear API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	return token.ResolveToken(token.Config("LINEAR", configToken).
-		WithEnvVars("LINEAR_API_KEY"))
+	return token.ResolveToken(token.Config("LINEAR", configToken))
 }
 
 // graphqlRequest represents a GraphQL request.

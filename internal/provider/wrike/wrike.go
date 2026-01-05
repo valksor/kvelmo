@@ -83,14 +83,32 @@ func (p *Provider) Parse(input string) (string, error) {
 
 // Fetch retrieves a task from Wrike and converts it to a WorkUnit.
 func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
-	// First try to fetch as a direct task ID
-	task, err := p.client.GetTask(ctx, id)
+	// Parse the reference to determine ID type
+	ref, err := ParseReference(id)
 	if err != nil {
-		// If that fails, try as permalink
-		task, err = p.client.GetTaskByPermalink(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("fetch task: %w", err)
-		}
+		return nil, fmt.Errorf("parse reference: %w", err)
+	}
+
+	var task *Task
+
+	// Strategy: Determine how to fetch based on ID type
+	switch {
+	case ref.Permalink != "":
+		// Full permalink URL provided - use permalink query parameter
+		task, err = p.client.GetTaskByPermalinkParam(ctx, ref.Permalink)
+	case apiIDPattern.MatchString(ref.TaskID):
+		// API ID format (IEAAJXXXX) - use direct task endpoint
+		task, err = p.client.GetTask(ctx, ref.TaskID)
+	case numericIDPattern.MatchString(ref.TaskID):
+		// Numeric ID format - construct permalink and use permalink query parameter
+		permalink := BuildPermalinkURL(ref.TaskID)
+		task, err = p.client.GetTaskByPermalinkParam(ctx, permalink)
+	default:
+		return nil, fmt.Errorf("%w: unrecognized task ID format: %s", ErrInvalidReference, ref.TaskID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("fetch task: %w", err)
 	}
 
 	// Fetch comments
@@ -153,12 +171,27 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 
 // Snapshot captures the task content from Wrike.
 func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
-	task, err := p.client.GetTask(ctx, id)
+	ref, err := ParseReference(id)
 	if err != nil {
-		task, err = p.client.GetTaskByPermalink(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("fetch task for snapshot: %w", err)
-		}
+		return nil, fmt.Errorf("parse reference: %w", err)
+	}
+
+	var task *Task
+
+	switch {
+	case ref.Permalink != "":
+		task, err = p.client.GetTaskByPermalinkParam(ctx, ref.Permalink)
+	case apiIDPattern.MatchString(ref.TaskID):
+		task, err = p.client.GetTask(ctx, ref.TaskID)
+	case numericIDPattern.MatchString(ref.TaskID):
+		permalink := BuildPermalinkURL(ref.TaskID)
+		task, err = p.client.GetTaskByPermalinkParam(ctx, permalink)
+	default:
+		return nil, fmt.Errorf("%w: unrecognized task ID format: %s", ErrInvalidReference, ref.TaskID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("fetch task for snapshot: %w", err)
 	}
 
 	comments, _ := p.client.GetComments(ctx, task.ID)

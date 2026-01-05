@@ -62,14 +62,10 @@ func NewClient(token, host string) *Client {
 	}
 }
 
-// ResolveToken finds the YouTrack token from multiple sources.
-// Priority order:
-//  1. MEHR_YOUTRACK_TOKEN env var
-//  2. YOUTRACK_TOKEN env var
-//  3. configToken (from config.yaml)
+// ResolveToken resolves the YouTrack API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	return token.ResolveToken(token.Config("YOUTRACK", configToken).
-		WithEnvVars("YOUTRACK_TOKEN"))
+	return token.ResolveToken(token.Config("YOUTRACK", configToken))
 }
 
 // GetIssue fetches an issue by readable ID (e.g., "ABC-123").

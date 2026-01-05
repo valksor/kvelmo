@@ -56,15 +56,11 @@ func (c *Client) CacheKey(resourceType, id string) string {
 	return fmt.Sprintf("github:%s/%s:%s:%s", c.owner, c.repo, resourceType, id)
 }
 
-// ResolveToken finds the GitHub token from multiple sources.
-// Priority order:
-//  1. MEHR_GITHUB_TOKEN env var
-//  2. GITHUB_TOKEN env var
-//  3. configToken (from config.yaml)
-//  4. gh CLI auth token (via `gh auth token`)
+// ResolveToken resolves the GitHub API token.
+// The configToken should be from config.yaml and may use ${VAR} syntax.
+// Falls back to gh CLI auth token if config is empty.
 func ResolveToken(configToken string) (string, error) {
 	return token.ResolveToken(token.Config("GITHUB", configToken).
-		WithEnvVars("GITHUB_TOKEN").
 		WithCLIFallback(getGHCLIToken))
 }
 
