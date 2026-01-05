@@ -390,7 +390,13 @@ func (c *Conductor) providerSupportsPR(ctx context.Context) bool {
 	resolveOpts := provider.ResolveOptions{
 		DefaultProvider: c.opts.DefaultProvider,
 	}
-	p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, provider.Config{}, resolveOpts)
+
+	// Load workspace config and build provider config
+	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
+	scheme := parseScheme(c.activeTask.Ref)
+	providerCfg := buildProviderConfig(workspaceCfg, scheme)
+
+	p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, providerCfg, resolveOpts)
 	if err != nil {
 		return false
 	}
