@@ -369,3 +369,127 @@ func TestReferenceString(t *testing.T) {
 		})
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// Scheme prefixes
+		{"asana:1234567890123456", true},
+		{"as:1234567890123456", true},
+		// URL patterns
+		{"https://app.asana.com/0/1234567890123456/9876543210987654", true},
+		{"app.asana.com/0/1234567890123456/9876543210987654", true},
+		// Bare GID (valid - ParseReference succeeds)
+		{"1234567890123456", true},
+		{"1111111111111111/2222222222222222", true},
+		// Invalid patterns (ParseReference fails)
+		{"", false},
+		{"123", false},
+		{"abc", false},
+		// Other providers
+		{"github:123", false},
+		{"https://github.com/org/repo/issues/42", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "asana scheme",
+			input: "asana:1234567890123456",
+			want:  "1234567890123456",
+		},
+		{
+			name:  "as scheme",
+			input: "as:1234567890123456",
+			want:  "1234567890123456",
+		},
+		{
+			name:  "bare task GID",
+			input: "1234567890123456",
+			want:  "1234567890123456",
+		},
+		{
+			name:  "project/task format",
+			input: "1111111111111111/2222222222222222",
+			want:  "2222222222222222",
+		},
+		{
+			name:  "asana URL",
+			input: "https://app.asana.com/0/1234567890123456/9876543210987654",
+			want:  "9876543210987654",
+		},
+		{
+			name:  "URL without project",
+			input: "https://app.asana.com/0/0/9876543210987654",
+			want:  "9876543210987654",
+		},
+		{
+			name:    "invalid input - too short",
+			input:   "123",
+			wantErr: true,
+		},
+		{
+			name:    "invalid input - non-numeric",
+			input:   "abc-task",
+			wantErr: true,
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}

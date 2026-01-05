@@ -841,3 +841,119 @@ func TestBytesReader(t *testing.T) {
 		t.Error("bytesReader() should return *strings.Reader")
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// Scheme prefixes
+		{"youtrack:ABC-123", true},
+		{"yt:ABC-123", true},
+		// URL patterns
+		{"https://youtrack.cloud/issue/ABC-123", true},
+		{"https://company.myjetbrains.com/youtrack/issue/ABC-123", true},
+		// Readable ID pattern (ABC-123 format)
+		{"ABC-123", true},
+		{"PROJECT-456", true},
+		{"123-456", true},
+		// Invalid patterns
+		{"", false},
+		{"abc", false},    // no dash
+		{"ABC123", false}, // no dash
+		{"github:123", false},
+		{"https://github.com/org/repo/issues/42", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		name        string
+		input       string
+		want        string
+		errContains string
+		wantErr     bool
+	}{
+		{
+			name:  "youtrack scheme",
+			input: "youtrack:ABC-123",
+			want:  "ABC-123",
+		},
+		{
+			name:  "yt scheme",
+			input: "yt:PROJ-456",
+			want:  "PROJ-456",
+		},
+		{
+			name:  "bare readable ID",
+			input: "ABC-123",
+			want:  "ABC-123",
+		},
+		{
+			name:  "youtrack.cloud URL",
+			input: "https://youtrack.cloud/issue/ABC-123",
+			want:  "ABC-123",
+		},
+		{
+			name:  "myjetbrains URL",
+			input: "https://company.myjetbrains.com/youtrack/issue/ABC-123",
+			want:  "ABC-123",
+		},
+		{
+			name:        "invalid format - no dash",
+			input:       "ABC123",
+			wantErr:     true,
+			errContains: "invalid",
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
