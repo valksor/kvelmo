@@ -1348,3 +1348,130 @@ func TestSetBaseURL(t *testing.T) {
 		})
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Match tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderMatch(t *testing.T) {
+	p := &Provider{}
+
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// Scheme prefixes
+		{"jira:JIRA-123", true},
+		{"j:PROJ-456", true},
+		// Just scheme still matches prefix (validation happens in Parse)
+		{"jira:", true},
+		{"j:", true},
+		// Bare issue keys don't match without scheme
+		{"JIRA-123", false},
+		{"PROJ-456", false},
+		// URLs don't match without scheme
+		{"https://domain.atlassian.net/browse/JIRA-123", false},
+		{"https://jira.example.com/browse/PROJ-456", false},
+		// Other schemes
+		{"github:123", false},
+		{"file:task.md", false},
+		// Empty
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := p.Match(tt.input)
+			if got != tt.want {
+				t.Errorf("Provider.Match(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "jira scheme with issue key",
+			input: "jira:JIRA-123",
+			want:  "JIRA-123",
+		},
+		{
+			name:  "j short scheme with issue key",
+			input: "j:PROJ-456",
+			want:  "PROJ-456",
+		},
+		{
+			name:  "jira scheme with Cloud URL",
+			input: "jira:https://domain.atlassian.net/browse/JIRA-123",
+			want:  "JIRA-123",
+		},
+		{
+			name:  "j short scheme with Server URL",
+			input: "j:https://jira.example.com/browse/PROJ-456",
+			want:  "PROJ-456",
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "just scheme",
+			input:   "jira:",
+			wantErr: true,
+		},
+		{
+			name:    "invalid format - no dash",
+			input:   "jira:JIRA123",
+			wantErr: true,
+		},
+		{
+			name:    "invalid format - lowercase project",
+			input:   "j:jira-123",
+			wantErr: true,
+		},
+		{
+			name:    "other provider scheme",
+			input:   "github:123",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Provider{
+				client: NewClient("test-token", "", ""),
+			}
+
+			got, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}

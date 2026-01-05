@@ -103,6 +103,99 @@ func TestMatch(t *testing.T) {
 	}
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Provider.Parse tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestProviderParse(t *testing.T) {
+	cfg := provider.NewConfig().
+		Set("api_key", "test").
+		Set("token", "test")
+
+	p, _ := New(context.Background(), cfg)
+	prov, ok := p.(*Provider)
+	if !ok {
+		t.Fatal("New did not return *Provider")
+	}
+
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "full card ID with scheme",
+			input: "trello:507f1f77bcf86cd799439011",
+			want:  "507f1f77bcf86cd799439011",
+		},
+		{
+			name:  "short link with scheme",
+			input: "tr:abc12345",
+			want:  "abc12345",
+		},
+		{
+			name:  "URL format with scheme",
+			input: "trello:https://trello.com/c/abc12345/my-card-name",
+			want:  "abc12345",
+		},
+		{
+			name:  "bare card ID (24 hex chars)",
+			input: "507f1f77bcf86cd799439011",
+			want:  "507f1f77bcf86cd799439011",
+		},
+		{
+			name:  "bare short link",
+			input: "abc12345",
+			want:  "abc12345",
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "just scheme",
+			input:   "trello:",
+			wantErr: true,
+		},
+		{
+			name:    "invalid format",
+			input:   "trello:not-valid-reference!!!",
+			wantErr: true,
+		},
+		{
+			name:    "other provider",
+			input:   "github:123",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := prov.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Provider.Parse(%q) expected error, got nil", tt.input)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Provider.Parse(%q) unexpected error: %v", tt.input, err)
+
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Provider.Parse(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParseReference(t *testing.T) {
 	tests := []struct {
 		name    string
