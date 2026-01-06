@@ -435,6 +435,7 @@ func findChrome() (string, error) {
 
 	// Fallback to paths NOT in PATH
 	paths := []string{
+		"/opt/hostedtoolcache/setup-chrome/chrome/stable/x64/chrome", // GitHub Actions setup-chrome
 		"/snap/bin/chromium", // Snap installs (often not in PATH)
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",                      // macOS .app bundle
 		"/Applications/Chromium.app/Contents/MacOS/Chromium",                                // macOS .app bundle
