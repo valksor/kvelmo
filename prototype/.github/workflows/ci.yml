@@ -37,20 +37,8 @@ jobs:
             -   name: Checkout
                 uses: actions/checkout@v6
 
-            -   name: Install Chromium (Linux)
-                if: matrix.goos == 'linux'
-                run: |
-                    sudo apt-get update
-                    sudo apt-get install -y snapd
-                    sudo systemctl start snapd
-                    sudo snap install chromium
-                    /snap/bin/chromium --version
-
-            -   name: Install Chrome (macOS)
-                if: matrix.goos == 'darwin'
-                run: |
-                    brew install --cask google-chrome
-                    /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version
+            -   name: Install Chromium
+                uses: browser-actions/setup-chrome@v2
 
             -   name: Set up Go
                 uses: actions/setup-go@v6
