@@ -1,5 +1,7 @@
 package browser
 
+//go:build !linux || !arm64
+
 import (
 	"context"
 	"fmt"
