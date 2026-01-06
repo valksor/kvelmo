@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
 
@@ -200,7 +201,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments for a work item.
-func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -211,7 +212,7 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Co
 		return nil, fmt.Errorf("fetch comments for %d: %w", ref.WorkItemID, err)
 	}
 
-	var result []*provider.Comment
+	var result []provider.Comment
 	for _, comment := range comments {
 		author := provider.Person{}
 		if comment.CreatedBy != nil {
@@ -222,7 +223,7 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Co
 			}
 		}
 
-		result = append(result, &provider.Comment{
+		result = append(result, provider.Comment{
 			ID:        strconv.Itoa(comment.ID),
 			Author:    author,
 			Body:      comment.Text,
@@ -234,18 +235,32 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Co
 }
 
 // AddComment adds a comment to a work item.
-func (p *Provider) AddComment(ctx context.Context, id string, body string) error {
+func (p *Provider) AddComment(ctx context.Context, id string, body string) (*provider.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
-		return fmt.Errorf("parse reference: %w", err)
+		return nil, fmt.Errorf("parse reference: %w", err)
 	}
 
-	_, err = p.client.AddWorkItemComment(ctx, ref.WorkItemID, body)
+	comment, err := p.client.AddWorkItemComment(ctx, ref.WorkItemID, body)
 	if err != nil {
-		return fmt.Errorf("add comment to %d: %w", ref.WorkItemID, err)
+		return nil, fmt.Errorf("add comment to %d: %w", ref.WorkItemID, err)
 	}
 
-	return nil
+	author := provider.Person{}
+	if comment.CreatedBy != nil {
+		author = provider.Person{
+			ID:    comment.CreatedBy.ID,
+			Name:  comment.CreatedBy.DisplayName,
+			Email: comment.CreatedBy.UniqueName,
+		}
+	}
+
+	return &provider.Comment{
+		ID:        strconv.Itoa(comment.ID),
+		Author:    author,
+		Body:      comment.Text,
+		CreatedAt: parseAzureTime(comment.CreatedDate),
+	}, nil
 }
 
 // UpdateStatus updates the work item state.
@@ -409,13 +424,13 @@ func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
 func mapAzureState(state string) provider.Status {
 	stateLower := strings.ToLower(state)
 	switch {
-	case contains(stateLower, "done") || contains(stateLower, "closed") || contains(stateLower, "resolved"):
+	case strings.Contains(stateLower, "done") || strings.Contains(stateLower, "closed") || strings.Contains(stateLower, "resolved"):
 		return provider.StatusClosed
-	case contains(stateLower, "active") || contains(stateLower, "committed") || contains(stateLower, "in progress"):
+	case strings.Contains(stateLower, "active") || strings.Contains(stateLower, "committed") || strings.Contains(stateLower, "in progress"):
 		return provider.StatusInProgress
-	case contains(stateLower, "review") || contains(stateLower, "pr"):
+	case strings.Contains(stateLower, "review") || strings.Contains(stateLower, "pr"):
 		return provider.StatusReview
-	case contains(stateLower, "new") || contains(stateLower, "to do") || contains(stateLower, "proposed"):
+	case strings.Contains(stateLower, "new") || strings.Contains(stateLower, "to do") || strings.Contains(stateLower, "proposed"):
 		return provider.StatusOpen
 	}
 
@@ -455,15 +470,15 @@ func mapAzurePriority(priority int) provider.Priority {
 func mapWorkItemType(wiType string) string {
 	typeLower := strings.ToLower(wiType)
 	switch {
-	case contains(typeLower, "bug"):
+	case strings.Contains(typeLower, "bug"):
 		return "fix"
-	case contains(typeLower, "feature") || contains(typeLower, "user story"):
+	case strings.Contains(typeLower, "feature") || strings.Contains(typeLower, "user story"):
 		return "feature"
-	case contains(typeLower, "task"):
+	case strings.Contains(typeLower, "task"):
 		return "task"
-	case contains(typeLower, "epic"):
+	case strings.Contains(typeLower, "epic"):
 		return "epic"
-	case contains(typeLower, "issue"):
+	case strings.Contains(typeLower, "issue"):
 		return "issue"
 	}
 
@@ -635,37 +650,8 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 	result = strings.ReplaceAll(result, "{id}", task.ID)
 
 	// Slugify title
-	slug := slugify(task.Title)
+	slug := naming.Slugify(task.Title, 50)
 	result = strings.ReplaceAll(result, "{slug}", slug)
 
 	return result
-}
-
-func slugify(s string) string {
-	// Simple slugification
-	s = strings.ToLower(s)
-	s = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		if r == ' ' || r == '-' || r == '_' {
-			return '-'
-		}
-
-		return -1
-	}, s)
-
-	// Remove consecutive hyphens
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-	s = strings.Trim(s, "-")
-
-	// Truncate
-	if len(s) > 50 {
-		s = s[:50]
-		s = strings.TrimRight(s, "-")
-	}
-
-	return s
 }

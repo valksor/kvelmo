@@ -8,7 +8,7 @@ import (
 )
 
 // AddComment adds a comment to a Notion page.
-func (p *Provider) AddComment(ctx context.Context, workUnitID, body string) (string, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID, body string) (*provider.Comment, error) {
 	input := &AddCommentInput{
 		Parent: CommentParent{
 			BlockID: workUnitID,
@@ -26,10 +26,15 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID, body string) (str
 
 	comment, err := p.client.AddComment(ctx, input)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return comment.ID, nil
+	return &provider.Comment{
+		ID:        comment.ID,
+		Body:      body,
+		CreatedAt: comment.CreatedTime,
+		UpdatedAt: comment.LastEditedTime,
+	}, nil
 }
 
 // FetchComments retrieves comments for a Notion page.
