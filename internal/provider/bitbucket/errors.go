@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
+	"net/http"
 )
 
 // Error types for the Bitbucket provider.
@@ -26,22 +26,22 @@ func wrapAPIError(err error) error {
 		return nil
 	}
 
-	errMsg := err.Error()
+	// Check for HTTP errors via interface
+	var httpErr interface{ HTTPStatusCode() int }
+	if errors.As(err, &httpErr) {
+		switch httpErr.HTTPStatusCode() {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("%w: %w", ErrUnauthorized, err)
+		case http.StatusForbidden:
+			return fmt.Errorf("%w: %w", ErrUnauthorized, err)
+		case http.StatusNotFound:
+			return fmt.Errorf("%w: %w", ErrIssueNotFound, err)
+		case http.StatusTooManyRequests:
+			return fmt.Errorf("%w: %w", ErrRateLimited, err)
+		}
+	}
 
-	// Check for specific error patterns
-	if strings.Contains(errMsg, "401") {
-		return fmt.Errorf("%w: %w", ErrUnauthorized, err)
-	}
-	if strings.Contains(errMsg, "403") {
-		return fmt.Errorf("%w: %w", ErrUnauthorized, err)
-	}
-	if strings.Contains(errMsg, "429") {
-		return fmt.Errorf("%w: %w", ErrRateLimited, err)
-	}
-	if strings.Contains(errMsg, "404") {
-		return fmt.Errorf("%w: %w", ErrIssueNotFound, err)
-	}
-
+	// Check for network errors
 	var netErr net.Error
 	if errors.As(err, &netErr) {
 		return fmt.Errorf("%w: %w", ErrNetworkError, err)
