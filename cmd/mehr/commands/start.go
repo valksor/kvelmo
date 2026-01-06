@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
@@ -46,6 +48,8 @@ USAGE:
   mehr start <reference>
 
 PROVIDERS:
+  empty:A-1                 Empty task (add description with 'mehr note')
+  empty:"Implement auth"    Empty task with description as title
   file:task.md              Markdown file (default, can omit 'file:')
   dir:./tasks/              Directory of markdown files
   github:123                GitHub issue (requires configuration)
@@ -78,6 +82,8 @@ TEMPLATES:
   mehr templates            List all available templates
 
 EXAMPLES:
+  mehr start empty:FEATURE-1      # Create empty task, then use 'mehr note'
+  mehr start empty:"Implement auth"  # Create with descriptive title
   mehr start file:task.md         # Start from a markdown file
   mehr start dir:./tasks/         # Start from a directory
   mehr start --no-branch task.md  # Start without creating a branch
@@ -193,6 +199,27 @@ func runStart(cmd *cobra.Command, args []string) error {
 				// If stash was explicitly set via flag, apply auto-pop-stash from config
 				if startStash {
 					opts = append(opts, conductor.WithAutoPopStash(wsCfg.Git.AutoPopStash))
+				}
+				// Apply browser configuration if enabled
+				if wsCfg.Browser != nil && wsCfg.Browser.Enabled {
+					browserCfg := browser.Config{
+						Host:          wsCfg.Browser.Host,
+						Port:          wsCfg.Browser.Port,
+						Headless:      wsCfg.Browser.Headless,
+						Timeout:       time.Duration(wsCfg.Browser.Timeout) * time.Second,
+						ScreenshotDir: wsCfg.Browser.ScreenshotDir,
+					}
+					// Set defaults if not specified
+					if browserCfg.Host == "" {
+						browserCfg.Host = browser.DefaultConfig().Host
+					}
+					if browserCfg.ScreenshotDir == "" {
+						browserCfg.ScreenshotDir = browser.DefaultConfig().ScreenshotDir
+					}
+					if browserCfg.Timeout == 0 {
+						browserCfg.Timeout = browser.DefaultConfig().Timeout
+					}
+					opts = append(opts, conductor.WithBrowserConfig(browserCfg))
 				}
 			}
 		}

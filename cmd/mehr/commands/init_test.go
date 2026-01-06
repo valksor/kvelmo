@@ -12,6 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// setTestHome sets HOME to a temp directory for testing.
+// This ensures workspace data is stored in a temp location during tests.
+func setTestHome(t *testing.T, tmpDir string) {
+	t.Helper()
+	t.Setenv("HOME", tmpDir)
+}
+
 func TestInitCommand(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -52,6 +59,9 @@ func TestInitCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			setTestHome(t, tmpDir)
+
 			tc := NewTestContext(t)
 
 			// Create a git repo if requested
@@ -111,6 +121,9 @@ func TestInitCommand(t *testing.T) {
 }
 
 func TestInitCommand_WithGitRepo(t *testing.T) {
+	tmpDir := t.TempDir()
+	setTestHome(t, tmpDir)
+
 	tc := NewTestContext(t)
 
 	// Initialize git repo first
@@ -149,6 +162,9 @@ func TestInitCommand_WithGitRepo(t *testing.T) {
 }
 
 func TestInitCommand_Twice(t *testing.T) {
+	tmpDir := t.TempDir()
+	setTestHome(t, tmpDir)
+
 	tc := NewTestContext(t)
 
 	rootCmd := &cobra.Command{
