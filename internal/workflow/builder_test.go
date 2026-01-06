@@ -148,8 +148,9 @@ func TestMachineBuilder_Build(t *testing.T) {
 
 	// Machine should be able to dispatch events
 	machine.SetWorkUnit(&WorkUnit{
-		ID:    "test",
-		Title: "Test Task",
+		ID:          "test",
+		Title:       "Test Task",
+		Description: "test task",
 		Source: &Source{
 			Reference: "test:123",
 		},
@@ -182,7 +183,11 @@ func TestMachineBuilder_AddGuardToTransition(t *testing.T) {
 
 	bus := events.NewBus()
 	machine := builder.Build(bus)
-	machine.SetWorkUnit(&WorkUnit{ID: "test"})
+	// Set a description to satisfy GuardHasDescription
+	machine.SetWorkUnit(&WorkUnit{
+		ID:          "test",
+		Description: "test description",
+	})
 
 	// Dispatch should fail because guard returns false
 	err = machine.Dispatch(context.Background(), EventPlan)
