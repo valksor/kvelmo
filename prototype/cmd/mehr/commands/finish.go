@@ -194,6 +194,17 @@ func runFinish(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Generate commit message preview for squash merges
+	var commitMessage string
+	if finishSquash {
+		if msg, err := cond.GenerateCommitMessagePreview(ctx); err == nil && msg != "" {
+			commitMessage = msg
+			fmt.Println("\nGenerated commit message:")
+			fmt.Print(display.InfoMsg("%s", msg))
+			fmt.Println()
+		}
+	}
+
 	// Build finish options
 	// Use tri-state for DeleteWork: nil=defer to config, true=delete, false=keep
 	var deleteWork *bool
@@ -208,10 +219,11 @@ func runFinish(cmd *cobra.Command, args []string) error {
 		PushAfter:    finishPush,
 		DeleteWork:   deleteWork,
 		// PR options
-		ForceMerge: finishMerge,
-		DraftPR:    finishDraftPR,
-		PRTitle:    finishPRTitle,
-		PRBody:     finishPRBody,
+		ForceMerge:    finishMerge,
+		DraftPR:       finishDraftPR,
+		PRTitle:       finishPRTitle,
+		PRBody:        finishPRBody,
+		CommitMessage: commitMessage,
 	}
 
 	// Perform finish

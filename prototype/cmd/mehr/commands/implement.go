@@ -102,7 +102,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 						slog.Debug("write checkpoint", "error", err)
 					}
 				}
-			case events.TypeStateChanged, events.TypeError, events.TypeAgentMessage, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated:
+			case events.TypeStateChanged, events.TypeError, events.TypeAgentMessage, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated, events.TypeBrowserAction, events.TypeBrowserTabOpened, events.TypeBrowserScreenshot:
 				// Ignore other event types
 			}
 		})

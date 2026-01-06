@@ -27,6 +27,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider/bitbucket"
 	"github.com/valksor/go-mehrhof/internal/provider/clickup"
 	"github.com/valksor/go-mehrhof/internal/provider/directory"
+	"github.com/valksor/go-mehrhof/internal/provider/empty"
 	"github.com/valksor/go-mehrhof/internal/provider/file"
 	"github.com/valksor/go-mehrhof/internal/provider/github"
 	"github.com/valksor/go-mehrhof/internal/provider/gitlab"
@@ -70,6 +71,7 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 	// Register standard providers
 	file.Register(cond.GetProviderRegistry())
 	directory.Register(cond.GetProviderRegistry())
+	empty.Register(cond.GetProviderRegistry())
 	github.Register(cond.GetProviderRegistry())
 	gitlab.Register(cond.GetProviderRegistry())
 	wrike.Register(cond.GetProviderRegistry())
@@ -227,7 +229,7 @@ func SetupVerboseEventHandlers(cond *conductor.Conductor) {
 		// Suppress non-essential output in quiet mode
 		if IsQuiet() {
 			switch e.Type {
-			case events.TypeProgress, events.TypeFileChanged, events.TypeCheckpoint:
+			case events.TypeProgress, events.TypeFileChanged, events.TypeCheckpoint, events.TypeBrowserAction, events.TypeBrowserTabOpened, events.TypeBrowserScreenshot:
 				return
 			case events.TypeStateChanged, events.TypeError, events.TypeAgentMessage, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated:
 				// Let other events through
@@ -260,6 +262,43 @@ func SetupVerboseEventHandlers(cond *conductor.Conductor) {
 		case events.TypeAgentMessage:
 			if agentEvent, ok := e.Data["event"].(agent.Event); ok {
 				printAgentEventTo(w, agentEvent)
+			}
+		case events.TypeBrowserAction:
+			action, _ := e.Data["action"].(string)
+			tabID, _ := e.Data["tab_id"].(string)
+			if selector, ok := e.Data["selector"].(string); ok {
+				_, err := fmt.Fprintf(w, "  🌐 Browser [%s]: %s on %s\n", tabID, action, selector)
+				if err != nil {
+					slog.Debug("write browser action", "error", err)
+				}
+			} else {
+				_, err := fmt.Fprintf(w, "  🌐 Browser [%s]: %s\n", tabID, action)
+				if err != nil {
+					slog.Debug("write browser action", "error", err)
+				}
+			}
+		case events.TypeBrowserTabOpened:
+			tabID, _ := e.Data["tab_id"].(string)
+			url, _ := e.Data["url"].(string)
+			title, _ := e.Data["title"].(string)
+			if title != "" {
+				_, err := fmt.Fprintf(w, "  🌐 Browser tab opened: %s - %s [%s]\n", title, url, tabID)
+				if err != nil {
+					slog.Debug("write browser tab opened", "error", err)
+				}
+			} else {
+				_, err := fmt.Fprintf(w, "  🌐 Browser tab opened: %s [%s]\n", url, tabID)
+				if err != nil {
+					slog.Debug("write browser tab opened", "error", err)
+				}
+			}
+		case events.TypeBrowserScreenshot:
+			tabID, _ := e.Data["tab_id"].(string)
+			format, _ := e.Data["format"].(string)
+			size, _ := e.Data["size"].(int)
+			_, err := fmt.Fprintf(w, "  📸 Screenshot captured [%s]: %s (%d bytes)\n", tabID, format, size)
+			if err != nil {
+				slog.Debug("write browser screenshot", "error", err)
 			}
 		case events.TypeStateChanged, events.TypeError, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated:
 			// Ignore other event types

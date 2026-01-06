@@ -4,7 +4,6 @@
 package commands
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -19,10 +18,7 @@ func TestRunMigrateTokens_NoTokensToMigrate(t *testing.T) {
 	t.Chdir(tmpDir)
 
 	// Create workspace with default (empty) config
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	cfg := storage.NewDefaultWorkspaceConfig()
 	if err := ws.SaveConfig(cfg); err != nil {
@@ -31,7 +27,7 @@ func TestRunMigrateTokens_NoTokensToMigrate(t *testing.T) {
 
 	// Run migration - should print "no migration needed"
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -48,10 +44,7 @@ func TestRunMigrateTokens_GitHubToken(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Initialize workspace to create .mehrhof directory
 	if err := ws.EnsureInitialized(); err != nil {
@@ -65,7 +58,7 @@ func TestRunMigrateTokens_GitHubToken(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -105,10 +98,7 @@ func TestRunMigrateTokens_MultipleTokens(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Initialize workspace to create .mehrhof directory
 	if err := ws.EnsureInitialized(); err != nil {
@@ -126,7 +116,7 @@ func TestRunMigrateTokens_MultipleTokens(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -223,10 +213,7 @@ func TestRunMigrateTokens_AlreadyHasVarSyntax(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	cfg := storage.NewDefaultWorkspaceConfig()
 	// Already using ${VAR} syntax - no actual value ever provided
@@ -238,7 +225,7 @@ func TestRunMigrateTokens_AlreadyHasVarSyntax(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -285,10 +272,7 @@ func TestRunMigrateTokens_TrelloCredentials(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	cfg := storage.NewDefaultWorkspaceConfig()
 	cfg.Trello = &storage.TrelloSettings{
@@ -300,7 +284,7 @@ func TestRunMigrateTokens_TrelloCredentials(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -328,10 +312,7 @@ func TestRunMigrateTokens_AppendToExistingEnv(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Create existing .env file
 	if err := ws.EnsureInitialized(); err != nil {
@@ -351,7 +332,7 @@ func TestRunMigrateTokens_AppendToExistingEnv(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -376,10 +357,7 @@ func TestRunMigrateTokens_ReplacesExistingEnvVar(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-	if err != nil {
-		t.Fatalf("OpenWorkspace: %v", err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	// Create .env file with existing GITHUB_TOKEN
 	if err := ws.EnsureInitialized(); err != nil {
@@ -399,7 +377,7 @@ func TestRunMigrateTokens_ReplacesExistingEnvVar(t *testing.T) {
 	}
 
 	cmd := &cobra.Command{}
-	err = runMigrateTokens(cmd, []string{})
+	err := runMigrateTokens(cmd, []string{})
 	if err != nil {
 		t.Fatalf("runMigrateTokens: %v", err)
 	}
@@ -589,10 +567,7 @@ func TestRunMigrateTokens_AllProviders(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 
-			ws, err := storage.OpenWorkspace(context.Background(), tmpDir, nil)
-			if err != nil {
-				t.Fatalf("OpenWorkspace: %v", err)
-			}
+			ws := openTestWorkspace(t, tmpDir)
 
 			cfg := storage.NewDefaultWorkspaceConfig()
 			tt.setupCfg(cfg)
@@ -601,7 +576,7 @@ func TestRunMigrateTokens_AllProviders(t *testing.T) {
 			}
 
 			cmd := &cobra.Command{}
-			err = runMigrateTokens(cmd, []string{})
+			err := runMigrateTokens(cmd, []string{})
 			if err != nil {
 				t.Fatalf("runMigrateTokens: %v", err)
 			}

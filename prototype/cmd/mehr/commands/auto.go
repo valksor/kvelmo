@@ -1,14 +1,19 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 var (
@@ -89,6 +94,35 @@ func runAuto(cmd *cobra.Command, args []string) error {
 		opts = append(opts, conductor.WithAgent(autoAgent))
 	}
 
+	// Load workspace config for browser settings
+	if wd, err := os.Getwd(); err == nil {
+		if ws, err := storage.OpenWorkspace(context.Background(), wd, nil); err == nil {
+			if wsCfg, err := ws.LoadConfig(); err == nil {
+				// Apply browser configuration if enabled
+				if wsCfg.Browser != nil && wsCfg.Browser.Enabled {
+					browserCfg := browser.Config{
+						Host:          wsCfg.Browser.Host,
+						Port:          wsCfg.Browser.Port,
+						Headless:      wsCfg.Browser.Headless,
+						Timeout:       time.Duration(wsCfg.Browser.Timeout) * time.Second,
+						ScreenshotDir: wsCfg.Browser.ScreenshotDir,
+					}
+					// Set defaults if not specified
+					if browserCfg.Host == "" {
+						browserCfg.Host = browser.DefaultConfig().Host
+					}
+					if browserCfg.ScreenshotDir == "" {
+						browserCfg.ScreenshotDir = browser.DefaultConfig().ScreenshotDir
+					}
+					if browserCfg.Timeout == 0 {
+						browserCfg.Timeout = browser.DefaultConfig().Timeout
+					}
+					opts = append(opts, conductor.WithBrowserConfig(browserCfg))
+				}
+			}
+		}
+	}
+
 	// Initialize conductor
 	cond, err := initializeConductor(ctx, opts...)
 	if err != nil {
@@ -146,7 +180,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 					}
 				}
 			}
-		case events.TypeStateChanged, events.TypeError, events.TypeAgentMessage, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated:
+		case events.TypeStateChanged, events.TypeError, events.TypeAgentMessage, events.TypeBlueprintReady, events.TypeBranchCreated, events.TypePlanCompleted, events.TypeImplementDone, events.TypePRCreated, events.TypeBrowserAction, events.TypeBrowserTabOpened, events.TypeBrowserScreenshot:
 			// Ignore other event types in auto mode
 		}
 	})
