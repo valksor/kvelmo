@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -19,6 +20,14 @@ func (c *Conductor) Plan(ctx context.Context) error {
 		return errors.New("no active task")
 	}
 
+	// Sync notes into WorkUnit.Description for guard evaluation
+	wu := c.machine.WorkUnit()
+	if wu != nil && wu.Description == "" {
+		if notes, err := c.workspace.ReadNotes(c.activeTask.ID); err == nil && notes != "" {
+			wu.Description = notes
+		}
+	}
+
 	// Update state
 	c.activeTask.State = "planning"
 	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
@@ -27,6 +36,13 @@ func (c *Conductor) Plan(ctx context.Context) error {
 
 	// Dispatch planning event
 	if err := c.machine.Dispatch(ctx, workflow.EventPlan); err != nil {
+		if strings.Contains(err.Error(), "guards not satisfied") {
+			return errors.New("cannot plan: task has no description\n\n" +
+				"Use 'mehr note' to add a task description first:\n" +
+				"  mehr note \"Implement feature X with REST API\"\n\n" +
+				"Then run 'mehr plan' again")
+		}
+
 		return fmt.Errorf("enter planning: %w", err)
 	}
 

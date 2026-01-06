@@ -2,11 +2,13 @@ package conductor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
 // gitInfo holds git branch/worktree information created during task start.
@@ -200,6 +202,101 @@ func (c *Conductor) resolveTargetBranch(ctx context.Context, requested string) s
 	return currentBranch
 }
 
+// generateFinalCommitMessage uses the agent to generate a structured commit message
+// based on specifications and git changes.
+func (c *Conductor) generateFinalCommitMessage(ctx context.Context) (string, error) {
+	if c.activeTask == nil {
+		return "", errors.New("no active task")
+	}
+
+	taskID := c.activeTask.ID
+	title := c.taskWork.Metadata.Title
+
+	// Get spec paths
+	specNumbers, err := c.workspace.ListSpecifications(taskID)
+	if err != nil {
+		return "", fmt.Errorf("list specifications: %w", err)
+	}
+
+	var specPaths []string
+	for _, num := range specNumbers {
+		specPaths = append(specPaths, fmt.Sprintf("specification-%d.md", num))
+	}
+
+	// Gather specs content
+	specSnapshot, err := c.workspace.GatherSpecificationsContent(taskID)
+	if err != nil {
+		specSnapshot = fmt.Sprintf("Error gathering specs: %v", err)
+	}
+
+	// Get git diff information
+	var diffStat, stagedFiles, stagedDiff string
+	if c.git != nil {
+		// Get diff stat
+		if changes, err := c.git.GetChangeSummary(ctx); err == nil {
+			var parts []string
+			if len(changes.Added) > 0 {
+				parts = append(parts, "Added: "+strings.Join(changes.Added, ", "))
+			}
+			if len(changes.Modified) > 0 {
+				parts = append(parts, "Modified: "+strings.Join(changes.Modified, ", "))
+			}
+			if len(changes.Deleted) > 0 {
+				parts = append(parts, "Deleted: "+strings.Join(changes.Deleted, ", "))
+			}
+			diffStat = strings.Join(parts, "\n")
+		}
+
+		// Get staged files
+		if output, err := c.git.Diff(ctx, "--cached", "--name-only"); err == nil {
+			stagedFiles = strings.TrimSpace(output)
+		}
+
+		// Get staged diff (truncated to 100k chars)
+		const maxStagedDiffChars = 100000
+		if output, err := c.git.Diff(ctx, "--cached"); err == nil {
+			if len(output) > maxStagedDiffChars {
+				stagedDiff = output[:maxStagedDiffChars] + "\n[staged diff omitted due to size; relying on staged file list and spec snapshot]"
+			} else {
+				stagedDiff = output
+			}
+		}
+	}
+
+	// Build prompt
+	prompt := buildFinishPrompt(taskID, title, specPaths, specSnapshot, diffStat, stagedFiles, stagedDiff)
+
+	// Get agent for commit message generation
+	agent, err := c.GetAgentForStep(ctx, workflow.StepImplementing)
+	if err != nil {
+		return "", fmt.Errorf("get agent for commit message: %w", err)
+	}
+
+	// Execute prompt
+	response, err := agent.Run(ctx, prompt)
+	if err != nil {
+		return "", fmt.Errorf("execute agent: %w", err)
+	}
+
+	// Extract commit message from response
+	commitMsg := strings.TrimSpace(response.Summary)
+	if commitMsg == "" && len(response.Messages) > 0 {
+		commitMsg = strings.TrimSpace(response.Messages[0])
+	}
+
+	if commitMsg == "" {
+		return "", errors.New("agent returned empty commit message")
+	}
+
+	return commitMsg, nil
+}
+
+// GenerateCommitMessagePreview generates a commit message preview for display.
+// Returns empty string if generation fails (caller should handle gracefully).
+func (c *Conductor) GenerateCommitMessagePreview(ctx context.Context) (string, error) {
+	return c.generateFinalCommitMessage(ctx)
+}
+
 // performMerge handles the merge operation (squash or regular).
 func (c *Conductor) performMerge(ctx context.Context, opts FinishOptions) error {
 	targetBranch := c.resolveTargetBranch(ctx, opts.TargetBranch)
@@ -218,12 +315,20 @@ func (c *Conductor) performMerge(ctx context.Context, opts FinishOptions) error 
 
 			return fmt.Errorf("squash merge: %w", err)
 		}
-		// Use stored commit prefix, fallback to task ID if not set
-		prefix := c.taskWork.Git.CommitPrefix
-		if prefix == "" {
-			prefix = fmt.Sprintf("(%s)", taskID)
+		// Use pre-generated commit message, or generate one, or fallback to simple message
+		var msg string
+		if opts.CommitMessage != "" {
+			msg = opts.CommitMessage
+		} else if generatedMsg, err := c.generateFinalCommitMessage(ctx); err == nil {
+			msg = generatedMsg
+		} else {
+			// Fallback to simple message if generation fails
+			prefix := c.taskWork.Git.CommitPrefix
+			if prefix == "" {
+				prefix = fmt.Sprintf("(%s)", taskID)
+			}
+			msg = fmt.Sprintf("%s merged from %s", prefix, currentBranch)
 		}
-		msg := fmt.Sprintf("%s merged from %s", prefix, currentBranch)
 		if _, err := c.git.Commit(ctx, msg); err != nil {
 			_ = c.git.Checkout(ctx, currentBranch)
 

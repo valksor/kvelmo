@@ -4,6 +4,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/valksor/go-mehrhof/internal/browser"
 )
 
 // Options configures the Conductor.
@@ -40,6 +42,9 @@ type Options struct {
 
 	// Provider configuration
 	DefaultProvider string // Default provider for bare references (e.g., "file")
+
+	// Browser configuration
+	BrowserConfig *browser.Config // Browser automation configuration (nil = disabled)
 
 	// Naming overrides (CLI flags)
 	ExternalKey           string // Override external key (e.g., "FEATURE-123")
@@ -271,6 +276,13 @@ func WithHomeDir(dir string) Option {
 	}
 }
 
+// WithBrowserConfig sets the browser configuration.
+func WithBrowserConfig(cfg browser.Config) Option {
+	return func(o *Options) {
+		o.BrowserConfig = &cfg
+	}
+}
+
 // Apply applies options to the Options struct.
 func (o *Options) Apply(opts ...Option) {
 	for _, opt := range opts {
@@ -291,6 +303,9 @@ type FinishOptions struct {
 	DraftPR    bool   // Create PR as draft
 	PRTitle    string // Custom PR title (defaults to task title)
 	PRBody     string // Custom PR body
+
+	// Commit message
+	CommitMessage string // Optional pre-generated commit message
 }
 
 // DefaultFinishOptions returns default finish options.
