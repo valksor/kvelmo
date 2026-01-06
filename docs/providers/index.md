@@ -9,6 +9,7 @@ Providers are task sources that Mehrhof can read from and interact with. Each pr
 
 | Provider | Schemes | Description |
 |----------|---------|-------------|
+| **Empty** | `empty:` | Create tasks without a source |
 | **File** | `file:` | Local markdown files |
 | **Directory** | `dir:` | Local directories with markdown files |
 | **GitHub** | `github:`, `gh:` | GitHub issues |
@@ -74,6 +75,7 @@ Provider plugins communicate via JSON-RPC 2.0 over stdin/stdout. See the plugin 
 
 | Provider | Format | Example |
 |----------|--------|---------|
+| Empty | `empty:ID` or `empty:"Description"` | `empty:FEATURE-1`, `empty:"Add authentication"` |
 | File | `file:path/to/file.md` | `file:tasks/auth.md` |
 | Directory | `dir:path/to/directory` | `dir:./tasks` |
 | GitHub | `github:N` or `github:owner/repo#N` | `github:123`, `github:owner/repo#456` |

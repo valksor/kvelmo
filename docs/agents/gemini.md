@@ -1,6 +1,10 @@
 # Gemini Agent
 
-> **⚠️ Third-Party Integration**: This integration depends on external APIs that may change. Not fully tested beyond unit tests. Behavior may vary depending on the third-party service. Manual validation recommended before production use.
+> **⚠️ Third-Party Integration**
+>
+> **This agent is not the primary supported agent.** Mehrhof is designed primarily for Claude. Other agents may work, may not work, or may not work the same way as Claude. You may still find this agent adequate for your needs.
+>
+> This integration depends on external APIs that may change. Not fully tested beyond unit tests. Behavior may vary depending on the third-party service. Manual validation recommended before production use.
 
 
 Gemini provides access to Google's Gemini AI models via the official Gemini CLI.

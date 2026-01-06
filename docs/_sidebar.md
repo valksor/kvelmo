@@ -25,6 +25,7 @@
 
 - **Task Providers**
   - [Overview](providers/index.md)
+  - [Empty](providers/empty.md)
   - [File](providers/file.md)
   - [Directory](providers/directory.md)
   - [GitHub](providers/github.md)
@@ -70,6 +71,7 @@
     - [plugins](cli/plugins.md)
     - [templates](cli/templates.md)
     - [config](cli/config.md)
+    - [browser](cli/browser.md)
     - [login](cli/login.md)
     - [update](cli/update.md)
     - [version](cli/version.md)

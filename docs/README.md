@@ -27,6 +27,7 @@ mehr start task.md && mehr plan && mehr implement && mehr finish
 - **AI Workflow** - Automatic planning, implementation, and code review
 - **Git Integration** - Auto branches, checkpoints, undo/redo, squash merge
 - **15+ Task Sources** - GitHub, GitLab, Jira, Linear, Notion, Asana, and more
+- **Browser Automation** - Chrome automation for web testing, scraping, and authentication
 - **Parallel Tasks** - Run multiple tasks in isolated git worktrees
 - **Auto Mode** - Full automation: `mehr auto task.md`
 
