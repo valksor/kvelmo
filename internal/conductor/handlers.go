@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	mrand "math/rand"
+	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,6 +21,14 @@ import (
 // ErrPendingQuestion is returned when the agent asks a question.
 // Using errors.New() instead of fmt.Errorf() ensures errors.Is() works reliably.
 var ErrPendingQuestion = errors.New("agent has a pending question")
+
+const (
+	// Retry configuration.
+	maxRetries          = 3
+	initialBackoffDelay = 1 * time.Second
+	maxBackoffDelay     = 10 * time.Second
+	backoffMultiplier   = 2.0
+)
 
 // RunPlanning executes the planning phase (creates SPEC files).
 func (c *Conductor) RunPlanning(ctx context.Context) error {
@@ -86,7 +98,7 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
-	prompt := buildPlanningPrompt(c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions)
+	prompt := buildPlanningPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions)
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
@@ -307,28 +319,94 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	// Build implementation prompt with latest spec and custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
-	prompt := buildImplementationPrompt(c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions)
+	specStatusSummary := buildSpecStatusSummary(c.workspace, taskID)
+	specTrackingSummary := buildSpecificationTrackingSummary(c.workspace, taskID)
+	prompt := buildImplementationPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary)
 
 	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent implementing...", 20)
 	var transcriptBuilder strings.Builder
-	response, err := implementingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		// Always publish to event bus
-		c.eventBus.PublishRaw(events.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
-		// Also track progress if not dry-run
-		if statusLine != nil {
-			_ = statusLine.OnEvent(event)
-		}
-		// Accumulate content for transcript archive
-		if event.Text != "" {
-			transcriptBuilder.WriteString(event.Text)
+
+	// Retry loop for recoverable errors
+	var response *agent.Response
+
+	// Store original prompt to avoid accumulation on retries
+	originalPrompt := prompt
+	var lastErr error
+
+	for attempt := range maxRetries {
+		// Check for context cancellation before retry
+		if ctx.Err() != nil {
+			return fmt.Errorf("implementation cancelled: %w", ctx.Err())
 		}
 
-		return nil
-	})
+		// Use original prompt + latest error (not accumulated)
+		currentPrompt := originalPrompt
+		if lastErr != nil {
+			currentPrompt = fmt.Sprintf(`%s
+
+## Previous Error
+The previous implementation attempt failed with: %v
+
+Please retry the implementation, taking into account this error.
+`, originalPrompt, lastErr)
+		}
+
+		response, err = implementingAgent.RunWithCallback(ctx, currentPrompt, func(event agent.Event) error {
+			// Always publish to event bus
+			c.eventBus.PublishRaw(events.Event{
+				Type: events.TypeAgentMessage,
+				Data: map[string]any{"event": event},
+			})
+			// Also track progress if not dry-run
+			if statusLine != nil {
+				_ = statusLine.OnEvent(event)
+			}
+			// Accumulate content for transcript archive
+			if event.Text != "" {
+				transcriptBuilder.WriteString(event.Text)
+			}
+
+			return nil
+		})
+
+		// If successful or not a recoverable error, break the loop
+		if err == nil || !isRecoverableError(err) {
+			break
+		}
+
+		// Store error for next retry
+		lastErr = err
+
+		// Recoverable error - retry with exponential backoff
+		if attempt < maxRetries-1 {
+			// Calculate exponential backoff with jitter
+			backoff := time.Duration(float64(initialBackoffDelay) * math.Pow(backoffMultiplier, float64(attempt)))
+			if backoff > maxBackoffDelay {
+				backoff = maxBackoffDelay
+			}
+
+			// Add jitter (±20%)
+			// #nosec G404 - math/rand is sufficient for non-critical jitter
+			jitter := time.Duration(float64(backoff) * 0.2 * (2.0*mrand.Float64() - 1.0))
+			backoff = backoff + jitter
+
+			c.publishProgress(fmt.Sprintf("Recoverable error, retrying in %.1fs (attempt %d/%d)...",
+				backoff.Seconds(), attempt+2, maxRetries), 20)
+
+			// Wait before retry (check ctx cancellation)
+			select {
+			case <-time.After(backoff):
+				// Proceed with retry
+			case <-ctx.Done():
+				return fmt.Errorf("implementation cancelled during backoff: %w", ctx.Err())
+			}
+
+			// Clear transcript builder for retry
+			transcriptBuilder.Reset()
+		}
+	}
+
 	if err != nil {
 		if statusLine != nil {
 			statusLine.Done()
@@ -394,6 +472,49 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	if !c.opts.DryRun && len(response.Files) > 0 {
 		if err := applyFiles(ctx, c, response.Files); err != nil {
 			return fmt.Errorf("apply files: %w", err)
+		}
+
+		// Track implemented files to the latest specification
+		specifications, specErr := c.workspace.ListSpecifications(taskID)
+		if specErr != nil {
+			// Non-critical: specification tracking is best-effort
+			c.logError(fmt.Errorf("failed to list specifications for file tracking: %w", specErr))
+		} else if len(specifications) > 0 {
+			specificationNum := specifications[len(specifications)-1] // Latest specification
+			specification, parseErr := c.workspace.ParseSpecification(taskID, specificationNum)
+			if parseErr != nil {
+				c.logError(fmt.Errorf("failed to parse specification-%d for file tracking: %w", specificationNum, parseErr))
+			} else {
+				// Check if previously tracked files still exist (handle reverts/undo)
+				var validFiles []string
+				for _, filePath := range specification.ImplementedFiles {
+					if _, err := os.Stat(filePath); err == nil {
+						// File still exists
+						validFiles = append(validFiles, filePath)
+					}
+				}
+
+				// Update specification if files were deleted
+				if len(validFiles) != len(specification.ImplementedFiles) {
+					originalCount := len(specification.ImplementedFiles)
+					specification.ImplementedFiles = validFiles
+					c.logVerbosef("Cleared %d deleted files from specification-%d tracking",
+						originalCount-len(validFiles), specificationNum)
+				}
+
+				// Add new files from this implementation
+				var filePaths []string
+				for _, fc := range response.Files {
+					filePaths = append(filePaths, fc.Path)
+				}
+				specification.ImplementedFiles = append(specification.ImplementedFiles, filePaths...)
+				specification.UpdatedAt = time.Now()
+				if saveErr := c.workspace.SaveSpecificationWithMeta(taskID, specification); saveErr != nil {
+					c.logError(fmt.Errorf("failed to save file tracking to specification-%d: %w", specificationNum, saveErr))
+				} else {
+					c.logVerbosef("Tracked %d files to specification-%d", len(filePaths), specificationNum)
+				}
+			}
 		}
 	}
 
@@ -467,7 +588,7 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	// Build review prompt with lint results and custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "reviewing")
-	prompt := buildReviewPromptWithLint(c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, customInstructions)
+	prompt := buildReviewPromptWithLint(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, customInstructions)
 
 	// Run agent, accumulate output for transcript
 	c.publishProgress("Agent reviewing...", 20)
@@ -698,4 +819,50 @@ Be specific about what was changed based on the file names. Focus on the most im
 	}
 
 	return phase
+}
+
+// isRecoverableError checks if an error is recoverable and should trigger a retry.
+// Returns true for errors like context overflow, token limits, timeouts, and rate limits.
+func isRecoverableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Use word boundary patterns to avoid false positives
+	// Format: "pattern" or "pattern variations"
+	recoverablePatterns := []struct {
+		pattern      string
+		wordBoundary bool
+	}{
+		{"context overflow", true},
+		{"context length exceeded", true},
+		{"token limit exceeded", true},
+		{"maximum tokens exceeded", true},
+		{"request timeout", false}, // False: can have suffixes
+		{"connection timeout", false},
+		{"rate limit", true},
+		{"rate limited", true},
+		{"too many requests", true},
+		{"429", false}, // HTTP status can have whitespace
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	for _, rp := range recoverablePatterns {
+		if rp.wordBoundary {
+			// Match with word boundaries to avoid false positives
+			// e.g., "timeout" should not match in "my_timeout_function"
+			pattern := `\b` + regexp.QuoteMeta(rp.pattern) + `\b`
+			matched, _ := regexp.MatchString(pattern, errMsg)
+			if matched {
+				return true
+			}
+		} else {
+			// Simple substring match for patterns that may have suffixes/prefixes
+			if strings.Contains(errMsg, rp.pattern) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

@@ -28,11 +28,13 @@
 package conductor
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sync"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/plugin"
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -55,6 +57,10 @@ type Conductor struct {
 	providers *provider.Registry
 	agents    *agent.Registry
 	plugins   *plugin.Registry
+
+	// Browser controller (lazy initialization)
+	browser     browser.Controller
+	browserOnce sync.Once
 
 	// Workflow plugin adapters (for lifecycle management)
 	workflowAdapters []*plugin.WorkflowAdapter
@@ -180,6 +186,21 @@ func (c *Conductor) GetStdout() io.Writer {
 // GetStderr returns the configured stderr writer.
 func (c *Conductor) GetStderr() io.Writer {
 	return c.opts.Stderr
+}
+
+// GetBrowser returns the browser controller with lazy initialization.
+// Returns nil if browser is not configured.
+func (c *Conductor) GetBrowser(ctx context.Context) browser.Controller {
+	if c.opts.BrowserConfig == nil {
+		return nil
+	}
+
+	c.browserOnce.Do(func() {
+		c.browser = browser.NewController(*c.opts.BrowserConfig)
+		c.logVerbosef("browser controller initialized")
+	})
+
+	return c.browser
 }
 
 // logVerbosef logs a message if verbose mode is enabled.
