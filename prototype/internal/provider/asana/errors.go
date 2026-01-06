@@ -3,6 +3,7 @@ package asana
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
 )
@@ -23,35 +24,20 @@ func wrapAPIError(err error) error {
 		return nil
 	}
 
-	errStr := err.Error()
-
-	// Check for common HTTP status codes
-	if contains(errStr, "401") || contains(errStr, "Unauthorized") {
-		return fmt.Errorf("%w: %w", providererrors.ErrUnauthorized, err)
-	}
-	if contains(errStr, "403") || contains(errStr, "Forbidden") {
-		return fmt.Errorf("%w: %w", providererrors.ErrUnauthorized, err)
-	}
-	if contains(errStr, "404") || contains(errStr, "Not Found") {
-		return fmt.Errorf("%w: %w", ErrTaskNotFound, err)
-	}
-	if contains(errStr, "429") || contains(errStr, "rate limit") {
-		return fmt.Errorf("%w: %w", ErrRateLimited, err)
-	}
-
-	return fmt.Errorf("asana API error: %w", err)
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && findSubstring(s, substr)
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
+	// Check for HTTP errors via interface
+	var httpErr interface{ HTTPStatusCode() int }
+	if errors.As(err, &httpErr) {
+		switch httpErr.HTTPStatusCode() {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("%w: %w", providererrors.ErrUnauthorized, err)
+		case http.StatusForbidden:
+			return fmt.Errorf("%w: %w", providererrors.ErrUnauthorized, err)
+		case http.StatusNotFound:
+			return fmt.Errorf("%w: %w", ErrTaskNotFound, err)
+		case http.StatusTooManyRequests:
+			return fmt.Errorf("%w: %w", ErrRateLimited, err)
 		}
 	}
 
-	return false
+	return fmt.Errorf("asana API error: %w", err)
 }

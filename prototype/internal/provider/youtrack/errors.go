@@ -7,31 +7,12 @@ import (
 	"net/http"
 
 	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 )
 
-// httpError represents an HTTP error with status code.
-// This is provider-specific to match YouTrack's error format.
-type httpError struct {
-	message string
-	code    int
-}
-
-func (e *httpError) Error() string {
-	if e.message != "" {
-		return fmt.Sprintf("HTTP %d: %s", e.code, e.message)
-	}
-
-	return fmt.Sprintf("HTTP %d", e.code)
-}
-
-// HTTPStatusCode returns the HTTP status code.
-func (e *httpError) HTTPStatusCode() int {
-	return e.code
-}
-
-// newHTTPError creates a new HTTP error.
-func newHTTPError(code int, message string) *httpError {
-	return &httpError{code: code, message: message}
+// newHTTPError creates a new HTTP error using the shared httpclient.HTTPError type.
+func newHTTPError(code int, message string) *httpclient.HTTPError {
+	return httpclient.NewHTTPError(code, message)
 }
 
 // wrapAPIError wraps an error with appropriate typed errors using shared error package.
@@ -50,10 +31,10 @@ func wrapAPIError(err error) error {
 		return err
 	}
 
-	// Check for HTTP errors
-	var httpErr *httpError
+	// Check for HTTP errors via interface
+	var httpErr interface{ HTTPStatusCode() int }
 	if errors.As(err, &httpErr) {
-		switch httpErr.code {
+		switch httpErr.HTTPStatusCode() {
 		case http.StatusUnauthorized:
 			return fmt.Errorf("%w: %w", providererrors.ErrUnauthorized, err)
 		case http.StatusForbidden:
