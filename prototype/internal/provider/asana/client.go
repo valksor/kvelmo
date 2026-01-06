@@ -11,11 +11,13 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
 	defaultBaseURL = "https://app.asana.com/api/1.0"
-	defaultTimeout = 30 * time.Second
 )
 
 // Client wraps the Asana API.
@@ -29,7 +31,7 @@ type Client struct {
 // NewClient creates a new Asana API client.
 func NewClient(token, workspaceGID string) *Client {
 	return &Client{
-		httpClient:   &http.Client{Timeout: defaultTimeout},
+		httpClient:   httpclient.NewHTTPClient(),
 		baseURL:      defaultBaseURL,
 		token:        token,
 		workspaceGID: workspaceGID,
@@ -39,11 +41,7 @@ func NewClient(token, workspaceGID string) *Client {
 // ResolveToken resolves the Asana API token.
 // The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if configToken != "" {
-		return configToken, nil
-	}
-
-	return "", ErrNoToken
+	return token.ResolveToken(token.Config("ASANA", configToken))
 }
 
 // SetWorkspace updates the workspace GID.
@@ -231,7 +229,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	return respBody, nil

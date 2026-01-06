@@ -8,15 +8,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
 	defaultBaseURL = "https://api.notion.com"
 	defaultVersion = "2022-06-28"
-	defaultTimeout = 30 * time.Second
 )
 
 // Client wraps the Notion API client.
@@ -30,7 +29,7 @@ type Client struct {
 // NewClient creates a new Notion API client.
 func NewClient(token string) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: httpclient.NewHTTPClient(),
 		baseURL:    defaultBaseURL,
 		token:      token,
 		version:    defaultVersion,

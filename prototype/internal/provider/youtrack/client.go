@@ -13,12 +13,12 @@ import (
 	"time"
 
 	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
 	defaultBaseURL = "https://youtrack.cloud/api"
-	defaultTimeout = 30 * time.Second
 	maxRetries     = 3
 	initialBackoff = 1 * time.Second
 )
@@ -56,7 +56,7 @@ func NewClient(token, host string) *Client {
 	}
 
 	return &Client{
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: httpclient.NewHTTPClient(),
 		baseURL:    baseURL,
 		token:      token,
 	}
@@ -328,15 +328,16 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 
 		lastErr = err
 
-		// Check if retryable
-		var httpErr *httpError
+		// Check if retryable via HTTP status code interface
+		var httpErr interface{ HTTPStatusCode() int }
 		if !errors.As(err, &httpErr) {
 			return err
 		}
 
 		// Retry on rate limit (429), service unavailable (503), or network errors
-		isRetryable := httpErr.code == http.StatusTooManyRequests ||
-			httpErr.code == http.StatusServiceUnavailable ||
+		code := httpErr.HTTPStatusCode()
+		isRetryable := code == http.StatusTooManyRequests ||
+			code == http.StatusServiceUnavailable ||
 			errors.Is(err, providererrors.ErrNetworkError)
 
 		if !isRetryable || attempt == maxRetries {

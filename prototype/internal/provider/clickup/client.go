@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
+
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
 	defaultBaseURL = "https://api.clickup.com/api/v2"
-	defaultTimeout = 30 * time.Second
 )
 
 // Client wraps the ClickUp API.
@@ -27,7 +28,7 @@ type Client struct {
 // NewClient creates a new ClickUp API client.
 func NewClient(token string) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: httpclient.NewHTTPClient(),
 		baseURL:    defaultBaseURL,
 		token:      token,
 	}
@@ -36,11 +37,7 @@ func NewClient(token string) *Client {
 // ResolveToken resolves the ClickUp API token.
 // The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if configToken != "" {
-		return configToken, nil
-	}
-
-	return "", ErrNoToken
+	return token.ResolveToken(token.Config("CLICKUP", configToken))
 }
 
 // --- API Types ---
@@ -242,7 +239,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 
-	req.Header.Set("Authorization", c.token)
+	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
@@ -257,7 +254,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	return respBody, nil
