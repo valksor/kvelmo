@@ -1,6 +1,6 @@
-package browser
+//go:build !(linux && arm64)
 
-//go:build !linux || !arm64
+package browser
 
 import (
 	"context"

@@ -40,6 +40,8 @@ jobs:
             -   name: Install Chromium
                 if: "!(matrix.goos == 'linux' && matrix.goarch == 'arm64')"
                 uses: browser-actions/setup-chrome@v2
+                with:
+                    install-dependencies: true
 
             -   name: Set up Go
                 uses: actions/setup-go@v6
