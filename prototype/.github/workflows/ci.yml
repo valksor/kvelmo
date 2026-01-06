@@ -41,6 +41,8 @@ jobs:
                 if: matrix.goos == 'linux'
                 run: |
                     sudo apt-get update
+                    sudo add-apt-repository -y universe
+                    sudo apt-get update
                     sudo apt-get install -y chromium-browser
                     chromium-browser --version
 
