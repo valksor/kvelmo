@@ -323,17 +323,18 @@ func (c *controller) ListTabs(ctx context.Context) ([]Tab, error) {
 		return nil, errListTabs(err)
 	}
 
-	result := make([]Tab, len(pages))
-	for i, page := range pages {
+	var result []Tab
+	for _, page := range pages {
 		info, err := page.Info()
 		if err != nil {
-			return nil, fmt.Errorf("get page info: %w", err)
+			// Page was closed concurrently, skip it
+			continue
 		}
-		result[i] = Tab{
+		result = append(result, Tab{
 			ID:    string(info.TargetID),
 			Title: info.Title,
 			URL:   info.URL,
-		}
+		})
 	}
 
 	return result, nil
