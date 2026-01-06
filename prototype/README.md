@@ -31,7 +31,8 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 **Key benefits:**
 - **Parallel tasks** - Run multiple AI tasks simultaneously using git worktrees for isolated development
 - **Workflow engine** - Reliable plan → implement → review → finish cycle with checkpointing and undo/redo
-- **Provider integrations** - Connect to 15+ task sources (GitHub issues, Jira, Linear, Notion, etc.)
+- **Provider integrations** - Connect to 16+ task sources (Empty, Files, GitHub issues, Jira, Linear, Notion, etc.)
+- **Browser automation** - Chrome automation for web testing, scraping, and authentication flows
 - **State tracking** - Task state persists across sessions; resume anytime with `mehr continue`
 - **Auto mode** - Fully automated workflow: `mehr auto file:task.md` handles everything
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
@@ -99,7 +100,13 @@ mehr version
 # 1. Initialize workspace
 mehr init
 
-# 2. Create a task file
+# 2. Create a task (option A: empty provider for quick tasks)
+mehr start empty:FEATURE-1
+mehr note "Add health check endpoint that returns HTTP 200 with JSON status"
+mehr plan
+mehr implement
+
+# OR (option B: file provider for documented tasks)
 cat > task.md << 'EOF'
 ---
 title: Add health check endpoint
@@ -107,13 +114,8 @@ title: Add health check endpoint
 Create a /health endpoint that returns HTTP 200 with JSON status.
 EOF
 
-# 3. Start the task (creates git branch)
 mehr start task.md
-
-# 4. Generate specifications
 mehr plan
-
-# 5. Implement
 mehr implement
 
 # 6. Review and finish
@@ -163,17 +165,19 @@ mehr finish
 | `mehr list` | List all tasks in workspace |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
+| `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
 
 **See [CLI Reference](https://mehrhof.valksor.com/docs/#/cli/index) for all commands and flags.**
 
 ## Task Providers
 
-Mehrhof supports 15+ task sources. Use provider schemes to load tasks:
+Mehrhof supports 16+ task sources. Use provider schemes to load tasks:
 
 > **Security**: Provider login commands (`mehr github login`, etc.) use secure password-style input. Tokens are masked with asterisks (`****`) when entered and never displayed in the terminal.
 
 | Provider | Scheme | Example | Docs |
 |----------|--------|---------|------|
+| Empty | `empty:` | `empty:FEATURE-1` | [empty](https://mehrhof.valksor.com/docs/#/providers/empty) |
 | File | `file:` | `file:task.md` | [file](https://mehrhof.valksor.com/docs/#/providers/file) |
 | Directory | `dir:` | `dir:./tasks/` | [directory](https://mehrhof.valksor.com/docs/#/providers/directory) |
 | GitHub | `github:` | `github:123` | [github](https://mehrhof.valksor.com/docs/#/providers/github) |
@@ -214,6 +218,12 @@ mehr plan && mehr implement
 Each worktree is an isolated git checkout. Mehrhof auto-detects which task you're working on based on your current directory.
 
 ## AI Agents
+
+> **⚠️ Claude is the Primary Supported Agent**
+>
+> Mehrhof is designed and optimized primarily for **Claude**. Other agents may work, may not work, or may not work the same way as Claude. Implementation completeness varies across agents.
+>
+> While you may find other agents adequate for your needs, they may have limited feature support or different behavior compared to Claude.
 
 Mehrhof supports multiple AI backends:
 
