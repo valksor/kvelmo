@@ -44,6 +44,12 @@ func GuardCanReview(ctx context.Context, wu *WorkUnit) bool {
 	return wu != nil && len(wu.Specifications) > 0
 }
 
+// GuardHasDescription checks if the task has a description.
+// Prevents planning on tasks created with 'empty:' provider that lack context.
+func GuardHasDescription(ctx context.Context, wu *WorkUnit) bool {
+	return wu != nil && wu.Description != ""
+}
+
 // EvaluateGuards checks if all guards pass for a transition.
 func EvaluateGuards(ctx context.Context, wu *WorkUnit, guards []GuardFunc) bool {
 	for _, guard := range guards {

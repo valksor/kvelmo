@@ -286,3 +286,63 @@ func TestEvaluateGuards(t *testing.T) {
 		})
 	}
 }
+
+func TestGuardHasDescription(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		wu   *WorkUnit
+		name string
+		want bool
+	}{
+		{
+			name: "nil work unit",
+			wu:   nil,
+			want: false,
+		},
+		{
+			name: "empty description",
+			wu:   &WorkUnit{ID: "test", Description: ""},
+			want: false,
+		},
+		{
+			name: "has description",
+			wu:   &WorkUnit{ID: "test", Description: "Implement feature X"},
+			want: true,
+		},
+		{
+			name: "no description field",
+			wu:   &WorkUnit{ID: "test"},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GuardHasDescription(ctx, tt.wu); got != tt.want {
+				t.Errorf("GuardHasDescription() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGuardHasDescription_WithEmptyProvider(t *testing.T) {
+	ctx := context.Background()
+
+	// Test that empty provider tasks require description before planning
+	emptyTask := &WorkUnit{
+		ID:          "FEATURE-1",
+		Title:       "FEATURE-1",
+		Description: "", // Empty provider creates tasks with empty description
+	}
+
+	if GuardHasDescription(ctx, emptyTask) {
+		t.Error("Empty provider task should not pass guard without description")
+	}
+
+	// After adding notes, description should be populated
+	emptyTask.Description = "Implement user authentication with OAuth2"
+	if !GuardHasDescription(ctx, emptyTask) {
+		t.Error("Task with notes should pass guard")
+	}
+}

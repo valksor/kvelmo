@@ -46,8 +46,9 @@ func TestDispatch_ValidTransition(t *testing.T) {
 
 	// Set up work unit with source (required by GuardHasSource)
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 
 	// EventStart from Idle stays in Idle (registers task)
@@ -103,8 +104,9 @@ func TestDispatch_GlobalTransition(t *testing.T) {
 
 	// Set up and move to planning state
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventStart)
 	_ = m.Dispatch(context.Background(), EventPlan)
@@ -125,8 +127,9 @@ func TestCanDispatch(t *testing.T) {
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 
 	can, reason := m.CanDispatch(context.Background(), EventStart)
@@ -146,8 +149,9 @@ func TestHistory(t *testing.T) {
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventStart)
 	_ = m.Dispatch(context.Background(), EventPlan)
@@ -175,8 +179,9 @@ func TestReset(t *testing.T) {
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventStart)
 
@@ -269,8 +274,9 @@ func TestAddListener(t *testing.T) {
 	})
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventPlan)
 
@@ -300,8 +306,9 @@ func TestEventBusIntegration(t *testing.T) {
 	})
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventStart)
 
@@ -324,8 +331,9 @@ func TestIsTerminal(t *testing.T) {
 	// Move to failed state using global abort
 	// Note: Failed state is now non-terminal to allow recovery via EventReset
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 	_ = m.Dispatch(context.Background(), EventAbort)
 
@@ -352,8 +360,9 @@ func TestConcurrentDispatch(t *testing.T) {
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
-		ID:     "test-123",
-		Source: &Source{Reference: "file:task.md"},
+		ID:          "test-123",
+		Description: "test task",
+		Source:      &Source{Reference: "file:task.md"},
 	})
 
 	errors := make([]error, 10)
@@ -416,8 +425,10 @@ func TestTransitions(t *testing.T) {
 			fromState: StateIdle,
 			event:     EventPlan,
 			wantState: StatePlanning,
-			setup:     func(m *Machine) {},
-			wantErr:   false,
+			setup: func(m *Machine) {
+				m.SetWorkUnit(&WorkUnit{ID: "t", Description: "test"})
+			},
+			wantErr: false,
 		},
 		{
 			name:      "planning to idle on done",

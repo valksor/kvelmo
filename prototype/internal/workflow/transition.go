@@ -30,7 +30,7 @@ var TransitionTable = map[TransitionKey][]Transition{
 
 	// === Planning Phase ===
 	{StateIdle, EventPlan}: {
-		{From: StateIdle, Event: EventPlan, To: StatePlanning},
+		{From: StateIdle, Event: EventPlan, To: StatePlanning, Guards: []GuardFunc{GuardHasDescription}},
 	},
 	{StatePlanning, EventPlanDone}: {
 		{From: StatePlanning, Event: EventPlanDone, To: StateIdle},
