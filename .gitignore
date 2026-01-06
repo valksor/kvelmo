@@ -1,5 +1,7 @@
+*.out
 *.test
 .active_task
+.backup
 .claude/
 .coverage/
 .junie/
@@ -12,5 +14,5 @@
 build/
 bun.lock
 covprofile
+internal/agent/browser/.mehrhof
 node_modules/
-*.out
