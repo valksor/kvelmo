@@ -28,6 +28,12 @@ var (
 
 	// ErrInvalidReference is returned when a reference is invalid.
 	ErrInvalidReference = NewBaseError(ErrorCodeInvalidReference, "invalid reference")
+
+	// ErrInvalidConfig is returned when provider configuration is invalid.
+	ErrInvalidConfig = NewBaseError(ErrorCodeInvalidConfig, "invalid configuration")
+
+	// ErrConflict is returned when an update conflict occurs.
+	ErrConflict = NewBaseError(ErrorCodeConflict, "update conflict")
 )
 
 // Error codes for categorizing errors.
@@ -42,6 +48,8 @@ const (
 	ErrorCodeNotFound
 	ErrorCodeInvalidReference
 	ErrorCodeInsufficientScope // For tokens with insufficient permissions
+	ErrorCodeInvalidConfig     // For invalid configuration
+	ErrorCodeConflict          // For update conflicts
 )
 
 // BaseError is a typed error that can be identified by code.
@@ -112,6 +120,16 @@ func IsInvalidReference(err error) bool {
 	return errors.Is(err, ErrInvalidReference)
 }
 
+// IsInvalidConfig returns true if err is or wraps ErrInvalidConfig.
+func IsInvalidConfig(err error) bool {
+	return errors.Is(err, ErrInvalidConfig)
+}
+
+// IsConflict returns true if err is or wraps ErrConflict.
+func IsConflict(err error) bool {
+	return errors.Is(err, ErrConflict)
+}
+
 // WrapHTTPError converts HTTP status codes to typed errors.
 // The providerName is used to create provider-specific wrapped errors.
 // The baseErrors map should contain status codes to base errors for provider-specific mappings.
@@ -158,6 +176,8 @@ func WrapHTTPError(err error, providerName string, baseErrors map[int]error) err
 		return NewProviderError(providerName, fmt.Errorf("%w: %w", ErrRateLimited, err))
 	case http.StatusNotFound:
 		return NewProviderError(providerName, fmt.Errorf("%w: %w", ErrNotFound, err))
+	case http.StatusConflict:
+		return NewProviderError(providerName, fmt.Errorf("%w: %w", ErrConflict, err))
 	case http.StatusTooManyRequests:
 		return NewProviderError(providerName, fmt.Errorf("%w: %w", ErrRateLimited, err))
 	default:
@@ -188,4 +208,24 @@ func NotFoundError(provider string, resource string) error {
 // InvalidReferenceError creates a provider-specific invalid reference error.
 func InvalidReferenceError(provider string, ref string) error {
 	return NewProviderError(provider, fmt.Errorf("%w: %s", ErrInvalidReference, ref))
+}
+
+// InvalidConfigError creates a provider-specific invalid configuration error.
+func InvalidConfigError(provider string, detail string) error {
+	return NewProviderError(provider, fmt.Errorf("%w: %s", ErrInvalidConfig, detail))
+}
+
+// ConflictError creates a provider-specific conflict error.
+func ConflictError(provider string, detail string) error {
+	return NewProviderError(provider, fmt.Errorf("%w: %s", ErrConflict, detail))
+}
+
+// GetErrorCode returns the error code if the error is a BaseError.
+func GetErrorCode(err error) ErrorCode {
+	var baseErr *BaseError
+	if errors.As(err, &baseErr) {
+		return baseErr.Code
+	}
+
+	return ErrorCodeUnknown
 }
