@@ -72,6 +72,15 @@ func Info() provider.ProviderInfo {
 
 // New creates a GitHub provider.
 func New(ctx context.Context, cfg provider.Config) (any, error) {
+	// Validate configuration
+	if err := provider.ValidateConfig("github", cfg, func(v *provider.Validator) {
+		// Token is required (may be resolved from config or env)
+		// Skip validation here as ResolveToken handles it with better error messages
+		// Owner and repo are optional - can be specified in reference
+	}); err != nil {
+		return nil, err
+	}
+
 	// Extract config values
 	token := cfg.GetString("token")
 	owner := cfg.GetString("owner")
