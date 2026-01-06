@@ -1,6 +1,11 @@
 # AI Agents
 
-> **Integration Notice**: Agent implementations depend on third-party APIs that may change. Manual testing recommended before production use.
+> **⚠️ Integration Status**
+>
+> - **Claude**: Primary agent - fully supported and tested
+> - **Other agents**: May work, may not work, or may not work the same as Claude
+>
+> Agent implementations depend on third-party APIs that may change. Manual testing recommended before production use.
 
 Mehrhof orchestrates AI agents to help with planning and implementation. It delegates AI operations to external CLI tools.
 
@@ -11,6 +16,18 @@ Mehrhof doesn't connect to AI APIs directly. It calls agent CLIs as subprocesses
 ```
 User → mehr plan → Agent CLI → AI Response → Mehrhof processes output
 ```
+
+## Claude as the Primary Agent
+
+Mehrhof is designed and optimized for **Claude**. The workflow engine, approval modes, tool integration, and output parsing are all built around Claude's capabilities.
+
+When using other agents:
+- Some workflow features may not work as expected
+- Approval mode handling may differ
+- Output parsing may be less reliable
+- Advanced features (like tool use) may not be available
+
+**For the best experience and full feature support, use Claude. However, you may find other agents adequate for your needs.**
 
 ## Available Agents
 
