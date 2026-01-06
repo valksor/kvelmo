@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
 
@@ -169,13 +170,13 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments (stories) for a task.
-func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Comment, error) {
 	stories, err := p.client.GetTaskStories(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("fetch comments for %s: %w", id, err)
 	}
 
-	var comments []*provider.Comment
+	var comments []provider.Comment
 	for _, story := range stories {
 		// Only include comment-type stories
 		if story.ResourceSubtype != "comment_added" {
@@ -190,7 +191,7 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Co
 			}
 		}
 
-		comments = append(comments, &provider.Comment{
+		comments = append(comments, provider.Comment{
 			ID:        story.GID,
 			Author:    author,
 			Body:      story.Text,
@@ -202,13 +203,26 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]*provider.Co
 }
 
 // AddComment adds a comment to a task.
-func (p *Provider) AddComment(ctx context.Context, id string, body string) error {
-	_, err := p.client.AddTaskComment(ctx, id, body)
+func (p *Provider) AddComment(ctx context.Context, id string, body string) (*provider.Comment, error) {
+	story, err := p.client.AddTaskComment(ctx, id, body)
 	if err != nil {
-		return fmt.Errorf("add comment to %s: %w", id, err)
+		return nil, fmt.Errorf("add comment to %s: %w", id, err)
 	}
 
-	return nil
+	author := provider.Person{}
+	if story.CreatedBy != nil {
+		author = provider.Person{
+			Name:  story.CreatedBy.Name,
+			Email: story.CreatedBy.Email,
+		}
+	}
+
+	return &provider.Comment{
+		ID:        story.GID,
+		Author:    author,
+		Body:      story.Text,
+		CreatedAt: story.CreatedAt,
+	}, nil
 }
 
 // UpdateStatus updates the task status (completes the task or moves to section).
@@ -238,6 +252,7 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 		Provider:    ProviderName,
 		Title:       task.Name,
 		Description: task.Notes,
+		Slug:        naming.Slugify(task.Name, 50),
 		Status:      mapAsanaStatus(task),
 		Priority:    provider.PriorityNormal, // Asana doesn't have built-in priority
 		TaskType:    mapTaskType(task),
@@ -295,13 +310,13 @@ func mapAsanaStatus(task *Task) provider.Status {
 		if membership.Section != nil {
 			sectionName := strings.ToLower(membership.Section.Name)
 			switch {
-			case contains(sectionName, "done") || contains(sectionName, "complete"):
+			case strings.Contains(sectionName, "done") || strings.Contains(sectionName, "complete"):
 				return provider.StatusClosed
-			case contains(sectionName, "progress") || contains(sectionName, "doing"):
+			case strings.Contains(sectionName, "progress") || strings.Contains(sectionName, "doing"):
 				return provider.StatusInProgress
-			case contains(sectionName, "review"):
+			case strings.Contains(sectionName, "review"):
 				return provider.StatusReview
-			case contains(sectionName, "blocked") || contains(sectionName, "hold"):
+			case strings.Contains(sectionName, "blocked") || strings.Contains(sectionName, "hold"):
 				return provider.StatusOpen // Blocked tasks are still open
 			}
 		}
@@ -315,13 +330,13 @@ func mapTaskType(task *Task) string {
 	for _, tag := range task.Tags {
 		tagLower := strings.ToLower(tag.Name)
 		switch {
-		case contains(tagLower, "bug") || contains(tagLower, "fix"):
+		case strings.Contains(tagLower, "bug") || strings.Contains(tagLower, "fix"):
 			return "fix"
-		case contains(tagLower, "feature") || contains(tagLower, "enhancement"):
+		case strings.Contains(tagLower, "feature") || strings.Contains(tagLower, "enhancement"):
 			return "feature"
-		case contains(tagLower, "chore") || contains(tagLower, "task"):
+		case strings.Contains(tagLower, "chore") || strings.Contains(tagLower, "task"):
 			return "task"
-		case contains(tagLower, "doc"):
+		case strings.Contains(tagLower, "doc"):
 			return "docs"
 		}
 	}
@@ -430,37 +445,8 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 	result = strings.ReplaceAll(result, "{id}", task.ID)
 
 	// Slugify title
-	slug := slugify(task.Title)
+	slug := naming.Slugify(task.Title, 50)
 	result = strings.ReplaceAll(result, "{slug}", slug)
 
 	return result
-}
-
-func slugify(s string) string {
-	// Simple slugification
-	s = strings.ToLower(s)
-	s = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		if r == ' ' || r == '-' || r == '_' {
-			return '-'
-		}
-
-		return -1
-	}, s)
-
-	// Remove consecutive hyphens
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-	s = strings.Trim(s, "-")
-
-	// Truncate
-	if len(s) > 50 {
-		s = s[:50]
-		s = strings.TrimRight(s, "-")
-	}
-
-	return s
 }

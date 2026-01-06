@@ -41,6 +41,7 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 			ID:        strconv.FormatInt(c.GetID(), 10),
 			Body:      c.GetBody(),
 			CreatedAt: c.GetCreatedAt().Time,
+			UpdatedAt: c.GetUpdatedAt().Time,
 			Author: provider.Person{
 				ID:   strconv.FormatInt(c.GetUser().GetID(), 10),
 				Name: c.GetUser().GetLogin(),
