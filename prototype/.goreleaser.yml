@@ -58,9 +58,6 @@ sboms:
 
 changelog:
     sort: asc
-    filters:
-        exclude:
-            - '\[skip ci\]'
 
 release:
     # Append changelog to existing release notes (keeps "Full Changelog" link and custom text)
