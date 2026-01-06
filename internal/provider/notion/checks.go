@@ -1,0 +1,20 @@
+package notion
+
+import (
+	"github.com/valksor/go-mehrhof/internal/provider"
+)
+
+// Compile-time interface checks to ensure Provider implements declared capabilities.
+var (
+	_ provider.Reader         = (*Provider)(nil)
+	_ provider.Identifier     = (*Provider)(nil)
+	_ provider.Lister         = (*Provider)(nil)
+	_ provider.Commenter      = (*Provider)(nil)
+	_ provider.StatusUpdater  = (*Provider)(nil)
+	_ provider.LabelManager   = (*Provider)(nil)
+	_ provider.Snapshotter    = (*Provider)(nil)
+	_ provider.CommentFetcher = (*Provider)(nil)
+
+	// Note: WorkUnitCreator has a different signature (CreateWorkUnitInput vs CreateWorkUnitOptions).
+	// Align with standard interface or use provider-specific type.
+)
