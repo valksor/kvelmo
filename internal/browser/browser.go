@@ -298,6 +298,18 @@ func isConnectionClosedError(err error) bool {
 		strings.Contains(errStr, "connection refused")
 }
 
+// isTargetNotFoundError checks if an error is a CDP "target not found" error.
+// This happens during concurrent tab operations when a target is closed
+// between getting the target list and accessing the target.
+func isTargetNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+
+	return strings.Contains(errStr, "No target with given id found")
+}
+
 // IsConnected returns true if connected to a browser.
 func (c *controller) IsConnected() bool {
 	c.mu.RLock()
@@ -335,6 +347,13 @@ func (c *controller) ListTabs(ctx context.Context) ([]Tab, error) {
 
 	pages, err := c.browser.Pages()
 	if err != nil {
+		// During concurrent tab operations, targets may be closed
+		// between the time we request the list and when CDP responds.
+		// Return empty list instead of failing.
+		if isTargetNotFoundError(err) {
+			return []Tab{}, nil
+		}
+
 		return nil, errListTabs(err)
 	}
 
