@@ -87,15 +87,16 @@ const (
 // Specification represents a specification file (specification-N.md)
 // These are stored as markdown files with optional YAML frontmatter.
 type Specification struct {
-	Number      int       `yaml:"-"`
-	Title       string    `yaml:"title,omitempty"`
-	Description string    `yaml:"-"` // Parsed from markdown content
-	Status      string    `yaml:"status,omitempty"`
-	CreatedAt   time.Time `yaml:"created_at,omitempty"`
-	UpdatedAt   time.Time `yaml:"updated_at,omitempty"`
-	CompletedAt time.Time `yaml:"completed_at,omitempty"`
-	Sections    []string  `yaml:"-"` // Parsed from markdown content
-	Content     string    `yaml:"-"` // Raw markdown content (without frontmatter)
+	Number           int       `yaml:"-"`
+	Title            string    `yaml:"title,omitempty"`
+	Description      string    `yaml:"-"` // Parsed from markdown content
+	Status           string    `yaml:"status,omitempty"`
+	CreatedAt        time.Time `yaml:"created_at,omitempty"`
+	UpdatedAt        time.Time `yaml:"updated_at,omitempty"`
+	CompletedAt      time.Time `yaml:"completed_at,omitempty"`
+	Sections         []string  `yaml:"-"`                           // Parsed from markdown content
+	Content          string    `yaml:"-"`                           // Raw markdown content (without frontmatter)
+	ImplementedFiles []string  `yaml:"implemented_files,omitempty"` // Files implemented for this specification
 }
 
 // Note represents a user note added via the note command.

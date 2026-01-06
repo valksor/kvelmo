@@ -2624,3 +2624,279 @@ func TestAddUsage_InvalidTask(t *testing.T) {
 		t.Error("FlushUsage should error when task doesn't exist")
 	}
 }
+
+func TestValidateSpecification(t *testing.T) {
+	tests := []struct {
+		name            string
+		specContent     string
+		wantValid       bool
+		wantErrors      int
+		wantWarnings    int
+		errorContains   []string
+		warningContains []string
+	}{
+		{
+			name: "valid specification",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. First step
+2. Second step
+
+## Context
+path/to/file:1-10: description
+
+## Unknowns
+0. None
+
+## Complete Condition
+- manual: Check the feature works
+- run: make test
+
+## Status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    0,
+			errorContains:   []string{},
+			warningContains: []string{},
+		},
+		{
+			name: "missing required sections",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. First step
+
+## Context
+path/to/file:1-10: description
+`,
+			wantValid:    false,
+			wantErrors:   3,
+			wantWarnings: 0,
+			errorContains: []string{
+				"Missing: ## Unknowns",
+				"Missing: ## Complete Condition",
+				"Missing: ## Status",
+			},
+			warningContains: []string{},
+		},
+		{
+			name: "plan with only one step",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. Only step
+
+## Context
+path/to/file:1-10: description
+
+## Unknowns
+0. None
+
+## Complete Condition
+- manual: Check it
+- run: make test
+
+## Status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    1,
+			errorContains:   []string{},
+			warningContains: []string{"Plan should have at least 2 steps"},
+		},
+		{
+			name: "unknowns with user input required",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. First step
+2. Second step
+
+## Context
+path/to/file:1-10: description
+
+## Unknowns
+1. What should we do?
+   user input required
+
+## Complete Condition
+- manual: Check it
+- run: make test
+
+## Status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    1,
+			errorContains:   []string{},
+			warningContains: []string{"Unknowns should have default answers"},
+		},
+		{
+			name: "missing manual validation",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. First step
+2. Second step
+
+## Context
+path/to/file:1-10: description
+
+## Unknowns
+0. None
+
+## Complete Condition
+- run: make test
+
+## Status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    1,
+			errorContains:   []string{},
+			warningContains: []string{"Complete Condition should include manual validation step"},
+		},
+		{
+			name: "missing run validation",
+			specContent: `## Request
+Implement a feature
+
+## Plan
+1. First step
+2. Second step
+
+## Context
+path/to/file:1-10: description
+
+## Unknowns
+0. None
+
+## Complete Condition
+- manual: Check it
+
+## Status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    1,
+			errorContains:   []string{},
+			warningContains: []string{"Complete Condition should include run validation step"},
+		},
+		{
+			name: "case insensitive section matching",
+			specContent: `## request
+Implement a feature
+
+## plan
+1. First step
+2. Second step
+
+## context
+path/to/file:1-10: description
+
+## unknowns
+0. None
+
+## complete condition
+- manual: Check it
+- run: make test
+
+## status
+planned 2024-01-01 12:00
+`,
+			wantValid:       true,
+			wantErrors:      0,
+			wantWarnings:    0,
+			errorContains:   []string{},
+			warningContains: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			ws := openTestWorkspace(t, tmpDir)
+
+			// Create a test task
+			taskID := "test-task"
+			source := SourceInfo{
+				Type:    "file",
+				Ref:     "test.md",
+				Content: "Test task",
+			}
+			_, err := ws.CreateWork(taskID, source)
+			if err != nil {
+				t.Fatalf("CreateWork: %v", err)
+			}
+
+			// Save specification
+			specNum := 1
+			if err := ws.SaveSpecification(taskID, specNum, tt.specContent); err != nil {
+				t.Fatalf("SaveSpecification: %v", err)
+			}
+
+			// Validate
+			result, err := ws.ValidateSpecification(taskID, specNum)
+			if err != nil {
+				t.Fatalf("ValidateSpecification: %v", err)
+			}
+
+			// Check validity
+			if result.IsValid != tt.wantValid {
+				t.Errorf("ValidateSpecification() IsValid = %v, want %v", result.IsValid, tt.wantValid)
+			}
+
+			// Check error count
+			if len(result.Errors) != tt.wantErrors {
+				t.Errorf("ValidateSpecification() Errors count = %d, want %d", len(result.Errors), tt.wantErrors)
+			}
+
+			// Check warning count
+			if len(result.Warnings) != tt.wantWarnings {
+				t.Errorf("ValidateSpecification() Warnings count = %d, want %d", len(result.Warnings), tt.wantWarnings)
+			}
+
+			// Check error content
+			for _, expectedErr := range tt.errorContains {
+				found := false
+				for _, err := range result.Errors {
+					if strings.Contains(err, expectedErr) {
+						found = true
+
+						break
+					}
+				}
+				if !found {
+					t.Errorf("ValidateSpecification() Errors should contain %q", expectedErr)
+				}
+			}
+
+			// Check warning content
+			for _, expectedWarn := range tt.warningContains {
+				found := false
+				for _, warn := range result.Warnings {
+					if strings.Contains(warn, expectedWarn) {
+						found = true
+
+						break
+					}
+				}
+				if !found {
+					t.Errorf("ValidateSpecification() Warnings should contain %q", expectedWarn)
+				}
+			}
+		})
+	}
+}
