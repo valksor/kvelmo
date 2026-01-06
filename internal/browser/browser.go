@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -254,19 +255,13 @@ func (c *controller) Disconnect() error {
 	c.consoleMon = make(map[string]*ConsoleMonitor)
 	c.networkMon = make(map[string]*NetworkMonitor)
 
-	// Close all pages
-	for _, page := range c.tabs {
-		if err := page.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("close page: %w", err))
-		}
-	}
-	c.tabs = make(map[string]*rod.Page)
-
-	// Close browser connection
+	// Close browser connection first (closes all pages implicitly)
 	if err := c.browser.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close browser: %w", err))
 	}
 
+	// Clear tabs map after closing browser
+	c.tabs = make(map[string]*rod.Page)
 	c.browser = nil
 
 	// Cleanup session if we launched it
@@ -276,11 +271,31 @@ func (c *controller) Disconnect() error {
 		}
 	}
 
+	// Only return error if it's not a connection closed error
+	// (connection may already be closed by browser or timeout)
 	if len(errs) > 0 {
-		return errDisconnect(errors.Join(errs...))
+		for _, err := range errs {
+			if !isConnectionClosedError(err) {
+				return errDisconnect(errors.Join(errs...))
+			}
+		}
 	}
 
 	return nil
+}
+
+// isConnectionClosedError checks if an error is a "connection closed" type error.
+func isConnectionClosedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Import strings package at top of file if not already present
+	errStr := err.Error()
+	// Common error messages for closed connections
+	return strings.Contains(errStr, "use of closed network connection") ||
+		strings.Contains(errStr, "connection reset by peer") ||
+		strings.Contains(errStr, "broken pipe") ||
+		strings.Contains(errStr, "connection refused")
 }
 
 // IsConnected returns true if connected to a browser.
