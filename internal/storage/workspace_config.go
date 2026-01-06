@@ -31,6 +31,7 @@ type WorkspaceConfig struct {
 	Plugins     PluginsConfig               `yaml:"plugins,omitempty"`
 	Update      UpdateSettings              `yaml:"update,omitempty"`
 	Storage     StorageSettings             `yaml:"storage,omitempty"`
+	Browser     *BrowserSettings            `yaml:"browser,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -158,6 +159,16 @@ type TrelloSettings struct {
 	APIKey string `yaml:"api_key,omitempty"` // Trello API key (env vars take priority)
 	Token  string `yaml:"token,omitempty"`   // Trello token (env vars take priority)
 	Board  string `yaml:"board,omitempty"`   // Default board ID
+}
+
+// BrowserSettings holds browser automation configuration.
+type BrowserSettings struct {
+	Enabled       bool   `yaml:"enabled,omitempty"`        // Enable browser automation (default: false)
+	Host          string `yaml:"host,omitempty"`           // CDP host (default: localhost)
+	Port          int    `yaml:"port,omitempty"`           // CDP port: 0 = random (default), 9222 = existing Chrome
+	Headless      bool   `yaml:"headless,omitempty"`       // Launch headless browser (default: false)
+	Timeout       int    `yaml:"timeout,omitempty"`        // Operation timeout in seconds (default: 30)
+	ScreenshotDir string `yaml:"screenshot_dir,omitempty"` // Directory for screenshots (default: .mehrhof/screenshots)
 }
 
 // AgentAliasConfig defines a user-defined agent alias that wraps an existing agent
@@ -379,6 +390,21 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 # workflow:
 #     delete_work_on_finish: false   # Keep work dirs after finish (default)
 #     delete_work_on_abandon: true   # Delete work dirs on abandon (default)
+`
+	}
+
+	// Add browser section comment if browser is nil or disabled
+	if cfg.Browser == nil || !cfg.Browser.Enabled {
+		content += `
+# Browser automation settings
+# Enable AI agent browser access for web-based tasks (login, testing, scraping)
+# Example:
+# browser:
+#     enabled: true                  # Enable browser automation
+#     headless: false                # Show browser window (false = visible, true = background)
+#     port: 0                        # 0 = random isolated browser, 9222 = existing Chrome
+#     timeout: 30                    # Operation timeout in seconds
+#     screenshot_dir: ".mehrhof/screenshots"
 `
 	}
 
