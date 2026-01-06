@@ -9,7 +9,6 @@ import (
 
 // Error types for the GitLab provider.
 var (
-	ErrNoToken              = errors.New("gitlab token not found")
 	ErrProjectNotDetected   = errors.New("could not detect project from git remote")
 	ErrProjectNotConfigured = errors.New("project not configured")
 	ErrIssueNotFound        = errors.New("issue not found")
