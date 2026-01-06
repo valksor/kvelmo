@@ -14,14 +14,11 @@ import (
 	"time"
 
 	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
-	defaultTimeout = 30 * time.Second
-	maxRetries     = 3
-	initialBackoff = 1 * time.Second
-
 	// Jira API versions.
 	cloudAPIVersion   = "3"
 	serverAPIVersion  = "2"
@@ -52,7 +49,7 @@ func NewClient(token, email, baseURL string) *Client {
 	}
 
 	return &Client{
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: httpclient.NewHTTPClient(),
 		baseURL:    baseURL,
 		token:      token,
 		email:      email,

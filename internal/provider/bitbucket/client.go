@@ -11,11 +11,12 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 )
 
 const (
 	defaultBaseURL = "https://api.bitbucket.org/2.0"
-	defaultTimeout = 30 * time.Second
 )
 
 // Client wraps the Bitbucket API.
@@ -31,7 +32,7 @@ type Client struct {
 // NewClient creates a new Bitbucket API client.
 func NewClient(username, appPassword, workspace, repoSlug string) *Client {
 	return &Client{
-		httpClient:  &http.Client{Timeout: defaultTimeout},
+		httpClient:  httpclient.NewHTTPClient(),
 		baseURL:     defaultBaseURL,
 		username:    username,
 		appPassword: appPassword,
@@ -233,7 +234,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	return respBody, nil

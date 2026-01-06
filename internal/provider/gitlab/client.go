@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 // ptr is a helper to create a pointer to a value.
@@ -47,11 +49,7 @@ func NewClient(token, host, projectPath string, projectID int64) *Client {
 // ResolveToken resolves the GitLab API token.
 // The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if configToken != "" {
-		return configToken, nil
-	}
-
-	return "", ErrNoToken
+	return token.ResolveToken(token.Config("GITLAB", configToken))
 }
 
 // getProjectID retrieves the numeric project ID from the project path.

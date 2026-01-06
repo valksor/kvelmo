@@ -10,12 +10,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
-	defaultTimeout = 30 * time.Second
-	apiVersion     = "7.1"
+	apiVersion = "7.1"
 )
 
 // Client wraps the Azure DevOps API.
@@ -29,7 +30,7 @@ type Client struct {
 // NewClient creates a new Azure DevOps API client.
 func NewClient(organization, project, token string) *Client {
 	return &Client{
-		httpClient:   &http.Client{Timeout: defaultTimeout},
+		httpClient:   httpclient.NewHTTPClient(),
 		organization: organization,
 		project:      project,
 		token:        token,
@@ -39,11 +40,7 @@ func NewClient(organization, project, token string) *Client {
 // ResolveToken resolves the Azure DevOps API token.
 // The configToken should be from config.yaml and may use ${VAR} syntax.
 func ResolveToken(configToken string) (string, error) {
-	if configToken != "" {
-		return configToken, nil
-	}
-
-	return "", ErrNoToken
+	return token.ResolveToken(token.Config("AZURE_DEVOPS", configToken))
 }
 
 // SetOrganization updates the organization.
@@ -216,7 +213,7 @@ func (c *Client) doRequest(ctx context.Context, method, url string, body any) ([
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	return respBody, nil
@@ -365,7 +362,7 @@ func (c *Client) UpdateWorkItem(ctx context.Context, id int, updates []PatchOper
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	var workItem WorkItem
@@ -505,7 +502,7 @@ func (c *Client) CreateWorkItem(ctx context.Context, workItemType string, update
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, wrapAPIError(fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody)))
+		return nil, wrapAPIError(httpclient.NewHTTPError(resp.StatusCode, string(respBody)))
 	}
 
 	var workItem WorkItem

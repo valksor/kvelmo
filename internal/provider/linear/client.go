@@ -11,14 +11,12 @@ import (
 	"time"
 
 	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 const (
 	defaultBaseURL = "https://api.linear.app"
-	defaultTimeout = 30 * time.Second
-	maxRetries     = 3
-	initialBackoff = 1 * time.Second
 )
 
 // Client wraps the Linear API client.
@@ -31,7 +29,7 @@ type Client struct {
 // NewClient creates a new Linear API client.
 func NewClient(token string) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: httpclient.NewHTTPClient(),
 		baseURL:    defaultBaseURL,
 		token:      token,
 	}
