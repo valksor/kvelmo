@@ -6,6 +6,24 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Compile-time interface compliance checks
+// ──────────────────────────────────────────────────────────────────────────────
+
+var (
+	_ provider.Reader          = (*Provider)(nil)
+	_ provider.Identifier      = (*Provider)(nil)
+	_ provider.Lister          = (*Provider)(nil)
+	_ provider.CommentFetcher  = (*Provider)(nil)
+	_ provider.Commenter       = (*Provider)(nil)
+	_ provider.StatusUpdater   = (*Provider)(nil)
+	_ provider.LabelManager    = (*Provider)(nil)
+	_ provider.Snapshotter     = (*Provider)(nil)
+	_ provider.PRCreator       = (*Provider)(nil)
+	_ provider.WorkUnitCreator = (*Provider)(nil)
+	_ provider.SubtaskFetcher  = (*Provider)(nil)
+)
+
 func TestParseReference(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -371,28 +389,6 @@ func TestParseTags(t *testing.T) {
 				if tag != tt.want[i] {
 					t.Errorf("parseTags(%q)[%d] = %q, want %q", tt.tags, i, tag, tt.want[i])
 				}
-			}
-		})
-	}
-}
-
-func TestSlugify(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"Hello World", "hello-world"},
-		{"Fix login bug", "fix-login-bug"},
-		{"API  --  Integration", "api-integration"},
-		{"Test!!!123", "test123"},
-		{"Very Long Title That Should Be Truncated After Fifty Characters For Branch Names", "very-long-title-that-should-be-truncated-after-fif"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			got := slugify(tt.input)
-			if got != tt.want {
-				t.Errorf("slugify(%q) = %q, want %q", tt.input, got, tt.want)
 			}
 		})
 	}

@@ -10,6 +10,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
 
 func TestParseReference(t *testing.T) {
@@ -892,8 +893,8 @@ func TestResolveToken(t *testing.T) {
 				if err == nil {
 					t.Errorf("ResolveToken() expected error, got nil")
 				}
-				if !errors.Is(err, ErrNoToken) {
-					t.Errorf("ResolveToken() error = %v, want ErrNoToken", err)
+				if !errors.Is(err, token.ErrNoToken) {
+					t.Errorf("ResolveToken() error = %v, want token.ErrNoToken", err)
 				}
 
 				return
@@ -1026,7 +1027,7 @@ func TestProviderNew(t *testing.T) {
 				return provider.NewConfig()
 			},
 			wantErr:     true,
-			errContains: "token not found",
+			errContains: "no token found",
 		},
 	}
 

@@ -3,10 +3,12 @@ package bitbucket
 import (
 	"errors"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -1056,25 +1058,25 @@ func TestWrapAPIError(t *testing.T) {
 		},
 		{
 			name:        "401 unauthorized",
-			err:         errors.New("API error 401: bad credentials"),
+			err:         httpclient.NewHTTPError(http.StatusUnauthorized, "bad credentials"),
 			wantType:    "ErrUnauthorized",
 			wantContain: "unauthorized",
 		},
 		{
 			name:        "403 forbidden",
-			err:         errors.New("API error 403: access denied"),
+			err:         httpclient.NewHTTPError(http.StatusForbidden, "access denied"),
 			wantType:    "ErrUnauthorized",
 			wantContain: "unauthorized",
 		},
 		{
 			name:        "429 rate limited",
-			err:         errors.New("API error 429: too many requests"),
+			err:         httpclient.NewHTTPError(http.StatusTooManyRequests, "too many requests"),
 			wantType:    "ErrRateLimited",
 			wantContain: "rate limit",
 		},
 		{
 			name:        "404 not found",
-			err:         errors.New("API error 404: issue not found"),
+			err:         httpclient.NewHTTPError(http.StatusNotFound, "issue not found"),
 			wantType:    "ErrIssueNotFound",
 			wantContain: "not found",
 		},
