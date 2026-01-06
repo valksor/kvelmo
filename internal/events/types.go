@@ -19,6 +19,11 @@ const (
 	TypePlanCompleted Type = "plan_completed"
 	TypeImplementDone Type = "implement_done"
 	TypePRCreated     Type = "pr_created"
+
+	// Browser-related events.
+	TypeBrowserAction     Type = "browser_action"
+	TypeBrowserTabOpened  Type = "browser_tab_opened"
+	TypeBrowserScreenshot Type = "browser_screenshot"
 )
 
 // Event is the base event structure.
@@ -295,6 +300,82 @@ func (e PRCreatedEvent) ToEvent() Event {
 			"task_id":   e.TaskID,
 			"pr_number": e.PRNumber,
 			"pr_url":    e.PRURL,
+		},
+	}
+}
+
+// BrowserActionEvent for browser automation actions.
+type BrowserActionEvent struct {
+	Timestamp time.Time
+	Action    string
+	URL       string
+	Selector  string
+	Success   bool
+	Error     string
+}
+
+func (e BrowserActionEvent) ToEvent() Event {
+	if e.Timestamp.IsZero() {
+		e.Timestamp = time.Now()
+	}
+
+	return Event{
+		Type:      TypeBrowserAction,
+		Timestamp: e.Timestamp,
+		Data: map[string]any{
+			"action":   e.Action,
+			"url":      e.URL,
+			"selector": e.Selector,
+			"success":  e.Success,
+			"error":    e.Error,
+		},
+	}
+}
+
+// BrowserTabOpenedEvent when a browser tab is opened.
+type BrowserTabOpenedEvent struct {
+	Timestamp time.Time
+	TabID     string
+	URL       string
+	Title     string
+}
+
+func (e BrowserTabOpenedEvent) ToEvent() Event {
+	if e.Timestamp.IsZero() {
+		e.Timestamp = time.Now()
+	}
+
+	return Event{
+		Type:      TypeBrowserTabOpened,
+		Timestamp: e.Timestamp,
+		Data: map[string]any{
+			"tab_id": e.TabID,
+			"url":    e.URL,
+			"title":  e.Title,
+		},
+	}
+}
+
+// BrowserScreenshotEvent when a screenshot is captured.
+type BrowserScreenshotEvent struct {
+	Timestamp time.Time
+	TabID     string
+	Format    string
+	FullPath  string
+}
+
+func (e BrowserScreenshotEvent) ToEvent() Event {
+	if e.Timestamp.IsZero() {
+		e.Timestamp = time.Now()
+	}
+
+	return Event{
+		Type:      TypeBrowserScreenshot,
+		Timestamp: e.Timestamp,
+		Data: map[string]any{
+			"tab_id":    e.TabID,
+			"format":    e.Format,
+			"full_path": e.FullPath,
 		},
 	}
 }
