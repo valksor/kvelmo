@@ -109,6 +109,25 @@ func (g *Generator) buildUpdatePrompt(changes provider.ChangeSet, oldContent, ne
 		builder.WriteString(fmt.Sprintf("Status changed from `%s` to `%s`\n\n", changes.OldStatus, changes.NewStatus))
 	}
 
+	if changes.PriorityChanged {
+		builder.WriteString("## Priority Changes\n\n")
+		builder.WriteString(fmt.Sprintf("Priority changed from `%s` to `%s`\n\n", changes.OldPriority, changes.NewPriority))
+	}
+
+	if changes.LabelsChanged {
+		builder.WriteString("## Label Changes\n\n")
+		builder.WriteString(fmt.Sprintf("Old labels: %s\n", strings.Join(changes.OldLabels, ", ")))
+		builder.WriteString(fmt.Sprintf("New labels: %s\n\n", strings.Join(changes.NewLabels, ", ")))
+	}
+
+	if changes.AssigneesChanged {
+		builder.WriteString("## Assignee Changes\n\n")
+		oldAssignees := provider.PersonNames(changes.OldAssignees)
+		newAssignees := provider.PersonNames(changes.NewAssignees)
+		builder.WriteString(fmt.Sprintf("Old assignees: %s\n", strings.Join(oldAssignees, ", ")))
+		builder.WriteString(fmt.Sprintf("New assignees: %s\n\n", strings.Join(newAssignees, ", ")))
+	}
+
 	if len(changes.NewComments) > 0 {
 		builder.WriteString(fmt.Sprintf("## New Comments (%d)\n\n", len(changes.NewComments)))
 		for _, comment := range changes.NewComments {
