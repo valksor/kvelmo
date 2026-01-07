@@ -32,6 +32,7 @@ type WorkspaceConfig struct {
 	Update      UpdateSettings              `yaml:"update,omitempty"`
 	Storage     StorageSettings             `yaml:"storage,omitempty"`
 	Browser     *BrowserSettings            `yaml:"browser,omitempty"`
+	MCP         *MCPSettings                `yaml:"mcp,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -169,6 +170,19 @@ type BrowserSettings struct {
 	Headless      bool   `yaml:"headless,omitempty"`       // Launch headless browser (default: false)
 	Timeout       int    `yaml:"timeout,omitempty"`        // Operation timeout in seconds (default: 30)
 	ScreenshotDir string `yaml:"screenshot_dir,omitempty"` // Directory for screenshots (default: .mehrhof/screenshots)
+}
+
+// MCPSettings holds MCP (Model Context Protocol) server configuration.
+type MCPSettings struct {
+	Enabled   bool               `yaml:"enabled,omitempty"`    // Enable MCP server (default: false)
+	ToolList  []string           `yaml:"tools,omitempty"`      // Allowlist of tools to expose (empty = all safe tools)
+	RateLimit *RateLimitSettings `yaml:"rate_limit,omitempty"` // Rate limiting for tool calls
+}
+
+// RateLimitSettings holds rate limiter configuration for MCP server.
+type RateLimitSettings struct {
+	Rate  float64 `yaml:"rate,omitempty"`  // Requests per second (default: 10)
+	Burst int     `yaml:"burst,omitempty"` // Burst size (default: 20)
 }
 
 // AgentAliasConfig defines a user-defined agent alias that wraps an existing agent
@@ -405,6 +419,23 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #     port: 0                        # 0 = random isolated browser, 9222 = existing Chrome
 #     timeout: 30                    # Operation timeout in seconds
 #     screenshot_dir: ".mehrhof/screenshots"
+`
+	}
+
+	// Add MCP section comment if mcp is nil or disabled
+	if cfg.MCP == nil || !cfg.MCP.Enabled {
+		content += `
+# MCP (Model Context Protocol) server settings
+# Allow AI agents to call Mehrhof commands via MCP protocol
+# Example:
+# mcp:
+#     enabled: true                  # Enable MCP server
+#     tools:                         # Optional: specific tools to expose (empty = all safe tools)
+#         - mehr_status
+#         - mehr_browser_goto
+#     rate_limit:                    # Optional: rate limiting for tool calls
+#         rate: 10                   # Requests per second (default: 10)
+#         burst: 20                  # Burst size (default: 20)
 `
 	}
 
