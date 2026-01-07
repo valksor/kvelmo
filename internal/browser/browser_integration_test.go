@@ -12,10 +12,11 @@ import (
 
 // TestBrowserIntegration tests end-to-end browser functionality.
 // This is an integration test that requires Chrome to be installed.
-// Set TEST_BROWSER_HEADLESS=true to run in headless mode (default in CI).
+// Headless mode is the default. Set TEST_BROWSER_VISIBLE=true to see the browser window.
 func TestBrowserIntegration(t *testing.T) {
-	// Use headless mode in CI or when explicitly requested
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	// Use headless mode by default
+	// Set TEST_BROWSER_VISIBLE=true to see the browser window
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 
 	// Use timeout context to prevent hanging
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -160,7 +161,7 @@ func TestMonitorLifecycle(t *testing.T) {
 		t.Skip("skipping monitor lifecycle test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -219,7 +220,7 @@ func TestMultipleTabs(t *testing.T) {
 		t.Skip("skipping multiple tabs test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
@@ -275,7 +276,7 @@ func TestNavigationTests(t *testing.T) {
 		t.Skip("skipping navigation test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -411,7 +412,7 @@ func TestDOMOperations(t *testing.T) {
 		t.Skip("skipping DOM operations test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -467,7 +468,7 @@ func TestReconnect(t *testing.T) {
 		t.Skip("skipping reconnect test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
