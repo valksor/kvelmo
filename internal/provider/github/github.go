@@ -232,6 +232,11 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		},
 	}
 
+	// Add milestone if present
+	if issue.Milestone != nil && issue.Milestone.GetTitle() != "" {
+		wu.Metadata["milestone"] = issue.Milestone.GetTitle()
+	}
+
 	// Fetch comments if available
 	comments, err := p.client.GetIssueComments(ctx, ref.IssueNumber)
 	if err == nil && len(comments) > 0 {
@@ -250,8 +255,8 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		wu.Attachments = make([]provider.Attachment, len(imageURLs))
 		for i, url := range imageURLs {
 			wu.Attachments[i] = provider.Attachment{
-				ID:   fmt.Sprintf("img-%d", i),
-				Name: fmt.Sprintf("image-%d", i),
+				ID:   AttachmentIDFromURL(url), // Stable ID based on URL hash
+				Name: fmt.Sprintf("image-%d", i+1),
 				URL:  url,
 			}
 		}
