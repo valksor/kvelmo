@@ -16,11 +16,6 @@
 - **AI Agents**
   - [Overview & Config](agents/index.md)
   - [Claude](agents/claude.md)
-  - [Gemini](agents/gemini.md)
-  - [Ollama](agents/ollama.md)
-  - [Aider](agents/aider.md)
-  - [Copilot](agents/copilot.md)
-  - [OpenRouter](agents/openrouter.md)
   - [Codex](agents/codex.md)
 
 - **Task Providers**
