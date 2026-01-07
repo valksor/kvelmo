@@ -10,29 +10,30 @@ import (
 
 // WorkspaceConfig holds workspace-specific configuration that users can customize.
 type WorkspaceConfig struct {
-	Git         GitSettings                 `yaml:"git"`
-	Agent       AgentSettings               `yaml:"agent"`
-	Workflow    WorkflowSettings            `yaml:"workflow"`
-	Providers   ProvidersSettings           `yaml:"providers,omitempty"`
-	Env         map[string]string           `yaml:"env,omitempty"`
-	Agents      map[string]AgentAliasConfig `yaml:"agents,omitempty"`
-	GitHub      *GitHubSettings             `yaml:"github,omitempty"`
-	GitLab      *GitLabSettings             `yaml:"gitlab,omitempty"`
-	Notion      *NotionSettings             `yaml:"notion,omitempty"`
-	Jira        *JiraSettings               `yaml:"jira,omitempty"`
-	Linear      *LinearSettings             `yaml:"linear,omitempty"`
-	Wrike       *WrikeSettings              `yaml:"wrike,omitempty"`
-	YouTrack    *YouTrackSettings           `yaml:"youtrack,omitempty"`
-	Bitbucket   *BitbucketSettings          `yaml:"bitbucket,omitempty"`
-	Asana       *AsanaSettings              `yaml:"asana,omitempty"`
-	ClickUp     *ClickUpSettings            `yaml:"clickup,omitempty"`
-	AzureDevOps *AzureDevOpsSettings        `yaml:"azure_devops,omitempty"`
-	Trello      *TrelloSettings             `yaml:"trello,omitempty"`
-	Plugins     PluginsConfig               `yaml:"plugins,omitempty"`
-	Update      UpdateSettings              `yaml:"update,omitempty"`
-	Storage     StorageSettings             `yaml:"storage,omitempty"`
-	Browser     *BrowserSettings            `yaml:"browser,omitempty"`
-	MCP         *MCPSettings                `yaml:"mcp,omitempty"`
+	Git           GitSettings                 `yaml:"git"`
+	Agent         AgentSettings               `yaml:"agent"`
+	Workflow      WorkflowSettings            `yaml:"workflow"`
+	Providers     ProvidersSettings           `yaml:"providers,omitempty"`
+	Env           map[string]string           `yaml:"env,omitempty"`
+	Agents        map[string]AgentAliasConfig `yaml:"agents,omitempty"`
+	GitHub        *GitHubSettings             `yaml:"github,omitempty"`
+	GitLab        *GitLabSettings             `yaml:"gitlab,omitempty"`
+	Notion        *NotionSettings             `yaml:"notion,omitempty"`
+	Jira          *JiraSettings               `yaml:"jira,omitempty"`
+	Linear        *LinearSettings             `yaml:"linear,omitempty"`
+	Wrike         *WrikeSettings              `yaml:"wrike,omitempty"`
+	YouTrack      *YouTrackSettings           `yaml:"youtrack,omitempty"`
+	Bitbucket     *BitbucketSettings          `yaml:"bitbucket,omitempty"`
+	Asana         *AsanaSettings              `yaml:"asana,omitempty"`
+	ClickUp       *ClickUpSettings            `yaml:"clickup,omitempty"`
+	AzureDevOps   *AzureDevOpsSettings        `yaml:"azure_devops,omitempty"`
+	Trello        *TrelloSettings             `yaml:"trello,omitempty"`
+	Plugins       PluginsConfig               `yaml:"plugins,omitempty"`
+	Update        UpdateSettings              `yaml:"update,omitempty"`
+	Storage       StorageSettings             `yaml:"storage,omitempty"`
+	Browser       *BrowserSettings            `yaml:"browser,omitempty"`
+	MCP           *MCPSettings                `yaml:"mcp,omitempty"`
+	Specification SpecificationSettings       `yaml:"specification,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -241,6 +242,11 @@ type StorageSettings struct {
 	WorkDir string `yaml:"work_dir,omitempty"` // Path to work directory (relative to project root)
 }
 
+// SpecificationSettings holds specification-related configuration.
+type SpecificationSettings struct {
+	SaveInProject bool `yaml:"save_in_project"` // Save specs in project .mehrhof/<task-id>/specifications/ (default: false)
+}
+
 // ProvidersSettings holds provider-related configuration.
 type ProvidersSettings struct {
 	Default string `yaml:"default,omitempty"` // Default provider for bare references (e.g., "file", "directory", "github")
@@ -277,6 +283,9 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 		},
 		Storage: StorageSettings{
 			WorkDir: "work", // Default: work/ (relative to global workspace location)
+		},
+		Specification: SpecificationSettings{
+			SaveInProject: false, // Default: disabled (specs stored in ~/.mehrhof only)
 		},
 		Env: make(map[string]string),
 	}
@@ -436,6 +445,17 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #     rate_limit:                    # Optional: rate limiting for tool calls
 #         rate: 10                   # Requests per second (default: 10)
 #         burst: 20                  # Burst size (default: 20)
+`
+	}
+
+	// Add specification section comment if save_in_project is disabled (default)
+	if !cfg.Specification.SaveInProject {
+		content += `
+# Specification settings
+# Control where specifications are stored
+# Example:
+# specification:
+#     save_in_project: true          # Save specs in .mehrhof/<task-id>/specifications/ (default: false)
 `
 	}
 
