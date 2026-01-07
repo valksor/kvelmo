@@ -33,6 +33,7 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 - **Workflow engine** - Reliable plan → implement → review → finish cycle with checkpointing and undo/redo
 - **Provider integrations** - Connect to 16+ task sources (Empty, Files, GitHub issues, Jira, Linear, Notion, etc.)
 - **Browser automation** - Chrome automation for web testing, scraping, and authentication flows
+- **MCP server** - Expose commands and workspace data to AI agents via Model Context Protocol
 - **State tracking** - Task state persists across sessions; resume anytime with `mehr continue`
 - **Auto mode** - Fully automated workflow: `mehr auto file:task.md` handles everything
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
@@ -154,6 +155,7 @@ mehr finish
 |---------|-------------|
 | `mehr init` | Initialize workspace (creates `.mehrhof/` for config, task data in home dir) |
 | `mehr start <ref>` | Start task from file, directory, or provider |
+| `mehr sync <task-id>` | Sync task from provider and generate delta specification if changed |
 | `mehr auto <ref>` | Full automation: plan → implement → review → finish |
 | `mehr plan` | Generate AI implementation specifications |
 | `mehr implement` | Execute the specifications |
@@ -166,6 +168,7 @@ mehr finish
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
+| `mehr mcp` | Start MCP server for AI agent integration |
 
 **See [CLI Reference](https://mehrhof.valksor.com/docs/#/cli/index) for all commands and flags.**
 
@@ -221,21 +224,14 @@ Each worktree is an isolated git checkout. Mehrhof auto-detects which task you'r
 
 > **⚠️ Claude is the Primary Supported Agent**
 >
-> Mehrhof is designed and optimized primarily for **Claude**. Other agents may work, may not work, or may not work the same way as Claude. Implementation completeness varies across agents.
->
-> While you may find other agents adequate for your needs, they may have limited feature support or different behavior compared to Claude.
+> Mehrhof is designed and optimized for **Claude**. Codex is available as an alternative agent with potentially different feature support.
 
 Mehrhof supports multiple AI backends:
 
 | Agent | Description |
 |-------|-------------|
-| Claude | Default agent via Claude CLI (recommended) |
-| Gemini | Google's Gemini models |
-| Ollama | Local models (Llama, Mistral, etc.) |
-| Aider | AI pair programming tool |
-| Copilot | GitHub Copilot integration |
-| OpenRouter | Multiple models via OpenRouter API |
-| Codex | OpenAI Codex models |
+| Claude | Primary agent via Claude CLI (recommended) |
+| Codex | Alternative AI agent |
 
 **See [AI Agents documentation](https://mehrhof.valksor.com/docs/#/agents/index) for configuration and custom aliases.**
 

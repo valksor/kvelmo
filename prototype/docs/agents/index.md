@@ -1,9 +1,8 @@
 # AI Agents
 
-> **⚠️ Integration Status**
+> **⚠️ Claude is the Primary Supported Agent**
 >
-> - **Claude**: Primary agent - fully supported and tested
-> - **Other agents**: May work, may not work, or may not work the same as Claude
+> Mehrhof is designed and optimized for **Claude**. Codex is available as an alternative.
 >
 > Agent implementations depend on third-party APIs that may change. Manual testing recommended before production use.
 
@@ -33,12 +32,7 @@ When using other agents:
 
 | Agent | Description |
 |-------|-------------|
-| [Claude](claude.md) | Anthropic's Claude AI (Default) |
-| [Gemini](gemini.md) | Google Gemini with 1M token context |
-| [Aider](aider.md) | Git-aware AI pair programming |
-| [Ollama](ollama.md) | Local AI inference |
-| [Copilot](copilot.md) | GitHub Copilot integration |
-| [OpenRouter](openrouter.md) | Access to 100+ AI models |
+| [Claude](claude.md) | Anthropic's Claude AI (Default, Primary) |
 | [Codex](codex.md) | Alternative AI agent |
 
 ## Basic Configuration
