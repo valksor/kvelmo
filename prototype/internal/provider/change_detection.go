@@ -3,6 +3,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -25,6 +26,12 @@ type ChangeSet struct {
 	NewStatus          Status
 	OldPriority        Priority
 	NewPriority        Priority
+	LabelsChanged      bool     // True if labels changed
+	OldLabels          []string // Old labels
+	NewLabels          []string // New labels
+	AssigneesChanged   bool     // True if assignees changed
+	OldAssignees       []Person // Old assignees
+	NewAssignees       []Person // New assignees
 }
 
 // DetectChanges compares two work units and returns a ChangeSet describing the differences.
@@ -38,6 +45,10 @@ func DetectChanges(old, updated *WorkUnit) ChangeSet {
 		NewStatus:      updated.Status,
 		OldPriority:    old.Priority,
 		NewPriority:    updated.Priority,
+		OldLabels:      old.Labels,
+		NewLabels:      updated.Labels,
+		OldAssignees:   old.Assignees,
+		NewAssignees:   updated.Assignees,
 	}
 
 	// Check for title changes
@@ -62,6 +73,18 @@ func DetectChanges(old, updated *WorkUnit) ChangeSet {
 	// Check for priority changes
 	if old.Priority != updated.Priority {
 		changes.PriorityChanged = true
+		changes.HasChanges = true
+	}
+
+	// Check for label changes
+	if !EqualStringSlices(old.Labels, updated.Labels) {
+		changes.LabelsChanged = true
+		changes.HasChanges = true
+	}
+
+	// Check for assignee changes
+	if !equalPersonSlices(old.Assignees, updated.Assignees) {
+		changes.AssigneesChanged = true
 		changes.HasChanges = true
 	}
 
@@ -193,10 +216,19 @@ func (c ChangeSet) Summary() string {
 		parts = append(parts, fmt.Sprintf("title changed from %q to %q", c.OldTitle, c.NewTitle))
 	}
 	if c.StatusChanged {
-		parts = append(parts, string(c.NewStatus))
+		parts = append(parts, fmt.Sprintf("status changed from %s to %s", c.OldStatus, c.NewStatus))
+	}
+	if c.PriorityChanged {
+		parts = append(parts, fmt.Sprintf("priority changed from %s to %s", c.OldPriority, c.NewPriority))
 	}
 	if c.DescriptionChanged {
 		parts = append(parts, "description updated")
+	}
+	if c.LabelsChanged {
+		parts = append(parts, "labels updated")
+	}
+	if c.AssigneesChanged {
+		parts = append(parts, "assignees updated")
 	}
 	if len(c.NewComments) > 0 {
 		parts = append(parts, countedStr(len(c.NewComments), "new comment"))
@@ -233,8 +265,26 @@ func (c ChangeSet) FormatDiff() string {
 		builder.WriteString(fmt.Sprintf("  Status: %s → %s\n", c.OldStatus, c.NewStatus))
 	}
 
+	if c.PriorityChanged {
+		builder.WriteString(fmt.Sprintf("  Priority: %s → %s\n", c.OldPriority, c.NewPriority))
+	}
+
 	if c.DescriptionChanged {
 		builder.WriteString("  Description: updated\n")
+	}
+
+	if c.LabelsChanged {
+		oldLabels := formatStringSlice(c.OldLabels)
+		newLabels := formatStringSlice(c.NewLabels)
+		builder.WriteString(fmt.Sprintf("  Labels: %s → %s\n", oldLabels, newLabels))
+	}
+
+	if c.AssigneesChanged {
+		oldAssignees := PersonNames(c.OldAssignees)
+		newAssignees := PersonNames(c.NewAssignees)
+		oldStr := formatStringSlice(oldAssignees)
+		newStr := formatStringSlice(newAssignees)
+		builder.WriteString(fmt.Sprintf("  Assignees: %s → %s\n", oldStr, newStr))
 	}
 
 	if len(c.NewComments) > 0 {
@@ -278,6 +328,16 @@ func truncate(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
+// formatStringSlice formats a string slice for display.
+// Returns "(none)" for nil/empty slices, otherwise comma-separated values.
+func formatStringSlice(slice []string) string {
+	if len(slice) == 0 {
+		return "(none)"
+	}
+
+	return strings.Join(slice, ", ")
+}
+
 // GetMostRecentUpdate returns the most recent update timestamp from comments and attachments.
 func (c ChangeSet) GetMostRecentUpdate() time.Time {
 	var mostRecent time.Time
@@ -308,4 +368,117 @@ func ResolveAuthor(comment Comment) string {
 	}
 
 	return ""
+}
+
+// EqualStringSlices compares two string slices for equality.
+// The comparison is order-insensitive and treats nil and empty slices as equal.
+func EqualStringSlices(a, b []string) bool {
+	// Treat nil and empty slices as equal
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+
+	// Fast path: check in-order first (common case)
+	// Only allocate and sort if the order differs
+	equalInOrder := true
+	for i := range a {
+		if a[i] != b[i] {
+			equalInOrder = false
+
+			break
+		}
+	}
+	if equalInOrder {
+		return true
+	}
+
+	// For small slices, use a map-based comparison (O(n)) instead of sort (O(n log n))
+	// This is more efficient for the typical case of 1-5 labels
+	if len(a) <= 10 {
+		return equalStringSlicesMap(a, b)
+	}
+
+	// For larger slices, use sorting
+	aCopy := make([]string, len(a))
+	bCopy := make([]string, len(b))
+	copy(aCopy, a)
+	copy(bCopy, b)
+
+	sort.Strings(aCopy)
+	sort.Strings(bCopy)
+
+	for i := range aCopy {
+		if aCopy[i] != bCopy[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// equalStringSlicesMap compares two string slices using a map.
+// More efficient than sorting for small slices.
+func equalStringSlicesMap(a, b []string) bool {
+	// Build a map from the first slice
+	seen := make(map[string]int, len(a))
+	for _, s := range a {
+		seen[s]++
+	}
+
+	// Check all elements in second slice exist in first with same counts
+	for _, s := range b {
+		count, exists := seen[s]
+		if !exists || count == 0 {
+			return false
+		}
+		seen[s]--
+	}
+
+	// Verify all counts are zero
+	for _, count := range seen {
+		if count != 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// equalPersonSlices compares two Person slices for equality.
+// The comparison is order-insensitive, compares by ID, and treats duplicates within
+// each slice as the same person (e.g., [{ID:"1"}, {ID:"1"}] has one unique person).
+// Returns true if both slices contain the same set of unique persons.
+func equalPersonSlices(a, b []Person) bool {
+	// Treat nil and empty slices as equal
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+
+	// Deduplicate within each slice (count unique IDs)
+	aIDs := make(map[string]bool, len(a))
+	for _, p := range a {
+		aIDs[p.ID] = true
+	}
+
+	bIDs := make(map[string]bool, len(b))
+	for _, p := range b {
+		bIDs[p.ID] = true
+	}
+
+	// Compare unique ID counts
+	if len(aIDs) != len(bIDs) {
+		return false
+	}
+
+	// Verify all IDs from a exist in b
+	for id := range aIDs {
+		if !bIDs[id] {
+			return false
+		}
+	}
+
+	return true
 }

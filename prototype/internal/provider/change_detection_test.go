@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -265,5 +266,250 @@ func TestResolveAuthor(t *testing.T) {
 				t.Errorf("ResolveAuthor() = %q, want %q", result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestDetectChanges_LabelsChanged(t *testing.T) {
+	old := &WorkUnit{
+		Title:  "Test Task",
+		Labels: []string{"bug", "urgent"},
+	}
+
+	updated := &WorkUnit{
+		Title:  "Test Task",
+		Labels: []string{"bug", "enhancement"},
+	}
+
+	changes := DetectChanges(old, updated)
+
+	if !changes.LabelsChanged {
+		t.Error("expected LabelsChanged to be true")
+	}
+	if !changes.HasChanges {
+		t.Error("expected HasChanges to be true")
+	}
+}
+
+func TestDetectChanges_AssigneesChanged(t *testing.T) {
+	old := &WorkUnit{
+		Title:     "Test Task",
+		Assignees: []Person{{ID: "user1", Name: "Alice"}},
+	}
+
+	updated := &WorkUnit{
+		Title:     "Test Task",
+		Assignees: []Person{{ID: "user2", Name: "Bob"}},
+	}
+
+	changes := DetectChanges(old, updated)
+
+	if !changes.AssigneesChanged {
+		t.Error("expected AssigneesChanged to be true")
+	}
+	if !changes.HasChanges {
+		t.Error("expected HasChanges to be true")
+	}
+}
+
+func TestDetectChanges_LabelsOrderInsensitive(t *testing.T) {
+	old := &WorkUnit{
+		Title:  "Test Task",
+		Labels: []string{"bug", "urgent", "enhancement"},
+	}
+
+	updated := &WorkUnit{
+		Title:  "Test Task",
+		Labels: []string{"enhancement", "bug", "urgent"},
+	}
+
+	changes := DetectChanges(old, updated)
+
+	if changes.LabelsChanged {
+		t.Error("expected LabelsChanged to be false when order differs but labels are same")
+	}
+}
+
+func TestDetectChanges_AssigneesOrderInsensitive(t *testing.T) {
+	old := &WorkUnit{
+		Title:     "Test Task",
+		Assignees: []Person{{ID: "user1"}, {ID: "user2"}},
+	}
+
+	updated := &WorkUnit{
+		Title:     "Test Task",
+		Assignees: []Person{{ID: "user2"}, {ID: "user1"}},
+	}
+
+	changes := DetectChanges(old, updated)
+
+	if changes.AssigneesChanged {
+		t.Error("expected AssigneesChanged to be false when order differs but assignees are same")
+	}
+}
+
+func TestEqualStringSlices_NilSafety(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        []string
+		b        []string
+		expected bool
+	}{
+		{
+			name:     "both nil",
+			a:        nil,
+			b:        nil,
+			expected: true,
+		},
+		{
+			name:     "first nil, second empty",
+			a:        nil,
+			b:        []string{},
+			expected: true,
+		},
+		{
+			name:     "first empty, second nil",
+			a:        []string{},
+			b:        nil,
+			expected: true,
+		},
+		{
+			name:     "both empty",
+			a:        []string{},
+			b:        []string{},
+			expected: true,
+		},
+		{
+			name:     "nil vs non-empty",
+			a:        nil,
+			b:        []string{"a"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := EqualStringSlices(tt.a, tt.b)
+			if result != tt.expected {
+				t.Errorf("EqualStringSlices() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestEqualPersonSlices_Duplicates(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        []Person
+		b        []Person
+		expected bool
+	}{
+		{
+			name:     "with duplicates in both",
+			a:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			b:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			expected: true,
+		},
+		{
+			name:     "different duplicate counts are equal after deduplication",
+			a:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			b:        []Person{{ID: "1"}, {ID: "2"}},
+			expected: true, // Now equal after deduplication
+		},
+		{
+			name:     "nil safety",
+			a:        nil,
+			b:        nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs empty",
+			a:        nil,
+			b:        []Person{},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := equalPersonSlices(tt.a, tt.b)
+			if result != tt.expected {
+				t.Errorf("equalPersonSlices() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestPersonNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		persons  []Person
+		expected []string
+	}{
+		{
+			name:     "all have names",
+			persons:  []Person{{ID: "1", Name: "Alice"}, {ID: "2", Name: "Bob"}},
+			expected: []string{"Alice", "Bob"},
+		},
+		{
+			name:     "mixed names and IDs",
+			persons:  []Person{{ID: "1", Name: "Alice"}, {ID: "2"}},
+			expected: []string{"Alice", "2"},
+		},
+		{
+			name:     "all IDs only",
+			persons:  []Person{{ID: "1"}, {ID: "2"}},
+			expected: []string{"1", "2"},
+		},
+		{
+			name:     "empty slice",
+			persons:  []Person{},
+			expected: []string{},
+		},
+		{
+			name:     "nil slice",
+			persons:  nil,
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PersonNames(tt.persons)
+			if len(result) != len(tt.expected) {
+				t.Errorf("PersonNames() length = %d, want %d", len(result), len(tt.expected))
+
+				return
+			}
+			for i := range result {
+				if result[i] != tt.expected[i] {
+					t.Errorf("PersonNames()[%d] = %q, want %q", i, result[i], tt.expected[i])
+				}
+			}
+		})
+	}
+}
+
+func TestChangeSet_Summary_StatusAndPriority(t *testing.T) {
+	changes := ChangeSet{
+		HasChanges:      true,
+		StatusChanged:   true,
+		PriorityChanged: true,
+		OldStatus:       StatusOpen,
+		NewStatus:       StatusDone,
+		OldPriority:     PriorityNormal,
+		NewPriority:     PriorityHigh,
+	}
+
+	summary := changes.Summary()
+	if summary == "" {
+		t.Error("expected non-empty summary")
+	}
+
+	// Check that it shows "old → new" format
+	if !strings.Contains(summary, "status changed from") {
+		t.Errorf("Summary() should show status change in 'from → to' format, got: %s", summary)
+	}
+	if !strings.Contains(summary, "priority changed from") {
+		t.Errorf("Summary() should show priority change in 'from → to' format, got: %s", summary)
 	}
 }
