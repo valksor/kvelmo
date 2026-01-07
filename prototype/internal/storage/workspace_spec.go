@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,6 +13,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// validTaskIDRegex is pre-compiled to avoid re-compiling on every validation call.
+// Valid task IDs contain only alphanumeric characters, hyphens, and underscores.
+var validTaskIDRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // SpecificationsDir returns the specifications directory path.
 func (w *Workspace) SpecificationsDir(taskID string) string {
@@ -25,11 +30,160 @@ func (w *Workspace) SpecificationPath(taskID string, number int) string {
 	return filepath.Join(w.SpecificationsDir(taskID), filename)
 }
 
-// SaveSpecification saves a specification file (markdown).
-func (w *Workspace) SaveSpecification(taskID string, number int, content string) error {
-	specPath := w.SpecificationPath(taskID, number)
+// ProjectSpecificationsDir returns the project-local specifications directory path.
+// Returns .mehrhof/<task-id>/specifications/.
+func (w *Workspace) ProjectSpecificationsDir(taskID string) string {
+	return filepath.Join(w.taskRoot, taskID, specsDirName)
+}
 
-	return os.WriteFile(specPath, []byte(content), 0o644)
+// ProjectSpecificationPath returns the project-local path for a specification file.
+// Returns .mehrhof/<task-id>/specifications/specification-N.md.
+func (w *Workspace) ProjectSpecificationPath(taskID string, number int) string {
+	filename := fmt.Sprintf("specification-%d.md", number)
+
+	return filepath.Join(w.ProjectSpecificationsDir(taskID), filename)
+}
+
+// isValidTaskID validates that a taskID is safe to use as a directory name.
+// It rejects empty strings, path traversal attempts, and characters that are
+// problematic on common filesystems. Valid task IDs contain only alphanumeric
+// characters, hyphens, and underscores.
+func isValidTaskID(taskID string) bool {
+	if taskID == "" {
+		return false
+	}
+	// Reject path traversal attempts and absolute paths
+	if strings.Contains(taskID, "..") || strings.ContainsAny(taskID, "\\/") {
+		return false
+	}
+	// Restrict to alphanumeric, hyphen, underscore - safe on all platforms
+	return validTaskIDRegex.MatchString(taskID)
+}
+
+// syncFile flushes file contents to stable storage. On Unix systems, this
+// calls fsync to ensure data is written to disk before proceeding. On other
+// systems, it returns nil as the guarantee may not be available.
+func syncFile(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// Close error is less critical than sync error, and we already
+		// have the sync result to return.
+		_ = f.Close()
+	}()
+
+	return f.Sync()
+}
+
+// SaveSpecification saves a specification file (markdown).
+//
+// The specification is always saved to internal storage
+// (~/.mehrhof/workspaces/<project-id>/work/). If the workspace config has
+// specification.save_in_project enabled, it is also saved to project-local
+// storage (.mehrhof/<task-id>/specifications/).
+//
+// Guarantees:
+//   - If nil is returned, the specification was successfully saved to internal storage
+//   - If an error is returned, no specification was written to any location
+//   - Project-local save failures are logged but do not cause error returns
+//
+// Error handling:
+//   - Invalid taskID: returns error (fails before any writes)
+//   - Internal storage write failure: returns error (authoritative storage)
+//   - Config load failure: logs warning, skips project-local write, returns nil
+//   - Project-local write failure: logs error, returns nil (internal spec exists)
+func (w *Workspace) SaveSpecification(taskID string, number int, content string) error {
+	// Validate taskID before any operations (fail fast)
+	if !isValidTaskID(taskID) {
+		return fmt.Errorf("invalid task ID %q: must contain only alphanumeric characters, hyphens, and underscores", taskID)
+	}
+
+	// Step 1: Always save to internal storage (authoritative location)
+	specPath := w.SpecificationPath(taskID, number)
+	if err := os.WriteFile(specPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("save internal specification: %w", err)
+	}
+
+	// Step 2: Load config to check if project-local saving is enabled
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		// Config is unavailable - internal spec was saved successfully, so log
+		// a warning and continue. The spec is still accessible from internal storage.
+		slog.Warn("failed to load workspace config, skipping project-local specification save",
+			"task_id", taskID,
+			"spec_number", number,
+			"error", err,
+		)
+
+		return nil
+	}
+
+	// Step 3: Save to project-local storage if enabled (non-fatal on failure)
+	if cfg.Specification.SaveInProject {
+		projectSpecPath := w.ProjectSpecificationPath(taskID, number)
+		projectDir := filepath.Dir(projectSpecPath)
+
+		// Ensure directory exists
+		if err := os.MkdirAll(projectDir, 0o755); err != nil {
+			slog.Error("failed to create project specifications directory",
+				"task_id", taskID,
+				"spec_number", number,
+				"path", projectDir,
+				"error", err,
+			)
+			// Don't fail - internal spec is authoritative
+			return nil
+		}
+
+		// Atomic write: write to unique temp file, sync, then rename.
+		// Using timestamp suffix ensures concurrent writes don't race.
+		tmpPath := projectSpecPath + ".tmp." + strconv.FormatInt(time.Now().UnixNano(), 36)
+
+		// Write to temp file
+		if err := os.WriteFile(tmpPath, []byte(content), 0o644); err != nil {
+			slog.Error("failed to write project-local specification (temp file)",
+				"task_id", taskID,
+				"spec_number", number,
+				"path", tmpPath,
+				"error", err,
+			)
+			// Don't fail - internal spec is authoritative
+
+			return nil
+		}
+
+		// Sync to disk before rename to prevent data loss on crash
+		if err := syncFile(tmpPath); err != nil {
+			slog.Error("failed to sync project-local specification before rename",
+				"task_id", taskID,
+				"spec_number", number,
+				"path", tmpPath,
+				"error", err,
+			)
+			// Clean up temp file and don't fail - internal spec is authoritative
+			_ = os.Remove(tmpPath)
+
+			return nil
+		}
+
+		// Atomic rename (replaces existing file atomically on POSIX systems)
+		if err := os.Rename(tmpPath, projectSpecPath); err != nil {
+			// Clean up temp file
+			_ = os.Remove(tmpPath)
+			slog.Error("failed to finalize project-local specification (rename)",
+				"task_id", taskID,
+				"spec_number", number,
+				"error", err,
+			)
+			// Don't fail - internal spec is authoritative and was saved successfully
+
+			return nil
+		}
+	}
+
+	return nil
 }
 
 // LoadSpecification loads a specification file content.

@@ -737,6 +737,299 @@ func TestNextSpecNumber(t *testing.T) {
 	}
 }
 
+func TestProjectSpecsDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+
+	// ProjectSpecificationsDir is in the project .mehrhof directory
+	path := ws.ProjectSpecificationsDir("test123")
+	if !strings.HasSuffix(path, ".mehrhof/test123/specifications") {
+		t.Errorf("ProjectSpecificationsDir() = %q, want suffix .mehrhof/test123/specifications", path)
+	}
+}
+
+func TestProjectSpecPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+
+	// ProjectSpecificationPath is in the project .mehrhof directory
+	path := ws.ProjectSpecificationPath("test123", 1)
+	if !strings.HasSuffix(path, ".mehrhof/test123/specifications/specification-1.md") {
+		t.Errorf("ProjectSpecificationPath() = %q, want suffix .mehrhof/test123/specifications/specification-1.md", path)
+	}
+}
+
+func TestSaveSpecificationInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Enable project-local saving
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Specification.SaveInProject = true
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork(test123): %v", err)
+	}
+
+	content := "# Spec 1\n\nThis is the first spec."
+	if err := ws.SaveSpecification("test123", 1, content); err != nil {
+		t.Fatalf("SaveSpecification failed: %v", err)
+	}
+
+	// Verify internal storage exists
+	internalPath := ws.SpecificationPath("test123", 1)
+	if _, err := os.Stat(internalPath); err != nil {
+		t.Errorf("Internal spec not found: %s, error: %v", internalPath, err)
+	}
+
+	// Verify project-local storage exists
+	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	if _, err := os.Stat(projectPath); err != nil {
+		t.Errorf("Project-local spec not found: %s, error: %v", projectPath, err)
+	}
+
+	// Verify content matches
+	loaded, err := os.ReadFile(projectPath)
+	if err != nil {
+		t.Fatalf("ReadFile(projectPath) failed: %v", err)
+	}
+	if string(loaded) != content {
+		t.Errorf("Project spec content mismatch, got %q, want %q", string(loaded), content)
+	}
+}
+
+func TestSaveSpecificationNotInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Ensure project-local saving is disabled (default)
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if cfg.Specification.SaveInProject {
+		t.Skip("SaveInProject should be false by default")
+	}
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork(test123): %v", err)
+	}
+
+	content := "# Spec 1\n\nThis is the first spec."
+	if err := ws.SaveSpecification("test123", 1, content); err != nil {
+		t.Fatalf("SaveSpecification failed: %v", err)
+	}
+
+	// Verify internal storage exists
+	internalPath := ws.SpecificationPath("test123", 1)
+	if _, err := os.Stat(internalPath); err != nil {
+		t.Errorf("Internal spec not found: %s, error: %v", internalPath, err)
+	}
+
+	// Verify project-local storage does NOT exist
+	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
+		t.Errorf("Project spec should not exist when SaveInProject=false, path: %s", projectPath)
+	}
+}
+
+func TestSaveSpecificationConfigLoadFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Enable project-local saving
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Specification.SaveInProject = true
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork(test123): %v", err)
+	}
+
+	// Corrupt the config file to simulate a config load failure
+	configPath := ws.ConfigPath()
+	if err := os.WriteFile(configPath, []byte("invalid: yaml: content: [unclosed"), 0o644); err != nil {
+		t.Fatalf("Failed to corrupt config: %v", err)
+	}
+
+	// SaveSpecification should still succeed (internal spec is saved)
+	// but should log a warning and skip project-local save
+	content := "# Spec 1\n\nThis is the first spec."
+	if err := ws.SaveSpecification("test123", 1, content); err != nil {
+		t.Errorf("SaveSpecification should succeed even with config load failure, got: %v", err)
+	}
+
+	// Verify internal storage exists
+	internalPath := ws.SpecificationPath("test123", 1)
+	if _, err := os.Stat(internalPath); err != nil {
+		t.Errorf("Internal spec should exist even with config load failure: %v", err)
+	}
+
+	// Verify project-local storage does NOT exist (config load failed)
+	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
+		t.Errorf("Project spec should not exist when config load fails, path: %s", projectPath)
+	}
+}
+
+func TestSaveSpecificationProjectWriteFails(t *testing.T) {
+	// Skip test when running as root - root can write to read-only directories
+	// which would make this test pass for the wrong reason.
+	if os.Getuid() == 0 {
+		t.Skip("skipping permission test when running as root")
+	}
+
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Enable project-local saving
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Specification.SaveInProject = true
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork(test123): %v", err)
+	}
+
+	// Make the project directory read-only to simulate a write failure
+	projectDir := filepath.Join(ws.TaskRoot(), "test123")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatalf("Failed to create project dir: %v", err)
+	}
+	// Make directory read-only
+	if err := os.Chmod(projectDir, 0o444); err != nil {
+		t.Fatalf("Failed to chmod directory: %v", err)
+	}
+	// Ensure we can restore permissions even if test fails
+	defer func() {
+		_ = os.Chmod(projectDir, 0o755)
+	}()
+
+	// SaveSpecification should still succeed (internal spec is saved)
+	// but should log an error when project write fails
+	content := "# Spec 1\n\nThis is the first spec."
+	if err := ws.SaveSpecification("test123", 1, content); err != nil {
+		t.Errorf("SaveSpecification should succeed even when project write fails, got: %v", err)
+	}
+
+	// Restore permissions for verification
+	if err := os.Chmod(projectDir, 0o755); err != nil {
+		t.Fatalf("Failed to restore permissions: %v", err)
+	}
+
+	// Verify internal storage exists
+	internalPath := ws.SpecificationPath("test123", 1)
+	if _, err := os.Stat(internalPath); err != nil {
+		t.Errorf("Internal spec should exist even when project write fails: %v", err)
+	}
+
+	// Verify content is correct
+	loaded, err := os.ReadFile(internalPath)
+	if err != nil {
+		t.Fatalf("ReadFile(internalPath) failed: %v", err)
+	}
+	if string(loaded) != content {
+		t.Errorf("Internal spec content mismatch, got %q, want %q", string(loaded), content)
+	}
+
+	// Verify project-local storage does NOT exist (write failed)
+	projectSpecPath := ws.ProjectSpecificationPath("test123", 1)
+	if _, err := os.Stat(projectSpecPath); !os.IsNotExist(err) {
+		t.Errorf("Project spec should not exist when write fails, path: %s", projectSpecPath)
+	}
+}
+
+func TestInvalidTaskIDRejected(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+
+	invalidTaskIDs := []struct {
+		name    string
+		taskID  string
+		wantErr bool
+	}{
+		{"empty string", "", true},
+		{"path traversal", "../etc/passwd", true},
+		{"backslash traversal", "..\\windows\\system32", true},
+		{"absolute path unix", "/etc/passwd", true},
+		{"absolute path windows", "C:\\Windows\\System32", true},
+		{"mixed traversal", "foo/../bar", true},
+		{"special characters", "foo@bar#baz", true},
+		{"spaces", "foo bar", true},
+		{"null character", "foo\x00bar", true},
+		{"valid - alphanumeric", "abc123", false},
+		{"valid - with hyphen", "abc-123", false},
+		{"valid - with underscore", "abc_123", false},
+		{"valid - mixed", "ABC-123_def", false},
+	}
+
+	for _, tt := range invalidTaskIDs {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create work directory for this test case so valid IDs can be saved
+			if !tt.wantErr {
+				if _, err := ws.CreateWork(tt.taskID, source); err != nil {
+					t.Fatalf("CreateWork(%q): %v", tt.taskID, err)
+				}
+			}
+
+			err := ws.SaveSpecification(tt.taskID, 1, "content")
+			if (err != nil) != tt.wantErr {
+				// For valid IDs, check if the error is specifically about validation
+				// (not directory not found)
+				if tt.wantErr {
+					t.Errorf("SaveSpecification(%q) error = %v, wantErr %v", tt.taskID, err, tt.wantErr)
+				} else {
+					// For valid IDs, we expect no validation error
+					// Directory not found is ok for this test - we're testing validation
+					if err != nil && !strings.Contains(err.Error(), "invalid task ID") {
+						t.Errorf("SaveSpecification(%q) should not fail validation, got: %v", tt.taskID, err)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestGatherSpecsContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)
