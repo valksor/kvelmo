@@ -38,10 +38,10 @@ func (p *Provider) DownloadAttachment(ctx context.Context, workUnitID, attachmen
 	// Extract image URLs from issue body
 	urls := ExtractImageURLs(issue.GetBody())
 
-	// Find the attachment by ID (format: img-N)
+	// Find the attachment by ID (format: img-hash)
 	var targetURL string
-	for i, url := range urls {
-		if attachmentID == fmt.Sprintf("img-%d", i) {
+	for _, url := range urls {
+		if attachmentID == AttachmentIDFromURL(url) {
 			targetURL = url
 
 			break

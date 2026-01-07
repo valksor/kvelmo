@@ -1,6 +1,7 @@
 package github
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -155,6 +156,15 @@ func ExtractImageURLs(body string) []string {
 	}
 
 	return urls
+}
+
+// AttachmentIDFromURL generates a stable attachment ID from a URL.
+// Uses SHA256 hash (16 bytes) of the URL to ensure the same URL always gets the same ID.
+// 16 bytes provides 128 bits of collision resistance, which is sufficient for attachment IDs.
+func AttachmentIDFromURL(url string) string {
+	hash := sha256.Sum256([]byte(url))
+
+	return fmt.Sprintf("img-%x", hash[:16])
 }
 
 // TaskItem represents a parsed task list item from markdown.
