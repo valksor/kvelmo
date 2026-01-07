@@ -17,7 +17,7 @@ func TestEmptyURL(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -57,7 +57,7 @@ func TestInvalidURL(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -110,7 +110,7 @@ func TestUnreachableURL(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -146,7 +146,7 @@ func TestMalformedSelectors(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -197,7 +197,7 @@ func TestSpecialCharactersInSelector(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -244,7 +244,7 @@ func TestVeryLongSelector(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -301,7 +301,7 @@ func TestVeryShortTimeout(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 
 	cfg := Config{
 		Host:     "localhost",
@@ -332,7 +332,7 @@ func TestMultipleConnectDisconnect(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -371,7 +371,7 @@ func TestConnectWhenAlreadyConnected(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -423,7 +423,7 @@ func TestOperationsOnClosedTab(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -507,7 +507,7 @@ func TestContextCancellation(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cfg := Config{
@@ -537,7 +537,7 @@ func TestScreenshotFormats(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -587,7 +587,7 @@ func TestInvalidScreenshotQuality(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -630,7 +630,7 @@ func TestEmptyJavaScript(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -665,7 +665,7 @@ func TestVeryLongJavaScript(t *testing.T) {
 		t.Skip("skipping edge case test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

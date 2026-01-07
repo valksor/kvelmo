@@ -962,8 +962,8 @@ func TestAdapterIntegration(t *testing.T) {
 		t.Skip("skipping adapter integration test in short mode")
 	}
 
-	if os.Getenv("CI") == "" && os.Getenv("TEST_BROWSER_HEADLESS") != "true" {
-		t.Skip("set TEST_BROWSER_HEADLESS=true to run integration test")
+	if os.Getenv("TEST_BROWSER_VISIBLE") != "true" {
+		t.Skip("set TEST_BROWSER_VISIBLE=true to run integration test")
 	}
 
 	ctx := context.Background()

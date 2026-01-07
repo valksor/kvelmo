@@ -17,7 +17,7 @@ func TestConcurrentTabs(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -104,7 +104,7 @@ func TestConcurrentCloseTab(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -158,7 +158,7 @@ func TestConcurrentMonitors(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -211,7 +211,7 @@ func TestConcurrentListAndModify(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -270,7 +270,7 @@ func TestConcurrentNavigation(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -337,7 +337,7 @@ func TestConcurrentDisconnect(t *testing.T) {
 		t.Skip("skipping concurrency test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
@@ -379,7 +379,7 @@ func TestRaceDetectorTest(t *testing.T) {
 		t.Skip("skipping race detector test in short mode")
 	}
 
-	headless := os.Getenv("CI") != "" || os.Getenv("TEST_BROWSER_HEADLESS") == "true"
+	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
 
 	cfg := Config{
