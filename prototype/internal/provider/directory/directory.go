@@ -3,6 +3,8 @@ package directory
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -16,6 +18,18 @@ import (
 
 // ProviderName is the registered name for this provider.
 const ProviderName = "directory"
+
+// FileInfo holds metadata about a file in a directory.
+type FileInfo struct {
+	Path    string    `yaml:"path"`
+	Size    int64     `yaml:"size"`
+	ModTime time.Time `yaml:"mod_time"`
+}
+
+// DirectorySnapshot represents the state of a directory at a point in time.
+type DirectorySnapshot struct {
+	Files []FileInfo `yaml:"files"`
+}
 
 // Provider handles directory-based tasks.
 type Provider struct {
@@ -145,11 +159,82 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		}
 	}
 
+	// Scan directory and track all files as attachments
+	files, err := p.scanDirectory(id)
+	if err != nil {
+		// Log but don't fail - attachments are optional
+		slog.Warn("Directory scan failed, continuing without attachments", "dir", id, "error", err)
+	}
+	// Pre-allocate slice for better performance
+	attachments := make([]provider.Attachment, 0, len(files))
+	for _, file := range files {
+		attachments = append(attachments, provider.Attachment{
+			ID:   file.Path,
+			Name: filepath.Base(file.Path),
+			URL:  file.Path,
+		})
+	}
+	wu.Attachments = attachments
+
 	// Find subtasks (other files in directory)
 	subtasks := p.findSubtasks(id)
 	wu.Subtasks = subtasks
 
 	return wu, nil
+}
+
+// scanDirectory scans a directory and returns metadata about all files.
+//
+// Error handling strategy:
+//   - Returns an error if the directory cannot be accessed or walked
+//   - Logs warnings for individual files that cannot be accessed but continues scanning
+//   - Files with permission errors are skipped and counted
+//
+// Returns (files, nil) on success (even if some files were skipped).
+// Returns (nil, error) if the directory walk itself fails.
+func (p *Provider) scanDirectory(dir string) ([]FileInfo, error) {
+	// Pre-allocate slice for better performance
+	files := make([]FileInfo, 0)
+	skipCount := 0
+
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Log warning but continue scanning
+			slog.Warn("Directory scan: cannot access file", "path", path, "error", err)
+			skipCount++
+
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		info, err := d.Info()
+		if err != nil {
+			slog.Warn("Directory scan: cannot get file info", "path", path, "error", err)
+			skipCount++
+
+			return nil
+		}
+
+		files = append(files, FileInfo{
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		})
+
+		return nil
+	})
+	if err != nil {
+		// Walk failed - return error to distinguish from empty directory
+		return nil, fmt.Errorf("directory walk failed: %w", err)
+	}
+
+	if skipCount > 0 {
+		slog.Info("Directory scan: completed with skipped files", "dir", dir, "skip_count", skipCount)
+	}
+
+	return files, nil
 }
 
 // List returns all files in directory as WorkUnits.
