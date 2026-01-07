@@ -27,6 +27,7 @@ These flags work with any command:
 | [start](cli/start.md)       | Register a new task from file or directory |
 | [status](cli/status.md)     | Show task status                           |
 | [continue](cli/continue.md) | Show status and suggested next actions     |
+| [sync](cli/sync.md)         | Sync task from provider and generate delta spec |
 | [abandon](cli/abandon.md)   | Abandon task without merging               |
 
 ### Workflow
@@ -61,6 +62,7 @@ These flags work with any command:
 | [cost](cli/cost.md)       | Show token usage and costs               |
 | [list](cli/list.md)       | List all tasks in workspace              |
 | [version](cli/version.md) | Print version information                |
+| [mcp](cli/mcp.md)         | Start MCP server for AI agent integration |
 
 ### Provider Authentication
 
