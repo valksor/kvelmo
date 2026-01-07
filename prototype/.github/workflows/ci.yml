@@ -70,25 +70,22 @@ jobs:
                 run: make quality
 
             -   name: Test
-                env:
-                    CI: true
                 run: make test
 
             -   name: Test (Race Detector)
                 if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 run: go test -race ./...
 
-            # Coverage upload on push to master, only from darwin-arm64
             -   name: Install goveralls
-                if: github.event_name == 'push' && matrix.goos == 'darwin' && matrix.goarch == 'arm64'
+                if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 run: go install github.com/mattn/goveralls@latest
 
             -   name: Generate coverage
-                if: github.event_name == 'push' && matrix.goos == 'darwin' && matrix.goarch == 'arm64'
+                if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 run: make coverage
 
             -   name: Send coverage to Coveralls
-                if: github.event_name == 'push' && matrix.goos == 'darwin' && matrix.goarch == 'arm64'
+                if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 env:
                     COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 run: goveralls -coverprofile=covprofile -service=github
