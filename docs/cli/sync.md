@@ -68,6 +68,8 @@ The sync command detects changes in:
 - Description
 - Status (e.g., Open → In Progress)
 - Priority (e.g., Normal → High)
+- Labels (added, removed, or changed)
+- Assignees (added or removed)
 - New comments
 - Updated comments (comments with modified text)
 - New attachments
@@ -85,8 +87,14 @@ After syncing:
 
 Currently supported providers for sync:
 
+**Local Providers:**
+- `file` - Markdown files (detects file modifications, attachment references, frontmatter metadata)
+- `directory` - Directories (detects new/deleted/modified files, README changes)
+- `empty` - Empty tasks (generates delta specification from note metadata changes)
+
+**External Providers:**
+- `github` - GitHub issues (full change detection including labels, assignees, milestones)
 - `wrike` - Wrike tasks
-- `github` - GitHub issues
 - `gitlab` - GitLab issues
 - `jira` - Jira tickets
 - `linear` - Linear issues
