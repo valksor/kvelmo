@@ -78,3 +78,155 @@ func TestProvider_Fetch(t *testing.T) {
 		t.Errorf("Fetch() Priority = %v, want %v", wu.Priority, provider.PriorityNormal)
 	}
 }
+
+func TestParseMetadataFromNotes_CaseInsensitive(t *testing.T) {
+	tests := []struct {
+		name         string
+		notes        []string
+		wantStatus   string
+		wantPriority string
+		wantLabels   []string
+	}{
+		{
+			name:         "uppercase @STATUS",
+			notes:        []string{"@STATUS: done"},
+			wantStatus:   "done",
+			wantPriority: "",
+			wantLabels:   nil,
+		},
+		{
+			name:         "mixed case @Status",
+			notes:        []string{"@Status: in_progress"},
+			wantStatus:   "in_progress",
+			wantPriority: "",
+			wantLabels:   nil,
+		},
+		{
+			name:         "uppercase @PRIORITY",
+			notes:        []string{"@PRIORITY: critical"},
+			wantStatus:   "",
+			wantPriority: "critical",
+			wantLabels:   nil,
+		},
+		{
+			name:         "mixed case @Priority",
+			notes:        []string{"@Priority: low"},
+			wantStatus:   "",
+			wantPriority: "low",
+			wantLabels:   nil,
+		},
+		{
+			name:         "uppercase @LABELS",
+			notes:        []string{"@LABELS: bug,urgent"},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   []string{"bug", "urgent"},
+		},
+		{
+			name:         "mixed case @Labels",
+			notes:        []string{"@Labels: feature,enhancement"},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   []string{"feature", "enhancement"},
+		},
+		{
+			name:         "all metadata with mixed case",
+			notes:        []string{"@Status: review", "@Priority: HIGH", "@LaBeLs: bug"},
+			wantStatus:   "review",
+			wantPriority: "HIGH",
+			wantLabels:   []string{"bug"},
+		},
+		{
+			name:         "value preserves case",
+			notes:        []string{"@status: In_Progress", "@priority: CrItIcAl"},
+			wantStatus:   "In_Progress",
+			wantPriority: "CrItIcAl",
+			wantLabels:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStatus, gotPriority, gotLabels := ParseMetadataFromNotes(tt.notes)
+
+			if gotStatus != tt.wantStatus {
+				t.Errorf("ParseMetadataFromNotes() status = %q, want %q", gotStatus, tt.wantStatus)
+			}
+			if gotPriority != tt.wantPriority {
+				t.Errorf("ParseMetadataFromNotes() priority = %q, want %q", gotPriority, tt.wantPriority)
+			}
+			if !provider.EqualStringSlices(gotLabels, tt.wantLabels) {
+				t.Errorf("ParseMetadataFromNotes() labels = %v, want %v", gotLabels, tt.wantLabels)
+			}
+		})
+	}
+}
+
+func TestParseMetadataFromNotes(t *testing.T) {
+	tests := []struct {
+		name         string
+		notes        []string
+		wantStatus   string
+		wantPriority string
+		wantLabels   []string
+	}{
+		{
+			name:         "all metadata present",
+			notes:        []string{"@status: in_progress", "@priority: high", "@labels: bug,urgent"},
+			wantStatus:   "in_progress",
+			wantPriority: "high",
+			wantLabels:   []string{"bug", "urgent"},
+		},
+		{
+			name:         "labels with trailing comma",
+			notes:        []string{"@labels: bug,urgent,"},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   []string{"bug", "urgent"},
+		},
+		{
+			name:         "labels with quotes",
+			notes:        []string{`@labels: "bug","urgent"`},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   []string{"bug", "urgent"},
+		},
+		{
+			name:         "no metadata",
+			notes:        []string{"just a regular note"},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   nil,
+		},
+		{
+			name:         "empty notes",
+			notes:        []string{},
+			wantStatus:   "",
+			wantPriority: "",
+			wantLabels:   nil,
+		},
+		{
+			name:         "mixed valid and invalid notes",
+			notes:        []string{"some text", "@status: done", "more text", "@labels: feature"},
+			wantStatus:   "done",
+			wantPriority: "",
+			wantLabels:   []string{"feature"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStatus, gotPriority, gotLabels := ParseMetadataFromNotes(tt.notes)
+
+			if gotStatus != tt.wantStatus {
+				t.Errorf("ParseMetadataFromNotes() status = %q, want %q", gotStatus, tt.wantStatus)
+			}
+			if gotPriority != tt.wantPriority {
+				t.Errorf("ParseMetadataFromNotes() priority = %q, want %q", gotPriority, tt.wantPriority)
+			}
+			if !provider.EqualStringSlices(gotLabels, tt.wantLabels) {
+				t.Errorf("ParseMetadataFromNotes() labels = %v, want %v", gotLabels, tt.wantLabels)
+			}
+		})
+	}
+}

@@ -11,6 +11,81 @@ import (
 
 const ProviderName = "empty"
 
+// ParseMetadataFromNotes parses metadata directives from note content.
+// Supported formats (case-insensitive, must be at start of note):
+//
+//	@status: in_progress
+//	@priority: high
+//	@labels: bug,urgent
+//
+// Label parsing supports:
+//   - Comma-separated values
+//   - Trailing commas are ignored
+//   - Basic quote stripping (removes surrounding quotes from labels)
+//
+// Limitations:
+//   - Does not support quoted strings with commas inside them
+//   - For complex label parsing, use frontmatter instead
+//   - Validation of status/priority values is the caller's responsibility
+//
+// Returns parsed status, priority, and labels. Unset fields are returned as empty/nil.
+// If multiple notes have the same metadata key, the last one wins.
+func ParseMetadataFromNotes(notes []string) (string, string, []string) {
+	var status, priority string
+	var labels []string
+
+	for _, note := range notes {
+		note = strings.TrimSpace(note)
+		if note == "" {
+			continue
+		}
+
+		// Only match if the note STARTS with the metadata tag (case-insensitive)
+		// This prevents false positives like "I checked the @status: flag"
+		lowerNote := strings.ToLower(note)
+
+		if strings.HasPrefix(lowerNote, "@status:") {
+			// Trim the @status: prefix from original (to preserve case of value)
+			status = strings.TrimSpace(note[len("@status:"):])
+		}
+		if strings.HasPrefix(lowerNote, "@priority:") {
+			priority = strings.TrimSpace(note[len("@priority:"):])
+		}
+		if strings.HasPrefix(lowerNote, "@labels:") {
+			labelsStr := strings.TrimSpace(note[len("@labels:"):])
+			labels = parseLabels(labelsStr)
+		}
+	}
+
+	return status, priority, labels
+}
+
+// parseLabels parses a comma-separated label string.
+// Supports trailing commas and basic quote stripping.
+func parseLabels(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	labelParts := strings.Split(s, ",")
+	labels := make([]string, 0, len(labelParts))
+	for _, part := range labelParts {
+		label := strings.TrimSpace(part)
+		// Strip surrounding quotes if present
+		label = strings.Trim(label, `"`)
+		if label != "" {
+			labels = append(labels, label)
+		}
+	}
+
+	// Return nil instead of empty slice for consistency
+	if len(labels) == 0 {
+		return nil
+	}
+
+	return labels
+}
+
 type Provider struct{}
 
 // Info returns provider metadata.
