@@ -11,32 +11,11 @@ import (
 	"sync"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/agent/aider"
-	"github.com/valksor/go-mehrhof/internal/agent/claude"
-	"github.com/valksor/go-mehrhof/internal/agent/codex"
-	"github.com/valksor/go-mehrhof/internal/agent/copilot"
-	"github.com/valksor/go-mehrhof/internal/agent/gemini"
-	"github.com/valksor/go-mehrhof/internal/agent/ollama"
-	"github.com/valksor/go-mehrhof/internal/agent/openrouter"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/output"
-	"github.com/valksor/go-mehrhof/internal/provider/asana"
-	"github.com/valksor/go-mehrhof/internal/provider/azuredevops"
-	"github.com/valksor/go-mehrhof/internal/provider/bitbucket"
-	"github.com/valksor/go-mehrhof/internal/provider/clickup"
-	"github.com/valksor/go-mehrhof/internal/provider/directory"
-	"github.com/valksor/go-mehrhof/internal/provider/empty"
-	"github.com/valksor/go-mehrhof/internal/provider/file"
-	"github.com/valksor/go-mehrhof/internal/provider/github"
-	"github.com/valksor/go-mehrhof/internal/provider/gitlab"
-	"github.com/valksor/go-mehrhof/internal/provider/jira"
-	"github.com/valksor/go-mehrhof/internal/provider/linear"
-	"github.com/valksor/go-mehrhof/internal/provider/notion"
-	"github.com/valksor/go-mehrhof/internal/provider/trello"
-	"github.com/valksor/go-mehrhof/internal/provider/wrike"
-	"github.com/valksor/go-mehrhof/internal/provider/youtrack"
+	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
@@ -69,43 +48,11 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 	}
 
 	// Register standard providers
-	file.Register(cond.GetProviderRegistry())
-	directory.Register(cond.GetProviderRegistry())
-	empty.Register(cond.GetProviderRegistry())
-	github.Register(cond.GetProviderRegistry())
-	gitlab.Register(cond.GetProviderRegistry())
-	wrike.Register(cond.GetProviderRegistry())
-	linear.Register(cond.GetProviderRegistry())
-	jira.Register(cond.GetProviderRegistry())
-	notion.Register(cond.GetProviderRegistry())
-	trello.Register(cond.GetProviderRegistry())
-	youtrack.Register(cond.GetProviderRegistry())
-	bitbucket.Register(cond.GetProviderRegistry())
-	asana.Register(cond.GetProviderRegistry())
-	clickup.Register(cond.GetProviderRegistry())
-	azuredevops.Register(cond.GetProviderRegistry())
+	registration.RegisterStandardProviders(cond)
 
 	// Register standard agents
-	if err := claude.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register claude agent: %w", err)
-	}
-	if err := codex.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register codex agent: %w", err)
-	}
-	if err := aider.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register aider agent: %w", err)
-	}
-	if err := ollama.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register ollama agent: %w", err)
-	}
-	if err := copilot.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register copilot agent: %w", err)
-	}
-	if err := openrouter.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register openrouter agent: %w", err)
-	}
-	if err := gemini.Register(cond.GetAgentRegistry()); err != nil {
-		return nil, fmt.Errorf("register gemini agent: %w", err)
+	if err := registration.RegisterStandardAgents(cond); err != nil {
+		return nil, fmt.Errorf("register standard agents: %w", err)
 	}
 
 	// Initialize the conductor (loads workspace, detects agent, etc.)
