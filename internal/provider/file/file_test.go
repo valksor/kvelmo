@@ -530,3 +530,57 @@ Task description here.
 		t.Error("AgentConfig should be nil when agent is not specified in frontmatter")
 	}
 }
+
+func TestParseStatus(t *testing.T) {
+	tests := []struct {
+		input string
+		want  provider.Status
+	}{
+		// Open status variations
+		{"open", provider.StatusOpen},
+		{"OPEN", provider.StatusOpen},
+		{"Open", provider.StatusOpen},
+		{"todo", provider.StatusOpen},
+		{"backlog", provider.StatusOpen},
+
+		// In Progress status variations
+		{"in_progress", provider.StatusInProgress},
+		{"in-progress", provider.StatusInProgress},
+		{"in progress", provider.StatusInProgress},
+		{"In_Progress", provider.StatusInProgress},
+		{"doing", provider.StatusInProgress},
+		{"active", provider.StatusInProgress},
+		{"ACTIVE", provider.StatusInProgress},
+
+		// Review status variations
+		{"review", provider.StatusReview},
+		{"in_review", provider.StatusReview},
+		{"in-review", provider.StatusReview},
+		{"in review", provider.StatusReview},
+		{"In_Review", provider.StatusReview},
+		{"code_review", provider.StatusReview},
+		{"code-review", provider.StatusReview},
+
+		// Done status variations
+		{"done", provider.StatusDone},
+		{"DONE", provider.StatusDone},
+		{"closed", provider.StatusDone},
+		{"complete", provider.StatusDone},
+		{"completed", provider.StatusDone},
+		{"finished", provider.StatusDone},
+
+		// Unknown/empty defaults to Open
+		{"", provider.StatusOpen},
+		{"unknown", provider.StatusOpen},
+		{"random-text", provider.StatusOpen},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := parseStatus(tt.input)
+			if got != tt.want {
+				t.Errorf("parseStatus(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
