@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -112,8 +113,14 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Slug:        naming.Slugify(parsed.Title, 50),
 	}
 
+	// Extract attachment references from markdown
+	wu.Attachments = ExtractAttachmentReferences(parsed.Body)
+
 	// Apply frontmatter metadata if present
 	if parsed.Frontmatter != nil {
+		if parsed.Frontmatter.Status != "" {
+			wu.Status = parseStatus(parsed.Frontmatter.Status)
+		}
 		if parsed.Frontmatter.Priority != "" {
 			wu.Priority = parsePriority(parsed.Frontmatter.Priority)
 		}
@@ -180,6 +187,33 @@ func parsePriority(s string) provider.Priority {
 		return provider.PriorityLow
 	default:
 		return provider.PriorityNormal
+	}
+}
+
+func parseStatus(s string) provider.Status {
+	// Normalize: replace hyphens with underscores, split on whitespace, join with underscores, lowercase
+	// Handles all Unicode whitespace (spaces, tabs, non-breaking spaces, etc.)
+	normalized := strings.ReplaceAll(s, "-", "_")
+	fields := strings.Fields(normalized)
+	normalized = strings.ToLower(strings.Join(fields, "_"))
+
+	switch normalized {
+	case "open", "todo", "backlog":
+		return provider.StatusOpen
+	case "in_progress", "inprogress", "doing", "active":
+		return provider.StatusInProgress
+	case "review", "in_review", "inreview", "code_review", "codereview":
+		return provider.StatusReview
+	case "done", "closed", "complete", "completed", "finished":
+		return provider.StatusDone
+	default:
+		// Log warning for unrecognized status values - this helps catch typos in frontmatter
+		// Default to StatusOpen for backward compatibility
+		if s != "" {
+			slog.Warn("Unrecognized status value, defaulting to 'open'", "value", s, "normalized", normalized)
+		}
+
+		return provider.StatusOpen
 	}
 }
 

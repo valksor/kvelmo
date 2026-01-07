@@ -19,6 +19,7 @@ type StepAgentFrontmatter struct {
 type Frontmatter struct {
 	Title       string   `yaml:"title"`
 	Description string   `yaml:"description"`
+	Status      string   `yaml:"status,omitempty"` // Task status (e.g., "open", "in_progress", "done")
 	Priority    string   `yaml:"priority"`
 	Labels      []string `yaml:"labels"`
 	Assignees   []string `yaml:"assignees"`
