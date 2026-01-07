@@ -16,3 +16,4 @@ bun.lock
 covprofile
 internal/agent/browser/.mehrhof
 node_modules/
+/mehr
