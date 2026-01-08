@@ -4,12 +4,16 @@ package mcp
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 const (
 	// ProtocolVersion is the MCP protocol version supported by this server.
 	ProtocolVersion = "2024-11-05"
 )
+
+// ErrDisabled is returned when MCP is disabled via build tag.
+var ErrDisabled = errors.New("MCP server is disabled in this build (built with 'no_mcp' tag)")
 
 // Protocol-specific types for MCP (Model Context Protocol).
 // Based on JSON-RPC 2.0 with MCP-specific extensions.
