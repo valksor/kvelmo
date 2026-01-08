@@ -22,6 +22,10 @@ browser:
   port: 0                        # 0 = random isolated browser, 9222 = existing Chrome
   timeout: 30                    # Operation timeout in seconds
   screenshot_dir: ".mehrhof/screenshots"
+  cookie_profile: "default"      # Cookie profile name (default: "default")
+  cookie_auto_load: true         # Auto-load cookies on connect (default: true)
+  cookie_auto_save: true         # Auto-save cookies on disconnect (default: true)
+  cookie_dir: ""                 # Custom cookie directory (default: ~/.mehrhof/)
 ```
 
 ### Session Isolation
@@ -35,6 +39,24 @@ To connect to an existing Chrome instance, use `port: 9222` and launch Chrome wi
 ```bash
 google-chrome --remote-debugging-port=9222
 ```
+
+### Cookie Persistence
+
+Browser sessions can be persisted across runs using **named cookie profiles**. This enables:
+
+- **Session persistence**: Stay logged in across browser sessions
+- **Multiple accounts**: Use different profiles for personal vs work accounts (e.g., `default`, `work-github`, `client-a`)
+- **Cross-project usage**: Cookie profiles are stored globally in `~/.mehrhof/`, not per-workspace
+
+Cookie storage location:
+```
+~/.mehrhof/
+  ├── cookies-default.json        # Default profile
+  ├── cookies-work-github.json    # Work GitHub account
+  └── cookies-client-a.json       # Client-specific profile
+```
+
+When `cookie_auto_load` is enabled, cookies are automatically restored when the browser connects. When `cookie_auto_save` is enabled, cookies are saved when the browser disconnects.
 
 ## Commands
 
@@ -206,6 +228,71 @@ Listening to network requests for 5 seconds...
 [GET] https://example.com/favicon.ico - 404 Not Found
 ```
 
+### browser cookies export
+
+Export current browser cookies to a JSON file:
+
+```bash
+mehr browser cookies export [--profile=<name>] [--output=<path>]
+```
+
+Flags:
+- `--profile` - Cookie profile to export (default: "default", or from `--cookie-profile` flag)
+- `--output` - Output file path (default: `~/.mehrhof/cookies-<profile>.json`)
+
+Examples:
+```bash
+# Export default profile to default location
+mehr browser cookies export
+
+# Export work profile to custom path
+mehr browser cookies export --profile work-github --output /tmp/work-cookies.json
+
+# Export using profile flag set at command level
+mehr browser --cookie-profile client-a cookies export
+```
+
+### browser cookies import
+
+Import cookies from a JSON file to the browser:
+
+```bash
+mehr browser cookies import [--profile=<name>] [--file=<path>]
+```
+
+Flags:
+- `--profile` - Cookie profile to import to (default: "default", or from `--cookie-profile` flag)
+- `--file` - Input file path (default: `~/.mehrhof/cookies-<profile>.json`)
+
+Examples:
+```bash
+# Import default profile from default location
+mehr browser cookies import
+
+# Import cookies from file to work profile
+mehr browser cookies import --profile work-github --file /tmp/work-cookies.json
+
+# Import using profile flag set at command level
+mehr browser --cookie-profile client-a cookies import
+```
+
+## Using Cookie Profiles
+
+Use the `--cookie-profile` flag to specify which cookie profile to use for a session:
+
+```bash
+# Use default profile
+mehr browser goto https://github.com
+
+# Use work profile
+mehr browser --cookie-profile work-github goto https://github.com
+
+# Use client profile
+mehr browser --cookie-profile client-a goto https://github.com
+```
+
+This enables maintaining separate sessions for different accounts on the same domain.
+
 ## Agent Integration
 
 To enable AI agents to use browser automation, add instructions to your config:
@@ -218,11 +305,17 @@ agent:
     - Interact with DOM elements (click, type, evaluate JavaScript)
     - Monitor network requests and console logs
     - Handle authentication flows
+    - Manage browser cookies (get, set, export, import)
 
     When implementing web features, include testing steps such as:
     - "Navigate to http://localhost:8080 and verify the page loads"
     - "Check that the form submission works correctly"
     - "Verify the error message displays for invalid input"
+
+    Cookie profiles are available for session persistence. Use cookies to:
+    - Stay logged in across browser sessions
+    - Test with different user accounts
+    - Maintain authentication state between test runs
 
   steps:
     implementing:
@@ -290,6 +383,34 @@ mehr browser screenshot --full-page
 
 mehr browser goto https://example.com/pricing
 mehr browser screenshot --full-page
+```
+
+### Managing Multiple Accounts with Cookie Profiles
+
+```bash
+# Login with personal GitHub account
+mehr browser --cookie-profile personal goto https://github.com
+# (complete login flow in browser)
+# Cookies are auto-saved to ~/.mehrhof/cookies-personal.json
+
+# Login with work GitHub account
+mehr browser --cookie-profile work-github goto https://github.com
+# (complete login flow with work credentials)
+# Cookies are auto-saved to ~/.mehrhof/cookies-work-github.json
+
+# Verify personal account
+mehr browser --cookie-profile personal goto https://github.com
+mehr browser screenshot --full-page
+
+# Verify work account
+mehr browser --cookie-profile work-github goto https://github.com
+mehr browser screenshot --full-page
+
+# Export cookies for backup
+mehr browser cookies export --profile work-github --output /tmp/backup-cookies.json
+
+# Import cookies to another machine
+mehr browser cookies import --profile work-github --file /tmp/backup-cookies.json
 ```
 
 ## Troubleshooting
