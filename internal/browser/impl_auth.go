@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 package browser
 
 import (
@@ -11,14 +14,6 @@ import (
 
 	"golang.org/x/term"
 )
-
-// AuthRequirement represents detected authentication requirements.
-type AuthRequirement struct {
-	Type     string // "login_form", "http_auth", "session_expired", "auth_wall"
-	URL      string
-	Selector string // For login forms
-	Hint     string // User-friendly hint
-}
 
 // DetectAuth checks if the current page requires authentication.
 func (c *controller) DetectAuth(ctx context.Context, tabID string) (*AuthRequirement, error) {

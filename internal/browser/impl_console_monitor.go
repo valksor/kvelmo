@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 package browser
 
 import (
@@ -12,11 +15,6 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
-// contains checks if a string contains a substring (case-insensitive).
-func contains(s, substr string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
-}
-
 // ConsoleMonitor monitors console messages for a browser tab.
 type ConsoleMonitor struct {
 	messages []ConsoleMessage
@@ -25,13 +23,6 @@ type ConsoleMonitor struct {
 	cancel   context.CancelFunc
 	done     chan struct{}
 	wg       sync.WaitGroup // Track goroutine
-}
-
-// ConsoleFilter defines which console messages to capture.
-type ConsoleFilter struct {
-	Levels    []string // Capture only these levels (empty = all)
-	Pattern   string   // Only capture messages matching this pattern
-	SourceURL string   // Only capture messages from this URL
 }
 
 // NewConsoleMonitor creates a new console monitor.

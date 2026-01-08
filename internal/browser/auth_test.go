@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 package browser
 
 import (

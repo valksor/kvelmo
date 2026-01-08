@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 package browser
 
 import (
@@ -22,6 +25,9 @@ func TestConfig(t *testing.T) {
 		if cfg.Headless {
 			t.Error("Headless should be false by default")
 		}
+		if !cfg.IgnoreCertErrors {
+			t.Error("IgnoreCertErrors should be true by default (for local dev)")
+		}
 		if cfg.Timeout == 0 {
 			t.Error("Timeout should not be 0")
 		}
@@ -32,13 +38,14 @@ func TestConfig(t *testing.T) {
 
 	t.Run("CustomConfig", func(t *testing.T) {
 		cfg := Config{
-			Host:          "192.168.1.1",
-			Port:          9222,
-			RemoteDebug:   true,
-			Headless:      true,
-			Timeout:       60 * time.Second,
-			ScreenshotDir: "/tmp/screenshots",
-			UserDataDir:   "/tmp/chrome-profile",
+			Host:             "192.168.1.1",
+			Port:             9222,
+			RemoteDebug:      true,
+			Headless:         true,
+			IgnoreCertErrors: false, // Set to false for strict cert validation
+			Timeout:          60 * time.Second,
+			ScreenshotDir:    "/tmp/screenshots",
+			UserDataDir:      "/tmp/chrome-profile",
 		}
 
 		if cfg.Host != "192.168.1.1" {
@@ -52,6 +59,9 @@ func TestConfig(t *testing.T) {
 		}
 		if !cfg.Headless {
 			t.Error("Headless should be true")
+		}
+		if cfg.IgnoreCertErrors {
+			t.Error("IgnoreCertErrors should be false in this custom config")
 		}
 		if cfg.Timeout != 60*time.Second {
 			t.Errorf("Timeout = %v, want 60s", cfg.Timeout)
