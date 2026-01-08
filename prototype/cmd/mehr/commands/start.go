@@ -203,11 +203,12 @@ func runStart(cmd *cobra.Command, args []string) error {
 				// Apply browser configuration if enabled
 				if wsCfg.Browser != nil && wsCfg.Browser.Enabled {
 					browserCfg := browser.Config{
-						Host:          wsCfg.Browser.Host,
-						Port:          wsCfg.Browser.Port,
-						Headless:      wsCfg.Browser.Headless,
-						Timeout:       time.Duration(wsCfg.Browser.Timeout) * time.Second,
-						ScreenshotDir: wsCfg.Browser.ScreenshotDir,
+						Host:             wsCfg.Browser.Host,
+						Port:             wsCfg.Browser.Port,
+						Headless:         wsCfg.Browser.Headless,
+						IgnoreCertErrors: wsCfg.Browser.IgnoreCertErrors,
+						Timeout:          time.Duration(wsCfg.Browser.Timeout) * time.Second,
+						ScreenshotDir:    wsCfg.Browser.ScreenshotDir,
 					}
 					// Set defaults if not specified
 					if browserCfg.Host == "" {
@@ -218,6 +219,10 @@ func runStart(cmd *cobra.Command, args []string) error {
 					}
 					if browserCfg.Timeout == 0 {
 						browserCfg.Timeout = browser.DefaultConfig().Timeout
+					}
+					// Normalize IgnoreCertErrors from defaults (use CLI flag for strict mode)
+					if !browserCfg.IgnoreCertErrors {
+						browserCfg.IgnoreCertErrors = browser.DefaultConfig().IgnoreCertErrors
 					}
 					opts = append(opts, conductor.WithBrowserConfig(browserCfg))
 				}
