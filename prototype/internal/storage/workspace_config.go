@@ -165,12 +165,17 @@ type TrelloSettings struct {
 
 // BrowserSettings holds browser automation configuration.
 type BrowserSettings struct {
-	Enabled       bool   `yaml:"enabled,omitempty"`        // Enable browser automation (default: false)
-	Host          string `yaml:"host,omitempty"`           // CDP host (default: localhost)
-	Port          int    `yaml:"port,omitempty"`           // CDP port: 0 = random (default), 9222 = existing Chrome
-	Headless      bool   `yaml:"headless,omitempty"`       // Launch headless browser (default: false)
-	Timeout       int    `yaml:"timeout,omitempty"`        // Operation timeout in seconds (default: 30)
-	ScreenshotDir string `yaml:"screenshot_dir,omitempty"` // Directory for screenshots (default: .mehrhof/screenshots)
+	Enabled          bool   `yaml:"enabled,omitempty"`            // Enable browser automation (default: false)
+	Host             string `yaml:"host,omitempty"`               // CDP host (default: localhost)
+	Port             int    `yaml:"port,omitempty"`               // CDP port: 0 = random (default), 9222 = existing Chrome
+	Headless         bool   `yaml:"headless,omitempty"`           // Launch headless browser (default: false)
+	IgnoreCertErrors bool   `yaml:"ignore_cert_errors,omitempty"` // Ignore SSL certificate errors (default: true for local dev)
+	Timeout          int    `yaml:"timeout,omitempty"`            // Operation timeout in seconds (default: 30)
+	ScreenshotDir    string `yaml:"screenshot_dir,omitempty"`     // Directory for screenshots (default: .mehrhof/screenshots)
+	CookieProfile    string `yaml:"cookie_profile,omitempty"`     // Which cookie profile to use (default: "default")
+	CookieAutoLoad   bool   `yaml:"cookie_auto_load,omitempty"`   // Auto-load cookies on connect (default: true)
+	CookieAutoSave   bool   `yaml:"cookie_auto_save,omitempty"`   // Auto-save cookies on disconnect (default: true)
+	CookieDir        string `yaml:"cookie_dir,omitempty"`         // Custom cookie directory (default: ~/.mehrhof/)
 }
 
 // MCPSettings holds MCP (Model Context Protocol) server configuration.
@@ -428,6 +433,9 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #     port: 0                        # 0 = random isolated browser, 9222 = existing Chrome
 #     timeout: 30                    # Operation timeout in seconds
 #     screenshot_dir: ".mehrhof/screenshots"
+#     cookie_profile: "default"      # Which cookie profile to use
+#     cookie_auto_load: true         # Auto-load cookies on connect
+#     cookie_auto_save: true         # Auto-save cookies on disconnect
 `
 	}
 
