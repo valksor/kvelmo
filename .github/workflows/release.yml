@@ -80,6 +80,11 @@ jobs:
                     cp dist/mehr_linux_arm64_v8.0/mehr dist/mehr-linux-arm64
                     cp dist/mehr_darwin_amd64_v1/mehr dist/mehr-darwin-amd64
                     cp dist/mehr_darwin_arm64_v8.0/mehr dist/mehr-darwin-arm64
+                    # Copy lite binaries with correct names
+                    cp dist/mehr-lite_linux_amd64_v1/mehr dist/mehr-lite-linux-amd64
+                    cp dist/mehr-lite_linux_arm64_v8.0/mehr dist/mehr-lite-linux-arm64
+                    cp dist/mehr-lite_darwin_amd64_v1/mehr dist/mehr-lite-darwin-amd64
+                    cp dist/mehr-lite_darwin_arm64_v8.0/mehr dist/mehr-lite-darwin-arm64
                     # Copy signatures and certificates with correct names
                     cp dist/mehr_linux_amd64_v1/mehr.sig dist/mehr-linux-amd64.sig
                     cp dist/mehr_linux_amd64_v1/mehr.pem dist/mehr-linux-amd64.pem
@@ -89,12 +94,25 @@ jobs:
                     cp dist/mehr_darwin_amd64_v1/mehr.pem dist/mehr-darwin-amd64.pem
                     cp dist/mehr_darwin_arm64_v8.0/mehr.sig dist/mehr-darwin-arm64.sig
                     cp dist/mehr_darwin_arm64_v8.0/mehr.pem dist/mehr-darwin-arm64.pem
+                    # Copy lite binary signatures and certificates
+                    cp dist/mehr-lite_linux_amd64_v1/mehr.sig dist/mehr-lite-linux-amd64.sig
+                    cp dist/mehr-lite_linux_amd64_v1/mehr.pem dist/mehr-lite-linux-amd64.pem
+                    cp dist/mehr-lite_linux_arm64_v8.0/mehr.sig dist/mehr-lite-linux-arm64.sig
+                    cp dist/mehr-lite_linux_arm64_v8.0/mehr.pem dist/mehr-lite-linux-arm64.pem
+                    cp dist/mehr-lite_darwin_amd64_v1/mehr.sig dist/mehr-lite-darwin-amd64.sig
+                    cp dist/mehr-lite_darwin_amd64_v1/mehr.pem dist/mehr-lite-darwin-amd64.pem
+                    cp dist/mehr-lite_darwin_arm64_v8.0/mehr.sig dist/mehr-lite-darwin-arm64.sig
+                    cp dist/mehr-lite_darwin_arm64_v8.0/mehr.pem dist/mehr-lite-darwin-arm64.pem
                     # Upload all artifacts
                     gh release upload "$RELEASE_TAG" \
                         dist/mehr-linux-amd64 \
                         dist/mehr-linux-arm64 \
                         dist/mehr-darwin-amd64 \
                         dist/mehr-darwin-arm64 \
+                        dist/mehr-lite-linux-amd64 \
+                        dist/mehr-lite-linux-arm64 \
+                        dist/mehr-lite-darwin-amd64 \
+                        dist/mehr-lite-darwin-arm64 \
                         dist/mehr-linux-amd64.sig \
                         dist/mehr-linux-amd64.pem \
                         dist/mehr-linux-arm64.sig \
@@ -103,15 +121,31 @@ jobs:
                         dist/mehr-darwin-amd64.pem \
                         dist/mehr-darwin-arm64.sig \
                         dist/mehr-darwin-arm64.pem \
+                        dist/mehr-lite-linux-amd64.sig \
+                        dist/mehr-lite-linux-amd64.pem \
+                        dist/mehr-lite-linux-arm64.sig \
+                        dist/mehr-lite-linux-arm64.pem \
+                        dist/mehr-lite-darwin-amd64.sig \
+                        dist/mehr-lite-darwin-amd64.pem \
+                        dist/mehr-lite-darwin-arm64.sig \
+                        dist/mehr-lite-darwin-arm64.pem \
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
+                        dist/mehr-lite-linux-amd64.sha256 \
+                        dist/mehr-lite-linux-arm64.sha256 \
+                        dist/mehr-lite-darwin-amd64.sha256 \
+                        dist/mehr-lite-darwin-arm64.sha256 \
                         dist/checksums.txt \
                         dist/mehr-linux-amd64.sbom.spdx.json \
                         dist/mehr-linux-arm64.sbom.spdx.json \
                         dist/mehr-darwin-amd64.sbom.spdx.json \
                         dist/mehr-darwin-arm64.sbom.spdx.json \
+                        dist/mehr-lite-linux-amd64.sbom.spdx.json \
+                        dist/mehr-lite-linux-arm64.sbom.spdx.json \
+                        dist/mehr-lite-darwin-amd64.sbom.spdx.json \
+                        dist/mehr-lite-darwin-arm64.sbom.spdx.json \
                         --clobber
 
             -   name: Upload individual checksums (stable)
@@ -125,4 +159,8 @@ jobs:
                         dist/mehr-linux-arm64.sha256 \
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
+                        dist/mehr-lite-linux-amd64.sha256 \
+                        dist/mehr-lite-linux-arm64.sha256 \
+                        dist/mehr-lite-darwin-amd64.sha256 \
+                        dist/mehr-lite-darwin-arm64.sha256 \
                         --clobber

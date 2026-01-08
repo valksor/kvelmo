@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook
+.PHONY: build build-lite build-all test test-lite quality install clean run hooks lefthook
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -19,6 +19,17 @@ build: ## Compile the binary
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
+
+build-lite: ## Build lite binary (without browser/MCP)
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=0 go build -tags no_browser,no_mcp $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-lite $(CMD_DIR)
+	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)-lite"
+
+build-all: build build-lite ## Build both variants
+
+test-lite: ## Test lite build
+	${MAKE} quality
+	go test -v -tags no_browser,no_mcp ./...
 
 test: ## Run tests with coverage
 	${MAKE} quality

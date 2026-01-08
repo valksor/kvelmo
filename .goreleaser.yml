@@ -11,7 +11,8 @@ before:
         - go mod verify
 
 builds:
-    -   id: mehr
+    # Full build (default) - includes browser and MCP
+    -   id: mehr-full
         binary: mehr
         main: ./cmd/mehr
         env:
@@ -28,10 +29,40 @@ builds:
             - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.Commit={{.ShortCommit}}
             - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.BuildTime={{.Date}}
 
+    # Lite build - excludes browser and MCP
+    -   id: mehr-lite
+        binary: mehr
+        main: ./cmd/mehr
+        env:
+            - CGO_ENABLED=0
+        goos:
+            - linux
+            - darwin
+        goarch:
+            - amd64
+            - arm64
+        tags:
+            - no_browser
+            - no_mcp
+        ldflags:
+            - -s -w
+            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.Version={{.Version}}
+            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.Commit={{.ShortCommit}}
+            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.BuildTime={{.Date}}
+
 # Binary-only releases (no tarballs)
 archives:
-    -   format: binary
+    # Full binaries
+    -   id: full-binaries
+        builds: [mehr-full]
+        format: binary
         name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+
+    # Lite binaries (with -lite suffix)
+    -   id: lite-binaries
+        builds: [mehr-lite]
+        format: binary
+        name_template: "{{ .ProjectName }}-lite-{{ .Os }}-{{ .Arch }}"
 
 checksum:
     name_template: 'checksums.txt'
