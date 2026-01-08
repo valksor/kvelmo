@@ -1,4 +1,4 @@
-//go:build !(linux && arm64)
+//go:build !(linux && arm64) && !no_browser
 
 package browser
 
@@ -165,6 +165,14 @@ func (m *MockController) WaitForLogin(ctx context.Context, tabID string, auth *b
 	return nil
 }
 
+func (m *MockController) GetCookies(ctx context.Context) ([]browser.Cookie, error) {
+	return []browser.Cookie{}, nil
+}
+
+func (m *MockController) SetCookies(ctx context.Context, cookies []browser.Cookie) error {
+	return nil
+}
+
 func (m *MockController) GetPort() int {
 	return 9222
 }
@@ -241,7 +249,7 @@ func TestToolsReturnsAllTools(t *testing.T) {
 
 	tools := adapter.Tools()
 
-	expectedToolCount := 10
+	expectedToolCount := 14
 	if len(tools) != expectedToolCount {
 		t.Errorf("Tools() returned %d tools, want %d", len(tools), expectedToolCount)
 	}
@@ -271,6 +279,10 @@ func TestToolsReturnsAllTools(t *testing.T) {
 		"browser_get_network_requests": false,
 		"browser_detect_auth":          false,
 		"browser_wait_for_login":       false,
+		"browser_get_cookies":          false,
+		"browser_set_cookies":          false,
+		"browser_export_cookies":       false,
+		"browser_import_cookies":       false,
 	}
 
 	for _, tool := range tools {

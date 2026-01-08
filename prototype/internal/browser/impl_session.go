@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 package browser
 
 import (
@@ -286,6 +289,14 @@ func (sm *SessionManager) tryLaunchBrowser(ctx context.Context, port int) (*Sess
 		"--no-first-run",
 		"--no-default-browser-check",
 		"--user-data-dir=" + userDataDir,
+	}
+
+	// Add certificate handling flags (default: ignore for local dev)
+	// --ignore-certificate-errors: Bypass SSL certificate validation
+	// --test-type: Suppress Chrome's unsupported flag warning
+	if sm.config.IgnoreCertErrors {
+		args = append(args, "--ignore-certificate-errors")
+		args = append(args, "--test-type")
 	}
 
 	if sm.config.Headless {

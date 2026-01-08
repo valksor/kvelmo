@@ -1,3 +1,6 @@
+//go:build !no_browser
+// +build !no_browser
+
 // Package browser provides agent tool adapters for browser automation.
 // It bridges the browser controller with the agent system, allowing
 // AI agents to control Chrome for tasks like navigation, screenshots,
@@ -11,6 +14,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
@@ -58,6 +62,10 @@ func (a *Adapter) Tools() []Tool {
 		a.getNetworkRequestsTool(),
 		a.detectAuthTool(),
 		a.waitForLoginTool(),
+		a.getCookiesTool(),
+		a.setCookiesTool(),
+		a.exportCookiesTool(),
+		a.importCookiesTool(),
 	}
 }
 
@@ -409,6 +417,149 @@ func (a *Adapter) waitForLoginTool() Tool {
 			}
 
 			return "User completed login, continuing workflow", nil
+		},
+	}
+}
+
+// getCookiesTool retrieves all cookies from the browser.
+func (a *Adapter) getCookiesTool() Tool {
+	return Tool{
+		Name:        "browser_get_cookies",
+		Description: "Retrieves all cookies from the browser. Returns a summary of cookies by domain.",
+		Execute: func(ctx context.Context, args map[string]any) (string, error) {
+			cookies, err := a.controller.GetCookies(ctx)
+			if err != nil {
+				return "", fmt.Errorf("get cookies: %w", err)
+			}
+
+			if len(cookies) == 0 {
+				return "No cookies found", nil
+			}
+
+			// Group by domain for summary
+			byDomain := make(map[string]int)
+			for _, cookie := range cookies {
+				byDomain[cookie.Domain]++
+			}
+
+			var b strings.Builder
+			fmt.Fprintf(&b, "Retrieved %d cookies from %d domains:\n", len(cookies), len(byDomain))
+			for domain, count := range byDomain {
+				fmt.Fprintf(&b, "  - %s: %d cookies\n", domain, count)
+			}
+
+			return b.String(), nil
+		},
+	}
+}
+
+// setCookiesTool sets cookies in the browser from a file.
+func (a *Adapter) setCookiesTool() Tool {
+	return Tool{
+		Name:        "browser_set_cookies",
+		Description: "Sets cookies in the browser from a JSON file. Requires 'file' parameter with path to cookie JSON file.",
+		Execute: func(ctx context.Context, args map[string]any) (string, error) {
+			filePath, ok := args["file"].(string)
+			if !ok {
+				return "", errors.New("file parameter is required")
+			}
+
+			// Load cookies from file
+			storage := browser.NewCookieStorage("")
+			profile := "default"
+			if p, ok := args["profile"].(string); ok {
+				profile = p
+			}
+
+			cookies, err := storage.Load(profile)
+			if err != nil {
+				return "", fmt.Errorf("load cookies from file: %w", err)
+			}
+
+			// Set in browser
+			if err := a.controller.SetCookies(ctx, cookies); err != nil {
+				return "", fmt.Errorf("set cookies: %w", err)
+			}
+
+			return fmt.Sprintf("Set %d cookies from %s", len(cookies), filePath), nil
+		},
+	}
+}
+
+// exportCookiesTool exports cookies to a file.
+func (a *Adapter) exportCookiesTool() Tool {
+	return Tool{
+		Name:        "browser_export_cookies",
+		Description: "Exports browser cookies to a JSON file. Requires 'output' parameter with destination path. Optionally specify 'profile' (default: 'default').",
+		Execute: func(ctx context.Context, args map[string]any) (string, error) {
+			outputPath, ok := args["output"].(string)
+			if !ok {
+				return "", errors.New("output parameter is required")
+			}
+
+			profile := "default"
+			if p, ok := args["profile"].(string); ok {
+				profile = p
+			}
+
+			// Get cookies from browser
+			cookies, err := a.controller.GetCookies(ctx)
+			if err != nil {
+				return "", fmt.Errorf("get cookies: %w", err)
+			}
+
+			// Save to file
+			storage := browser.NewCookieStorage("")
+			if err := storage.Save(profile, cookies); err != nil {
+				return "", fmt.Errorf("save cookies: %w", err)
+			}
+
+			// Publish event
+			a.publishEvent(events.BrowserActionEvent{
+				Action:  "export_cookies",
+				Success: true,
+			})
+
+			return fmt.Sprintf("Exported %d cookies to %s (profile: %s)", len(cookies), outputPath, profile), nil
+		},
+	}
+}
+
+// importCookiesTool imports cookies from a file.
+func (a *Adapter) importCookiesTool() Tool {
+	return Tool{
+		Name:        "browser_import_cookies",
+		Description: "Imports cookies from a JSON file into the browser. Requires 'file' parameter with path to cookie JSON file. Optionally specify 'profile' (default: 'default').",
+		Execute: func(ctx context.Context, args map[string]any) (string, error) {
+			filePath, ok := args["file"].(string)
+			if !ok {
+				return "", errors.New("file parameter is required")
+			}
+
+			profile := "default"
+			if p, ok := args["profile"].(string); ok {
+				profile = p
+			}
+
+			// Load cookies from file
+			storage := browser.NewCookieStorage("")
+			cookies, err := storage.Load(profile)
+			if err != nil {
+				return "", fmt.Errorf("load cookies from file: %w", err)
+			}
+
+			// Set in browser
+			if err := a.controller.SetCookies(ctx, cookies); err != nil {
+				return "", fmt.Errorf("set cookies: %w", err)
+			}
+
+			// Publish event
+			a.publishEvent(events.BrowserActionEvent{
+				Action:  "import_cookies",
+				Success: true,
+			})
+
+			return fmt.Sprintf("Imported %d cookies from %s (profile: %s)", len(cookies), filePath, profile), nil
 		},
 	}
 }
