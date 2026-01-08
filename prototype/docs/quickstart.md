@@ -15,17 +15,34 @@ claude --version
 
 ### Option 1: Pre-built Binary (Recommended)
 
-| Platform | Architecture | Binary |
-|----------|--------------|--------|
-| Linux | AMD64 | `mehr-linux-amd64` |
-| Linux | ARM64 | `mehr-linux-arm64` |
-| macOS | Intel | `mehr-darwin-amd64` |
-| macOS | Apple Silicon | `mehr-darwin-arm64` |
+**Binary Variants:**
 
-> **Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) with the Linux binary (`mehr-linux-amd64` or `mehr-linux-arm64`).
+| Variant | Description |
+|---------|-------------|
+| **Full** | Includes browser automation and MCP server |
+| **Lite** | Core features only (smaller size, no browser/MCP) |
+
+**Downloads:**
+
+| Platform | Architecture | Full Binary | Lite Binary |
+|----------|--------------|-------------|-------------|
+| Linux | AMD64 | `mehr-linux-amd64` | `mehr-lite-linux-amd64` |
+| Linux | ARM64 | `mehr-linux-arm64` | `mehr-lite-linux-arm64` |
+| macOS | Intel | `mehr-darwin-amd64` | `mehr-lite-darwin-amd64` |
+| macOS | Apple Silicon | `mehr-darwin-arm64` | `mehr-lite-darwin-arm64` |
+
+> **Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) with the Linux binary (`mehr-linux-amd64` or `mehr-lite-linux-amd64`).
+
+> **Which variant?** Use the **lite** variant if you don't need browser automation or MCP server integration. It's significantly smaller and has the same core functionality.
 
 ```bash
+# Full binary (includes browser + MCP)
 curl -L https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64 -o mehr
+chmod +x mehr
+sudo mv mehr /usr/local/bin/
+
+# OR lite binary (core features only)
+curl -L https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-lite-darwin-arm64 -o mehr
 chmod +x mehr
 sudo mv mehr /usr/local/bin/
 
@@ -49,9 +66,21 @@ Requires Go 1.25+:
 ```bash
 git clone https://github.com/valksor/go-mehrhof.git
 cd go-mehrhof
+
+# Full build (includes browser + MCP)
 make install
+
+# OR lite build (core features only)
+make build-lite
+cp build/mehr-lite /usr/local/bin/mehr
+
 mehr version
 ```
+
+**Build variants:**
+- `make build` - Full binary (includes browser + MCP)
+- `make build-lite` - Lite binary (core features only, smaller size)
+- `make build-all` - Build both variants
 
 ## Your First Task
 
@@ -122,6 +151,8 @@ mehr finish
 | `mehr note "..."` | Add context for the AI |
 | `mehr finish` | Complete and merge |
 | `mehr abandon` | Discard task without merging |
+| `mehr browser ...` | Browser automation *(full build only)* |
+| `mehr mcp` | MCP server for AI agents *(full build only)* |
 
 ## Updating
 
