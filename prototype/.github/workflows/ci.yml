@@ -72,9 +72,12 @@ jobs:
             -   name: Test
                 run: make test
 
+            -   name: Test Lite Build
+                run: make test-lite
+
             -   name: Test (Race Detector)
                 if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-                run: go test -race ./...
+                run: go test -v -race ./...
 
             -   name: Install goveralls
                 if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
