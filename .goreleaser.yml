@@ -31,7 +31,7 @@ builds:
 
     # Lite build - excludes browser and MCP
     -   id: mehr-lite
-        binary: mehr
+        binary: mehr-lite
         main: ./cmd/mehr
         env:
             - CGO_ENABLED=0
@@ -62,7 +62,7 @@ archives:
     -   id: lite-binaries
         builds: [mehr-lite]
         format: binary
-        name_template: "{{ .ProjectName }}-lite-{{ .Os }}-{{ .Arch }}"
+        name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
 
 checksum:
     name_template: 'checksums.txt'
@@ -85,7 +85,7 @@ signs:
 sboms:
     -   artifacts: binary
         documents:
-            - "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}.sbom.spdx.json"
+            - "${artifact}.sbom.spdx.json"
 
 changelog:
     sort: asc
