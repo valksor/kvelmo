@@ -1,9 +1,15 @@
+//go:build !no_browser
+// +build !no_browser
+
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -12,9 +18,12 @@ import (
 )
 
 var (
-	browserHost     string
-	browserPort     int
-	browserHeadless bool
+	browserHost        string
+	browserPort        int
+	browserHeadless    bool
+	browserStrictCerts bool // Enable strict certificate validation
+	browserKeepAlive   bool // Keep browser running after command completes
+	cookieProfile      string
 )
 
 var browserCmd = &cobra.Command{
@@ -24,6 +33,11 @@ var browserCmd = &cobra.Command{
 
 By default, launches an isolated Chrome instance on a random port.
 This prevents hijacking your active browser session.
+
+To keep the browser running for use by AI agents or further commands:
+  mehr browser --keep-alive navigate https://example.com
+
+The browser will continue running until you explicitly close it or stop the process.
 
 To use existing Chrome:
   google-chrome --remote-debugging-port=9222
@@ -39,6 +53,9 @@ func init() {
 	browserCmd.PersistentFlags().StringVar(&browserHost, "host", "localhost", "CDP host")
 	browserCmd.PersistentFlags().IntVar(&browserPort, "port", 0, "CDP port (0 = random, 9222 = existing Chrome)")
 	browserCmd.PersistentFlags().BoolVar(&browserHeadless, "headless", false, "Launch headless browser")
+	browserCmd.PersistentFlags().BoolVar(&browserStrictCerts, "strict-certs", false, "Enable strict certificate validation (default: ignore)")
+	browserCmd.PersistentFlags().BoolVar(&browserKeepAlive, "keep-alive", false, "Keep browser running after command completes")
+	browserCmd.PersistentFlags().StringVar(&cookieProfile, "cookie-profile", "default", "Cookie profile to use")
 
 	browserCmd.AddCommand(browserStatusCmd)
 	browserCmd.AddCommand(browserTabsCmd)
@@ -54,6 +71,7 @@ func init() {
 	browserCmd.AddCommand(browserEvalCmd)
 	browserCmd.AddCommand(browserConsoleCmd)
 	browserCmd.AddCommand(browserNetworkCmd)
+	browserCmd.AddCommand(browserCookiesCmd)
 }
 
 // status command.
@@ -276,16 +294,74 @@ func init() {
 	browserNetworkCmd.Flags().StringVar(&networkType, "type", "", "Filter by resource type")
 }
 
+// cookies command group.
+var browserCookiesCmd = &cobra.Command{
+	Use:   "cookies <subcommand>",
+	Short: "Cookie management commands",
+	Long:  `Manage browser cookies for session persistence.`,
+	RunE:  func(cmd *cobra.Command, args []string) error { return cmd.Help() },
+}
+
+// cookies export command.
+var (
+	cookieOutputPath    string
+	cookieProfileExport string
+)
+
+var browserCookiesExportCmd = &cobra.Command{
+	Use:   "export",
+	Short: "Export cookies to file",
+	Long: `Export browser cookies to a JSON file.
+
+If no output path is specified, uses the default cookie storage location
+(~/.mehrhof/cookies-{profile}.json). This is useful for backing up cookies
+or transferring them between machines.`,
+	RunE: runBrowserCookiesExport,
+}
+
+func init() {
+	browserCookiesExportCmd.Flags().StringVarP(&cookieOutputPath, "output", "o", "", "Output file path (default: ~/.mehrhof/cookies-{profile}.json)")
+	browserCookiesExportCmd.Flags().StringVar(&cookieProfileExport, "profile", "", "Cookie profile to export (default: uses --cookie-profile flag)")
+}
+
+// cookies import command.
+var (
+	cookieInputPath     string
+	cookieProfileImport string
+)
+
+var browserCookiesImportCmd = &cobra.Command{
+	Use:   "import",
+	Short: "Import cookies from file",
+	Long: `Import browser cookies from a JSON file.
+
+If no input path is specified, uses the default cookie storage location
+(~/.mehrhof/cookies-{profile}.json). This is useful for restoring cookies
+or transferring them between machines.`,
+	RunE: runBrowserCookiesImport,
+}
+
+func init() {
+	browserCookiesImportCmd.Flags().StringVarP(&cookieInputPath, "file", "f", "", "Input file path (default: ~/.mehrhof/cookies-{profile}.json)")
+	browserCookiesImportCmd.Flags().StringVar(&cookieProfileImport, "profile", "", "Cookie profile to import (default: uses --cookie-profile flag)")
+}
+
+func init() {
+	browserCookiesCmd.AddCommand(browserCookiesExportCmd)
+	browserCookiesCmd.AddCommand(browserCookiesImportCmd)
+}
+
 // Command implementations
 
 func runBrowserStatus(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
@@ -298,7 +374,11 @@ func runBrowserStatus(cmd *cobra.Command, args []string) error {
 
 		return nil
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
@@ -312,6 +392,10 @@ func runBrowserStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("     %s\n", tab.URL)
 	}
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -319,17 +403,22 @@ func runBrowserTabs(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
@@ -347,6 +436,10 @@ func runBrowserTabs(cmd *cobra.Command, args []string) error {
 		fmt.Printf("   %s\n", tab.URL)
 	}
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -355,17 +448,22 @@ func runBrowserGoto(cmd *cobra.Command, args []string) error {
 	url := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  30 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          30 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	tab, err := ctrl.OpenTab(ctx, url)
 	if err != nil {
@@ -375,6 +473,10 @@ func runBrowserGoto(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Opened new tab: %s\n", tab.Title)
 	fmt.Printf("URL: %s\n", tab.URL)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -382,17 +484,22 @@ func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  30 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          30 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	var tabID string
 	if len(args) > 0 {
@@ -441,6 +548,10 @@ func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Screenshot saved: %s\n", outputPath)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -449,17 +560,22 @@ func runBrowserNavigate(cmd *cobra.Command, args []string) error {
 	url := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  30 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          30 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -476,6 +592,10 @@ func runBrowserNavigate(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Navigated to: %s\n", url)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -484,10 +604,11 @@ func runBrowserClose(cmd *cobra.Command, args []string) error {
 	tabID := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
@@ -510,10 +631,11 @@ func runBrowserSwitch(cmd *cobra.Command, args []string) error {
 	tabID := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
@@ -537,17 +659,22 @@ func runBrowserReload(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -564,6 +691,10 @@ func runBrowserReload(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Page reloaded")
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -571,17 +702,22 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -653,6 +789,10 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Visible: %v\n", elem.Visible)
 	}
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -660,17 +800,22 @@ func runBrowserClick(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -687,6 +832,10 @@ func runBrowserClick(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Clicked: %s\n", clickSelector)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -695,17 +844,22 @@ func runBrowserType(cmd *cobra.Command, args []string) error {
 	text := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -722,6 +876,10 @@ func runBrowserType(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Typed into: %s\n", typeSelector)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -730,17 +888,22 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 	expression := args[0]
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  10 * time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          10 * time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -758,6 +921,10 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Result: %v\n", result)
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -765,17 +932,22 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  time.Duration(consoleDuration*float64(time.Second)) + 5*time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          time.Duration(consoleDuration*float64(time.Second)) + 5*time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -804,6 +976,10 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 		fmt.Printf("[%s] %s\n", msg.Level, msg.Text)
 	}
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -811,17 +987,22 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	cfg := browser.Config{
-		Host:     browserHost,
-		Port:     browserPort,
-		Headless: browserHeadless,
-		Timeout:  time.Duration(networkDuration*float64(time.Second)) + 5*time.Second,
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
+		Timeout:          time.Duration(networkDuration*float64(time.Second)) + 5*time.Second,
 	}
 
 	ctrl := browser.NewController(cfg)
 	if err := ctrl.Connect(ctx); err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	if !browserKeepAlive {
+		defer disconnectWrapper(ctrl)
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+	}
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -854,6 +1035,10 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 		fmt.Printf("[%s] %s %s%s\n", req.Timestamp.Format("15:04:05.000"), req.Method, req.URL, status)
 	}
 
+	if browserKeepAlive {
+		printKeepAliveMessage(ctrl)
+	}
+
 	return nil
 }
 
@@ -878,4 +1063,133 @@ func truncateString(s string, maxLength int) string {
 	}
 
 	return s[:maxLength-3] + "..."
+}
+
+// printKeepAliveMessage prints the keep-alive status message.
+func printKeepAliveMessage(ctrl browser.Controller) {
+	port := getActualPort(ctrl)
+	fmt.Printf("\nBrowser is running in background (port %d)\n", port)
+	fmt.Printf("Session saved to: .mehrhof/browser.json\n")
+	fmt.Printf("Use Ctrl+C to stop this process, or close the browser window to exit.\n")
+}
+
+// setupKeepAliveSignalHandler sets up signal handling for graceful shutdown when using keep-alive.
+func setupKeepAliveSignalHandler(ctx context.Context, ctrl browser.Controller) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		select {
+		case <-sigCh:
+			fmt.Println("\nShutting down browser...")
+			_ = ctrl.Disconnect()
+		case <-ctx.Done():
+		}
+	}()
+}
+
+func runBrowserCookiesExport(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	// Determine profile
+	profile := cookieProfileExport
+	if profile == "" {
+		profile = cookieProfile
+	}
+	if profile == "" {
+		profile = "default"
+	}
+
+	cfg := browser.Config{
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts,
+		Timeout:          10 * time.Second,
+	}
+
+	ctrl := browser.NewController(cfg)
+	if err := ctrl.Connect(ctx); err != nil {
+		return fmt.Errorf("connect: %w", err)
+	}
+	defer disconnectWrapper(ctrl)
+
+	// Get cookies from browser
+	cookies, err := ctrl.GetCookies(ctx)
+	if err != nil {
+		return fmt.Errorf("get cookies: %w", err)
+	}
+
+	// Determine output path
+	outputPath := cookieOutputPath
+	if outputPath == "" {
+		cookiePath, err := browser.CookiePath(profile)
+		if err != nil {
+			return fmt.Errorf("get default cookie path: %w", err)
+		}
+		outputPath = cookiePath
+	}
+
+	// Save cookies
+	storage := browser.NewCookieStorage("")
+	if err := storage.Save(profile, cookies); err != nil {
+		return fmt.Errorf("save cookies: %w", err)
+	}
+
+	fmt.Printf("Exported %d cookies from profile '%s' to: %s\n", len(cookies), profile, outputPath)
+
+	return nil
+}
+
+func runBrowserCookiesImport(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	// Determine profile
+	profile := cookieProfileImport
+	if profile == "" {
+		profile = cookieProfile
+	}
+	if profile == "" {
+		profile = "default"
+	}
+
+	// Determine input path
+	inputPath := cookieInputPath
+	if inputPath == "" {
+		cookiePath, err := browser.CookiePath(profile)
+		if err != nil {
+			return fmt.Errorf("get default cookie path: %w", err)
+		}
+		inputPath = cookiePath
+	}
+
+	// Load cookies from file
+	storage := browser.NewCookieStorage("")
+	cookies, err := storage.Load(profile)
+	if err != nil {
+		return fmt.Errorf("load cookies: %w", err)
+	}
+
+	cfg := browser.Config{
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts,
+		Timeout:          10 * time.Second,
+	}
+
+	ctrl := browser.NewController(cfg)
+	if err := ctrl.Connect(ctx); err != nil {
+		return fmt.Errorf("connect: %w", err)
+	}
+	defer disconnectWrapper(ctrl)
+
+	// Set cookies in browser
+	if err := ctrl.SetCookies(ctx, cookies); err != nil {
+		return fmt.Errorf("set cookies: %w", err)
+	}
+
+	fmt.Printf("Imported %d cookies from '%s' to profile '%s'\n", len(cookies), inputPath, profile)
+
+	return nil
 }
