@@ -95,30 +95,6 @@ make install
 mehr version
 ```
 
-### Binary Variants
-
-Mehrhof provides two binary variants:
-
-| Variant | Description |
-|---------|-------------|
-| **Full** | Includes browser automation and MCP server |
-| **Lite** | Core features only (smaller size, no browser/MCP) |
-
-**Download examples**:
-- `mehr-linux-amd64` / `mehr-darwin-arm64` - Full binary
-- `mehr-lite-linux-amd64` / `mehr-lite-darwin-arm64` - Lite binary
-
-**Build from source variants**:
-```bash
-# Full build (includes browser and MCP)
-make build
-
-# Lite build (excludes browser and MCP)
-make build-lite
-```
-
-Use the **lite** variant if you don't need browser automation or MCP server integration. This significantly reduces binary size.
-
 ### First Task
 
 ```bash
@@ -304,12 +280,9 @@ update:
 ## Development
 
 ```bash
-make build        # Build full binary to ./build/mehr
-make build-lite   # Build lite binary (without browser/MCP) to ./build/mehr-lite
-make build-all    # Build both variants
+make build        # Build binary to ./build/mehr
 make install      # Install to $GOPATH/bin
 make test         # Run tests with coverage
-make test-lite    # Test lite build
 make coverage     # Generate coverage report
 make quality      # Run golangci-lint + govulncheck
 make fmt          # Format code (gofmt, goimports, gofumpt)
