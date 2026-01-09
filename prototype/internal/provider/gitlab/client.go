@@ -2,8 +2,12 @@ package gitlab
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
+	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 
@@ -18,6 +22,8 @@ func ptr[T any](v T) *T {
 // Client wraps the GitLab API client.
 type Client struct {
 	gl          *gitlab.Client
+	httpClient  *http.Client
+	token       string
 	projectID   int64  // Numeric project ID (cached)
 	projectPath string // Project path (e.g., "group/project")
 	host        string // GitLab host (e.g., "gitlab.com" or custom)
@@ -40,6 +46,8 @@ func NewClient(token, host, projectPath string, projectID int64) *Client {
 
 	return &Client{
 		gl:          client,
+		httpClient:  &http.Client{Timeout: 30 * time.Second},
+		token:       token,
 		projectPath: projectPath,
 		projectID:   projectID,
 		host:        host,
@@ -334,4 +342,47 @@ func (c *Client) GetDefaultBranch(ctx context.Context) (string, error) {
 	}
 
 	return project.DefaultBranch, nil
+}
+
+// DownloadAttachment downloads an attachment by URL with authentication.
+// Only HTTPS URLs are allowed for security. The URL must be from a GitLab host.
+func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadCloser, error) {
+	// Validate URL scheme - only HTTPS allowed
+	if !strings.HasPrefix(url, "https://") {
+		return nil, errors.New("invalid URL scheme: only HTTPS URLs are allowed")
+	}
+
+	// Validate URL is from a trusted GitLab host
+	host := c.Host()
+	if host == "gitlab.com" {
+		host = "https://gitlab.com"
+	}
+	if !strings.HasPrefix(host, "https://") && !strings.HasPrefix(host, "http://") {
+		host = "https://" + host
+	}
+	if !strings.HasPrefix(url, host) && !strings.HasPrefix(url, "https://gitlab.com") {
+		return nil, errors.New("URL host does not match configured GitLab host")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	// Add authentication header
+	req.Header.Set("Private-Token", c.token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("download: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		_ = resp.Body.Close()
+
+		return nil, fmt.Errorf("download failed: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp.Body, nil
 }

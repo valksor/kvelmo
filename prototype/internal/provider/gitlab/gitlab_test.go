@@ -494,6 +494,76 @@ func TestExtractImageURLs(t *testing.T) {
 	}
 }
 
+func TestHashURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{
+			name: "simple URL",
+			url:  "https://example.com/image.png",
+			want: "99a19c21", // SHA256 first 4 bytes as hex
+		},
+		{
+			name: "same URL produces same hash",
+			url:  "https://example.com/image.png",
+			want: "99a19c21",
+		},
+		{
+			name: "different URL produces different hash",
+			url:  "https://example.com/other.png",
+			want: "9e50801f",
+		},
+		{
+			name: "URL with query params",
+			url:  "https://example.com/img.png?w=100",
+			want: "b0f708ae",
+		},
+		{
+			name: "empty string",
+			url:  "",
+			want: "e3b0c442", // SHA256 of empty string
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hashURL(tt.url)
+			if got != tt.want {
+				t.Errorf("hashURL(%q) = %q, want %q", tt.url, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHashURLStability(t *testing.T) {
+	// Verify that hashURL produces stable output across multiple calls
+	url := "https://gitlab.com/uploads/abc123/screenshot.png"
+
+	first := hashURL(url)
+	second := hashURL(url)
+	third := hashURL(url)
+
+	if first != second || second != third {
+		t.Errorf("hashURL() not stable: got %q, %q, %q", first, second, third)
+	}
+
+	// Verify format is 8 hex characters
+	if len(first) != 8 {
+		t.Errorf("hashURL() length = %d, want 8", len(first))
+	}
+
+	// Verify all characters are hex
+	for _, c := range first {
+		isDigit := c >= '0' && c <= '9'
+		isHexLower := c >= 'a' && c <= 'f'
+		if !isDigit && !isHexLower {
+			t.Errorf("hashURL() contains non-hex character: %c", c)
+		}
+	}
+}
+
 func TestParseTaskList(t *testing.T) {
 	tests := []struct {
 		name string

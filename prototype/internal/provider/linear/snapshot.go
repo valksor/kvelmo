@@ -41,9 +41,9 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		content.WriteString(fmt.Sprintf("- **Team:** %s (%s)\n", issue.Team.Name, issue.Team.Key))
 	}
 
-	if len(issue.Labels) > 0 {
-		labelNames := make([]string, len(issue.Labels))
-		for i, label := range issue.Labels {
+	if issue.Labels != nil && len(issue.Labels.Nodes) > 0 {
+		labelNames := make([]string, len(issue.Labels.Nodes))
+		for i, label := range issue.Labels.Nodes {
 			labelNames[i] = label.Name
 		}
 		content.WriteString(fmt.Sprintf("- **Labels:** %s\n", strings.Join(labelNames, ", ")))

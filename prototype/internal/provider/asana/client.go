@@ -173,6 +173,19 @@ type Story struct {
 	ResourceSubtype string    `json:"resource_subtype"`
 }
 
+// Attachment represents an Asana task attachment.
+type Attachment struct {
+	GID          string    `json:"gid"`
+	Name         string    `json:"name"`
+	ResourceType string    `json:"resource_type"`
+	CreatedAt    time.Time `json:"created_at"`
+	DownloadURL  string    `json:"download_url"`
+	PermanentURL string    `json:"permanent_url"`
+	Host         string    `json:"host"`
+	ViewURL      string    `json:"view_url"`
+	Size         int64     `json:"size,omitempty"`
+}
+
 // APIResponse wraps API responses.
 type APIResponse[T any] struct {
 	Data     T          `json:"data"`
@@ -303,6 +316,25 @@ func (c *Client) GetTaskStories(ctx context.Context, taskGID string) ([]Story, e
 	var resp APIResponse[[]Story]
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("unmarshal stories: %w", err)
+	}
+
+	return resp.Data, nil
+}
+
+// GetTaskAttachments fetches attachments for a task.
+func (c *Client) GetTaskAttachments(ctx context.Context, taskGID string) ([]Attachment, error) {
+	optFields := "gid,name,resource_type,created_at,download_url,permanent_url,host,view_url,size"
+
+	path := fmt.Sprintf("/tasks/%s/attachments?opt_fields=%s", taskGID, url.QueryEscape(optFields))
+
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp APIResponse[[]Attachment]
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal attachments: %w", err)
 	}
 
 	return resp.Data, nil
@@ -495,4 +527,54 @@ func (c *Client) GetSubtasks(ctx context.Context, taskGID string) ([]Task, error
 	}
 
 	return resp.Data, nil
+}
+
+// CreateTask creates a new task.
+func (c *Client) CreateTask(ctx context.Context, name, notes, projectGID string) (*Task, error) {
+	path := "/tasks"
+
+	reqBody := map[string]any{
+		"name":  name,
+		"notes": notes,
+	}
+
+	if projectGID != "" {
+		reqBody["projects"] = []string{projectGID}
+	}
+
+	respBody, err := c.doRequest(ctx, http.MethodPost, path, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp APIResponse[Task]
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal task: %w", err)
+	}
+
+	return &resp.Data, nil
+}
+
+// DownloadAttachment downloads an attachment by URL.
+func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("download: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		_ = resp.Body.Close()
+
+		return nil, fmt.Errorf("download failed: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp.Body, nil
 }

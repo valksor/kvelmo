@@ -435,3 +435,27 @@ func (c *Client) GetSubtasks(ctx context.Context, taskID string) ([]Task, error)
 
 	return task.Subtasks, nil
 }
+
+// DownloadAttachment downloads an attachment by URL.
+func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", c.token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("download: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		_ = resp.Body.Close()
+
+		return nil, fmt.Errorf("download failed: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp.Body, nil
+}

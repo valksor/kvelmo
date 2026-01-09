@@ -512,8 +512,96 @@ func TestProviderMatch(t *testing.T) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Provider.Parse tests
+// taskToWorkUnit tests
 // ──────────────────────────────────────────────────────────────────────────────
+
+func TestTaskToWorkUnitAttachments(t *testing.T) {
+	tests := []struct {
+		name          string
+		attachments   []Attachment
+		wantCount     int
+		wantFirstID   string
+		wantFirstName string
+		wantFirstURL  string
+	}{
+		{
+			name:        "no attachments",
+			attachments: nil,
+			wantCount:   0,
+		},
+		{
+			name:        "empty attachments",
+			attachments: []Attachment{},
+			wantCount:   0,
+		},
+		{
+			name: "single attachment",
+			attachments: []Attachment{
+				{
+					ID:    "att123",
+					Title: "screenshot.png",
+					URL:   "https://api.clickup.com/v2/attachment/att123/download",
+				},
+			},
+			wantCount:     1,
+			wantFirstID:   "https://api.clickup.com/v2/attachment/att123/download",
+			wantFirstName: "screenshot.png",
+			wantFirstURL:  "https://api.clickup.com/v2/attachment/att123/download",
+		},
+		{
+			name: "multiple attachments",
+			attachments: []Attachment{
+				{
+					ID:    "att1",
+					Title: "doc1.pdf",
+					URL:   "https://api.clickup.com/v2/attachment/att1/download",
+				},
+				{
+					ID:    "att2",
+					Title: "image.jpg",
+					URL:   "https://api.clickup.com/v2/attachment/att2/download",
+				},
+			},
+			wantCount:     2,
+			wantFirstID:   "https://api.clickup.com/v2/attachment/att1/download",
+			wantFirstName: "doc1.pdf",
+			wantFirstURL:  "https://api.clickup.com/v2/attachment/att1/download",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a minimal provider to call taskToWorkUnit
+			p := &Provider{}
+
+			task := &Task{
+				ID:          "task123",
+				Name:        "Test Task",
+				Attachments: tt.attachments,
+			}
+
+			unit := p.taskToWorkUnit(task)
+
+			if len(unit.Attachments) != tt.wantCount {
+				t.Errorf("taskToWorkUnit() attachments count = %d, want %d", len(unit.Attachments), tt.wantCount)
+
+				return
+			}
+
+			if tt.wantCount > 0 {
+				if unit.Attachments[0].ID != tt.wantFirstID {
+					t.Errorf("taskToWorkUnit() first attachment ID = %q, want %q", unit.Attachments[0].ID, tt.wantFirstID)
+				}
+				if unit.Attachments[0].Name != tt.wantFirstName {
+					t.Errorf("taskToWorkUnit() first attachment Name = %q, want %q", unit.Attachments[0].Name, tt.wantFirstName)
+				}
+				if unit.Attachments[0].URL != tt.wantFirstURL {
+					t.Errorf("taskToWorkUnit() first attachment URL = %q, want %q", unit.Attachments[0].URL, tt.wantFirstURL)
+				}
+			}
+		})
+	}
+}
 
 func TestProviderParse(t *testing.T) {
 	p := &Provider{}

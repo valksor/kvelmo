@@ -305,6 +305,25 @@ func (c *Client) UpdateTaskStatus(ctx context.Context, taskID, status string) er
 	return nil
 }
 
+// UpdateTaskTags updates the tags of a task.
+func (c *Client) UpdateTaskTags(ctx context.Context, taskID string, tags []string) error {
+	requestBody := map[string]any{
+		"tags": tags,
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return fmt.Errorf("encode request: %w", err)
+	}
+
+	var response taskResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodPut, "/tasks/"+url.PathEscape(taskID),
+		strings.NewReader(string(bodyBytes)), &response); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CreateTaskOptions holds options for creating a new task.
 type CreateTaskOptions struct {
 	Title       string
@@ -361,6 +380,7 @@ type Task struct {
 	Priority    string    `json:"priority"`
 	Permalink   string    `json:"permalink"`
 	SubTaskIDs  []string  `json:"subTaskIds"`
+	Tags        []string  `json:"tags"`
 }
 
 // Comment represents a Wrike comment.
