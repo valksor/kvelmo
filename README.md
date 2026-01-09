@@ -45,6 +45,9 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 - **Go 1.25+** (for building from source)
 - **Git** (for version control operations)
 - **Claude CLI** - Mehrhof wraps Claude CLI for AI operations (see [quickstart](https://mehrhof.valksor.com/docs/#/quickstart))
+- **Chrome or Chromium** (optional, required for browser automation features)
+
+> **Browser Features**: Browser automation (`mehr browser` commands) requires Chrome or Chromium to be installed. See [Browser Documentation](https://mehrhof.valksor.com/docs/#/cli/browser) for installation instructions.
 
 ### Installation
 
