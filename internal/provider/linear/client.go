@@ -134,6 +134,14 @@ func (c *Client) GetIssue(ctx context.Context, issueID string) (*Issue, error) {
 						color
 					}
 				}
+				attachments {
+					nodes {
+						id
+						title
+						url
+						createdAt
+					}
+				}
 				assignee {
 					id
 					name
@@ -540,18 +548,29 @@ func (c *Client) GetChildIssues(ctx context.Context, issueID string) ([]*Issue, 
 
 // Issue represents a Linear issue.
 type Issue struct {
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	State       *State    `json:"state"`
-	Assignee    *User     `json:"assignee"`
-	Team        *Team     `json:"team"`
-	ID          string    `json:"id"`
-	Identifier  string    `json:"identifier"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	URL         string    `json:"url"`
-	Labels      []*Label  `json:"labels"`
-	Priority    int       `json:"priority"`
+	CreatedAt   time.Time             `json:"createdAt"`
+	UpdatedAt   time.Time             `json:"updatedAt"`
+	State       *State                `json:"state"`
+	Assignee    *User                 `json:"assignee"`
+	Team        *Team                 `json:"team"`
+	ID          string                `json:"id"`
+	Identifier  string                `json:"identifier"`
+	Title       string                `json:"title"`
+	Description string                `json:"description"`
+	URL         string                `json:"url"`
+	Labels      *LabelConnection      `json:"labels"`
+	Attachments *AttachmentConnection `json:"attachments"`
+	Priority    int                   `json:"priority"`
+}
+
+// LabelConnection wraps the GraphQL connection type for labels.
+type LabelConnection struct {
+	Nodes []*Label `json:"nodes"`
+}
+
+// AttachmentConnection wraps the GraphQL connection type for attachments.
+type AttachmentConnection struct {
+	Nodes []*Attachment `json:"nodes"`
 }
 
 // State represents the state of an issue.
@@ -566,6 +585,15 @@ type Label struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color"`
+}
+
+// Attachment represents a file attachment.
+type Attachment struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	URL       string    `json:"url"`
+	CreatedAt time.Time `json:"createdAt"`
+	Metadata  any       `json:"metadata,omitempty"`
 }
 
 // User represents a user.
@@ -611,6 +639,30 @@ type UpdateIssueInput struct {
 // ListFilters represents filters for listing issues.
 type ListFilters struct {
 	State string
+}
+
+// DownloadAttachment downloads an attachment by URL.
+func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("download: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		_ = resp.Body.Close()
+
+		return nil, fmt.Errorf("download failed: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp.Body, nil
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

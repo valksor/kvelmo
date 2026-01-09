@@ -17,6 +17,7 @@ func Info() provider.ProviderInfo {
 			provider.CapFetchComments:      true,
 			provider.CapComment:            true,
 			provider.CapUpdateStatus:       true,
+			provider.CapManageLabels:       true,
 			provider.CapDownloadAttachment: true,
 			provider.CapSnapshot:           true,
 			provider.CapCreateWorkUnit:     true,

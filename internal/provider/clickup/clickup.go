@@ -36,15 +36,16 @@ func Info() provider.ProviderInfo {
 		Description: "Load tasks from ClickUp",
 		Schemes:     []string{"clickup", "cu"},
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead:           true,
-			provider.CapList:           true,
-			provider.CapFetchComments:  true,
-			provider.CapComment:        true,
-			provider.CapUpdateStatus:   true,
-			provider.CapManageLabels:   true,
-			provider.CapSnapshot:       true,
-			provider.CapCreateWorkUnit: true,
-			provider.CapFetchSubtasks:  true,
+			provider.CapRead:               true,
+			provider.CapList:               true,
+			provider.CapFetchComments:      true,
+			provider.CapComment:            true,
+			provider.CapUpdateStatus:       true,
+			provider.CapManageLabels:       true,
+			provider.CapDownloadAttachment: true,
+			provider.CapSnapshot:           true,
+			provider.CapCreateWorkUnit:     true,
+			provider.CapFetchSubtasks:      true,
 		},
 	}
 }
@@ -362,6 +363,18 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 	// Set points in metadata
 	if task.Points != nil {
 		unit.Metadata["points"] = *task.Points
+	}
+
+	// Set attachments
+	if len(task.Attachments) > 0 {
+		unit.Attachments = make([]provider.Attachment, len(task.Attachments))
+		for i, att := range task.Attachments {
+			unit.Attachments[i] = provider.Attachment{
+				ID:   att.URL, // Use URL as ID for consistency with DownloadAttachment
+				Name: att.Title,
+				URL:  att.URL,
+			}
+		}
 	}
 
 	return unit

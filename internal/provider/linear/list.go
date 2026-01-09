@@ -89,8 +89,10 @@ func matchesLabels(issue *Issue, labels []string) bool {
 	}
 
 	issueLabelNames := make(map[string]bool)
-	for _, label := range issue.Labels {
-		issueLabelNames[label.Name] = true
+	if issue.Labels != nil {
+		for _, label := range issue.Labels.Nodes {
+			issueLabelNames[label.Name] = true
+		}
 	}
 
 	for _, filterLabel := range labels {

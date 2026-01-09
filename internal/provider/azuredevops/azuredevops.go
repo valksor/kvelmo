@@ -41,17 +41,18 @@ func Info() provider.ProviderInfo {
 		Description: "Load work items from Azure DevOps",
 		Schemes:     []string{"azdo", "azure"},
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead:           true,
-			provider.CapList:           true,
-			provider.CapFetchComments:  true,
-			provider.CapComment:        true,
-			provider.CapUpdateStatus:   true,
-			provider.CapManageLabels:   true,
-			provider.CapSnapshot:       true,
-			provider.CapCreatePR:       true,
-			provider.CapLinkBranch:     true,
-			provider.CapCreateWorkUnit: true,
-			provider.CapFetchSubtasks:  true,
+			provider.CapRead:               true,
+			provider.CapList:               true,
+			provider.CapFetchComments:      true,
+			provider.CapComment:            true,
+			provider.CapUpdateStatus:       true,
+			provider.CapManageLabels:       true,
+			provider.CapDownloadAttachment: true,
+			provider.CapSnapshot:           true,
+			provider.CapCreatePR:           true,
+			provider.CapLinkBranch:         true,
+			provider.CapCreateWorkUnit:     true,
+			provider.CapFetchSubtasks:      true,
 		},
 	}
 }
@@ -418,6 +419,11 @@ func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
 		unit.Metadata["acceptance_criteria"] = wi.Fields.AcceptanceCriteria
 	}
 
+	// Extract attachments from relations
+	if len(wi.Relations) > 0 {
+		unit.Attachments = extractAttachments(wi.Relations)
+	}
+
 	return unit
 }
 
@@ -500,6 +506,31 @@ func parseTags(tags string) []string {
 	}
 
 	return result
+}
+
+// extractAttachments extracts attachments from work item relations.
+// Azure DevOps stores attachments as relations with rel="AttachedFile".
+func extractAttachments(relations []WorkItemRelation) []provider.Attachment {
+	var attachments []provider.Attachment
+	for _, rel := range relations {
+		if rel.Rel == "AttachedFile" {
+			// Extract filename from attributes if available
+			name := ""
+			if rel.Attributes != nil {
+				if n, ok := rel.Attributes["name"].(string); ok {
+					name = n
+				}
+			}
+			// Use URL as the attachment ID for DownloadAttachment compatibility
+			attachments = append(attachments, provider.Attachment{
+				ID:   rel.URL,
+				Name: name,
+				URL:  rel.URL,
+			})
+		}
+	}
+
+	return attachments
 }
 
 func parseAzureTime(ts string) time.Time {

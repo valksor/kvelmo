@@ -11,11 +11,9 @@ var (
 	_ provider.Lister          = (*Provider)(nil)
 	_ provider.Commenter       = (*Provider)(nil)
 	_ provider.StatusUpdater   = (*Provider)(nil)
+	_ provider.LabelManager    = (*Provider)(nil)
 	_ provider.Snapshotter     = (*Provider)(nil)
 	_ provider.WorkUnitCreator = (*Provider)(nil)
 	_ provider.SubtaskFetcher  = (*Provider)(nil)
 	_ provider.CommentFetcher  = (*Provider)(nil)
-
-	// Note: LabelManager is declared but AddLabels/RemoveLabels not implemented.
-	// Implement label management methods.
 )

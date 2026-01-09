@@ -35,14 +35,16 @@ func Info() provider.ProviderInfo {
 		Description: "Load tasks from Asana projects",
 		Schemes:     []string{"asana", "as"},
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead:          true,
-			provider.CapList:          true,
-			provider.CapFetchComments: true,
-			provider.CapComment:       true,
-			provider.CapUpdateStatus:  true,
-			provider.CapManageLabels:  true,
-			provider.CapSnapshot:      true,
-			provider.CapFetchSubtasks: true,
+			provider.CapRead:               true,
+			provider.CapList:               true,
+			provider.CapFetchComments:      true,
+			provider.CapComment:            true,
+			provider.CapUpdateStatus:       true,
+			provider.CapManageLabels:       true,
+			provider.CapCreateWorkUnit:     true,
+			provider.CapDownloadAttachment: true,
+			provider.CapSnapshot:           true,
+			provider.CapFetchSubtasks:      true,
 		},
 	}
 }
@@ -106,7 +108,15 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		return nil, fmt.Errorf("fetch task %s: %w", id, err)
 	}
 
-	return p.taskToWorkUnit(task), nil
+	wu := p.taskToWorkUnit(task)
+
+	// Fetch attachments (optional - don't fail if this errors)
+	attachments, err := p.client.GetTaskAttachments(ctx, id)
+	if err == nil && len(attachments) > 0 {
+		wu.Attachments = mapAttachments(attachments)
+	}
+
+	return wu, nil
 }
 
 // Snapshot creates a snapshot of the task's current state.
@@ -368,6 +378,27 @@ func extractProjectNames(projects []Project) []string {
 	}
 
 	return names
+}
+
+func mapAttachments(attachments []Attachment) []provider.Attachment {
+	result := make([]provider.Attachment, 0, len(attachments))
+	for _, a := range attachments {
+		// Use download_url if available, otherwise permanent_url
+		url := a.DownloadURL
+		if url == "" {
+			url = a.PermanentURL
+		}
+
+		result = append(result, provider.Attachment{
+			ID:        url, // Use URL as ID for DownloadAttachment compatibility
+			Name:      a.Name,
+			URL:       url,
+			Size:      a.Size,
+			CreatedAt: a.CreatedAt,
+		})
+	}
+
+	return result
 }
 
 func hasAnyTag(tags []Tag, tagNames []string) bool {

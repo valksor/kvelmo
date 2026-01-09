@@ -2,6 +2,8 @@ package gitlab
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,6 +14,14 @@ import (
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
+
+// hashURL generates a stable 8-character hash from a URL for attachment IDs.
+// This ensures attachment IDs remain stable even if images are reordered.
+func hashURL(url string) string {
+	h := sha256.Sum256([]byte(url))
+
+	return hex.EncodeToString(h[:4])
+}
 
 // ProviderName is the registered name for this provider.
 const ProviderName = "gitlab"
@@ -238,7 +248,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		wu.Attachments = make([]provider.Attachment, len(imageURLs))
 		for i, url := range imageURLs {
 			wu.Attachments[i] = provider.Attachment{
-				ID:   fmt.Sprintf("img-%d", i),
+				ID:   "img-" + hashURL(url), // Hash-based ID for stability
 				Name: fmt.Sprintf("image-%d", i),
 				URL:  url,
 			}

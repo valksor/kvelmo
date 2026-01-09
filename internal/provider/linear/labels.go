@@ -22,9 +22,13 @@ func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []st
 	}
 
 	// Extract existing label IDs
-	existingLabelIDs := make([]string, 0, len(issue.Labels))
+	var labelNodes []*Label
+	if issue.Labels != nil {
+		labelNodes = issue.Labels.Nodes
+	}
+	existingLabelIDs := make([]string, 0, len(labelNodes))
 	existingLabelNames := make(map[string]string)
-	for _, label := range issue.Labels {
+	for _, label := range labelNodes {
 		existingLabelIDs = append(existingLabelIDs, label.ID)
 		existingLabelNames[label.Name] = label.ID
 	}
@@ -73,8 +77,12 @@ func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels [
 	}
 
 	// Keep labels that aren't in the remove list
-	keptLabelIDs := make([]string, 0, len(issue.Labels))
-	for _, label := range issue.Labels {
+	var labelsToKeep []*Label
+	if issue.Labels != nil {
+		labelsToKeep = issue.Labels.Nodes
+	}
+	keptLabelIDs := make([]string, 0, len(labelsToKeep))
+	for _, label := range labelsToKeep {
 		if !labelsToRemove[label.Name] {
 			keptLabelIDs = append(keptLabelIDs, label.ID)
 		}

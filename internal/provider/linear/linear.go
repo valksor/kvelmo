@@ -32,15 +32,16 @@ func Info() provider.ProviderInfo {
 		Schemes:     []string{"linear", "ln"},
 		Priority:    20, // Same as GitHub and Wrike
 		Capabilities: provider.CapabilitySet{
-			provider.CapRead:           true,
-			provider.CapList:           true,
-			provider.CapFetchComments:  true,
-			provider.CapComment:        true,
-			provider.CapUpdateStatus:   true,
-			provider.CapManageLabels:   true,
-			provider.CapCreateWorkUnit: true,
-			provider.CapSnapshot:       true,
-			provider.CapFetchSubtasks:  true,
+			provider.CapRead:               true,
+			provider.CapList:               true,
+			provider.CapFetchComments:      true,
+			provider.CapComment:            true,
+			provider.CapUpdateStatus:       true,
+			provider.CapManageLabels:       true,
+			provider.CapCreateWorkUnit:     true,
+			provider.CapDownloadAttachment: true,
+			provider.CapSnapshot:           true,
+			provider.CapFetchSubtasks:      true,
 		},
 	}
 }
@@ -122,6 +123,11 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	comments, err := p.client.GetComments(ctx, issue.ID)
 	if err == nil && len(comments) > 0 {
 		wu.Comments = mapComments(comments)
+	}
+
+	// Map attachments if available
+	if issue.Attachments != nil && len(issue.Attachments.Nodes) > 0 {
+		wu.Attachments = mapAttachments(issue.Attachments.Nodes)
 	}
 
 	return wu, nil
@@ -231,16 +237,30 @@ func mapProviderStatusToLinearStateName(status provider.Status) string {
 }
 
 // extractLabelNames extracts label names from Linear labels.
-func extractLabelNames(labels []*Label) []string {
-	if labels == nil {
+func extractLabelNames(labels *LabelConnection) []string {
+	if labels == nil || len(labels.Nodes) == 0 {
 		return []string{}
 	}
-	names := make([]string, len(labels))
-	for i, label := range labels {
+	names := make([]string, len(labels.Nodes))
+	for i, label := range labels.Nodes {
 		names[i] = label.Name
 	}
 
 	return names
+}
+
+func mapAttachments(attachments []*Attachment) []provider.Attachment {
+	result := make([]provider.Attachment, 0, len(attachments))
+	for _, a := range attachments {
+		result = append(result, provider.Attachment{
+			ID:        a.URL, // Use URL as ID for DownloadAttachment compatibility
+			Name:      a.Title,
+			URL:       a.URL,
+			CreatedAt: a.CreatedAt,
+		})
+	}
+
+	return result
 }
 
 // mapAssignees converts Linear assignee to provider Person.
