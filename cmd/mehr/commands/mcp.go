@@ -1,6 +1,3 @@
-//go:build !no_mcp
-// +build !no_mcp
-
 package commands
 
 import (

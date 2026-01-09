@@ -1,5 +1,4 @@
-//go:build !testbinary && !no_browser
-// +build !testbinary,!no_browser
+//go:build !testbinary
 
 package commands
 

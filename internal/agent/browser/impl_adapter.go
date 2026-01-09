@@ -1,6 +1,3 @@
-//go:build !no_browser
-// +build !no_browser
-
 // Package browser provides agent tool adapters for browser automation.
 // It bridges the browser controller with the agent system, allowing
 // AI agents to control Chrome for tasks like navigation, screenshots,
