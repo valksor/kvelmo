@@ -208,3 +208,34 @@ func TestOptionsApply_AutoOptions(t *testing.T) {
 		t.Errorf("MaxQualityRetries = %d, want 10", opts.MaxQualityRetries)
 	}
 }
+
+func TestWithUseDefaults(t *testing.T) {
+	opts := DefaultOptions()
+	if opts.UseDefaults != false {
+		t.Errorf("UseDefaults default = %v, want false", opts.UseDefaults)
+	}
+
+	opts.Apply(WithUseDefaults(true))
+	if opts.UseDefaults != true {
+		t.Errorf("UseDefaults after WithUseDefaults(true) = %v, want true", opts.UseDefaults)
+	}
+}
+
+func TestWithUseDefaults_False(t *testing.T) {
+	opts := DefaultOptions()
+	opts.Apply(WithUseDefaults(true))
+	opts.Apply(WithUseDefaults(false))
+
+	if opts.UseDefaults != false {
+		t.Errorf("UseDefaults = %v, want false", opts.UseDefaults)
+	}
+}
+
+func TestDefaultOptions_UseDefaultsFalse(t *testing.T) {
+	opts := DefaultOptions()
+
+	// UseDefaults should default to false (ask user)
+	if opts.UseDefaults != false {
+		t.Errorf("DefaultOptions().UseDefaults = %v, want false", opts.UseDefaults)
+	}
+}

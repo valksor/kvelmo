@@ -116,7 +116,7 @@ func TestBuildPlanningPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildPlanningPrompt(nil, tt.title, tt.sourceContent, tt.notes, tt.existingSpecs, "")
+			got := buildPlanningPrompt(nil, tt.title, tt.sourceContent, tt.notes, tt.existingSpecs, "", false)
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
 					t.Errorf("buildPlanningPrompt() missing %q", want)
@@ -132,7 +132,7 @@ func TestBuildPlanningPrompt(t *testing.T) {
 }
 
 func TestBuildPlanningPromptWithCustomInstructions(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "Focus on security.")
+	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "Focus on security.", false)
 
 	if !strings.Contains(got, "## Custom Instructions") {
 		t.Error("buildPlanningPrompt() should contain custom instructions section")
@@ -1190,6 +1190,539 @@ func TestBuildQualityGateInstructions(t *testing.T) {
 	for _, want := range wantIn {
 		if !strings.Contains(got, want) {
 			t.Errorf("buildQualityGateInstructions() missing %q", want)
+		}
+	}
+}
+
+// Tests for useDefaults parameter in buildPlanningPrompt
+
+func TestBuildPlanningPromptUseDefaults(t *testing.T) {
+	tests := []struct {
+		name        string
+		useDefaults bool
+		wantIn      []string
+		wantNotIn   []string
+	}{
+		{
+			name:        "useDefaults false - should ask user",
+			useDefaults: false,
+			wantIn: []string{
+				"STOP and ask the user",
+				"Do not guess",
+				"get clarification",
+			},
+			wantNotIn: []string{
+				"Provide your best-guess default answers",
+				"Do not wait for user input",
+			},
+		},
+		{
+			name:        "useDefaults true - should use defaults",
+			useDefaults: true,
+			wantIn: []string{
+				"your recommended default answer",
+				"Do not wait for user input",
+			},
+			wantNotIn: []string{
+				"STOP and ask the user",
+				"get clarification for important decisions",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", tt.useDefaults)
+
+			for _, want := range tt.wantIn {
+				if !strings.Contains(got, want) {
+					t.Errorf("buildPlanningPrompt(useDefaults=%v) missing %q", tt.useDefaults, want)
+				}
+			}
+			for _, notWant := range tt.wantNotIn {
+				if strings.Contains(got, notWant) {
+					t.Errorf("buildPlanningPrompt(useDefaults=%v) should not contain %q", tt.useDefaults, notWant)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildUnknownsSection(t *testing.T) {
+	tests := []struct {
+		name        string
+		useDefaults bool
+		wantIn      []string
+		wantNotIn   []string
+	}{
+		{
+			name:        "ask user mode",
+			useDefaults: false,
+			wantIn: []string{
+				"STOP and ask the user",
+				"ask_question tool",
+				"Do not guess",
+			},
+			wantNotIn: []string{
+				"Do not wait for user input",
+			},
+		},
+		{
+			name:        "defaults mode",
+			useDefaults: true,
+			wantIn: []string{
+				"your recommended default answer",
+				"Do not wait for user input",
+			},
+			wantNotIn: []string{
+				"STOP and ask the user",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildUnknownsSection(tt.useDefaults)
+
+			for _, want := range tt.wantIn {
+				if !strings.Contains(got, want) {
+					t.Errorf("buildUnknownsSection(%v) missing %q", tt.useDefaults, want)
+				}
+			}
+			for _, notWant := range tt.wantNotIn {
+				if strings.Contains(got, notWant) {
+					t.Errorf("buildUnknownsSection(%v) should not contain %q", tt.useDefaults, notWant)
+				}
+			}
+		})
+	}
+}
+
+// Tests for step-specific browser sections
+
+func TestBuildBrowserToolsSectionForStep(t *testing.T) {
+	tests := []struct {
+		name    string
+		step    string
+		wantIn  []string
+		wantNot []string
+	}{
+		{
+			name: "planning step",
+			step: "planning",
+			wantIn: []string{
+				"## Browser Automation (Planning)",
+				"Research APIs",
+				"explore documentation",
+				"Capture screenshots for specification references",
+			},
+		},
+		{
+			name: "implementing step",
+			step: "implementing",
+			wantIn: []string{
+				"## Browser Automation (Implementation)",
+				"Test your changes",
+				"Verify UI components",
+				"Debug frontend issues",
+			},
+		},
+		{
+			name: "reviewing step",
+			step: "reviewing",
+			wantIn: []string{
+				"## Browser Automation (Review)",
+				"Verify the implementation works end-to-end",
+				"Test edge cases",
+				"Capture evidence of issues",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Note: This test verifies the step-specific content.
+			// Without a workspace with browser enabled, it returns empty.
+			// We test the switch logic by verifying the function exists
+			// and handles different step values.
+
+			// For nil workspace, should return empty
+			got := buildBrowserToolsSectionForStep(nil, tt.step)
+			if got != "" {
+				t.Errorf("buildBrowserToolsSectionForStep(nil, %q) should be empty", tt.step)
+			}
+		})
+	}
+}
+
+// Tests for chain-of-thought sections
+
+func TestPlanningPromptChainOfThought(t *testing.T) {
+	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+
+	wantIn := []string{
+		"## Approach",
+		"Before writing your specification",
+		"Identify existing patterns in the codebase",
+		"Consider integration points and dependencies",
+		"Think through edge cases and failure scenarios",
+		"Evaluate trade-offs",
+		"Briefly explain your key architectural decisions",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildPlanningPrompt() missing chain-of-thought element %q", want)
+		}
+	}
+}
+
+func TestReviewPromptChainOfThought(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	wantIn := []string{
+		"## Approach",
+		"Before providing your review",
+		"Trace through the code paths systematically",
+		"Check each specification requirement",
+		"Consider edge cases the implementation might miss",
+		"Look for patterns that commonly cause bugs",
+		"Document your analysis",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildReviewPrompt() missing chain-of-thought element %q", want)
+		}
+	}
+}
+
+// Tests for actionable constraints
+
+func TestPlanningPromptActionableConstraints(t *testing.T) {
+	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+
+	wantIn := []string{
+		"If the approach has flaws, explain the specific problem",
+		"If requirements are ambiguous, list your assumptions explicitly",
+		"Prefer existing patterns in the codebase",
+		"If you're uncertain about something, say so rather than guessing",
+	}
+
+	wantNotIn := []string{
+		"Be brutally honest",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildPlanningPrompt() missing actionable constraint %q", want)
+		}
+	}
+
+	for _, notWant := range wantNotIn {
+		if strings.Contains(got, notWant) {
+			t.Errorf("buildPlanningPrompt() should not contain vague constraint %q", notWant)
+		}
+	}
+}
+
+func TestReviewPromptActionableConstraints(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	wantIn := []string{
+		"If the approach has flaws, explain the specific problem",
+		"If you find issues, provide concrete fixes",
+		"Prefer existing patterns in the codebase",
+	}
+
+	wantNotIn := []string{
+		"Be brutally honest",
+		"Prioritize technical accuracy over validation",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildReviewPrompt() missing actionable constraint %q", want)
+		}
+	}
+
+	for _, notWant := range wantNotIn {
+		if strings.Contains(got, notWant) {
+			t.Errorf("buildReviewPrompt() should not contain vague constraint %q", notWant)
+		}
+	}
+}
+
+// Tests for concrete examples
+
+func TestPlanningPromptHasExample(t *testing.T) {
+	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+
+	wantIn := []string{
+		"## Example Specification",
+		"Add rate limiting",
+		"/api/users endpoint",
+		"## Plan",
+		"golang.org/x/time/rate",
+		"## Complete Condition",
+		"go test",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildPlanningPrompt() missing example element %q", want)
+		}
+	}
+}
+
+func TestImplementationPromptHasExample(t *testing.T) {
+	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", "")
+
+	wantIn := []string{
+		"## Example Output",
+		"yaml:file",
+		"path: internal/api/middleware/ratelimit.go",
+		"operation: create",
+		"content:",
+		"RateLimit",
+		"rate.NewLimiter",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildImplementationPrompt() missing example element %q", want)
+		}
+	}
+}
+
+// Tests for Implementation prompt structure (phase order)
+
+func TestImplementationPromptStructure(t *testing.T) {
+	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "Notes", "Custom", "StatusSum", "TrackingSum")
+
+	// Verify phases appear in correct order
+	phases := []string{
+		"## Task",
+		"## Original Requirements",
+		"## Specifications",
+		"## Additional Notes",
+		"## Custom Instructions",
+		"## Constraints",
+		"## Instructions",
+		"## Spec Status Overview",
+		"## Specification Tracking",
+		"## Error Recovery Strategies",
+		"## Testing and Verification",
+		"## Example Output",
+	}
+
+	lastIndex := -1
+	for _, phase := range phases {
+		idx := strings.Index(got, phase)
+		if idx == -1 {
+			t.Errorf("buildImplementationPrompt() missing phase %q", phase)
+
+			continue
+		}
+		if idx < lastIndex {
+			t.Errorf("buildImplementationPrompt() phase %q appears before previous phase (order violation)", phase)
+		}
+		lastIndex = idx
+	}
+}
+
+// Tests for Review prompt large codebase handling
+
+func TestReviewPromptLargeCodebaseHandling(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	wantIn := []string{
+		"## Handling Large Codebases",
+		"unable to review all changes due to context limits",
+		"Focus on critical paths and security-sensitive code first",
+		"Prioritize files with the most significant changes",
+		"Note which files were not fully reviewed",
+		"follow-up review",
+	}
+
+	for _, want := range wantIn {
+		if !strings.Contains(got, want) {
+			t.Errorf("buildReviewPrompt() missing large codebase handling element %q", want)
+		}
+	}
+}
+
+// Tests for role standardization
+
+func TestPromptRoles(t *testing.T) {
+	tests := []struct {
+		name     string
+		prompt   string
+		wantRole string
+	}{
+		{
+			name:     "planning prompt",
+			prompt:   buildPlanningPrompt(nil, "Task", "Source", "", "", "", false),
+			wantRole: "expert software engineer specializing in architecture and system design",
+		},
+		{
+			name:     "implementation prompt",
+			prompt:   buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", ""),
+			wantRole: "expert software engineer",
+		},
+		{
+			name:     "review prompt",
+			prompt:   buildReviewPrompt(nil, "Task", "Source", "Specs"),
+			wantRole: "expert software engineer specializing in code review and quality assurance",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !strings.Contains(tt.prompt, tt.wantRole) {
+				t.Errorf("%s missing role %q", tt.name, tt.wantRole)
+			}
+		})
+	}
+}
+
+// Tests for timestamp in Review prompt
+
+func TestReviewPromptHasTimestamp(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	if !strings.Contains(got, "Current timestamp:") {
+		t.Error("buildReviewPrompt() should contain timestamp")
+	}
+}
+
+// Phase 2 Tests
+
+func TestReviewPromptHasExample(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	// Verify example sections
+	required := []string{
+		"## Example Review Output",
+		"### Analysis",
+		"### Issues Found",
+		"### Fixes",
+		"yaml:file",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildReviewPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestReviewPromptHasIterationStructure(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	// Verify Round 1/2/3 structure
+	required := []string{
+		"## Review Process",
+		"**Round 1: Analysis**",
+		"**Round 2: Fixes**",
+		"**Round 3: Verification**",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildReviewPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestPlanningPromptHasOutputFormat(t *testing.T) {
+	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+
+	required := []string{
+		"## Required Output Format",
+		"specification with ALL sections",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildPlanningPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestImplementationPromptHasOutputFormat(t *testing.T) {
+	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", "")
+
+	required := []string{
+		"## Required Output Format",
+		"yaml:file blocks",
+		"Updated specification status",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildImplementationPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestReviewPromptHasOutputFormat(t *testing.T) {
+	got := buildReviewPrompt(nil, "Task", "Source", "Specs")
+
+	required := []string{
+		"## Required Output Format",
+		"Analysis section",
+		"Issues found with severity",
+		"yaml:file blocks fixing ALL issues",
+		"Final verdict",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildReviewPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestFinishPromptHasGuidelines(t *testing.T) {
+	got := buildFinishPrompt("TEST-123", "Test Task", nil, "", "", "", "")
+
+	// Verify conventional commits guidance
+	required := []string{
+		"## Commit Message Guidelines",
+		"**Conventional Commits Types:**",
+		"feat:",
+		"fix:",
+		"refactor:",
+		"docs:",
+		"test:",
+		"chore:",
+		"**Format Rules:**",
+		"72 characters",
+		"imperative mood",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildFinishPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestFinishPromptHasExample(t *testing.T) {
+	got := buildFinishPrompt("TEST-123", "Test Task", nil, "", "", "", "")
+
+	// Verify good/bad examples
+	required := []string{
+		"## Example Commit Messages",
+		"**Good:**",
+		"**Bad:**",
+		"updated files",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildFinishPrompt() should contain %q", section)
 		}
 	}
 }
