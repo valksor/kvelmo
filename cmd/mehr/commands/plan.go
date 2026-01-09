@@ -21,6 +21,7 @@ var (
 	planSeed          string
 	planFullContext   bool
 	planAgentPlanning string // Per-step agent override
+	planUseDefaults   bool   // Use defaults for unknowns without asking
 )
 
 var planCmd = &cobra.Command{
@@ -66,6 +67,7 @@ func init() {
 	planCmd.Flags().StringVarP(&planSeed, "seed", "s", "", "Initial topic for standalone planning")
 	planCmd.Flags().BoolVar(&planFullContext, "full-context", false, "Include full exploration context from previous session (default: summary only)")
 	planCmd.Flags().StringVar(&planAgentPlanning, "agent-plan", "", "Agent for planning step")
+	planCmd.Flags().BoolVar(&planUseDefaults, "default", false, "Use default answers for unknowns without asking user")
 }
 
 func runPlan(cmd *cobra.Command, args []string) error {
@@ -86,6 +88,11 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		Verbose:     verbose,
 		FullContext: planFullContext,
 	})
+
+	// Add --default flag for planning
+	if planUseDefaults {
+		opts = append(opts, conductor.WithUseDefaults(true))
+	}
 
 	// Per-step agent override for planning
 	if planAgentPlanning != "" {

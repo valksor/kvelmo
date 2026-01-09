@@ -32,6 +32,9 @@ type Options struct {
 	// Context preservation
 	IncludeFullContext bool // Include full exploration context from pending question (default: summary only)
 
+	// Planning behavior
+	UseDefaults bool // Use default answers for unknowns without asking user (default: false, ask user)
+
 	// Output
 	Stdout io.Writer // Where to write output (default: os.Stdout)
 	Stderr io.Writer // Where to write errors (default: os.Stderr)
@@ -182,6 +185,13 @@ func WithMaxQualityRetries(n int) Option {
 func WithIncludeFullContext(enabled bool) Option {
 	return func(o *Options) {
 		o.IncludeFullContext = enabled
+	}
+}
+
+// WithUseDefaults enables using default answers for unknowns without asking user.
+func WithUseDefaults(enabled bool) Option {
+	return func(o *Options) {
+		o.UseDefaults = enabled
 	}
 }
 

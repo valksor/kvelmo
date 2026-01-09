@@ -98,7 +98,7 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
-	prompt := buildPlanningPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions)
+	prompt := buildPlanningPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults)
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
