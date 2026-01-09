@@ -196,7 +196,8 @@ func (w *Workspace) UpdateGitignore() error {
 
 	// Entries to ADD
 	entriesToAdd := []string{
-		taskDirName + "/.env", // .mehrhof/.env
+		taskDirName + "/.env", // .mehrhof/.env,
+		taskDirName + "browser.json",
 	}
 
 	// Entries to REMOVE (legacy - no longer in project)

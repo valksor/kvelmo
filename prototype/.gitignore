@@ -8,7 +8,6 @@
 .local/
 .mcp.json
 .mehrhof/.env
-.mehrhof/work/
 .wrangler/
 /CLAUDE.md
 build/
@@ -17,3 +16,4 @@ covprofile
 internal/agent/browser/.mehrhof
 node_modules/
 /mehr
+.mehrhof/browser.json
