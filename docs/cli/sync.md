@@ -38,7 +38,7 @@ If changes are detected:
 
 → Generating delta specification...
 
-✓ Generated delta specification: ~/.mehrhof/workspaces/<project-id>/work/TASK-123/specifications/specification-2.md
+✓ Generated delta specification: ~/.valksor/mehrhof/workspaces/<project-id>/work/TASK-123/specifications/specification-2.md
 
 Next steps:
   1. Review the delta specification
@@ -56,9 +56,9 @@ If no changes:
 
 ## Generated Files
 
-- `~/.mehrhof/workspaces/<project-id>/work/<task-id>/specifications/specification-N.md` - Delta specification with update instructions
-- `~/.mehrhof/workspaces/<project-id>/work/<task-id>/source/<provider>.previous` - Backup of original source
-- `~/.mehrhof/workspaces/<project-id>/work/<task-id>/source/changes.txt` - Human-readable change summary
+- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/specifications/specification-N.md` - Delta specification with update instructions
+- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/source/<provider>.previous` - Backup of original source
+- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/source/changes.txt` - Human-readable change summary
 
 ## Change Detection
 

@@ -47,7 +47,7 @@ Active Task: a1b2c3d4
   Title:   Add user authentication
   State:   implementing - Generating code from specifications
   Source:  task.md
-  WorkDir: ~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4
+  WorkDir: ~/.valksor/mehrhof/workspaces/<project-id>/work/a1b2c3d4
   Started: 2024-01-15 10:30:00
   Branch:  task/a1b2c3d4
 
@@ -137,7 +137,7 @@ Output:
   "state": "implementing",
   "state_description": "Generating code from specifications",
   "source": "task.md",
-  "work_dir": "~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4",
+  "work_dir": "~/.valksor/mehrhof/workspaces/<project-id>/work/a1b2c3d4",
   "branch": "task/a1b2c3d4",
   "started_at": "2024-01-15T10:30:00Z",
   "agent_name": "claude",

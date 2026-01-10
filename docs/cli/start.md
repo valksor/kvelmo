@@ -329,7 +329,7 @@ Brief description of what needs to be done.
    - Base branch: current HEAD
 
 4. **Work Directory**
-   - Created at `~/.mehrhof/workspaces/<project-id>/work/<id>/`
+   - Created at `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/`
    - Source content copied (read-only)
    - `work.yaml` metadata file created
 
@@ -375,7 +375,7 @@ Your choice [d/c]:
 
 ### Options
 
-- **Delete and archive**: Moves the old work directory to `~/.mehrhof/workspaces/<project-id>/archive/<taskID>-timestamp/` and creates a fresh task
+- **Delete and archive**: Moves the old work directory to `~/.valksor/mehrhof/workspaces/<project-id>/archive/<taskID>-timestamp/` and creates a fresh task
 - **Continue with existing**: Reuses the existing work directory, fetches updated content from the provider, resets state to idle, and keeps all existing files (specs, sessions, checkpoints)
 
 ### Continue Workflow

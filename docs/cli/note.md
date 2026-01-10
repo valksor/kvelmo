@@ -99,7 +99,7 @@ All notes are included when the agent runs during planning.
 
 ## Notes File
 
-Notes are saved to `~/.mehrhof/workspaces/<project-id>/work/<id>/notes.md`:
+Notes are saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/notes.md`:
 
 ```markdown
 # Notes

@@ -101,7 +101,7 @@ Each task gets a unique 8-character ID:
 ```
 Task ID: a1b2c3d4
 Branch:  task/a1b2c3d4
-Work:    ~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4/
+Work:    ~/.valksor/mehrhof/workspaces/<project-id>/work/a1b2c3d4/
 ```
 
 ## Specifications
@@ -109,7 +109,7 @@ Work:    ~/.mehrhof/workspaces/<project-id>/work/a1b2c3d4/
 Specifications are detailed implementation plans created during planning:
 
 ```
-~/.mehrhof/workspaces/<project-id>/work/<id>/specifications/
+~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/specifications/
 ├── specification-1.md    # First specification
 ├── specification-2.md    # Second specification
 └── specification-3.md    # Third specification
@@ -180,7 +180,7 @@ Add context during development:
 mehr note "Use the existing UserService instead of creating a new one"
 ```
 
-Notes are saved to `~/.mehrhof/workspaces/<project-id>/work/<id>/notes.md` and included in future AI prompts.
+Notes are saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/notes.md` and included in future AI prompts.
 
 ## Task Lifecycle Example
 
@@ -214,10 +214,10 @@ Options:
 
 ## Task Storage
 
-All task data is stored in `~/.mehrhof/workspaces/<project-id>/work/<id>/`:
+All task data is stored in `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/`:
 
 ```
-~/.mehrhof/workspaces/<project-id>/work/abc12345/
+~/.valksor/mehrhof/workspaces/<project-id>/work/abc12345/
 ├── work.yaml           # Task metadata
 ├── notes.md            # User notes
 ├── specifications/              # Specifications

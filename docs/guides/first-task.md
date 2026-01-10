@@ -131,7 +131,7 @@ Specifications:
 Read the specification:
 
 ```bash
-cat ~/.mehrhof/workspaces/*/work/*/specifications/specification-1.md
+cat ~/.valksor/mehrhof/workspaces/*/work/*/specifications/specification-1.md
 ```
 
 You'll see a detailed implementation plan:

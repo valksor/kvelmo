@@ -264,7 +264,7 @@ update:
   check_interval: 24  # hours
 ```
 
-**Note**: Task data (specifications, sessions, notes) is stored in `~/.mehrhof/workspaces/<project-id>/` to keep project directories clean.
+**Note**: Task data (specifications, sessions, notes) is stored in `~/.valksor/mehrhof/workspaces/<project-id>/` to keep project directories clean.
 
 **See [Configuration Guide](https://mehrhof.valksor.com/docs/#/configuration/index) for all options including agent aliases, per-step agents, and provider settings.**
 

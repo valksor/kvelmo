@@ -77,7 +77,7 @@ mehr plugins install <source> [--global]
 
 | Flag       | Description                                                     |
 | ---------- | --------------------------------------------------------------- |
-| `--global` | Install to `~/.mehrhof/plugins/` (default: `.mehrhof/plugins/`) |
+| `--global` | Install to `~/.valksor/mehrhof/plugins/` (default: `.mehrhof/plugins/`) |
 
 **Examples:**
 
@@ -220,7 +220,7 @@ Plugins are discovered from two locations:
 | Scope   | Path                  | Priority |
 | ------- | --------------------- | -------- |
 | Project | `.mehrhof/plugins/`   | Higher   |
-| Global  | `~/.mehrhof/plugins/` | Lower    |
+| Global  | `~/.valksor/mehrhof/plugins/` | Lower    |
 
 Project plugins with the same name override global plugins.
 
