@@ -13,7 +13,7 @@ import (
 
 const (
 	// MehrhofHomeDir is the base directory in user's home for all mehrhof data.
-	MehrhofHomeDir = ".mehrhof"
+	MehrhofHomeDir = ".valksor/mehrhof"
 	// WorkspacesDir is the subdirectory for workspace data.
 	WorkspacesDir = "workspaces"
 )
@@ -94,15 +94,21 @@ func hashPathToFallbackID(path string) string {
 	return fmt.Sprintf("local-%x", hash)[:16]
 }
 
-// GetGlobalWorkspaceRoot returns the global mehrhof directory in user's home.
-// Example: /home/user/.mehrhof.
-func GetGlobalWorkspaceRoot() (string, error) {
+// GetMehrhofHomeDir returns the mehrhof home directory path.
+// Example: /home/user/.valksor/mehrhof.
+func GetMehrhofHomeDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("get home directory: %w", err)
 	}
 
 	return filepath.Join(homeDir, MehrhofHomeDir), nil
+}
+
+// GetGlobalWorkspaceRoot returns the global mehrhof directory in user's home.
+// Example: /home/user/.valksor/mehrhof.
+func GetGlobalWorkspaceRoot() (string, error) {
+	return GetMehrhofHomeDir()
 }
 
 // GetGlobalWorkspaceRootWithOverride returns the global mehrhof directory,

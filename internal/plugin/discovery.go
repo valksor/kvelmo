@@ -7,6 +7,8 @@ import (
 
 	_maps "maps"
 	_slices "slices"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 const (
@@ -27,7 +29,7 @@ type Discovery struct {
 }
 
 // NewDiscovery creates a new plugin discovery instance.
-// globalDir is typically ~/.mehrhof/plugins/
+// globalDir is typically ~/.valksor/mehrhof/plugins/
 // projectDir is typically .mehrhof/plugins/ (relative to workspace root).
 func NewDiscovery(globalDir, projectDir string) *Discovery {
 	return &Discovery{
@@ -38,12 +40,12 @@ func NewDiscovery(globalDir, projectDir string) *Discovery {
 
 // DefaultGlobalDir returns the default global plugins directory.
 func DefaultGlobalDir() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := storage.GetMehrhofHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("get home directory: %w", err)
+		return "", err
 	}
 
-	return filepath.Join(home, ".mehrhof", "plugins"), nil
+	return filepath.Join(home, "plugins"), nil
 }
 
 // DefaultProjectDir returns the default project plugins directory.

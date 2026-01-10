@@ -116,8 +116,8 @@ func TestSettingsPath(t *testing.T) {
 		t.Errorf("SettingsPath base = %q, want %q", filepath.Base(path), "settings.json")
 	}
 
-	// Should be in .mehrhof directory
-	if filepath.Base(filepath.Dir(path)) != ".mehrhof" {
-		t.Errorf("SettingsPath parent = %q, want %q", filepath.Base(filepath.Dir(path)), ".mehrhof")
+	// Should be in mehrhof directory
+	if filepath.Base(filepath.Dir(path)) != "mehrhof" {
+		t.Errorf("SettingsPath parent = %q, want %q", filepath.Base(filepath.Dir(path)), "mehrhof")
 	}
 }
