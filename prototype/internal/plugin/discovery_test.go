@@ -119,13 +119,13 @@ func TestDefaultGlobalDir(t *testing.T) {
 		t.Error("DefaultGlobalDir() returned empty string")
 	}
 
-	// Should end with .mehrhof/plugins
+	// Should end with mehrhof/plugins
 	if !filepath.IsAbs(dir) {
 		t.Error("DefaultGlobalDir() should return absolute path")
 	}
 
-	suffix := filepath.Join(".mehrhof", "plugins")
-	if filepath.Base(filepath.Dir(dir)) != ".mehrhof" || filepath.Base(dir) != "plugins" {
+	suffix := filepath.Join("mehrhof", "plugins")
+	if filepath.Base(filepath.Dir(dir)) != "mehrhof" || filepath.Base(dir) != "plugins" {
 		t.Errorf("DefaultGlobalDir() = %q, should end with %q", dir, suffix)
 	}
 }

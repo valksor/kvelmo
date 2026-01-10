@@ -7,6 +7,8 @@ import (
 	"time"
 
 	_slices "slices"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // Settings holds user preferences that persist between sessions.
@@ -28,10 +30,14 @@ type Settings struct {
 }
 
 // SettingsPath returns the path to the settings file.
+// Returns empty string if home directory cannot be determined.
 func SettingsPath() string {
-	home, _ := os.UserHomeDir()
+	home, err := storage.GetMehrhofHomeDir()
+	if err != nil {
+		return ""
+	}
 
-	return filepath.Join(home, ".mehrhof", "settings.json")
+	return filepath.Join(home, "settings.json")
 }
 
 // LoadSettings reads settings from disk.

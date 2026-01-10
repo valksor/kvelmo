@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // DefaultConfigDir returns the default mehrhof config directory.
-// Returns ~/.mehrhof/ (or platform equivalent).
+// Returns ~/.valksor/mehrhof/ (or platform equivalent).
 func DefaultConfigDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("get user home dir: %w", err)
-	}
-
-	return filepath.Join(homeDir, ".mehrhof"), nil
+	return storage.GetMehrhofHomeDir()
 }
 
 // CookiePath returns the path to the cookie file for a given profile.
