@@ -115,7 +115,7 @@ mehr --verbose plan
 **Cause:** Large session logs.
 
 ```bash
-find ~/.mehrhof/workspaces/*/work/*/sessions/ -mtime +7 -delete
+find ~/.valksor/mehrhof/workspaces/*/work/*/sessions/ -mtime +7 -delete
 ```
 
 Or configure retention:
@@ -155,7 +155,7 @@ mehr start file:task.md
 **Cause:** Work directory missing.
 
 ```bash
-ls ~/.mehrhof/workspaces/*/work/
+ls ~/.valksor/mehrhof/workspaces/*/work/
 
 mehr start file:task.md
 ```
@@ -310,7 +310,7 @@ mehr --verbose <command>
 ### View Session Logs
 
 ```bash
-cat ~/.mehrhof/workspaces/*/work/*/sessions/*.yaml
+cat ~/.valksor/mehrhof/workspaces/*/work/*/sessions/*.yaml
 ```
 
 ### Validate Configuration

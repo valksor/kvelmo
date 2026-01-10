@@ -25,7 +25,7 @@ browser:
   cookie_profile: "default"      # Cookie profile name (default: "default")
   cookie_auto_load: true         # Auto-load cookies on connect (default: true)
   cookie_auto_save: true         # Auto-save cookies on disconnect (default: true)
-  cookie_dir: ""                 # Custom cookie directory (default: ~/.mehrhof/)
+  cookie_dir: ""                 # Custom cookie directory (default: ~/.valksor/mehrhof/)
 ```
 
 ### Session Isolation
@@ -46,11 +46,11 @@ Browser sessions can be persisted across runs using **named cookie profiles**. T
 
 - **Session persistence**: Stay logged in across browser sessions
 - **Multiple accounts**: Use different profiles for personal vs work accounts (e.g., `default`, `work-github`, `client-a`)
-- **Cross-project usage**: Cookie profiles are stored globally in `~/.mehrhof/`, not per-workspace
+- **Cross-project usage**: Cookie profiles are stored globally in `~/.valksor/mehrhof/`, not per-workspace
 
 Cookie storage location:
 ```
-~/.mehrhof/
+~/.valksor/mehrhof/
   ├── cookies-default.json        # Default profile
   ├── cookies-work-github.json    # Work GitHub account
   └── cookies-client-a.json       # Client-specific profile
@@ -238,7 +238,7 @@ mehr browser cookies export [--profile=<name>] [--output=<path>]
 
 Flags:
 - `--profile` - Cookie profile to export (default: "default", or from `--cookie-profile` flag)
-- `--output` - Output file path (default: `~/.mehrhof/cookies-<profile>.json`)
+- `--output` - Output file path (default: `~/.valksor/mehrhof/cookies-<profile>.json`)
 
 Examples:
 ```bash
@@ -262,7 +262,7 @@ mehr browser cookies import [--profile=<name>] [--file=<path>]
 
 Flags:
 - `--profile` - Cookie profile to import to (default: "default", or from `--cookie-profile` flag)
-- `--file` - Input file path (default: `~/.mehrhof/cookies-<profile>.json`)
+- `--file` - Input file path (default: `~/.valksor/mehrhof/cookies-<profile>.json`)
 
 Examples:
 ```bash
@@ -391,12 +391,12 @@ mehr browser screenshot --full-page
 # Login with personal GitHub account
 mehr browser --cookie-profile personal goto https://github.com
 # (complete login flow in browser)
-# Cookies are auto-saved to ~/.mehrhof/cookies-personal.json
+# Cookies are auto-saved to ~/.valksor/mehrhof/cookies-personal.json
 
 # Login with work GitHub account
 mehr browser --cookie-profile work-github goto https://github.com
 # (complete login flow with work credentials)
-# Cookies are auto-saved to ~/.mehrhof/cookies-work-github.json
+# Cookies are auto-saved to ~/.valksor/mehrhof/cookies-work-github.json
 
 # Verify personal account
 mehr browser --cookie-profile personal goto https://github.com

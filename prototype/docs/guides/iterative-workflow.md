@@ -38,7 +38,7 @@ mehr plan
 ### Review Specifications
 
 ```bash
-cat ~/.mehrhof/workspaces/*/work/*/specifications/specification-1.md
+cat ~/.valksor/mehrhof/workspaces/*/work/*/specifications/specification-1.md
 ```
 
 The AI might have made assumptions you don't agree with.
@@ -70,7 +70,7 @@ mehr plan
 Check the updated spec:
 
 ```bash
-cat ~/.mehrhof/workspaces/*/work/*/specifications/specification-*.md
+cat ~/.valksor/mehrhof/workspaces/*/work/*/specifications/specification-*.md
 ```
 
 Now it should mention stateless JWT.
@@ -203,7 +203,7 @@ Always check specifications before `mehr implement`:
 
 ```bash
 mehr plan
-cat ~/.mehrhof/workspaces/*/work/*/specifications/*.md
+cat ~/.valksor/mehrhof/workspaces/*/work/*/specifications/*.md
 mehr note "Actually, change X to Y"
 mehr plan
 ```

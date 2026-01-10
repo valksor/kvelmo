@@ -17,7 +17,7 @@ Mehrhof calls Claude CLI as a subprocess:
 | CLI flags | Per-command overrides | `mehr --verbose plan` |
 | Workspace config | Project settings | `.mehrhof/config.yaml` (in project) |
 | Environment file | Secrets (gitignored) | `.mehrhof/.env` (in project) |
-| User settings | Personal preferences | `~/.mehrhof/settings.json` |
+| User settings | Personal preferences | `~/.valksor/mehrhof/settings.json` |
 
 ## File Locations
 
@@ -25,7 +25,7 @@ Mehrhof calls Claude CLI as a subprocess:
 - `config.yaml` - Workspace configuration (safe to commit)
 - `.env` - Project-specific secrets (gitignored)
 
-**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+**In home directory** (`~/.valksor/mehrhof/workspaces/<project-id>/`):
 - `work/` - Task data (specifications, sessions, notes, etc.)
 - `.active_task` - Current task state
 
@@ -33,10 +33,10 @@ Mehrhof calls Claude CLI as a subprocess:
 |------|---------|
 | `.mehrhof/config.yaml` | Workspace configuration (in project) |
 | `.mehrhof/.env` | Secrets (in project, gitignored) |
-| `~/.mehrhof/workspaces/<project-id>/work/` | Task data |
-| `~/.mehrhof/workspaces/<project-id>/.active_task` | Current task state |
-| `~/.mehrhof/settings.json` | User preferences |
-| `~/.mehrhof/plugins/` | Global plugins |
+| `~/.valksor/mehrhof/workspaces/<project-id>/work/` | Task data |
+| `~/.valksor/mehrhof/workspaces/<project-id>/.active_task` | Current task state |
+| `~/.valksor/mehrhof/settings.json` | User preferences |
+| `~/.valksor/mehrhof/plugins/` | Global plugins |
 
 ## Workspace Configuration
 
@@ -211,7 +211,7 @@ browser:
   cookie_profile: "default"        # Cookie profile name (default: "default")
   cookie_auto_load: true           # Auto-load cookies on connect (default: true)
   cookie_auto_save: true           # Auto-save cookies on disconnect (default: true)
-  cookie_dir: ""                   # Custom cookie directory (default: ~/.mehrhof/)
+  cookie_dir: ""                   # Custom cookie directory (default: ~/.valksor/mehrhof/)
 ```
 
 | Setting | Default | Description |
@@ -224,7 +224,7 @@ browser:
 | `cookie_profile` | `"default"` | Cookie profile name for session persistence |
 | `cookie_auto_load` | `true` | Auto-load cookies on browser connect |
 | `cookie_auto_save` | `true` | Auto-save cookies on browser disconnect |
-| `cookie_dir` | `""` | Custom cookie storage directory (default: `~/.mehrhof/`) |
+| `cookie_dir` | `""` | Custom cookie storage directory (default: `~/.valksor/mehrhof/`) |
 
 **Cookie Profiles:**
 
@@ -232,7 +232,7 @@ Browser sessions can be persisted using named cookie profiles, enabling:
 
 - **Session persistence**: Stay logged in across browser sessions
 - **Multiple accounts**: Use different profiles for personal vs work accounts
-- **Cross-project usage**: Cookies stored globally in `~/.mehrhof/`
+- **Cross-project usage**: Cookies stored globally in `~/.valksor/mehrhof/`
 
 Example profiles:
 ```bash
@@ -245,7 +245,7 @@ mehr browser --cookie-profile work-github goto https://github.com
 
 Cookies are stored as:
 ```
-~/.mehrhof/
+~/.valksor/mehrhof/
   ├── cookies-default.json        # Default profile
   ├── cookies-work-github.json    # Work GitHub account
   └── cookies-client-a.json       # Client-specific profile
@@ -268,7 +268,7 @@ project/
 │   ├── config.yaml    # Workspace configuration (safe to commit)
 │   └── .env           # Project-specific secrets (gitignored)
 
-~/.mehrhof/workspaces/<project-id>/
+~/.valksor/mehrhof/workspaces/<project-id>/
 ├── .active_task       # Current task state
 └── work/              # Task work directories
     ├── abc123/
@@ -293,7 +293,7 @@ The `<project-id>` is automatically derived from your git remote:
 **Migration:**
 
 If you have an existing `.mehrhof/work/` directory or `.active_task` file in your project,
-they will be automatically migrated to `~/.mehrhof/workspaces/<project-id>/` when you run any mehrhof command.
+they will be automatically migrated to `~/.valksor/mehrhof/workspaces/<project-id>/` when you run any mehrhof command.
 The `config.yaml` and `.env` files remain in the project.
 
 ### cache
@@ -439,7 +439,7 @@ agents:
 
 Personal preferences stored automatically.
 
-**Location:** `~/.mehrhof/settings.json`
+**Location:** `~/.valksor/mehrhof/settings.json`
 
 ```json
 {

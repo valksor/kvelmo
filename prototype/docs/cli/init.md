@@ -13,7 +13,7 @@ mehr init
 The `init` command sets up the Mehrhof workspace in your project. It:
 
 1. Creates the `.mehrhof/` directory for configuration (config.yaml, .env)
-2. Creates workspace directories in `~/.mehrhof/workspaces/<project-id>/` for task data
+2. Creates workspace directories in `~/.valksor/mehrhof/workspaces/<project-id>/` for task data
 3. Creates a default `config.yaml` with sensible defaults
 4. Updates `.gitignore` to exclude `.mehrhof/.env` but keeps `config.yaml` for sharing
 
@@ -102,9 +102,9 @@ Workspace initialized in /path/to/my-project
 └── .env           # Secrets (gitignored)
 ```
 
-**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+**In home directory** (`~/.valksor/mehrhof/workspaces/<project-id>/`):
 ```
-~/.mehrhof/workspaces/<project-id>/
+~/.valksor/mehrhof/workspaces/<project-id>/
 ├── .active_task   # Current task reference
 └── work/          # Task work directories (created as needed)
     └── <task-id>/

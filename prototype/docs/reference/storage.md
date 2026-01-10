@@ -10,7 +10,7 @@ Mehrhof uses a split storage structure:
 - `config.yaml` - Workspace configuration (safe to commit)
 - `.env` - Project-specific secrets (gitignored)
 
-**In home directory** (`~/.mehrhof/workspaces/<project-id>/`):
+**In home directory** (`~/.valksor/mehrhof/workspaces/<project-id>/`):
 - `.active_task` - Current active task reference
 - `work/` - Task work directories
 
@@ -20,7 +20,7 @@ project/
     ├── config.yaml              # Workspace configuration
     └── .env                     # Secrets (gitignored)
 
-~/.mehrhof/workspaces/<project-id>/
+~/.valksor/mehrhof/workspaces/<project-id>/
 ├── .active_task                # Current active task reference
 └── work/                       # Task work directories
     └── <task-id>/
@@ -72,7 +72,7 @@ Currently active task reference (in home directory, YAML):
 ```yaml
 id: cb9a54db
 ref: file:task.md
-work_dir: ~/.mehrhof/workspaces/github.com-user-repo/work/cb9a54db
+work_dir: ~/.valksor/mehrhof/workspaces/github.com-user-repo/work/cb9a54db
 state: idle
 branch: task/cb9a54db
 use_git: true
@@ -95,7 +95,7 @@ started: 2025-01-15T10:30:00Z
 
 ## Work Directory
 
-Each task has a work directory in `~/.mehrhof/workspaces/<project-id>/work/<task-id>/`.
+Each task has a work directory in `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/`.
 
 ### work.yaml
 
@@ -352,7 +352,7 @@ Keep tracked:
 ### Backup Task Data
 
 ```bash
-cp -r ~/.mehrhof/workspaces/<project-id>/work/abc12345 ~/backup/
+cp -r ~/.valksor/mehrhof/workspaces/<project-id>/work/abc12345 ~/backup/
 ```
 
 ### Recovery
@@ -368,7 +368,7 @@ cp -r ~/.mehrhof/workspaces/<project-id>/work/abc12345 ~/backup/
 Sessions older than `session_retention_days` can be cleaned:
 
 ```bash
-find ~/.mehrhof/workspaces/*/work/*/sessions/ -mtime +30 -delete
+find ~/.valksor/mehrhof/workspaces/*/work/*/sessions/ -mtime +30 -delete
 ```
 
 ### Remove Completed Tasks
@@ -376,7 +376,7 @@ find ~/.mehrhof/workspaces/*/work/*/sessions/ -mtime +30 -delete
 After `mehr finish`, work directories are removed based on the `workflow.delete_work_on_finish` config setting (default: `false`/keep). For manual cleanup:
 
 ```bash
-rm -rf ~/.mehrhof/workspaces/<project-id>/work/abc12345/
+rm -rf ~/.valksor/mehrhof/workspaces/<project-id>/work/abc12345/
 ```
 
 For automatic cleanup on finish, configure:

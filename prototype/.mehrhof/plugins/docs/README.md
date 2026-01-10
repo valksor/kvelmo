@@ -20,7 +20,7 @@ Create custom plugins to extend Mehrhof with new task sources, AI backends, or w
 ```bash
 mkdir -p .mehrhof/plugins/my-plugin
 
-mkdir -p ~/.mehrhof/plugins/my-plugin
+mkdir -p ~/.valksor/mehrhof/plugins/my-plugin
 ```
 
 ### 2. Create Manifest
@@ -121,7 +121,7 @@ mehr start my:test-task
 Plugins are discovered from two locations:
 
 ```
-~/.mehrhof/plugins/     # Global (all projects)
+~/.valksor/mehrhof/plugins/     # Global (all projects)
 .mehrhof/plugins/       # Project-local (overrides global)
 ```
 

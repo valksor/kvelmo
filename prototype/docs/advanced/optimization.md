@@ -236,7 +236,7 @@ mehr cost --summary       # Aggregate statistics
 ### Clean Up Old Sessions
 
 ```bash
-rm -rf ~/.mehrhof/workspaces/*/work/*/sessions/*
+rm -rf ~/.valksor/mehrhof/workspaces/*/work/*/sessions/*
 ```
 
 ### Clean Up Old Tasks
@@ -245,7 +245,7 @@ rm -rf ~/.mehrhof/workspaces/*/work/*/sessions/*
 mehr list
 
 mehr abandon <task-id>
-rm -rf ~/.mehrhof/workspaces/*/work/<task-id>
+rm -rf ~/.valksor/mehrhof/workspaces/*/work/<task-id>
 ```
 
 ### Cache Clearing

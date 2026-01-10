@@ -42,7 +42,7 @@ mehr plan --agent my-local-llm
 Plugins are discovered from two directories:
 
 ```
-~/.mehrhof/plugins/     # Global (available to all projects)
+~/.valksor/mehrhof/plugins/     # Global (available to all projects)
 .mehrhof/plugins/       # Project-local (overrides global)
 ```
 
@@ -190,7 +190,7 @@ effects:
 ```bash
 mehr plugins list
 
-ls -la ~/.mehrhof/plugins/
+ls -la ~/.valksor/mehrhof/plugins/
 ls -la .mehrhof/plugins/
 ```
 
