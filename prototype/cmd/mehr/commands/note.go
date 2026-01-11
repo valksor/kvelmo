@@ -24,21 +24,24 @@ var noteCmd = &cobra.Command{
 This command saves your input directly to notes.md in the work directory.
 Notes are included when the agent runs during plan/implement/review phases.
 
-Use this to add requirements, clarify specifications, or provide context
-before running plan/implement. The agent will see your notes when processing.
+WHEN TO USE:
+  • You want to add requirements or context before running plan/implement
+  • The agent is waiting for your answer to a question
+  • You want to provide clarification or additional information
 
-If an agent question is pending (waiting for your response), this command
-will submit your answer and clear the pending question state.
+USE THIS COMMAND FOR:
+  Adding context, requirements, or answering agent questions
 
-ALIASES:
-  note                        General note-taking
-  answer                      Submit answer to pending agent question
+RELATED COMMANDS:
+  plan      - Create implementation specifications (sees your notes)
+  implement - Execute specifications (sees your notes)
+  guide     - Check if an agent question is pending
 
 Examples:
-  mehr note                                # Enter interactive mode
-  mehr note "The API should use REST"      # Add a note
-  mehr answer "Use PostgreSQL"              # Answer agent question
-  mehr note "Add error handling"            # Add context before planning`,
+  mehr note                           # Enter interactive mode
+  mehr note "Use PostgreSQL"          # Add a note
+  mehr note "Add error handling"      # Add context before planning
+  mehr answer "Yes, proceed"          # Answer agent question (alias)`,
 	RunE: runNote,
 }
 

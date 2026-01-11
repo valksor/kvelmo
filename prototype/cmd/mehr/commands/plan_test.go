@@ -124,21 +124,10 @@ func TestPlanCommand_DocumentsSeedTopic(t *testing.T) {
 	}
 }
 
-func TestPlanCommand_HasAliases(t *testing.T) {
-	if len(planCmd.Aliases) == 0 {
-		t.Error("plan command has no aliases")
-	}
-
-	found := false
-	for _, alias := range planCmd.Aliases {
-		if alias == "p" {
-			found = true
-
-			break
-		}
-	}
-	if !found {
-		t.Error("plan command missing 'p' alias")
+func TestPlanCommand_NoAliases(t *testing.T) {
+	// Aliases removed in favor of prefix matching
+	if len(planCmd.Aliases) > 0 {
+		t.Errorf("plan command should have no aliases, got %v", planCmd.Aliases)
 	}
 }
 

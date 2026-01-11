@@ -93,24 +93,10 @@ func TestImplementCommand_LongDescriptionContains(t *testing.T) {
 	}
 }
 
-func TestImplementCommand_HasAliases(t *testing.T) {
-	if len(implementCmd.Aliases) == 0 {
-		t.Error("implement command has no aliases")
-	}
-
-	expected := []string{"impl", "i"}
-	for _, exp := range expected {
-		found := false
-		for _, alias := range implementCmd.Aliases {
-			if alias == exp {
-				found = true
-
-				break
-			}
-		}
-		if !found {
-			t.Errorf("implement command missing %q alias", exp)
-		}
+func TestImplementCommand_NoAliases(t *testing.T) {
+	// Aliases removed in favor of prefix matching
+	if len(implementCmd.Aliases) > 0 {
+		t.Errorf("implement command should have no aliases, got %v", implementCmd.Aliases)
 	}
 }
 

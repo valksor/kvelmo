@@ -163,22 +163,10 @@ func TestStatusCommand_RegisteredInRoot(t *testing.T) {
 	}
 }
 
-func TestStatusCommand_HasAliases(t *testing.T) {
-	if len(statusCmd.Aliases) == 0 {
-		t.Error("status command has no aliases")
-	}
-
-	// Should have "st" alias
-	found := false
-	for _, alias := range statusCmd.Aliases {
-		if alias == "st" {
-			found = true
-
-			break
-		}
-	}
-	if !found {
-		t.Error("status command missing 'st' alias")
+func TestStatusCommand_NoAliases(t *testing.T) {
+	// Aliases removed in favor of prefix matching
+	if len(statusCmd.Aliases) > 0 {
+		t.Errorf("status command should have no aliases, got %v", statusCmd.Aliases)
 	}
 }
 

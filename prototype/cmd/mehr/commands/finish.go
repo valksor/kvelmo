@@ -27,9 +27,8 @@ var (
 )
 
 var finishCmd = &cobra.Command{
-	Use:     "finish",
-	Aliases: []string{"fi", "done"},
-	Short:   "Complete the task (creates PR by default for supported providers)",
+	Use:   "finish",
+	Short: "Complete the task (creates PR by default for supported providers)",
 	Long: `Complete the current task by creating a pull request or merging locally.
 
 ENDING A TASK:

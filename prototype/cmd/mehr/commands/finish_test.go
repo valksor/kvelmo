@@ -180,24 +180,10 @@ func TestFinishCommand_DocumentsFlagCombinations(t *testing.T) {
 	}
 }
 
-func TestFinishCommand_HasAliases(t *testing.T) {
-	if len(finishCmd.Aliases) == 0 {
-		t.Error("finish command has no aliases")
-	}
-
-	expected := []string{"fi", "done"}
-	for _, exp := range expected {
-		found := false
-		for _, alias := range finishCmd.Aliases {
-			if alias == exp {
-				found = true
-
-				break
-			}
-		}
-		if !found {
-			t.Errorf("finish command missing %q alias", exp)
-		}
+func TestFinishCommand_NoAliases(t *testing.T) {
+	// Aliases removed in favor of prefix matching
+	if len(finishCmd.Aliases) > 0 {
+		t.Errorf("finish command should have no aliases, got %v", finishCmd.Aliases)
 	}
 }
 

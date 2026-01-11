@@ -25,9 +25,8 @@ var (
 )
 
 var planCmd = &cobra.Command{
-	Use:     "plan [topic]",
-	Aliases: []string{"p"},
-	Short:   "Create implementation specifications for the active task",
+	Use:   "plan [topic]",
+	Short: "Create implementation specifications for the active task",
 	Long: `Run the planning phase to analyze the task and create specification files.
 
 WHAT ARE SPECIFICATIONS?

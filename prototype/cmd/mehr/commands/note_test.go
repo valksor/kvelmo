@@ -26,22 +26,12 @@ func TestNoteCommand_Properties(t *testing.T) {
 	}
 }
 
-func TestNoteCommand_Aliases(t *testing.T) {
-	// Check that "answer" is an alias
-	expectedAliases := []string{"answer"}
-
-	for _, expected := range expectedAliases {
-		found := false
-		for _, alias := range noteCmd.Aliases {
-			if alias == expected {
-				found = true
-
-				break
-			}
-		}
-		if !found {
-			t.Errorf("alias %q not found in noteCmd.Aliases", expected)
-		}
+func TestNoteCommand_HasAnswerAlias(t *testing.T) {
+	// The "answer" alias is kept for semantic distinction:
+	// - "note" = add context/requirements
+	// - "answer" = respond to agent questions
+	if len(noteCmd.Aliases) != 1 || noteCmd.Aliases[0] != "answer" {
+		t.Errorf("note command should have 'answer' alias, got %v", noteCmd.Aliases)
 	}
 }
 
@@ -71,8 +61,8 @@ func TestNoteCommand_LongDescriptionContains(t *testing.T) {
 func TestNoteCommand_ExamplesContains(t *testing.T) {
 	examples := []string{
 		"mehr note",
-		"mehr answer",
-		`"The API should use REST"`,
+		`"Use PostgreSQL"`,
+		`"Add error handling"`,
 	}
 
 	for _, example := range examples {
@@ -94,17 +84,6 @@ func TestNoteCommand_RegisteredInRoot(t *testing.T) {
 	}
 	if !found {
 		t.Error("note command not registered in root command")
-	}
-}
-
-func TestNoteCommand_AliasesSection(t *testing.T) {
-	// Long description should document aliases
-	if !containsString(noteCmd.Long, "ALIASES") {
-		t.Error("Long description does not contain ALIASES section")
-	}
-
-	if !containsString(noteCmd.Long, "note") && !containsString(noteCmd.Long, "answer") {
-		t.Error("Long description does not document both note and answer aliases")
 	}
 }
 

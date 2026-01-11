@@ -22,9 +22,8 @@ var (
 )
 
 var statusCmd = &cobra.Command{
-	Use:     "status",
-	Aliases: []string{"st"},
-	Short:   "Show full task details",
+	Use:   "status",
+	Short: "Show full task details",
 	Long: `Comprehensive view of your task - everything in one place.
 
 Use this when you need the complete picture:
