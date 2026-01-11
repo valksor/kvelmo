@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -52,7 +53,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 
 	ws, err := storage.OpenWorkspace(ctx, res.Root, nil)
 	if err != nil {
-		return fmt.Errorf("open workspace: %w", err)
+		return errors.New(display.WorkspaceError("open", err))
 	}
 
 	// Check if in a worktree

@@ -3,6 +3,7 @@ package commands
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -44,7 +45,7 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 	// Create conductor with provided options
 	cond, err := conductor.New(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("create conductor: %w", err)
+		return nil, errors.New(display.ConductorError("create", err))
 	}
 
 	// Register standard providers
@@ -52,12 +53,12 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 
 	// Register standard agents
 	if err := registration.RegisterStandardAgents(cond); err != nil {
-		return nil, fmt.Errorf("register standard agents: %w", err)
+		return nil, errors.New(display.ConductorError("register", err))
 	}
 
 	// Initialize the conductor (loads workspace, detects agent, etc.)
 	if err := cond.Initialize(ctx); err != nil {
-		return nil, fmt.Errorf("initialize: %w", err)
+		return nil, errors.New(display.ConductorError("initialize", err))
 	}
 
 	return cond, nil
