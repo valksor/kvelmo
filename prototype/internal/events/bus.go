@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 )
 
@@ -98,7 +99,7 @@ func (b *Bus) Unsubscribe(id string) {
 	for eventType, subs := range b.handlers {
 		for i, sub := range subs {
 			if sub.ID == id {
-				b.handlers[eventType] = append(subs[:i], subs[i+1:]...)
+				b.handlers[eventType] = slices.Delete(subs, i, i+1)
 
 				return
 			}
@@ -108,7 +109,7 @@ func (b *Bus) Unsubscribe(id string) {
 	// Remove from all-handlers
 	for i, sub := range b.allHandlers {
 		if sub.ID == id {
-			b.allHandlers = append(b.allHandlers[:i], b.allHandlers[i+1:]...)
+			b.allHandlers = slices.Delete(b.allHandlers, i, i+1)
 
 			return
 		}
