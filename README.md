@@ -51,7 +51,22 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 
 ### Installation
 
-#### Option 1: Pre-built Binary (Recommended)
+#### Option 1: Install Script (Recommended)
+
+```bash
+# Latest stable release
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
+
+# Nightly build (latest master)
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- --nightly
+
+# Specific version
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- -v v1.2.3
+```
+
+The install script auto-detects your OS/architecture, verifies checksums (and Cosign signatures if available), and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
+
+#### Option 2: Pre-built Binary
 
 Download the latest release for your platform:
 
@@ -74,7 +89,7 @@ sudo mv mehr /usr/local/bin/
 mehr version
 ```
 
-#### Option 2: Nightly Build (Pre-release)
+#### Option 3: Nightly Build (Pre-release)
 
 Get the latest commit build (always available, use with caution):
 
@@ -87,7 +102,7 @@ sudo mv mehr /usr/local/bin/
 
 **Note:** Nightly builds are pre-release and may contain untested changes. Prefer stable releases when available.
 
-#### Option 3: Build from Source
+#### Option 4: Build from Source
 
 ```bash
 git clone https://github.com/valksor/go-mehrhof.git
@@ -162,13 +177,15 @@ mehr finish           # Merge changes or create PR
 | `mehr review` | Run automated code review |
 | `mehr status` | Show full task details |
 | `mehr guide` | What should I do next? (quick suggestion) |
-| `mehr continue` | Resume work on task (aliases: `cont`, `c`) |
+| `mehr continue` | Resume work on task |
 | `mehr finish` | Complete task and merge changes |
 | `mehr list` | List all tasks in workspace |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
 | `mehr mcp` | Start MCP server for AI agent integration |
+
+**Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
 **See [CLI Reference](https://mehrhof.valksor.com/docs/#/cli/index) for all commands and flags.**
 

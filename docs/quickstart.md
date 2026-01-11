@@ -13,9 +13,24 @@ claude --version
 
 ## Install
 
-### Option 1: Pre-built Binary (Recommended)
+### Option 1: Install Script (Recommended)
 
-**Downloads:**
+```bash
+# Latest stable release
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
+
+# Nightly build (latest master)
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- --nightly
+
+# Specific version
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- -v v1.2.3
+```
+
+The script auto-detects your OS/architecture, verifies checksums, and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
+
+> **Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) and run the install script from a Linux shell.
+
+### Option 2: Pre-built Binary
 
 | Platform | Architecture | Binary |
 |----------|--------------|--------|
@@ -23,8 +38,6 @@ claude --version
 | Linux | ARM64 | `mehr-linux-arm64` |
 | macOS | Intel | `mehr-darwin-amd64` |
 | macOS | Apple Silicon | `mehr-darwin-arm64` |
-
-> **Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) with the Linux binary (`mehr-linux-amd64`).
 
 ```bash
 curl -L https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64 -o mehr
@@ -34,7 +47,7 @@ sudo mv mehr /usr/local/bin/
 mehr version
 ```
 
-### Option 2: Nightly Build
+### Option 3: Nightly Build
 
 Get the latest development build (use with caution):
 
@@ -44,7 +57,7 @@ chmod +x mehr
 sudo mv mehr /usr/local/bin/
 ```
 
-### Option 3: Build from Source
+### Option 4: Build from Source
 
 Requires Go 1.25+:
 
