@@ -160,3 +160,56 @@ func GitError(operation string, err error) string {
 		},
 	)
 }
+
+// ConductorError returns a formatted error for conductor initialization failures.
+// It wraps internal "conductor" terminology into user-friendly messaging.
+func ConductorError(stage string, err error) string {
+	var suggestions []Suggestion
+
+	// Provide context-aware suggestions based on the error
+	switch stage {
+	case "initialize":
+		suggestions = []Suggestion{
+			{Command: "mehr init", Description: "Initialize workspace"},
+			{Command: "mehr status", Description: "Check workspace status"},
+		}
+	case "register":
+		suggestions = []Suggestion{
+			{Command: "mehr agents list", Description: "List available agents"},
+			{Command: "mehr --agent=<name> <ref>", Description: "Specify an agent explicitly"},
+		}
+	default:
+		suggestions = []Suggestion{
+			{Command: "mehr status", Description: "Check current status"},
+			{Command: "mehr guide", Description: "Get next-step guidance"},
+		}
+	}
+
+	return ErrorWithContext(
+		err,
+		fmt.Sprintf("Failed to %s workspace", stage),
+		suggestions,
+	)
+}
+
+// WorkspaceError returns a formatted error for workspace-related failures.
+// It suggests initializing the workspace if that's likely the issue.
+func WorkspaceError(operation string, err error) string {
+	suggestions := []Suggestion{
+		{Command: "mehr init", Description: "Initialize workspace in current directory"},
+	}
+
+	// Add fallback suggestion
+	if operation != "open" {
+		suggestions = append(suggestions, Suggestion{
+			Command:     "mehr status",
+			Description: "Check workspace status",
+		})
+	}
+
+	return ErrorWithContext(
+		err,
+		fmt.Sprintf("Workspace %s failed", operation),
+		suggestions,
+	)
+}
