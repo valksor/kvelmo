@@ -25,9 +25,7 @@ test: ## Run tests with coverage
 	go test -v -cover ./...
 
 coverage: ## Run tests with race detection and coverage profile
-	@go test -race -covermode atomic -coverprofile=covprofile.tmp ./...
-	@grep -v testutil covprofile.tmp > covprofile || true
-	@rm covprofile.tmp
+	go test -race -covermode atomic -coverprofile=covprofile ./...
 
 coverage-html: coverage ## Generate HTML coverage report
 	@mkdir -p .coverage
