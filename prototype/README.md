@@ -101,16 +101,10 @@ mehr version
 ### First Task
 
 ```bash
-# 1. Initialize workspace
+# 1. Initialize workspace (one-time)
 mehr init
 
-# 2. Create a task (option A: empty provider for quick tasks)
-mehr start empty:FEATURE-1
-mehr note "Add health check endpoint that returns HTTP 200 with JSON status"
-mehr plan
-mehr implement
-
-# OR (option B: file provider for documented tasks)
+# 2. Create a task file
 cat > task.md << 'EOF'
 ---
 title: Add health check endpoint
@@ -118,15 +112,18 @@ title: Add health check endpoint
 Create a /health endpoint that returns HTTP 200 with JSON status.
 EOF
 
-mehr start task.md
-mehr plan
-mehr implement
-
-# 6. Review and finish
-mehr finish
+# 3. Run workflow
+mehr start task.md    # Creates git branch
+mehr plan             # AI creates specifications (implementation plan)
+mehr implement        # AI writes code following specifications
+mehr finish           # Merge changes or create PR
 ```
 
-**Workflow Overview**: `init` → `start` → `plan` → `implement` → `review` → `finish`
+**[See full guides](https://mehrhof.valksor.com/docs)** for:
+- Parallel tasks with worktrees
+- Provider integrations (GitHub, Jira, Notion, etc.)
+- Configuration options
+- Troubleshooting
 
 ## How It Works
 
@@ -156,7 +153,7 @@ mehr finish
 
 | Command | Description |
 |---------|-------------|
-| `mehr init` | Initialize workspace (creates `.mehrhof/` for config, task data in home dir) |
+| `mehr init` | Initialize workspace (creates `.mehrhof/config.yaml`; task data in `~/.valksor/mehrhof/`) |
 | `mehr start <ref>` | Start task from file, directory, or provider |
 | `mehr sync <task-id>` | Sync task from provider and generate delta specification if changed |
 | `mehr auto <ref>` | Full automation: plan → implement → review → finish |
@@ -207,6 +204,8 @@ providers:
 
 ## Parallel Tasks with Worktrees
 
+A **git worktree** is a separate working directory linked to the same git repository, allowing you to work on multiple branches simultaneously without stashing.
+
 Run multiple tasks simultaneously in isolated environments:
 
 ```bash
@@ -227,7 +226,7 @@ Each worktree is an isolated git checkout. Mehrhof auto-detects which task you'r
 
 > **⚠️ Claude is the Primary Supported Agent**
 >
-> Mehrhof is designed and optimized for **Claude**. Codex is available as an alternative agent with potentially different feature support.
+> Mehrhof is designed and optimized for **Claude**. See AI Agents documentation for other options.
 
 Mehrhof supports multiple AI backends:
 
