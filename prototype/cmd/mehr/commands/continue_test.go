@@ -73,7 +73,7 @@ func TestContinueCommand_ShortDescription(t *testing.T) {
 func TestContinueCommand_LongDescriptionContains(t *testing.T) {
 	contains := []string{
 		"auto-pilot",
-		"CHOOSING THE RIGHT COMMAND",
+		"RELATED COMMANDS",
 		"AUTO-EXECUTION LOGIC",
 		"specifications",
 	}

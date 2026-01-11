@@ -10,8 +10,8 @@ import (
 // Note: TestPlanCommand_Aliases and TestPlanCommand_StandaloneFlag are in common_test.go
 
 func TestPlanCommand_Properties(t *testing.T) {
-	if planCmd.Use != "plan [seed-topic]" {
-		t.Errorf("Use = %q, want %q", planCmd.Use, "plan [seed-topic]")
+	if planCmd.Use != "plan [topic]" {
+		t.Errorf("Use = %q, want %q", planCmd.Use, "plan [topic]")
 	}
 
 	if planCmd.Short == "" {
@@ -145,7 +145,7 @@ func TestPlanCommand_HasAliases(t *testing.T) {
 func TestPlanCommand_RegisteredInRoot(t *testing.T) {
 	found := false
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "plan [seed-topic]" {
+		if cmd.Use == "plan [topic]" {
 			found = true
 
 			break
