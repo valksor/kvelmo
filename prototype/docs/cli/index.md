@@ -76,6 +76,46 @@ These flags work with any command:
 | [wrike login](cli/login.md)    | Authenticate with Wrike            |
 | [youtrack login](cli/login.md) | Authenticate with YouTrack         |
 
+## Command Shortcuts
+
+Mehrhof supports Symfony-style command abbreviation for faster typing.
+
+### Prefix Matching
+
+Type any unique prefix of a command name:
+
+```bash
+mehr gu          # → mehr guide
+mehr imp         # → mehr implement
+mehr fin         # → mehr finish
+mehr pl          # → ambiguous: plan, plugins (shows selection)
+```
+
+If the prefix matches multiple commands, you'll be prompted to select one interactively. Use arrow keys to navigate, Enter to select, or choose `[Cancel]` to abort.
+
+### Colon Notation for Subcommands
+
+Use colons to abbreviate nested commands:
+
+```bash
+mehr config:v    # → mehr config validate
+mehr config:i    # → mehr config init
+mehr a:l         # → mehr agents list
+mehr p:l         # → mehr plugins list
+```
+
+### Non-Interactive Mode
+
+In scripts or pipes, ambiguous commands show an error listing the matches instead of prompting:
+
+```bash
+echo "" | mehr s
+# Command "s" is ambiguous. Did you mean one of these?
+#   start - Start a new task...
+#   status - Show full task details
+#   sync - Sync task from provider...
+```
+
 ## Command Help
 
 Get help for any command:
