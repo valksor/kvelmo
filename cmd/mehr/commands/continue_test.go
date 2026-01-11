@@ -100,24 +100,10 @@ func TestContinueCommand_DocumentsWhenToUse(t *testing.T) {
 	}
 }
 
-func TestContinueCommand_HasAliases(t *testing.T) {
-	if len(continueCmd.Aliases) == 0 {
-		t.Error("continue command has no aliases")
-	}
-
-	expected := []string{"cont", "c"}
-	for _, exp := range expected {
-		found := false
-		for _, alias := range continueCmd.Aliases {
-			if alias == exp {
-				found = true
-
-				break
-			}
-		}
-		if !found {
-			t.Errorf("continue command missing %q alias", exp)
-		}
+func TestContinueCommand_NoAliases(t *testing.T) {
+	// Aliases removed in favor of prefix matching
+	if len(continueCmd.Aliases) > 0 {
+		t.Errorf("continue command should have no aliases, got %v", continueCmd.Aliases)
 	}
 }
 

@@ -19,9 +19,8 @@ var (
 )
 
 var implementCmd = &cobra.Command{
-	Use:     "implement",
-	Aliases: []string{"impl", "i"},
-	Short:   "Implement the specifications for the active task",
+	Use:   "implement",
+	Short: "Implement the specifications for the active task",
 	Long: `Run the implementation phase to generate code based on specifications.
 
 The agent will read all specification files in the work directory along with any

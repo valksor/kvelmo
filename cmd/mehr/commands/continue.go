@@ -16,9 +16,8 @@ import (
 var continueAuto bool // Auto-execute the next logical step
 
 var continueCmd = &cobra.Command{
-	Use:     "continue",
-	Aliases: []string{"cont", "c"},
-	Short:   "Resume work on task",
+	Use:   "continue",
+	Short: "Resume work on task",
 	Long: `Resume your task with optional auto-pilot mode.
 
 Perfect for returning after a break - see where you left off and optionally
