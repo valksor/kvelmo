@@ -2,14 +2,17 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/config"
+	"github.com/valksor/go-mehrhof/internal/disambiguate"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/help"
 	"github.com/valksor/go-mehrhof/internal/log"
@@ -82,7 +85,7 @@ For full auto: mehr auto task.md`,
 	},
 }
 
-// Execute runs the root command with signal handling.
+// Execute runs the root command with signal handling and command disambiguation.
 func Execute() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -95,10 +98,116 @@ func Execute() error {
 		cancel()
 	}()
 
-	return rootCmd.ExecuteContext(ctx)
+	// Pre-process args to handle colon notation before Cobra sees them
+	args := os.Args[1:]
+	if len(args) > 0 {
+		resolvedArgs, err := resolveCommandArgs(args)
+		if err != nil {
+			return err
+		}
+		if resolvedArgs != nil {
+			rootCmd.SetArgs(resolvedArgs)
+
+			return rootCmd.ExecuteContext(ctx)
+		}
+	}
+
+	// Execute with Cobra's built-in prefix matching
+	err := rootCmd.ExecuteContext(ctx)
+	if err == nil {
+		return nil
+	}
+
+	// Check if this is an ambiguous command error we can help with
+	if shouldAttemptDisambiguation(err) && len(args) > 0 {
+		resolvedArgs, disambigErr := attemptDisambiguation(args[0])
+		if disambigErr == nil {
+			rootCmd.SetArgs(append(resolvedArgs, args[1:]...))
+
+			return rootCmd.ExecuteContext(ctx)
+		}
+		// If disambiguation was attempted (matches found), use its error
+		// This handles: non-interactive mode, user cancelled selection, etc.
+		// Only fall through to Cobra's error if no matches were found
+		if !strings.Contains(disambigErr.Error(), "no commands match") {
+			return disambigErr
+		}
+	}
+
+	return err
+}
+
+// resolveCommandArgs handles colon notation (e.g., "c:v" -> "config validate").
+// Returns nil if no transformation needed.
+func resolveCommandArgs(args []string) ([]string, error) {
+	if len(args) == 0 || !strings.Contains(args[0], ":") {
+		return nil, nil
+	}
+
+	resolved, matches, err := disambiguate.ResolveColonPath(rootCmd, args[0])
+	if err != nil {
+		// Not a colon path or no match - let Cobra handle it
+		if strings.Contains(err.Error(), "not a colon path") {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	// Ambiguous match - need user selection
+	if len(matches) > 0 {
+		if !disambiguate.IsInteractive() {
+			return nil, errors.New(disambiguate.FormatAmbiguousError(args[0], matches))
+		}
+		selected, err := disambiguate.SelectCommand(matches, args[0])
+		if err != nil {
+			return nil, err
+		}
+		resolved = selected.Path
+	}
+
+	// Replace colon path with resolved space-separated args
+	return append(resolved, args[1:]...), nil
+}
+
+// shouldAttemptDisambiguation checks if we should try to disambiguate the error.
+func shouldAttemptDisambiguation(err error) bool {
+	errMsg := err.Error()
+
+	return strings.Contains(errMsg, "unknown command")
+}
+
+// attemptDisambiguation tries to find matching commands for a prefix.
+func attemptDisambiguation(prefix string) ([]string, error) {
+	matches := disambiguate.FindPrefixMatches(rootCmd, prefix)
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("no commands match prefix %q", prefix)
+	}
+
+	if len(matches) == 1 {
+		// Single match - shouldn't happen often with EnablePrefixMatching
+		// but handle it anyway
+		return []string{matches[0].Command.Name()}, nil
+	}
+
+	// Multiple matches - interactive selection
+	if !disambiguate.IsInteractive() {
+		return nil, errors.New(disambiguate.FormatAmbiguousError(prefix, matches))
+	}
+
+	selected, err := disambiguate.SelectCommand(matches, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{selected.Command.Name()}, nil
 }
 
 func init() {
+	// Enable Cobra's built-in prefix matching for unambiguous command prefixes
+	cobra.EnablePrefixMatching = true
+
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
