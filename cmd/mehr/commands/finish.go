@@ -165,7 +165,7 @@ func runFinish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if !confirmed {
-		fmt.Println("Cancelled")
+		fmt.Println("Operation cancelled")
 
 		return nil
 	}
@@ -237,6 +237,13 @@ func runFinish(cmd *cobra.Command, args []string) error {
 	} else {
 		fmt.Println(display.SuccessMsg("Task completed"))
 	}
+
+	// Suggest next steps
+	PrintNextSteps(
+		"mehr list              - View other tasks",
+		"mehr start <ref>       - Start a new task",
+		"mehr guide             - Get context-aware help",
+	)
 
 	return nil
 }

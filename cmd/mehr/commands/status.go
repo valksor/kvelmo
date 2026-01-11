@@ -34,9 +34,16 @@ Use this when you need the complete picture:
   • Session history and token usage
   • Agent configuration
 
-CHOOSING THE RIGHT COMMAND:
+WHEN TO USE:
+  • You need comprehensive information about your task
+  • You want to see specifications, checkpoints, tokens, etc.
+
+USE THIS COMMAND FOR:
+  Full inspection - "Show me everything about my task"
+
+RELATED COMMANDS:
   guide     - "What's my next command?" (fastest, minimal output)
-  status    - "Show me everything" (full inspection, all details)  <-- you are here
+  status    - "Show me everything" (full inspection: specs, checkpoints, tokens)  <-- you are here
   continue  - "Resume and optionally auto-execute" (--auto runs next step)
 
 OUTPUT FORMATS:

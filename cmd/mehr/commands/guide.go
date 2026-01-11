@@ -18,16 +18,17 @@ var guideCmd = &cobra.Command{
 This is the fastest way to get back on track. It shows only your current
 state and the most relevant next command - nothing else.
 
-CHOOSING THE RIGHT COMMAND:
-  guide     - "What's my next command?" (fastest, minimal output)
-  status    - "Show me everything" (full inspection, all details)
-  continue  - "Resume and optionally auto-execute" (--auto runs next step)
+WHEN TO USE:
+  • You just sat down and want to know what to do next
+  • You want minimal output - just state + next actions
 
-OUTPUT:
-  • Task ID and title
-  • Current state
-  • Pending questions (if agent is waiting)
-  • 2-3 suggested next commands
+USE THIS COMMAND FOR:
+  Quick context - "Where am I and what's next?"
+
+RELATED COMMANDS:
+  guide     - "What's my next command?" (fastest, minimal output)           <-- you are here
+  status    - "Show me everything" (full inspection: specs, checkpoints, tokens)
+  continue  - "Resume and optionally auto-execute" (--auto runs next step)
 
 Works in both main repository and worktree environments.
 

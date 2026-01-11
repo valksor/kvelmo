@@ -27,9 +27,17 @@ let the AI continue automatically.
 WITHOUT --auto: Shows current state and suggests what to do next
 WITH --auto:    Automatically runs the next logical step (plan → implement)
 
-CHOOSING THE RIGHT COMMAND:
+WHEN TO USE:
+  • You're returning from a break and want to pick up where you left off
+  • You want status summary + state-specific next actions
+  • With --auto: You want the AI to continue working automatically
+
+USE THIS COMMAND FOR:
+  Resume context - "Where was I and what should I do?"
+
+RELATED COMMANDS:
   guide     - "What's my next command?" (fastest, minimal output)
-  status    - "Show me everything" (full inspection, all details)
+  status    - "Show me everything" (full inspection: specs, checkpoints, tokens)
   continue  - "Resume and optionally auto-execute" (--auto runs next step)  <-- you are here
 
 AUTO-EXECUTION LOGIC:
