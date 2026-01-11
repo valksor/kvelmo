@@ -92,7 +92,7 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if !confirmed {
-		fmt.Println("Cancelled")
+		fmt.Println("Operation cancelled")
 
 		return nil
 	}

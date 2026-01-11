@@ -21,11 +21,11 @@ var (
 	planSeed          string
 	planFullContext   bool
 	planAgentPlanning string // Per-step agent override
-	planUseDefaults   bool   // Use defaults for unknowns without asking
+	planAutoApprove   bool   // Auto-approve defaults without asking user
 )
 
 var planCmd = &cobra.Command{
-	Use:     "plan [seed-topic]",
+	Use:     "plan [topic]",
 	Aliases: []string{"p"},
 	Short:   "Create implementation specifications for the active task",
 	Long: `Run the planning phase to analyze the task and create specification files.
@@ -46,7 +46,7 @@ STANDALONE MODE (--standalone):
   Plans are saved to .mehrhof/planned/ directory.
 
 SEED TOPIC:
-  For standalone mode, you can provide a seed topic in two ways:
+  For standalone mode, you can provide a topic in two ways:
     mehr plan --standalone --seed "build a CLI"
     mehr plan --standalone "build a CLI"    # positional argument works too
 
@@ -67,7 +67,7 @@ func init() {
 	planCmd.Flags().StringVarP(&planSeed, "seed", "s", "", "Initial topic for standalone planning")
 	planCmd.Flags().BoolVar(&planFullContext, "full-context", false, "Include full exploration context from previous session (default: summary only)")
 	planCmd.Flags().StringVar(&planAgentPlanning, "agent-plan", "", "Agent for planning step")
-	planCmd.Flags().BoolVar(&planUseDefaults, "default", false, "Use default answers for unknowns without asking user")
+	planCmd.Flags().BoolVar(&planAutoApprove, "auto-approve", false, "Auto-approve defaults without asking user")
 }
 
 func runPlan(cmd *cobra.Command, args []string) error {
@@ -89,8 +89,8 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		FullContext: planFullContext,
 	})
 
-	// Add --default flag for planning
-	if planUseDefaults {
+	// Add --auto-approve flag for planning
+	if planAutoApprove {
 		opts = append(opts, conductor.WithUseDefaults(true))
 	}
 

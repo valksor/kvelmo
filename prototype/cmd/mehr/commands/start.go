@@ -127,7 +127,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	// Apply template if specified (only works for file: provider)
 	if startTemplate != "" {
 		if !strings.HasPrefix(reference, "file:") {
-			return errors.New("--template only works with file: provider")
+			return errors.New("--template only works with file: provider\n\nExample: mehr start --template bug-fix file:task.md")
 		}
 
 		filePath := strings.TrimPrefix(reference, "file:")
@@ -261,7 +261,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	// Check for existing work directories from finished tasks
 	workDirs, err := cond.ListExistingWorkDirs()
 	if err == nil && len(workDirs) > 0 {
-		fmt.Printf("Found %d existing work director(ies) from previous tasks:\n", len(workDirs))
+		fmt.Printf("Found %d previous task(s) with existing work directories:\n", len(workDirs))
 		for _, taskID := range workDirs {
 			// Try to load work to get title
 			if work, err := cond.GetWorkspace().LoadWork(taskID); err == nil {
@@ -272,12 +272,12 @@ func runStart(cmd *cobra.Command, args []string) error {
 		}
 
 		fmt.Println("\nOptions:")
-		fmt.Println("  [d]elete and archive - Archive old work, start fresh")
+		fmt.Println("  [d]elete and archive - Archive old work, start fresh (recommended)")
 		fmt.Println("  [c]ontinue with existing - Reuse directory, reset to idle state")
 
 		// Read user choice
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nYour choice [d/c]: ")
+		fmt.Print("\nYour choice [D/c]: ")
 		choice, err := reader.ReadString('\n')
 		if err != nil {
 			return fmt.Errorf("read choice: %w", err)
@@ -285,7 +285,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		choice = strings.ToLower(strings.TrimSpace(choice))
 
 		switch choice {
-		case "d", "delete":
+		case "", "d", "delete":
 			// Archive all existing work directories
 			for _, taskID := range workDirs {
 				if err := cond.ArchiveWorkDir(taskID); err != nil {
