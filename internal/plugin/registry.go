@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"sync"
-
-	_maps "maps"
-	_slices "slices"
 )
 
 // PluginInfo holds information about a registered plugin.
@@ -158,9 +157,9 @@ func (r *Registry) List() []*PluginInfo {
 	defer r.mu.RUnlock()
 
 	// Collect values into a slice, then clip excess capacity
-	result := _slices.Collect(_maps.Values(r.plugins))
+	result := slices.Collect(maps.Values(r.plugins))
 
-	return _slices.Clip(result)
+	return slices.Clip(result)
 }
 
 // ListEnabled returns all enabled and loaded plugins.
@@ -176,7 +175,7 @@ func (r *Registry) ListEnabled() []*PluginInfo {
 		}
 	}
 
-	return _slices.Clip(result)
+	return slices.Clip(result)
 }
 
 // ListByType returns plugins of a specific type.
@@ -192,7 +191,7 @@ func (r *Registry) ListByType(t PluginType) []*PluginInfo {
 		}
 	}
 
-	return _slices.Clip(result)
+	return slices.Clip(result)
 }
 
 // ListEnabledByType returns enabled plugins of a specific type.
@@ -208,7 +207,7 @@ func (r *Registry) ListEnabledByType(t PluginType) []*PluginInfo {
 		}
 	}
 
-	return _slices.Clip(result)
+	return slices.Clip(result)
 }
 
 // Providers returns all enabled provider plugins.

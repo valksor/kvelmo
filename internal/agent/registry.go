@@ -3,10 +3,9 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"sync"
-
-	_maps "maps"
-	_slices "slices"
 )
 
 // Registry manages available agents.
@@ -88,10 +87,10 @@ func (r *Registry) List() []string {
 	defer r.mu.RUnlock()
 
 	// Collect keys into a slice, then clip excess capacity
-	names := _slices.Collect(_maps.Keys(r.agents))
-	_slices.Sort(names)
+	names := slices.Collect(maps.Keys(r.agents))
+	slices.Sort(names)
 
-	return _slices.Clip(names)
+	return slices.Clip(names)
 }
 
 // Available returns agents that pass availability check.
@@ -99,14 +98,15 @@ func (r *Registry) Available() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var available []string
-	for name, agent := range r.agents {
-		if err := agent.Available(); err == nil {
-			available = append(available, name)
+	return slices.Collect(func(yield func(string) bool) {
+		for name, agent := range r.agents {
+			if agent.Available() == nil {
+				if !yield(name) {
+					return
+				}
+			}
 		}
-	}
-
-	return available
+	})
 }
 
 // Detect returns the first available agent.

@@ -2,11 +2,10 @@ package plugin
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
-
-	_maps "maps"
-	_slices "slices"
+	"slices"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -87,9 +86,9 @@ func (d *Discovery) Discover() ([]*Manifest, error) {
 	}
 
 	// Convert map to slice and clip excess capacity
-	result := _slices.Collect(_maps.Values(plugins))
+	result := slices.Collect(maps.Values(plugins))
 
-	return _slices.Clip(result), nil
+	return slices.Clip(result), nil
 }
 
 // DiscoverByType finds all plugins of a specific type.
@@ -107,7 +106,7 @@ func (d *Discovery) DiscoverByType(pluginType PluginType) ([]*Manifest, error) {
 		}
 	}
 
-	return _slices.Clip(result), nil
+	return slices.Clip(result), nil
 }
 
 // DiscoverByName finds a specific plugin by name.
