@@ -97,7 +97,7 @@ func TestStatusCommand_LongDescriptionContains(t *testing.T) {
 func TestStatusCommand_WhenToUseSection(t *testing.T) {
 	// Should document when to use status vs guide vs continue
 	expected := []string{
-		"CHOOSING THE RIGHT COMMAND",
+		"RELATED COMMANDS",
 		"guide",
 		"status",
 		"continue",
