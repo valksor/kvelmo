@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	toolkitdisplay "github.com/valksor/go-toolkit/display"
 )
 
 // TaskInfo holds task information for consistent display.
@@ -52,7 +53,7 @@ func FormatTaskInfo(header string, info TaskInfo, opts TaskInfoOptions) string {
 	var sb strings.Builder
 
 	// Header line: "Task: abc123" or "Task started: abc123"
-	sb.WriteString(fmt.Sprintf("%s: %s\n", header, Bold(info.TaskID)))
+	sb.WriteString(fmt.Sprintf("%s: %s\n", header, toolkitdisplay.Bold(info.TaskID)))
 
 	// Key-value pairs with consistent 10-char alignment
 	if opts.ShowTitle && info.Title != "" {
@@ -68,7 +69,7 @@ func FormatTaskInfo(header string, info TaskInfo, opts TaskInfoOptions) string {
 		if !opts.Compact {
 			desc := StateDescription[workflow.State(info.State)]
 			if desc != "" {
-				stateStr += " - " + Muted(desc)
+				stateStr += " - " + toolkitdisplay.Muted(desc)
 			}
 		}
 		sb.WriteString(fmt.Sprintf("  %-10s%s\n", "State:", stateStr))
@@ -107,7 +108,7 @@ func FormatNextSteps(steps []NextStep) string {
 
 	var sb strings.Builder
 	sb.WriteString("\n")
-	sb.WriteString(Muted("Next steps:"))
+	sb.WriteString(toolkitdisplay.Muted("Next steps:"))
 	sb.WriteString("\n")
 
 	// Find the longest command for alignment
@@ -122,8 +123,8 @@ func FormatNextSteps(steps []NextStep) string {
 	for _, s := range steps {
 		sb.WriteString(fmt.Sprintf("  %-*s  %s\n",
 			maxLen,
-			Cyan(s.Command),
-			Muted("- "+s.Description),
+			toolkitdisplay.Cyan(s.Command),
+			toolkitdisplay.Muted("- "+s.Description),
 		))
 	}
 
@@ -138,15 +139,15 @@ func PrintNextSteps(steps ...string) {
 	}
 
 	fmt.Println()
-	fmt.Println(Muted("Next steps:"))
+	fmt.Println(toolkitdisplay.Muted("Next steps:"))
 
 	for _, step := range steps {
 		// Parse "command - description" format
 		parts := strings.SplitN(step, " - ", 2)
 		if len(parts) == 2 {
-			fmt.Printf("  %s  %s\n", Cyan(parts[0]), Muted("- "+parts[1]))
+			fmt.Printf("  %s  %s\n", toolkitdisplay.Cyan(parts[0]), toolkitdisplay.Muted("- "+parts[1]))
 		} else {
-			fmt.Printf("  %s\n", Cyan(step))
+			fmt.Printf("  %s\n", toolkitdisplay.Cyan(step))
 		}
 	}
 }
@@ -158,7 +159,7 @@ func PrintNextSteps(steps ...string) {
 func FormatConfirmation(summary string, details []string, warning string) string {
 	var sb strings.Builder
 
-	sb.WriteString(Bold(summary))
+	sb.WriteString(toolkitdisplay.Bold(summary))
 	sb.WriteString("\n")
 
 	for _, d := range details {
@@ -167,7 +168,7 @@ func FormatConfirmation(summary string, details []string, warning string) string
 
 	if warning != "" {
 		sb.WriteString("\n")
-		sb.WriteString(WarningMsg("%s", warning))
+		sb.WriteString(toolkitdisplay.WarningMsg("%s", warning))
 		sb.WriteString("\n")
 	}
 

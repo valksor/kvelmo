@@ -459,6 +459,34 @@ Your response MUST include:
 	return prompt
 }
 
+// buildReviewPromptWithLintAndSecurity creates the prompt for code review including lint results and security findings.
+func buildReviewPromptWithLintAndSecurity(workspace *storage.Workspace, title, sourceContent, specsContent, lintResults, securityFindings, customInstructions string) string {
+	// Start with the standard review prompt with lint
+	prompt := buildReviewPromptWithLint(workspace, title, sourceContent, specsContent, lintResults, customInstructions)
+
+	// Add security findings if available
+	if securityFindings != "" {
+		// Insert security findings before the "Approach" section
+		securitySection := fmt.Sprintf(`
+
+## Security Scan Results
+%s
+
+Please review these security findings and provide guidance on how to address them.
+`, securityFindings)
+
+		// Insert before "## Approach" section
+		approachIndex := strings.Index(prompt, "\n## Approach")
+		if approachIndex != -1 {
+			prompt = prompt[:approachIndex] + securitySection + prompt[approachIndex:]
+		} else {
+			prompt += securitySection
+		}
+	}
+
+	return prompt
+}
+
 // buildFinishPrompt creates the prompt for commit message generation.
 func buildFinishPrompt(ticketID, title string, specPaths []string, specSnapshot, diffStat, stagedFiles, stagedDiff string) string {
 	// Format spec list
@@ -882,11 +910,11 @@ func formatSpecificationContent(num int, response *agent.Response) string {
 
 	if len(response.Messages) > 0 {
 		content += "## Details\n\n"
-		var contentSb156 strings.Builder
+		var detailsBuilder strings.Builder
 		for _, msg := range response.Messages {
-			contentSb156.WriteString(msg + "\n\n")
+			detailsBuilder.WriteString(msg + "\n\n")
 		}
-		content += contentSb156.String()
+		content += detailsBuilder.String()
 	}
 
 	return content

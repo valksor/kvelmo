@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	toolkitdisplay "github.com/valksor/go-toolkit/display"
 )
 
 // Spinner provides animated progress indication for long-running operations.
@@ -72,21 +74,21 @@ func (s *Spinner) Stop() {
 func (s *Spinner) StopWithSuccess(message string) {
 	s.Stop()
 	s.clearLine()
-	_, _ = fmt.Fprintln(s.writer, SuccessMsg("%s", message))
+	_, _ = fmt.Fprintln(s.writer, toolkitdisplay.SuccessMsg("%s", message))
 }
 
 // StopWithError stops the spinner and shows an error message.
 func (s *Spinner) StopWithError(message string) {
 	s.Stop()
 	s.clearLine()
-	_, _ = fmt.Fprintln(s.writer, ErrorMsg("%s", message))
+	_, _ = fmt.Fprintln(s.writer, toolkitdisplay.ErrorMsg("%s", message))
 }
 
 // StopWithWarning stops the spinner and shows a warning message.
 func (s *Spinner) StopWithWarning(message string) {
 	s.Stop()
 	s.clearLine()
-	_, _ = fmt.Fprintln(s.writer, WarningMsg("%s", message))
+	_, _ = fmt.Fprintln(s.writer, toolkitdisplay.WarningMsg("%s", message))
 }
 
 // UpdateMessage changes the spinner message while running.
@@ -128,10 +130,10 @@ func (s *Spinner) render() {
 	message := s.message
 	s.mu.Unlock()
 
-	if ColorsEnabled() {
+	if toolkitdisplay.ColorsEnabled() {
 		// Animated spinner with colors
 		s.clearLine()
-		_, _ = fmt.Fprintf(s.writer, "%s %s", Info(frame), message)
+		_, _ = fmt.Fprintf(s.writer, "%s %s", toolkitdisplay.Info(frame), message)
 	} else {
 		// Static fallback without animation
 		// Only render once at the start
@@ -143,7 +145,7 @@ func (s *Spinner) render() {
 
 // clearLine clears the current line (for re-rendering).
 func (s *Spinner) clearLine() {
-	if ColorsEnabled() {
+	if toolkitdisplay.ColorsEnabled() {
 		// ANSI escape: move to column 0, clear to end of line
 		_, _ = fmt.Fprint(s.writer, "\r\033[K")
 	}

@@ -6,6 +6,7 @@ package display
 import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	toolkitdisplay "github.com/valksor/go-toolkit/display"
 )
 
 // StateDisplay maps internal workflow state values to user-friendly names.
@@ -130,7 +131,7 @@ func GetStateAccessiblePrefix(state workflow.State) string {
 // FormatStateColored returns a colored state display name with accessibility prefix.
 // Format: "[P] Planning" where the prefix is muted and the name is colored.
 func FormatStateColored(state workflow.State) string {
-	prefix := Muted(GetStateAccessiblePrefix(state))
+	prefix := toolkitdisplay.Muted(GetStateAccessiblePrefix(state))
 	displayName := FormatState(state)
 	coloredName := ColorState(string(state), displayName)
 

@@ -4,12 +4,19 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/vcs"
+	"github.com/valksor/go-toolkit/paths"
 )
+
+// Path configuration for mehrhof.
+var pathsConfig = &paths.Config{
+	Vendor:   ".valksor",
+	ToolName: "mehrhof",
+	LocalDir: ".mehrhof",
+}
 
 const (
 	// MehrhofHomeDir is the base directory in user's home for all mehrhof data.
@@ -97,12 +104,7 @@ func hashPathToFallbackID(path string) string {
 // GetMehrhofHomeDir returns the mehrhof home directory path.
 // Example: /home/user/.valksor/mehrhof.
 func GetMehrhofHomeDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("get home directory: %w", err)
-	}
-
-	return filepath.Join(homeDir, MehrhofHomeDir), nil
+	return pathsConfig.GlobalDir()
 }
 
 // GetGlobalWorkspaceRoot returns the global mehrhof directory in user's home.
@@ -115,19 +117,13 @@ func GetGlobalWorkspaceRoot() (string, error) {
 // using the provided override if set, otherwise using the user's home directory.
 // This allows tests and custom configurations to use a different base directory.
 func GetGlobalWorkspaceRootWithOverride(homeDirOverride string) (string, error) {
-	var homeDir string
-	var err error
-
 	if homeDirOverride != "" {
-		homeDir = homeDirOverride
-	} else {
-		homeDir, err = os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("get home directory: %w", err)
-		}
+		// Set up temporary override
+		restore := paths.SetHomeDirForTesting(homeDirOverride)
+		defer restore()
 	}
 
-	return filepath.Join(homeDir, MehrhofHomeDir), nil
+	return pathsConfig.GlobalDir()
 }
 
 // GetWorkspaceDataDir returns the workspace data directory for a specific project.
