@@ -11,8 +11,8 @@ import (
 
 	gh "github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/cache"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
+	"github.com/valksor/go-toolkit/cache"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────

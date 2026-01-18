@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 func TestParseReference(t *testing.T) {
