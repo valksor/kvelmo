@@ -26,6 +26,9 @@ mehr start task.md && mehr plan && mehr implement && mehr finish
 ## Key Features
 
 - **AI Workflow** - Automatic planning, implementation, and code review
+- **Multi-Agent Orchestration** - Sequential, parallel, and consensus-based agent execution
+- **Semantic Memory** - Learn from past tasks with vector embeddings
+- **Security Scanning** - Automated vulnerability detection with SARIF output
 - **Git Integration** - Auto branches, checkpoints, undo/redo, squash merge
 - **15+ Task Sources** - GitHub, GitLab, Jira, Linear, Notion, Asana, and more
 - **Browser Automation** - Chrome automation for web testing, scraping, and authentication
@@ -55,4 +58,5 @@ mehr init → mehr start → mehr plan → mehr implement → mehr finish
 | [Providers](providers/index.md) | Task sources (GitHub, Jira, etc.) |
 | [Configuration](configuration/index.md) | Customize behavior |
 | [CLI Reference](cli/index.md) | All commands and flags |
+| [Advanced](advanced/multi-agent.md) | Multi-agent orchestration, memory, security |
 | [Troubleshooting](troubleshooting/index.md) | Common issues |

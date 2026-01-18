@@ -67,6 +67,8 @@
     - [templates](cli/templates.md)
     - [config](cli/config.md)
     - [browser](cli/browser.md)
+    - [memory](cli/memory.md)
+    - [scan](cli/scan.md)
     - [login](cli/login.md)
     - [update](cli/update.md)
     - [version](cli/version.md)
@@ -77,6 +79,10 @@
 
 - **Advanced**
   - [Performance & Cost](advanced/optimization.md)
+  - [Multi-Agent Orchestration](advanced/multi-agent.md)
+  - [Semantic Memory](advanced/semantic-memory.md)
+  - [Security Scanning](advanced/security.md)
+  - [ML Predictions](advanced/predictions.md)
 
 - **Troubleshooting**
   - [Common Issues](troubleshooting/index.md)
