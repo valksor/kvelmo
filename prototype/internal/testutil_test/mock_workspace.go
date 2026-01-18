@@ -352,13 +352,13 @@ func (m *MockWorkspace) GatherSpecificationsContent(taskID string) (string, erro
 
 	specs := m.Specs[taskID]
 	var content string
-	var contentSb336 strings.Builder
+	var specsBuilder strings.Builder
 	for num := 1; num <= len(specs); num++ {
 		if specContent, ok := specs[num]; ok {
-			contentSb336.WriteString(specContent + "\n\n")
+			specsBuilder.WriteString(specContent + "\n\n")
 		}
 	}
-	content += contentSb336.String()
+	content += specsBuilder.String()
 
 	return content, nil
 }

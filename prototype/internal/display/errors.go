@@ -3,6 +3,8 @@ package display
 import (
 	"fmt"
 	"strings"
+
+	toolkitdisplay "github.com/valksor/go-toolkit/display"
 )
 
 // Suggestion represents a suggested action for error recovery.
@@ -16,18 +18,18 @@ func ErrorWithSuggestions(message string, suggestions []Suggestion) string {
 	var sb strings.Builder
 
 	// Error header
-	sb.WriteString(ErrorMsg("%s", message))
+	sb.WriteString(toolkitdisplay.ErrorMsg("%s", message))
 	sb.WriteString("\n")
 
 	// Add suggestions if any
 	if len(suggestions) > 0 {
 		sb.WriteString("\n")
-		sb.WriteString(Muted("Suggested actions:"))
+		sb.WriteString(toolkitdisplay.Muted("Suggested actions:"))
 		sb.WriteString("\n")
 		for _, s := range suggestions {
 			sb.WriteString(fmt.Sprintf("  %s %s - %s\n",
-				Muted("•"),
-				Cyan(s.Command),
+				toolkitdisplay.Muted("•"),
+				toolkitdisplay.Cyan(s.Command),
 				s.Description,
 			))
 		}
@@ -41,24 +43,24 @@ func ErrorWithContext(err error, context string, suggestions []Suggestion) strin
 	var sb strings.Builder
 
 	// Context header
-	sb.WriteString(ErrorMsg("Error: %s", context))
+	sb.WriteString(toolkitdisplay.ErrorMsg("Error: %s", context))
 	sb.WriteString("\n")
 
 	// Add the underlying error if present
 	if err != nil {
-		sb.WriteString(Muted(fmt.Sprintf("  Cause: %v", err)))
+		sb.WriteString(toolkitdisplay.Muted(fmt.Sprintf("  Cause: %v", err)))
 		sb.WriteString("\n")
 	}
 
 	// Add suggestions if any
 	if len(suggestions) > 0 {
 		sb.WriteString("\n")
-		sb.WriteString(Muted("Suggested actions:"))
+		sb.WriteString(toolkitdisplay.Muted("Suggested actions:"))
 		sb.WriteString("\n")
 		for _, s := range suggestions {
 			sb.WriteString(fmt.Sprintf("  %s %s - %s\n",
-				Muted("•"),
-				Cyan(s.Command),
+				toolkitdisplay.Muted("•"),
+				toolkitdisplay.Cyan(s.Command),
 				s.Description,
 			))
 		}
@@ -71,17 +73,17 @@ func ErrorWithContext(err error, context string, suggestions []Suggestion) strin
 func ValidationError(field string, message string, suggestions []Suggestion) string {
 	var sb strings.Builder
 
-	sb.WriteString(ErrorMsg("Validation Error: %s", field))
+	sb.WriteString(toolkitdisplay.ErrorMsg("Validation Error: %s", field))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("  %s\n", message))
 
 	if len(suggestions) > 0 {
 		sb.WriteString("\n")
-		sb.WriteString(Muted("Fix:"))
+		sb.WriteString(toolkitdisplay.Muted("Fix:"))
 		sb.WriteString("\n")
 		for _, s := range suggestions {
 			sb.WriteString(fmt.Sprintf("  %s %s\n",
-				Muted("•"),
+				toolkitdisplay.Muted("•"),
 				s.Description,
 			))
 		}

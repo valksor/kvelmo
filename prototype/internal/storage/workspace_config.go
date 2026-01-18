@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -34,6 +35,10 @@ type WorkspaceConfig struct {
 	Browser       *BrowserSettings            `yaml:"browser,omitempty"`
 	MCP           *MCPSettings                `yaml:"mcp,omitempty"`
 	Specification SpecificationSettings       `yaml:"specification,omitempty"`
+	Security      *SecuritySettings           `yaml:"security,omitempty"`
+	Memory        *MemorySettings             `yaml:"memory,omitempty"`
+	Orchestration *OrchestrationSettings      `yaml:"orchestration,omitempty"`
+	ML            *MLSettings                 `yaml:"ml,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -189,6 +194,180 @@ type MCPSettings struct {
 type RateLimitSettings struct {
 	Rate  float64 `yaml:"rate,omitempty"`  // Requests per second (default: 10)
 	Burst int     `yaml:"burst,omitempty"` // Burst size (default: 20)
+}
+
+// SecuritySettings holds security scanning configuration.
+type SecuritySettings struct {
+	Enabled  bool                   `yaml:"enabled,omitempty"`  // Enable security scanning (default: false)
+	RunOn    SecurityRunOnConfig    `yaml:"run_on,omitempty"`   // When to run scans
+	FailOn   SecurityFailOnConfig   `yaml:"fail_on,omitempty"`  // Failure policy
+	Scanners SecurityScannersConfig `yaml:"scanners,omitempty"` // Scanner configuration
+	Output   SecurityOutputConfig   `yaml:"output,omitempty"`   // Reporting settings
+	Tools    *SecurityToolsConfig   `yaml:"tools,omitempty"`    // Tool management
+}
+
+// SecurityRunOnConfig controls when security scans run.
+type SecurityRunOnConfig struct {
+	Planning     bool `yaml:"planning,omitempty"`     // Run during planning (default: false)
+	Implementing bool `yaml:"implementing,omitempty"` // Run after implementation (default: true)
+	Reviewing    bool `yaml:"reviewing,omitempty"`    // Run during review (default: true)
+}
+
+// SecurityFailOnConfig controls failure behavior.
+type SecurityFailOnConfig struct {
+	Level       string `yaml:"level,omitempty"`        // Minimum severity to fail: "critical", "high", "medium", "low", "any" (default: "critical")
+	BlockFinish bool   `yaml:"block_finish,omitempty"` // Block task completion on failures (default: true)
+}
+
+// SecurityScannersConfig configures individual scanners.
+type SecurityScannersConfig struct {
+	SAST         *SASTScannerConfig       `yaml:"sast,omitempty"`
+	Secrets      *SecretScannerConfig     `yaml:"secrets,omitempty"`
+	Dependencies *DependencyScannerConfig `yaml:"dependencies,omitempty"`
+	License      *LicenseScannerConfig    `yaml:"license,omitempty"`
+}
+
+// SASTScannerConfig configures static analysis scanners.
+type SASTScannerConfig struct {
+	Enabled bool                     `yaml:"enabled,omitempty"`
+	Tools   []map[string]interface{} `yaml:"tools,omitempty"` // Tool-specific config
+}
+
+// SecretScannerConfig configures secret detection scanners.
+type SecretScannerConfig struct {
+	Enabled bool                     `yaml:"enabled,omitempty"`
+	Tools   []map[string]interface{} `yaml:"tools,omitempty"` // Tool-specific config
+}
+
+// DependencyScannerConfig configures vulnerability scanners.
+type DependencyScannerConfig struct {
+	Enabled bool                     `yaml:"enabled,omitempty"`
+	Tools   []map[string]interface{} `yaml:"tools,omitempty"` // Tool-specific config
+}
+
+// LicenseScannerConfig configures license compliance checking.
+type LicenseScannerConfig struct {
+	Enabled   bool     `yaml:"enabled,omitempty"`
+	Allowlist []string `yaml:"allowlist,omitempty"` // Allowed licenses (e.g., "MIT", "Apache-2.0")
+}
+
+// SecurityOutputConfig controls report generation.
+type SecurityOutputConfig struct {
+	Format             string `yaml:"format,omitempty"`              // "sarif", "json", "text" (default: "sarif")
+	File               string `yaml:"file,omitempty"`                // Report file path (default: ".mehrhof/security-report.json")
+	IncludeSuggestions bool   `yaml:"include_suggestions,omitempty"` // Include fix suggestions (default: true)
+}
+
+// SecurityToolsConfig controls security tool management.
+type SecurityToolsConfig struct {
+	AutoDownload bool   `yaml:"auto_download,omitempty"` // Auto-download missing tools (default: true)
+	CacheDir     string `yaml:"cache_dir,omitempty"`     // Override default cache directory (default: ~/.valksor/mehrhof/tools)
+	Timeout      int    `yaml:"timeout,omitempty"`       // Download timeout in seconds (default: 60)
+}
+
+// MemorySettings holds memory system configuration.
+type MemorySettings struct {
+	Enabled   bool                  `yaml:"enabled,omitempty"`   // Enable memory system (default: false)
+	VectorDB  VectorDBSettings      `yaml:"vector_db,omitempty"` // Vector database configuration
+	Retention MemoryRetentionConfig `yaml:"retention,omitempty"` // Retention policy
+	Search    MemorySearchConfig    `yaml:"search,omitempty"`    // Search settings
+	Learning  MemoryLearningConfig  `yaml:"learning,omitempty"`  // Learning settings
+}
+
+// VectorDBSettings configures vector database backend.
+type VectorDBSettings struct {
+	Backend          string `yaml:"backend,omitempty"`           // "chromadb", "pinecone", "weaviate", "qdrant" (default: "chromadb")
+	ConnectionString string `yaml:"connection_string,omitempty"` // Path or URL to vector DB (default: "./.mehrhof/vectors")
+	Collection       string `yaml:"collection,omitempty"`        // Collection name (default: "mehr_task_memory")
+	EmbeddingModel   string `yaml:"embedding_model,omitempty"`   // Embedding model name (default: "default")
+}
+
+// MemoryRetentionConfig controls data retention.
+type MemoryRetentionConfig struct {
+	MaxDays  int `yaml:"max_days,omitempty"`  // Maximum days to keep documents (default: 90)
+	MaxTasks int `yaml:"max_tasks,omitempty"` // Maximum number of tasks to store (default: 1000)
+}
+
+// MemorySearchConfig controls search behavior.
+type MemorySearchConfig struct {
+	SimilarityThreshold float32 `yaml:"similarity_threshold,omitempty"` // Minimum similarity score (default: 0.8)
+	MaxResults          int     `yaml:"max_results,omitempty"`          // Maximum results to return (default: 5)
+	IncludeCode         bool    `yaml:"include_code,omitempty"`         // Include code changes (default: true)
+	IncludeSpecs        bool    `yaml:"include_specs,omitempty"`        // Include specifications (default: true)
+	IncludeSessions     bool    `yaml:"include_sessions,omitempty"`     // Include session logs (default: true)
+}
+
+// MemoryLearningConfig controls automatic learning.
+type MemoryLearningConfig struct {
+	AutoStore            bool `yaml:"auto_store,omitempty"`             // Automatically store task data (default: true)
+	LearnFromCorrections bool `yaml:"learn_from_corrections,omitempty"` // Learn from user corrections (default: true)
+	SuggestSimilar       bool `yaml:"suggest_similar,omitempty"`        // Auto-suggest similar tasks (default: true)
+}
+
+// OrchestrationSettings holds multi-agent orchestration configuration.
+type OrchestrationSettings struct {
+	Enabled bool                              `yaml:"enabled,omitempty"` // Enable multi-agent orchestration (default: false)
+	Steps   map[string]StepOrchestratorConfig `yaml:"steps,omitempty"`   // Per-step orchestration config
+}
+
+// StepOrchestratorConfig defines orchestration for a workflow step.
+type StepOrchestratorConfig struct {
+	Mode      string                     `yaml:"mode,omitempty"`      // "single", "sequential", "parallel", "consensus"
+	Agents    []OrchestrationAgentConfig `yaml:"agents,omitempty"`    // Agent steps
+	Consensus StepConsensusConfig        `yaml:"consensus,omitempty"` // Consensus settings
+}
+
+// OrchestrationAgentConfig defines an agent step in orchestration.
+type OrchestrationAgentConfig struct {
+	Name    string            `yaml:"name"`              // Step identifier
+	Agent   string            `yaml:"agent"`             // Agent name to use
+	Model   string            `yaml:"model,omitempty"`   // Optional model override
+	Role    string            `yaml:"role"`              // Role/purpose for this agent
+	Input   []string          `yaml:"input,omitempty"`   // Input artifact names
+	Output  string            `yaml:"output,omitempty"`  // Output artifact name
+	Depends []string          `yaml:"depends,omitempty"` // Dependencies on other steps
+	Env     map[string]string `yaml:"env,omitempty"`     // Environment variables
+	Args    []string          `yaml:"args,omitempty"`    // CLI arguments
+	Timeout int               `yaml:"timeout,omitempty"` // Timeout in seconds
+}
+
+// StepConsensusConfig defines consensus building for a step.
+type StepConsensusConfig struct {
+	Mode        string `yaml:"mode,omitempty"`        // "majority", "unanimous", "any"
+	MinVotes    int    `yaml:"min_votes,omitempty"`   // Minimum votes required
+	Synthesizer string `yaml:"synthesizer,omitempty"` // Agent to use for synthesis
+}
+
+// MLSettings holds ML prediction system configuration.
+type MLSettings struct {
+	Enabled     bool                `yaml:"enabled,omitempty"`     // Enable ML predictions (default: false)
+	Telemetry   MLTelemetryConfig   `yaml:"telemetry,omitempty"`   // Telemetry settings
+	Model       MLModelConfig       `yaml:"model,omitempty"`       // Model configuration
+	Predictions MLPredictionsConfig `yaml:"predictions,omitempty"` // Prediction settings
+}
+
+// MLTelemetryConfig controls telemetry collection.
+type MLTelemetryConfig struct {
+	Enabled    bool    `yaml:"enabled,omitempty"`     // Enable telemetry collection (default: true)
+	Anonymize  bool    `yaml:"anonymize,omitempty"`   // Anonymize task IDs (default: true)
+	SampleRate float32 `yaml:"sample_rate,omitempty"` // Sampling rate 0-1 (default: 1.0)
+	Storage    string  `yaml:"storage,omitempty"`     // Storage path (default: ".mehrhof/telemetry")
+}
+
+// MLModelConfig controls ML model configuration.
+type MLModelConfig struct {
+	Type            string `yaml:"type,omitempty"`             // Model type (default: "heuristic")
+	RetrainInterval string `yaml:"retrain_interval,omitempty"` // Retrain interval (default: "7d")
+	MinSamples      int    `yaml:"min_samples,omitempty"`      // Minimum samples for training (default: 100)
+}
+
+// MLPredictionsConfig controls which predictions are enabled.
+type MLPredictionsConfig struct {
+	NextAction     bool `yaml:"next_action,omitempty"`     // Predict next action (default: true)
+	Duration       bool `yaml:"duration,omitempty"`        // Predict duration (default: true)
+	Complexity     bool `yaml:"complexity,omitempty"`      // Predict complexity (default: true)
+	AgentSelection bool `yaml:"agent_selection,omitempty"` // Predict agent selection (default: true)
+	RiskAssessment bool `yaml:"risk_assessment,omitempty"` // Predict risks (default: true)
 }
 
 // AgentAliasConfig defines a user-defined agent alias that wraps an existing agent
@@ -456,6 +635,123 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 `
 	}
 
+	// Add security section comment if security is nil or disabled
+	if cfg.Security == nil || !cfg.Security.Enabled {
+		content += `
+# Security scanning settings
+# Automatically scan code for vulnerabilities, secrets, and compliance issues
+# Example:
+# security:
+#     enabled: true                  # Enable security scanning
+#     run_on:
+#         implementing: true         # Run after implementation
+#         reviewing: true            # Run during review
+#     fail_on:
+#         level: critical            # Block on critical findings
+#         block_finish: true         # Block task completion
+#     scanners:
+#         sast:
+#             enabled: true
+#         secrets:
+#             enabled: true
+#         dependencies:
+#             enabled: true
+#     output:
+#         format: sarif              # Report format (sarif, json, text)
+#         file: ".mehrhof/security-report.json"
+`
+	}
+
+	// Add memory section comment if memory is nil or disabled
+	if cfg.Memory == nil || !cfg.Memory.Enabled {
+		content += `
+# Memory system settings
+# Enable semantic search and learning from past tasks
+# Example:
+# memory:
+#     enabled: true                  # Enable memory system
+#     vector_db:
+#         backend: chromadb          # Vector database backend
+#         connection_string: "./.mehrhof/vectors"  # Storage path
+#         collection: "mehr_task_memory"  # Collection name
+#         embedding_model: "default"   # Embedding model name
+#     retention:
+#         max_days: 90               # Keep documents for 90 days
+#         max_tasks: 1000            # Keep max 1000 tasks
+#     search:
+#         similarity_threshold: 0.8  # Minimum similarity score
+#         max_results: 5             # Max results to return
+#         include_code: true         # Include code changes
+#         include_specs: true        # Include specifications
+#         include_sessions: true     # Include session logs
+#     learning:
+#         auto_store: true           # Automatically store task data
+#         learn_from_corrections: true  # Learn from user corrections
+#         suggest_similar: true      # Auto-suggest similar tasks
+`
+	}
+
+	// Add orchestration section comment if orchestration is nil or disabled
+	if cfg.Orchestration == nil || !cfg.Orchestration.Enabled {
+		content += `
+# Multi-agent orchestration settings
+# Enable multiple agents to work together on workflow steps
+# Example:
+# orchestration:
+#     enabled: true                  # Enable multi-agent orchestration
+#     steps:
+#         planning:
+#             mode: sequential       # Execute agents in sequence
+#             agents:
+#                 - name: architect
+#                   agent: claude
+#                   role: "Design system architecture"
+#                   output: "architecture.md"
+#                 - name: security-analyst
+#                   agent: claude
+#                   role: "Review architecture for security"
+#                   input: ["architecture.md"]
+#         implementing:
+#             mode: single           # Use single agent (default)
+#         reviewing:
+#             mode: consensus        # Use multiple agents and build consensus
+#             agents:
+#                 - name: code-reviewer
+#                   agent: claude
+#                   role: "Review code quality"
+#                 - name: security-reviewer
+#                   agent: claude
+#                   role: "Review for security"
+#             consensus:
+#                 mode: majority      # Require majority agreement
+#                 synthesizer: claude # Agent to synthesize results
+`
+	}
+
+	// Add ML section comment if ML is nil or disabled
+	if cfg.ML == nil || !cfg.ML.Enabled {
+		content += `
+# ML prediction system settings
+# Enable machine learning predictions for workflow guidance
+# Example:
+# ml:
+#     enabled: true                  # Enable ML predictions
+#     telemetry:
+#         enabled: true              # Collect telemetry data
+#         anonymize: true            # Anonymize task IDs
+#         storage: ".mehrhof/telemetry"  # Telemetry storage path
+#     model:
+#         type: heuristic            # Model type (heuristic, xgboost, neural)
+#         retrain_interval: "7d"     # How often to retrain models
+#         min_samples: 100           # Minimum samples for training
+#     predictions:
+#         next_action: true          # Predict next workflow action
+#         duration: true             # Predict task duration
+#         complexity: true           # Predict task complexity
+#         risk_assessment: true      # Predict potential risks
+`
+	}
+
 	// Add specification section comment if save_in_project is disabled (default)
 	if !cfg.Specification.SaveInProject {
 		content += `
@@ -509,6 +805,62 @@ func expandEnvInStringSlice(s []string) []string {
 	return result
 }
 
+// expandEnvInStruct uses reflection to expand environment variables in all string fields of a struct.
+// It returns a new copy of the struct with expanded values. If cfg is nil, it returns nil.
+func expandEnvInStruct[T any](cfg *T) *T {
+	if cfg == nil {
+		return nil
+	}
+
+	val := reflect.ValueOf(cfg).Elem()
+	typ := val.Type()
+
+	result := reflect.New(typ).Elem()
+	for i := range val.NumField() {
+		field := val.Field(i)
+		resultField := result.Field(i)
+
+		switch field.Kind() {
+		case reflect.String:
+			resultField.SetString(expandEnvInString(field.String()))
+		case reflect.Struct:
+			// Handle nested structs (like SecuritySettings.Output)
+			if field.CanAddr() && field.Addr().IsValid() {
+				// For structs, recursively expand their string fields
+				nestedResult := reflect.New(field.Type()).Elem()
+				for j := range field.NumField() {
+					nestedField := field.Field(j)
+					nestedResultField := nestedResult.Field(j)
+					if nestedField.Kind() == reflect.String {
+						nestedResultField.SetString(expandEnvInString(nestedField.String()))
+					} else {
+						nestedResultField.Set(nestedField)
+					}
+				}
+				resultField.Set(nestedResult)
+			} else {
+				resultField.Set(field)
+			}
+		case reflect.Invalid, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+			reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128, reflect.Array,
+			reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer,
+			reflect.Slice, reflect.UnsafePointer:
+			// Unsupported types - just copy the value
+			resultField.Set(field)
+		}
+	}
+
+	// Type assertion is safe here because we created the result from the same type
+	resultTyped, ok := result.Addr().Interface().(*T)
+	if !ok {
+		// This should never happen, but handle it gracefully
+		return nil
+	}
+
+	return resultTyped
+}
+
 // expandEnvInAgentAliasConfig expands env vars in agent alias config.
 func expandEnvInAgentAliasConfig(cfg AgentAliasConfig) AgentAliasConfig {
 	return AgentAliasConfig{
@@ -521,178 +873,77 @@ func expandEnvInAgentAliasConfig(cfg AgentAliasConfig) AgentAliasConfig {
 
 // expandEnvInGitHubSettings expands env vars in GitHub config.
 func expandEnvInGitHubSettings(cfg *GitHubSettings) *GitHubSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Owner = expandEnvInString(result.Owner)
-	result.Repo = expandEnvInString(result.Repo)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-	result.TargetBranch = expandEnvInString(result.TargetBranch)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInWrikeSettings expands env vars in Wrike config.
 func expandEnvInWrikeSettings(cfg *WrikeSettings) *WrikeSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Host = expandEnvInString(result.Host)
-	result.Folder = expandEnvInString(result.Folder)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInGitLabSettings expands env vars in GitLab config.
 func expandEnvInGitLabSettings(cfg *GitLabSettings) *GitLabSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Host = expandEnvInString(result.Host)
-	result.ProjectPath = expandEnvInString(result.ProjectPath)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInNotionSettings expands env vars in Notion config.
 func expandEnvInNotionSettings(cfg *NotionSettings) *NotionSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.DatabaseID = expandEnvInString(result.DatabaseID)
-	result.StatusProperty = expandEnvInString(result.StatusProperty)
-	result.DescriptionProperty = expandEnvInString(result.DescriptionProperty)
-	result.LabelsProperty = expandEnvInString(result.LabelsProperty)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInJiraSettings expands env vars in Jira config.
 func expandEnvInJiraSettings(cfg *JiraSettings) *JiraSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Email = expandEnvInString(result.Email)
-	result.BaseURL = expandEnvInString(result.BaseURL)
-	result.Project = expandEnvInString(result.Project)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInLinearSettings expands env vars in Linear config.
 func expandEnvInLinearSettings(cfg *LinearSettings) *LinearSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Team = expandEnvInString(result.Team)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInYouTrackSettings expands env vars in YouTrack config.
 func expandEnvInYouTrackSettings(cfg *YouTrackSettings) *YouTrackSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Host = expandEnvInString(result.Host)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInBitbucketSettings expands env vars in Bitbucket config.
 func expandEnvInBitbucketSettings(cfg *BitbucketSettings) *BitbucketSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Username = expandEnvInString(result.Username)
-	result.AppPassword = expandEnvInString(result.AppPassword)
-	result.Workspace = expandEnvInString(result.Workspace)
-	result.RepoSlug = expandEnvInString(result.RepoSlug)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-	result.TargetBranch = expandEnvInString(result.TargetBranch)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInAsanaSettings expands env vars in Asana config.
 func expandEnvInAsanaSettings(cfg *AsanaSettings) *AsanaSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.WorkspaceGID = expandEnvInString(result.WorkspaceGID)
-	result.DefaultProject = expandEnvInString(result.DefaultProject)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInClickUpSettings expands env vars in ClickUp config.
 func expandEnvInClickUpSettings(cfg *ClickUpSettings) *ClickUpSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.TeamID = expandEnvInString(result.TeamID)
-	result.DefaultList = expandEnvInString(result.DefaultList)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInAzureDevOpsSettings expands env vars in Azure DevOps config.
 func expandEnvInAzureDevOpsSettings(cfg *AzureDevOpsSettings) *AzureDevOpsSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.Token = expandEnvInString(result.Token)
-	result.Organization = expandEnvInString(result.Organization)
-	result.Project = expandEnvInString(result.Project)
-	result.AreaPath = expandEnvInString(result.AreaPath)
-	result.IterationPath = expandEnvInString(result.IterationPath)
-	result.RepoName = expandEnvInString(result.RepoName)
-	result.TargetBranch = expandEnvInString(result.TargetBranch)
-	result.BranchPattern = expandEnvInString(result.BranchPattern)
-	result.CommitPrefix = expandEnvInString(result.CommitPrefix)
-
-	return &result
+	return expandEnvInStruct(cfg)
 }
 
 // expandEnvInTrelloSettings expands env vars in Trello config.
 func expandEnvInTrelloSettings(cfg *TrelloSettings) *TrelloSettings {
-	if cfg == nil {
-		return nil
-	}
-	result := *cfg // Copy
-	result.APIKey = expandEnvInString(result.APIKey)
-	result.Token = expandEnvInString(result.Token)
-	result.Board = expandEnvInString(result.Board)
+	return expandEnvInStruct(cfg)
+}
 
-	return &result
+// expandEnvInSecuritySettings expands env vars in Security config.
+func expandEnvInSecuritySettings(cfg *SecuritySettings) *SecuritySettings {
+	return expandEnvInStruct(cfg)
+}
+
+// expandEnvInMemorySettings expands env vars in Memory config.
+func expandEnvInMemorySettings(cfg *MemorySettings) *MemorySettings {
+	result := expandEnvInStruct(cfg)
+	if result != nil && result.VectorDB.ConnectionString == "" {
+		result.VectorDB.ConnectionString = "./.mehrhof/vectors"
+	}
+
+	return result
 }
 
 // LoadConfig loads the workspace configuration from .mehrhof/config.yaml.
@@ -729,6 +980,12 @@ func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 	cfg.ClickUp = expandEnvInClickUpSettings(cfg.ClickUp)
 	cfg.AzureDevOps = expandEnvInAzureDevOpsSettings(cfg.AzureDevOps)
 	cfg.Trello = expandEnvInTrelloSettings(cfg.Trello)
+
+	// Expand security settings
+	cfg.Security = expandEnvInSecuritySettings(cfg.Security)
+
+	// Expand memory settings
+	cfg.Memory = expandEnvInMemorySettings(cfg.Memory)
 
 	// Expand agent aliases
 	if cfg.Agents != nil {
