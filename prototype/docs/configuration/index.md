@@ -315,7 +315,6 @@ Environment variables filtered by agent name prefix:
 env:
   CLAUDE_ANTHROPIC_API_KEY: sk-ant-xxx  # → ANTHROPIC_API_KEY to claude
   CLAUDE_MAX_TOKENS: "4096"              # → MAX_TOKENS to claude
-  OPENAI_API_KEY: sk-openai-xxx          # → API_KEY to openai agent
 ```
 
 Variables are filtered by agent name prefix, stripped when passed.

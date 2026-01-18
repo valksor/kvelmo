@@ -34,6 +34,10 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 - **Provider integrations** - Connect to 16+ task sources (Empty, Files, GitHub issues, Jira, Linear, Notion, etc.)
 - **Browser automation** - Chrome automation for web testing, scraping, and authentication flows
 - **MCP server** - Expose commands and workspace data to AI agents via Model Context Protocol
+- **Semantic memory** - Store and search past tasks using vector embeddings for context-aware AI
+- **Security scanning** - Integrated SAST (gosec), secret detection (gitleaks), and vulnerability scanning (govulncheck) with automatic tool downloading and caching
+- **Multi-agent orchestration** - Run multiple agents in parallel, sequentially, or consensus modes
+- **ML predictions** - Predict task complexity and resource requirements from historical data
 - **State tracking** - Task state persists across sessions; resume anytime with `mehr continue`
 - **Auto mode** - Fully automated workflow: `mehr auto file:task.md` handles everything
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
@@ -184,6 +188,7 @@ mehr finish           # Merge changes or create PR
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
 | `mehr mcp` | Start MCP server for AI agent integration |
+| `mehr scan` | Run security scanners (SAST, secrets, dependencies) |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
