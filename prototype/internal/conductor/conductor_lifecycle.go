@@ -132,6 +132,20 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 				// Don't fail initialization since plugins are optional
 				c.logError(fmt.Errorf("load plugins (non-fatal): %w", err))
 			}
+
+			// Initialize memory system
+			if err := c.InitializeMemory(ctx); err != nil {
+				// Memory is optional, but log the error for debugging
+				// Don't fail initialization since memory is optional
+				c.logError(fmt.Errorf("initialize memory (non-fatal): %w", err))
+			}
+
+			// Initialize ML system
+			if err := c.InitializeML(ctx); err != nil {
+				// ML is optional, but log the error for debugging
+				// Don't fail initialization since ML is optional
+				c.logError(fmt.Errorf("initialize ML (non-fatal): %w", err))
+			}
 		}
 	}
 
