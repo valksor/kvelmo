@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v67/github"
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 func TestWrapAPIError_NetworkError(t *testing.T) {

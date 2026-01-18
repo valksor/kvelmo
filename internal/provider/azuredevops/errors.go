@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // Sentinel errors for the Azure DevOps provider.
