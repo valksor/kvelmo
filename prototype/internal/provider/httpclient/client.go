@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // Default configuration values used across providers.

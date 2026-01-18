@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // Ref represents a parsed Notion reference.

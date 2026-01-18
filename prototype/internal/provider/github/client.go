@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-github/v67/github"
 	"golang.org/x/oauth2"
 
-	"github.com/valksor/go-mehrhof/internal/cache"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
+	"github.com/valksor/go-toolkit/cache"
 )
 
 // ptr is a helper to create a pointer to a value.

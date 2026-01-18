@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // DownloadAttachment downloads an attachment from Jira.

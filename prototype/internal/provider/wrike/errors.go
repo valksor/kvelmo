@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // Wrike-specific error types.

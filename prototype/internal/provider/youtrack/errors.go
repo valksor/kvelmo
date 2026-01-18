@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
 	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 // newHTTPError creates a new HTTP error using the shared httpclient.HTTPError type.

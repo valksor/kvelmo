@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
 	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	providererrors "github.com/valksor/go-mehrhof/internal/provider/errors"
+	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 func TestHTTPError(t *testing.T) {
