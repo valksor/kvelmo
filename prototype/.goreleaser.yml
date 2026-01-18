@@ -24,9 +24,9 @@ builds:
             - arm64
         ldflags:
             - -s -w
-            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.Version={{.Version}}
-            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.Commit={{.ShortCommit}}
-            - -X github.com/valksor/go-mehrhof/cmd/mehr/commands.BuildTime={{.Date}}
+            - -X github.com/valksor/go-toolkit/version.Version={{.Version}}
+            - -X github.com/valksor/go-toolkit/version.Commit={{.ShortCommit}}
+            - -X github.com/valksor/go-toolkit/version.BuildTime={{.Date}}
 
 # Binary-only releases (no tarballs)
 archives:
