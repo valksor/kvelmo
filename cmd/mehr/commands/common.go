@@ -13,11 +13,12 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/display"
+	mehrhofdisplay "github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
-	"github.com/valksor/go-mehrhof/internal/output"
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/vcs"
+	"github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/output"
 )
 
 var (
@@ -45,7 +46,7 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 	// Create conductor with provided options
 	cond, err := conductor.New(opts...)
 	if err != nil {
-		return nil, errors.New(display.ConductorError("create", err))
+		return nil, errors.New(mehrhofdisplay.ConductorError("create", err))
 	}
 
 	// Register standard providers
@@ -53,12 +54,12 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 
 	// Register standard agents
 	if err := registration.RegisterStandardAgents(cond); err != nil {
-		return nil, errors.New(display.ConductorError("register", err))
+		return nil, errors.New(mehrhofdisplay.ConductorError("register", err))
 	}
 
 	// Initialize the conductor (loads workspace, detects agent, etc.)
 	if err := cond.Initialize(ctx); err != nil {
-		return nil, errors.New(display.ConductorError("initialize", err))
+		return nil, errors.New(mehrhofdisplay.ConductorError("initialize", err))
 	}
 
 	return cond, nil
@@ -160,7 +161,7 @@ func deriveStepName(agentVar string) string {
 // Returns true if an active task exists, false otherwise.
 func RequireActiveTask(cond *conductor.Conductor) bool {
 	if cond.GetActiveTask() == nil {
-		fmt.Print(display.NoActiveTaskError())
+		fmt.Print(mehrhofdisplay.NoActiveTaskError())
 
 		return false
 	}
@@ -370,4 +371,65 @@ func printToolCallTo(w io.Writer, tc *agent.ToolCall) {
 			slog.Debug("write tool call", "error", err)
 		}
 	}
+}
+
+// RunWithSpinner runs a function with either verbose output or a spinner.
+// This consolidates the spinner/verbose pattern used across commands.
+// If verbose is true, runs the function directly and returns its error.
+// If verbose is false, shows a spinner with the given message during execution.
+func RunWithSpinner(verbose bool, spinnerMsg string, fn func() error) error {
+	if verbose {
+		return fn()
+	}
+
+	spinner := mehrhofdisplay.NewSpinner(spinnerMsg)
+	spinner.Start()
+	err := fn()
+
+	// Handle spinner result
+	if err != nil && !errors.Is(err, conductor.ErrPendingQuestion) {
+		spinner.StopWithError("Failed")
+	} else if errors.Is(err, conductor.ErrPendingQuestion) {
+		spinner.Stop()
+	} else {
+		spinner.StopWithSuccess("Complete")
+	}
+
+	return err
+}
+
+// DisplayPendingQuestion displays a pending question from the agent.
+// Returns true if a question was displayed.
+func DisplayPendingQuestion(cond *conductor.Conductor) bool {
+	activeTask := cond.GetActiveTask()
+	if activeTask == nil {
+		return false
+	}
+
+	q, err := cond.GetWorkspace().LoadPendingQuestion(activeTask.ID)
+	if err != nil || q == nil {
+		return false
+	}
+
+	fmt.Println()
+	fmt.Println(display.WarningMsg("Agent has a question:"))
+	fmt.Println()
+	fmt.Printf("  %s\n\n", display.Bold(q.Question))
+
+	if len(q.Options) > 0 {
+		fmt.Println(display.Muted("  Options:"))
+		for i, opt := range q.Options {
+			fmt.Printf("    %s %s", display.Info(fmt.Sprintf("%d.", i+1)), opt.Label)
+			if opt.Description != "" {
+				fmt.Printf(" %s", display.Muted("- "+opt.Description))
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+
+	fmt.Println(display.Muted("Answer with:"))
+	fmt.Printf("  %s\n", display.Cyan("mehr answer \"your response\""))
+
+	return true
 }

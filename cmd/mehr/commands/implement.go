@@ -11,6 +11,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -121,9 +122,9 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	if verbose {
 		if implementDryRun {
-			fmt.Println(display.InfoMsg("Implementing (dry-run)..."))
+			fmt.Println(tkdisplay.InfoMsg("Implementing (dry-run)..."))
 		} else {
-			fmt.Println(display.InfoMsg("Implementing..."))
+			fmt.Println(tkdisplay.InfoMsg("Implementing..."))
 		}
 		implErr = cond.RunImplementation(ctx)
 	} else {
@@ -153,22 +154,22 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	if verbose {
 		fmt.Println()
 		if implementDryRun {
-			fmt.Println(display.SuccessMsg("Implementation preview finished"))
+			fmt.Println(tkdisplay.SuccessMsg("Implementation preview finished"))
 		} else {
-			fmt.Println(display.SuccessMsg("Implementation complete!"))
+			fmt.Println(tkdisplay.SuccessMsg("Implementation complete!"))
 		}
 	}
-	fmt.Printf("  Checkpoints: %s\n", display.Bold(strconv.Itoa(status.Checkpoints)))
+	fmt.Printf("  Checkpoints: %s\n", tkdisplay.Bold(strconv.Itoa(status.Checkpoints)))
 	if implementDryRun {
 		fmt.Println()
-		fmt.Println(display.Muted("  (Dry-run mode - no files were modified)"))
+		fmt.Println(tkdisplay.Muted("  (Dry-run mode - no files were modified)"))
 	}
 	fmt.Println()
-	fmt.Println(display.Muted("Next steps:"))
-	fmt.Printf("  %s - View task status\n", display.Cyan("mehr status"))
-	fmt.Printf("  %s - Run code review\n", display.Cyan("mehr review"))
-	fmt.Printf("  %s - Revert last changes\n", display.Cyan("mehr undo"))
-	fmt.Printf("  %s - Complete the task\n", display.Cyan("mehr finish"))
+	fmt.Println(tkdisplay.Muted("Next steps:"))
+	fmt.Printf("  %s - View task status\n", tkdisplay.Cyan("mehr status"))
+	fmt.Printf("  %s - Run code review\n", tkdisplay.Cyan("mehr review"))
+	fmt.Printf("  %s - Revert last changes\n", tkdisplay.Cyan("mehr undo"))
+	fmt.Printf("  %s - Complete the task\n", tkdisplay.Cyan("mehr finish"))
 
 	return nil
 }

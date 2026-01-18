@@ -8,6 +8,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -115,7 +116,7 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("abandon: %w", err)
 	}
 
-	fmt.Println(display.SuccessMsg("Task abandoned successfully"))
+	fmt.Println(tkdisplay.SuccessMsg("Task abandoned successfully"))
 
 	return nil
 }

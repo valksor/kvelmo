@@ -353,16 +353,8 @@ func init() {
 func runBrowserStatus(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		fmt.Printf("Not connected: %v\n", err)
 		fmt.Println("\nTo launch Chrome with remote debugging:")
 		fmt.Println("  google-chrome --remote-debugging-port=9222")
@@ -371,11 +363,7 @@ func runBrowserStatus(cmd *cobra.Command, args []string) error {
 
 		return nil
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
@@ -399,23 +387,11 @@ func runBrowserStatus(cmd *cobra.Command, args []string) error {
 func runBrowserTabs(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
@@ -444,23 +420,11 @@ func runBrowserGoto(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	url := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          30 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 30*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	tab, err := ctrl.OpenTab(ctx, url)
 	if err != nil {
@@ -480,23 +444,11 @@ func runBrowserGoto(cmd *cobra.Command, args []string) error {
 func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          30 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 30*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	var tabID string
 	if len(args) > 0 {
@@ -556,23 +508,11 @@ func runBrowserNavigate(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	url := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          30 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 30*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -600,19 +540,11 @@ func runBrowserClose(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	tabID := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	defer cleanup()
 
 	if err := ctrl.CloseTab(ctx, tabID); err != nil {
 		return fmt.Errorf("close tab: %w", err)
@@ -627,19 +559,11 @@ func runBrowserSwitch(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	tabID := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	defer cleanup()
 
 	tab, err := ctrl.SwitchTab(ctx, tabID)
 	if err != nil {
@@ -655,23 +579,11 @@ func runBrowserSwitch(cmd *cobra.Command, args []string) error {
 func runBrowserReload(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -698,23 +610,11 @@ func runBrowserReload(cmd *cobra.Command, args []string) error {
 func runBrowserDOM(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -796,23 +696,11 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 func runBrowserClick(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -840,23 +728,11 @@ func runBrowserType(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	text := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -884,23 +760,11 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	expression := args[0]
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -928,23 +792,12 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 func runBrowserConsole(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          time.Duration(consoleDuration*float64(time.Second)) + 5*time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	timeout := time.Duration(consoleDuration*float64(time.Second)) + 5*time.Second
+	ctrl, cleanup, err := setupBrowserController(ctx, timeout)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -983,23 +836,12 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts, // Default is true (ignore), flag makes it false (strict)
-		Timeout:          time.Duration(networkDuration*float64(time.Second)) + 5*time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	timeout := time.Duration(networkDuration*float64(time.Second)) + 5*time.Second
+	ctrl, cleanup, err := setupBrowserController(ctx, timeout)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	if !browserKeepAlive {
-		defer disconnectWrapper(ctrl)
-	} else {
-		setupKeepAliveSignalHandler(ctx, ctrl)
-	}
+	defer cleanup()
 
 	// Use first available tab
 	tabs, err := ctrl.ListTabs(ctx)
@@ -1040,6 +882,34 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 }
 
 // Helper functions
+
+// setupBrowserController creates and connects a browser controller with the current configuration.
+// It returns the controller and a cleanup function that should be called when done.
+// The cleanup function will handle disconnect or no-op depending on keepAlive setting.
+func setupBrowserController(ctx context.Context, timeout time.Duration) (browser.Controller, func(), error) {
+	cfg := browser.Config{
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts,
+		Timeout:          timeout,
+	}
+
+	ctrl := browser.NewController(cfg)
+	if err := ctrl.Connect(ctx); err != nil {
+		return nil, nil, fmt.Errorf("connect: %w", err)
+	}
+
+	var cleanup func()
+	if !browserKeepAlive {
+		cleanup = func() { disconnectWrapper(ctrl) }
+	} else {
+		setupKeepAliveSignalHandler(ctx, ctrl)
+		cleanup = func() {} // No cleanup for keep-alive
+	}
+
+	return ctrl, cleanup, nil
+}
 
 // disconnectWrapper wraps disconnect with error logging for use in defer.
 func disconnectWrapper(ctrl browser.Controller) {
@@ -1097,19 +967,11 @@ func runBrowserCookiesExport(cmd *cobra.Command, args []string) error {
 		profile = "default"
 	}
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts,
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	defer cleanup()
 
 	// Get cookies from browser
 	cookies, err := ctrl.GetCookies(ctx)
@@ -1167,19 +1029,11 @@ func runBrowserCookiesImport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load cookies: %w", err)
 	}
 
-	cfg := browser.Config{
-		Host:             browserHost,
-		Port:             browserPort,
-		Headless:         browserHeadless,
-		IgnoreCertErrors: !browserStrictCerts,
-		Timeout:          10 * time.Second,
-	}
-
-	ctrl := browser.NewController(cfg)
-	if err := ctrl.Connect(ctx); err != nil {
+	ctrl, cleanup, err := setupBrowserController(ctx, 10*time.Second)
+	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer disconnectWrapper(ctrl)
+	defer cleanup()
 
 	// Set cookies in browser
 	if err := ctrl.SetCookies(ctx, cookies); err != nil {

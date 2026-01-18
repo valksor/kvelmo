@@ -14,6 +14,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -176,7 +177,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 				TotalCostUSD: 0,
 			})
 		}
-		fmt.Printf("No cost data available for task: %s\n", display.Bold(label))
+		fmt.Printf("No cost data available for task: %s\n", tkdisplay.Bold(label))
 		fmt.Printf("\nRun 'mehr plan' or 'mehr implement' to generate costs.\n")
 
 		return nil
@@ -223,12 +224,12 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 	}
 
 	// Regular text output
-	fmt.Printf("Costs for task: %s\n", display.Bold(label))
+	fmt.Printf("Costs for task: %s\n", tkdisplay.Bold(label))
 	if work.Metadata.Title != "" {
 		fmt.Printf("  Title: %s\n", work.Metadata.Title)
 	}
 
-	fmt.Printf("\n%s\n", display.Bold("Total Usage:"))
+	fmt.Printf("\n%s\n", tkdisplay.Bold("Total Usage:"))
 	fmt.Printf("  Input tokens:  %s\n", formatNumber(costs.TotalInputTokens))
 	fmt.Printf("  Output tokens: %s\n", formatNumber(costs.TotalOutputTokens))
 	fmt.Printf("  Cached tokens: %s", formatNumber(costs.TotalCachedTokens))
@@ -237,13 +238,13 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 	}
 	fmt.Println()
 	fmt.Printf("  Total tokens:  %s\n", formatNumber(totalTokens))
-	fmt.Printf("  Total cost:    %s\n", display.Bold(formatCost(costs.TotalCostUSD)))
-	fmt.Println(display.Muted("  (Based on Claude API pricing)"))
+	fmt.Printf("  Total cost:    %s\n", tkdisplay.Bold(formatCost(costs.TotalCostUSD)))
+	fmt.Println(tkdisplay.Muted("  (Based on Claude API pricing)"))
 
 	// Show by-step breakdown if requested or if there are multiple steps
 	if costByStep || len(costs.ByStep) > 1 {
 		if len(costs.ByStep) > 0 {
-			fmt.Printf("\n%s\n", display.Bold("By Step:"))
+			fmt.Printf("\n%s\n", tkdisplay.Bold("By Step:"))
 
 			// Sort steps by name for consistent output
 			steps := make([]string, 0, len(costs.ByStep))
@@ -507,7 +508,7 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 		cachedPercent = float64(grandTotalCached) / float64(totalTokens) * 100
 	}
 
-	fmt.Printf("\n%s\n", display.Bold("Grand Totals:"))
+	fmt.Printf("\n%s\n", tkdisplay.Bold("Grand Totals:"))
 	fmt.Printf("  Input tokens:  %s\n", formatNumber(grandTotalInput))
 	fmt.Printf("  Output tokens: %s\n", formatNumber(grandTotalOutput))
 	fmt.Printf("  Cached tokens: %s", formatNumber(grandTotalCached))
@@ -516,10 +517,10 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 	}
 	fmt.Println()
 	fmt.Printf("  Total tokens:  %s\n", formatNumber(totalTokens))
-	fmt.Printf("  Total cost:    %s\n", display.Bold(formatCost(grandTotalCost)))
+	fmt.Printf("  Total cost:    %s\n", tkdisplay.Bold(formatCost(grandTotalCost)))
 
 	if len(stepTotals) > 0 {
-		fmt.Printf("\n%s\n", display.Bold("By Step:"))
+		fmt.Printf("\n%s\n", tkdisplay.Bold("By Step:"))
 
 		// Sort steps by name
 		steps := make([]string, 0, len(stepTotals))

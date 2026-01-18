@@ -13,9 +13,9 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/config"
 	"github.com/valksor/go-mehrhof/internal/disambiguate"
-	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/help"
-	"github.com/valksor/go-mehrhof/internal/log"
+	"github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/log"
 )
 
 var (
@@ -225,6 +225,9 @@ func init() {
 	}, &cobra.Group{
 		ID:    "config",
 		Title: "Configuration Commands:",
+	}, &cobra.Group{
+		ID:    "utility",
+		Title: "Utility Commands:",
 	})
 
 	// Setup contextual help that shows available/unavailable commands

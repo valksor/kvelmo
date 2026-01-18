@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -125,12 +126,12 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 		return outputJSON(buildJSONStatusTask(ctx, ws, git, active, work, git.Root()))
 	}
 
-	fmt.Printf("Worktree Task: %s\n", display.Bold(active.ID))
+	fmt.Printf("Worktree Task: %s\n", tkdisplay.Bold(active.ID))
 	fmt.Printf("  Title:    %s\n", work.Metadata.Title)
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:      %s\n", work.Metadata.ExternalKey)
 	}
-	fmt.Printf("  State:    %s - %s\n", display.FormatStateStringColored(active.State), display.Muted(display.GetStateDescription(workflow.State(active.State))))
+	fmt.Printf("  State:    %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescription(workflow.State(active.State))))
 	fmt.Printf("  Source:   %s\n", active.Ref)
 	fmt.Printf("  Worktree: %s\n", git.Root())
 	fmt.Printf("  Started:  %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -218,12 +219,12 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 		return outputJSON(buildJSONStatusTask(ctx, ws, git, active, work, ""))
 	}
 
-	fmt.Printf("Active Task: %s\n", display.Bold(active.ID))
+	fmt.Printf("Active Task: %s\n", tkdisplay.Bold(active.ID))
 	fmt.Printf("  Title:   %s\n", work.Metadata.Title)
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:     %s\n", work.Metadata.ExternalKey)
 	}
-	fmt.Printf("  State:   %s - %s\n", display.FormatStateStringColored(active.State), display.Muted(display.GetStateDescription(workflow.State(active.State))))
+	fmt.Printf("  State:   %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescription(workflow.State(active.State))))
 	fmt.Printf("  Source:  %s\n", active.Ref)
 	fmt.Printf("  WorkDir: %s\n", active.WorkDir)
 	fmt.Printf("  Started: %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -425,8 +426,8 @@ func showAllTasks(ws *storage.Workspace) error {
 
 	// Add legend for symbols
 	fmt.Println()
-	fmt.Println(display.Muted("Legend:"))
-	fmt.Println(display.Muted("  * = active task"))
+	fmt.Println(tkdisplay.Muted("Legend:"))
+	fmt.Println(tkdisplay.Muted("  * = active task"))
 	printSpecLegend()
 
 	return nil
@@ -435,11 +436,11 @@ func showAllTasks(ws *storage.Workspace) error {
 // printSpecLegend prints the specification status icon legend.
 func printSpecLegend() {
 	fmt.Println()
-	fmt.Println(display.Muted("Specification icons:"))
-	fmt.Println(display.Muted("  ○ = Draft (not yet finalized)"))
-	fmt.Println(display.Muted("  ◐ = Ready (queued for implementation)"))
-	fmt.Println(display.Muted("  ◑ = Implementing (in progress)"))
-	fmt.Println(display.Muted("  ● = Completed"))
+	fmt.Println(tkdisplay.Muted("Specification icons:"))
+	fmt.Println(tkdisplay.Muted("  ○ = Draft (not yet finalized)"))
+	fmt.Println(tkdisplay.Muted("  ◐ = Ready (queued for implementation)"))
+	fmt.Println(tkdisplay.Muted("  ◑ = Implementing (in progress)"))
+	fmt.Println(tkdisplay.Muted("  ● = Completed"))
 }
 
 // JSON output structures for status command.
