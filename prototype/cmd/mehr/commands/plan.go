@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -122,7 +123,7 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	// Run planning with spinner in non-verbose mode
 	var planErr error
 	if verbose {
-		fmt.Println(display.InfoMsg("Planning..."))
+		fmt.Println(tkdisplay.InfoMsg("Planning..."))
 		planErr = cond.RunPlanning(ctx)
 	} else {
 		spinner := display.NewSpinner("Creating specifications...")
@@ -143,23 +144,23 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		q, loadErr := cond.GetWorkspace().LoadPendingQuestion(cond.GetActiveTask().ID)
 		if loadErr == nil && q != nil {
 			fmt.Println()
-			fmt.Println(display.WarningMsg("Agent has a question:"))
+			fmt.Println(tkdisplay.WarningMsg("Agent has a question:"))
 			fmt.Println()
-			fmt.Printf("  %s\n\n", display.Bold(q.Question))
+			fmt.Printf("  %s\n\n", tkdisplay.Bold(q.Question))
 			if len(q.Options) > 0 {
-				fmt.Println(display.Muted("  Options:"))
+				fmt.Println(tkdisplay.Muted("  Options:"))
 				for i, opt := range q.Options {
-					fmt.Printf("    %s %s", display.Info(fmt.Sprintf("%d.", i+1)), opt.Label)
+					fmt.Printf("    %s %s", tkdisplay.Info(fmt.Sprintf("%d.", i+1)), opt.Label)
 					if opt.Description != "" {
-						fmt.Printf(" %s", display.Muted("- "+opt.Description))
+						fmt.Printf(" %s", tkdisplay.Muted("- "+opt.Description))
 					}
 					fmt.Println()
 				}
 				fmt.Println()
 			}
-			fmt.Println(display.Muted("Answer with:"))
-			fmt.Printf("  %s\n", display.Cyan("mehr answer \"your response\""))
-			fmt.Printf("  %s\n", display.Cyan("mehr plan")+" "+display.Muted("(to continue after answering)"))
+			fmt.Println(tkdisplay.Muted("Answer with:"))
+			fmt.Printf("  %s\n", tkdisplay.Cyan("mehr answer \"your response\""))
+			fmt.Printf("  %s\n", tkdisplay.Cyan("mehr plan")+" "+tkdisplay.Muted("(to continue after answering)"))
 		}
 
 		return nil
@@ -177,9 +178,9 @@ func runPlan(cmd *cobra.Command, args []string) error {
 
 	if verbose {
 		fmt.Println()
-		fmt.Println(display.SuccessMsg("Planning complete!"))
+		fmt.Println(tkdisplay.SuccessMsg("Planning complete!"))
 	}
-	fmt.Printf("  Specifications created: %s\n", display.Bold(strconv.Itoa(status.Specifications)))
+	fmt.Printf("  Specifications created: %s\n", tkdisplay.Bold(strconv.Itoa(status.Specifications)))
 
 	PrintNextSteps(
 		"mehr status - View task status and specifications",

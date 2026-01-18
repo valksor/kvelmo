@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/validation"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var configCmd = &cobra.Command{
@@ -166,15 +166,15 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	}
 
 	if configExists {
-		fmt.Printf(display.Warning("WARNING: Config file already exists: %s\n"), configPath)
+		fmt.Printf(tkdisplay.Warning("WARNING: Config file already exists: %s\n"), configPath)
 		fmt.Println()
 		fmt.Println("The 'mehr config init' command is for creating NEW configurations.")
 		fmt.Println("Your existing config contains custom settings that would be lost.")
 		fmt.Println()
 		fmt.Println("Options:")
-		fmt.Printf("  %s - View your current config\n", display.Cyan("cat .mehrhof/config.yaml"))
-		fmt.Printf("  %s - Validate your current config\n", display.Cyan("mehr config validate"))
-		fmt.Printf("  %s - Edit your current config\n", display.Cyan("vim .mehrhof/config.yaml"))
+		fmt.Printf("  %s - View your current config\n", tkdisplay.Cyan("cat .mehrhof/config.yaml"))
+		fmt.Printf("  %s - Validate your current config\n", tkdisplay.Cyan("mehr config validate"))
+		fmt.Printf("  %s - Edit your current config\n", tkdisplay.Cyan("vim .mehrhof/config.yaml"))
 		fmt.Println()
 
 		if !configInitForce {
@@ -182,7 +182,7 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 		}
 
 		// With --force, require extra explicit confirmation
-		fmt.Println(display.ErrorMsg("--force flag: This will DELETE your custom configuration!"))
+		fmt.Println(tkdisplay.ErrorMsg("--force flag: This will DELETE your custom configuration!"))
 		confirmed, err := confirmAction("Type 'yes' to confirm deletion and overwrite", false)
 		if err != nil {
 			return err
@@ -202,7 +202,7 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	if projectType == "" {
 		projectType = detectProjectType(wd)
 		if projectType != "" {
-			fmt.Printf("Detected project type: %s\n", display.Cyan(projectType))
+			fmt.Printf("Detected project type: %s\n", tkdisplay.Cyan(projectType))
 		}
 	}
 
@@ -222,12 +222,12 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("save config: %w", err)
 	}
 
-	fmt.Println(display.SuccessMsg("Configuration created successfully"))
+	fmt.Println(tkdisplay.SuccessMsg("Configuration created successfully"))
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Printf("  %s - Edit the configuration\n", display.Cyan("vim .mehrhof/config.yaml"))
-	fmt.Printf("  %s - Validate the configuration\n", display.Cyan("mehr config validate"))
-	fmt.Printf("  %s - Start your first task\n", display.Cyan("mehr start task.md"))
+	fmt.Printf("  %s - Edit the configuration\n", tkdisplay.Cyan("vim .mehrhof/config.yaml"))
+	fmt.Printf("  %s - Validate the configuration\n", tkdisplay.Cyan("mehr config validate"))
+	fmt.Printf("  %s - Start your first task\n", tkdisplay.Cyan("mehr start task.md"))
 
 	return nil
 }

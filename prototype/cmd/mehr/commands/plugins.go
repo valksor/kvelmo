@@ -16,6 +16,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/plugin"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/cfg"
 )
 
 var pluginGlobal bool // --global flag for install/remove
@@ -225,7 +226,7 @@ func runPluginsInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Ensure target directory exists
-	if err := plugin.EnsureDir(targetDir); err != nil {
+	if err := cfg.EnsureDir(targetDir); err != nil {
 		return fmt.Errorf("create plugins directory: %w", err)
 	}
 

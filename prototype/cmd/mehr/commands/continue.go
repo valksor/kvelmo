@@ -11,6 +11,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var continueAuto bool // Auto-execute the next logical step
@@ -87,7 +88,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 
 		fmt.Println("No active task found.")
 		fmt.Println()
-		fmt.Println(display.Muted("Suggested actions:"))
+		fmt.Println(tkdisplay.Muted("Suggested actions:"))
 		fmt.Println("  mehr start <file.md>       # Start from markdown file")
 		fmt.Println("  mehr start <directory/>    # Start from directory")
 
@@ -125,7 +126,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 	}
 
 	// Otherwise, show suggested next actions
-	fmt.Println(display.Muted("Next steps:"))
+	fmt.Println(tkdisplay.Muted("Next steps:"))
 	switch workflow.State(status.State) {
 	case workflow.StateIdle:
 		if status.Specifications == 0 {

@@ -2,9 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/go-toolkit/version"
 )
 
 // Build-time variables set via ldflags.
@@ -18,15 +18,14 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		out := cmd.OutOrStdout()
-		_, _ = fmt.Fprintf(out, "mehr %s\n", Version)
-		_, _ = fmt.Fprintf(out, "  by Valksor\n")
-		_, _ = fmt.Fprintf(out, "  Commit: %s\n", Commit)
-		_, _ = fmt.Fprintf(out, "  Built:  %s\n", BuildTime)
-		_, _ = fmt.Fprintf(out, "  Go:     %s\n", runtime.Version())
-	},
-}
+		// Set version info for go-toolkit (works with test values)
+		version.Set(Version, Commit, BuildTime)
 
-func init() {
-	rootCmd.AddCommand(versionCmd)
+		out := cmd.OutOrStdout()
+		// Get version info from go-toolkit
+		info := version.Info("mehr")
+		// Insert "by Valksor" after the first line
+		lines := info + "\n  by Valksor"
+		_, _ = fmt.Fprintln(out, lines)
+	},
 }

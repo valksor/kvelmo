@@ -8,6 +8,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var undoYes bool
@@ -77,7 +78,7 @@ func runUndo(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("undo: %w", err)
 	}
 
-	fmt.Println(display.SuccessMsg("Reverted to previous checkpoint"))
+	fmt.Println(tkdisplay.SuccessMsg("Reverted to previous checkpoint"))
 
 	return nil
 }

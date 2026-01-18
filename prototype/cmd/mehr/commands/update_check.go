@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/config"
-	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/provider/github"
 	"github.com/valksor/go-mehrhof/internal/update"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 // checkForUpdatesInBackground performs an asynchronous update check.
@@ -66,8 +66,8 @@ func checkForUpdatesInBackground(ctx context.Context) {
 	if status.IsNewer {
 		// Print to stderr so it doesn't interfere with command output
 		fmt.Fprintf(os.Stderr, "\n%s %s is available (you have %s)\n",
-			display.Info("→"), display.Bold(status.LatestVersion), display.Muted(Version))
-		fmt.Fprintf(os.Stderr, "%s Run 'mehr update' to install\n\n", display.Muted("→"))
+			tkdisplay.Info("→"), tkdisplay.Bold(status.LatestVersion), tkdisplay.Muted(Version))
+		fmt.Fprintf(os.Stderr, "%s Run 'mehr update' to install\n\n", tkdisplay.Muted("→"))
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -188,7 +189,7 @@ func runFinish(cmd *cobra.Command, args []string) error {
 			}
 
 			if result.Passed {
-				fmt.Println(display.SuccessMsg("Quality checks passed"))
+				fmt.Println(tkdisplay.SuccessMsg("Quality checks passed"))
 			}
 		}
 	}
@@ -199,7 +200,7 @@ func runFinish(cmd *cobra.Command, args []string) error {
 		if msg, err := cond.GenerateCommitMessagePreview(ctx); err == nil && msg != "" {
 			commitMessage = msg
 			fmt.Println("\nGenerated commit message:")
-			fmt.Print(display.InfoMsg("%s", msg))
+			fmt.Print(tkdisplay.InfoMsg("%s", msg))
 			fmt.Println()
 		}
 	}
@@ -232,9 +233,9 @@ func runFinish(cmd *cobra.Command, args []string) error {
 
 	// Success message depends on what happened
 	if finishMerge {
-		fmt.Println(display.SuccessMsg("Task completed and merged"))
+		fmt.Println(tkdisplay.SuccessMsg("Task completed and merged"))
 	} else {
-		fmt.Println(display.SuccessMsg("Task completed"))
+		fmt.Println(tkdisplay.SuccessMsg("Task completed"))
 	}
 
 	// Suggest next steps

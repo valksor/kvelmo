@@ -9,6 +9,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
 var guideCmd = &cobra.Command{
@@ -68,7 +69,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		if active == nil {
 			fmt.Println("No task associated with this worktree.")
 			fmt.Println()
-			fmt.Println(display.Muted("Next steps:"))
+			fmt.Println(tkdisplay.Muted("Next steps:"))
 			fmt.Println("  mehr start <reference>   # Start a new task")
 
 			return nil
@@ -79,7 +80,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		if !ws.HasActiveTask() {
 			fmt.Println("No active task.")
 			fmt.Println()
-			fmt.Println(display.Muted("Next steps:"))
+			fmt.Println(tkdisplay.Muted("Next steps:"))
 			fmt.Println("  mehr start <reference>   # Start a new task")
 			fmt.Println("  mehr status --all        # View all tasks in workspace")
 
@@ -97,7 +98,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	if work == nil {
 		fmt.Println("No task found.")
 		fmt.Println()
-		fmt.Println(display.Muted("Next steps:"))
+		fmt.Println(tkdisplay.Muted("Next steps:"))
 		fmt.Println("  mehr start <reference>   # Start a new task")
 
 		return nil
@@ -134,7 +135,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 			}
 		}
 		fmt.Println()
-		fmt.Println(display.Muted("Next steps:"))
+		fmt.Println(tkdisplay.Muted("Next steps:"))
 		fmt.Println("  mehr answer \"your answer\"  # Respond to the question")
 		fmt.Println("  mehr note                   # Enter interactive mode")
 
@@ -143,7 +144,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 
 	// Show state-specific suggestions
 	fmt.Println()
-	fmt.Println(display.Muted("Next steps:"))
+	fmt.Println(tkdisplay.Muted("Next steps:"))
 
 	switch workflow.State(active.State) {
 	case workflow.StateIdle:
