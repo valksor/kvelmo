@@ -62,6 +62,12 @@ type Conductor struct {
 	browser     browser.Controller
 	browserOnce sync.Once
 
+	// Memory system (initialized if enabled)
+	memory *MemorySystem
+
+	// ML system (initialized if enabled)
+	ml *MLSystem
+
 	// Workflow plugin adapters (for lifecycle management)
 	workflowAdapters []*plugin.WorkflowAdapter
 

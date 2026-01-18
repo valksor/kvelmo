@@ -106,6 +106,11 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		prompt += "\n\n## Previous Q&A History\nThe following questions were asked and answered in previous planning sessions:\n\n" + historicalContext
 	}
 
+	// Check for orchestration configuration
+	if c.isOrchestrationEnabledForPhase("planning") {
+		return c.runOrchestratedPlanning(ctx, taskID, prompt, statusLine)
+	}
+
 	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent analyzing task...", 20)
 	var transcriptBuilder strings.Builder
@@ -524,6 +529,13 @@ Please retry the implementation, taking into account this error.
 		c.eventBus.PublishRaw(*event)
 	}
 
+	// Run security scans if configured
+	c.publishProgress("Running security scans...", 90)
+	if scanErr := c.RunSecurityScan(ctx); scanErr != nil {
+		c.logError(fmt.Errorf("security scan: %w", scanErr))
+		// Don't fail implementation on scan errors
+	}
+
 	// Update state back to idle
 	c.activeTask.State = "idle"
 	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
@@ -585,10 +597,16 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	c.publishProgress("Running automated linters...", 10)
 	lintResults := c.runLinters(ctx)
 
-	// Build review prompt with lint results and custom instructions
+	// Get security findings if available
+	securityFindings := c.GetSecurityFindingsForReview()
+	if securityFindings != "" {
+		c.publishProgress("Including security scan findings...", 15)
+	}
+
+	// Build review prompt with lint results, security findings, and custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "reviewing")
-	prompt := buildReviewPromptWithLint(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, customInstructions)
+	prompt := buildReviewPromptWithLintAndSecurity(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, securityFindings, customInstructions)
 
 	// Run agent, accumulate output for transcript
 	c.publishProgress("Agent reviewing...", 20)
@@ -865,4 +883,111 @@ func isRecoverableError(err error) bool {
 	}
 
 	return false
+}
+
+// runOrchestratedPlanning executes the planning phase using multi-agent orchestration.
+func (c *Conductor) runOrchestratedPlanning(ctx context.Context, taskID string, prompt string, statusLine *progress.StatusLine) error {
+	c.publishProgress("Running planning with multi-agent orchestration...", 20)
+
+	// Run orchestration
+	result, err := c.runOrchestratedStep(ctx, "planning", c.taskWork)
+	if err != nil {
+		if statusLine != nil {
+			statusLine.Done()
+		}
+		c.activeTask.State = "idle"
+		if saveErr := c.workspace.SaveActiveTask(c.activeTask); saveErr != nil {
+			c.logError(fmt.Errorf("save active task after planning error: %w", saveErr))
+		}
+		_ = c.machine.Dispatch(ctx, workflow.EventError)
+
+		return fmt.Errorf("orchestrated planning: %w", err)
+	}
+
+	// Extract final output from orchestration result
+	specContent := c.extractFinalOutput(result)
+
+	// Record total usage from all orchestration steps
+	var totalTokens int
+	var totalCost float64
+	for _, step := range result.StepResults {
+		totalTokens += step.TokenUsage
+		// Note: Cost tracking would need to be added to StepResult if not present
+	}
+	if totalTokens > 0 {
+		if err := c.workspace.AddUsage(taskID, "planning", totalTokens, 0, 0, totalCost); err != nil {
+			c.logError(fmt.Errorf("record planning usage: %w", err))
+		}
+	}
+
+	// Save transcript for orchestration run
+	transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-planning-orchestration.log"
+	transcript := fmt.Sprintf("# Orchestration Planning Run\n\nDuration: %s\nConsensus: %.0f%%\n\nSteps Executed: %d\n\n",
+		result.Duration, result.Consensus*100, len(result.StepResults))
+	var stepsBuilder strings.Builder
+	for stepName, stepResult := range result.StepResults {
+		stepsBuilder.WriteString(fmt.Sprintf("## Step: %s (Agent: %s, Tokens: %d)\n%s\n\n",
+			stepName, stepResult.AgentName, stepResult.TokenUsage, stepResult.Output))
+	}
+	transcript += stepsBuilder.String()
+	if err := c.workspace.SaveTranscript(taskID, transcriptFile, transcript); err != nil {
+		c.logError(fmt.Errorf("save orchestration transcript: %w", err))
+	}
+
+	// Record exchanges to session
+	if c.currentSession != nil {
+		now := time.Now()
+		promptSummary := prompt
+		if len(promptSummary) > 500 {
+			promptSummary = promptSummary[:500] + "..."
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   promptSummary,
+			Timestamp: now,
+		})
+		// Record orchestration summary
+		orchestrationSummary := fmt.Sprintf("Orchestration completed with %d steps, %.0f%% consensus",
+			len(result.StepResults), result.Consensus*100)
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "agent",
+			Content:   orchestrationSummary,
+			Timestamp: now,
+		})
+	}
+
+	c.publishProgress("Creating specifications from orchestration result...", 70)
+
+	// Create specification from orchestration result
+	nextNum, err := c.workspace.NextSpecificationNumber(taskID)
+	if err != nil {
+		return fmt.Errorf("get next specification number: %w", err)
+	}
+
+	// Format specification content
+	// For orchestration, we create a simpler spec format
+	specContentFormatted := fmt.Sprintf("# Specification %d\n\n%s\n\n---\n\n*Generated by multi-agent orchestration (%.0f%% consensus)*\n",
+		nextNum, specContent, result.Consensus*100)
+
+	if err := c.workspace.SaveSpecification(taskID, nextNum, specContentFormatted); err != nil {
+		return fmt.Errorf("save specification: %w", err)
+	}
+
+	c.publishProgress(fmt.Sprintf("Specification %d created", nextNum), 90)
+
+	// Update state back to idle
+	c.activeTask.State = "idle"
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		c.logError(fmt.Errorf("save active task: %w", err))
+	}
+
+	// Dispatch completion
+	_ = c.machine.Dispatch(ctx, workflow.EventPlanDone)
+
+	// Save session with completion time
+	c.saveCurrentSession(taskID)
+
+	c.publishProgress("Planning complete", 100)
+
+	return nil
 }

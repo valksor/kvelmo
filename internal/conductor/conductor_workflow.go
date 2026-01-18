@@ -265,6 +265,12 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 		c.logError(fmt.Errorf("save active task: %w", err))
 	}
 
+	// Index completed task into memory (if enabled)
+	if err := c.IndexCompletedTask(ctx); err != nil {
+		// Memory indexing is non-critical, log error but don't fail
+		c.logError(fmt.Errorf("index completed task (non-fatal): %w", err))
+	}
+
 	// Dispatch finish event
 	if err := c.machine.Dispatch(ctx, workflow.EventFinish); err != nil {
 		return fmt.Errorf("finish workflow: %w", err)
