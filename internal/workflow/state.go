@@ -1,5 +1,9 @@
 package workflow
 
+import (
+	"time"
+)
+
 // State represents a workflow state.
 type State string
 
@@ -152,13 +156,56 @@ func IsTerminal(s State) bool {
 
 // WorkUnit represents the current task being worked on by the state machine.
 type WorkUnit struct {
-	ID             string
-	ExternalID     string // Provider-specific ID (original reference)
-	Title          string
-	Description    string
-	Source         *Source
-	Specifications []string // Specification file paths (specification-1.md, specification-2.md, etc.)
-	Checkpoints    []string // Git checkpoint IDs
+	ID              string
+	ExternalID      string // Provider-specific ID (original reference)
+	Title           string
+	Description     string
+	Source          *Source
+	Specifications  []string             // Specification file paths (specification-1.md, specification-2.md, etc.)
+	Checkpoints     []string             // Git checkpoint IDs
+	SecurityResults *SecurityScanResults // Security scan results from last scan
+}
+
+// SecurityScanResults holds the results of security scans.
+type SecurityScanResults struct {
+	ScannedAt     time.Time             `json:"scanned_at"`
+	Results       []*SecurityScanResult `json:"results"`
+	Summary       SecurityScanSummary   `json:"summary"`
+	HasBlocking   bool                  `json:"has_blocking"`
+	BlockingCount int                   `json:"blocking_count"`
+}
+
+// SecurityScanResult represents a single security scan result.
+type SecurityScanResult struct {
+	Scanner  string              `json:"scanner"`
+	Findings []*SecurityFinding  `json:"findings"`
+	Summary  SecurityScanSummary `json:"summary"`
+	Duration time.Duration       `json:"duration"`
+	Error    error               `json:"error,omitempty"`
+}
+
+// SecurityFinding represents a single security finding.
+type SecurityFinding struct {
+	ID          string            `json:"id"`
+	Scanner     string            `json:"scanner"`
+	Severity    string            `json:"severity"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Location    *SecurityLocation `json:"location,omitempty"`
+	CVE         string            `json:"cve,omitempty"`
+}
+
+// SecurityLocation represents the location of a finding.
+type SecurityLocation struct {
+	File   string `json:"file"`
+	Line   int    `json:"line"`
+	Column int    `json:"column,omitempty"`
+}
+
+// SecurityScanSummary holds summary statistics.
+type SecurityScanSummary struct {
+	Total      int            `json:"total"`
+	BySeverity map[string]int `json:"by_severity"`
 }
 
 // Source represents where the task came from (read-only).

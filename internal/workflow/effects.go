@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 )
@@ -27,6 +28,7 @@ const (
 	EffectRollbackChanges     EffectType = "rollback_changes"
 	EffectMergeAndCleanup     EffectType = "merge_and_cleanup"
 	EffectCleanup             EffectType = "cleanup"
+	EffectSecurityScan        EffectType = "security_scan"
 )
 
 // EffectRequest represents a request for the conductor to execute an effect.
@@ -120,4 +122,19 @@ func WrapCriticalEffect(name string, fn EffectFunc) CriticalEffect {
 		Fn:       fn,
 		Critical: true,
 	}
+}
+
+// SecurityScanData holds data for the security scan effect.
+type SecurityScanData struct {
+	ScannerRegistry any    // ScannerRegistry instance
+	WorkDirectory   string // Directory to scan
+	Config          any    // SecuritySettings config
+}
+
+// RunSecurityScanEffect executes a security scan and stores results in the work unit.
+// This is meant to be called by the conductor, not directly by the state machine.
+func RunSecurityScanEffect(ctx context.Context, scannerRegistry any, workDir string, config any) (*SecurityScanResults, error) {
+	// This is a placeholder - the actual implementation will be in the conductor
+	// which has access to the security package
+	return nil, errors.New("security scan not implemented - use conductor.RunSecurityScan")
 }
