@@ -35,6 +35,7 @@ quality: ## Run linter (golangci-lint)
 	${MAKE} fmt
 	golangci-lint run ./... --fix
 	govulncheck ./...
+	${MAKE} check-alias
 
 fmt: ## Format code with go fmt, goimports, and gofumpt
 	go fmt ./...
@@ -73,3 +74,11 @@ lefthook: ## Install and configure Lefthook pre-commit hooks
 	go install github.com/evilmartians/lefthook@latest
 	lefthook install
 	@echo "Lefthook installed. Pre-commit hooks active."
+
+check-alias:
+	@alias_issues="$$(./.github/alias.sh || true)"; \
+	if [ -n "$$alias_issues" ]; then \
+		echo "❌ Unnecessary import alias detected:"; \
+		echo "$$alias_issues"; \
+		exit 1; \
+	fi
