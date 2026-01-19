@@ -13,7 +13,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -161,7 +161,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 						phase = "[5/5]" // Finish
 					}
 				}
-				_, err := fmt.Fprintf(w, "  %s %s\n", tkdisplay.Info(phase), msg)
+				_, err := fmt.Fprintf(w, "  %s %s\n", display.Info(phase), msg)
 				if err != nil {
 					slog.Debug("write progress", "error", err)
 				}
@@ -170,7 +170,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 			if verbose {
 				if path, ok := e.Data["path"].(string); ok {
 					op, _ := e.Data["operation"].(string)
-					_, err := fmt.Fprintf(w, "  %s [%s] %s\n", tkdisplay.Muted("     "), op, path)
+					_, err := fmt.Fprintf(w, "  %s [%s] %s\n", display.Muted("     "), op, path)
 					if err != nil {
 						slog.Debug("write file change", "error", err)
 					}
@@ -179,7 +179,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 		case events.TypeCheckpoint:
 			if verbose {
 				if num, ok := e.Data["checkpoint"].(int); ok {
-					_, err := fmt.Fprintf(w, "  %s Checkpoint #%d created\n", tkdisplay.Muted("     "), num)
+					_, err := fmt.Fprintf(w, "  %s Checkpoint #%d created\n", display.Muted("     "), num)
 					if err != nil {
 						slog.Debug("write checkpoint", "error", err)
 					}
@@ -190,8 +190,8 @@ func runAuto(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	fmt.Printf("%s Starting auto mode for: %s\n", tkdisplay.Info("[1/5]"), tkdisplay.Bold(reference))
-	fmt.Printf("%s Workflow: start → plan → implement → quality → finish\n", tkdisplay.Muted("     "))
+	fmt.Printf("%s Starting auto mode for: %s\n", display.Info("[1/5]"), display.Bold(reference))
+	fmt.Printf("%s Workflow: start → plan → implement → quality → finish\n", display.Muted("     "))
 
 	// Build auto options
 	autoOpts := conductor.AutoOptions{
@@ -222,12 +222,12 @@ func runAuto(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println(tkdisplay.SuccessMsg("Task completed automatically"))
-	fmt.Printf("  %s Quality attempts: %d\n", tkdisplay.Muted("•"), result.QualityAttempts)
+	fmt.Println(display.SuccessMsg("Task completed automatically"))
+	fmt.Printf("  %s Quality attempts: %d\n", display.Muted("•"), result.QualityAttempts)
 	if !autoNoPush {
-		fmt.Printf("  %s Changes merged and pushed\n", tkdisplay.Muted("•"))
+		fmt.Printf("  %s Changes merged and pushed\n", display.Muted("•"))
 	} else {
-		fmt.Printf("  %s Changes merged (not pushed)\n", tkdisplay.Muted("•"))
+		fmt.Printf("  %s Changes merged (not pushed)\n", display.Muted("•"))
 	}
 
 	return nil

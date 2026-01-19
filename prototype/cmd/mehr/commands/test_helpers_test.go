@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/storage"
 	helper_test "github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/storage"
 	toolkit_helper_test "github.com/valksor/go-toolkit/helper_test"
 )
 
