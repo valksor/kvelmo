@@ -118,9 +118,6 @@ func TestState_GetLastUserMessage(t *testing.T) {
 	}
 
 	msg := state.GetLastUserMessage()
-	if msg == nil {
-		t.Fatal("GetLastUserMessage() returned nil")
-	}
 	if msg.Content != "Second" {
 		t.Errorf("GetLastUserMessage().Content = %q, want %q", msg.Content, "Second")
 	}
@@ -150,9 +147,6 @@ func TestState_GetLastAssistantMessage(t *testing.T) {
 	}
 
 	msg := state.GetLastAssistantMessage()
-	if msg == nil {
-		t.Fatal("GetLastAssistantMessage() returned nil")
-	}
 	if msg.Content != "Second Response" {
 		t.Errorf("GetLastAssistantMessage().Content = %q, want %q", msg.Content, "Second Response")
 	}

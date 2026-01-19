@@ -10,9 +10,6 @@ import (
 
 func TestNew(t *testing.T) {
 	a := New()
-	if a == nil {
-		t.Fatal("New returned nil")
-	}
 	if a.config.Command[0] != "codex" {
 		t.Errorf("Command[0] = %q, want %q", a.config.Command[0], "codex")
 	}
@@ -33,9 +30,6 @@ func TestNewWithConfig(t *testing.T) {
 	}
 
 	a := NewWithConfig(cfg)
-	if a == nil {
-		t.Fatal("NewWithConfig returned nil")
-	}
 	if a.config.Command[0] != "custom-codex" {
 		t.Errorf("Command[0] = %q, want %q", a.config.Command[0], "custom-codex")
 	}
