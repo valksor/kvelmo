@@ -156,11 +156,13 @@ mehr note "What's the best way to handle password reset tokens?"
 mehr start task.md
 mehr plan
 ├── Review specifications
+├── mehr simplify (optional: clarify and reduce complexity)
 ├── mehr note "refinement..."
 └── mehr plan (if major changes)
 
 mehr implement
 ├── Review code
+├── mehr simplify (optional: reduce complexity)
 ├── mehr undo
 ├── mehr note "adjustment..."
 └── mehr implement
@@ -169,6 +171,22 @@ mehr implement
 
 mehr finish
 ```
+
+## Using Simplify
+
+The `mehr simplify` command can help clarify and reduce complexity:
+
+```bash
+# After planning - simplify specifications
+mehr plan
+mehr simplify
+
+# After implementing - simplify code changes
+mehr implement
+mehr simplify
+```
+
+See [simplify command](../cli/simplify.md) for details.
 
 ## Tips for Effective Iteration
 

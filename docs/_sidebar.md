@@ -46,6 +46,7 @@
     - [plan](cli/plan.md)
     - [implement](cli/implement.md)
     - [review](cli/review.md)
+    - [simplify](cli/simplify.md)
     - [finish](cli/finish.md)
     - [auto](cli/auto.md)
   - **Task Management**
