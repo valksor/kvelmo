@@ -14,7 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/workflow"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var syncCmd = &cobra.Command{
@@ -97,7 +97,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 		Description: string(sourceContent),
 	}
 
-	fmt.Printf(tkdisplay.Info("→")+" Fetching latest task data from %s...\n", workUnit.Provider)
+	fmt.Printf(display.Info("→")+" Fetching latest task data from %s...\n", workUnit.Provider)
 
 	// Fetch updated version from provider
 	updated, err := fetchUpdatedFromProvider(ctx, c, workUnit)
@@ -105,40 +105,40 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("fetch updated task: %w", err)
 	}
 
-	fmt.Println(tkdisplay.Info("→") + " Detecting changes...")
+	fmt.Println(display.Info("→") + " Detecting changes...")
 
 	// Detect changes
 	changes := provider.DetectChanges(workUnit, updated)
 
 	// If no changes, report and exit
 	if !changes.HasChanges {
-		fmt.Println(tkdisplay.Success("✓") + " No changes detected in the task.")
+		fmt.Println(display.Success("✓") + " No changes detected in the task.")
 
 		return nil
 	}
 
 	// Report changes
-	fmt.Printf("\n%s Changes detected:\n", tkdisplay.Warning("▲"))
-	fmt.Printf("  %s\n\n", tkdisplay.Muted(changes.Summary()))
+	fmt.Printf("\n%s Changes detected:\n", display.Warning("▲"))
+	fmt.Printf("  %s\n\n", display.Muted(changes.Summary()))
 
 	// Create delta specification generator
 	gen := workflow.NewGenerator(taskDir)
 
 	// Backup original source file
 	if err := gen.BackupSourceFile(sourcePath); err != nil {
-		fmt.Printf("%s Warning: could not backup source file: %v\n", tkdisplay.Warning("→"), err)
+		fmt.Printf("%s Warning: could not backup source file: %v\n", display.Warning("→"), err)
 	}
 
 	// Write diff file
 	if err := gen.WriteDiffFile(changes); err != nil {
-		fmt.Printf("%s Warning: could not write diff file: %v\n", tkdisplay.Warning("→"), err)
+		fmt.Printf("%s Warning: could not write diff file: %v\n", display.Warning("→"), err)
 	}
 
 	// Extract old and new content for comparison
 	oldContent := extractContent(workUnit)
 	newContent := extractContent(updated)
 
-	fmt.Println(tkdisplay.Info("→") + " Generating delta specification...")
+	fmt.Println(display.Info("→") + " Generating delta specification...")
 
 	// Add timeout for AI agent call (10 minutes max)
 	genCtx, genCancel := context.WithTimeout(ctx, 10*time.Minute)
@@ -150,11 +150,11 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("generate delta specification: %w", err)
 	}
 
-	fmt.Printf("\n%s Generated delta specification: %s\n", tkdisplay.Success("✓"), tkdisplay.Bold(specificationPath))
+	fmt.Printf("\n%s Generated delta specification: %s\n", display.Success("✓"), display.Bold(specificationPath))
 	fmt.Println("\nNext steps:")
 	fmt.Printf("  1. Review the delta specification\n")
-	fmt.Printf("  2. Run %s to create an implementation plan\n", tkdisplay.Bold("mehr plan"))
-	fmt.Printf("  3. Run %s to apply the changes\n", tkdisplay.Bold("mehr implement"))
+	fmt.Printf("  2. Run %s to create an implementation plan\n", display.Bold("mehr plan"))
+	fmt.Printf("  3. Run %s to apply the changes\n", display.Bold("mehr implement"))
 
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/template"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var templatesCmd = &cobra.Command{
@@ -67,7 +67,7 @@ func runTemplatesList(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			continue
 		}
-		fmt.Printf("  %-12s %s\n", tkdisplay.Bold(name), tpl.GetDescription())
+		fmt.Printf("  %-12s %s\n", display.Bold(name), tpl.GetDescription())
 	}
 
 	fmt.Println()
@@ -87,12 +87,12 @@ func runTemplateShow(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load template: %w", err)
 	}
 
-	fmt.Printf("Template: %s\n", tkdisplay.Bold(tpl.Name))
+	fmt.Printf("Template: %s\n", display.Bold(tpl.Name))
 	fmt.Printf("Description: %s\n\n", tpl.Description)
 
 	// Show frontmatter
 	if len(tpl.Frontmatter) > 0 {
-		fmt.Println(tkdisplay.Bold("Frontmatter:"))
+		fmt.Println(display.Bold("Frontmatter:"))
 		for k, v := range tpl.Frontmatter {
 			fmt.Printf("  %s: %v\n", k, v)
 		}
@@ -101,7 +101,7 @@ func runTemplateShow(cmd *cobra.Command, args []string) error {
 
 	// Show agent config
 	if tpl.Agent != "" {
-		fmt.Println(tkdisplay.Bold("Agent:"))
+		fmt.Println(display.Bold("Agent:"))
 		fmt.Printf("  Default: %s\n", tpl.Agent)
 		if len(tpl.AgentSteps) > 0 {
 			fmt.Println("  Per-step:")
@@ -114,7 +114,7 @@ func runTemplateShow(cmd *cobra.Command, args []string) error {
 
 	// Show git config
 	if len(tpl.Git) > 0 {
-		fmt.Println(tkdisplay.Bold("Git:"))
+		fmt.Println(display.Bold("Git:"))
 		for k, v := range tpl.Git {
 			fmt.Printf("  %s: %s\n", k, v)
 		}
@@ -123,7 +123,7 @@ func runTemplateShow(cmd *cobra.Command, args []string) error {
 
 	// Show workflow config
 	if len(tpl.Workflow) > 0 {
-		fmt.Println(tkdisplay.Bold("Workflow:"))
+		fmt.Println(display.Bold("Workflow:"))
 		for k, v := range tpl.Workflow {
 			fmt.Printf("  %s: %v\n", k, v)
 		}
@@ -131,7 +131,7 @@ func runTemplateShow(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show example
-	fmt.Println(tkdisplay.Bold("Example usage:"))
+	fmt.Println(display.Bold("Example usage:"))
 	fmt.Printf("  mehr templates apply %s my-task.md\n", tpl.Name)
 	fmt.Printf("  mehr start --template %s file:my-task.md\n", tpl.Name)
 
@@ -169,7 +169,7 @@ func runTemplateApply(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("write file: %w", err)
 	}
 
-	fmt.Printf("Applied template '%s' to %s\n", tkdisplay.Bold(tpl.Name), filePath)
+	fmt.Printf("Applied template '%s' to %s\n", display.Bold(tpl.Name), filePath)
 
 	// Show what was added
 	if len(tpl.Frontmatter) > 0 {
