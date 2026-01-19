@@ -72,9 +72,6 @@ func TestNewResolver(t *testing.T) {
 
 	r := NewResolver(registry, workspace)
 
-	if r == nil {
-		t.Fatal("NewResolver returned nil")
-	}
 	if r.agents != registry {
 		t.Error("agents not set correctly")
 	}
