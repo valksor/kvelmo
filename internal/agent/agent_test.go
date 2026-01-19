@@ -69,9 +69,6 @@ func TestNewConfig(t *testing.T) {
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
 
-	if r == nil {
-		t.Fatal("NewRegistry returned nil")
-	}
 	if r.agents == nil {
 		t.Error("agents map not initialized")
 	}

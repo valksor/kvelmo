@@ -223,10 +223,6 @@ func TestNewAdapter(t *testing.T) {
 				return
 			}
 
-			if adapter == nil {
-				t.Fatal("expected adapter, got nil")
-			}
-
 			if adapter.controller != tt.controller {
 				t.Error("controller not set correctly")
 			}
@@ -369,10 +365,6 @@ func TestOpenURLTool(t *testing.T) {
 
 					break
 				}
-			}
-
-			if tool == nil {
-				t.Fatal("browser_open_url tool not found")
 			}
 
 			result, err := tool.Execute(context.Background(), tt.args)
@@ -1011,10 +1003,6 @@ func TestAdapterIntegration(t *testing.T) {
 
 			break
 		}
-	}
-
-	if openURLTool == nil {
-		t.Fatal("browser_open_url tool not found")
 	}
 
 	result, err := openURLTool.Execute(ctx, map[string]any{

@@ -6,9 +6,6 @@ import (
 
 func TestNewYAMLBlockParser(t *testing.T) {
 	p := NewYAMLBlockParser()
-	if p == nil {
-		t.Fatal("NewYAMLBlockParser returned nil")
-	}
 	if p.fileBlockRe == nil {
 		t.Error("fileBlockRe should not be nil")
 	}
@@ -271,9 +268,6 @@ func TestExtractQuestion(t *testing.T) {
 
 				return
 			}
-			if got == nil {
-				t.Fatal("extractQuestion() returned nil, want non-nil")
-			}
 			if got.Text != tt.wantText {
 				t.Errorf("Text = %q, want %q", got.Text, tt.wantText)
 			}
@@ -327,9 +321,6 @@ func TestExtractToolCall(t *testing.T) {
 
 				return
 			}
-			if got == nil {
-				t.Fatal("extractToolCall() returned nil, want non-nil")
-			}
 			if got.Name != tt.wantName {
 				t.Errorf("Name = %q, want %q", got.Name, tt.wantName)
 			}
@@ -343,9 +334,6 @@ func TestParse_EmptyEvents(t *testing.T) {
 	resp, err := p.Parse([]Event{})
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
-	}
-	if resp == nil {
-		t.Fatal("Parse returned nil")
 	}
 	if len(resp.Files) != 0 {
 		t.Errorf("Files = %d, want 0", len(resp.Files))
