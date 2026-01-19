@@ -18,9 +18,6 @@ func TestSessionManager(t *testing.T) {
 			Timeout: 30 * time.Second,
 		})
 
-		if sm == nil {
-			t.Fatal("NewSessionManager() returned nil")
-		}
 		if sm.workspaceDir != "/tmp/test-workspace" {
 			t.Errorf("workspaceDir = %s, want /tmp/test-workspace", sm.workspaceDir)
 		}

@@ -19,9 +19,6 @@ func TestNewAgentAdapter(t *testing.T) {
 
 	adapter := NewAgentAdapter(manifest, nil)
 
-	if adapter == nil {
-		t.Fatal("NewAgentAdapter returned nil")
-	}
 	if adapter.manifest != manifest {
 		t.Error("manifest not set correctly")
 	}

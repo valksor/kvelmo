@@ -272,10 +272,6 @@ func TestNewWorkflowAdapter(t *testing.T) {
 
 	adapter := NewWorkflowAdapter(manifest, proc)
 
-	if adapter == nil {
-		t.Fatal("NewWorkflowAdapter() returned nil")
-	}
-
 	if adapter.manifest != manifest {
 		t.Error("manifest not set correctly")
 	}

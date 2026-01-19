@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
-
-	_maps "maps"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 )
@@ -165,7 +164,7 @@ func (a *AgentAdapter) RunWithCallback(ctx context.Context, prompt string, cb ag
 
 // WithEnv adds an environment variable and returns a new agent with that env set.
 func (a *AgentAdapter) WithEnv(key, value string) agent.Agent {
-	newEnv := _maps.Clone(a.env)
+	newEnv := maps.Clone(a.env)
 	if newEnv == nil {
 		newEnv = make(map[string]string, 1)
 	}

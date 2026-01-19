@@ -9,9 +9,6 @@ import (
 func TestNetworkMonitor(t *testing.T) {
 	t.Run("NewNetworkMonitor", func(t *testing.T) {
 		mon := NewNetworkMonitor()
-		if mon == nil {
-			t.Fatal("NewNetworkMonitor() returned nil")
-		}
 		if mon.requests == nil {
 			t.Error("requests map is not initialized")
 		}

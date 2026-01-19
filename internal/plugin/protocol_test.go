@@ -47,10 +47,6 @@ func TestNewRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := NewRequest(tt.id, tt.method, tt.params)
 
-			if req == nil {
-				t.Fatal("NewRequest returned nil")
-			}
-
 			if req.JSONRPC != "2.0" {
 				t.Errorf("JSONRPC = %q, want %q", req.JSONRPC, "2.0")
 			}
