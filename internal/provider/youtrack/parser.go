@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	providererrors "github.com/valksor/go-toolkit/errors"
+	"github.com/valksor/go-toolkit/errors"
 )
 
 // Ref represents a parsed YouTrack issue reference.
@@ -43,7 +43,7 @@ func ParseReference(input string) (*Ref, error) {
 	input = strings.TrimSpace(input)
 
 	if input == "" {
-		return nil, fmt.Errorf("%w: empty reference", providererrors.ErrInvalidReference)
+		return nil, fmt.Errorf("%w: empty reference", errors.ErrInvalidReference)
 	}
 
 	// Strip scheme prefix
@@ -65,7 +65,7 @@ func ParseReference(input string) (*Ref, error) {
 	}
 
 	return nil, fmt.Errorf("%w: unrecognized format: %s (expected ABC-123 or YouTrack URL)",
-		providererrors.ErrInvalidReference, input)
+		errors.ErrInvalidReference, input)
 }
 
 // extractHost extracts the host from a YouTrack URL.

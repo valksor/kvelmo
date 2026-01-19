@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gl "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 )
@@ -21,7 +21,7 @@ func ptr[T any](v T) *T {
 
 // Client wraps the GitLab API client.
 type Client struct {
-	gl          *gitlab.Client
+	gl          *gl.Client
 	httpClient  *http.Client
 	token       string
 	projectID   int64  // Numeric project ID (cached)
@@ -31,15 +31,15 @@ type Client struct {
 
 // NewClient creates a new GitLab API client.
 func NewClient(token, host, projectPath string, projectID int64) *Client {
-	var options []gitlab.ClientOptionFunc
+	var options []gl.ClientOptionFunc
 
 	// For self-hosted GitLab, set the base URL
 	if host != "" && host != "https://gitlab.com" && host != "gitlab.com" {
 		baseURL := strings.TrimSuffix(host, "/") + "/api/v4"
-		options = append(options, gitlab.WithBaseURL(baseURL))
+		options = append(options, gl.WithBaseURL(baseURL))
 	}
 
-	client, err := gitlab.NewClient(token, options...)
+	client, err := gl.NewClient(token, options...)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create GitLab client: %v", err))
 	}
@@ -71,7 +71,7 @@ func (c *Client) getProjectID(ctx context.Context) (int64, error) {
 	}
 
 	// Get project by path
-	project, _, err := c.gl.Projects.GetProject(c.projectPath, nil, gitlab.WithContext(ctx))
+	project, _, err := c.gl.Projects.GetProject(c.projectPath, nil, gl.WithContext(ctx))
 	if err != nil {
 		return 0, wrapAPIError(err)
 	}
@@ -82,13 +82,13 @@ func (c *Client) getProjectID(ctx context.Context) (int64, error) {
 }
 
 // GetIssue fetches an issue by IID (internal issue number).
-func (c *Client) GetIssue(ctx context.Context, iid int64) (*gitlab.Issue, error) {
+func (c *Client) GetIssue(ctx context.Context, iid int64) (*gl.Issue, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	issue, _, err := c.gl.Issues.GetIssue(pid, iid, gitlab.WithContext(ctx))
+	issue, _, err := c.gl.Issues.GetIssue(pid, iid, gl.WithContext(ctx))
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
@@ -97,19 +97,19 @@ func (c *Client) GetIssue(ctx context.Context, iid int64) (*gitlab.Issue, error)
 }
 
 // GetIssueNotes fetches all notes (comments) on an issue.
-func (c *Client) GetIssueNotes(ctx context.Context, iid int64) ([]*gitlab.Note, error) {
+func (c *Client) GetIssueNotes(ctx context.Context, iid int64) ([]*gl.Note, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var allNotes []*gitlab.Note
-	opts := &gitlab.ListIssueNotesOptions{}
+	var allNotes []*gl.Note
+	opts := &gl.ListIssueNotesOptions{}
 	opts.Page = 1
 	opts.PerPage = 100
 
 	for {
-		notes, resp, err := c.gl.Notes.ListIssueNotes(pid, iid, opts, gitlab.WithContext(ctx))
+		notes, resp, err := c.gl.Notes.ListIssueNotes(pid, iid, opts, gl.WithContext(ctx))
 		if err != nil {
 			return nil, wrapAPIError(err)
 		}
@@ -124,15 +124,15 @@ func (c *Client) GetIssueNotes(ctx context.Context, iid int64) ([]*gitlab.Note, 
 }
 
 // AddNote adds a note (comment) to an issue.
-func (c *Client) AddNote(ctx context.Context, iid int64, body string) (*gitlab.Note, error) {
+func (c *Client) AddNote(ctx context.Context, iid int64, body string) (*gl.Note, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	note, _, err := c.gl.Notes.CreateIssueNote(pid, iid, &gitlab.CreateIssueNoteOptions{
+	note, _, err := c.gl.Notes.CreateIssueNote(pid, iid, &gl.CreateIssueNoteOptions{
 		Body: ptr(body),
-	}, gitlab.WithContext(ctx))
+	}, gl.WithContext(ctx))
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
@@ -141,13 +141,13 @@ func (c *Client) AddNote(ctx context.Context, iid int64, body string) (*gitlab.N
 }
 
 // UpdateIssue updates an issue.
-func (c *Client) UpdateIssue(ctx context.Context, iid int64, opts *gitlab.UpdateIssueOptions) (*gitlab.Issue, error) {
+func (c *Client) UpdateIssue(ctx context.Context, iid int64, opts *gl.UpdateIssueOptions) (*gl.Issue, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	issue, _, err := c.gl.Issues.UpdateIssue(pid, iid, opts, gitlab.WithContext(ctx))
+	issue, _, err := c.gl.Issues.UpdateIssue(pid, iid, opts, gl.WithContext(ctx))
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
@@ -156,7 +156,7 @@ func (c *Client) UpdateIssue(ctx context.Context, iid int64, opts *gitlab.Update
 }
 
 // ListIssues lists issues with filters.
-func (c *Client) ListIssues(ctx context.Context, opts *gitlab.ListProjectIssuesOptions) ([]*gitlab.Issue, error) {
+func (c *Client) ListIssues(ctx context.Context, opts *gl.ListProjectIssuesOptions) ([]*gl.Issue, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
@@ -167,9 +167,9 @@ func (c *Client) ListIssues(ctx context.Context, opts *gitlab.ListProjectIssuesO
 		opts.PerPage = 100
 	}
 
-	var allIssues []*gitlab.Issue
+	var allIssues []*gl.Issue
 	for {
-		issues, resp, err := c.gl.Issues.ListProjectIssues(pid, opts, gitlab.WithContext(ctx))
+		issues, resp, err := c.gl.Issues.ListProjectIssues(pid, opts, gl.WithContext(ctx))
 		if err != nil {
 			return nil, wrapAPIError(err)
 		}
@@ -184,13 +184,13 @@ func (c *Client) ListIssues(ctx context.Context, opts *gitlab.ListProjectIssuesO
 }
 
 // CreateIssue creates a new issue.
-func (c *Client) CreateIssue(ctx context.Context, opts *gitlab.CreateIssueOptions) (*gitlab.Issue, error) {
+func (c *Client) CreateIssue(ctx context.Context, opts *gl.CreateIssueOptions) (*gl.Issue, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	issue, _, err := c.gl.Issues.CreateIssue(pid, opts, gitlab.WithContext(ctx))
+	issue, _, err := c.gl.Issues.CreateIssue(pid, opts, gl.WithContext(ctx))
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
@@ -206,10 +206,10 @@ func (c *Client) SetLabels(ctx context.Context, iid int64, labels []string) erro
 	}
 
 	// Update labels requires setting the full label list
-	labelOpts := gitlab.LabelOptions(labels)
-	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gitlab.UpdateIssueOptions{
+	labelOpts := gl.LabelOptions(labels)
+	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gl.UpdateIssueOptions{
 		Labels: &labelOpts,
-	}, gitlab.WithContext(ctx))
+	}, gl.WithContext(ctx))
 
 	return err
 }
@@ -240,10 +240,10 @@ func (c *Client) AddLabels(ctx context.Context, iid int64, labels []string) erro
 	}
 
 	// Update with new label set
-	labelOpts := gitlab.LabelOptions(issue.Labels)
-	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gitlab.UpdateIssueOptions{
+	labelOpts := gl.LabelOptions(issue.Labels)
+	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gl.UpdateIssueOptions{
 		Labels: &labelOpts,
-	}, gitlab.WithContext(ctx))
+	}, gl.WithContext(ctx))
 
 	return err
 }
@@ -270,10 +270,10 @@ func (c *Client) RemoveLabel(ctx context.Context, iid int64, label string) error
 	}
 
 	// Update with new label set
-	labelOpts := gitlab.LabelOptions(newLabels)
-	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gitlab.UpdateIssueOptions{
+	labelOpts := gl.LabelOptions(newLabels)
+	_, _, err = c.gl.Issues.UpdateIssue(pid, iid, &gl.UpdateIssueOptions{
 		Labels: &labelOpts,
-	}, gitlab.WithContext(ctx))
+	}, gl.WithContext(ctx))
 
 	return err
 }
@@ -309,19 +309,19 @@ func (c *Client) Host() string {
 }
 
 // CreateMergeRequest creates a new merge request.
-func (c *Client) CreateMergeRequest(ctx context.Context, title, description, sourceBranch, targetBranch string, removeSourceBranch bool) (*gitlab.MergeRequest, error) {
+func (c *Client) CreateMergeRequest(ctx context.Context, title, description, sourceBranch, targetBranch string, removeSourceBranch bool) (*gl.MergeRequest, error) {
 	pid, err := c.getProjectID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mr, _, err := c.gl.MergeRequests.CreateMergeRequest(pid, &gitlab.CreateMergeRequestOptions{
+	mr, _, err := c.gl.MergeRequests.CreateMergeRequest(pid, &gl.CreateMergeRequestOptions{
 		Title:              ptr(title),
 		Description:        ptr(description),
 		SourceBranch:       ptr(sourceBranch),
 		TargetBranch:       ptr(targetBranch),
 		RemoveSourceBranch: ptr(removeSourceBranch),
-	}, gitlab.WithContext(ctx))
+	}, gl.WithContext(ctx))
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
@@ -336,7 +336,7 @@ func (c *Client) GetDefaultBranch(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	project, _, err := c.gl.Projects.GetProject(pid, nil, gitlab.WithContext(ctx))
+	project, _, err := c.gl.Projects.GetProject(pid, nil, gl.WithContext(ctx))
 	if err != nil {
 		return "", wrapAPIError(err)
 	}

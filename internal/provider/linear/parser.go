@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	providererrors "github.com/valksor/go-toolkit/errors"
+	"github.com/valksor/go-toolkit/errors"
 )
 
 // Ref represents a parsed Linear issue reference.
@@ -52,7 +52,7 @@ func ParseReference(input string) (*Ref, error) {
 	input = strings.TrimSpace(input)
 
 	if input == "" {
-		return nil, fmt.Errorf("%w: empty reference", providererrors.ErrInvalidReference)
+		return nil, fmt.Errorf("%w: empty reference", errors.ErrInvalidReference)
 	}
 
 	// Strip scheme prefix if present
@@ -91,7 +91,7 @@ func ParseReference(input string) (*Ref, error) {
 	// Parse issue ID format (TEAM-123)
 	ref, err := parseIssueID(issueID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: unrecognized format: %s (expected TEAM-123 or linear URL)", providererrors.ErrInvalidReference, input)
+		return nil, fmt.Errorf("%w: unrecognized format: %s (expected TEAM-123 or linear URL)", errors.ErrInvalidReference, input)
 	}
 
 	return ref, nil
@@ -103,7 +103,7 @@ func parseIssueID(issueID string) (*Ref, error) {
 		teamKey := matches[1]
 		var number int
 		if _, err := fmt.Sscanf(matches[2], "%d", &number); err != nil {
-			return nil, fmt.Errorf("%w: invalid issue number: %s", providererrors.ErrInvalidReference, matches[2])
+			return nil, fmt.Errorf("%w: invalid issue number: %s", errors.ErrInvalidReference, matches[2])
 		}
 
 		return &Ref{
@@ -114,7 +114,7 @@ func parseIssueID(issueID string) (*Ref, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("%w: invalid issue ID format: %s (expected TEAM-123)", providererrors.ErrInvalidReference, issueID)
+	return nil, fmt.Errorf("%w: invalid issue ID format: %s (expected TEAM-123)", errors.ErrInvalidReference, issueID)
 }
 
 // ExtractIssueID extracts the issue ID from a Linear URL

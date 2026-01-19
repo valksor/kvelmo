@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	providererrors "github.com/valksor/go-toolkit/errors"
+	"github.com/valksor/go-toolkit/errors"
 )
 
 // DownloadAttachment downloads an attachment from Jira.
@@ -38,7 +38,7 @@ func (p *Provider) DownloadAttachment(ctx context.Context, workUnitID, attachmen
 	}
 
 	if attachmentURL == "" {
-		return nil, fmt.Errorf("%w: attachment %s", providererrors.ErrNotFound, attachmentID)
+		return nil, fmt.Errorf("%w: attachment %s", errors.ErrNotFound, attachmentID)
 	}
 
 	// Download the attachment

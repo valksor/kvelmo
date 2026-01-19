@@ -281,9 +281,6 @@ func TestProviderInfoStruct(t *testing.T) {
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
 
-	if r == nil {
-		t.Fatal("NewRegistry returned nil")
-	}
 	if r.providers == nil {
 		t.Error("providers map not initialized")
 	}

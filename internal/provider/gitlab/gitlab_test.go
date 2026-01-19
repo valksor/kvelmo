@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gl "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
@@ -1198,9 +1198,6 @@ func TestProviderGetters(t *testing.T) {
 
 	t.Run("GetConfig", func(t *testing.T) {
 		cfg := p.GetConfig()
-		if cfg == nil {
-			t.Fatal("GetConfig() returned nil")
-		}
 		if cfg.Token != "test-token" {
 			t.Errorf("GetConfig().Token = %q, want 'test-token'", cfg.Token)
 		}
@@ -1374,18 +1371,18 @@ func TestProviderRemoveLabels(t *testing.T) {
 func TestMapAssignees(t *testing.T) {
 	tests := []struct {
 		name      string
-		assignees []*gitlab.IssueAssignee
+		assignees []*gl.IssueAssignee
 		wantCount int
 		wantIDs   map[string]bool
 	}{
 		{
 			name:      "no assignees",
-			assignees: []*gitlab.IssueAssignee{},
+			assignees: []*gl.IssueAssignee{},
 			wantCount: 0,
 		},
 		{
 			name: "single assignee",
-			assignees: []*gitlab.IssueAssignee{
+			assignees: []*gl.IssueAssignee{
 				{ID: 123, Username: "user1"},
 			},
 			wantCount: 1,
@@ -1393,7 +1390,7 @@ func TestMapAssignees(t *testing.T) {
 		},
 		{
 			name: "multiple assignees",
-			assignees: []*gitlab.IssueAssignee{
+			assignees: []*gl.IssueAssignee{
 				{ID: 1, Username: "user1"},
 				{ID: 2, Username: "user2"},
 			},
@@ -1424,23 +1421,23 @@ func TestMapNotes(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		notes []*gitlab.Note
+		notes []*gl.Note
 		want  int
 	}{
 		{
 			name:  "no notes",
-			notes: []*gitlab.Note{},
+			notes: []*gl.Note{},
 			want:  0,
 		},
 		{
 			name: "single note",
-			notes: []*gitlab.Note{
+			notes: []*gl.Note{
 				{
 					ID:        1,
 					Body:      "Test comment",
 					CreatedAt: &now,
 					UpdatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						ID:       123,
 						Username: "testuser",
 					},
@@ -1450,13 +1447,13 @@ func TestMapNotes(t *testing.T) {
 		},
 		{
 			name: "multiple notes",
-			notes: []*gitlab.Note{
+			notes: []*gl.Note{
 				{
 					ID:        1,
 					Body:      "First",
 					CreatedAt: &now,
 					UpdatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						ID:       123,
 						Username: "user1",
 					},
@@ -1466,7 +1463,7 @@ func TestMapNotes(t *testing.T) {
 					Body:      "Second",
 					CreatedAt: &now,
 					UpdatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						ID:       456,
 						Username: "user2",
 					},
@@ -1476,13 +1473,13 @@ func TestMapNotes(t *testing.T) {
 		},
 		{
 			name: "note without UpdatedAt uses CreatedAt",
-			notes: []*gitlab.Note{
+			notes: []*gl.Note{
 				{
 					ID:        1,
 					Body:      "Test",
 					CreatedAt: &now,
 					UpdatedAt: nil,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						ID:       1,
 						Username: "user",
 					},
@@ -1508,12 +1505,12 @@ func TestFormatIssueMarkdown(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		issue        *gitlab.Issue
+		issue        *gl.Issue
 		wantContains []string
 	}{
 		{
 			name: "minimal issue",
-			issue: &gitlab.Issue{
+			issue: &gl.Issue{
 				IID:         123,
 				Title:       "Test Issue",
 				State:       "opened",
@@ -1525,7 +1522,7 @@ func TestFormatIssueMarkdown(t *testing.T) {
 		},
 		{
 			name: "issue with labels",
-			issue: &gitlab.Issue{
+			issue: &gl.Issue{
 				IID:       1,
 				Title:     "Labelled Issue",
 				State:     "closed",
@@ -1537,13 +1534,13 @@ func TestFormatIssueMarkdown(t *testing.T) {
 		},
 		{
 			name: "issue with author",
-			issue: &gitlab.Issue{
+			issue: &gl.Issue{
 				IID:       5,
 				Title:     "Authored Issue",
 				State:     "opened",
 				CreatedAt: &now,
 				UpdatedAt: &now,
-				Author: &gitlab.IssueAuthor{
+				Author: &gl.IssueAuthor{
 					ID:       123,
 					Username: "testuser",
 				},
@@ -1552,7 +1549,7 @@ func TestFormatIssueMarkdown(t *testing.T) {
 		},
 		{
 			name: "issue with URL",
-			issue: &gitlab.Issue{
+			issue: &gl.Issue{
 				IID:       10,
 				Title:     "Issue with URL",
 				State:     "opened",
@@ -1564,13 +1561,13 @@ func TestFormatIssueMarkdown(t *testing.T) {
 		},
 		{
 			name: "issue with assignees",
-			issue: &gitlab.Issue{
+			issue: &gl.Issue{
 				IID:       7,
 				Title:     "Assigned Issue",
 				State:     "opened",
 				CreatedAt: &now,
 				UpdatedAt: &now,
-				Assignees: []*gitlab.IssueAssignee{
+				Assignees: []*gl.IssueAssignee{
 					{Username: "user1"},
 					{Username: "user2"},
 				},
@@ -1597,21 +1594,21 @@ func TestFormatNotesMarkdown(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		notes        []*gitlab.Note
+		notes        []*gl.Note
 		wantContains []string
 	}{
 		{
 			name:         "no notes",
-			notes:        []*gitlab.Note{},
+			notes:        []*gl.Note{},
 			wantContains: []string{"# Notes"},
 		},
 		{
 			name: "single note",
-			notes: []*gitlab.Note{
+			notes: []*gl.Note{
 				{
 					Body:      "Test note content",
 					CreatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						Username: "testuser",
 					},
 				},
@@ -1620,18 +1617,18 @@ func TestFormatNotesMarkdown(t *testing.T) {
 		},
 		{
 			name: "multiple notes",
-			notes: []*gitlab.Note{
+			notes: []*gl.Note{
 				{
 					Body:      "First note",
 					CreatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						Username: "user1",
 					},
 				},
 				{
 					Body:      "Second note",
 					CreatedAt: &now,
-					Author: gitlab.NoteAuthor{
+					Author: gl.NoteAuthor{
 						Username: "user2",
 					},
 				},

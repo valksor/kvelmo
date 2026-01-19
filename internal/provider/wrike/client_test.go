@@ -19,9 +19,6 @@ import (
 func TestNewClient(t *testing.T) {
 	c := NewClient("test-token", "")
 
-	if c == nil {
-		t.Fatal("NewClient returned nil")
-	}
 	if c.httpClient == nil {
 		t.Error("httpClient is nil")
 	}
