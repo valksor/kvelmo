@@ -39,10 +39,6 @@ func TestNewToolManager(t *testing.T) {
 				return
 			}
 
-			if tm == nil {
-				t.Fatal("NewToolManager() returned nil ToolManager")
-			}
-
 			if tm.autoDownload != tt.autoDownload {
 				t.Errorf("autoDownload = %v, want %v", tm.autoDownload, tt.autoDownload)
 			}

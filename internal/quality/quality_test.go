@@ -9,9 +9,6 @@ import (
 
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
-	if r == nil {
-		t.Fatal("expected non-nil registry")
-	}
 
 	// Should have 4 standard linters registered
 	if len(r.linters) != 4 {

@@ -9,9 +9,6 @@ import (
 
 func TestNewBus(t *testing.T) {
 	bus := NewBus()
-	if bus == nil {
-		t.Fatal("NewBus returned nil")
-	}
 	if bus.handlers == nil {
 		t.Error("handlers map not initialized")
 	}

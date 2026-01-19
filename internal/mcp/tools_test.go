@@ -11,9 +11,6 @@ func TestNewToolRegistry(t *testing.T) {
 	rootCmd := &cobra.Command{Use: "test"}
 	registry := NewToolRegistry(rootCmd)
 
-	if registry == nil {
-		t.Fatal("NewToolRegistry returned nil")
-	}
 	if registry.tools == nil {
 		t.Error("tools map not initialized")
 	}

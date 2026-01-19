@@ -31,10 +31,6 @@ func TestServerInitialize(t *testing.T) {
 	reqData, _ := json.Marshal(req) //nolint:errchkjson // Test code - RawMessage contains valid JSON
 	resp := server.handleRequest(ctx, string(reqData)+("\n"))
 
-	if resp == nil {
-		t.Fatal("Expected non-nil response")
-	}
-
 	if resp.Error != nil {
 		t.Fatalf("Initialize failed: %v", resp.Error)
 	}
@@ -106,10 +102,6 @@ func TestServerToolsList(t *testing.T) {
 
 	reqData, _ := json.Marshal(req) //nolint:errchkjson // Test code - RawMessage contains valid JSON
 	resp := server.handleRequest(ctx, string(reqData)+("\n"))
-
-	if resp == nil {
-		t.Fatal("Expected error response for tools/list before initialize")
-	}
 
 	if resp.Error == nil {
 		t.Fatal("Expected error for tools/list before initialize")
@@ -329,10 +321,6 @@ func TestServerInvalidJSON(t *testing.T) {
 	// Test invalid JSON
 	resp := server.handleRequest(ctx, "not json\n")
 
-	if resp == nil {
-		t.Fatal("Expected error response for invalid JSON")
-	}
-
 	if resp.Error == nil {
 		t.Fatal("Expected error for invalid JSON")
 	}
@@ -352,10 +340,6 @@ func TestServerInvalidJSONRPCVersion(t *testing.T) {
 
 	req := `{"jsonrpc":"1.0","id":1,"method":"initialize"}`
 	resp := server.handleRequest(ctx, req+"\n")
-
-	if resp == nil {
-		t.Fatal("Expected error response for invalid JSON-RPC version")
-	}
 
 	if resp.Error == nil {
 		t.Fatal("Expected error for invalid JSON-RPC version")
@@ -383,10 +367,6 @@ func TestServerMethodNotFound(t *testing.T) {
 
 	reqData, _ := json.Marshal(req) //nolint:errchkjson // Test code - RawMessage contains valid JSON
 	resp := server.handleRequest(ctx, string(reqData)+("\n"))
-
-	if resp == nil {
-		t.Fatal("Expected error response for unknown method")
-	}
 
 	if resp.Error == nil {
 		t.Fatal("Expected error for unknown method")
@@ -467,10 +447,6 @@ func TestServerEmptyLines(t *testing.T) {
 	// Empty line should be treated as invalid JSON by handleRequest
 	// (Note: Serve() filters empty lines before calling handleRequest)
 	resp := server.handleRequest(ctx, "\n")
-	if resp == nil {
-		t.Fatal("Expected error response for empty line")
-	}
-
 	if resp.Error == nil {
 		t.Error("Expected error for empty line")
 	}
@@ -482,10 +458,6 @@ func TestServerEmptyLines(t *testing.T) {
 
 	// Multiple empty lines - same behavior
 	resp = server.handleRequest(ctx, "\n\n\n")
-	if resp == nil {
-		t.Fatal("Expected error response for multiple empty lines")
-	}
-
 	if resp.Error == nil {
 		t.Error("Expected error for multiple empty lines")
 	}

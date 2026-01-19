@@ -193,9 +193,6 @@ func TestNewGitNonRepo(t *testing.T) {
 func TestNewCheckpointTracker(t *testing.T) {
 	tracker := NewCheckpointTracker(nil, "test-task")
 
-	if tracker == nil {
-		t.Fatal("NewCheckpointTracker returned nil")
-	}
 	if tracker.taskID != "test-task" {
 		t.Errorf("tracker.taskID = %q, want %q", tracker.taskID, "test-task")
 	}

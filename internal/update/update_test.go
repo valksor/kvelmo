@@ -573,9 +573,6 @@ func TestReleaseInfoFromGitHub(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ReleaseInfoFromGitHub(tt.gh)
-			if got == nil {
-				t.Fatal("ReleaseInfoFromGitHub() returned nil")
-			}
 
 			// Compare each field
 			if got.TagName != tt.want.TagName {

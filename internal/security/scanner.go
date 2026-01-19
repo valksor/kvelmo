@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -137,6 +138,11 @@ func (r *ScannerRegistry) RunAll(ctx context.Context, dir string) ([]*ScanResult
 		return nil, fmt.Errorf("all scanners failed: %v", errors)
 	}
 
+	// Sort results by scanner name for deterministic output
+	slices.SortFunc(results, func(a, b *ScanResult) int {
+		return strings.Compare(a.Scanner, b.Scanner)
+	})
+
 	return results, nil
 }
 
@@ -187,6 +193,11 @@ func (r *ScannerRegistry) RunEnabled(ctx context.Context, dir string, names []st
 	if len(errors) > 0 && len(results) == 0 {
 		return nil, fmt.Errorf("all scanners failed: %v", errors)
 	}
+
+	// Sort results by scanner name for deterministic output
+	slices.SortFunc(results, func(a, b *ScanResult) int {
+		return strings.Compare(a.Scanner, b.Scanner)
+	})
 
 	return results, nil
 }
