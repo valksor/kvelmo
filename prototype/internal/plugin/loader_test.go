@@ -12,10 +12,6 @@ import (
 func TestNewLoader(t *testing.T) {
 	l := NewLoader()
 
-	if l == nil {
-		t.Fatal("NewLoader() returned nil")
-	}
-
 	// Check that processes map is initialized
 	if l.processes == nil {
 		t.Error("NewLoader() processes map is nil")

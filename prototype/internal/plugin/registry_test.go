@@ -8,9 +8,6 @@ func TestNewRegistry(t *testing.T) {
 	discovery := &Discovery{}
 	r := NewRegistry(discovery)
 
-	if r == nil {
-		t.Fatal("NewRegistry returned nil")
-	}
 	if r.discovery != discovery {
 		t.Error("discovery not set correctly")
 	}
@@ -192,9 +189,6 @@ func TestRegistryGet(t *testing.T) {
 		info, ok := r.Get("test-plugin")
 		if !ok {
 			t.Error("Get returned false for existing plugin")
-		}
-		if info == nil {
-			t.Fatal("Get returned nil info for existing plugin")
 		}
 		if info.Manifest.Name != "test-plugin" {
 			t.Errorf("Manifest.Name = %q, want %q", info.Manifest.Name, "test-plugin")

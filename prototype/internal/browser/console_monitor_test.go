@@ -14,9 +14,6 @@ func TestConsoleMonitor(t *testing.T) {
 		}
 
 		mon := NewConsoleMonitor(filter)
-		if mon == nil {
-			t.Fatal("NewConsoleMonitor() returned nil")
-		}
 		if mon.filter.Levels == nil {
 			t.Error("filter levels not set")
 		}
@@ -30,9 +27,6 @@ func TestConsoleMonitor(t *testing.T) {
 
 	t.Run("NewConsoleMonitorAll", func(t *testing.T) {
 		mon := NewConsoleMonitorAll()
-		if mon == nil {
-			t.Fatal("NewConsoleMonitorAll() returned nil")
-		}
 		if mon.filter.Levels != nil {
 			t.Error("filter levels should be nil for 'all' monitor")
 		}

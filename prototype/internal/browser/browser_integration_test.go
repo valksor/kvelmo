@@ -53,9 +53,6 @@ func TestBrowserIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("OpenTab() failed: %v", err)
 		}
-		if tab == nil {
-			t.Fatal("OpenTab() = nil, want non-nil")
-		}
 		if tab.ID == "" {
 			t.Error("tab.ID is empty")
 		}
@@ -509,9 +506,6 @@ func TestReconnect(t *testing.T) {
 	tab, err := controller.OpenTab(ctx, "https://example.com")
 	if err != nil {
 		t.Fatalf("OpenTab() after reconnect failed: %v", err)
-	}
-	if tab == nil {
-		t.Fatal("OpenTab() returned nil after reconnect")
 	}
 
 	// Clean up

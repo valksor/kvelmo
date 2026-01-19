@@ -19,9 +19,6 @@ func TestNewProviderAdapter(t *testing.T) {
 
 	adapter := NewProviderAdapter(manifest, nil)
 
-	if adapter == nil {
-		t.Fatal("NewProviderAdapter returned nil")
-	}
 	if adapter.manifest != manifest {
 		t.Error("manifest not set correctly")
 	}
