@@ -139,11 +139,13 @@ Events trigger state transitions:
 ```
 1. mehr start task.md     → idle (task registered)
 2. mehr plan              → planning → idle (specifications created)
-3. [Review specifications, add notes with mehr note]
-4. mehr implement         → implementing → idle (code generated)
-5. [Review changes, maybe undo/redo]
-6. mehr review            → reviewing → idle (review done)
-7. mehr finish            → done (merged)
+3. [Optional: mehr simplify to clarify specifications]
+4. [Review specifications, add notes with mehr note]
+5. mehr implement         → implementing → idle (code generated)
+6. [Optional: mehr simplify to reduce code complexity]
+7. [Review changes, maybe undo/redo]
+8. mehr review            → reviewing → idle (review done)
+9. mehr finish            → done (merged)
 ```
 
 ## Parallel Workflows
