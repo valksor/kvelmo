@@ -145,6 +145,8 @@ func TestReviewCommand_OutputFlagHasShorthand(t *testing.T) {
 	flag := reviewCmd.Flags().Lookup("output")
 	if flag == nil {
 		t.Fatal("output flag not found")
+
+		return
 	}
 	if flag.Shorthand != "o" {
 		t.Errorf("output flag shorthand = %q, want 'o'", flag.Shorthand)
@@ -155,6 +157,8 @@ func TestReviewCommand_DefaultTool(t *testing.T) {
 	flag := reviewCmd.Flags().Lookup("tool")
 	if flag == nil {
 		t.Fatal("tool flag not found")
+
+		return
 	}
 	if flag.DefValue != "coderabbit" {
 		t.Errorf("tool flag default = %q, want 'coderabbit'", flag.DefValue)

@@ -140,6 +140,8 @@ func TestCostCommand_SummaryFlagHasShorthand(t *testing.T) {
 	flag := costCmd.Flags().Lookup("summary")
 	if flag == nil {
 		t.Fatal("summary flag not found")
+
+		return
 	}
 	if flag.Shorthand != "s" {
 		t.Errorf("summary flag shorthand = %q, want 's'", flag.Shorthand)

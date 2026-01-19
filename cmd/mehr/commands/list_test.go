@@ -123,6 +123,8 @@ func TestListCommand_WorktreesFlagShorthand(t *testing.T) {
 	flag := listCmd.Flags().Lookup("worktrees")
 	if flag == nil {
 		t.Fatal("worktrees flag not found")
+
+		return
 	}
 	if flag.Shorthand != "w" {
 		t.Errorf("worktrees flag shorthand = %q, want 'w'", flag.Shorthand)

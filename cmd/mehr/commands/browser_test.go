@@ -11,6 +11,8 @@ func TestBrowserCommand_StrictCertsFlag(t *testing.T) {
 	flag := browserCmd.PersistentFlags().Lookup("strict-certs")
 	if flag == nil {
 		t.Fatal("strict-certs flag not found")
+
+		return
 	}
 
 	// Check default value is false (meaning IgnoreCertErrors is true by default)
@@ -29,6 +31,8 @@ func TestBrowserCommand_HostFlag(t *testing.T) {
 	flag := browserCmd.PersistentFlags().Lookup("host")
 	if flag == nil {
 		t.Fatal("host flag not found")
+
+		return
 	}
 
 	if flag.DefValue != "localhost" {
@@ -41,6 +45,8 @@ func TestBrowserCommand_PortFlag(t *testing.T) {
 	flag := browserCmd.PersistentFlags().Lookup("port")
 	if flag == nil {
 		t.Fatal("port flag not found")
+
+		return
 	}
 
 	if flag.DefValue != "0" {
@@ -53,6 +59,8 @@ func TestBrowserCommand_HeadlessFlag(t *testing.T) {
 	flag := browserCmd.PersistentFlags().Lookup("headless")
 	if flag == nil {
 		t.Fatal("headless flag not found")
+
+		return
 	}
 
 	if flag.DefValue != "false" {
@@ -65,6 +73,8 @@ func TestBrowserCommand_KeepAliveFlag(t *testing.T) {
 	flag := browserCmd.PersistentFlags().Lookup("keep-alive")
 	if flag == nil {
 		t.Fatal("keep-alive flag not found")
+
+		return
 	}
 
 	if flag.DefValue != "false" {

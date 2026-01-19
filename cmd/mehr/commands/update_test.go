@@ -133,6 +133,8 @@ func TestUpdateCommand_PreReleaseFlagShorthand(t *testing.T) {
 	flag := updateCmd.Flags().Lookup("pre-release")
 	if flag == nil {
 		t.Fatal("pre-release flag not found")
+
+		return
 	}
 	if flag.Shorthand != "p" {
 		t.Errorf("pre-release flag shorthand = %q, want 'p'", flag.Shorthand)
@@ -143,6 +145,8 @@ func TestUpdateCommand_YesFlagShorthand(t *testing.T) {
 	flag := updateCmd.Flags().Lookup("yes")
 	if flag == nil {
 		t.Fatal("yes flag not found")
+
+		return
 	}
 	if flag.Shorthand != "y" {
 		t.Errorf("yes flag shorthand = %q, want 'y'", flag.Shorthand)
