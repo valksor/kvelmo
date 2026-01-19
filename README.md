@@ -150,7 +150,9 @@ mehr finish           # Merge changes or create PR
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │  mehr init  →  mehr start  →  mehr plan  →                  │
-│                                                             │
+│       ↓                                                    │
+│  mehr simplify  ←  (at any stage to refine content)         │
+│       ↓                                                    │
 │  →  mehr implement  →  mehr review  →  mehr finish          │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -159,14 +161,16 @@ mehr finish           # Merge changes or create PR
 1. **Initialize** (`mehr init`) - Set up workspace (one-time)
 2. **Start** (`mehr start`) - Begin a task; creates git branch automatically
 3. **Plan** (`mehr plan`) - AI generates implementation specifications
-4. **Implement** (`mehr implement`) - AI executes the specifications
-5. **Review** (`mehr review`) - Run automated code review
-6. **Finish** (`mehr finish`) - Merge changes and clean up
+4. **Simplify** (`mehr simplify`) - Refine content based on current state (optional)
+5. **Implement** (`mehr implement`) - AI executes the specifications
+6. **Review** (`mehr review`) - Run automated code review
+7. **Finish** (`mehr finish`) - Merge changes and clean up
 
 **Recovery commands**:
 - `mehr continue` - Resume workflow, optionally auto-execute (`--auto`)
 - `mehr undo` / `mehr redo` - Revert to previous checkpoint
 - `mehr abandon` - Abandon task without merging
+- `mehr simplify` - Auto-detects what to simplify (task input, specs, or code)
 
 ## Essential Commands
 
@@ -178,6 +182,7 @@ mehr finish           # Merge changes or create PR
 | `mehr auto <ref>` | Full automation: plan → implement → review → finish |
 | `mehr plan` | Generate AI implementation specifications |
 | `mehr implement` | Execute the specifications |
+| `mehr simplify` | Refine content based on current workflow state (task input, specs, or code) |
 | `mehr review` | Run automated code review |
 | `mehr status` | Show full task details |
 | `mehr guide` | What should I do next? (quick suggestion) |
