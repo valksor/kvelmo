@@ -12,7 +12,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
-	tkEnv "github.com/valksor/go-toolkit/env"
+	"github.com/valksor/go-toolkit/env"
 )
 
 // ErrAgentNotFound indicates no agent was found at a priority level.
@@ -227,11 +227,11 @@ func (r *Resolver) tryResolveAtPriority(_ context.Context, req ResolveRequest, p
 }
 
 // ApplyEnvs applies environment variables to an agent instance.
-func ApplyEnvs(agentInst agent.Agent, env map[string]string) agent.Agent {
-	if len(env) == 0 {
+func ApplyEnvs(agentInst agent.Agent, envMap map[string]string) agent.Agent {
+	if len(envMap) == 0 {
 		return agentInst
 	}
-	resolvedEnv := tkEnv.ExpandEnvInMap(env)
+	resolvedEnv := env.ExpandEnvInMap(envMap)
 	for k, v := range resolvedEnv {
 		agentInst = agentInst.WithEnv(k, v)
 	}
