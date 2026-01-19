@@ -13,6 +13,8 @@ func TestSyncCmd(t *testing.T) {
 
 	if cmd == nil {
 		t.Fatal("sync command is nil")
+
+		return
 	}
 
 	// Verify command properties

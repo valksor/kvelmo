@@ -175,6 +175,8 @@ func TestStatusCommand_JSONFlagNoShorthand(t *testing.T) {
 	flag := statusCmd.Flags().Lookup("json")
 	if flag == nil {
 		t.Fatal("json flag not found")
+
+		return
 	}
 	if flag.Shorthand != "" {
 		t.Errorf("json flag has shorthand %q, expected none", flag.Shorthand)

@@ -74,9 +74,6 @@ func TestNew(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	if c == nil {
-		t.Fatal("New returned nil conductor")
-	}
 	if c.machine == nil {
 		t.Error("conductor.machine is nil")
 	}
@@ -723,9 +720,6 @@ func TestBuildWorkUnit_WithTaskWork(t *testing.T) {
 	}
 
 	wu := c.buildWorkUnit()
-	if wu == nil {
-		t.Fatal("buildWorkUnit returned nil")
-	}
 
 	if wu.ID != "test-task" {
 		t.Errorf("ID = %q, want %q", wu.ID, "test-task")
@@ -772,9 +766,6 @@ func TestGetTaskWork_WithTask(t *testing.T) {
 	c.taskWork = work
 
 	got := c.GetTaskWork()
-	if got == nil {
-		t.Fatal("GetTaskWork returned nil")
-	}
 	// GetTaskWork now returns a copy for thread safety, so compare values not pointers
 	if got.Metadata.ID != work.Metadata.ID {
 		t.Errorf("GetTaskWork returned different work ID: got %q, want %q", got.Metadata.ID, work.Metadata.ID)
@@ -1060,9 +1051,6 @@ This is a test task description.
 
 	// Verify task work exists
 	taskWork := c.GetTaskWork()
-	if taskWork == nil {
-		t.Fatal("GetTaskWork returned nil")
-	}
 
 	if taskWork.Metadata.Title != "Test Task from File" {
 		t.Errorf("task title = %q, want %q", taskWork.Metadata.Title, "Test Task from File")

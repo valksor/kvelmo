@@ -224,6 +224,8 @@ func TestGetProviderInfo(t *testing.T) {
 
 			if got == nil {
 				t.Fatalf("getProviderInfo(%q) returned nil, want non-nil", tt.provider)
+
+				return
 			}
 
 			if got.Name != tt.expectedName {
@@ -257,6 +259,8 @@ func TestGetProviderInfo_HasEnvVars(t *testing.T) {
 			info := getProviderInfo(provider)
 			if info == nil {
 				t.Fatalf("getProviderInfo(%q) returned nil", provider)
+
+				return
 			}
 
 			if len(info.EnvVars) == 0 {
@@ -289,6 +293,8 @@ func TestGetProviderInfo_HasConfig(t *testing.T) {
 			info := getProviderInfo(provider)
 			if info == nil {
 				t.Fatalf("getProviderInfo(%q) returned nil", provider)
+
+				return
 			}
 
 			if len(info.Config) == 0 {

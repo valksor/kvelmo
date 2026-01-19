@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/agent"
-	toolkit_helper_test "github.com/valksor/go-toolkit/helper_test"
+	"github.com/valksor/go-toolkit/helper_test"
 )
 
 func TestConfirmAction(t *testing.T) {
@@ -241,6 +241,8 @@ func TestStartCommand_AgentFlagShorthand(t *testing.T) {
 	agentFlag := startCmd.Flags().Lookup("agent")
 	if agentFlag == nil {
 		t.Fatal("start command missing 'agent' flag")
+
+		return
 	}
 
 	if agentFlag.Shorthand != "A" {
@@ -444,7 +446,7 @@ func TestResolveWorkspaceRoot(t *testing.T) {
 			name: "git repository",
 			setup: func(t *testing.T) (context.Context, func()) {
 				t.Helper()
-				_ = toolkit_helper_test.CreateTempGitRepo(t)
+				_ = helper_test.CreateTempGitRepo(t)
 				ctx := context.Background()
 
 				return ctx, func() {}

@@ -198,6 +198,8 @@ func TestPluginsInstallCommand_GlobalFlag(t *testing.T) {
 	flag := pluginsInstallCmd.Flags().Lookup("global")
 	if flag == nil {
 		t.Fatal("global flag not found")
+
+		return
 	}
 	if flag.DefValue != "false" {
 		t.Errorf("global flag default = %q, want 'false'", flag.DefValue)
@@ -208,6 +210,8 @@ func TestPluginsRemoveCommand_GlobalFlag(t *testing.T) {
 	flag := pluginsRemoveCmd.Flags().Lookup("global")
 	if flag == nil {
 		t.Fatal("global flag not found")
+
+		return
 	}
 	if flag.DefValue != "false" {
 		t.Errorf("global flag default = %q, want 'false'", flag.DefValue)

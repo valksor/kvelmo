@@ -132,6 +132,8 @@ func TestImplementCommand_DryRunHasShorthand(t *testing.T) {
 	flag := implementCmd.Flags().Lookup("dry-run")
 	if flag == nil {
 		t.Fatal("dry-run flag not found")
+
+		return
 	}
 	if flag.Shorthand != "n" {
 		t.Errorf("dry-run flag shorthand = %q, want 'n'", flag.Shorthand)

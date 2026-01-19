@@ -227,6 +227,8 @@ func TestFinishCommand_YesFlagHasShorthand(t *testing.T) {
 	flag := finishCmd.Flags().Lookup("yes")
 	if flag == nil {
 		t.Fatal("yes flag not found")
+
+		return
 	}
 	if flag.Shorthand != "y" {
 		t.Errorf("yes flag shorthand = %q, want 'y'", flag.Shorthand)
@@ -237,6 +239,8 @@ func TestFinishCommand_TargetFlagHasShorthand(t *testing.T) {
 	flag := finishCmd.Flags().Lookup("target")
 	if flag == nil {
 		t.Fatal("target flag not found")
+
+		return
 	}
 	if flag.Shorthand != "t" {
 		t.Errorf("target flag shorthand = %q, want 't'", flag.Shorthand)
@@ -247,6 +251,8 @@ func TestFinishCommand_QualityTargetDefault(t *testing.T) {
 	flag := finishCmd.Flags().Lookup("quality-target")
 	if flag == nil {
 		t.Fatal("quality-target flag not found")
+
+		return
 	}
 	if flag.DefValue != "quality" {
 		t.Errorf("quality-target default = %q, want 'quality'", flag.DefValue)

@@ -194,6 +194,8 @@ func TestAutoCommand_DefaultMaxRetries(t *testing.T) {
 	flag := autoCmd.Flags().Lookup("max-retries")
 	if flag == nil {
 		t.Fatal("max-retries flag not found")
+
+		return
 	}
 	if flag.DefValue != "3" {
 		t.Errorf("max-retries default = %q, want '3'", flag.DefValue)
@@ -204,6 +206,8 @@ func TestAutoCommand_AgentFlagHasShorthand(t *testing.T) {
 	flag := autoCmd.Flags().Lookup("agent")
 	if flag == nil {
 		t.Fatal("agent flag not found")
+
+		return
 	}
 	if flag.Shorthand != "a" {
 		t.Errorf("agent flag shorthand = %q, want 'a'", flag.Shorthand)
@@ -214,6 +218,8 @@ func TestAutoCommand_WorktreeFlagHasShorthand(t *testing.T) {
 	flag := autoCmd.Flags().Lookup("worktree")
 	if flag == nil {
 		t.Fatal("worktree flag not found")
+
+		return
 	}
 	if flag.Shorthand != "w" {
 		t.Errorf("worktree flag shorthand = %q, want 'w'", flag.Shorthand)

@@ -1875,10 +1875,6 @@ func TestResolveNaming(t *testing.T) {
 			// Call resolveNaming
 			gotInfo := c.resolveNaming(tt.workUnit, tt.taskID)
 
-			if gotInfo == nil {
-				t.Fatal("resolveNaming() returned nil")
-			}
-
 			if !strings.Contains(gotInfo.branchName, tt.wantBranchContain) {
 				t.Errorf("branch name = %q, want contain %q", gotInfo.branchName, tt.wantBranchContain)
 			}
@@ -1994,10 +1990,6 @@ func TestBuildWorkUnit_WithSpecs(t *testing.T) {
 				}
 
 				return
-			}
-
-			if gotWorkUnit == nil {
-				t.Fatal("buildWorkUnit() returned nil, expected non-nil")
 			}
 
 			if gotWorkUnit.ID != tt.wantID {
