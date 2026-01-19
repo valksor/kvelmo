@@ -23,9 +23,6 @@ func TestPtr(t *testing.T) {
 	t.Run("string pointer", func(t *testing.T) {
 		s := "hello"
 		p := ptr(s)
-		if p == nil {
-			t.Fatal("ptr returned nil")
-		}
 		if *p != s {
 			t.Errorf("*ptr(%q) = %q, want %q", s, *p, s)
 		}
@@ -34,9 +31,6 @@ func TestPtr(t *testing.T) {
 	t.Run("int pointer", func(t *testing.T) {
 		i := 42
 		p := ptr(i)
-		if p == nil {
-			t.Fatal("ptr returned nil")
-		}
 		if *p != i {
 			t.Errorf("*ptr(%d) = %d, want %d", i, *p, i)
 		}
@@ -45,9 +39,6 @@ func TestPtr(t *testing.T) {
 	t.Run("bool pointer", func(t *testing.T) {
 		b := true
 		p := ptr(b)
-		if p == nil {
-			t.Fatal("ptr returned nil")
-		}
 		if *p != b {
 			t.Errorf("*ptr(%v) = %v, want %v", b, *p, b)
 		}
@@ -56,9 +47,6 @@ func TestPtr(t *testing.T) {
 	t.Run("int64 pointer", func(t *testing.T) {
 		i := int64(123456789)
 		p := ptr(i)
-		if p == nil {
-			t.Fatal("ptr returned nil")
-		}
 		if *p != i {
 			t.Errorf("*ptr(%d) = %d, want %d", i, *p, i)
 		}
@@ -131,9 +119,6 @@ func TestNewClient(t *testing.T) {
 	ctx := context.Background()
 	c := NewClient(ctx, "test-token", "owner", "repo")
 
-	if c == nil {
-		t.Fatal("NewClient returned nil")
-	}
 	if c.gh == nil {
 		t.Error("gh client is nil")
 	}
@@ -828,9 +813,6 @@ func TestNewClientWithCache(t *testing.T) {
 		c := cache.New()
 		client := NewClientWithCache(ctx, "token", "owner", "repo", c)
 
-		if client == nil {
-			t.Fatal("NewClientWithCache returned nil")
-		}
 		if client.cache != c {
 			t.Error("client cache not set correctly")
 		}
@@ -839,9 +821,6 @@ func TestNewClientWithCache(t *testing.T) {
 	t.Run("creates client with nil cache", func(t *testing.T) {
 		client := NewClientWithCache(ctx, "token", "owner", "repo", nil)
 
-		if client == nil {
-			t.Fatal("NewClientWithCache returned nil")
-		}
 		if client.cache != nil {
 			t.Error("expected nil cache, got non-nil")
 		}

@@ -252,9 +252,6 @@ func TestDefaultRetryConfig(t *testing.T) {
 
 func TestNewHTTPClient(t *testing.T) {
 	client := NewHTTPClient()
-	if client == nil {
-		t.Fatal("NewHTTPClient() returned nil")
-	}
 	if client.Timeout != DefaultTimeout {
 		t.Errorf("Timeout = %v, want %v", client.Timeout, DefaultTimeout)
 	}
@@ -263,9 +260,6 @@ func TestNewHTTPClient(t *testing.T) {
 func TestNewHTTPClientWithTimeout(t *testing.T) {
 	timeout := 60 * time.Second
 	client := NewHTTPClientWithTimeout(timeout)
-	if client == nil {
-		t.Fatal("NewHTTPClientWithTimeout() returned nil")
-	}
 	if client.Timeout != timeout {
 		t.Errorf("Timeout = %v, want %v", client.Timeout, timeout)
 	}

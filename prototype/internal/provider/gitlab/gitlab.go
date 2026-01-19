@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gl "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -319,7 +319,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		p.client.SetProjectPath(projectPath)
 	}
 
-	listOpts := &gitlab.ListProjectIssuesOptions{
+	listOpts := &gl.ListProjectIssuesOptions{
 		OrderBy: ptr("created_at"),
 		Sort:    ptr("desc"),
 	}
@@ -339,7 +339,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 
 	// Map labels
 	if len(opts.Labels) > 0 {
-		labelOpts := gitlab.LabelOptions(opts.Labels)
+		labelOpts := gl.LabelOptions(opts.Labels)
 		listOpts.Labels = &labelOpts
 	}
 
@@ -450,7 +450,7 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 		stateEvent = nil
 	}
 
-	_, err = p.client.UpdateIssue(ctx, ref.IssueIID, &gitlab.UpdateIssueOptions{
+	_, err = p.client.UpdateIssue(ctx, ref.IssueIID, &gl.UpdateIssueOptions{
 		StateEvent: stateEvent,
 	})
 
@@ -485,13 +485,13 @@ func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels [
 
 // CreateWorkUnit creates a new work unit.
 func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
-	createOpts := &gitlab.CreateIssueOptions{
+	createOpts := &gl.CreateIssueOptions{
 		Title:       ptr(opts.Title),
 		Description: ptr(opts.Description),
 	}
 
 	if len(opts.Labels) > 0 {
-		labelOpts := gitlab.LabelOptions(opts.Labels)
+		labelOpts := gl.LabelOptions(opts.Labels)
 		createOpts.Labels = &labelOpts
 	}
 
@@ -575,7 +575,7 @@ func inferPriorityFromLabels(labels []string) provider.Priority {
 	return provider.PriorityNormal
 }
 
-func mapAssignees(assignees []*gitlab.IssueAssignee) []provider.Person {
+func mapAssignees(assignees []*gl.IssueAssignee) []provider.Person {
 	persons := make([]provider.Person, len(assignees))
 	for i, a := range assignees {
 		persons[i] = provider.Person{
@@ -587,7 +587,7 @@ func mapAssignees(assignees []*gitlab.IssueAssignee) []provider.Person {
 	return persons
 }
 
-func mapNotes(notes []*gitlab.Note) []provider.Comment {
+func mapNotes(notes []*gl.Note) []provider.Comment {
 	result := make([]provider.Comment, len(notes))
 	for i, n := range notes {
 		author := provider.Person{
@@ -614,7 +614,7 @@ func mapNotes(notes []*gitlab.Note) []provider.Comment {
 	return result
 }
 
-func formatIssueMarkdown(issue *gitlab.Issue) string {
+func formatIssueMarkdown(issue *gl.Issue) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf("# #%d: %s\n\n", issue.IID, issue.Title))
@@ -661,7 +661,7 @@ func formatIssueMarkdown(issue *gitlab.Issue) string {
 	return sb.String()
 }
 
-func formatNotesMarkdown(notes []*gitlab.Note) string {
+func formatNotesMarkdown(notes []*gl.Note) string {
 	var sb strings.Builder
 
 	sb.WriteString("# Notes\n\n")

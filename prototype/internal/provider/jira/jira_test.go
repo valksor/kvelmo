@@ -1291,9 +1291,6 @@ func TestNewClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewClient(tt.token, tt.email, tt.baseURL)
-			if c == nil {
-				t.Fatal("NewClient() returned nil")
-			}
 			if c.token != tt.token {
 				t.Errorf("token = %q, want %q", c.token, tt.token)
 			}

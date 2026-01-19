@@ -465,9 +465,6 @@ func TestNewCommentGenerator(t *testing.T) {
 	p := &Provider{}
 	gen := NewCommentGenerator(p)
 
-	if gen == nil {
-		t.Fatal("NewCommentGenerator() returned nil")
-	}
 	if gen.provider != p {
 		t.Error("NewCommentGenerator() did not set provider correctly")
 	}
