@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	toolkitdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 // Formatting constants for consistent output across the CLI.
@@ -73,7 +73,7 @@ func (f *Formatter) Indent() string {
 func (f *Formatter) Section(title string) string {
 	separator := SeparatorLine
 	if len(title) > 0 {
-		return fmt.Sprintf("\n%s\n%s\n%s\n", toolkitdisplay.Bold(title), separator, "")
+		return fmt.Sprintf("\n%s\n%s\n%s\n", display.Bold(title), separator, "")
 	}
 
 	return fmt.Sprintf("\n%s\n", separator)
@@ -81,7 +81,7 @@ func (f *Formatter) Section(title string) string {
 
 // Subsection prints a subsection header.
 func (f *Formatter) Subsection(title string) string {
-	return fmt.Sprintf("\n%s\n%s\n", toolkitdisplay.Muted(title), strings.Repeat("─", len(title)))
+	return fmt.Sprintf("\n%s\n%s\n", display.Muted(title), strings.Repeat("─", len(title)))
 }
 
 // KeyValue formats a key-value pair with consistent alignment.
@@ -122,7 +122,7 @@ func (f *Formatter) List(items []string) string {
 		if i < 10 {
 			bullet = fmt.Sprintf("%d.", i+1)
 		}
-		sb.WriteString(fmt.Sprintf("%s%s %s\n", indent, toolkitdisplay.Muted(bullet), item))
+		sb.WriteString(fmt.Sprintf("%s%s %s\n", indent, display.Muted(bullet), item))
 	}
 
 	return sb.String()
@@ -135,7 +135,7 @@ func (f *Formatter) DefinitionList(terms map[string]string) string {
 
 	for term, definition := range terms {
 		sb.WriteString(fmt.Sprintf("%s%s\n%s%s%s\n\n",
-			indent, toolkitdisplay.Bold(term),
+			indent, display.Bold(term),
 			indent, IndentOne, definition,
 		))
 	}
@@ -149,7 +149,7 @@ func (f *Formatter) CodeBlock(code string, language string) string {
 	var sb strings.Builder
 
 	sb.WriteString(indent)
-	sb.WriteString(toolkitdisplay.Muted("```"))
+	sb.WriteString(display.Muted("```"))
 	if language != "" {
 		sb.WriteString(language)
 	}
@@ -165,7 +165,7 @@ func (f *Formatter) CodeBlock(code string, language string) string {
 	}
 
 	sb.WriteString(indent)
-	sb.WriteString(toolkitdisplay.Muted("```"))
+	sb.WriteString(display.Muted("```"))
 	sb.WriteString("\n")
 
 	return sb.String()
@@ -244,7 +244,7 @@ func (f *Formatter) Table(headers []string, rows [][]string) string {
 	}
 
 	// Print header
-	sb.WriteString(toolkitdisplay.Bold(strings.Join(headers, "  ")))
+	sb.WriteString(display.Bold(strings.Join(headers, "  ")))
 	sb.WriteString("\n")
 
 	// Print separator
@@ -252,7 +252,7 @@ func (f *Formatter) Table(headers []string, rows [][]string) string {
 	for _, w := range colWidths {
 		separators = append(separators, strings.Repeat("─", w))
 	}
-	sb.WriteString(toolkitdisplay.Muted(strings.Join(separators, "  ")))
+	sb.WriteString(display.Muted(strings.Join(separators, "  ")))
 	sb.WriteString("\n")
 
 	// Print rows

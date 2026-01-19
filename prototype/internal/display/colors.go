@@ -2,21 +2,21 @@
 // For common display utilities, use github.com/valksor/go-toolkit/display.
 package display
 
-import toolkitdisplay "github.com/valksor/go-toolkit/display"
+import "github.com/valksor/go-toolkit/display"
 
 // ColorState returns a colored state string based on the state value.
 func ColorState(state, displayName string) string {
 	switch state {
 	case "idle":
-		return toolkitdisplay.Muted(displayName)
+		return display.Muted(displayName)
 	case "planning", "implementing", "reviewing", "checkpointing":
-		return toolkitdisplay.Info(displayName)
+		return display.Info(displayName)
 	case "done":
-		return toolkitdisplay.Success(displayName)
+		return display.Success(displayName)
 	case "failed":
-		return toolkitdisplay.Error(displayName)
+		return display.Error(displayName)
 	case "waiting":
-		return toolkitdisplay.Warning(displayName)
+		return display.Warning(displayName)
 	default:
 		return displayName
 	}
@@ -26,13 +26,13 @@ func ColorState(state, displayName string) string {
 func ColorSpecStatus(status, displayName string) string {
 	switch status {
 	case "draft":
-		return toolkitdisplay.Muted(displayName)
+		return display.Muted(displayName)
 	case "ready":
-		return toolkitdisplay.Warning(displayName)
+		return display.Warning(displayName)
 	case "implementing":
-		return toolkitdisplay.Info(displayName)
+		return display.Info(displayName)
 	case "done":
-		return toolkitdisplay.Success(displayName)
+		return display.Success(displayName)
 	default:
 		return displayName
 	}
@@ -42,7 +42,7 @@ func ColorSpecStatus(status, displayName string) string {
 // Use this to help users understand if they're in a worktree or main repo.
 func WorktreeIndicator(isWorktree bool) string {
 	if isWorktree {
-		return toolkitdisplay.Muted("[worktree]")
+		return display.Muted("[worktree]")
 	}
 
 	return ""
