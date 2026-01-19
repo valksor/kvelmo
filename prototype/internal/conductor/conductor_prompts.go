@@ -1021,3 +1021,179 @@ func buildCombinedInstructions(cfg *storage.WorkspaceConfig, step string) string
 
 	return strings.Join(parts, "\n\n")
 }
+
+// buildSimplifyInputPrompt creates a prompt to simplify task input.
+func buildSimplifyInputPrompt(title, sourceContent, customInstructions string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are an expert technical writer. Simplify and refine the following task description to make it clearer and more actionable.
+
+Current timestamp: %s
+
+## Task Title
+%s
+
+## Current Task Description
+%s
+`, currentTime, title, sourceContent)
+
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
+	prompt += `
+## Your Mission
+Simplify the task description while preserving all requirements:
+
+1. **Clarify the goal** - Make the objective crystal clear
+2. **Remove ambiguity** - Eliminate vague language
+3. **Improve structure** - Organize information logically
+4. **Be specific** - Use precise technical language
+5. **Stay concise** - Remove fluff without losing meaning
+
+## Key Principles
+
+1. **One goal per sentence** - Don't combine multiple requirements
+2. **Use active voice** - "Implement X" not "X should be implemented"
+3. **Define terms** - Introduce abbreviations before using them
+4. **Prioritize** - Put the most important requirements first
+5. **Be complete** - Don't remove any technical requirements
+
+## Output Format
+Return only the simplified task description. No markdown formatting, no sections - just the clear, refined task text.`
+
+	return prompt
+}
+
+// buildSimplifyPlanningPrompt creates a prompt to simplify planning output.
+func buildSimplifyPlanningPrompt(title, sourceContent, notes, specContent, customInstructions string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are an expert technical writer and software architect. Simplify and refine the following planning specifications to make them clearer and more maintainable.
+
+Current timestamp: %s
+
+## Task
+%s
+
+## Original Requirements
+%s
+`, currentTime, title, sourceContent)
+
+	if notes != "" {
+		prompt += fmt.Sprintf(`
+## Additional Notes
+%s
+`, notes)
+	}
+
+	prompt += fmt.Sprintf(`
+## Current Specifications
+%s
+`, specContent)
+
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
+	prompt += `
+## Your Mission
+Simplify the specifications while preserving all technical details and requirements. Your goal is to enhance clarity by:
+
+1. **Reducing complexity** - Break down convoluted steps into clear, actionable items
+2. **Improving names** - Use consistent, descriptive terminology
+3. **Enhancing structure** - Organize information logically
+4. **Maintaining balance** - Don't oversimplify to the point of losing important details
+5. **Preserving functionality** - Every requirement must remain intact
+
+## Key Principles
+
+1. **Be precise, not brief** - Clarity trumps brevity
+2. **Use active voice** - "Implement feature X" not "Feature X is implemented"
+3. **One action per step** - Don't combine multiple operations
+4. **Define terms** - Introduce abbreviations before using them
+5. **Avoid weasel words** - No "should", "could", "might" - use definitive language
+
+## Output Format
+Return the complete simplified specifications using this format:
+
+--- specification-N.md ---
+[content of specification file]
+--- end ---
+
+Where N is the specification number.
+
+Remember: You are simplifying for clarity, not removing content. Every technical requirement must be preserved.`
+
+	return prompt
+}
+
+// buildSimplifyImplementingPrompt creates a prompt to simplify implemented code.
+func buildSimplifyImplementingPrompt(title, sourceContent string, files map[string]string, customInstructions string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are an expert code reviewer and refactoring specialist. Simplify and refine the recently implemented code to improve clarity and maintainability while preserving exact functionality.
+
+Current timestamp: %s
+
+## Task
+%s
+
+## Original Requirements
+%s
+
+## Implemented Files
+The following files were recently modified:
+`, currentTime, title, sourceContent)
+
+	var promptSb strings.Builder
+	for filePath, content := range files {
+		promptSb.WriteString(fmt.Sprintf(`
+### %s
+%s
+`, filePath, content))
+	}
+	prompt += promptSb.String()
+
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
+	prompt += `
+## Your Mission
+Simplify the code while preserving exact functionality. Focus on:
+
+1. **Improving names** - Better variable, function, and type names
+2. **Reducing complexity** - Break down complex functions
+3. **Enhancing readability** - Clear logic flow and structure
+4. **Removing redundancy** - Eliminate duplicate code
+5. **Applying patterns** - Use existing project patterns
+
+## Key Principles
+
+1. **Preserve behavior** - No functional changes allowed
+2. **Follow conventions** - Match existing code style
+3. **Be idiomatic** - Use language best practices
+4. **Add clarity** - Better comments where needed
+5. **Stay focused** - Only simplify recently modified code
+
+## Output Format
+Return the complete simplified code for each file using this format:
+
+--- path/to/file.ext ---
+[simplified code content]
+--- end ---
+
+Remember: You must preserve exact functionality.`
+
+	return prompt
+}

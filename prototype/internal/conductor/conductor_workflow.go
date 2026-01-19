@@ -215,6 +215,60 @@ func (c *Conductor) Redo(ctx context.Context) error {
 	return nil
 }
 
+// Simplify refines content based on the current workflow state.
+// It automatically determines what to simplify based on task state:
+// - No specs: Simplify input files (task description, source content)
+// - Has specs, no implemented files: Simplify specifications
+// - Has implemented files: Simplify code (even if review exists).
+func (c *Conductor) Simplify(ctx context.Context, targetStep string, createCheckpoint bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	taskID := c.activeTask.ID
+
+	// Create checkpoint before modifying files
+	if createCheckpoint && c.git != nil {
+		c.publishProgress("Creating checkpoint...", 0)
+		if event := c.createCheckpointIfNeeded(ctx, taskID, "Simplify"); event != nil {
+			c.eventBus.PublishRaw(*event)
+		}
+	}
+
+	// Auto-detect based on current state
+	specs, _ := c.workspace.ListSpecifications(taskID)
+	hasSpecs := len(specs) > 0
+
+	hasImplementedFiles := false
+	if hasSpecs {
+		for _, specNum := range specs {
+			spec, err := c.workspace.ParseSpecification(taskID, specNum)
+			if err == nil && len(spec.ImplementedFiles) > 0 {
+				hasImplementedFiles = true
+
+				break
+			}
+		}
+	}
+
+	// Determine what to simplify based on state
+	if !hasSpecs {
+		// Pre-plan: simplify input files
+		return c.simplifyInput(ctx, taskID)
+	} else if hasSpecs && !hasImplementedFiles {
+		// After planning: simplify specifications
+		return c.simplifyPlanning(ctx, taskID)
+	} else if hasImplementedFiles {
+		// After implementation (with or without review): simplify code
+		return c.simplifyImplementing(ctx, taskID)
+	}
+
+	return errors.New("unable to determine what to simplify")
+}
+
 // Finish completes the task.
 func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 	c.mu.Lock()
