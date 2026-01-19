@@ -12,6 +12,8 @@ const (
 	StepReviewing Step = "reviewing"
 	// StepCheckpointing is the checkpointing phase for git operations.
 	StepCheckpointing Step = "checkpointing"
+	// StepSimplifying is the simplification phase where content is refined.
+	StepSimplifying Step = "simplifying"
 )
 
 // AllSteps returns all valid step names.
@@ -21,6 +23,7 @@ func AllSteps() []Step {
 		StepImplementing,
 		StepReviewing,
 		StepCheckpointing,
+		StepSimplifying,
 	}
 }
 
