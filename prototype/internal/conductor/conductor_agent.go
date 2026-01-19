@@ -11,7 +11,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
-	tkEnv "github.com/valksor/go-toolkit/env"
+	"github.com/valksor/go-toolkit/env"
 )
 
 // applyAgentEnv applies environment variables to an agent instance.
@@ -226,7 +226,7 @@ func (c *Conductor) registerAliasAgents(cfg *storage.WorkspaceConfig) error {
 		}
 
 		// Resolve environment variable references
-		env := tkEnv.ExpandEnvInMap(alias.Env)
+		env := env.ExpandEnvInMap(alias.Env)
 
 		// Create and register the alias agent
 		aliasAgent := agent.NewAlias(name, base, env, alias.Args, alias.Description)

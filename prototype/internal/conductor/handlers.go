@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	mrand "math/rand"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -394,7 +394,7 @@ Please retry the implementation, taking into account this error.
 
 			// Add jitter (±20%)
 			// #nosec G404 - math/rand is sufficient for non-critical jitter
-			jitter := time.Duration(float64(backoff) * 0.2 * (2.0*mrand.Float64() - 1.0))
+			jitter := time.Duration(float64(backoff) * 0.2 * (2.0*rand.Float64() - 1.0))
 			backoff = backoff + jitter
 
 			c.publishProgress(fmt.Sprintf("Recoverable error, retrying in %.1fs (attempt %d/%d)...",

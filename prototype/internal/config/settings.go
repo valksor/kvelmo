@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
-
-	_slices "slices"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -81,13 +80,13 @@ func (s *Settings) Save() error {
 // AddRecentTask adds a task to recent list (max 10, most recent first).
 func (s *Settings) AddRecentTask(taskID string) {
 	// Remove all occurrences of taskID, then insert at front
-	s.RecentTasks = _slices.DeleteFunc(s.RecentTasks, func(t string) bool {
+	s.RecentTasks = slices.DeleteFunc(s.RecentTasks, func(t string) bool {
 		return t == taskID
 	})
-	s.RecentTasks = _slices.Insert(s.RecentTasks, 0, taskID)
+	s.RecentTasks = slices.Insert(s.RecentTasks, 0, taskID)
 
 	// Trim to max 10 and remove excess capacity
 	if len(s.RecentTasks) > 10 {
-		s.RecentTasks = _slices.Clip(s.RecentTasks[:10])
+		s.RecentTasks = slices.Clip(s.RecentTasks[:10])
 	}
 }
