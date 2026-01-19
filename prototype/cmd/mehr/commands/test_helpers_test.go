@@ -10,7 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	"github.com/valksor/go-mehrhof/internal/testutil_test"
+	helper_test "github.com/valksor/go-mehrhof/internal/helper_test"
+	toolkit_helper_test "github.com/valksor/go-toolkit/helper_test"
 )
 
 // TestContext provides test context for command tests.
@@ -91,14 +92,14 @@ func ExecuteCommandWithContext(ctx context.Context, cmd *cobra.Command, args ...
 func SetupTestWorkspace(t *testing.T) string {
 	t.Helper()
 
-	return testutil_test.CreateTempGitRepo(t)
+	return toolkit_helper_test.CreateTempGitRepo(t)
 }
 
 // SetupTestGitRepo creates a test git repository.
 func SetupTestGitRepo(t *testing.T) string {
 	t.Helper()
 
-	return testutil_test.CreateTempGitRepo(t)
+	return toolkit_helper_test.CreateTempGitRepo(t)
 }
 
 // AssertOutputContains fails the test if the output doesn't contain the substring.
@@ -158,12 +159,12 @@ func (tc *TestContext) ExecuteWithContext(ctx context.Context, args ...string) e
 
 // CreateTestTaskFile creates a test task file in the test directory.
 func (tc *TestContext) CreateTestTaskFile(filename, title, description string) string {
-	return testutil_test.CreateTaskFile(tc.T, tc.TmpDir, filename, title, description)
+	return helper_test.CreateTaskFile(tc.T, tc.TmpDir, filename, title, description)
 }
 
 // CreateTestTaskDir creates a test task directory.
 func (tc *TestContext) CreateTestTaskDir(taskName, readmeContent string, subtasks []string) string {
-	return testutil_test.CreateTaskDir(tc.T, tc.TmpDir, taskName, readmeContent, subtasks)
+	return helper_test.CreateTaskDir(tc.T, tc.TmpDir, taskName, readmeContent, subtasks)
 }
 
 // GetWorkspaceConfig returns the workspace configuration.
@@ -191,7 +192,7 @@ func (tc *TestContext) CreateTaskWork(taskID, title string) *storage.TaskWork {
 	work, err := tc.Workspace.CreateWork(taskID, storage.SourceInfo{
 		Type:    "file",
 		Ref:     "task.md",
-		Content: testutil_test.SampleTaskContent(title),
+		Content: helper_test.SampleTaskContent(title),
 	})
 	if err != nil {
 		tc.T.Fatalf("Create work: %v", err)
@@ -206,7 +207,7 @@ func (tc *TestContext) CreateTaskWork(taskID, title string) *storage.TaskWork {
 
 // WithGit initializes a git repository in the test directory.
 func (tc *TestContext) WithGit() {
-	testutil_test.CreateTempGitRepoInDir(tc.T, tc.TmpDir)
+	toolkit_helper_test.CreateTempGitRepoInDir(tc.T, tc.TmpDir)
 }
 
 // StdoutString returns the stdout buffer as a string.
@@ -240,20 +241,20 @@ func (tc *TestContext) WithRegisteredSubCommands(cmds ...*cobra.Command) {
 // CreateFile creates a file in the test directory.
 func (tc *TestContext) CreateFile(relativePath, content string) {
 	fullPath := filepath.Join(tc.TmpDir, relativePath)
-	testutil_test.WriteFile(tc.T, fullPath, content)
+	toolkit_helper_test.WriteFile(tc.T, fullPath, content)
 }
 
 // AssertFileExists fails if the file doesn't exist.
 func (tc *TestContext) AssertFileExists(relativePath string) {
-	testutil_test.AssertFileExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
+	toolkit_helper_test.AssertFileExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
 }
 
 // AssertFileNotExists fails if the file exists.
 func (tc *TestContext) AssertFileNotExists(relativePath string) {
-	testutil_test.AssertFileNotExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
+	toolkit_helper_test.AssertFileNotExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
 }
 
 // AssertFileContains fails if the file doesn't contain the content.
 func (tc *TestContext) AssertFileContains(relativePath, content string) {
-	testutil_test.AssertFileContains(tc.T, filepath.Join(tc.TmpDir, relativePath), content)
+	toolkit_helper_test.AssertFileContains(tc.T, filepath.Join(tc.TmpDir, relativePath), content)
 }

@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/testutil_test"
+	toolkit_helper_test "github.com/valksor/go-toolkit/helper_test"
 )
 
 func TestConfirmAction(t *testing.T) {
@@ -444,7 +444,7 @@ func TestResolveWorkspaceRoot(t *testing.T) {
 			name: "git repository",
 			setup: func(t *testing.T) (context.Context, func()) {
 				t.Helper()
-				_ = testutil_test.CreateTempGitRepo(t)
+				_ = toolkit_helper_test.CreateTempGitRepo(t)
 				ctx := context.Background()
 
 				return ctx, func() {}
