@@ -406,12 +406,18 @@ type AgentSettings struct {
 	Steps        map[string]StepAgentConfig `yaml:"steps,omitempty"`        // Per-step agent configuration
 }
 
+// SimplifySettings holds configuration for the simplify command.
+type SimplifySettings struct {
+	Instructions string `yaml:"instructions,omitempty"` // Custom instructions for all simplification steps
+}
+
 // WorkflowSettings holds workflow-related configuration.
 type WorkflowSettings struct {
-	AutoInit             bool `yaml:"auto_init"`
-	SessionRetentionDays int  `yaml:"session_retention_days"`
-	DeleteWorkOnFinish   bool `yaml:"delete_work_on_finish"`  // Delete work dirs on finish (default: false)
-	DeleteWorkOnAbandon  bool `yaml:"delete_work_on_abandon"` // Delete work dirs on abandon (default: true)
+	AutoInit             bool             `yaml:"auto_init"`
+	SessionRetentionDays int              `yaml:"session_retention_days"`
+	DeleteWorkOnFinish   bool             `yaml:"delete_work_on_finish"`  // Delete work dirs on finish (default: false)
+	DeleteWorkOnAbandon  bool             `yaml:"delete_work_on_abandon"` // Delete work dirs on abandon (default: true)
+	Simplify             SimplifySettings `yaml:"simplify,omitempty"`     // Simplification command settings
 }
 
 // UpdateSettings holds update-related configuration.
@@ -760,6 +766,22 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 # Example:
 # specification:
 #     save_in_project: true          # Save specs in .mehrhof/<task-id>/specifications/ (default: false)
+`
+	}
+
+	// Add simplify section comment if simplify is empty
+	if cfg.Workflow.Simplify.Instructions == "" {
+		content += `
+# Simplification settings
+# Customize how the 'mehr simplify' command refines your work
+# Example:
+# workflow:
+#     simplify:
+#         instructions: |
+#             Follow our project standards:
+#             - Use descriptive names (no abbreviations)
+#             - Keep functions under 50 lines
+#             - Prefer composition over inheritance
 `
 	}
 
