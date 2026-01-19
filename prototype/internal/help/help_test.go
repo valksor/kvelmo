@@ -27,9 +27,6 @@ func TestGetHelpContext_NonNil(t *testing.T) {
 	// Ensure GetHelpContext never returns nil, even with no workspace
 	ResetContext()
 	ctx := GetHelpContext()
-	if ctx == nil {
-		t.Fatal("GetHelpContext should never return nil")
-	}
 	// An empty context is valid
 	if ctx.HasActiveTask {
 		t.Error("expected HasActiveTask to be false in isolated test")

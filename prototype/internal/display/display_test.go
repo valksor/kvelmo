@@ -8,7 +8,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
-	toolkitdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 func TestFormatState(t *testing.T) {
@@ -233,8 +233,8 @@ func TestColorState(t *testing.T) {
 		{"waiting", "waiting", "Waiting", false, false, false, false, true},
 	}
 
-	toolkitdisplay.SetColorsEnabled(true)
-	defer toolkitdisplay.SetColorsEnabled(false)
+	display.SetColorsEnabled(true)
+	defer display.SetColorsEnabled(false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -258,8 +258,8 @@ func TestColorSpecStatus(t *testing.T) {
 		{"done", "done", "Completed"},
 	}
 
-	toolkitdisplay.SetColorsEnabled(true)
-	defer toolkitdisplay.SetColorsEnabled(false)
+	display.SetColorsEnabled(true)
+	defer display.SetColorsEnabled(false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

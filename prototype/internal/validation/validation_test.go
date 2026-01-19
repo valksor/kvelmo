@@ -225,9 +225,6 @@ func TestSlicesContains(t *testing.T) {
 
 func TestValidatorNew(t *testing.T) {
 	v := New("/tmp/test", Options{Strict: true})
-	if v == nil {
-		t.Fatal("expected non-nil validator")
-	}
 	if v.workspacePath != "/tmp/test" {
 		t.Errorf("expected workspacePath /tmp/test, got %s", v.workspacePath)
 	}
@@ -723,9 +720,6 @@ func TestValidatorValidate_NoConfig(t *testing.T) {
 	}
 
 	// Should be valid - no config means defaults are used
-	if result == nil {
-		t.Fatal("result is nil")
-	}
 	if !result.Valid {
 		t.Error("expected valid result when no config exists")
 	}
