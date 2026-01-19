@@ -238,3 +238,18 @@ func init() {
 func GetSettings() *config.Settings {
 	return settings
 }
+
+// FormatError formats an error for stderr output.
+// Multi-line errors are passed through as-is.
+// Single-line errors get an "Error: " prefix.
+func FormatError(err error) string {
+	if err == nil {
+		return ""
+	}
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "\n") {
+		return errMsg + "\n"
+	}
+
+	return "Error: " + errMsg + "\n"
+}
