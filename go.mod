@@ -11,11 +11,12 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/valksor/go-toolkit v0.0.0-20260119193218-d8260c2d0ce9
-	gitlab.com/gitlab-org/api/client-go v1.14.0
+	github.com/valksor/go-toolkit v0.0.0-20260119215335-f8dc30d55728
+	gitlab.com/gitlab-org/api/client-go v1.15.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/term v0.39.0
+	golang.org/x/text v0.33.0
 	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -40,5 +41,4 @@ require (
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.9.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
 )
