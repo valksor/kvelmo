@@ -404,6 +404,19 @@ type AgentSettings struct {
 	MaxRetries   int                        `yaml:"max_retries"`
 	Instructions string                     `yaml:"instructions,omitempty"` // Global instructions for all steps
 	Steps        map[string]StepAgentConfig `yaml:"steps,omitempty"`        // Per-step agent configuration
+	PRReview     *PRReviewConfig            `yaml:"pr_review,omitempty"`    // PR review configuration
+}
+
+// PRReviewConfig holds PR review configuration.
+type PRReviewConfig struct {
+	Enabled          bool     `yaml:"enabled,omitempty"`           // Enable PR review (default: false)
+	Format           string   `yaml:"format,omitempty"`            // Comment format: summary, line-comments
+	Scope            string   `yaml:"scope,omitempty"`             // Review scope: full, compact, files-changed
+	FailOnIssues     bool     `yaml:"fail_on_issues,omitempty"`    // Exit with error on issues
+	MaxComments      int      `yaml:"max_comments,omitempty"`      // Cap to avoid spam
+	ExcludePatterns  []string `yaml:"exclude_patterns,omitempty"`  // File patterns to exclude
+	AcknowledgeFixes bool     `yaml:"acknowledge_fixes,omitempty"` // Post "✓ Fixed" comments when issues are resolved
+	UpdateExisting   bool     `yaml:"update_existing,omitempty"`   // Edit existing comment vs post new ones
 }
 
 // SimplifySettings holds configuration for the simplify command.
