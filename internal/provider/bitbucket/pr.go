@@ -169,3 +169,207 @@ func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskW
 
 	return p.CreatePullRequest(ctx, opts)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Support (PRFetcher, PRCommenter, PRCommentFetcher, PRCommentUpdater)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// FetchPullRequest retrieves pull request details.
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+	workspace := p.config.Workspace
+	repoSlug := p.config.RepoSlug
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	prID := number
+
+	pr, err := p.client.GetPullRequest(ctx, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	webURL := ""
+	if pr.Links.HTML != nil {
+		webURL = pr.Links.HTML.Href
+	}
+
+	author := ""
+	if pr.Author != nil {
+		author = pr.Author.Username
+		if author == "" {
+			author = pr.Author.DisplayName
+		}
+	}
+
+	return &provider.PullRequest{
+		ID:         strconv.Itoa(pr.ID),
+		URL:        webURL,
+		Title:      pr.Title,
+		State:      pr.State,
+		Number:     pr.ID,
+		Body:       pr.Description,
+		HeadSHA:    "", // Not available in basic PR type
+		HeadBranch: pr.Source.Branch.Name,
+		BaseBranch: pr.Destination.Branch.Name,
+		Author:     author,
+		CreatedAt:  pr.CreatedOn,
+		UpdatedAt:  pr.UpdatedOn,
+		Labels:     nil, // Bitbucket doesn't have PR labels
+		Assignees:  nil, // Would need to fetch reviewers separately
+	}, nil
+}
+
+// FetchPullRequestDiff retrieves the diff for a pull request.
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+	workspace := p.config.Workspace
+	repoSlug := p.config.RepoSlug
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	prID := number
+
+	// Get PR details first for branch info
+	pr, err := p.client.GetPullRequest(ctx, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get diff
+	rawDiff, diffs, additions, deletions, err := p.client.GetPullRequestDiff(ctx, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map files
+	providerFiles := make([]provider.FileDiff, len(diffs))
+	for i, d := range diffs {
+		providerFiles[i] = provider.FileDiff{
+			Path:      d.Path,
+			Mode:      d.Mode,
+			Patch:     "", // Not parsed from raw diff
+			Additions: d.LinesAdded,
+			Deletions: d.LinesRemoved,
+		}
+	}
+
+	return &provider.PullRequestDiff{
+		URL:        pr.Links.HTML.Href + "/diff",
+		BaseBranch: pr.Destination.Branch.Name,
+		HeadBranch: pr.Source.Branch.Name,
+		Files:      providerFiles,
+		Patch:      rawDiff,
+		Additions:  additions,
+		Deletions:  deletions,
+		Commits:    0, // Not available in basic diff
+	}, nil
+}
+
+// AddPullRequestComment posts a comment to a pull request.
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+	workspace := p.config.Workspace
+	repoSlug := p.config.RepoSlug
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	prID := number
+
+	comment, err := p.client.AddPullRequestComment(ctx, prID, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapPRCommentToProviderComment(comment), nil
+}
+
+// FetchPullRequestComments retrieves all comments on a pull request.
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+	workspace := p.config.Workspace
+	repoSlug := p.config.RepoSlug
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	prID := number
+
+	comments, err := p.client.GetPullRequestComments(ctx, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]provider.Comment, len(comments))
+	for i, c := range comments {
+		result[i] = *mapPRCommentToProviderComment(&c)
+	}
+
+	return result, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a pull request.
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+	workspace := p.config.Workspace
+	repoSlug := p.config.RepoSlug
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	prID := number
+
+	// Parse comment ID
+	id, err := strconv.Atoi(commentID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid comment ID: %w", err)
+	}
+
+	comment, err := p.client.UpdatePullRequestComment(ctx, prID, id, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapPRCommentToProviderComment(comment), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions for PR review support
+// ─────────────────────────────────────────────────────────────────────────────
+
+// mapPRCommentToProviderComment converts a Bitbucket PR comment to a provider Comment.
+func mapPRCommentToProviderComment(c *Comment) *provider.Comment {
+	content := ""
+	if c.Content != nil {
+		content = c.Content.Raw
+	}
+
+	author := ""
+	if c.User != nil {
+		author = c.User.Username
+		if author == "" {
+			author = c.User.DisplayName
+		}
+	}
+
+	return &provider.Comment{
+		ID:        strconv.Itoa(c.ID),
+		Body:      content,
+		Author:    provider.Person{ID: author, Name: author},
+		CreatedAt: c.CreatedOn,
+		UpdatedAt: c.UpdatedOn,
+	}
+}

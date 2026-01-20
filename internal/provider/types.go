@@ -90,9 +90,13 @@ func (p Priority) String() string {
 }
 
 // Person represents a user/assignee.
+// ID is the provider-specific unique identifier (e.g., GitHub login, GitLab username).
+// It is used for matching in PR comments and other provider interactions.
+// Name is the display name.
+// Email is the email address (optional, may not be available from all providers).
 type Person struct {
-	ID    string
-	Name  string
+	ID    string // Provider username/login (used for matching in PR comments)
+	Name  string // Display name
 	Email string
 }
 
@@ -131,6 +135,10 @@ const (
 	CapLinkBranch         Capability = "link_branch"
 	CapCreateWorkUnit     Capability = "create_work_unit"
 	CapFetchSubtasks      Capability = "fetch_subtasks"
+	CapFetchPR            Capability = "fetch_pr"
+	CapPRComment          Capability = "pr_comment"
+	CapFetchPRComments    Capability = "fetch_pr_comments"
+	CapUpdatePRComment    Capability = "update_pr_comment"
 )
 
 // CapabilitySet is a set of capabilities.
@@ -180,6 +188,18 @@ func InferCapabilities(p any) CapabilitySet {
 	}
 	if _, ok := p.(SubtaskFetcher); ok {
 		caps[CapFetchSubtasks] = true
+	}
+	if _, ok := p.(PRFetcher); ok {
+		caps[CapFetchPR] = true
+	}
+	if _, ok := p.(PRCommenter); ok {
+		caps[CapPRComment] = true
+	}
+	if _, ok := p.(PRCommentFetcher); ok {
+		caps[CapFetchPRComments] = true
+	}
+	if _, ok := p.(PRCommentUpdater); ok {
+		caps[CapUpdatePRComment] = true
 	}
 
 	return caps

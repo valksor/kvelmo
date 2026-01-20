@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	gh "github.com/google/go-github/v67/github"
+
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -167,4 +169,209 @@ func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskW
 	// Note: Labels could be added via GitHub API after PR creation if needed
 
 	return p.CreatePullRequest(ctx, opts)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Support (PRFetcher, PRCommenter, PRCommentFetcher, PRCommentUpdater)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// FetchPullRequest retrieves pull request details.
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	ghPR, err := p.client.GetPullRequest(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.PullRequest{
+		ID:         strconv.FormatInt(ghPR.GetID(), 10),
+		URL:        ghPR.GetHTMLURL(),
+		Title:      ghPR.GetTitle(),
+		State:      ghPR.GetState(),
+		Number:     ghPR.GetNumber(),
+		Body:       ghPR.GetBody(),
+		HeadSHA:    ghPR.GetHead().GetSHA(),
+		HeadBranch: ghPR.GetHead().GetRef(),
+		BaseBranch: ghPR.GetBase().GetRef(),
+		Author:     ghPR.GetUser().GetLogin(),
+		CreatedAt:  ghPR.GetCreatedAt().Time,
+		UpdatedAt:  ghPR.GetUpdatedAt().Time,
+		Labels:     extractLabelNamesFromPR(ghPR.Labels),
+		Assignees:  extractAssigneesFromPR(ghPR.Assignees),
+	}, nil
+}
+
+// FetchPullRequestDiff retrieves the diff for a pull request.
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	// Get PR details first for branch info
+	ghPR, err := p.client.GetPullRequest(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get diff
+	rawDiff, files, additions, deletions, err := p.client.GetPullRequestDiff(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map files
+	providerFiles := make([]provider.FileDiff, len(files))
+	for i, f := range files {
+		providerFiles[i] = provider.FileDiff{
+			Path:      f.GetFilename(),
+			Mode:      determineFileMode(f.GetStatus()),
+			Patch:     f.GetPatch(),
+			Additions: f.GetAdditions(),
+			Deletions: f.GetDeletions(),
+		}
+	}
+
+	return &provider.PullRequestDiff{
+		URL:        fmt.Sprintf("https://github.com/%s/%s/pull/%d/files", p.owner, p.repo, number),
+		BaseBranch: ghPR.GetBase().GetRef(),
+		HeadBranch: ghPR.GetHead().GetRef(),
+		Files:      providerFiles,
+		Patch:      rawDiff,
+		Additions:  additions,
+		Deletions:  deletions,
+		Commits:    ghPR.GetCommits(),
+	}, nil
+}
+
+// AddPullRequestComment posts a comment to a pull request.
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	ghComment, err := p.client.CreatePullRequestComment(ctx, number, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.Comment{
+		ID:        strconv.FormatInt(ghComment.GetID(), 10),
+		Body:      ghComment.GetBody(),
+		Author:    provider.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
+		CreatedAt: ghComment.GetCreatedAt().Time,
+		UpdatedAt: ghComment.GetUpdatedAt().Time,
+	}, nil
+}
+
+// FetchPullRequestComments retrieves all comments on a pull request.
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	ghComments, err := p.client.GetPullRequestComments(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]provider.Comment, len(ghComments))
+	for i, c := range ghComments {
+		userLogin := c.GetUser().GetLogin()
+		result[i] = provider.Comment{
+			ID:        strconv.FormatInt(c.GetID(), 10),
+			Body:      c.GetBody(),
+			Author:    provider.Person{ID: userLogin, Name: userLogin},
+			CreatedAt: c.GetCreatedAt().Time,
+			UpdatedAt: c.GetUpdatedAt().Time,
+		}
+	}
+
+	return result, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a pull request.
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	// Parse comment ID
+	id, err := strconv.ParseInt(commentID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid comment ID: %w", err)
+	}
+
+	ghComment, err := p.client.UpdatePullRequestComment(ctx, number, id, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.Comment{
+		ID:        strconv.FormatInt(ghComment.GetID(), 10),
+		Body:      ghComment.GetBody(),
+		Author:    provider.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
+		CreatedAt: ghComment.GetCreatedAt().Time,
+		UpdatedAt: ghComment.GetUpdatedAt().Time,
+	}, nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+// extractLabelNamesFromPR extracts label names from PR labels.
+func extractLabelNamesFromPR(labels []*gh.Label) []string {
+	if len(labels) == 0 {
+		return nil
+	}
+	names := make([]string, len(labels))
+	for i, label := range labels {
+		names[i] = label.GetName()
+	}
+
+	return names
+}
+
+// extractAssigneesFromPR extracts assignee logins from PR assignees.
+func extractAssigneesFromPR(assignees []*gh.User) []string {
+	if len(assignees) == 0 {
+		return nil
+	}
+	names := make([]string, len(assignees))
+	for i, u := range assignees {
+		names[i] = u.GetLogin()
+	}
+
+	return names
+}
+
+// determineFileMode maps GitHub file status to provider file mode.
+func determineFileMode(status string) string {
+	switch status {
+	case "added":
+		return "added"
+	case "deleted":
+		return "deleted"
+	case "renamed":
+		return "renamed"
+	case "modified":
+		return "modified"
+	case "changed":
+		return "modified"
+	default:
+		return "modified"
+	}
 }

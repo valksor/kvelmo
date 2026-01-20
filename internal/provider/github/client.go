@@ -222,6 +222,92 @@ func (c *Client) DownloadFile(ctx context.Context, path, ref string) ([]byte, er
 	return []byte(decoded), nil
 }
 
+// GetPullRequest fetches a pull request by number.
+func (c *Client) GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error) {
+	pr, _, err := c.gh.PullRequests.Get(ctx, c.owner, c.repo, number)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	return pr, nil
+}
+
+// GetPullRequestDiff fetches the diff for a pull request.
+func (c *Client) GetPullRequestDiff(ctx context.Context, number int) (string, []*github.CommitFile, int, int, error) {
+	opts := &github.ListOptions{PerPage: 100}
+
+	var allFiles []*github.CommitFile
+	var totalAdditions, totalDeletions int
+
+	// Fetch files with pagination
+	for {
+		files, resp, err := c.gh.PullRequests.ListFiles(ctx, c.owner, c.repo, number, opts)
+		if err != nil {
+			return "", nil, 0, 0, wrapAPIError(err)
+		}
+
+		for _, f := range files {
+			totalAdditions += f.GetAdditions()
+			totalDeletions += f.GetDeletions()
+		}
+		allFiles = append(allFiles, files...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	// Get raw diff
+	diff, _, err := c.gh.PullRequests.GetRaw(ctx, c.owner, c.repo, number, github.RawOptions{Type: github.Diff})
+	if err != nil {
+		return "", nil, 0, 0, wrapAPIError(err)
+	}
+
+	return diff, allFiles, totalAdditions, totalDeletions, nil
+}
+
+// CreatePullRequestComment adds a comment to a pull request (issue comment in GitHub).
+func (c *Client) CreatePullRequestComment(ctx context.Context, number int, body string) (*github.IssueComment, error) {
+	comment, _, err := c.gh.Issues.CreateComment(ctx, c.owner, c.repo, number, &github.IssueComment{
+		Body: ptr(body),
+	})
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	// Invalidate comments cache for this PR
+	if c.cache != nil {
+		key := c.CacheKey("comments", strconv.Itoa(number))
+		c.cache.Delete(key)
+	}
+
+	return comment, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a pull request.
+func (c *Client) UpdatePullRequestComment(ctx context.Context, number int, commentID int64, body string) (*github.IssueComment, error) {
+	comment, _, err := c.gh.Issues.EditComment(ctx, c.owner, c.repo, commentID, &github.IssueComment{
+		Body: ptr(body),
+	})
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	// Invalidate comments cache for this PR
+	if c.cache != nil {
+		key := c.CacheKey("comments", strconv.Itoa(number))
+		c.cache.Delete(key)
+	}
+
+	return comment, nil
+}
+
+// GetPullRequestComments fetches all comments on a pull request.
+func (c *Client) GetPullRequestComments(ctx context.Context, number int) ([]*github.IssueComment, error) {
+	return c.GetIssueComments(ctx, number)
+}
+
 // SetOwnerRepo updates the owner and repo for the client.
 func (c *Client) SetOwnerRepo(owner, repo string) {
 	c.owner = owner
