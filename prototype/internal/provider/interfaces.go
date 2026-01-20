@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"io"
+	"time"
 )
 
 // Reader fetches work units from a provider.
@@ -99,6 +100,27 @@ type PRCreator interface {
 	CreatePullRequest(ctx context.Context, opts PullRequestOptions) (*PullRequest, error)
 }
 
+// PRFetcher retrieves pull request details and diffs.
+type PRFetcher interface {
+	FetchPullRequest(ctx context.Context, number int) (*PullRequest, error)
+	FetchPullRequestDiff(ctx context.Context, number int) (*PullRequestDiff, error)
+}
+
+// PRCommenter posts comments to pull requests.
+type PRCommenter interface {
+	AddPullRequestComment(ctx context.Context, number int, body string) (*Comment, error)
+}
+
+// PRCommentFetcher retrieves existing comments from a PR/MR.
+type PRCommentFetcher interface {
+	FetchPullRequestComments(ctx context.Context, number int) ([]Comment, error)
+}
+
+// PRCommentUpdater updates existing comments on a PR/MR.
+type PRCommentUpdater interface {
+	UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*Comment, error)
+}
+
 // PullRequestOptions for creating a PR.
 type PullRequestOptions struct {
 	Title        string
@@ -112,11 +134,41 @@ type PullRequestOptions struct {
 
 // PullRequest represents a pull/merge request.
 type PullRequest struct {
-	ID     string
-	URL    string
-	Title  string
-	State  string
-	Number int
+	ID         string
+	URL        string
+	Title      string
+	State      string
+	Number     int
+	Body       string
+	HeadSHA    string    // Commit SHA of the head branch
+	HeadBranch string    // Name of the head branch
+	BaseBranch string    // Name of the base branch
+	Author     string    // Author username
+	CreatedAt  time.Time // Creation time
+	UpdatedAt  time.Time // Last update time
+	Labels     []string  // PR labels
+	Assignees  []string  // Assignee usernames
+}
+
+// PullRequestDiff contains PR diff information.
+type PullRequestDiff struct {
+	URL        string     // URL to view the diff
+	BaseBranch string     // Base branch name
+	HeadBranch string     // Head branch name
+	Files      []FileDiff // Files changed
+	Patch      string     // Full diff in unified format
+	Additions  int        // Total lines added
+	Deletions  int        // Total lines deleted
+	Commits    int        // Number of commits
+}
+
+// FileDiff represents a single file's changes.
+type FileDiff struct {
+	Path      string // File path
+	Mode      string // "added", "modified", "deleted", "renamed"
+	Patch     string // Unified diff for this file
+	Additions int    // Lines added
+	Deletions int    // Lines deleted
 }
 
 // BranchLinker links work units to git branches.

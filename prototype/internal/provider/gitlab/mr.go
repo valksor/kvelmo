@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
+
+	gl "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
@@ -152,4 +155,225 @@ func (p *Provider) CreateMRFromTask(ctx context.Context, taskWork *storage.TaskW
 	}
 
 	return p.CreatePullRequest(ctx, opts)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MR Review Support (PRFetcher, PRCommenter, PRCommentFetcher, PRCommentUpdater)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// FetchPullRequest retrieves merge request details.
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(number)
+
+	glMR, err := p.client.GetMergeRequest(ctx, iid)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.PullRequest{
+		ID:         strconv.FormatInt(glMR.ID, 10),
+		URL:        glMR.WebURL,
+		Title:      glMR.Title,
+		State:      glMR.State,
+		Number:     int(glMR.IID),
+		Body:       glMR.Description,
+		HeadSHA:    glMR.SHA,
+		HeadBranch: glMR.SourceBranch,
+		BaseBranch: glMR.TargetBranch,
+		Author:     glMR.Author.Username,
+		CreatedAt:  *glMR.CreatedAt,
+		UpdatedAt:  *glMR.UpdatedAt,
+		Labels:     glMR.Labels,
+		Assignees:  extractAssigneesFromMR(glMR.Assignees),
+	}, nil
+}
+
+// FetchPullRequestDiff retrieves the diff for a merge request.
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(number)
+
+	// Get MR details first for branch info
+	glMR, err := p.client.GetMergeRequest(ctx, iid)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get diff
+	rawDiff, diffs, additions, deletions, err := p.client.GetMergeRequestDiff(ctx, iid)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map files
+	providerFiles := make([]provider.FileDiff, len(diffs))
+	for i, d := range diffs {
+		providerFiles[i] = provider.FileDiff{
+			Path:      d.NewPath,
+			Mode:      determineMRFileMode(d.NewFile, d.RenamedFile, d.DeletedFile),
+			Patch:     getSafeDiff(d),
+			Additions: 0, // GitLab API doesn't provide per-file additions
+			Deletions: 0, // GitLab API doesn't provide per-file deletions
+		}
+	}
+
+	return &provider.PullRequestDiff{
+		URL:        fmt.Sprintf("%s/-/merge_requests/%d/diffs", glMR.WebURL, number),
+		BaseBranch: glMR.TargetBranch,
+		HeadBranch: glMR.SourceBranch,
+		Files:      providerFiles,
+		Patch:      rawDiff,
+		Additions:  additions,
+		Deletions:  deletions,
+		Commits:    0, // GitLab doesn't provide commit count directly in MR
+	}, nil
+}
+
+// AddPullRequestComment posts a comment to a merge request.
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(number)
+
+	glNote, err := p.client.CreateMergeRequestNote(ctx, iid, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapMRNoteToComment(glNote), nil
+}
+
+// FetchPullRequestComments retrieves all comments on a merge request.
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(number)
+
+	glNotes, err := p.client.GetMergeRequestNotes(ctx, iid)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]provider.Comment, len(glNotes))
+	for i, n := range glNotes {
+		result[i] = *mapMRNoteToComment(n)
+	}
+
+	return result, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a merge request.
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(number)
+
+	// Parse note ID
+	noteID, err := strconv.ParseInt(commentID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid comment ID: %w", err)
+	}
+
+	glNote, err := p.client.UpdateMergeRequestNote(ctx, iid, noteID, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapMRNoteToComment(glNote), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions for MR review support
+// ─────────────────────────────────────────────────────────────────────────────
+
+// extractAssigneesFromMR extracts assignee usernames from MR assignees.
+func extractAssigneesFromMR(assignees []*gl.BasicUser) []string {
+	if len(assignees) == 0 {
+		return nil
+	}
+	names := make([]string, len(assignees))
+	for i, u := range assignees {
+		names[i] = u.Username
+	}
+
+	return names
+}
+
+// determineMRFileMode determines the file mode from GitLab diff flags.
+func determineMRFileMode(newFile, renamedFile, deletedFile bool) string {
+	if deletedFile {
+		return "deleted"
+	}
+	if renamedFile {
+		return "renamed"
+	}
+	if newFile {
+		return "added"
+	}
+
+	return "modified"
+}
+
+// getSafeDiff extracts the diff string safely.
+func getSafeDiff(d *gl.MergeRequestDiff) string {
+	if d.Diff == "" {
+		return ""
+	}
+
+	return d.Diff
+}
+
+// mapMRNoteToComment converts a GitLab MR note to a provider Comment.
+func mapMRNoteToComment(note *gl.Note) *provider.Comment {
+	author := provider.Person{
+		ID:   strconv.FormatInt(note.Author.ID, 10),
+		Name: note.Author.Username,
+	}
+
+	if note.Author.Email != "" {
+		author.Email = note.Author.Email
+	}
+
+	var updatedAt time.Time
+	if note.UpdatedAt != nil {
+		updatedAt = *note.UpdatedAt
+	} else if note.CreatedAt != nil {
+		updatedAt = *note.CreatedAt
+	}
+
+	return &provider.Comment{
+		ID:        strconv.FormatInt(note.ID, 10),
+		Body:      note.Body,
+		Author:    author,
+		CreatedAt: *note.CreatedAt,
+		UpdatedAt: updatedAt,
+	}
 }

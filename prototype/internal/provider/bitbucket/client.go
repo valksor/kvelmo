@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
@@ -444,4 +445,167 @@ func (c *Client) CreateIssue(ctx context.Context, title, content, priority, kind
 	}
 
 	return &issue, nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Support (GetPullRequest, GetPullRequestDiff, AddPullRequestComment, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GetPullRequest fetches a pull request by ID.
+func (c *Client) GetPullRequest(ctx context.Context, prID int) (*PullRequest, error) {
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%d", c.workspace, c.repoSlug, prID)
+
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var pr PullRequest
+	if err := json.Unmarshal(body, &pr); err != nil {
+		return nil, fmt.Errorf("unmarshal pull request: %w", err)
+	}
+
+	return &pr, nil
+}
+
+// GetPullRequestDiff fetches the diff for a pull request.
+func (c *Client) GetPullRequestDiff(ctx context.Context, prID int) (string, []PRDiffFile, int, int, error) {
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%d/diff", c.workspace, c.repoSlug, prID)
+
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return "", nil, 0, 0, err
+	}
+
+	// The diff API returns raw patch directly, not JSON
+	rawDiff := string(body)
+
+	// Also get the PR with stats for file info
+	_, err = c.GetPullRequest(ctx, prID)
+	if err != nil {
+		return "", nil, 0, 0, err
+	}
+
+	// Parse the diff to extract file information (simplified approach)
+	// In a full implementation, you'd want to parse the unified diff format
+	diffs := parseDiffToFiles(rawDiff)
+
+	return rawDiff, diffs, 0, 0, nil
+}
+
+// PRDiffFile represents a file in a PR diff.
+type PRDiffFile struct {
+	Path         string
+	OldPath      string
+	NewPath      string
+	IsNew        bool
+	IsRemoved    bool
+	IsRenamed    bool
+	Mode         string
+	LinesAdded   int
+	LinesRemoved int
+}
+
+// parseDiffToFiles is a simple parser for extracting file info from a unified diff.
+func parseDiffToFiles(diff string) []PRDiffFile {
+	var files []PRDiffFile
+	lines := strings.Split(diff, "\n")
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "diff --git ") {
+			// Parse file paths from diff header
+			parts := strings.Fields(line)
+			if len(parts) >= 4 {
+				oldPath := strings.TrimPrefix(parts[2], "a/")
+				newPath := strings.TrimPrefix(parts[3], "b/")
+
+				file := PRDiffFile{
+					OldPath: oldPath,
+					NewPath: newPath,
+					Path:    newPath,
+				}
+
+				if oldPath == "/dev/null" {
+					file.IsNew = true
+					file.Mode = "added"
+				} else if newPath == "/dev/null" {
+					file.IsRemoved = true
+					file.Mode = "deleted"
+					file.Path = oldPath
+				} else if oldPath != newPath {
+					file.IsRenamed = true
+					file.Mode = "renamed"
+				} else {
+					file.Mode = "modified"
+				}
+
+				files = append(files, file)
+			}
+		}
+	}
+
+	return files
+}
+
+// AddPullRequestComment adds a comment to a pull request.
+func (c *Client) AddPullRequestComment(ctx context.Context, prID int, body string) (*Comment, error) {
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%d/comments", c.workspace, c.repoSlug, prID)
+
+	reqBody := map[string]any{
+		"content": map[string]string{
+			"raw": body,
+		},
+	}
+
+	respBody, err := c.doRequest(ctx, http.MethodPost, path, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var comment Comment
+	if err := json.Unmarshal(respBody, &comment); err != nil {
+		return nil, fmt.Errorf("unmarshal comment: %w", err)
+	}
+
+	return &comment, nil
+}
+
+// GetPullRequestComments fetches all comments on a pull request.
+func (c *Client) GetPullRequestComments(ctx context.Context, prID int) ([]Comment, error) {
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%d/comments", c.workspace, c.repoSlug, prID)
+
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PaginatedResponse[Comment]
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal comments: %w", err)
+	}
+
+	return resp.Values, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a pull request.
+func (c *Client) UpdatePullRequestComment(ctx context.Context, prID int, commentID int, body string) (*Comment, error) {
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%d/comments/%d", c.workspace, c.repoSlug, prID, commentID)
+
+	reqBody := map[string]any{
+		"content": map[string]string{
+			"raw": body,
+		},
+	}
+
+	respBody, err := c.doRequest(ctx, http.MethodPut, path, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var comment Comment
+	if err := json.Unmarshal(respBody, &comment); err != nil {
+		return nil, fmt.Errorf("unmarshal comment: %w", err)
+	}
+
+	return &comment, nil
 }

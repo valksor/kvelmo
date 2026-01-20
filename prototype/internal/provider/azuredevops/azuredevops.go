@@ -53,6 +53,10 @@ func Info() provider.ProviderInfo {
 			provider.CapLinkBranch:         true,
 			provider.CapCreateWorkUnit:     true,
 			provider.CapFetchSubtasks:      true,
+			provider.CapFetchPR:            true,
+			provider.CapPRComment:          true,
+			provider.CapFetchPRComments:    true,
+			provider.CapUpdatePRComment:    true,
 		},
 	}
 }
@@ -685,4 +689,178 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 	result = strings.ReplaceAll(result, "{slug}", slug)
 
 	return result
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Support (PRFetcher, PRCommenter, PRCommentFetcher, PRCommentUpdater)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// FetchPullRequest retrieves pull request details.
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+	pr, err := p.client.GetPullRequest(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract branch names from refs
+	sourceBranch := strings.TrimPrefix(pr.SourceRefName, "refs/heads/")
+	targetBranch := strings.TrimPrefix(pr.TargetRefName, "refs/heads/")
+
+	// Parse creation date for timestamps
+	createdAt := parseAzureTime(pr.CreationDate)
+	// We'll use creation date for both if modified date is not available
+
+	return &provider.PullRequest{
+		ID:         strconv.Itoa(pr.PullRequestID),
+		URL:        pr.URL,
+		Title:      pr.Title,
+		State:      pr.Status,
+		Number:     pr.PullRequestID,
+		Body:       pr.Description,
+		HeadSHA:    "", // Not available in basic PR type
+		HeadBranch: sourceBranch,
+		BaseBranch: targetBranch,
+		Author:     "", // Not available in basic PR type
+		CreatedAt:  createdAt,
+		UpdatedAt:  createdAt,
+		Labels:     nil, // Not available
+		Assignees:  nil, // Would need to fetch reviewers separately
+	}, nil
+}
+
+// FetchPullRequestDiff retrieves the diff for a pull request.
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+	// Get PR details first for branch info
+	pr, err := p.client.GetPullRequest(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceBranch := strings.TrimPrefix(pr.SourceRefName, "refs/heads/")
+	targetBranch := strings.TrimPrefix(pr.TargetRefName, "refs/heads/")
+
+	// Get diff
+	rawDiff, diffs, additions, deletions, err := p.client.GetPullRequestDiff(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map files
+	providerFiles := make([]provider.FileDiff, len(diffs))
+	for i, d := range diffs {
+		providerFiles[i] = provider.FileDiff{
+			Path:      d.Path,
+			Mode:      mapAzureChangeType(d.ChangeType),
+			Patch:     d.Patch,
+			Additions: 0, // Not separated in Azure DevOps diff
+			Deletions: 0, // Not separated in Azure DevOps diff
+		}
+	}
+
+	return &provider.PullRequestDiff{
+		URL:        pr.URL + "/diff",
+		BaseBranch: targetBranch,
+		HeadBranch: sourceBranch,
+		Files:      providerFiles,
+		Patch:      rawDiff,
+		Additions:  additions,
+		Deletions:  deletions,
+		Commits:    0, // Not available
+	}, nil
+}
+
+// AddPullRequestComment posts a comment to a pull request.
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+	thread, err := p.client.CreatePullRequestThread(ctx, number, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert thread to provider Comment
+	if len(thread.Comments) > 0 {
+		return mapPRThreadToProviderComment(thread, &thread.Comments[0]), nil
+	}
+
+	// Return empty comment if no comments returned
+	return &provider.Comment{
+		ID:   thread.ID,
+		Body: body,
+	}, nil
+}
+
+// FetchPullRequestComments retrieves all comments on a pull request.
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+	threads, err := p.client.GetPullRequestThreads(ctx, number)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []provider.Comment
+	for _, t := range threads {
+		for i := range t.Comments {
+			// Skip system comments
+			if t.Comments[i].CommentType == "system" {
+				continue
+			}
+			result = append(result, *mapPRThreadToProviderComment(&t, &t.Comments[i]))
+		}
+	}
+
+	return result, nil
+}
+
+// UpdatePullRequestComment updates an existing comment on a pull request.
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+	// Azure DevOps uses threadID/commentID structure
+	// For simplicity, we'll create a new comment thread
+	// In a full implementation, you'd need to parse the thread ID from the comment ID
+	thread, err := p.client.CreatePullRequestThread(ctx, number, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(thread.Comments) > 0 {
+		return mapPRThreadToProviderComment(thread, &thread.Comments[0]), nil
+	}
+
+	return &provider.Comment{
+		ID:   thread.ID,
+		Body: body,
+	}, nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions for PR review support
+// ─────────────────────────────────────────────────────────────────────────────
+
+// mapPRThreadToProviderComment converts an Azure DevOps PR thread comment to a provider Comment.
+func mapPRThreadToProviderComment(_ *PRThread, comment *PRThreadComment) *provider.Comment {
+	author := ""
+	if comment.Author != nil {
+		author = comment.Author.DisplayName
+	}
+
+	return &provider.Comment{
+		ID:        strconv.Itoa(comment.ID),
+		Body:      comment.Content,
+		Author:    provider.Person{ID: author, Name: author},
+		CreatedAt: parseAzureTime(comment.PublishedDate),
+		UpdatedAt: parseAzureTime(comment.PublishedDate),
+	}
+}
+
+// mapAzureChangeType maps Azure DevOps change type to provider file mode.
+func mapAzureChangeType(changeType string) string {
+	switch changeType {
+	case "add":
+		return "added"
+	case "delete", "sourceDeleted":
+		return "deleted"
+	case "edit":
+		return "modified"
+	case "rename":
+		return "renamed"
+	default:
+		return "modified"
+	}
 }

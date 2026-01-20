@@ -65,6 +65,10 @@ func Info() provider.ProviderInfo {
 			provider.CapSnapshot:           true,
 			provider.CapCreatePR:           true, // MR creation
 			provider.CapFetchSubtasks:      true,
+			provider.CapFetchPR:            true,
+			provider.CapPRComment:          true,
+			provider.CapFetchPRComments:    true,
+			provider.CapUpdatePRComment:    true,
 		},
 	}
 }

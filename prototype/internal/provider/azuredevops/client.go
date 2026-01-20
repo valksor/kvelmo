@@ -599,3 +599,153 @@ func joinStrings(strs []string, sep string) string {
 
 	return result
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Support (GetPullRequest, GetPullRequestDiff, AddPullRequestComment, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GetPullRequest fetches a pull request by ID.
+func (c *Client) GetPullRequest(ctx context.Context, prID int) (*AzurePullRequest, error) {
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/pullrequests/%d?api-version=%s",
+		c.organization, c.project, prID, apiVersion)
+
+	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var pr AzurePullRequest
+	if err := json.Unmarshal(body, &pr); err != nil {
+		return nil, fmt.Errorf("unmarshal pull request: %w", err)
+	}
+
+	return &pr, nil
+}
+
+// GetPullRequestThreads fetches all threads (comments) on a pull request.
+func (c *Client) GetPullRequestThreads(ctx context.Context, prID int) ([]PRThread, error) {
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads?api-version=%s",
+		c.organization, c.project, prID, apiVersion)
+
+	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Value []PRThread `json:"value"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal threads: %w", err)
+	}
+
+	return resp.Value, nil
+}
+
+// PRThread represents a discussion thread in a PR.
+type PRThread struct {
+	ID       string            `json:"id"`
+	Comments []PRThreadComment `json:"comments"`
+}
+
+// PRThreadComment represents a comment in a thread.
+type PRThreadComment struct {
+	ID            int       `json:"id"`
+	Content       string    `json:"content"`
+	CommentType   string    `json:"commentType"` // "text" or "system"
+	Author        *Identity `json:"author"`
+	PublishedDate string    `json:"publishedDate"`
+}
+
+// GetPullRequestDiff fetches the diff for a pull request.
+func (c *Client) GetPullRequestDiff(ctx context.Context, prID int) (string, []PRDiffFile, int, int, error) {
+	// Get the diff stats and file changes
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/diffs?api-version=%s",
+		c.organization, c.project, prID, apiVersion)
+
+	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", nil, 0, 0, err
+	}
+
+	var resp struct {
+		Value []PRDiffFile `json:"value"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return "", nil, 0, 0, fmt.Errorf("unmarshal diff: %w", err)
+	}
+
+	// Calculate totals
+	var additions, deletions int
+	for _, f := range resp.Value {
+		additions += f.ChangeCount
+		deletions += f.ChangeCount // This is total changes, need to parse for additions/deletions separately
+	}
+
+	// Build raw diff from file patches
+	var rawDiff strings.Builder
+	for _, f := range resp.Value {
+		if f.Patch != "" {
+			rawDiff.WriteString(f.Patch)
+		}
+	}
+
+	return rawDiff.String(), resp.Value, additions, deletions, nil
+}
+
+// PRDiffFile represents a file in a PR diff.
+type PRDiffFile struct {
+	Path        string `json:"path"`
+	ChangeType  string `json:"changeType"` // "add", "edit", "delete"
+	ChangeCount int    `json:"changeCount"`
+	Patch       string `json:"patch"`
+}
+
+// CreatePullRequestThread creates a new thread (comment) on a pull request.
+func (c *Client) CreatePullRequestThread(ctx context.Context, prID int, content string) (*PRThread, error) {
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads?api-version=%s",
+		c.organization, c.project, prID, apiVersion)
+
+	reqBody := map[string]any{
+		"comments": []map[string]string{
+			{
+				"content":     content,
+				"commentType": "text",
+			},
+		},
+	}
+
+	respBody, err := c.doRequest(ctx, http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var thread PRThread
+	if err := json.Unmarshal(respBody, &thread); err != nil {
+		return nil, fmt.Errorf("unmarshal thread: %w", err)
+	}
+
+	return &thread, nil
+}
+
+// UpdatePullRequestThread updates an existing thread comment.
+func (c *Client) UpdatePullRequestThread(ctx context.Context, prID int, threadID, commentID int, content string) (*PRThread, error) {
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads/%d/comments/%d?api-version=%s",
+		c.organization, c.project, prID, threadID, commentID, apiVersion)
+
+	reqBody := map[string]string{
+		"content": content,
+	}
+
+	respBody, err := c.doRequest(ctx, http.MethodPatch, url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var thread PRThread
+	if err := json.Unmarshal(respBody, &thread); err != nil {
+		return nil, fmt.Errorf("unmarshal thread: %w", err)
+	}
+
+	return &thread, nil
+}

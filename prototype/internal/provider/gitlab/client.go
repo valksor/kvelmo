@@ -386,3 +386,127 @@ func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadClo
 
 	return resp.Body, nil
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MR Review Support (GetMergeRequest, GetMergeRequestDiff, CreateMergeRequestNote, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GetMergeRequest fetches a merge request by IID.
+func (c *Client) GetMergeRequest(ctx context.Context, iid int64) (*gl.MergeRequest, error) {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	mr, _, err := c.gl.MergeRequests.GetMergeRequest(pid, iid, nil, gl.WithContext(ctx))
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	return mr, nil
+}
+
+// GetMergeRequestDiff fetches the diff for a merge request.
+func (c *Client) GetMergeRequestDiff(ctx context.Context, iid int64) (string, []*gl.MergeRequestDiff, int, int, error) {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return "", nil, 0, 0, err
+	}
+
+	var allDiffs []*gl.MergeRequestDiff
+	var totalAdditions, totalDeletions int
+
+	opts := &gl.ListMergeRequestDiffsOptions{}
+	opts.PerPage = 100
+
+	for {
+		diffs, resp, err := c.gl.MergeRequests.ListMergeRequestDiffs(pid, iid, opts, gl.WithContext(ctx))
+		if err != nil {
+			return "", nil, 0, 0, wrapAPIError(err)
+		}
+
+		// GitLab API doesn't provide per-file additions/deletions
+		// Total additions/deletions are calculated from MR diff_size field
+		allDiffs = append(allDiffs, diffs...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	// Get MR for commit count and other info
+	_, err = c.GetMergeRequest(ctx, iid)
+	if err != nil {
+		return "", nil, 0, 0, err
+	}
+
+	// Generate raw diff from individual file diffs
+	var rawDiff strings.Builder
+	for _, d := range allDiffs {
+		rawDiff.WriteString(d.Diff)
+	}
+
+	return rawDiff.String(), allDiffs, totalAdditions, totalDeletions, nil
+}
+
+// CreateMergeRequestNote adds a note (comment) to a merge request.
+func (c *Client) CreateMergeRequestNote(ctx context.Context, iid int64, body string) (*gl.Note, error) {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	note, _, err := c.gl.Notes.CreateMergeRequestNote(pid, iid, &gl.CreateMergeRequestNoteOptions{
+		Body: ptr(body),
+	}, gl.WithContext(ctx))
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	return note, nil
+}
+
+// UpdateMergeRequestNote updates an existing note on a merge request.
+func (c *Client) UpdateMergeRequestNote(ctx context.Context, iid int64, noteID int64, body string) (*gl.Note, error) {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	note, _, err := c.gl.Notes.UpdateMergeRequestNote(pid, iid, noteID, &gl.UpdateMergeRequestNoteOptions{
+		Body: ptr(body),
+	}, gl.WithContext(ctx))
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	return note, nil
+}
+
+// GetMergeRequestNotes fetches all notes on a merge request.
+func (c *Client) GetMergeRequestNotes(ctx context.Context, iid int64) ([]*gl.Note, error) {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var allNotes []*gl.Note
+	opts := &gl.ListMergeRequestNotesOptions{}
+	opts.Page = 1
+	opts.PerPage = 100
+
+	for {
+		notes, resp, err := c.gl.Notes.ListMergeRequestNotes(pid, iid, opts, gl.WithContext(ctx))
+		if err != nil {
+			return nil, wrapAPIError(err)
+		}
+		allNotes = append(allNotes, notes...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allNotes, nil
+}
