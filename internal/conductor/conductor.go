@@ -29,9 +29,11 @@ package conductor
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/browser"
@@ -221,4 +223,201 @@ func (c *Conductor) logError(err error) {
 	if c.opts.OnError != nil {
 		c.opts.OnError(err)
 	}
+}
+
+// RunPRReview performs an AI-powered review of a pull/merge request.
+// This is a standalone operation that does not require an active task or workspace.
+// It supports incremental/differential reviews that only comment on new issues.
+func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRReviewResult, error) {
+	// 1. Get provider from registry
+	c.mu.RLock()
+	_, factory, ok := c.providers.Get(opts.Provider)
+	c.mu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("provider %q not found", opts.Provider)
+	}
+
+	// 2. Create provider instance with minimal config
+	// Token is handled via environment variables or provider-specific config
+	providerCfg := provider.NewConfig()
+	if opts.Token != "" {
+		providerCfg = providerCfg.Set("token", opts.Token)
+	}
+
+	instance, err := factory(ctx, providerCfg)
+	if err != nil {
+		return nil, fmt.Errorf("create provider: %w", err)
+	}
+
+	// 3. Check if provider implements required interfaces
+	prFetcher, ok := instance.(provider.PRFetcher)
+	if !ok {
+		return nil, fmt.Errorf("provider %q does not implement PRFetcher", opts.Provider)
+	}
+
+	prCommenter, ok := instance.(provider.PRCommenter)
+	if !ok {
+		return nil, fmt.Errorf("provider %q does not implement PRCommenter", opts.Provider)
+	}
+
+	// 4. Fetch PR details and diff
+	c.logVerbosef("Fetching PR #%d from %s...", opts.PRNumber, opts.Provider)
+	pr, err := prFetcher.FetchPullRequest(ctx, opts.PRNumber)
+	if err != nil {
+		return nil, fmt.Errorf("fetch PR: %w", err)
+	}
+
+	// Validate PR
+	if pr.Number != opts.PRNumber {
+		return nil, fmt.Errorf("PR number mismatch: requested %d, got %d", opts.PRNumber, pr.Number)
+	}
+
+	// Skip closed/merged PRs
+	if pr.State == "closed" || pr.State == "merged" {
+		return &PRReviewResult{
+			Skipped: true,
+			Reason:  fmt.Sprintf("PR is %s - skipping review", pr.State),
+		}, nil
+	}
+
+	c.logVerbosef("Fetching PR diff...")
+	diff, err := prFetcher.FetchPullRequestDiff(ctx, opts.PRNumber)
+	if err != nil {
+		return nil, fmt.Errorf("fetch PR diff: %w", err)
+	}
+
+	// Check if diff is empty
+	if diff.Patch == "" {
+		return &PRReviewResult{
+			Skipped: true,
+			Reason:  "No diff found - PR may have no changes",
+		}, nil
+	}
+
+	// 5. Fetch existing comments to find our previous review (if any)
+	var prevState *PRReviewState
+	var ourPreviousComment *provider.Comment
+
+	if prCommentFetcher, ok := instance.(provider.PRCommentFetcher); ok {
+		c.logVerbosef("Fetching existing PR comments...")
+		comments, err := prCommentFetcher.FetchPullRequestComments(ctx, opts.PRNumber)
+		if err != nil {
+			// Log warning but continue - this is acceptable for first run
+			c.logVerbosef("Warning: could not fetch existing comments (first run?): %v", err)
+		} else {
+			// Empty string for botUsername - we accept any comment with our marker
+			// For stronger validation, the bot username should be passed in opts
+			ourPreviousComment, prevState, _ = FindOurPreviousComment(comments, "")
+		}
+	}
+
+	// 6. Check if this is a re-run on same commit (skip if no changes)
+	if prevState != nil && prevState.CommitSHA == pr.HeadSHA {
+		// Additional checks for edge cases - verify diff hasn't changed either
+		currentDiffHash := hashDiffPatch(diff.Patch)
+		if prevState.ReviewedDiffHash != "" {
+			// Use constant-time comparison to prevent timing attacks
+			if subtle.ConstantTimeCompare([]byte(currentDiffHash), []byte(prevState.ReviewedDiffHash)) == 1 {
+				c.logVerbosef("Skipping review: no new commits or diff changes since last review")
+
+				return &PRReviewResult{
+					Skipped: true,
+					Reason:  "No new commits or diff changes since last review",
+				}, nil
+			}
+		} else {
+			// Old state without diff hash - skip based on commit SHA only
+			c.logVerbosef("Skipping review: no new commits since last review")
+
+			return &PRReviewResult{
+				Skipped: true,
+				Reason:  "No new commits since last review",
+			}, nil
+		}
+	}
+
+	// 7. Get agent for review
+	c.logVerbosef("Getting agent '%s'...", opts.AgentName)
+	c.mu.RLock()
+	agentInst, err := c.agents.Get(opts.AgentName)
+	c.mu.RUnlock()
+	if err != nil {
+		return nil, fmt.Errorf("get agent %q: %w", opts.AgentName, err)
+	}
+
+	// 8. Build review prompt
+	c.logVerbosef("Building review prompt...")
+	prompt := buildPRReviewPrompt(pr, diff, prevState, opts.Scope, c.workspace)
+
+	// 9. Run AI review with timeout
+	// Add timeout context (default 10 minutes)
+	const defaultReviewTimeout = 10 * time.Minute
+	reviewCtx, cancel := context.WithTimeout(ctx, defaultReviewTimeout)
+	defer cancel()
+
+	c.logVerbosef("Running AI review (timeout: %v)...", defaultReviewTimeout)
+	response, err := agentInst.Run(reviewCtx, prompt)
+	if err != nil {
+		return nil, fmt.Errorf("run agent: %w", err)
+	}
+
+	// 10. Parse response
+	c.logVerbosef("Parsing AI response...")
+	currentReview := parsePRReview(response.Summary)
+
+	// 11. Compute delta
+	delta := ComputeReviewDelta(prevState, currentReview)
+	c.logVerbosef("Delta: %d new issues, %d fixed, %d unchanged",
+		len(delta.NewIssues), len(delta.FixedIssues), len(delta.Unchanged))
+
+	// 12. Build new state
+	newState := BuildPRReviewState(pr, diff, currentReview)
+
+	// 13. Format review comment
+	commentBody := FormatReviewComment(currentReview, delta, opts)
+
+	// 14. Embed state in comment
+	commentBody = EmbedStateInComment(commentBody, newState)
+
+	// 15. Post or update comment
+	c.logVerbosef("Posting comment to PR...")
+	if ourPreviousComment != nil && opts.UpdateExisting {
+		// Update existing comment
+		if prCommentUpdater, ok := instance.(provider.PRCommentUpdater); ok {
+			_, err = prCommentUpdater.UpdatePullRequestComment(ctx, opts.PRNumber, ourPreviousComment.ID, commentBody)
+			if err != nil {
+				return nil, fmt.Errorf("update comment: %w", err)
+			}
+			c.logVerbosef("Updated existing comment")
+		} else {
+			// Can't update, post new comment instead
+			_, err = prCommenter.AddPullRequestComment(ctx, opts.PRNumber, commentBody)
+			if err != nil {
+				return nil, fmt.Errorf("add comment: %w", err)
+			}
+			c.logVerbosef("Posted new comment (update not supported)")
+		}
+	} else {
+		// Post new comment
+		_, err = prCommenter.AddPullRequestComment(ctx, opts.PRNumber, commentBody)
+		if err != nil {
+			return nil, fmt.Errorf("add comment: %w", err)
+		}
+		c.logVerbosef("Posted new comment")
+	}
+
+	// 16. Build result
+	result := &PRReviewResult{
+		CommentsPosted: 1,
+		URL:            pr.URL,
+	}
+
+	// If we found new issues, count them
+	if len(delta.NewIssues) > 0 {
+		result.CommentsPosted += len(delta.NewIssues)
+	}
+
+	c.logVerbosef("Review completed successfully")
+
+	return result, nil
 }
