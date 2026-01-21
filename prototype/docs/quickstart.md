@@ -69,60 +69,9 @@ make install
 mehr version
 ```
 
-## Your First Task
+## Next: Your First Task
 
-### 1. Initialize Your Project
-
-```bash
-cd your-project
-mehr init
-```
-
-This creates `.mehrhof/` for configuration (task data is stored in `~/.valksor/mehrhof/workspaces/<project-id>/`).
-
-### 2. Create a Task File
-
-```bash
-cat > feature.md << 'EOF'
----
-title: Add Health Check Endpoint
----
-
-Create a `/health` endpoint that returns:
-- HTTP 200 when healthy
-- JSON with status and timestamp
-- No authentication required
-EOF
-```
-
-### 3. Start the Task
-
-```bash
-mehr start feature.md
-```
-
-Output:
-```
-Task registered: a1b2c3d4
-Branch created: task/a1b2c3d4--add-health-check-endpoint
-Switched to branch task/a1b2c3d4--add-health-check-endpoint
-```
-
-### 4. Generate & Implement
-
-```bash
-mehr plan
-
-mehr implement
-```
-
-### 5. Review & Finish
-
-```bash
-git diff
-
-mehr finish
-```
+Now that Mehrhof is installed, follow the **[Your First Task Tutorial](guides/first-task.md)** to learn the workflow by building a complete feature.
 
 ## Common Commands
 
@@ -148,9 +97,8 @@ mehr update
 mehr update --check
 ```
 
-## Next Steps
+## Learn More
 
-- [Your First Task (detailed)](guides/first-task.md) - Step-by-step tutorial
 - [Workflow Concepts](concepts/workflow.md) - Understanding the task lifecycle
 - [CLI Reference](cli/index.md) - All commands and flags
 - [Configuration](configuration/index.md) - Customize behavior
