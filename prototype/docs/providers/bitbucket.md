@@ -5,7 +5,7 @@
 
 **Schemes:** `bitbucket:`, `bb:`
 
-**Capabilities:** `read`, `list`, `fetch_comments`, `comment`, `update_status`, `manage_labels`, `create_work_unit`, `download_attachment`, `create_pr`, `snapshot`, `fetch_subtasks`
+**Capabilities:** `read`, `list`, `fetch_comments`, `comment`, `update_status`, `create_work_unit`, `create_pr`, `snapshot`, `fetch_subtasks`, `fetch_pr`, `pr_comment`, `fetch_pr_comments`, `update_pr_comment`
 
 Integrates with Bitbucket Cloud for issue tracking and pull request management.
 
@@ -64,6 +64,7 @@ Required permissions: `Issues: Read, Write`, `Repositories: Read, Write`, `Pull 
 - **Comment Support**: Fetch and add comments
 - **State Updates**: Change issue state
 - **PR Creation**: Create pull requests
+- **PR Review**: Fetch PR details, diff, comments; add and update PR comments
 - **Snapshots**: Export issue content as markdown
 
 ## Status Mapping
