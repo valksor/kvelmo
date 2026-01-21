@@ -7,7 +7,7 @@ Mehrhof supports a plugin system for extending functionality without recompilati
 | Type         | Purpose                  | Example Use Cases                | Status |
 | ------------ | ------------------------ | -------------------------------- | ------ |
 | **Provider** | Custom task sources      | Jira, YouTrack, Linear, Notion   | Stable |
-| **Agent**    | Custom AI backends       | Local LLMs, Codex, custom models | Stable |
+| **Agent**    | Custom AI backends       | Local LLMs, custom models        | Stable |
 | **Workflow** | State machine extensions | Approval steps, notifications    | Stable |
 
 ## Quick Start
@@ -118,7 +118,7 @@ Agent plugins provide custom AI backends:
 
 ```bash
 mehr plan --agent ollama
-mehr implement --agent codex
+mehr implement --agent claude
 ```
 
 ### Agent Aliases

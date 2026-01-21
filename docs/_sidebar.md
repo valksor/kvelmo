@@ -17,7 +17,6 @@
 - **AI Agents**
   - [Overview & Config](agents/index.md)
   - [Claude](agents/claude.md)
-  - [Codex](agents/codex.md)
 
 - **Task Providers**
   - [Overview](providers/index.md)

@@ -256,12 +256,11 @@ Each worktree is an isolated git checkout. Mehrhof auto-detects which task you'r
 >
 > Mehrhof is designed and optimized for **Claude**. See AI Agents documentation for other options.
 
-Mehrhof supports multiple AI backends:
+Mehrhof supports AI agent plugins for custom backends. The primary agent is **Claude**, which is fully integrated with Mehrhof's workflow engine.
 
 | Agent | Description |
 |-------|-------------|
 | Claude | Primary agent via Claude CLI (recommended) |
-| Codex | Alternative AI agent |
 
 **See [AI Agents documentation](https://mehrhof.valksor.com/docs/#/agents/index) for configuration and custom aliases.**
 
