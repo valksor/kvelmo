@@ -45,4 +45,4 @@ Permission modes are set explicitly to ensure consistent behavior regardless of 
 - Planning step from modifying files (if user defaults to `acceptEdits`)
 - Implementation step from being read-only (if user defaults to `plan`)
 
-> **Note**: Agent aliases that extend Claude (like `glm` or `opus`) inherit this behavior automatically.
+> **Note**: Agent aliases that extend Claude (like `work-account` or `opus`) inherit this behavior automatically.
