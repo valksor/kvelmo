@@ -1,8 +1,8 @@
-# mcp
+# mehr mcp
 
 Start an MCP (Model Context Protocol) server for AI agent integration.
 
-## Usage
+## Synopsis
 
 ```bash
 mehr mcp

@@ -1,4 +1,14 @@
-# Provider Login Commands
+# mehr login
+
+Provider login commands for configuring authentication tokens.
+
+## Synopsis
+
+```bash
+mehr <provider> login
+```
+
+## Description
 
 The `mehr <provider> login` commands provide an interactive way to configure authentication tokens for various providers.
 
@@ -13,14 +23,6 @@ The `mehr <provider> login` commands provide an interactive way to configure aut
 | Linear | `mehr linear login` | `LINEAR_API_KEY` |
 | Wrike | `mehr wrike login` | `WRIKE_TOKEN` |
 | YouTrack | `mehr youtrack login` | `YOUTRACK_TOKEN` |
-
-## Usage
-
-```bash
-mehr github login
-mehr gitlab login
-mehr jira login
-```
 
 ## What Happens When You Run Login
 

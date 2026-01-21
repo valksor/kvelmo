@@ -1,8 +1,14 @@
-# browser
+# mehr browser
 
 Browser automation commands for web-based testing, scraping, and authentication flows.
 
-## Overview
+## Synopsis
+
+```bash
+mehr browser <subcommand> [flags]
+```
+
+## Description
 
 Mehrhof includes Chrome browser automation capabilities using the [Rod](https://github.com/go-rod/rod) library. This enables:
 - Web-based testing and verification

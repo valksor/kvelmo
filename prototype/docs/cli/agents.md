@@ -2,7 +2,17 @@
 
 Manage AI agents including built-in agents and user-defined aliases.
 
-## Commands
+## Synopsis
+
+```bash
+mehr agents <subcommand> [flags]
+```
+
+## Description
+
+The `agents` command group provides utilities for managing AI agents. Agents are the AI backends that perform planning, implementation, and review operations.
+
+## Subcommands
 
 ### mehr agents list
 
@@ -15,10 +25,10 @@ mehr agents list
 **Output:**
 
 ```
-NAME      TYPE      EXTENDS  AVAILABLE  DESCRIPTION
-claude    built-in  -        yes        -
-glm       alias     claude   yes        Claude with GLM API key
-glm-fast  alias     glm      yes        GLM with lower token limit
+NAME          TYPE      EXTENDS       AVAILABLE  DESCRIPTION
+claude        built-in  -             yes        -
+work-account  alias     claude        yes        Claude with work API key
+work-fast     alias     work-account  yes        Work account with lower token limit
 ```
 
 **Columns:**
@@ -36,16 +46,15 @@ Aliases are defined in `.mehrhof/config.yaml`:
 
 ```yaml
 agents:
-  glm:
+  work-account:
     extends: claude # Required: base agent to wrap
-    description: "Claude with GLM API key" # Optional: shown in list
+    description: "Claude with work API key" # Optional: shown in list
     env: # Optional: environment variables
-      ANTHROPIC_API_KEY: "${GLM_API_KEY}" # ${VAR} references system env vars
-      CUSTOM_HEADER: "X-GLM-Request"
+      ANTHROPIC_API_KEY: "${WORK_API_KEY}" # ${VAR} references system env vars
 
-  glm-fast:
-    extends: glm # Aliases can extend other aliases
-    description: "GLM with lower tokens"
+  work-fast:
+    extends: work-account # Aliases can extend other aliases
+    description: "Work account with lower tokens"
     env:
       MAX_TOKENS: "2048"
 ```
@@ -64,7 +73,7 @@ Values in `env` support shell variable expansion:
 
 ```yaml
 env:
-  ANTHROPIC_API_KEY: "${GLM_API_KEY}" # Expands $GLM_API_KEY
+  ANTHROPIC_API_KEY: "${WORK_API_KEY}" # Expands $WORK_API_KEY
   MAX_TOKENS: "${MAX_TOKENS:-4096}" # With default (shell syntax)
   LITERAL_VALUE: "sk-ant-123" # Literal value (no expansion)
 ```
@@ -74,13 +83,13 @@ env:
 ### At Task Start
 
 ```bash
-mehr start --agent glm file:task.md
+mehr start --agent work-account file:task.md
 ```
 
 ### In Auto Mode
 
 ```bash
-mehr auto --agent glm file:task.md
+mehr auto --agent work-account file:task.md
 ```
 
 ### Change Default Agent
@@ -90,7 +99,7 @@ Set in workspace config:
 ```yaml
 # .mehrhof/config.yaml
 agent:
-  default: glm # Use alias as default
+  default: work-account # Use alias as default
 ```
 
 ## Common Patterns
@@ -139,18 +148,18 @@ Build on top of other aliases:
 
 ```yaml
 agents:
-  glm:
+  work-account:
     extends: claude
     env:
-      ANTHROPIC_API_KEY: "${GLM_API_KEY}"
+      ANTHROPIC_API_KEY: "${WORK_API_KEY}"
 
-  glm-fast:
-    extends: glm # Inherits GLM's API key
+  work-fast:
+    extends: work-account # Inherits work account's API key
     env:
       MAX_TOKENS: "2048"
 
-  glm-thorough:
-    extends: glm # Inherits GLM's API key
+  work-thorough:
+    extends: work-account # Inherits work account's API key
     env:
       MAX_TOKENS: "16000"
 ```

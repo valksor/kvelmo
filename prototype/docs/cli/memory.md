@@ -1,8 +1,14 @@
-# memory
+# mehr memory
 
 Semantic memory commands for storing and searching past task embeddings.
 
-## Overview
+## Synopsis
+
+```bash
+mehr memory <subcommand> [flags]
+```
+
+## Description
 
 Mehrhof's semantic memory system stores vector embeddings of:
 - Code changes (git diffs)

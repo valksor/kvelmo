@@ -2,13 +2,10 @@
 
 Show token usage and costs for the active task.
 
-## Usage
+## Synopsis
 
 ```bash
-mehr cost
-mehr cost --breakdown
-mehr cost --all
-mehr cost --summary
+mehr cost [flags]
 ```
 
 ## Description
@@ -160,3 +157,8 @@ costs:
 Costs are calculated based on the agent's model pricing. For Claude models via Claude CLI, pricing follows Anthropic's published rates.
 
 Note: Cached tokens are billed at 90% discount compared to standard input tokens.
+
+## See Also
+
+- [status](status.md) - View task status including token summary
+- [Performance & Cost](../advanced/optimization.md) - Optimization strategies

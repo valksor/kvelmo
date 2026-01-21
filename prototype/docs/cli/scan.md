@@ -1,8 +1,14 @@
-# scan
+# mehr scan
 
 Security scanning commands for vulnerability detection and compliance checking.
 
-## Overview
+## Synopsis
+
+```bash
+mehr scan [flags]
+```
+
+## Description
 
 Mehrhof integrates security scanners that run automatically during implementation and review phases:
 - **SAST** (Static Application Security Testing) - Code vulnerability scanning
