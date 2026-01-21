@@ -54,25 +54,13 @@ labels:
   - backend
 key: FEATURE-123
 type: feature
-agent: glm
-agent_env:
-  MAX_TOKENS: "8192"
+agent: work-account
 ---
 # Add Search Feature
 ...
 ```
 
-| Field       | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `title`     | Task title (overrides `# Heading`)                |
-| `priority`  | Priority: `critical`, `high`, `normal`, `low`     |
-| `labels`    | Array of labels/tags                              |
-| `key`       | External key for branch naming (e.g., `FEAT-123`) |
-| `type`      | Task type: `feature`, `fix`, `chore`, etc.        |
-| `agent`     | Agent name or alias to use for this task          |
-| `agent_env` | Inline environment variables for the agent        |
-
-See [AI Agents](../agents/index.md#per-task-agent-configuration) for details on `agent` and `agent_env`.
+See [Task File Format](../reference/task-format.md) for complete frontmatter reference and examples.
 
 ### Directory Source
 
@@ -121,7 +109,7 @@ Each specification file contains:
 - File changes required
 - Step-by-step instructions
 
-See [SPEC File Format](../reference/spec-format.md) for details.
+See [Specification File Format](../reference/specification-format.md) for details.
 
 ## Task States
 

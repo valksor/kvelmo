@@ -131,7 +131,7 @@ Use a specific agent for this planning session. See [AI Agents](../agents/index.
    - Plan saved to `.mehrhof/planned/<id>/`
    - Includes `PLAN_HISTORY.md` with conversation
 
-## SPEC File Format
+## Specification File Format
 
 Generated specifications follow this format:
 
@@ -202,4 +202,4 @@ mehr note "Simplify the authentication flow"
 
 - [implement](cli/implement.md) - Implement specifications
 - [note](cli/note.md) - Add notes or clarifications
-- [SPEC Format](../reference/spec-format.md) - Specification details
+- [Specification Format](../reference/specification-format.md) - Specification file details

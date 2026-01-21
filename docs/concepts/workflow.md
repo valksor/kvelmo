@@ -69,7 +69,7 @@ mehr implement
 
 Requirements:
 
-- At least one SPEC file must exist
+- At least one specification file must exist
 
 What happens:
 

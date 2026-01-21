@@ -15,7 +15,7 @@ Checkpoints are git commits that capture the state of your code at specific poin
 
 Checkpoints are created automatically after:
 
-- **Planning** - After SPEC files are generated
+- **Planning** - After specification files are generated
 - **Implementation** - After code changes are applied
 - **Chat sessions** - If files are modified
 
@@ -186,7 +186,7 @@ These integrate with the checkpoint system.
 
 ## Best Practices
 
-1. **Review before implementing** - Check SPEC files before `mehr implement`
+1. **Review before implementing** - Check specification files before `mehr implement`
 
 2. **Add notes** - Add context with `mehr note` before re-implementing
 

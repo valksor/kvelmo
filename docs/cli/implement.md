@@ -14,12 +14,12 @@ mehr implement [flags]
 
 The `implement` command runs the implementation phase where the AI agent:
 
-1. Reads all SPEC files in the work directory
+1. Reads all specification files in the work directory
 2. Reviews notes and context
 3. Generates or modifies code
 4. Creates a checkpoint for undo support
 
-**Prerequisite:** At least one SPEC file must exist. Run `mehr plan` first.
+**Prerequisite:** At least one specification file must exist. Run `mehr plan` first.
 
 ## Flags
 

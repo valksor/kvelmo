@@ -1,11 +1,11 @@
 # mehr sync
 
-Sync task data from the provider (e.g., Wrike, GitHub) and generate a delta specification if changes are detected.
+Sync task data from the provider and generate a delta specification if changes are detected.
 
-## Usage
+## Synopsis
 
 ```bash
-mehr sync <task-id>
+mehr sync [task-id]
 ```
 
 ## Description

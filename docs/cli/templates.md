@@ -2,12 +2,10 @@
 
 Manage and apply task templates for common development patterns.
 
-## Usage
+## Synopsis
 
 ```bash
-mehr templates
-mehr templates show <name>
-mehr templates apply <name> <file>
+mehr templates [subcommand] [arguments]
 ```
 
 ## Description
@@ -238,3 +236,8 @@ type: fix
 agent: claude-sonnet
 ---
 ```
+
+## See Also
+
+- [start](start.md) - Start a task with `--template` flag
+- [Task File Format](../reference/task-format.md) - Frontmatter reference

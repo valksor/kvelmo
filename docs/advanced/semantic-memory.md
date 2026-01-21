@@ -48,7 +48,7 @@ The memory system stores different document types:
 | Type | Description | Content |
 |------|-------------|---------|
 | `code_change` | Git diffs | Unified diff of code changes |
-| `specification` | Implementation plans | SPEC file content |
+| `specification` | Implementation plans | Specification file content |
 | `session` | Agent conversations | Full transcript of agent interactions |
 | `solution` | Fixes and corrections | Problem → solution pairs |
 | `decision` | Architectural decisions | Decision records and rationale |

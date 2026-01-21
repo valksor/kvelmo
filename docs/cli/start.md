@@ -275,7 +275,7 @@ Use different agents for different workflow phases:
 ```bash
 mehr start --agent-planning claude-opus --agent-implementing claude task.md
 
-mehr start --agent-planning glm task.md
+mehr start --agent-planning work-account task.md
 ```
 
 See [AI Agents](../agents/index.md#per-step-agent-configuration) for details.

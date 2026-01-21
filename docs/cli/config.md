@@ -2,7 +2,17 @@
 
 Manage and validate Mehrhof configuration files.
 
-## Commands
+## Synopsis
+
+```bash
+mehr config <subcommand> [flags]
+```
+
+## Description
+
+The `config` command group provides utilities for managing Mehrhof configuration files in your project.
+
+## Subcommands
 
 ### mehr config init
 
@@ -57,11 +67,11 @@ workflow:
 # User-defined agent aliases
 agents:
   # Example: Custom agent with environment variables
-  # glm:
+  # work-account:
   #   extends: claude
-  #   description: "Claude with custom API"
+  #   description: "Claude with work API key"
   #   env:
-  #     ANTHROPIC_API_KEY: "${CUSTOM_API_KEY}"
+  #     ANTHROPIC_API_KEY: "${WORK_API_KEY}"
 
 # Plugins
 plugins:
@@ -124,11 +134,11 @@ Configuration is VALID
 Validating configuration...
 
 .mehrhof/config.yaml:
-  ERROR [AGENT_ALIAS_CIRCULAR] agents.glm-fast: Circular dependency detected: glm-fast -> glm -> glm-fast
+  ERROR [AGENT_ALIAS_CIRCULAR] agents.work-fast: Circular dependency detected: work-fast -> work-account -> work-fast
     Suggestion: Remove circular reference in 'extends' field
 
-  WARNING [ENV_VAR_UNSET] agents.glm.env.ANTHROPIC_API_KEY: Environment variable ${GLM_API_KEY} is not set
-    Suggestion: Set GLM_API_KEY environment variable
+  WARNING [ENV_VAR_UNSET] agents.work-account.env.ANTHROPIC_API_KEY: Environment variable ${WORK_API_KEY} is not set
+    Suggestion: Set WORK_API_KEY environment variable
 
 Summary: 1 error(s), 1 warning(s)
 Configuration is INVALID
@@ -149,18 +159,18 @@ mehr config validate --format json
     {
       "severity": "error",
       "code": "AGENT_ALIAS_CIRCULAR",
-      "message": "Circular dependency detected: glm-fast -> glm -> glm-fast",
-      "path": "agents.glm-fast",
+      "message": "Circular dependency detected: work-fast -> work-account -> work-fast",
+      "path": "agents.work-fast",
       "file": ".mehrhof/config.yaml",
       "suggestion": "Remove circular reference in 'extends' field"
     },
     {
       "severity": "warning",
       "code": "ENV_VAR_UNSET",
-      "message": "Environment variable ${GLM_API_KEY} is not set",
-      "path": "agents.glm.env.ANTHROPIC_API_KEY",
+      "message": "Environment variable ${WORK_API_KEY} is not set",
+      "path": "agents.work-account.env.ANTHROPIC_API_KEY",
       "file": ".mehrhof/config.yaml",
-      "suggestion": "Set GLM_API_KEY environment variable"
+      "suggestion": "Set WORK_API_KEY environment variable"
     }
   ]
 }
@@ -290,9 +300,9 @@ A `${VAR}` reference in your config points to an unset variable:
 
 ```yaml
 agents:
-  glm:
+  work-account:
     env:
-      ANTHROPIC_API_KEY: "${GLM_API_KEY}" # GLM_API_KEY not set
+      ANTHROPIC_API_KEY: "${WORK_API_KEY}" # WORK_API_KEY not set
 ```
 
 Fix by setting the environment variable or using a literal value.

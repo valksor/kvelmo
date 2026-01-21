@@ -177,7 +177,7 @@ Output:
 | State          | Current workflow state        |
 | Source         | Original task file/directory  |
 | Branch         | Git branch name               |
-| Specifications | List of SPEC files            |
+| Specifications | List of specification files   |
 | Checkpoints    | Undo/redo availability        |
 | Notes          | Number of note entries        |
 | Sessions       | Number of logged sessions     |
