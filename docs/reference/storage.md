@@ -199,7 +199,7 @@ specifications/
 └── specification-3.md
 ```
 
-See [Specification File Format](reference/spec-format.md) for details.
+See [Specification File Format](specification-format.md) for details.
 
 ### reviews/ Directory
 

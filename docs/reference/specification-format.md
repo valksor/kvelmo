@@ -121,7 +121,7 @@ Create `internal/api/health_test.go` with:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `title` | string | Spec title |
+| `title` | string | Specification title |
 | `status` | string | Current status |
 
 ### Optional Fields
@@ -354,7 +354,6 @@ Create a new user.
 
 ## See Also
 
-- [Storage Structure](reference/storage.md) - Where specifications are stored
+- [Storage Structure](storage.md) - Where specifications are stored
 - [plan command](../cli/plan.md) - Creating specifications
 - [implement command](../cli/implement.md) - Using specifications
-```
