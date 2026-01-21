@@ -10,7 +10,7 @@ Create custom plugins to extend Mehrhof with new task sources, AI backends, or w
 | Type         | Purpose                  | Use Cases                                   |
 | ------------ | ------------------------ | ------------------------------------------- |
 | **Provider** | Custom task sources      | Jira, YouTrack, Linear, Notion, custom APIs |
-| **Agent**    | AI backends              | Local LLMs, Codex, custom models            |
+| **Agent**    | AI backends              | Local LLMs, custom models                   |
 | **Workflow** | State machine extensions | Approval steps, notifications, CI triggers  |
 
 ## Quick Start

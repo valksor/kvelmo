@@ -131,21 +131,14 @@ func TestRegisterStandardAgents(t *testing.T) {
 
 		// Check for expected agents
 		foundClaude := false
-		foundCodex := false
 		for _, name := range agents {
 			if name == "claude" {
 				foundClaude = true
-			}
-			if name == "codex" {
-				foundCodex = true
 			}
 		}
 
 		if !foundClaude {
 			t.Error("claude agent not registered")
-		}
-		if !foundCodex {
-			t.Error("codex agent not registered")
 		}
 	})
 

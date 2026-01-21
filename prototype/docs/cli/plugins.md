@@ -13,7 +13,7 @@ mehr plugins <subcommand> [flags]
 The `plugins` command group manages the plugin system. Plugins extend mehr with custom integrations without requiring recompilation:
 
 - **Providers**: Custom task sources (Jira, YouTrack, Linear) — _Stable_
-- **Agents**: Custom AI backends (Codex, Junie, custom models) — _Stable_
+- **Agents**: Custom AI backends (Junie, local LLMs, custom models) — _Stable_
 - **Workflows**: Custom phases, guards, and effects — _Experimental_
 
 > **Note:** Workflow plugins have scaffolding in place but are not yet fully integrated into the state machine. Use provider and agent plugins for production workloads.
@@ -54,7 +54,6 @@ mehr plugins list
 NAME       TYPE      SCOPE    ENABLED  DESCRIPTION
 jira       provider  global   yes      Jira integration provider
 youtrack   provider  project  no       YouTrack integration
-codex      agent     global   yes      OpenAI Codex agent
 ```
 
 ---
@@ -235,7 +234,6 @@ plugins:
   enabled:
     - jira
     - youtrack
-    - codex
   config:
     jira:
       url: "https://company.atlassian.net"

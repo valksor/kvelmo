@@ -28,7 +28,7 @@ var pluginsCmd = &cobra.Command{
 
 Plugins extend mehr with custom integrations:
   - Providers: Jira, YouTrack, Linear, etc.
-  - Agents: Codex, custom AI models, etc.
+  - Agents: Custom AI models
   - Workflows: Custom phases, guards, effects
 
 Plugins must be explicitly enabled in .mehrhof/config.yaml:

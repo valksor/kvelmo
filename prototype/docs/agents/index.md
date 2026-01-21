@@ -1,10 +1,8 @@
 # AI Agents
 
-> **⚠️ Claude is the Primary Supported Agent**
+> **⚠️ Claude Agent**
 >
-> Mehrhof is designed and optimized for **Claude**. Codex is available as an alternative.
->
-> Agent implementations depend on third-party APIs that may change. Manual testing recommended before production use.
+> Mehrhof is designed and optimized for **Claude**. Agent implementations depend on third-party APIs that may change. Manual testing recommended before production use.
 
 Mehrhof orchestrates AI agents to help with planning and implementation. It delegates AI operations to external CLI tools.
 
@@ -33,7 +31,6 @@ When using other agents:
 | Agent | Description |
 |-------|-------------|
 | [Claude](claude.md) | Anthropic's Claude AI (Default, Primary) |
-| [Codex](codex.md) | Alternative AI agent |
 
 ## Basic Configuration
 

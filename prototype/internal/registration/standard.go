@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/valksor/go-mehrhof/internal/agent/claude"
-	"github.com/valksor/go-mehrhof/internal/agent/codex"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/provider/asana"
 	"github.com/valksor/go-mehrhof/internal/provider/azuredevops"
@@ -56,9 +55,6 @@ func RegisterStandardAgents(cond *conductor.Conductor) error {
 
 	if err := claude.Register(registry); err != nil {
 		errs = append(errs, fmt.Errorf("register claude agent: %w", err))
-	}
-	if err := codex.Register(registry); err != nil {
-		errs = append(errs, fmt.Errorf("register codex agent: %w", err))
 	}
 
 	if len(errs) > 0 {
