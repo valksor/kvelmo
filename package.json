@@ -1,12 +1,12 @@
 {
     "devDependencies": {
-        "@cloudflare/kv-asset-handler": "^0.4.1",
+        "@cloudflare/kv-asset-handler": "^0.4.2",
         "docsify": "^4.13.1",
         "docsify-copy-code": "^3.0.2",
         "docsify-pagination": "^2.10.1",
-        "prettier": "^3.7.4",
+        "prettier": "^3.8.0",
         "prismjs": "^1.30.0",
-        "wrangler": "^4.54.0"
+        "wrangler": "^4.59.3"
     },
     "scripts": {
         "bump": "npx npm-check-updates -u && bun i",
