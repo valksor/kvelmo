@@ -7,47 +7,46 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
 
-// CreateWorkUnitInput holds input for creating a new page.
-type CreateWorkUnitInput struct {
-	Title       string
-	Description string
-	Status      provider.Status
-	AssigneeID  string
-	Labels      []string
-}
-
 // CreateWorkUnit creates a new Notion page.
-func (p *Provider) CreateWorkUnit(ctx context.Context, input CreateWorkUnitInput) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
 	databaseID := p.databaseID
 	if databaseID == "" {
 		return nil, fmt.Errorf("%w: specify notion.database_id in config", ErrDatabaseRequired)
 	}
 
+	// Determine status from CustomFields or default to open
+	status := provider.StatusOpen
+	if opts.CustomFields != nil {
+		if s, ok := opts.CustomFields["status"].(provider.Status); ok {
+			status = s
+		}
+	}
+
 	// Build properties
 	properties := map[string]Property{
-		"Name":           MakeTitleProperty(input.Title),
-		p.statusProperty: MakeStatusProperty(mapProviderStatusToNotion(input.Status)),
+		"Name":           MakeTitleProperty(opts.Title),
+		p.statusProperty: MakeStatusProperty(mapProviderStatusToNotion(status)),
 	}
 
 	// Add description if provided
-	if input.Description != "" {
-		properties[p.descriptionProperty] = MakeRichTextProperty(input.Description)
+	if opts.Description != "" {
+		properties[p.descriptionProperty] = MakeRichTextProperty(opts.Description)
 	}
 
 	// Add labels if provided
-	if len(input.Labels) > 0 {
-		properties[p.labelsProperty] = MakeMultiSelectProperty(input.Labels)
+	if len(opts.Labels) > 0 {
+		properties[p.labelsProperty] = MakeMultiSelectProperty(opts.Labels)
 	}
 
-	// Add assignee if provided
-	if input.AssigneeID != "" {
+	// Add assignee if provided (use first from list)
+	if len(opts.Assignees) > 0 {
 		properties["Assignee"] = Property{
 			Type: "people",
 			People: &PeopleProp{
 				Type: "people",
 				People: []User{
 					{
-						ID: input.AssigneeID,
+						ID: opts.Assignees[0],
 					},
 				},
 			},
@@ -71,11 +70,11 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, input CreateWorkUnitInput
 		ID:          page.ID,
 		ExternalID:  page.ID,
 		Provider:    ProviderName,
-		Title:       input.Title,
-		Description: input.Description,
-		Status:      input.Status,
-		Priority:    provider.PriorityNormal,
-		Labels:      input.Labels,
+		Title:       opts.Title,
+		Description: opts.Description,
+		Status:      status,
+		Priority:    opts.Priority,
+		Labels:      opts.Labels,
 		CreatedAt:   page.CreatedTime,
 		UpdatedAt:   page.LastEditedTime,
 		Source: provider.SourceInfo{
