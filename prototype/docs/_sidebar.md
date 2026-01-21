@@ -37,7 +37,10 @@
   - [YouTrack](providers/youtrack.md)
 
 - **Configuration**
-  - [Configuration Guide](configuration/index.md)
+  - [Overview](configuration/index.md)
+  - [Git](configuration/git.md)
+  - [Browser](configuration/browser.md)
+  - [Storage](configuration/storage.md)
 
 - **CLI Reference**
   - [Overview](cli/index.md)
@@ -78,7 +81,8 @@
 
 - **Reference**
   - [Storage Structure](reference/storage.md)
-  - [SPEC File Format](reference/spec-format.md)
+  - [Task File Format](reference/task-format.md)
+  - [Specification File Format](reference/specification-format.md)
 
 - **Advanced**
   - [Performance & Cost](advanced/optimization.md)
