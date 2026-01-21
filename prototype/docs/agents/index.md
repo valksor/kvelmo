@@ -57,12 +57,17 @@ Aliases let you create custom agents with specific environment variables and CLI
 
 ### Defining Aliases
 
+**Key distinction:**
+- `claude` = uses whatever model is configured in Claude Code globally
+- Model aliases (`opus`, `sonnet-fast`) = override the model
+- Account aliases (`work-account`) = use different API key
+
 ```yaml
 # .mehrhof/config.yaml
 agents:
   opus:
     extends: claude
-    description: "Claude Opus model"
+    description: "Claude Opus for complex tasks"
     args: ["--model", "claude-opus-4-20250514"]
 
   sonnet-fast:
@@ -70,23 +75,23 @@ agents:
     description: "Sonnet with limited turns"
     args: ["--model", "claude-sonnet-4-20250514", "--max-turns", "3"]
 
-  glm:
+  work-account:
     extends: claude
-    description: "Claude with GLM API key"
+    description: "Claude with work API key"
     env:
-      ANTHROPIC_API_KEY: "${GLM_API_KEY}"  # Expands from .env or system env
+      ANTHROPIC_API_KEY: "${WORK_API_KEY}"  # Expands from .env or system env
 
-  glm-opus:
-    extends: glm  # Aliases can extend aliases
-    description: "GLM with Opus model"
+  work-opus:
+    extends: work-account  # Aliases can extend aliases
+    description: "Work account with Opus"
     args: ["--model", "claude-opus-4-20250514"]
 ```
 
 ### Using Aliases
 
 ```bash
-export GLM_API_KEY="sk-ant-..."
-mehr start --agent glm file:task.md
+export WORK_API_KEY="sk-ant-..."
+mehr start --agent work-account file:task.md
 mehr auto --agent opus file:task.md
 ```
 
@@ -97,10 +102,10 @@ mehr agents list
 ```
 
 ```
-NAME      TYPE      EXTENDS  AVAILABLE  DESCRIPTION
-claude    built-in  -        yes        -
-glm       alias     claude   yes        Claude with GLM API key
-opus      alias     claude   yes        Claude Opus model
+NAME          TYPE      EXTENDS       AVAILABLE  DESCRIPTION
+claude        built-in  -             yes        -
+opus          alias     claude        yes        Claude Opus for complex tasks
+work-account  alias     claude        yes        Claude with work API key
 ```
 
 ---
@@ -183,7 +188,7 @@ Specify agents directly in task frontmatter:
 ```yaml
 ---
 title: My Feature
-agent: glm
+agent: work-account
 agent_args: ["--max-turns", "20"]
 agent_env:
   ANTHROPIC_API_KEY: "${PROJECT_API_KEY}"
@@ -216,11 +221,11 @@ mehr implement
 1. Receives task source content
 2. Reads any existing notes
 3. Analyzes requirements
-4. Generates SPEC files with implementation details
+4. Generates specification files with implementation details
 
 ### Implementation Phase (`mehr implement`)
 
-1. Reads all SPEC files
+1. Reads all specification files
 2. Considers notes and context
 3. Generates or modifies code files
 4. Provides summary of changes
