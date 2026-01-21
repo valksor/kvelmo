@@ -4,48 +4,22 @@ AI-powered task automation for software development. Mehrhof orchestrates AI age
 
 ---
 
-**Note:** Provider and agent integrations with third-party services (GitHub, Jira, Claude, Gemini, etc.) are experimental. Report issues at [github.com/valksor/go-mehrhof/issues](https://github.com/valksor/go-mehrhof/issues).
+**Note:** Provider and agent integrations with third-party services (GitHub, Jira, Claude, etc.) are experimental. Report issues at [github.com/valksor/go-mehrhof/issues](https://github.com/valksor/go-mehrhof/issues).
 
 ---
 
-## Get Started in 5 Minutes
+## Get Started
 
-```bash
-# Install (auto-detects OS/architecture)
-curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
-
-# Run your first task
-cd your-project && mehr init
-
-echo "Create a /health endpoint returning JSON status" > task.md
-mehr start task.md && mehr plan && mehr implement && mehr finish
-```
-
-[Full Quickstart Guide](quickstart.md)
+Follow the [Quickstart](quickstart.md) to install Mehrhof and run your first task, then continue with the [Your First Task Tutorial](guides/first-task.md) for a detailed walkthrough.
 
 ## Key Features
 
 - **AI Workflow** - Automatic planning, implementation, and code review
-- **Multi-Agent Orchestration** - Sequential, parallel, and consensus-based agent execution
-- **Semantic Memory** - Learn from past tasks with vector embeddings
-- **Security Scanning** - Automated vulnerability detection with SARIF output
 - **Git Integration** - Auto branches, checkpoints, undo/redo, squash merge
 - **15+ Task Sources** - GitHub, GitLab, Jira, Linear, Notion, Asana, and more
-- **Browser Automation** - Chrome automation for web testing, scraping, and authentication
+- **Browser Automation** - Chrome automation for web testing and authentication
 - **Parallel Tasks** - Run multiple tasks in isolated git worktrees
-- **Auto Mode** - Full automation: `mehr auto task.md`
-
-## How It Works
-
-```
-mehr init → mehr start → mehr plan → mehr implement → mehr finish
-```
-
-1. **init** - Set up workspace (one-time)
-2. **start** - Begin task, create git branch
-3. **plan** - AI generates implementation specifications
-4. **implement** - AI executes the specifications
-5. **finish** - Merge changes, clean up
+- **Auto Mode** - Full automation with `mehr auto task.md`
 
 ## Documentation
 

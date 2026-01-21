@@ -1,6 +1,6 @@
 # Tutorial: Your First Task
 
-Learn Mehrhof by building a complete feature from start to finish.
+Learn Mehrhof by building a complete feature from start to finish. This tutorial assumes you've completed the [Quickstart](../quickstart.md) and have Mehrhof installed.
 
 ## What We'll Build
 
@@ -12,9 +12,9 @@ A simple HTTP health check endpoint that returns:
 
 ## Prerequisites
 
-- Mehrhof installed (`mehr version` works)
-- Claude CLI installed and configured (`claude --version` works)
-- A Go project (or any project)
+- Mehrhof installed ([Quickstart](../quickstart.md) if not yet installed)
+- Claude CLI configured (`claude --version` works)
+- A project to work in (Go, Python, JavaScript, etc.)
 
 ## Step 1: Create the Task File
 
