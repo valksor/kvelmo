@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/config"
-	"github.com/valksor/go-mehrhof/internal/disambiguate"
 	"github.com/valksor/go-mehrhof/internal/help"
+	"github.com/valksor/go-toolkit/cli/disambiguate"
 	"github.com/valksor/go-toolkit/display"
 	"github.com/valksor/go-toolkit/log"
 )
