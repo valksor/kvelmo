@@ -9,23 +9,19 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/go-toolkit/cli"
+	"github.com/valksor/go-toolkit/version"
 )
 
 func TestVersionCommand(t *testing.T) {
 	// Save original values
-	origVersion := Version
-	origCommit := Commit
-	origBuildTime := BuildTime
+	origVersion, origCommit, origBuildTime := version.Version, version.Commit, version.BuildTime
 	defer func() {
-		Version = origVersion
-		Commit = origCommit
-		BuildTime = origBuildTime
+		version.Set(origVersion, origCommit, origBuildTime)
 	}()
 
 	// Set test values
-	Version = "1.2.3"
-	Commit = "abc123"
-	BuildTime = "2024-01-15T10:30:00Z"
+	version.Set("1.2.3", "abc123", "2024-01-15T10:30:00Z")
 
 	tests := []struct {
 		name            string
@@ -69,7 +65,7 @@ func TestVersionCommand(t *testing.T) {
 			}
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
-			rootCmd.AddCommand(versionCmd)
+			rootCmd.AddCommand(cli.NewVersionCommand("mehr"))
 
 			// Execute command
 			rootCmd.SetArgs(tt.args)
@@ -98,9 +94,7 @@ func TestVersionCommand(t *testing.T) {
 
 func TestVersionCommand_DefaultValues(t *testing.T) {
 	// Set default build values
-	Version = "dev"
-	Commit = "none"
-	BuildTime = "unknown"
+	version.Set("dev", "none", "unknown")
 
 	stdout := &bytes.Buffer{}
 	rootCmd := &cobra.Command{
@@ -108,7 +102,7 @@ func TestVersionCommand_DefaultValues(t *testing.T) {
 		Short: "Test command",
 	}
 	rootCmd.SetOut(stdout)
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(cli.NewVersionCommand("mehr"))
 
 	rootCmd.SetArgs([]string{"version"})
 	if err := rootCmd.Execute(); err != nil {
@@ -134,7 +128,7 @@ func TestVersionCommand_GoVersion(t *testing.T) {
 		Short: "Test command",
 	}
 	rootCmd.SetOut(stdout)
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(cli.NewVersionCommand("mehr"))
 
 	rootCmd.SetArgs([]string{"version"})
 	if err := rootCmd.Execute(); err != nil {
