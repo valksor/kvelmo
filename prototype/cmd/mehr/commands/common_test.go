@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-toolkit/cli"
 	"github.com/valksor/go-toolkit/helper_test"
 )
 
@@ -83,15 +84,16 @@ func TestUndoCommand_Properties(t *testing.T) {
 }
 
 func TestVersionCommand_Properties(t *testing.T) {
-	if versionCmd.Use != "version" {
-		t.Errorf("Use = %q, want %q", versionCmd.Use, "version")
+	cmd := cli.NewVersionCommand("mehr")
+	if cmd.Use != "version" {
+		t.Errorf("Use = %q, want %q", cmd.Use, "version")
 	}
 
-	if versionCmd.Short == "" {
+	if cmd.Short == "" {
 		t.Error("Short description is empty")
 	}
 
-	if versionCmd.Run == nil {
+	if cmd.Run == nil {
 		t.Error("Run not set")
 	}
 }

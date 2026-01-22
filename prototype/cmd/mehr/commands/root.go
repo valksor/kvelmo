@@ -13,6 +13,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/config"
 	"github.com/valksor/go-mehrhof/internal/help"
+	"github.com/valksor/go-toolkit/cli"
 	"github.com/valksor/go-toolkit/cli/disambiguate"
 	"github.com/valksor/go-toolkit/display"
 	"github.com/valksor/go-toolkit/log"
@@ -20,6 +21,11 @@ import (
 
 var (
 	settings *config.Settings
+
+	// Build-time variables set via ldflags.
+	Version   = "dev"
+	Commit    = "none"
+	BuildTime = "unknown"
 
 	// Global flags.
 	verbose bool
@@ -207,6 +213,9 @@ func attemptDisambiguation(prefix string) ([]string, error) {
 func init() {
 	// Enable Cobra's built-in prefix matching for unambiguous command prefixes
 	cobra.EnablePrefixMatching = true
+
+	// Add version command
+	rootCmd.AddCommand(cli.NewVersionCommand("mehr"))
 
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")

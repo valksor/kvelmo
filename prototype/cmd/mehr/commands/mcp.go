@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/mcp"
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/cli"
 	"github.com/valksor/go-toolkit/log"
 )
 
@@ -125,7 +126,7 @@ func registerSafeCommands(registry *mcp.ToolRegistry) {
 	commandsToRegister = append(commandsToRegister, statusCmd)
 	commandsToRegister = append(commandsToRegister, listCmd)
 	commandsToRegister = append(commandsToRegister, guideCmd)
-	commandsToRegister = append(commandsToRegister, versionCmd)
+	commandsToRegister = append(commandsToRegister, cli.NewVersionCommand("mehr"))
 
 	// Browser commands
 	commandsToRegister = append(commandsToRegister, browserCmd)
