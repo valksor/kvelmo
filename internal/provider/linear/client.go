@@ -641,6 +641,44 @@ type ListFilters struct {
 	State string
 }
 
+// UpdateIssueDescription updates an issue's description.
+func (c *Client) UpdateIssueDescription(ctx context.Context, issueID, description string) error {
+	input := UpdateIssueInput{}
+	// Linear doesn't have a dedicated description field in UpdateIssueInput
+	// We need to use the full update mutation with description
+	query := `
+		mutation UpdateIssueDescription($id: String!, $description: String!) {
+			issueUpdate(id: $id, input: {description: $description}) {
+				success
+			}
+		}
+	`
+
+	var response struct {
+		IssueUpdate struct {
+			Success bool `json:"success"`
+		} `json:"issueUpdate"`
+	}
+
+	variables := map[string]any{
+		"id":          issueID,
+		"description": description,
+	}
+
+	if err := c.doGraphQLRequest(ctx, query, variables, &response); err != nil {
+		return err
+	}
+
+	if !response.IssueUpdate.Success {
+		return errors.New("failed to update issue description")
+	}
+
+	// Suppress unused variable warning
+	_ = input
+
+	return nil
+}
+
 // DownloadAttachment downloads an attachment by URL.
 func (c *Client) DownloadAttachment(ctx context.Context, url string) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

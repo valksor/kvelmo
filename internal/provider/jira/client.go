@@ -292,6 +292,33 @@ func (c *Client) GetSubtasks(ctx context.Context, issueKey string) ([]*Issue, er
 	return issue.Fields.Subtasks, nil
 }
 
+// CreateIssueLink creates a link between two issues.
+func (c *Client) CreateIssueLink(ctx context.Context, inwardIssue, outwardIssue, linkType string) error {
+	input := map[string]any{
+		"type": map[string]string{
+			"name": linkType,
+		},
+		"inwardIssue": map[string]string{
+			"key": inwardIssue,
+		},
+		"outwardIssue": map[string]string{
+			"key": outwardIssue,
+		},
+	}
+
+	return c.doRequest(ctx, http.MethodPost, "/issueLink", input, nil)
+}
+
+// GetIssueLinks fetches links for an issue.
+func (c *Client) GetIssueLinks(ctx context.Context, issueKey string) ([]IssueLink, error) {
+	issue, err := c.GetIssue(ctx, issueKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return issue.Fields.IssueLinks, nil
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Jira API Types
 // ──────────────────────────────────────────────────────────────────────────────
@@ -321,6 +348,34 @@ type Fields struct {
 	Attachments []*Attachment `json:"attachment"`
 	Subtasks    []*Issue      `json:"subtasks"`
 	Parent      *Issue        `json:"parent"`
+	IssueLinks  []IssueLink   `json:"issuelinks"`
+}
+
+// IssueLink represents a link between issues.
+type IssueLink struct {
+	ID           string        `json:"id"`
+	Type         IssueLinkType `json:"type"`
+	InwardIssue  *LinkedIssue  `json:"inwardIssue,omitempty"`
+	OutwardIssue *LinkedIssue  `json:"outwardIssue,omitempty"`
+}
+
+// IssueLinkType represents the type of issue link.
+type IssueLinkType struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Inward  string `json:"inward"`
+	Outward string `json:"outward"`
+}
+
+// LinkedIssue represents a linked issue reference.
+type LinkedIssue struct {
+	ID     string `json:"id"`
+	Key    string `json:"key"`
+	Self   string `json:"self"`
+	Fields struct {
+		Summary string  `json:"summary"`
+		Status  *Status `json:"status"`
+	} `json:"fields"`
 }
 
 // Status represents issue status.
