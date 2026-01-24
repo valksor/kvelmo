@@ -54,8 +54,8 @@ func TestServerInitialize(t *testing.T) {
 		t.Fatalf("Failed to unmarshal result: %v", err)
 	}
 
-	if result.ProtocolVersion != "2024-11-05" {
-		t.Errorf("Protocol version mismatch: got %s", result.ProtocolVersion)
+	if result.ProtocolVersion != ProtocolVersion {
+		t.Errorf("Protocol version mismatch: got %s, expected %s", result.ProtocolVersion, ProtocolVersion)
 	}
 
 	if result.ServerInfo.Name != "go-mehrhof" {

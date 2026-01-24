@@ -9,7 +9,8 @@ import (
 
 const (
 	// ProtocolVersion is the MCP protocol version supported by this server.
-	ProtocolVersion = "2024-11-05"
+	// Must match assern's protocol version for compatibility.
+	ProtocolVersion = "2025-06-18"
 )
 
 // ErrDisabled is returned when MCP is disabled.

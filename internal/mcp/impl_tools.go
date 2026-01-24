@@ -176,12 +176,20 @@ func (r *ToolRegistry) CallTool(ctx context.Context, name string, args map[strin
 		cliArgs = []string{}
 	}
 
-	// Use the command directly. The mutex above ensures only one goroutine
-	// executes this command at a time. We don't clone because:
-	// 1. Cobra commands don't support easy deep copying
-	// 2. The mutex already provides serialization
-	// 3. Resetting flags between calls is handled by Cobra
+	// Get the command path (e.g., "mehr browser status" -> ["browser", "status"])
+	// When executing a subcommand via Cobra, we need to prepend the subcommand names
+	// because Cobra walks up to the root and parses args from there.
 	cmd := wrapper.Command
+	cmdPath := cmd.CommandPath() // e.g., "mehr browser status"
+	pathParts := strings.Split(cmdPath, " ")
+	if len(pathParts) > 1 {
+		// Remove the root command name ("mehr") and prepend subcommand path
+		subcommandPath := pathParts[1:] // e.g., ["browser", "status"]
+		cliArgs = append(subcommandPath, cliArgs...)
+	}
+
+	// Find root command to execute from
+	root := cmd.Root()
 
 	// Execute command with context awareness
 	// Since cmd.Execute() doesn't accept a context, we run it in a goroutine
@@ -206,12 +214,12 @@ func (r *ToolRegistry) CallTool(ctx context.Context, name string, args map[strin
 
 		// Capture output
 		output := &strings.Builder{}
-		cmd.SetOut(output)
-		cmd.SetErr(output)
+		root.SetOut(output)
+		root.SetErr(output)
 
-		// Set args and execute
-		cmd.SetArgs(cliArgs)
-		err := cmd.Execute()
+		// Set args and execute with context from the root
+		root.SetArgs(cliArgs)
+		err := root.ExecuteContext(execCtx)
 
 		resultCh <- execResult{
 			text: output.String(),
@@ -330,9 +338,18 @@ func (r *ToolRegistry) buildInputSchema(cmd *cobra.Command) map[string]interface
 		}
 	})
 
-	// Add persistent flags
+	// Add persistent flags defined on this command
 	cmd.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
 		properties[flag.Name] = r.mapFlagToSchema(flag)
+	})
+
+	// Add inherited persistent flags from parent commands
+	// This is critical for subcommands that rely on parent flags (e.g., browser status inherits from browser)
+	cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
+		// Only add if not already present (local flags take precedence)
+		if _, exists := properties[flag.Name]; !exists {
+			properties[flag.Name] = r.mapFlagToSchema(flag)
+		}
 	})
 
 	// Check if command expects arguments
