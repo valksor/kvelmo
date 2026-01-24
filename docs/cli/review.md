@@ -43,6 +43,7 @@ Review results are saved to the work directory.
 | ---------- | ----- | ------ | ------------ | ------------------ |
 | `--tool`   |       | string | coderabbit   | Review tool to use |
 | `--output` | `-o`  | string | REVIEW-N.txt | Output file name   |
+| `--optimize` |     | bool   | false        | Optimize prompt before sending to agent |
 
 ## Examples
 
@@ -79,6 +80,14 @@ mehr review --output security-review.txt
 ```bash
 mehr review --tool coderabbit
 ```
+
+### Optimize Prompt
+
+```bash
+mehr review --optimize
+```
+
+Optimize the review prompt using an optimizer agent before sending to the working agent. This can improve the quality and depth of the code review.
 
 ## Review Status
 
