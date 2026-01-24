@@ -70,6 +70,8 @@ func Info() provider.ProviderInfo {
 			provider.CapPRComment:          true,
 			provider.CapFetchPRComments:    true,
 			provider.CapUpdatePRComment:    true,
+			provider.CapCreateDependency:   true,
+			provider.CapFetchDependencies:  true,
 		},
 	}
 }

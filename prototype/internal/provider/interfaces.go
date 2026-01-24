@@ -190,13 +190,26 @@ type SubtaskFetcher interface {
 
 // CreateWorkUnitOptions for creating a work unit.
 type CreateWorkUnitOptions struct {
-	CustomFields map[string]any
-	Title        string
-	Description  string
-	ParentID     string
-	Labels       []string
-	Assignees    []string
-	Priority     Priority
+	CustomFields  map[string]any
+	Title         string
+	Description   string
+	ParentID      string
+	Labels        []string
+	Assignees     []string
+	Priority      Priority
+	DependencyIDs []string // Work unit IDs this unit depends on (predecessors)
+}
+
+// DependencyCreator creates dependencies between work units.
+type DependencyCreator interface {
+	// CreateDependency creates a dependency where predecessorID must complete before successorID.
+	CreateDependency(ctx context.Context, predecessorID, successorID string) error
+}
+
+// DependencyFetcher retrieves dependencies for a work unit.
+type DependencyFetcher interface {
+	// GetDependencies returns the IDs of work units that the given work unit depends on.
+	GetDependencies(ctx context.Context, workUnitID string) ([]string, error)
 }
 
 // FullProvider is a comprehensive interface combining all capabilities

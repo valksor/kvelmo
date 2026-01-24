@@ -326,13 +326,15 @@ func (c *Client) UpdateTaskTags(ctx context.Context, taskID string, tags []strin
 
 // CreateTaskOptions holds options for creating a new task.
 type CreateTaskOptions struct {
-	Title       string
-	Description string
-	Priority    string
-	Status      string
+	Title         string
+	Description   string
+	Priority      string
+	Status        string
+	DependencyIDs []string // Task IDs this task depends on (predecessors)
 }
 
 // CreateTask creates a new task in a folder.
+// If DependencyIDs are specified, dependencies are created after task creation.
 func (c *Client) CreateTask(ctx context.Context, folderID string, opts CreateTaskOptions) (*Task, error) {
 	requestBody := map[string]any{
 		"title": opts.Title,
@@ -362,7 +364,70 @@ func (c *Client) CreateTask(ctx context.Context, folderID string, opts CreateTas
 		return nil, errors.New("no task returned")
 	}
 
-	return &response.Data[0], nil
+	task := &response.Data[0]
+
+	// Create dependencies if specified
+	// In Wrike, a dependency means: predecessorId must complete before successorId can start
+	// So if task A depends on task B, B is the predecessor and A (the new task) is the successor
+	if len(opts.DependencyIDs) > 0 {
+		for _, predecessorID := range opts.DependencyIDs {
+			if err := c.CreateDependency(ctx, predecessorID, task.ID); err != nil {
+				// Log error but don't fail the entire task creation
+				// Dependencies can be added later if needed
+				continue
+			}
+		}
+		task.DependencyIDs = opts.DependencyIDs
+	}
+
+	return task, nil
+}
+
+// Dependency represents a Wrike task dependency.
+type Dependency struct {
+	ID            string `json:"id"`
+	PredecessorID string `json:"predecessorId"`
+	SuccessorID   string `json:"successorId"`
+	RelationType  string `json:"relationType"` // FinishToStart, StartToStart, etc.
+}
+
+// dependencyResponse wraps the Wrike API response for dependencies.
+type dependencyResponse struct {
+	Data []Dependency `json:"data"`
+}
+
+// CreateDependency creates a dependency between two tasks.
+// The predecessor must complete before the successor can start.
+func (c *Client) CreateDependency(ctx context.Context, predecessorID, successorID string) error {
+	requestBody := map[string]any{
+		"predecessorId": predecessorID,
+		"successorId":   successorID,
+		"relationType":  "FinishToStart", // Most common dependency type
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return fmt.Errorf("encode request: %w", err)
+	}
+
+	var response dependencyResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodPost, "/dependencies",
+		strings.NewReader(string(bodyBytes)), &response); err != nil {
+		return fmt.Errorf("create dependency: %w", err)
+	}
+
+	return nil
+}
+
+// GetTaskDependencies returns the dependencies for a task.
+func (c *Client) GetTaskDependencies(ctx context.Context, taskID string) ([]Dependency, error) {
+	var response dependencyResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodGet,
+		"/tasks/"+url.PathEscape(taskID)+"/dependencies", nil, &response); err != nil {
+		return nil, fmt.Errorf("get dependencies: %w", err)
+	}
+
+	return response.Data, nil
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -371,16 +436,17 @@ func (c *Client) CreateTask(ctx context.Context, folderID string, opts CreateTas
 
 // Task represents a Wrike task.
 type Task struct {
-	CreatedDate time.Time `json:"createdDate"`
-	UpdatedDate time.Time `json:"updatedDate"`
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	Priority    string    `json:"priority"`
-	Permalink   string    `json:"permalink"`
-	SubTaskIDs  []string  `json:"subTaskIds"`
-	Tags        []string  `json:"tags"`
+	CreatedDate   time.Time `json:"createdDate"`
+	UpdatedDate   time.Time `json:"updatedDate"`
+	ID            string    `json:"id"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	Status        string    `json:"status"`
+	Priority      string    `json:"priority"`
+	Permalink     string    `json:"permalink"`
+	SubTaskIDs    []string  `json:"subTaskIds"`
+	Tags          []string  `json:"tags"`
+	DependencyIDs []string  `json:"dependencyIds,omitempty"` // Task IDs this task depends on
 }
 
 // Comment represents a Wrike comment.

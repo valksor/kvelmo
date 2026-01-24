@@ -139,6 +139,8 @@ const (
 	CapPRComment          Capability = "pr_comment"
 	CapFetchPRComments    Capability = "fetch_pr_comments"
 	CapUpdatePRComment    Capability = "update_pr_comment"
+	CapCreateDependency   Capability = "create_dependency"
+	CapFetchDependencies  Capability = "fetch_dependencies"
 )
 
 // CapabilitySet is a set of capabilities.
@@ -200,6 +202,12 @@ func InferCapabilities(p any) CapabilitySet {
 	}
 	if _, ok := p.(PRCommentUpdater); ok {
 		caps[CapUpdatePRComment] = true
+	}
+	if _, ok := p.(DependencyCreator); ok {
+		caps[CapCreateDependency] = true
+	}
+	if _, ok := p.(DependencyFetcher); ok {
+		caps[CapFetchDependencies] = true
 	}
 
 	return caps

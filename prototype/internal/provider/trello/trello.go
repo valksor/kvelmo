@@ -43,6 +43,8 @@ func Info() provider.ProviderInfo {
 			provider.CapSnapshot:           true,
 			provider.CapCreateWorkUnit:     true,
 			provider.CapFetchSubtasks:      true,
+			provider.CapCreateDependency:   true,
+			provider.CapFetchDependencies:  true,
 		},
 	}
 }
