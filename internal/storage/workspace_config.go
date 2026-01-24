@@ -391,20 +391,22 @@ type GitSettings struct {
 
 // StepAgentConfig holds agent configuration for a specific workflow step.
 type StepAgentConfig struct {
-	Name         string            `yaml:"name,omitempty"`         // Agent name or alias
-	Env          map[string]string `yaml:"env,omitempty"`          // Step-specific env vars
-	Args         []string          `yaml:"args,omitempty"`         // Step-specific CLI args
-	Instructions string            `yaml:"instructions,omitempty"` // Custom instructions for this step
+	Name            string            `yaml:"name,omitempty"`             // Agent name or alias
+	Env             map[string]string `yaml:"env,omitempty"`              // Step-specific env vars
+	Args            []string          `yaml:"args,omitempty"`             // Step-specific CLI args
+	Instructions    string            `yaml:"instructions,omitempty"`     // Custom instructions for this step
+	OptimizePrompts bool              `yaml:"optimize_prompts,omitempty"` // Optimize prompts for this step
 }
 
 // AgentSettings holds agent-related configuration.
 type AgentSettings struct {
-	Default      string                     `yaml:"default"`
-	Timeout      int                        `yaml:"timeout"`
-	MaxRetries   int                        `yaml:"max_retries"`
-	Instructions string                     `yaml:"instructions,omitempty"` // Global instructions for all steps
-	Steps        map[string]StepAgentConfig `yaml:"steps,omitempty"`        // Per-step agent configuration
-	PRReview     *PRReviewConfig            `yaml:"pr_review,omitempty"`    // PR review configuration
+	Default         string                     `yaml:"default"`
+	Timeout         int                        `yaml:"timeout"`
+	MaxRetries      int                        `yaml:"max_retries"`
+	Instructions    string                     `yaml:"instructions,omitempty"`     // Global instructions for all steps
+	OptimizePrompts bool                       `yaml:"optimize_prompts,omitempty"` // Optimize prompts for all steps
+	Steps           map[string]StepAgentConfig `yaml:"steps,omitempty"`            // Per-step agent configuration
+	PRReview        *PRReviewConfig            `yaml:"pr_review,omitempty"`        // PR review configuration
 }
 
 // PRReviewConfig holds PR review configuration.
