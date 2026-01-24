@@ -368,9 +368,10 @@ func TestConnectOrCreateWithUnresponsiveSession(t *testing.T) {
 	t.Run("detects unresponsive session and creates new", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		sm := NewSessionManager(tmpDir, Config{
-			Host:    "localhost",
-			Port:    0,
-			Timeout: 30 * time.Second,
+			Host:     "localhost",
+			Port:     0,
+			Headless: true,
+			Timeout:  30 * time.Second,
 		})
 
 		// Start a mock process that won't have Chrome's HTTP endpoint
