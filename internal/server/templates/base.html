@@ -1,0 +1,69 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mehrhof Web UI</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        .btn { @apply px-4 py-2 rounded-lg font-medium transition-colors; }
+        .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+        .btn-secondary { @apply bg-gray-200 text-gray-800 hover:bg-gray-300; }
+        .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
+        .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
+        .card { @apply bg-white rounded-lg shadow-md p-6 mb-4; }
+        .card-header { @apply text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-900">Mehrhof</span>
+                    <span class="ml-4 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full">{{.Mode}}</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {{if .CanSwitchProject}}
+                    <form hx-post="/api/v1/projects/switch" hx-target="body" hx-swap="innerHTML" class="inline">
+                        <button type="submit" class="text-sm text-gray-500 hover:text-gray-700">Switch Project</button>
+                    </form>
+                    {{end}}
+                    <a href="/settings" class="text-sm text-gray-500 hover:text-gray-700">Settings</a>
+                    {{if .AuthEnabled}}
+                    <a href="/logout" class="text-sm text-gray-500 hover:text-gray-700">Logout</a>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {{template "content" .}}
+    </main>
+
+    <script>
+        // HTMX configuration
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            // Add loading state to buttons
+            if (evt.detail.elt.tagName === 'BUTTON') {
+                evt.detail.elt.disabled = true;
+            }
+        });
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.elt.tagName === 'BUTTON') {
+                evt.detail.elt.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+{{end}}

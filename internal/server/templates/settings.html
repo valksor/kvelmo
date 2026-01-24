@@ -1,0 +1,545 @@
+{{define "content"}}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+        <a href="/" class="text-blue-600 hover:text-blue-700 text-sm">Back to Dashboard</a>
+    </div>
+
+    {{if eq .Mode "global"}}
+    <!-- Project Picker (Global Mode Only) -->
+    <div class="card mb-6">
+        <div class="card-header">Select Project</div>
+        <div class="flex items-center space-x-4">
+            <select id="project-picker"
+                    onchange="if(this.value) window.location.href='/settings?project='+encodeURIComponent(this.value)"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                <option value="">-- Select a project --</option>
+                {{range .Projects}}
+                <option value="{{.ID}}" {{if eq .ID $.SelectedProject}}selected{{end}}>
+                    {{.Name}} ({{.ID}})
+                </option>
+                {{end}}
+            </select>
+            {{if .SelectedProject}}
+            <span class="text-sm text-green-600 font-medium">Editing: {{.SelectedProject}}</span>
+            {{end}}
+        </div>
+        {{if not .Projects}}
+        <p class="mt-3 text-sm text-gray-500">No projects found. Run <code class="bg-gray-100 px-1 rounded">mehr init</code> in a project directory first.</p>
+        {{end}}
+    </div>
+    {{end}}
+
+    {{if .Success}}
+    <div id="success-toast" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+        {{.Success}}
+    </div>
+    {{end}}
+
+    {{if .Error}}
+    <div id="error-toast" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        {{.Error}}
+    </div>
+    {{end}}
+
+    {{if or (ne .Mode "global") .SelectedProject}}
+    <form hx-post="/api/v1/settings{{if .SelectedProject}}?project={{.SelectedProject}}{{end}}" hx-target="body" hx-swap="innerHTML" class="space-y-6">
+        <!-- Git Settings -->
+        <div class="card">
+            <div class="card-header">Git Settings</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="git.auto_commit" value="true"
+                               {{if .Config.Git.AutoCommit}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Auto-commit changes</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Automatically commit after each workflow step</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="git.sign_commits" value="true"
+                               {{if .Config.Git.SignCommits}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Sign commits</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Sign commits with GPG key</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="git.stash_on_start" value="true"
+                               {{if .Config.Git.StashOnStart}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Stash on start</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Auto-stash changes before creating task branch</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="git.auto_pop_stash" value="true"
+                               {{if .Config.Git.AutoPopStash}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Auto-pop stash</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Auto-pop stash after branch creation</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Commit Prefix</label>
+                    <input type="text" name="git.commit_prefix" value="{{.Config.Git.CommitPrefix}}"
+                           placeholder="[{key}]"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <p class="text-xs text-gray-500 mt-1">Template: {key}, {type}, {slug}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch Pattern</label>
+                    <input type="text" name="git.branch_pattern" value="{{.Config.Git.BranchPattern}}"
+                           placeholder="{type}/{key}--{slug}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <p class="text-xs text-gray-500 mt-1">Template: {key}, {type}, {slug}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Settings -->
+        <div class="card">
+            <div class="card-header">Agent Settings</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Agent</label>
+                    <select name="agent.default"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        {{range .Agents}}
+                        <option value="{{.}}" {{if eq . $.Config.Agent.Default}}selected{{end}}>{{.}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+                    <input type="number" name="agent.timeout" value="{{.Config.Agent.Timeout}}" min="30" max="3600"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Max Retries</label>
+                    <input type="number" name="agent.max_retries" value="{{.Config.Agent.MaxRetries}}" min="0" max="10"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Global Instructions</label>
+                <textarea name="agent.instructions" rows="3"
+                          placeholder="Instructions passed to all agents..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">{{.Config.Agent.Instructions}}</textarea>
+            </div>
+
+            <!-- Prompt Optimization -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Prompt Optimization</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="agent.optimize_prompts" value="true"
+                               {{if .Config.Agent.OptimizePrompts}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700">Enable for all steps</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-6">Optimize prompts before sending to agents for better results</p>
+                </div>
+
+                <!-- Per-step optimization checkboxes -->
+                <div class="ml-6 mt-3 space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="agent.optimize_planning" value="true"
+                               {{if index .Config.Agent.Steps "planning"}}{{if (index .Config.Agent.Steps "planning").OptimizePrompts}}checked{{end}}{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600">Planning step</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="agent.optimize_implementing" value="true"
+                               {{if index .Config.Agent.Steps "implementing"}}{{if (index .Config.Agent.Steps "implementing").OptimizePrompts}}checked{{end}}{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600">Implementation step</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="agent.optimize_reviewing" value="true"
+                               {{if index .Config.Agent.Steps "reviewing"}}{{if (index .Config.Agent.Steps "reviewing").OptimizePrompts}}checked{{end}}{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600">Review step</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow Settings -->
+        <div class="card">
+            <div class="card-header">Workflow Settings</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="workflow.auto_init" value="true"
+                               {{if .Config.Workflow.AutoInit}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Auto-initialize</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Auto-initialize workspace on first use</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Session Retention (days)</label>
+                    <input type="number" name="workflow.session_retention_days"
+                           value="{{.Config.Workflow.SessionRetentionDays}}" min="1" max="365"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="workflow.delete_work_on_finish" value="true"
+                               {{if .Config.Workflow.DeleteWorkOnFinish}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Delete work on finish</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Clean up work directories after task completion</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="workflow.delete_work_on_abandon" value="true"
+                               {{if .Config.Workflow.DeleteWorkOnAbandon}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Delete work on abandon</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Clean up work directories when task is abandoned</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browser Settings -->
+        <div class="card">
+            <div class="card-header">Browser Automation</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="browser.enabled" value="true"
+                               {{if and .Config.Browser .Config.Browser.Enabled}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Enable browser automation</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Allow agents to control browser for web tasks</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="browser.headless" value="true"
+                               {{if and .Config.Browser .Config.Browser.Headless}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Headless mode</span>
+                    </label>
+                    <p class="text-xs text-gray-500 ml-7 mt-1">Run browser in background (no visible window)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                    <input type="number" name="browser.port"
+                           value="{{if .Config.Browser}}{{.Config.Browser.Port}}{{else}}0{{end}}" min="0" max="65535"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <p class="text-xs text-gray-500 mt-1">0 = random isolated browser, 9222 = existing Chrome</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+                    <input type="number" name="browser.timeout"
+                           value="{{if .Config.Browser}}{{.Config.Browser.Timeout}}{{else}}30{{end}}" min="5" max="300"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Screenshot Directory</label>
+                    <input type="text" name="browser.screenshot_dir"
+                           value="{{if .Config.Browser}}{{.Config.Browser.ScreenshotDir}}{{end}}"
+                           placeholder=".mehrhof/screenshots"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cookie Profile</label>
+                    <input type="text" name="browser.cookie_profile"
+                           value="{{if .Config.Browser}}{{.Config.Browser.CookieProfile}}{{end}}"
+                           placeholder="default"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Settings -->
+        <div class="card">
+            <div class="card-header">Updates</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="update.enabled" value="true"
+                               {{if .Config.Update.Enabled}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Enable auto-update checks</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Check Interval (hours)</label>
+                    <input type="number" name="update.check_interval" value="{{.Config.Update.CheckInterval}}" min="1" max="168"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Providers Default -->
+        <div class="card">
+            <div class="card-header">Provider Settings</div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Default Provider</label>
+                <select name="providers.default"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <option value="file" {{if eq .Config.Providers.Default "file"}}selected{{end}}>file</option>
+                    <option value="directory" {{if eq .Config.Providers.Default "directory"}}selected{{end}}>directory</option>
+                    <option value="github" {{if eq .Config.Providers.Default "github"}}selected{{end}}>github</option>
+                    <option value="gitlab" {{if eq .Config.Providers.Default "gitlab"}}selected{{end}}>gitlab</option>
+                    <option value="jira" {{if eq .Config.Providers.Default "jira"}}selected{{end}}>jira</option>
+                    <option value="linear" {{if eq .Config.Providers.Default "linear"}}selected{{end}}>linear</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Default provider for bare task references (e.g., "task.md" becomes "file:task.md")</p>
+            </div>
+        </div>
+
+        <!-- GitHub Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>GitHub</span>
+                {{if and .Config.GitHub .Config.GitHub.Token}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Token</label>
+                    <input type="password" name="github.token"
+                           value="{{if .Config.GitHub}}{{.Config.GitHub.Token}}{{end}}"
+                           placeholder="ghp_..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+                    <input type="text" name="github.owner"
+                           value="{{if .Config.GitHub}}{{.Config.GitHub.Owner}}{{end}}"
+                           placeholder="Auto-detected from git remote"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Repository</label>
+                    <input type="text" name="github.repo"
+                           value="{{if .Config.GitHub}}{{.Config.GitHub.Repo}}{{end}}"
+                           placeholder="Auto-detected from git remote"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Target Branch</label>
+                    <input type="text" name="github.target_branch"
+                           value="{{if .Config.GitHub}}{{.Config.GitHub.TargetBranch}}{{end}}"
+                           placeholder="main"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center space-x-3 mt-6">
+                        <input type="checkbox" name="github.draft_pr" value="true"
+                               {{if and .Config.GitHub .Config.GitHub.DraftPR}}checked{{end}}
+                               class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Create PRs as draft</span>
+                    </label>
+                </div>
+            </div>
+        </details>
+
+        <!-- GitLab Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>GitLab</span>
+                {{if and .Config.GitLab .Config.GitLab.Token}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Token</label>
+                    <input type="password" name="gitlab.token"
+                           value="{{if .Config.GitLab}}{{.Config.GitLab.Token}}{{end}}"
+                           placeholder="glpat-..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Host</label>
+                    <input type="text" name="gitlab.host"
+                           value="{{if .Config.GitLab}}{{.Config.GitLab.Host}}{{end}}"
+                           placeholder="https://gitlab.com"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Project Path</label>
+                    <input type="text" name="gitlab.project_path"
+                           value="{{if .Config.GitLab}}{{.Config.GitLab.ProjectPath}}{{end}}"
+                           placeholder="group/project"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </details>
+
+        <!-- Jira Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>Jira</span>
+                {{if and .Config.Jira .Config.Jira.Token}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+                    <input type="password" name="jira.token"
+                           value="{{if .Config.Jira}}{{.Config.Jira.Token}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="jira.email"
+                           value="{{if .Config.Jira}}{{.Config.Jira.Email}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Base URL</label>
+                    <input type="text" name="jira.base_url"
+                           value="{{if .Config.Jira}}{{.Config.Jira.BaseURL}}{{end}}"
+                           placeholder="https://company.atlassian.net"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Project</label>
+                    <input type="text" name="jira.project"
+                           value="{{if .Config.Jira}}{{.Config.Jira.Project}}{{end}}"
+                           placeholder="PROJECT"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </details>
+
+        <!-- Linear Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>Linear</span>
+                {{if and .Config.Linear .Config.Linear.Token}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input type="password" name="linear.token"
+                           value="{{if .Config.Linear}}{{.Config.Linear.Token}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Team</label>
+                    <input type="text" name="linear.team"
+                           value="{{if .Config.Linear}}{{.Config.Linear.Team}}{{end}}"
+                           placeholder="TEAM"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </details>
+
+        <!-- Notion Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>Notion</span>
+                {{if and .Config.Notion .Config.Notion.Token}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Integration Token</label>
+                    <input type="password" name="notion.token"
+                           value="{{if .Config.Notion}}{{.Config.Notion.Token}}{{end}}"
+                           placeholder="secret_..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Database ID</label>
+                    <input type="text" name="notion.database_id"
+                           value="{{if .Config.Notion}}{{.Config.Notion.DatabaseID}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status Property</label>
+                    <input type="text" name="notion.status_property"
+                           value="{{if .Config.Notion}}{{.Config.Notion.StatusProperty}}{{end}}"
+                           placeholder="Status"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </details>
+
+        <!-- Bitbucket Provider -->
+        <details class="card">
+            <summary class="card-header cursor-pointer flex items-center justify-between">
+                <span>Bitbucket</span>
+                {{if and .Config.Bitbucket .Config.Bitbucket.AppPassword}}
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Configured</span>
+                {{end}}
+            </summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{if .ShowSensitive}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" name="bitbucket.username"
+                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.Username}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">App Password</label>
+                    <input type="password" name="bitbucket.app_password"
+                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.AppPassword}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono">
+                </div>
+                {{end}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Workspace</label>
+                    <input type="text" name="bitbucket.workspace"
+                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.Workspace}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Repository Slug</label>
+                    <input type="text" name="bitbucket.repo"
+                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.RepoSlug}}{{end}}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+        </details>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end space-x-4">
+            <a href="/" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                Save Settings
+            </button>
+        </div>
+    </form>
+    {{else}}
+    <!-- Global mode without project selected -->
+    <div class="card">
+        <div class="text-center py-8 text-gray-500">
+            <p class="text-lg mb-2">Select a project above to view and edit its settings.</p>
+            <p class="text-sm">Settings are stored per-project in each project's <code class="bg-gray-100 px-1 rounded">.mehrhof/config.yaml</code> file.</p>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

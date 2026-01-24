@@ -1,0 +1,352 @@
+package server
+
+// Request/response types for API endpoints.
+
+// continueRequest is the request body for POST /api/v1/workflow/continue.
+type continueRequest struct {
+	Auto bool `json:"auto"` // Auto-execute next logical step
+}
+
+// continueResponse is the response for POST /api/v1/workflow/continue.
+type continueResponse struct {
+	Success     bool     `json:"success"`
+	State       string   `json:"state"`
+	Action      string   `json:"action,omitempty"`
+	NextActions []string `json:"next_actions"`
+	Message     string   `json:"message"`
+}
+
+// autoRequest is the request body for POST /api/v1/workflow/auto.
+type autoRequest struct {
+	Ref           string `json:"ref"`
+	Agent         string `json:"agent,omitempty"`
+	MaxRetries    int    `json:"max_retries"`
+	NoPush        bool   `json:"no_push"`
+	NoDelete      bool   `json:"no_delete"`
+	NoSquash      bool   `json:"no_squash"`
+	TargetBranch  string `json:"target_branch,omitempty"`
+	QualityTarget string `json:"quality_target"`
+	NoQuality     bool   `json:"no_quality"`
+}
+
+// autoResponse is the response for POST /api/v1/workflow/auto.
+type autoResponse struct {
+	Success         bool   `json:"success"`
+	PlanningDone    bool   `json:"planning_done"`
+	ImplementDone   bool   `json:"implement_done"`
+	QualityAttempts int    `json:"quality_attempts"`
+	QualityPassed   bool   `json:"quality_passed"`
+	FinishDone      bool   `json:"finish_done"`
+	FailedAt        string `json:"failed_at,omitempty"`
+	Error           string `json:"error,omitempty"`
+}
+
+// addNoteRequest is the request body for POST /api/v1/tasks/{id}/notes.
+type addNoteRequest struct {
+	Content string `json:"content"`
+}
+
+// noteResponse is the response for POST /api/v1/tasks/{id}/notes.
+type noteResponse struct {
+	Success   bool   `json:"success"`
+	WasAnswer bool   `json:"was_answer"`
+	Message   string `json:"message"`
+}
+
+// notesListResponse is the response for GET /api/v1/tasks/{id}/notes.
+type notesListResponse struct {
+	TaskID  string `json:"task_id"`
+	Content string `json:"content"`
+}
+
+// taskCostResponse is the response for GET /api/v1/tasks/{id}/costs.
+type taskCostResponse struct {
+	TaskID        string              `json:"task_id"`
+	Title         string              `json:"title,omitempty"`
+	TotalTokens   int                 `json:"total_tokens"`
+	InputTokens   int                 `json:"input_tokens"`
+	OutputTokens  int                 `json:"output_tokens"`
+	CachedTokens  int                 `json:"cached_tokens"`
+	CachedPercent float64             `json:"cached_percent,omitempty"`
+	TotalCostUSD  float64             `json:"total_cost_usd"`
+	ByStep        map[string]stepCost `json:"by_step,omitempty"`
+}
+
+// stepCost represents cost data for a workflow step.
+type stepCost struct {
+	InputTokens  int     `json:"input_tokens"`
+	OutputTokens int     `json:"output_tokens"`
+	CachedTokens int     `json:"cached_tokens"`
+	TotalTokens  int     `json:"total_tokens"`
+	CostUSD      float64 `json:"cost_usd"`
+	Calls        int     `json:"calls"`
+}
+
+// grandTotal represents aggregated cost totals.
+type grandTotal struct {
+	InputTokens  int     `json:"input_tokens"`
+	OutputTokens int     `json:"output_tokens"`
+	TotalTokens  int     `json:"total_tokens"`
+	CachedTokens int     `json:"cached_tokens"`
+	CostUSD      float64 `json:"cost_usd"`
+}
+
+// allCostsResponse is the response for GET /api/v1/costs.
+type allCostsResponse struct {
+	Tasks      []taskCostResponse `json:"tasks"`
+	GrandTotal grandTotal         `json:"grand_total"`
+}
+
+// guideResponse is the response for GET /api/v1/guide.
+type guideResponse struct {
+	HasTask         bool                 `json:"has_task"`
+	TaskID          string               `json:"task_id,omitempty"`
+	Title           string               `json:"title,omitempty"`
+	State           string               `json:"state,omitempty"`
+	Specifications  int                  `json:"specifications"`
+	PendingQuestion *pendingQuestionInfo `json:"pending_question,omitempty"`
+	NextActions     []guideAction        `json:"next_actions"`
+}
+
+// pendingQuestionInfo contains pending agent question details.
+type pendingQuestionInfo struct {
+	Question string   `json:"question"`
+	Options  []string `json:"options,omitempty"`
+}
+
+// guideAction represents a suggested next action.
+type guideAction struct {
+	Command     string `json:"command"`
+	Description string `json:"description"`
+	Endpoint    string `json:"endpoint,omitempty"`
+}
+
+// agentInfo represents information about an agent.
+type agentInfo struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Extends     string `json:"extends,omitempty"`
+	Description string `json:"description,omitempty"`
+	Available   bool   `json:"available"`
+}
+
+// agentsListResponse is the response for GET /api/v1/agents.
+type agentsListResponse struct {
+	Agents []agentInfo `json:"agents"`
+	Count  int         `json:"count"`
+}
+
+// providerInfo represents information about a provider.
+type providerInfo struct {
+	Scheme      string   `json:"scheme"`
+	Shorthand   string   `json:"shorthand,omitempty"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	EnvVars     []string `json:"env_vars,omitempty"`
+}
+
+// providersListResponse is the response for GET /api/v1/providers.
+type providersListResponse struct {
+	Providers []providerInfo `json:"providers"`
+	Count     int            `json:"count"`
+}
+
+// browserGotoRequest is the request body for POST /api/v1/browser/goto.
+type browserGotoRequest struct {
+	URL string `json:"url"`
+}
+
+// browserNavigateRequest is the request body for POST /api/v1/browser/navigate.
+type browserNavigateRequest struct {
+	TabID string `json:"tab_id,omitempty"`
+	URL   string `json:"url"`
+}
+
+// browserClickRequest is the request body for POST /api/v1/browser/click.
+type browserClickRequest struct {
+	TabID    string `json:"tab_id,omitempty"`
+	Selector string `json:"selector"`
+}
+
+// browserTypeRequest is the request body for POST /api/v1/browser/type.
+type browserTypeRequest struct {
+	TabID    string `json:"tab_id,omitempty"`
+	Selector string `json:"selector"`
+	Text     string `json:"text"`
+	Clear    bool   `json:"clear"`
+}
+
+// browserEvalRequest is the request body for POST /api/v1/browser/eval.
+type browserEvalRequest struct {
+	TabID      string `json:"tab_id,omitempty"`
+	Expression string `json:"expression"`
+}
+
+// browserDOMRequest is the request body for POST /api/v1/browser/dom.
+type browserDOMRequest struct {
+	TabID    string `json:"tab_id,omitempty"`
+	Selector string `json:"selector"`
+	All      bool   `json:"all"`
+	HTML     bool   `json:"html"`
+	Limit    int    `json:"limit"`
+}
+
+// browserScreenshotRequest is the request body for POST /api/v1/browser/screenshot.
+type browserScreenshotRequest struct {
+	TabID    string `json:"tab_id,omitempty"`
+	Format   string `json:"format"`
+	Quality  int    `json:"quality"`
+	FullPage bool   `json:"full_page"`
+}
+
+// browserReloadRequest is the request body for POST /api/v1/browser/reload.
+type browserReloadRequest struct {
+	TabID string `json:"tab_id,omitempty"`
+	Hard  bool   `json:"hard"`
+}
+
+// browserCloseRequest is the request body for POST /api/v1/browser/close.
+type browserCloseRequest struct {
+	TabID string `json:"tab_id"`
+}
+
+// browserTabResponse represents a browser tab.
+type browserTabResponse struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+
+// browserStatusResponse is the response for GET /api/v1/browser/status.
+type browserStatusResponse struct {
+	Connected bool                 `json:"connected"`
+	Host      string               `json:"host,omitempty"`
+	Port      int                  `json:"port,omitempty"`
+	Tabs      []browserTabResponse `json:"tabs,omitempty"`
+	Error     string               `json:"error,omitempty"`
+}
+
+// browserDOMElement represents a DOM element.
+type browserDOMElement struct {
+	TagName     string `json:"tag_name"`
+	TextContent string `json:"text_content,omitempty"`
+	OuterHTML   string `json:"outer_html,omitempty"`
+	Visible     bool   `json:"visible"`
+}
+
+// scanRequest is the request body for POST /api/v1/scan.
+type scanRequest struct {
+	Dir       string   `json:"dir,omitempty"`
+	Scanners  []string `json:"scanners,omitempty"`
+	FailLevel string   `json:"fail_level,omitempty"`
+	Format    string   `json:"format,omitempty"`
+}
+
+// scanFinding represents a security finding.
+type scanFinding struct {
+	Scanner  string `json:"scanner"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	File     string `json:"file,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Column   int    `json:"column,omitempty"`
+	RuleID   string `json:"rule_id,omitempty"`
+}
+
+// scanResponse is the response for POST /api/v1/scan.
+type scanResponse struct {
+	Findings      []scanFinding `json:"findings"`
+	TotalCount    int           `json:"total_count"`
+	BlockingCount int           `json:"blocking_count"`
+	Passed        bool          `json:"passed"`
+}
+
+// memoryResult represents a memory search result.
+type memoryResult struct {
+	TaskID   string         `json:"task_id"`
+	Type     string         `json:"type"`
+	Score    float64        `json:"score"`
+	Content  string         `json:"content"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+// memorySearchResponse is the response for GET /api/v1/memory/search.
+type memorySearchResponse struct {
+	Results []memoryResult `json:"results"`
+	Count   int            `json:"count"`
+}
+
+// memoryIndexRequest is the request body for POST /api/v1/memory/index.
+type memoryIndexRequest struct {
+	TaskID string `json:"task_id"`
+}
+
+// memoryStatsResponse is the response for GET /api/v1/memory/stats.
+type memoryStatsResponse struct {
+	TotalDocuments int            `json:"total_documents"`
+	ByType         map[string]int `json:"by_type"`
+	Enabled        bool           `json:"enabled"`
+}
+
+// syncRequest is the request body for POST /api/v1/workflow/sync.
+type syncRequest struct {
+	TaskID string `json:"task_id"` // Required - task to sync
+}
+
+// syncResponse is the response for POST /api/v1/workflow/sync.
+type syncResponse struct {
+	Success        bool   `json:"success"`
+	HasChanges     bool   `json:"has_changes"`
+	ChangesSummary string `json:"changes_summary,omitempty"`
+	SpecGenerated  string `json:"spec_generated,omitempty"`
+	Message        string `json:"message"`
+}
+
+// simplifyRequest is the request body for POST /api/v1/workflow/simplify.
+type simplifyRequest struct {
+	NoCheckpoint bool   `json:"no_checkpoint"`
+	Agent        string `json:"agent,omitempty"`
+}
+
+// simplifyResponse is the response for POST /api/v1/workflow/simplify.
+type simplifyResponse struct {
+	Success    bool   `json:"success"`
+	Simplified string `json:"simplified"` // "task_input", "specifications", or "code"
+	Message    string `json:"message"`
+}
+
+// templateInfo represents information about a template.
+type templateInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// templatesListResponse is the response for GET /api/v1/templates.
+type templatesListResponse struct {
+	Templates []templateInfo `json:"templates"`
+	Count     int            `json:"count"`
+}
+
+// templateShowResponse is the response for GET /api/v1/templates/{name}.
+type templateShowResponse struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Frontmatter map[string]any    `json:"frontmatter,omitempty"`
+	Agent       string            `json:"agent,omitempty"`
+	AgentSteps  map[string]any    `json:"agent_steps,omitempty"`
+	Git         map[string]string `json:"git,omitempty"`
+	Workflow    map[string]any    `json:"workflow,omitempty"`
+}
+
+// templateApplyRequest is the request body for POST /api/v1/templates/apply.
+type templateApplyRequest struct {
+	TemplateName string `json:"template_name"` // Required
+	FilePath     string `json:"file_path"`     // Required
+}
+
+// templateApplyResponse is the response for POST /api/v1/templates/apply.
+type templateApplyResponse struct {
+	Success     bool           `json:"success"`
+	Frontmatter map[string]any `json:"frontmatter,omitempty"`
+	Message     string         `json:"message"`
+}

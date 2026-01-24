@@ -1,0 +1,47 @@
+{{define "task_card"}}
+<div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:workflow_state_changed, every 30s" hx-swap="outerHTML">
+    <div class="card">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-2">
+                    <span class="text-3xl {{stateColor .State}}">{{stateIcon .State}}</span>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">{{if .Title}}{{.Title}}{{else}}Task {{.ID}}{{end}}</h2>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{stateColor .State}}">
+                            {{stateBadge .State}}
+                        </span>
+                    </div>
+                </div>
+
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm">
+                    {{if .Branch}}
+                    <div>
+                        <dt class="text-gray-500">Branch</dt>
+                        <dd class="font-mono text-gray-900">{{.Branch}}</dd>
+                    </div>
+                    {{end}}
+                    {{if .Ref}}
+                    <div>
+                        <dt class="text-gray-500">Source</dt>
+                        <dd class="text-gray-900">{{.Ref}}</dd>
+                    </div>
+                    {{end}}
+                    {{if not .Started.IsZero}}
+                    <div>
+                        <dt class="text-gray-500">Started</dt>
+                        <dd class="text-gray-900">{{timeAgo .Started}}</dd>
+                    </div>
+                    {{end}}
+                    {{if .Worktree}}
+                    <div>
+                        <dt class="text-gray-500">Worktree</dt>
+                        <dd class="font-mono text-gray-900 truncate" title="{{.Worktree}}">{{.Worktree}}</dd>
+                    </div>
+                    {{end}}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{template "task_card" .}}

@@ -1,0 +1,40 @@
+{{define "question"}}
+{{if .}}
+<div id="question" hx-get="/ui/partials/question" hx-trigger="sse:question_asked" hx-swap="outerHTML">
+    <div class="card border-l-4 border-orange-500">
+        <div class="card-header flex items-center">
+            <span class="text-orange-500 mr-2 text-xl">?</span>
+            Pending Question
+        </div>
+        <p class="text-gray-800 mb-4 text-lg">{{.Question}}</p>
+
+        {{if .Options}}
+        <div class="flex flex-wrap gap-2 mb-4">
+            {{range .Options}}
+            <button hx-post="/api/v1/workflow/answer"
+                    hx-vals='{"answer": "{{.}}"}'
+                    hx-target="#question"
+                    hx-swap="outerHTML"
+                    class="btn btn-secondary">
+                {{.}}
+            </button>
+            {{end}}
+        </div>
+        {{end}}
+
+        <form hx-post="/api/v1/workflow/answer" hx-target="#question" hx-swap="outerHTML" class="flex gap-2">
+            <input type="text" name="answer"
+                   placeholder="Type your answer..."
+                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <button type="submit" class="btn btn-primary">
+                <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                Submit
+            </button>
+        </form>
+    </div>
+</div>
+{{else}}
+<div id="question"></div>
+{{end}}
+{{end}}
+{{template "question" .}}

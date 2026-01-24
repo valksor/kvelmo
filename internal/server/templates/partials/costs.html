@@ -1,0 +1,35 @@
+{{define "costs"}}
+{{if .}}
+<div id="costs" hx-get="/ui/partials/costs" hx-trigger="sse:costs_updated, every 60s" hx-swap="outerHTML">
+    <div class="card">
+        <div class="card-header">Token Usage & Costs</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{formatCost .TotalCostUSD}}</div>
+                <div class="text-xs text-gray-500">Total Cost</div>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">{{.InputTokens}}</div>
+                <div class="text-xs text-gray-500">Input Tokens</div>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{.OutputTokens}}</div>
+                <div class="text-xs text-gray-500">Output Tokens</div>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">{{.CachedTokens}}</div>
+                <div class="text-xs text-gray-500">Cached Tokens</div>
+            </div>
+        </div>
+        {{if gt .CachedPercent 0}}
+        <div class="mt-4 text-center text-sm text-gray-500">
+            Cache hit rate: {{printf "%.1f" .CachedPercent}}%
+        </div>
+        {{end}}
+    </div>
+</div>
+{{else}}
+<div id="costs"></div>
+{{end}}
+{{end}}
+{{template "costs" .}}
