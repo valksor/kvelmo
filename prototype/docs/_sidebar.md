@@ -45,11 +45,12 @@
 - **CLI Reference**
   - [Overview](cli/index.md)
   - **Workflow**
+    - [workflow](cli/workflow.md)
     - [start](cli/start.md)
     - [plan](cli/plan.md)
     - [implement](cli/implement.md)
     - [review](cli/review.md)
-    - [review pr](cli/review.md#pr-review) - [PR Review State Guide](../guides/pr-review-state.md)
+    - [review pr](cli/review.md) - PR/MR review without active task
     - [simplify](cli/simplify.md)
     - [finish](cli/finish.md)
     - [auto](cli/auto.md)
@@ -58,6 +59,7 @@
     - [continue](cli/continue.md)
     - [note](cli/note.md)
     - [list](cli/list.md)
+    - [sync](cli/sync.md)
     - [abandon](cli/abandon.md)
   - **History**
     - [undo](cli/undo.md)
@@ -76,8 +78,13 @@
     - [scan](cli/scan.md)
     - [login](cli/login.md)
     - [generate-secret](cli/generate-secret.md)
+    - [migrate-tokens](cli/migrate-tokens.md)
+    - [mcp](cli/mcp.md)
     - [update](cli/update.md)
     - [version](cli/version.md)
+  - **Web UI**
+    - [serve](cli/serve.md)
+    - [register](cli/register.md)
 
 - **Reference**
   - [Storage Structure](reference/storage.md)
