@@ -114,7 +114,7 @@ func TestBrowserIntegration(t *testing.T) {
 
 	// Test JavaScript evaluation
 	t.Run("Eval", func(t *testing.T) {
-		t.Skip("Eval has Rod API compatibility issues - to be investigated")
+		// t.Skip("Eval has Rod API compatibility issues - to be investigated")
 
 		tabs, err := controller.ListTabs(ctx)
 		if err != nil {

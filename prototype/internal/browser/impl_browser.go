@@ -718,6 +718,9 @@ func (c *controller) Type(ctx context.Context, tabID, selector, text string, cle
 }
 
 // Eval evaluates JavaScript.
+// The expression can be a simple value (like "1 + 1") or a function.
+// We use the RuntimeEvaluate CDP command directly to avoid Rod's
+// function call mechanism which requires .apply().
 func (c *controller) Eval(ctx context.Context, tabID, expression string) (any, error) {
 	c.mu.RLock()
 	page, err := c.getPage(tabID)
@@ -727,12 +730,24 @@ func (c *controller) Eval(ctx context.Context, tabID, expression string) (any, e
 		return nil, err
 	}
 
-	result, err := page.Eval(expression)
+	// Use RuntimeEvaluate directly for simple expression evaluation.
+	// This avoids Rod's Eval/Evaluate which wrap expressions in
+	// function calls using .apply(), which fails for simple values.
+	res, err := proto.RuntimeEvaluate{
+		Expression:    expression,
+		ReturnByValue: true,
+		AwaitPromise:  true,
+	}.Call(page)
 	if err != nil {
 		return nil, errEval(err)
 	}
 
-	return result.Value, nil
+	if res.ExceptionDetails != nil {
+		return nil, errEval(fmt.Errorf("js exception: %s", res.ExceptionDetails.Exception.Description))
+	}
+
+	// The Value field is gson.JSON; use Val() to get the underlying Go value
+	return res.Result.Value.Val(), nil
 }
 
 // getOrCreateConsoleMonitor returns an existing console monitor or creates a new one.
