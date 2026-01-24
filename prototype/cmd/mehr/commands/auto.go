@@ -27,6 +27,7 @@ var (
 	autoTargetBranch  string
 	autoQualityTarget string
 	autoNoQuality     bool
+	autoOptimize      bool
 )
 
 var autoCmd = &cobra.Command{
@@ -67,6 +68,7 @@ func init() {
 	autoCmd.Flags().StringVarP(&autoTargetBranch, "target", "t", "", "Target branch to merge into")
 	autoCmd.Flags().StringVar(&autoQualityTarget, "quality-target", "quality", "Make target for quality checks")
 	autoCmd.Flags().BoolVar(&autoNoQuality, "no-quality", false, "Skip quality checks entirely")
+	autoCmd.Flags().BoolVar(&autoOptimize, "optimize", false, "Optimize prompts before sending to agents")
 }
 
 func runAuto(cmd *cobra.Command, args []string) error {
@@ -92,6 +94,10 @@ func runAuto(cmd *cobra.Command, args []string) error {
 
 	if autoAgent != "" {
 		opts = append(opts, conductor.WithAgent(autoAgent))
+	}
+
+	if autoOptimize {
+		opts = append(opts, conductor.WithOptimizePrompts(true))
 	}
 
 	// Load workspace config for browser settings

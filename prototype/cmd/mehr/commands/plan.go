@@ -23,6 +23,7 @@ var (
 	planFullContext   bool
 	planAgentPlanning string // Per-step agent override
 	planAutoApprove   bool   // Auto-approve defaults without asking user
+	planOptimize      bool   // Optimize prompt before sending to agent
 )
 
 var planCmd = &cobra.Command{
@@ -68,6 +69,7 @@ func init() {
 	planCmd.Flags().BoolVar(&planFullContext, "full-context", false, "Include full exploration context from previous session (default: summary only)")
 	planCmd.Flags().StringVar(&planAgentPlanning, "agent-plan", "", "Agent for planning step")
 	planCmd.Flags().BoolVar(&planAutoApprove, "auto-approve", false, "Auto-approve defaults without asking user")
+	planCmd.Flags().BoolVar(&planOptimize, "optimize", false, "Optimize prompt before sending to agent")
 }
 
 func runPlan(cmd *cobra.Command, args []string) error {
@@ -85,8 +87,9 @@ func runPlan(cmd *cobra.Command, args []string) error {
 
 	// Build conductor options using helper
 	opts := BuildConductorOptions(CommandOptions{
-		Verbose:     verbose,
-		FullContext: planFullContext,
+		Verbose:         verbose,
+		FullContext:     planFullContext,
+		OptimizePrompts: planOptimize,
 	})
 
 	// Add --auto-approve flag for planning

@@ -22,6 +22,7 @@ var (
 	reviewTool           string
 	reviewOutput         string
 	reviewAgentReviewing string
+	reviewOptimize       bool
 )
 
 var reviewCmd = &cobra.Command{
@@ -50,13 +51,22 @@ func init() {
 	reviewCmd.Flags().StringVar(&reviewTool, "tool", "coderabbit", "Review tool to use (coderabbit)")
 	reviewCmd.Flags().StringVarP(&reviewOutput, "output", "o", "", "Output file name (default: review-N.txt)")
 	reviewCmd.Flags().StringVar(&reviewAgentReviewing, "agent-review", "", "Agent for review step (when using agent-based review)")
+	reviewCmd.Flags().BoolVar(&reviewOptimize, "optimize", false, "Optimize prompt before sending to agent")
 }
 
 func runReview(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	// Build conductor options
+	opts := []conductor.Option{
+		conductor.WithVerbose(verbose),
+	}
+	if reviewOptimize {
+		opts = append(opts, conductor.WithOptimizePrompts(true))
+	}
+
 	// Initialize conductor with standard providers and agents
-	cond, err := initializeConductor(ctx, conductor.WithVerbose(verbose))
+	cond, err := initializeConductor(ctx, opts...)
 	if err != nil {
 		return err
 	}

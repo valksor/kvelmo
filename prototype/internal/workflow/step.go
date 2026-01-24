@@ -14,6 +14,8 @@ const (
 	StepCheckpointing Step = "checkpointing"
 	// StepSimplifying is the simplification phase where content is refined.
 	StepSimplifying Step = "simplifying"
+	// StepOptimizing is the prompt optimization phase where prompts are refined.
+	StepOptimizing Step = "optimizing"
 )
 
 // AllSteps returns all valid step names.
@@ -24,6 +26,7 @@ func AllSteps() []Step {
 		StepReviewing,
 		StepCheckpointing,
 		StepSimplifying,
+		StepOptimizing,
 	}
 }
 

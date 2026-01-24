@@ -318,6 +318,12 @@ func (sm *SessionManager) tryLaunchBrowser(ctx context.Context, port int) (*Sess
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
+	// Disconnect Chrome from parent's stdio to prevent interference with MCP protocol.
+	// When running via MCP server, stdin/stdout are used for JSON-RPC communication,
+	// and Chrome processes must not inherit these file descriptors.
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
 
 	if err := cmd.Start(); err != nil {
 		_ = os.RemoveAll(userDataDir)

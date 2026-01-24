@@ -721,6 +721,7 @@ func TestAllSteps(t *testing.T) {
 		StepReviewing,
 		StepCheckpointing,
 		StepSimplifying,
+		StepOptimizing,
 	}
 
 	if len(steps) != len(expectedSteps) {
@@ -745,6 +746,7 @@ func TestIsValidStep(t *testing.T) {
 		{"reviewing", "reviewing", true},
 		{"checkpointing", "checkpointing", true},
 		{"simplifying", "simplifying", true},
+		{"optimizing", "optimizing", true},
 		{"invalid step", "invalid", false},
 		{"empty string", "", false},
 		{"mixed case", "Planning", false},
