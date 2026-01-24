@@ -50,6 +50,17 @@ These flags work with any command:
 | [undo](cli/undo.md)           | Revert to previous checkpoint |
 | [redo](cli/redo.md)           | Restore undone checkpoint     |
 
+### Project Planning
+
+| Command                               | Description                                    |
+| ------------------------------------- | ---------------------------------------------- |
+| [project plan](cli/project.md#plan)   | Create task breakdown from source              |
+| [project tasks](cli/project.md#tasks) | List tasks in a project queue                  |
+| [project edit](cli/project.md#edit)   | Edit task properties (deps, priority, status)  |
+| [project reorder](cli/project.md#reorder) | Reorder tasks in queue                     |
+| [project submit](cli/project.md#submit) | Submit tasks to provider                     |
+| [project start](cli/project.md#start) | Start implementing tasks from queue            |
+
 ### Web UI
 
 | Command                         | Description                              |
