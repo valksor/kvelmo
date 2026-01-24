@@ -12,7 +12,8 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/valksor/go-toolkit v0.0.0-20260122184555-64b2f5908bc3
-	gitlab.com/gitlab-org/api/client-go v1.16.0
+	gitlab.com/gitlab-org/api/client-go v1.17.0
+	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/term v0.39.0
