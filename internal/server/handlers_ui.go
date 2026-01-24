@@ -217,6 +217,26 @@ func (s *Server) handleLoginPageUI(w http.ResponseWriter, r *http.Request, error
 	}
 }
 
+// handleProjectUI renders the project planning page.
+func (s *Server) handleProjectUI(w http.ResponseWriter, _ *http.Request) {
+	if s.templates == nil {
+		s.writeError(w, http.StatusInternalServerError, "templates not loaded")
+
+		return
+	}
+
+	data := ProjectData{
+		Mode:             s.modeString(),
+		AuthEnabled:      s.config.AuthStore != nil,
+		CanSwitchProject: s.canSwitchProject(),
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.RenderProject(w, data); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
+	}
+}
+
 // Helper functions to get data for templates.
 
 func (s *Server) getGuideData() *GuideData {

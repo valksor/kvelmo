@@ -98,6 +98,22 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /settings", s.handleSettingsPage)
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
+
+		// Project planning UI
+		mux.HandleFunc("GET /project", s.handleProjectUI)
+
+		// Project workflow endpoints
+		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
+		mux.HandleFunc("POST /api/v1/project/source", s.handleProjectSource)
+		mux.HandleFunc("POST /api/v1/project/plan", s.handleProjectPlan)
+		mux.HandleFunc("GET /api/v1/project/queues", s.handleProjectQueues)
+		mux.HandleFunc("GET /api/v1/project/queue/", s.handleProjectQueueRoute)
+		mux.HandleFunc("DELETE /api/v1/project/queue/", s.handleProjectQueueDeleteRoute)
+		mux.HandleFunc("GET /api/v1/project/tasks", s.handleProjectTasks)
+		mux.HandleFunc("PUT /api/v1/project/tasks/", s.handleProjectTaskEditRoute)
+		mux.HandleFunc("POST /api/v1/project/reorder", s.handleProjectReorder)
+		mux.HandleFunc("POST /api/v1/project/submit", s.handleProjectSubmit)
+		mux.HandleFunc("POST /api/v1/project/start", s.handleProjectStart)
 	}
 
 	// Global mode routes

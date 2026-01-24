@@ -17,6 +17,7 @@ type Templates struct {
 	dashboard *template.Template
 	login     *template.Template
 	settings  *template.Template
+	project   *template.Template
 	partials  map[string]*template.Template
 }
 
@@ -72,6 +73,17 @@ func LoadTemplates() (*Templates, error) {
 	}
 	t.settings = settings
 
+	// Load project template
+	project, err := template.New("project.html").Funcs(templateFuncs()).ParseFS(
+		templateFS,
+		"templates/base.html",
+		"templates/project.html",
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.project = project
+
 	// Load partials
 	partialNames := []string{"task_card", "actions", "specs", "question", "costs"}
 	for _, name := range partialNames {
@@ -111,6 +123,11 @@ func (t *Templates) RenderPartial(w io.Writer, name string, data any) error {
 // RenderSettings renders the settings page.
 func (t *Templates) RenderSettings(w io.Writer, data SettingsData) error {
 	return t.settings.ExecuteTemplate(w, "base", data)
+}
+
+// RenderProject renders the project planning page.
+func (t *Templates) RenderProject(w io.Writer, data ProjectData) error {
+	return t.project.ExecuteTemplate(w, "base", data)
 }
 
 // DashboardData holds data for the dashboard template.
@@ -197,6 +214,13 @@ type SettingsData struct {
 	Error            string                    // Error message
 	Projects         []storage.ProjectMetadata // Available projects for picker (global mode)
 	SelectedProject  string                    // Currently selected project ID (global mode)
+}
+
+// ProjectData holds data for the project planning template.
+type ProjectData struct {
+	Mode             string
+	AuthEnabled      bool
+	CanSwitchProject bool
 }
 
 // Template helper functions.
