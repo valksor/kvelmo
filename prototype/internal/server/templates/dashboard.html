@@ -1,0 +1,473 @@
+{{define "content"}}
+<div hx-ext="sse" sse-connect="/api/v1/events" sse-swap="message">
+    <!-- SSE connection for real-time updates -->
+</div>
+
+{{if .HasTask}}
+<!-- Task Card -->
+<div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:workflow_state_changed, every 30s" hx-swap="outerHTML">
+    {{template "task_card_content" .Task}}
+</div>
+
+<!-- Actions -->
+<div id="actions" hx-get="/ui/partials/actions" hx-trigger="sse:workflow_state_changed" hx-swap="outerHTML">
+    {{template "actions_content" .Guide}}
+</div>
+
+<!-- Pending Question (if any) -->
+{{if .PendingQuestion}}
+<div id="question" hx-get="/ui/partials/question" hx-trigger="sse:question_asked" hx-swap="outerHTML">
+    {{template "question_content" .PendingQuestion}}
+</div>
+{{end}}
+
+<!-- Specifications -->
+<div id="specs" hx-get="/ui/partials/specs" hx-trigger="sse:spec_updated, every 30s" hx-swap="outerHTML">
+    {{template "specs_content" .Specs}}
+</div>
+
+<!-- Costs -->
+{{if .Costs}}
+<div id="costs" hx-get="/ui/partials/costs" hx-trigger="sse:costs_updated, every 60s" hx-swap="outerHTML">
+    {{template "costs_content" .Costs}}
+</div>
+{{end}}
+
+{{else}}
+{{if .IsGlobalMode}}
+<!-- Global Mode: Project Picker -->
+<div class="card">
+    <div class="text-center py-8">
+        <div class="text-6xl text-gray-300 mb-4">📁</div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-2">Select a Project</h2>
+        <p class="text-gray-500 mb-6">Choose a project to start working</p>
+
+        {{if .Projects}}
+        <div class="max-w-lg mx-auto">
+            <div class="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                {{range .Projects}}
+                <form hx-post="/api/v1/projects/select" hx-target="body" hx-swap="innerHTML" class="block">
+                    <input type="hidden" name="path" value="{{.Path}}">
+                    <button type="submit" class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 text-left">
+                        <div>
+                            <div class="font-medium text-gray-900">{{.Name}}</div>
+                            <div class="text-sm text-gray-500 font-mono truncate">{{.Path}}</div>
+                        </div>
+                        <span class="text-gray-400">→</span>
+                    </button>
+                </form>
+                {{end}}
+            </div>
+        </div>
+        {{else}}
+        <div class="max-w-md mx-auto bg-gray-50 rounded-lg p-6">
+            <p class="text-gray-600 mb-4">No projects registered yet.</p>
+            <p class="text-sm text-gray-500">
+                Register a project by running:<br>
+                <code class="bg-gray-200 px-2 py-1 rounded mt-2 inline-block">mehr serve register</code>
+            </p>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{else}}
+<!-- Project Mode: No Active Task -->
+<div class="card">
+    <div class="text-center py-8">
+        <div class="text-6xl text-gray-300 mb-4">○</div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-2">No Active Task</h2>
+        <p class="text-gray-500 mb-6">Start a new task to begin working</p>
+
+        <div class="max-w-lg mx-auto">
+            <!-- Tab buttons -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button type="button" onclick="showTab('upload')" id="tab-upload"
+                        class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600">
+                    Upload File
+                </button>
+                <button type="button" onclick="showTab('write')" id="tab-write"
+                        class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    Write Task
+                </button>
+                <button type="button" onclick="showTab('external')" id="tab-external"
+                        class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    External Link
+                </button>
+            </div>
+
+            <!-- Upload File Tab -->
+            <div id="panel-upload" class="tab-panel">
+                <form id="upload-form" hx-post="/api/v1/workflow/start" hx-encoding="multipart/form-data"
+                      hx-target="body" hx-swap="innerHTML" class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
+                         ondragover="event.preventDefault(); this.classList.add('border-blue-500', 'bg-blue-50');"
+                         ondragleave="this.classList.remove('border-blue-500', 'bg-blue-50');"
+                         ondrop="event.preventDefault(); this.classList.remove('border-blue-500', 'bg-blue-50'); document.getElementById('file-input').files = event.dataTransfer.files; updateFileName();">
+                        <input type="file" name="file" id="file-input" accept=".md,.txt,.markdown"
+                               class="hidden" onchange="updateFileName()">
+                        <div class="text-4xl text-gray-400 mb-2">📄</div>
+                        <p class="text-gray-600 mb-2">Drop file here or
+                            <label for="file-input" class="text-blue-600 hover:underline cursor-pointer">browse</label>
+                        </p>
+                        <p class="text-xs text-gray-400">Accepts .md, .txt, .markdown files</p>
+                        <p id="file-name" class="text-sm text-blue-600 mt-2 hidden"></p>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                        Start Task
+                    </button>
+                </form>
+            </div>
+
+            <!-- Write Task Tab -->
+            <div id="panel-write" class="tab-panel hidden">
+                <form hx-post="/api/v1/workflow/start" hx-target="body" hx-swap="innerHTML" class="space-y-4">
+                    <div>
+                        <label for="task-content" class="block text-sm font-medium text-gray-700 mb-1 text-left">Task Description</label>
+                        <textarea name="content" id="task-content" rows="8"
+                                  placeholder="# Task Title&#10;&#10;Describe what you want to accomplish...&#10;&#10;## Requirements&#10;- First requirement&#10;- Second requirement"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                        Start Task
+                    </button>
+                </form>
+            </div>
+
+            <!-- External Link Tab -->
+            <div id="panel-external" class="tab-panel hidden">
+                <form id="external-form" hx-post="/api/v1/workflow/start" hx-target="body" hx-swap="innerHTML" class="space-y-3">
+                    <input type="hidden" name="ref" id="external-ref">
+
+                    <div id="external-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                        Please fill only one field
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr] gap-x-2 gap-y-1 items-center text-left max-h-80 overflow-y-auto pr-2">
+                        <label for="ext-github" class="text-sm font-medium text-gray-700">GitHub</label>
+                        <input type="text" id="ext-github" data-prefix="github:"
+                               placeholder="owner/repo#123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-gitlab" class="text-sm font-medium text-gray-700">GitLab</label>
+                        <input type="text" id="ext-gitlab" data-prefix="gitlab:"
+                               placeholder="owner/repo#123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-bitbucket" class="text-sm font-medium text-gray-700">Bitbucket</label>
+                        <input type="text" id="ext-bitbucket" data-prefix="bitbucket:"
+                               placeholder="owner/repo#123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-jira" class="text-sm font-medium text-gray-700">Jira</label>
+                        <input type="text" id="ext-jira" data-prefix="jira:"
+                               placeholder="PROJECT-123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-linear" class="text-sm font-medium text-gray-700">Linear</label>
+                        <input type="text" id="ext-linear" data-prefix="linear:"
+                               placeholder="TEAM-123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-asana" class="text-sm font-medium text-gray-700">Asana</label>
+                        <input type="text" id="ext-asana" data-prefix="asana:"
+                               placeholder="task-id"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-notion" class="text-sm font-medium text-gray-700">Notion</label>
+                        <input type="text" id="ext-notion" data-prefix="notion:"
+                               placeholder="page-id"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-trello" class="text-sm font-medium text-gray-700">Trello</label>
+                        <input type="text" id="ext-trello" data-prefix="trello:"
+                               placeholder="card-id"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-clickup" class="text-sm font-medium text-gray-700">ClickUp</label>
+                        <input type="text" id="ext-clickup" data-prefix="clickup:"
+                               placeholder="task-id"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-wrike" class="text-sm font-medium text-gray-700">Wrike</label>
+                        <input type="text" id="ext-wrike" data-prefix="wrike:"
+                               placeholder="task-id"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-youtrack" class="text-sm font-medium text-gray-700">YouTrack</label>
+                        <input type="text" id="ext-youtrack" data-prefix="youtrack:"
+                               placeholder="PROJECT-123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-azuredevops" class="text-sm font-medium text-gray-700">Azure DevOps</label>
+                        <input type="text" id="ext-azuredevops" data-prefix="azuredevops:"
+                               placeholder="org/project#123"
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+
+                        <label for="ext-url" class="text-sm font-medium text-gray-700">URL</label>
+                        <input type="text" id="ext-url" data-prefix=""
+                               placeholder="https://..."
+                               class="ext-input px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    </div>
+
+                    <p class="text-xs text-gray-400 text-left">Fill only one field above</p>
+
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                        Start Task
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    // Deactivate all tabs
+    document.querySelectorAll('.tab-btn').forEach(t => {
+        t.classList.remove('border-blue-500', 'text-blue-600');
+        t.classList.add('border-transparent', 'text-gray-500');
+    });
+    // Show selected panel
+    document.getElementById('panel-' + tabName).classList.remove('hidden');
+    // Activate selected tab
+    const tab = document.getElementById('tab-' + tabName);
+    tab.classList.remove('border-transparent', 'text-gray-500');
+    tab.classList.add('border-blue-500', 'text-blue-600');
+}
+
+function updateFileName() {
+    const input = document.getElementById('file-input');
+    const nameEl = document.getElementById('file-name');
+    if (input.files.length > 0) {
+        nameEl.textContent = 'Selected: ' + input.files[0].name;
+        nameEl.classList.remove('hidden');
+    } else {
+        nameEl.classList.add('hidden');
+    }
+}
+
+// External form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('external-form');
+    if (!form) return;
+
+    form.addEventListener('htmx:configRequest', function(evt) {
+        const inputs = document.querySelectorAll('.ext-input');
+        const errorEl = document.getElementById('external-error');
+        const refInput = document.getElementById('external-ref');
+        let filled = [];
+
+        inputs.forEach(function(input) {
+            if (input.value.trim()) {
+                filled.push(input);
+            }
+        });
+
+        if (filled.length === 0) {
+            errorEl.textContent = 'Please fill at least one field';
+            errorEl.classList.remove('hidden');
+            evt.preventDefault();
+            return;
+        }
+
+        if (filled.length > 1) {
+            errorEl.textContent = 'Please fill only one field';
+            errorEl.classList.remove('hidden');
+            evt.preventDefault();
+            return;
+        }
+
+        errorEl.classList.add('hidden');
+
+        // Construct the ref value
+        const input = filled[0];
+        const prefix = input.dataset.prefix || '';
+        refInput.value = prefix + input.value.trim();
+    });
+
+    // Clear error on input
+    document.querySelectorAll('.ext-input').forEach(function(input) {
+        input.addEventListener('input', function() {
+            document.getElementById('external-error').classList.add('hidden');
+        });
+    });
+});
+</script>
+
+<!-- Recent Tasks -->
+<div class="card" hx-get="/ui/partials/recent-tasks" hx-trigger="load" hx-swap="innerHTML">
+    <div class="card-header">Recent Tasks</div>
+    <div class="text-gray-500 text-center py-4">Loading...</div>
+</div>
+{{end}}
+{{end}}
+{{end}}
+
+{{define "task_card_content"}}
+<div class="card">
+    <div class="flex items-start justify-between">
+        <div class="flex-1">
+            <div class="flex items-center space-x-3 mb-2">
+                <span class="text-3xl {{stateColor .State}}">{{stateIcon .State}}</span>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">{{if .Title}}{{.Title}}{{else}}Task {{.ID}}{{end}}</h2>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{stateColor .State}} bg-opacity-10"
+                          style="background-color: currentColor; color: inherit;">
+                        {{stateBadge .State}}
+                    </span>
+                </div>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm">
+                {{if .Branch}}
+                <div>
+                    <dt class="text-gray-500">Branch</dt>
+                    <dd class="font-mono text-gray-900">{{.Branch}}</dd>
+                </div>
+                {{end}}
+                {{if .Ref}}
+                <div>
+                    <dt class="text-gray-500">Source</dt>
+                    <dd class="text-gray-900">{{.Ref}}</dd>
+                </div>
+                {{end}}
+                {{if not .Started.IsZero}}
+                <div>
+                    <dt class="text-gray-500">Started</dt>
+                    <dd class="text-gray-900">{{timeAgo .Started}}</dd>
+                </div>
+                {{end}}
+                {{if .Worktree}}
+                <div>
+                    <dt class="text-gray-500">Worktree</dt>
+                    <dd class="font-mono text-gray-900 truncate" title="{{.Worktree}}">{{.Worktree}}</dd>
+                </div>
+                {{end}}
+            </dl>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "actions_content"}}
+<div class="card">
+    <div class="card-header">Actions</div>
+    {{if .NextActions}}
+    <div class="flex flex-wrap gap-3">
+        {{range .NextActions}}
+        <button hx-post="{{.Endpoint}}"
+                hx-target="#task-card"
+                hx-swap="outerHTML"
+                hx-confirm="{{if .Dangerous}}Are you sure? This action cannot be undone.{{end}}"
+                class="btn {{if .Dangerous}}btn-danger{{else if eq .Command "finish"}}btn-success{{else}}btn-primary{{end}}">
+            <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+            {{.Description}}
+        </button>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="text-gray-500">No actions available</p>
+    {{end}}
+</div>
+{{end}}
+
+{{define "question_content"}}
+<div class="card border-l-4 border-orange-500">
+    <div class="card-header flex items-center">
+        <span class="text-orange-500 mr-2">?</span>
+        Pending Question
+    </div>
+    <p class="text-gray-800 mb-4">{{.Question}}</p>
+
+    {{if .Options}}
+    <div class="flex flex-wrap gap-2 mb-4">
+        {{range .Options}}
+        <button hx-post="/api/v1/workflow/answer"
+                hx-vals='{"answer": "{{.}}"}'
+                hx-target="#question"
+                hx-swap="outerHTML"
+                class="btn btn-secondary">
+            {{.}}
+        </button>
+        {{end}}
+    </div>
+    {{end}}
+
+    <form hx-post="/api/v1/workflow/answer" hx-target="#question" hx-swap="outerHTML" class="flex gap-2">
+        <input type="text" name="answer"
+               placeholder="Type your answer..."
+               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit" class="btn btn-primary">
+            <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+            Submit
+        </button>
+    </form>
+</div>
+{{end}}
+
+{{define "specs_content"}}
+<div class="card">
+    <div class="card-header">Specifications</div>
+    {{if .}}
+    <ul class="space-y-2">
+        {{range .}}
+        <li class="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
+            <span class="text-xl {{specColor .Status}}">{{specIcon .Status}}</span>
+            <div class="flex-1">
+                <span class="font-medium text-gray-900">{{.Name}}</span>
+                {{if .Title}}
+                <span class="text-gray-500">- {{.Title}}</span>
+                {{end}}
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{.Status}}</span>
+        </li>
+        {{end}}
+    </ul>
+
+    <!-- Progress summary -->
+    {{$total := len .}}
+    {{$done := 0}}
+    {{range .}}{{if eq .Status "done"}}{{$done = 1}}{{end}}{{end}}
+    <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex items-center justify-between text-sm text-gray-500">
+            <span>Progress</span>
+            <span>{{$total}} specifications</span>
+        </div>
+        <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-full bg-green-500 rounded-full" style="width: 0%"></div>
+        </div>
+    </div>
+    {{else}}
+    <p class="text-gray-500 text-center py-4">No specifications yet</p>
+    {{end}}
+</div>
+{{end}}
+
+{{define "costs_content"}}
+<div class="card">
+    <div class="card-header">Token Usage & Costs</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-gray-900">{{formatCost .TotalCostUSD}}</div>
+            <div class="text-xs text-gray-500">Total Cost</div>
+        </div>
+        <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-blue-600">{{.InputTokens}}</div>
+            <div class="text-xs text-gray-500">Input Tokens</div>
+        </div>
+        <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-600">{{.OutputTokens}}</div>
+            <div class="text-xs text-gray-500">Output Tokens</div>
+        </div>
+        <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-purple-600">{{.CachedTokens}}</div>
+            <div class="text-xs text-gray-500">Cached Tokens</div>
+        </div>
+    </div>
+</div>
+{{end}}

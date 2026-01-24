@@ -1,0 +1,24 @@
+{{define "actions"}}
+<div id="actions" hx-get="/ui/partials/actions" hx-trigger="sse:workflow_state_changed" hx-swap="outerHTML">
+    <div class="card">
+        <div class="card-header">Actions</div>
+        {{if .NextActions}}
+        <div class="flex flex-wrap gap-3">
+            {{range .NextActions}}
+            <button hx-post="{{.Endpoint}}"
+                    hx-target="#task-card"
+                    hx-swap="outerHTML"
+                    {{if .Dangerous}}hx-confirm="Are you sure? This action cannot be undone."{{end}}
+                    class="btn {{if .Dangerous}}btn-danger{{else if eq .Command "finish"}}btn-success{{else}}btn-primary{{end}}">
+                <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                {{.Description}}
+            </button>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="text-gray-500">No actions available</p>
+        {{end}}
+    </div>
+</div>
+{{end}}
+{{template "actions" .}}

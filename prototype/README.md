@@ -41,6 +41,7 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 - **ML predictions** - Predict task complexity and resource requirements from historical data
 - **State tracking** - Task state persists across sessions; resume anytime with `mehr continue`
 - **Auto mode** - Fully automated workflow: `mehr auto file:task.md` handles everything
+- **Prompt optimization** - Automatically refine prompts for clarity and effectiveness with `--optimize`
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
 
 ## Quick Start
@@ -195,6 +196,7 @@ mehr finish           # Merge changes or create PR
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
 | `mehr mcp` | Start MCP server for AI agent integration |
 | `mehr scan` | Run security scanners (SAST, secrets, dependencies) |
+| `mehr serve` | Start web UI server (includes auth, register subcommands) |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
@@ -263,6 +265,44 @@ Mehrhof supports AI agent plugins for custom backends. The primary agent is **Cl
 | Claude | Primary agent via Claude CLI (recommended) |
 
 **See [AI Agents documentation](https://mehrhof.valksor.com/docs/#/agents/index) for configuration and custom aliases.**
+
+## Web UI
+
+Mehrhof includes a web-based UI for browser-based task management with full CLI feature parity:
+
+```bash
+# Start web UI (project mode)
+mehr serve
+
+# Start on specific port and open browser
+mehr serve --port 3000 --open
+
+# Global mode - see all projects
+mehr serve --global
+
+# Remote access (requires authentication)
+mehr serve auth add admin mypassword
+mehr serve --host 0.0.0.0 --port 8080
+```
+
+The web UI provides:
+- **Full workflow control** - Start, plan, implement, review, finish, undo/redo via REST API
+- **Auto mode** - Run complete automation cycles (`POST /api/v1/workflow/auto`)
+- **Continue/resume** - Resume work with optional auto-execute next step
+- **Real-time updates** - Server-Sent Events for live state changes
+- **Cost tracking** - View token usage and costs per task or across all tasks
+- **Guidance** - State-specific suggestions on what to do next
+- **Notes** - Add notes to tasks for AI context
+- **Settings page** - Configure all workspace settings via web UI (Git, Agent, Workflow, Browser, Providers)
+- **Global mode project picker** - In global mode, select and configure any registered project's settings
+- **Browser automation** - Control Chrome for testing via API
+- **Security scanning** - Run SAST, secrets, and vulnerability scans
+- **Memory search** - Query semantic memory for past task context
+- **Agent/provider info** - List available AI agents and task providers
+- **Authentication** - Secure access for network-accessible servers
+- **SSH tunnel support** - Secure remote access
+
+**See [Web UI documentation](https://mehrhof.valksor.com/docs/#/cli/serve) for API details and examples.**
 
 ## Configuration
 
