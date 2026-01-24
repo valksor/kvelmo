@@ -1028,6 +1028,24 @@ func buildCombinedInstructions(cfg *storage.WorkspaceConfig, step string) string
 	return strings.Join(parts, "\n\n")
 }
 
+// shouldOptimizePrompt checks if prompt optimization is enabled for a given step.
+// Checks step-specific setting first, then falls back to global setting.
+// Returns false if no config is provided.
+func shouldOptimizePrompt(cfg *storage.WorkspaceConfig, step string) bool {
+	if cfg == nil {
+		return false
+	}
+
+	// Step-specific setting takes precedence
+	// If step is explicitly configured (even with false), use that value
+	if stepCfg, ok := cfg.Agent.Steps[step]; ok {
+		return stepCfg.OptimizePrompts
+	}
+
+	// Fall back to global setting
+	return cfg.Agent.OptimizePrompts
+}
+
 // buildSimplifyInputPrompt creates a prompt to simplify task input.
 func buildSimplifyInputPrompt(title, sourceContent, customInstructions string) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")

@@ -107,6 +107,12 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		prompt += "\n\n## Previous Q&A History\nThe following questions were asked and answered in previous planning sessions:\n\n" + historicalContext
 	}
 
+	// Optimize prompt if enabled (CLI flag or workspace config)
+	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "planning")
+	if shouldOptimize {
+		prompt = c.optimizePrompt(ctx, "planning", prompt)
+	}
+
 	// Check for orchestration configuration
 	if c.isOrchestrationEnabledForPhase("planning") {
 		return c.runOrchestratedPlanning(ctx, taskID, prompt, statusLine)
@@ -328,6 +334,12 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	specStatusSummary := buildSpecStatusSummary(c.workspace, taskID)
 	specTrackingSummary := buildSpecificationTrackingSummary(c.workspace, taskID)
 	prompt := buildImplementationPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary)
+
+	// Optimize prompt if enabled (CLI flag or workspace config)
+	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "implementing")
+	if shouldOptimize {
+		prompt = c.optimizePrompt(ctx, "implementing", prompt)
+	}
 
 	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent implementing...", 20)
@@ -609,6 +621,12 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	customInstructions := buildCombinedInstructions(workspaceCfg, "reviewing")
 	prompt := buildReviewPromptWithLintAndSecurity(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, lintResults, securityFindings, customInstructions)
 
+	// Optimize prompt if enabled (CLI flag or workspace config)
+	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "reviewing")
+	if shouldOptimize {
+		prompt = c.optimizePrompt(ctx, "reviewing", prompt)
+	}
+
 	// Run agent, accumulate output for transcript
 	c.publishProgress("Agent reviewing...", 20)
 	var transcriptBuilder strings.Builder
@@ -772,6 +790,66 @@ func (c *Conductor) buildHistoricalContext(taskID string, fullContext bool) stri
 	}
 
 	return context.String()
+}
+
+// optimizePrompt runs the optimizer agent to refine a prompt before execution.
+// Agent resolution follows the pattern: optimizing step → current step → global default.
+// Returns the optimized prompt, or falls back to original if optimization fails.
+func (c *Conductor) optimizePrompt(ctx context.Context, phase, prompt string) string {
+	// Try to get optimizer agent with fallback chain:
+	// 1. Dedicated "optimizing" agent (if configured)
+	// 2. The current step's agent (e.g., "planning" agent for planning phase)
+	// 3. Global default agent
+	var optimizerAgent agent.Agent
+
+	// First try: dedicated optimizing agent
+	optimizerAgent, err := c.GetAgentForStep(ctx, workflow.StepOptimizing)
+	if err != nil {
+		// Second try: use the current step's agent
+		optimizerAgent, err = c.GetAgentForStep(ctx, workflow.Step(phase))
+		if err != nil {
+			c.logVerbosef("Optimizer agent not available, using original prompt")
+
+			return prompt
+		}
+	}
+
+	// Build optimizer prompt
+	optimizerPrompt := buildOptimizerPrompt(phase, prompt)
+
+	c.publishProgress("Optimizing prompt...", 5)
+
+	// Run optimizer (no streaming needed, just get the result)
+	response, err := optimizerAgent.Run(ctx, optimizerPrompt)
+	if err != nil {
+		c.logError(fmt.Errorf("prompt optimization failed: %w", err))
+		c.publishProgress("Optimization failed, using original prompt", 10)
+
+		return prompt // Fall back to original
+	}
+
+	// Extract optimized prompt from response
+	optimizedPrompt := response.Summary
+	if optimizedPrompt == "" && len(response.Messages) > 0 {
+		optimizedPrompt = response.Messages[0]
+	}
+
+	if optimizedPrompt == "" {
+		c.publishProgress("Optimization returned empty, using original prompt", 10)
+
+		return prompt
+	}
+
+	// Log optimization stats
+	originalLen := len(prompt)
+	optimizedLen := len(optimizedPrompt)
+	reduction := float64(originalLen-optimizedLen) / float64(originalLen) * 100
+	c.logVerbosef("Prompt optimized: %d -> %d chars (%.1f%% reduction)",
+		originalLen, optimizedLen, reduction)
+
+	c.publishProgress("Prompt optimized", 10)
+
+	return optimizedPrompt
 }
 
 // generateCommitMessage asks the agent to generate a descriptive commit message

@@ -35,6 +35,9 @@ type Options struct {
 	// Planning behavior
 	UseDefaults bool // Use default answers for unknowns without asking user (default: false, ask user)
 
+	// Prompt optimization
+	OptimizePrompts bool // Optimize prompts before sending to working agent
+
 	// Output
 	Stdout io.Writer // Where to write output (default: os.Stdout)
 	Stderr io.Writer // Where to write errors (default: os.Stderr)
@@ -192,6 +195,13 @@ func WithIncludeFullContext(enabled bool) Option {
 func WithUseDefaults(enabled bool) Option {
 	return func(o *Options) {
 		o.UseDefaults = enabled
+	}
+}
+
+// WithOptimizePrompts enables prompt optimization before execution.
+func WithOptimizePrompts(enabled bool) Option {
+	return func(o *Options) {
+		o.OptimizePrompts = enabled
 	}
 }
 
