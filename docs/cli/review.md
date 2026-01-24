@@ -206,6 +206,137 @@ Ensure you have uncommitted changes or are on a task branch with modifications.
 
 Large changesets may take longer. The tool will retry automatically.
 
+## Review Pull Requests
+
+### mehr review pr
+
+Review a pull request (GitHub) or merge request (GitLab) using AI agents. This is a **standalone command** that does not require an active task or workspace.
+
+```bash
+mehr review pr --pr-number <N> [flags]
+```
+
+**Use when:** You want to review a PR/MR without starting a mehrhof task. Ideal for CI/CD pipelines.
+
+#### Provider Detection
+
+The provider is **auto-detected from your git remote URL**:
+- GitHub → `github.com`
+- GitLab → `gitlab.com`
+- Bitbucket → `bitbucket.org`
+- Azure DevOps → `dev.azure.com`, `azure.com`
+
+Use `--provider` to override auto-detection.
+
+#### Flags
+
+| Flag                | Description                                                            |
+| ------------------- | ---------------------------------------------------------------------- |
+| `--provider`        | Provider: `github`, `gitlab`, `bitbucket`, `azuredevops` (auto-detected) |
+| `--pr-number`       | PR/MR number (required)                                                |
+| `--format`          | Comment format: `summary` (default), `line-comments`                   |
+| `--scope`           | Review scope: `full` (default), `compact`, `files-changed`             |
+| `--agent`           | Agent to use (default: `claude`)                                       |
+| `--token`           | Auth token (overrides config/env vars; use for CI)                     |
+| `--acknowledge-fixes` | Acknowledge when previously reported issues are fixed (default: true)  |
+| `--update-existing` | Edit existing comment vs post new comment (default: true)               |
+
+#### Examples
+
+**Basic PR review:**
+```bash
+mehr review pr --pr-number 123
+```
+
+**Specify provider:**
+```bash
+mehr review pr --pr-number 456 --provider gitlab
+```
+
+**CI/CD with token:**
+```bash
+mehr review pr --pr-number 789 --token "$GITHUB_TOKEN"
+```
+
+**Compact review scope:**
+```bash
+mehr review pr --pr-number 100 --scope compact
+```
+
+**Use specific agent:**
+```bash
+mehr review pr --pr-number 200 --agent claude-opus
+```
+
+#### Output
+
+```bash
+$ mehr review pr --pr-number 123
+
+Reviewing PR #123 from github.com/user/repo...
+Agent: claude
+Scope: full
+Format: summary
+
+✅ Review completed for PR #123
+   Provider: github
+   Agent: claude
+   Comments posted: 3
+   URL: https://github.com/user/repo/pull/123#issuecomment-456
+```
+
+#### Formats
+
+| Format        | Description                                          |
+| ------------- | ---------------------------------------------------- |
+| `summary`     | Single summary comment with all findings             |
+| `line-comments` | Individual comments on specific lines of code       |
+
+#### Scopes
+
+| Scope          | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| `full`         | Review all changes in detail                         |
+| `compact`      | Concise review focusing on critical issues            |
+| `files-changed` | Summary of modified files without detailed review   |
+
+#### CI/CD Integration
+
+**GitHub Actions:**
+```yaml
+name: PR Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+steps:
+  - uses: actions/checkout@v4
+  - name: Run Mehrhof PR Review
+    run: mehr review pr --pr-number ${{ github.event.pull_request.number }} --token "${{ secrets.GITHUB_TOKEN }}"
+```
+
+**GitLab CI:**
+```yaml
+review:
+  stage: test
+  script:
+    - mehr review pr --pr-number $CI_MERGE_REQUEST_IID --provider gitlab --token "$GITLAB_TOKEN"
+  only:
+    - merge_requests
+```
+
+#### Skipping Reviews
+
+If no issues are found or the PR was already reviewed:
+```bash
+$ mehr review pr --pr-number 123
+
+⏭️  Skipped: No new changes since last review
+```
+
 ## See Also
 
 - [implement](cli/implement.md) - Generate code

@@ -71,6 +71,7 @@ These flags work with any command:
 | [list](cli/list.md)       | List all tasks in workspace              |
 | [version](cli/version.md) | Print version information                |
 | [mcp](cli/mcp.md)         | Start MCP server for AI agent integration |
+| [migrate-tokens](cli/migrate-tokens.md) | Migrate tokens to ${VAR} syntax |
 
 ### Provider Authentication
 

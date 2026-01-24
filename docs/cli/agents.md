@@ -78,6 +78,30 @@ env:
   LITERAL_VALUE: "sk-ant-123" # Literal value (no expansion)
 ```
 
+### mehr agents explain
+
+Explain agent configuration priority and resolution order.
+
+```bash
+mehr agents explain
+```
+
+Displays a detailed explanation of how agents are selected based on configuration sources. This helps you understand which agent will be used when multiple configuration options conflict.
+
+**Priority (highest to lowest):**
+
+| Priority | Source                          | Scope                | Example                              |
+| -------- | ------------------------------- | -------------------- | ------------------------------------ |
+| 1        | `--agent-plan`, `--agent-implement`, `--agent-review` flags | Single step         | `mehr plan --agent-plan opus`        |
+| 2        | `--agent` flag                  | Entire workflow      | `mehr start --agent sonnet ...`      |
+| 3        | Task frontmatter step-specific  | Single step         | `agent_steps.planning.agent`         |
+| 4        | Task frontmatter default        | Entire workflow      | `agent: sonnet`                      |
+| 5        | Workspace config step-specific  | Single step         | `agent.steps.planning.name`          |
+| 6        | Workspace config default        | Entire workflow      | `agent.default: claude`              |
+| 7        | Auto-detection                  | Fallback            | First available agent                |
+
+**Use when:** You want to understand why a specific agent is being used, or troubleshoot agent selection issues.
+
 ## Using Aliases
 
 ### At Task Start
