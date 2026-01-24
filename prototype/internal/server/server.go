@@ -101,10 +101,6 @@ func (s *Server) Start(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("unexpected listener address type: %T", listener.Addr())
 	}
-	s.mu.Lock()
-	s.actualPort = tcpAddr.Port
-	s.running = true
-	s.mu.Unlock()
 
 	// Create HTTP server
 	s.httpServer = &http.Server{
@@ -113,6 +109,11 @@ func (s *Server) Start(ctx context.Context) error {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+
+	s.mu.Lock()
+	s.actualPort = tcpAddr.Port
+	s.running = true
+	s.mu.Unlock()
 
 	// Log server start
 	slog.Info("server started", "port", s.actualPort, "mode", s.modeString())
@@ -149,17 +150,22 @@ func (s *Server) Start(ctx context.Context) error {
 
 // Shutdown gracefully shuts down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.mu.RLock()
-	running := s.running
-	s.mu.RUnlock()
+	s.mu.Lock()
 
-	if !running {
+	if !s.running {
+		s.mu.Unlock()
+
 		return nil
 	}
 
 	if s.httpServer != nil {
-		return s.httpServer.Shutdown(ctx)
+		hs := s.httpServer
+		s.mu.Unlock()
+
+		return hs.Shutdown(ctx)
 	}
+
+	s.mu.Unlock()
 
 	return nil
 }
