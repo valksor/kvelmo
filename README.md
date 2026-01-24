@@ -197,6 +197,8 @@ mehr finish           # Merge changes or create PR
 | `mehr mcp` | Start MCP server for AI agent integration |
 | `mehr scan` | Run security scanners (SAST, secrets, dependencies) |
 | `mehr serve` | Start web UI server (includes auth, register subcommands) |
+| `mehr project plan` | Create task breakdown from source with dependencies |
+| `mehr project submit` | Submit tasks to provider with dependencies |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
@@ -231,6 +233,50 @@ Mehrhof supports 16+ task sources. Use provider schemes to load tasks:
 providers:
   default: file  # "mehr start task.md" works without "file:" prefix
 ```
+
+## Project Planning with Dependencies
+
+Plan multi-task projects with dependency tracking:
+
+```bash
+# Create task breakdown from specs
+mehr project plan dir:/workspace/.final/ --title "Auth System"
+
+# Plan from a provider task (fetches details from provider)
+mehr project plan github:123 --title "From Issue"
+
+# View tasks and dependencies
+mehr project tasks --show-deps
+
+# Let AI optimize task order based on dependencies
+mehr project reorder --auto
+
+# Submit to provider with dependencies
+mehr project submit --provider wrike
+
+# Auto-implement all tasks in order
+mehr project start --auto
+```
+
+**Features:**
+- **Multiple source types** - Plan from directories, files, provider references, or URLs (via web API)
+- **AI task ordering** - Automatically optimize task order based on dependencies and priorities
+- **Provider integration** - Fetch task details from any supported provider (GitHub, Jira, etc.)
+
+**Supported dependency types by provider:**
+
+| Provider | Dependency Support |
+|----------|-------------------|
+| Wrike | Native (FinishToStart) |
+| GitHub | Task lists in epic |
+| GitLab | Task lists in description |
+| Jira | Issue links (blocks/is-blocked-by) |
+| Asana | Native task dependencies |
+| ClickUp | Native task dependencies |
+| Azure DevOps | Work item links |
+| Linear, Trello, YouTrack, Bitbucket | Description-based |
+
+See [Project Planning documentation](https://mehrhof.valksor.com/docs/#/cli/project) for full workflow details.
 
 ## Parallel Tasks with Worktrees
 

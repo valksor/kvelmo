@@ -41,6 +41,8 @@ When `port: 0`, Mehrhof launches an isolated Chrome instance on a random port:
 - Session tracked in `.mehrhof/browser.json`
 - Automatically cleaned up when workflow completes
 
+**Automatic Stale Session Recovery**: If a browser process becomes unresponsive (hung or zombie), Mehrhof automatically detects this by checking the Chrome DevTools endpoint. Unresponsive sessions are terminated and cleaned up, then a fresh browser is launched. This eliminates the need to manually delete session files.
+
 To connect to an existing Chrome instance, use `port: 9222` and launch Chrome with:
 ```bash
 google-chrome --remote-debugging-port=9222
@@ -448,8 +450,25 @@ If you see "port already in use", either:
 
 ### Session Stale
 
-If the browser session becomes stale, delete the session file:
+Mehrhof automatically detects and cleans up stale browser sessions. When a browser process is alive but unresponsive (hung or zombie state), the next browser command will:
+
+1. Detect the unresponsive endpoint
+2. Terminate the stuck process
+3. Clean up the session file
+4. Launch a fresh Chrome instance
+
+You can see this in the logs:
+```
+WARN browser process unresponsive, cleaning up pid=12345 port=9222
+INFO launching isolated browser...
+```
+
+If automatic cleanup fails, you can manually reset:
 ```bash
+# Kill any stuck Chrome processes
+pkill -f 'chrome.*remote-debugging-port'
+
+# Remove session file
 rm .mehrhof/browser.json
 ```
 

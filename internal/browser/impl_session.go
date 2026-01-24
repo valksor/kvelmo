@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -68,16 +69,21 @@ func (sm *SessionManager) ConnectOrCreate(ctx context.Context) (*Session, error)
 			return sm.launchBrowserUnlocked(ctx)
 		}
 
-		// Verify the session is still alive
+		// Verify the session is still alive AND responsive
 		if sm.isProcessAlive(session.PID) {
-			slog.Info("reusing existing browser session", "pid", session.PID, "port", session.Port)
-			sm.session = session
+			if sm.isEndpointResponsive(ctx, session.Host, session.Port) {
+				slog.Info("reusing existing browser session", "pid", session.PID, "port", session.Port)
+				sm.session = session
 
-			return session, nil
+				return session, nil
+			}
+			// Process alive but not responding - kill it
+			slog.Warn("browser process unresponsive, cleaning up", "pid", session.PID, "port", session.Port)
+			sm.killProcess(session.PID)
 		}
 
-		// Session file exists but process is dead, clean it up
-		slog.Debug("browser session process not found, will create new", "pid", session.PID)
+		// Session file exists but process is dead/unresponsive, clean it up
+		slog.Debug("browser session not usable, will create new", "pid", session.PID)
 		sm.cleanupStaleSession()
 	}
 
@@ -429,6 +435,49 @@ func (sm *SessionManager) isProcessAlive(pid int) bool {
 	err = process.Signal(syscall.Signal(0))
 
 	return err == nil
+}
+
+// isEndpointResponsive checks if Chrome's HTTP endpoint is responding.
+// This catches cases where the process exists but Chrome is hung/zombie.
+func (sm *SessionManager) isEndpointResponsive(ctx context.Context, host string, port int) bool {
+	url := fmt.Sprintf("http://%s:%d/json/version", host, port)
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return resp.StatusCode == http.StatusOK
+}
+
+// killProcess terminates a browser process that's become unresponsive.
+func (sm *SessionManager) killProcess(pid int) {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return
+	}
+
+	// Try SIGTERM first
+	_ = syscall.Kill(-pid, syscall.SIGTERM)
+
+	// Give it a moment, then force kill
+	time.Sleep(500 * time.Millisecond)
+	if sm.isProcessAlive(pid) {
+		_ = syscall.Kill(-pid, syscall.SIGKILL)
+	}
+
+	// Reap zombie
+	_, _ = process.Wait()
 }
 
 // findChrome locates the Chrome executable on the system.

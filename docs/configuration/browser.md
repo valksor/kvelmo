@@ -29,6 +29,14 @@ browser:
 | `cookie_auto_save` | `true` | Auto-save cookies on browser disconnect |
 | `cookie_dir` | `""` | Custom cookie storage directory (default: `~/.valksor/mehrhof/`) |
 
+## Session Management
+
+Browser sessions are tracked in `.mehrhof/browser.json`. Key behaviors:
+
+- **Automatic reuse**: If a browser session is still running and responsive, it will be reused
+- **Stale session recovery**: If a browser process is alive but unresponsive (hung/zombie), it is automatically terminated and a fresh browser is launched
+- **Cleanup on finish**: Sessions are cleaned up when the workflow completes
+
 ## Cookie Profiles
 
 Browser sessions can be persisted using named cookie profiles, enabling:
