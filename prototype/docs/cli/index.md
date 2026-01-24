@@ -50,6 +50,14 @@ These flags work with any command:
 | [undo](cli/undo.md)           | Revert to previous checkpoint |
 | [redo](cli/redo.md)           | Restore undone checkpoint     |
 
+### Web UI
+
+| Command                         | Description                              |
+| ------------------------------- | ---------------------------------------- |
+| [serve](cli/serve.md)           | Start web UI server                      |
+| [register](cli/register.md)     | Register project for remote access       |
+| unregister                      | Remove project from registry             |
+
 ### Utility
 
 | Command                   | Description                              |

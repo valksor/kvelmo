@@ -30,6 +30,7 @@ specification files are saved to `~/.valksor/mehrhof/workspaces/<project-id>/wor
 | `--verbose`        | `-v`  | bool   | false   | Show agent output in real-time       |
 | `--agent-plan`     |       | string |         | Override agent for planning step     |
 | `--full-context`   |       | bool   | false   | Load full transcripts instead of summaries |
+| `--optimize`       |       | bool   | false   | Optimize prompt before sending to agent |
 
 **Note:** For standalone mode, you can also provide the seed topic as a positional argument:
 ```bash
@@ -99,6 +100,14 @@ mehr plan --agent-planning claude-opus
 ```
 
 Use a specific agent for this planning session. See [AI Agents](../agents/index.md#per-step-agent-configuration).
+
+### Optimize Prompt
+
+```bash
+mehr plan --optimize
+```
+
+Optimize the planning prompt using an optimizer agent before sending to the working agent. This can improve clarity and effectiveness of the prompt.
 
 ## What Happens
 

@@ -40,6 +40,7 @@ This is ideal for well-defined tasks where you trust the AI to handle the entire
 | `--no-squash`      |       | Use regular merge instead of squash  | `false`     |
 | `--target`         | `-t`  | Target branch to merge into          | auto-detect |
 | `--quality-target` |       | Make target for quality checks       | `quality`   |
+| `--optimize`       |       | Optimize prompts before sending to agents | `false` |
 
 ## Examples
 
@@ -74,6 +75,14 @@ mehr auto --no-squash task.md
 
 mehr auto --worktree task.md
 ```
+
+### Optimize Prompts
+
+```bash
+mehr auto --optimize task.md
+```
+
+Enable prompt optimization for all phases (planning, implementation, review) to potentially improve the quality of AI responses.
 
 ## Quality Retry Loop
 
