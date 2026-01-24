@@ -92,11 +92,12 @@ func confirmAction(prompt string, skipConfirm bool) (bool, error) {
 
 // CommandOptions holds common options for command execution.
 type CommandOptions struct {
-	Verbose     bool
-	Quiet       bool
-	DryRun      bool
-	StepAgent   string // Per-step agent override (e.g., "planning", "implementing")
-	FullContext bool
+	Verbose         bool
+	Quiet           bool
+	DryRun          bool
+	StepAgent       string // Per-step agent override (e.g., "planning", "implementing")
+	FullContext     bool
+	OptimizePrompts bool // Optimize prompts before sending to agents
 }
 
 // IsQuiet returns true if quiet mode is enabled.
@@ -117,6 +118,10 @@ func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 
 	if cmdOpts.FullContext {
 		opts = append(opts, conductor.WithIncludeFullContext(true))
+	}
+
+	if cmdOpts.OptimizePrompts {
+		opts = append(opts, conductor.WithOptimizePrompts(true))
 	}
 
 	if cmdOpts.StepAgent != "" {

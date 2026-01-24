@@ -17,6 +17,7 @@ import (
 var (
 	implementDryRun            bool
 	implementAgentImplementing string
+	implementOptimize          bool
 )
 
 var implementCmd = &cobra.Command{
@@ -41,6 +42,7 @@ func init() {
 
 	implementCmd.Flags().BoolVarP(&implementDryRun, "dry-run", "n", false, "Don't apply file changes (preview only)")
 	implementCmd.Flags().StringVar(&implementAgentImplementing, "agent-implement", "", "Agent for implementation step")
+	implementCmd.Flags().BoolVar(&implementOptimize, "optimize", false, "Optimize prompt before sending to agent")
 }
 
 func runImplement(cmd *cobra.Command, args []string) error {
@@ -55,6 +57,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	// Per-step agent override
 	if implementAgentImplementing != "" {
 		opts = append(opts, conductor.WithStepAgent("implementing", implementAgentImplementing))
+	}
+
+	// Prompt optimization
+	if implementOptimize {
+		opts = append(opts, conductor.WithOptimizePrompts(true))
 	}
 
 	// Use deduplicating stdout in verbose mode to suppress duplicate lines
