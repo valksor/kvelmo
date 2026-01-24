@@ -3,6 +3,8 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
@@ -32,6 +34,14 @@ func init() {
 
 func runMCPServer(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+
+	// Disable logging to stderr - MCP protocol uses stdout for JSON-RPC
+	// and stderr logging can interfere with client parsing.
+	// Configure both go-toolkit logger and default slog to discard output.
+	log.Configure(log.Options{
+		Output: io.Discard,
+	})
+	slog.SetDefault(slog.New(slog.DiscardHandler))
 
 	// Handle interrupt signals
 	sigCh := make(chan os.Signal, 1)

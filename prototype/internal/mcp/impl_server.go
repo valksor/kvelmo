@@ -128,7 +128,8 @@ func (s *Server) Serve(ctx context.Context) error {
 		if err != nil {
 			<-s.semaphore // Release semaphore
 			if errors.Is(err, io.EOF) {
-				slog.Info("MCP server received EOF, shutting down")
+				// EOF means stdin was closed - exit gracefully
+				slog.Info("MCP server shutting down (stdin closed)")
 
 				return nil
 			}
