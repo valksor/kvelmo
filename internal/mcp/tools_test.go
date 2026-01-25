@@ -85,8 +85,8 @@ func TestRegisterCommand(t *testing.T) {
 		t.Fatalf("Expected 1 tool, got %d", len(tools))
 	}
 
-	// Command path is "root test" -> tool name is "mehr_root_test"
-	if tools[0].Name != "mehr_root_test" {
+	// Command path is "root test" -> tool name is "test" (root command stripped)
+	if tools[0].Name != "test" {
 		t.Errorf("Tool name mismatch: got %s", tools[0].Name)
 	}
 
