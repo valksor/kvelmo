@@ -155,7 +155,7 @@ func TestDownloadAttachment_Errors(t *testing.T) {
 			owner:        "",
 			repo:         "",
 			wantErr:      true,
-			errContains:  "issue not found",
+			errContains:  "resource not found",
 		},
 		{
 			name:         "error with invalid reference format",

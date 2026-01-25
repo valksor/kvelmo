@@ -3,10 +3,10 @@ package github
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v67/github"
-	providererrors "github.com/valksor/go-toolkit/errors"
 )
 
 func TestParseReference(t *testing.T) {
@@ -550,7 +550,7 @@ func TestParseTaskList(t *testing.T) {
 func TestWrapAPIError(t *testing.T) {
 	tests := []struct {
 		err         error
-		wantErr     error
+		errContains string
 		name        string
 		wantNil     bool
 		wantWrapped bool
@@ -566,7 +566,7 @@ func TestWrapAPIError(t *testing.T) {
 				Response: &http.Response{StatusCode: http.StatusUnauthorized},
 				Message:  "Bad credentials",
 			},
-			wantErr:     providererrors.ErrUnauthorized,
+			errContains: "authentication failed",
 			wantWrapped: true,
 		},
 		{
@@ -578,7 +578,7 @@ func TestWrapAPIError(t *testing.T) {
 				},
 				Message: "API rate limit exceeded",
 			},
-			wantErr:     providererrors.ErrRateLimited,
+			errContains: "rate limit exceeded",
 			wantWrapped: true,
 		},
 		{
@@ -587,7 +587,7 @@ func TestWrapAPIError(t *testing.T) {
 				Response: &http.Response{StatusCode: http.StatusForbidden},
 				Message:  "Resource not accessible",
 			},
-			wantErr:     ErrInsufficientScope,
+			errContains: "insufficient permissions",
 			wantWrapped: true,
 		},
 		{
@@ -596,7 +596,7 @@ func TestWrapAPIError(t *testing.T) {
 				Response: &http.Response{StatusCode: http.StatusNotFound},
 				Message:  "Not Found",
 			},
-			wantErr:     ErrIssueNotFound,
+			errContains: "resource not found",
 			wantWrapped: true,
 		},
 		{
@@ -624,9 +624,9 @@ func TestWrapAPIError(t *testing.T) {
 				return
 			}
 
-			if tt.wantWrapped {
-				if !errors.Is(got, tt.wantErr) {
-					t.Errorf("wrapAPIError() error = %v, want wrapped %v", got, tt.wantErr)
+			if tt.errContains != "" {
+				if !strings.Contains(got.Error(), tt.errContains) {
+					t.Errorf("wrapAPIError() error = %v, want containing %q", got, tt.errContains)
 				}
 			}
 		})
