@@ -112,6 +112,66 @@ mehr config validate [flags]
 | 0    | Configuration is valid              |
 | 1    | One or more validation errors found |
 
+### mehr config explain
+
+Trace agent resolution path to debug which agent is selected for a workflow step.
+
+```bash
+mehr config explain --agent <step> [flags]
+```
+
+**Flags:**
+
+| Flag       | Description                                    |
+| ---------- | ---------------------------------------------- |
+| `--agent`  | Workflow step to explain (plan, implement, review) |
+| `--format` | Output format: `text` (default), `json`          |
+
+**Examples:**
+
+```bash
+# Explain which agent is used for planning
+mehr config explain --agent plan
+
+# Explain implementing agent
+mehr config explain --agent implement
+```
+
+**Output:**
+
+```bash
+$ mehr config explain --agent plan
+
+Effective agent: claude-sonnet
+
+Resolution path (priority order):
+  1. CLI --agent-plan flag: not set
+  2. CLI --agent flag: not set
+  3. Task frontmatter agent_steps.planning.agent: not set
+  4. Task frontmatter agent: not set
+  5. Workspace config agent.steps.planning.name: claude-sonnet ✓
+  6. Workspace config agent.default: claude (overridden)
+
+Configuration:
+  Model: claude-sonnet-4-20250514
+  Timeout: 300s
+  Args: --permission-mode plan
+
+To override:
+  mehr plan --agent-plan claude-opus
+  Or set in .mehrhof/config.yaml:
+    agent:
+      steps:
+        planning:
+          name: claude-opus
+```
+
+**Use cases:**
+- Debug why a specific agent is being used
+- Understand agent resolution priority
+- Verify workspace configuration is applied correctly
+- Troubleshoot agent selection issues
+
 ## Examples
 
 ### Validate All Configuration

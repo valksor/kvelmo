@@ -25,10 +25,11 @@ The `status` command displays information about the active task including:
 
 ## Flags
 
-| Flag     | Short | Type | Default | Description                              |
-| -------- | ----- | ---- | ------- | ---------------------------------------- |
-| `--all`  |       | bool | false   | Show all tasks in workspace              |
-| `--json` |       | bool | false   | Output as JSON for programmatic use      |
+| Flag        | Short | Type | Default | Description                              |
+| ----------- | ----- | ---- | ------- | ---------------------------------------- |
+| `--all`     |       | bool | false   | Show all tasks in workspace              |
+| `--diagram` |       | bool | false   | Show ASCII workflow state diagram        |
+| `--json`    |       | bool | false   | Output as JSON for programmatic use      |
 
 **Note:** The `--json` flag is useful for scripting and integration with other tools.
 
@@ -119,6 +120,53 @@ Tasks in workspace:
 
 * = active task
 ```
+
+### Workflow State Diagram
+
+The `--diagram` flag displays an ASCII visualization of the workflow state machine:
+
+```bash
+mehr status --diagram
+```
+
+Output:
+
+```
+Workflow State: implementing
+
+    ┌────────┐
+    │  idle  │
+    └───┬────┘
+        │
+        ▼
+  ┌─────────┐
+  │ planning│
+  └────┬────┘
+       │
+       ▼
+┌───────────────┐
+│ implementing  │ ◄── Current State
+└───────┬───────┘
+        │
+        ▼
+  ┌──────────┐
+  │ reviewing│
+  └────┬─────┘
+       │
+       ▼
+   ┌─────┐
+   │ done │
+   └─────┘
+
+Available transitions:
+  → reviewing (after implementation complete)
+```
+
+This visualization shows:
+- All workflow states
+- Possible transitions between states
+- Current state highlighted
+- Available next steps
 
 ### JSON Output
 

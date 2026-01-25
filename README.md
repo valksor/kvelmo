@@ -186,13 +186,16 @@ mehr finish           # Merge changes or create PR
 | `mehr implement` | Execute the specifications |
 | `mehr simplify` | Refine content based on current workflow state (task input, specs, or code) |
 | `mehr review` | Run automated code review |
-| `mehr status` | Show full task details |
+| `mehr status` | Show full task details with workflow state diagram |
 | `mehr guide` | What should I do next? (quick suggestion) |
 | `mehr continue` | Resume work on task |
 | `mehr finish` | Complete task and merge changes |
-| `mehr list` | List all tasks in workspace |
+| `mehr list` | List all tasks with search, filter, and sort (`--search`, `--filter`, `--sort`, `--format`) |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
+| `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
+| `mehr providers status` | Check provider health and connection status |
+| `mehr config explain` | Trace agent resolution path for debugging |
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
 | `mehr mcp` | Start MCP server for AI agent integration |
 | `mehr scan` | Run security scanners (SAST, secrets, dependencies) |
@@ -335,13 +338,20 @@ The web UI provides:
 - **Full workflow control** - Start, plan, implement, review, finish, undo/redo via REST API
 - **Auto mode** - Run complete automation cycles (`POST /api/v1/workflow/auto`)
 - **Continue/resume** - Resume work with optional auto-execute next step
-- **Real-time updates** - Server-Sent Events for live state changes
-- **Cost tracking** - View token usage and costs per task or across all tasks
+- **Real-time updates** - Server-Sent Events for live state changes and agent output
+- **Cost tracking** - View token usage and costs per task or across all tasks with interactive charts
 - **Guidance** - State-specific suggestions on what to do next
 - **Notes** - Add notes to tasks for AI context
+- **Task history** - Browse past tasks with search, filter, and sort capabilities
 - **Settings page** - Configure all workspace settings via web UI (Git, Agent, Workflow, Browser, Providers)
+- **Provider health** - Monitor provider connection status and rate limits
+- **Agent resolution** - Debug which agent is selected for each workflow step
 - **Global mode project picker** - In global mode, select and configure any registered project's settings
-- **Browser automation** - Control Chrome for testing via API
+- **Browser automation** - Control Chrome for testing via dedicated control panel
+- **Dark mode** - Toggle theme with system preference detection
+- **Mobile responsive** - Full feature support on mobile devices
+- **Notifications** - Toast alerts and browser notifications for task events
+- **Workflow visualization** - Interactive state diagram showing current workflow state
 - **Security scanning** - Run SAST, secrets, and vulnerability scans
 - **Memory search** - Query semantic memory for past task context
 - **Agent/provider info** - List available AI agents and task providers
