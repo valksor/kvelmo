@@ -5,128 +5,366 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mehrhof Web UI</title>
+
+    <!-- Google Fonts: Inter for premium, readable typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- HTMX for real-time interactivity -->
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Brand colors
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        // Light theme backgrounds
+                        surface: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        // Semantic colors
+                        success: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        warning: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        },
+                        error: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                        },
+                        info: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        },
+                    },
+                    boxShadow: {
+                        'brand': '0 4px 20px -2px rgba(99, 102, 241, 0.15)',
+                        'brand-lg': '0 10px 40px -10px rgba(99, 102, 241, 0.25)',
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
+                        'card-hover': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'shimmer': 'shimmer 2s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            'from': { opacity: '0' },
+                            'to': { opacity: '1' },
+                        },
+                        slideUp: {
+                            'from': { opacity: '0', transform: 'translateY(10px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        scaleIn: {
+                            'from': { opacity: '0', transform: 'scale(0.95)' },
+                            'to': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-1000px 0' },
+                            '100%': { backgroundPosition: '1000px 0' },
+                        },
+                    },
+                },
+            },
         }
     </script>
     <style>
+        /* Base styles */
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: inline-block; }
         .htmx-request.htmx-indicator { display: inline-block; }
+
+        /* Custom animations */
         @keyframes spin { to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
-        .btn { @apply px-4 py-2 rounded-lg font-medium transition-colors; }
-        .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
-        .btn-secondary { @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600; }
-        .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
-        .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
-        .card { @apply bg-white rounded-lg shadow-md p-6 mb-4 dark:bg-gray-800 dark:border dark:border-gray-700; }
-        .card-header { @apply text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 dark:text-gray-100 dark:border-gray-700; }
+
+        /* Smooth transitions */
+        .transition-smooth { transition: all 200ms ease-out; }
+
+        /* Navigation underline animation */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 200ms ease-out;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Button styles */
+        .btn {
+            @apply px-5 py-2.5 rounded-xl font-medium transition-smooth inline-flex items-center justify-center gap-2 min-h-[44px];
+        }
+        .btn-primary {
+            @apply bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-700 hover:to-brand-600 shadow-brand hover:shadow-brand-lg -translate-y-0.5 hover:-translate-y-1;
+        }
+        .btn-secondary {
+            @apply bg-surface-100 text-surface-700 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-200 dark:hover:bg-surface-700;
+        }
+        .btn-danger {
+            @apply bg-gradient-to-r from-error-600 to-error-500 text-white hover:from-error-700 hover:to-error-600 shadow-lg hover:shadow-xl -translate-y-0.5 hover:-translate-y-1;
+        }
+        .btn-success {
+            @apply bg-gradient-to-r from-success-600 to-success-500 text-white hover:from-success-700 hover:to-success-600 shadow-lg hover:shadow-xl -translate-y-0.5 hover:-translate-y-1;
+        }
+        .btn-ghost {
+            @apply text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-400 dark:hover:text-surface-100 dark:hover:bg-surface-800;
+        }
+
+        /* Card styles */
+        .card {
+            @apply bg-white dark:bg-surface-800 rounded-2xl shadow-card hover:shadow-card-hover transition-smooth border border-surface-100 dark:border-surface-700;
+        }
+        .card-header {
+            @apply text-xl font-bold text-surface-900 dark:text-surface-100 pb-4 border-b border-surface-100 dark:border-surface-700;
+        }
+
+        /* Input styles */
+        .input {
+            @apply w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all duration-200 ease-out;
+        }
+
+        /* Status badge */
+        .status-badge {
+            @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            @apply backdrop-blur-xl bg-white/80 dark:bg-surface-900/80;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            @apply bg-surface-100 dark:bg-surface-800;
+        }
+        ::-webkit-scrollbar-thumb {
+            @apply bg-surface-300 dark:bg-surface-600 rounded-full;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            @apply bg-surface-400 dark:bg-surface-500;
+        }
+
+        /* State banner colors */
+        .state-planning { @apply bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300; }
+        .state-implementing { @apply bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300; }
+        .state-reviewing { @apply bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300; }
+        .state-done { @apply bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300; }
+        .state-failed { @apply bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300; }
+        .state-idle { @apply bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400; }
+        .state-waiting { @apply bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+<body class="bg-surface-50 dark:bg-surface-900 min-h-screen transition-colors duration-300 font-sans">
+    <!-- Navbar with gradient -->
+    <nav class="sticky top-0 z-40 glass border-b border-surface-200 dark:border-surface-700 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-xl font-bold text-gray-900 dark:text-gray-100">Mehrhof</span>
-                    <span class="ml-2 sm:ml-4 px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hidden sm:inline-block">{{.Mode}}</span>
+            <div class="flex justify-between h-20">
+                <!-- Logo and mode badge -->
+                <div class="flex items-center gap-4">
+                    <a href="/dashboard" class="flex items-center gap-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-400 flex items-center justify-center shadow-brand group-hover:shadow-brand-lg transition-smooth">
+                            <span class="text-white font-bold text-lg">M</span>
+                        </div>
+                        <span class="text-xl font-bold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth">Mehrhof</span>
+                    </a>
+                    {{if .Mode}}
+                    <span class="hidden sm:inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 border border-surface-200 dark:border-surface-700">
+                        {{.Mode}}
+                    </span>
+                    {{end}}
                 </div>
-                <div class="flex items-center">
-                    <!-- Desktop menu -->
-                    <div class="hidden md:flex items-center space-x-4">
+
+                <!-- Desktop navigation -->
+                <div class="hidden md:flex items-center">
+                    <div class="flex items-center gap-1">
                         {{if .CanSwitchProject}}
                         <form hx-post="/api/v1/projects/switch" hx-target="body" hx-swap="innerHTML" class="inline">
-                            <button type="submit" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Switch Project</button>
+                            <button type="submit" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                                Switch Project
+                            </button>
                         </form>
                         {{end}}
-                        <a href="/dashboard" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Dashboard</a>
-                        <a href="/project" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Project Planning</a>
-                        <a href="/settings" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Settings</a>
-                        <a href="/browser" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Browser</a>
-                        <a href="/history" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">History</a>
-                        <button id="notification-bell" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none min-h-[44px] px-2 relative" aria-label="Notifications">
+                        <a href="/dashboard" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            Dashboard
+                        </a>
+                        <a href="/project" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            Planning
+                        </a>
+                        <a href="/settings" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            Settings
+                        </a>
+                        <a href="/browser" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            Browser
+                        </a>
+                        <a href="/history" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            History
+                        </a>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2 ml-4 pl-4 border-l border-surface-200 dark:border-surface-700">
+                        <!-- Notification bell -->
+                        <button id="notification-bell" class="relative p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Notifications">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                             </svg>
-                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-gradient-to-r from-error-600 to-error-500 text-white text-xs rounded-full font-semibold shadow-lg">0</span>
                         </button>
-                        <button id="theme-toggle" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none min-h-[44px] px-2" aria-label="Toggle dark mode">
+
+                        <!-- Dark mode toggle -->
+                        <button id="theme-toggle" class="p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Toggle dark mode">
                             <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
                             </svg>
                             <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
                             </svg>
                         </button>
+
                         {{if .AuthEnabled}}
-                        <a href="/logout" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2">Logout</a>
+                        <a href="/logout" class="ml-2 px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                            Logout
+                        </a>
                         {{end}}
                     </div>
+                </div>
 
-                    <!-- Mobile menu button -->
-                    <div class="md:hidden flex items-center space-x-2">
-                        <button id="theme-toggle-mobile" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-2 min-h-[44px]" aria-label="Toggle dark mode">
-                            <svg id="theme-toggle-light-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
-                            </svg>
-                            <svg id="theme-toggle-dark-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                            </svg>
-                        </button>
-                        <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-2 min-h-[44px]" aria-label="Open menu">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                            </svg>
-                        </button>
-                    </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center gap-2">
+                    <button id="theme-toggle-mobile" class="p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Toggle dark mode">
+                        <svg id="theme-toggle-light-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <svg id="theme-toggle-dark-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                    <button id="mobile-menu-button" class="p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Open menu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Mobile menu panel -->
-            <div id="mobile-menu" class="hidden md:hidden pb-4">
-                <div class="flex flex-col space-y-2">
+            <div id="mobile-menu" class="hidden md:hidden pb-4 animate-fade-in">
+                <div class="flex flex-col gap-1 pt-2 border-t border-surface-200 dark:border-surface-700">
                     {{if .CanSwitchProject}}
-                    <form hx-post="/api/v1/projects/switch" hx-target="body" hx-swap="innerHTML" class="inline">
-                        <button type="submit" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] w-full text-left px-2 py-2 rounded">Switch Project</button>
+                    <form hx-post="/api/v1/projects/switch" hx-target="body" hx-swap="innerHTML" class="w-full">
+                        <button type="submit" class="w-full px-4 py-3 text-left text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                            Switch Project
+                        </button>
                     </form>
                     {{end}}
-                    <a href="/dashboard" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">Dashboard</a>
-                    <a href="/project" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">Project Planning</a>
-                    <a href="/settings" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">Settings</a>
-                    <a href="/browser" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">Browser</a>
-                    <a href="/history" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">History</a>
+                    <a href="/dashboard" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Dashboard
+                    </a>
+                    <a href="/project" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Planning
+                    </a>
+                    <a href="/settings" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Settings
+                    </a>
+                    <a href="/browser" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Browser
+                    </a>
+                    <a href="/history" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        History
+                    </a>
                     {{if .AuthEnabled}}
-                    <a href="/logout" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] px-2 py-2 rounded block">Logout</a>
+                    <a href="/logout" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Logout
+                    </a>
                     {{end}}
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Main content with animation -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-slide-up">
         {{template "content" .}}
     </main>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 max-w-sm w-full"></div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <!-- Toasts will be inserted here -->
+    </div>
 
-    <!-- Notification Center Panel -->
-    <div id="notification-center" class="hidden fixed top-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-            <button id="close-notifications" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+    <!-- Notification Center Panel (Glassmorphism) -->
+    <div id="notification-center" class="hidden fixed top-24 right-6 w-80 glass rounded-2xl shadow-2xl border border-surface-200 dark:border-surface-700 z-50 max-h-96 overflow-hidden animate-scale-in">
+        <div class="px-5 py-4 border-b border-surface-200 dark:border-surface-700 flex justify-between items-center bg-surface-50/50 dark:bg-surface-800/50">
+            <h3 class="text-sm font-bold text-surface-900 dark:text-surface-100">Notifications</h3>
+            <button id="close-notifications" class="p-1 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-smooth">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                 </svg>
             </button>
         </div>
-        <div id="notification-list" class="overflow-y-auto max-h-80">
-            <p class="px-4 py-8 text-center text-sm text-gray-500">No notifications</p>
+        <div id="notification-list" class="overflow-y-auto max-h-80 p-2">
+            <p class="px-3 py-8 text-center text-sm text-surface-500 dark:text-surface-400">No notifications</p>
         </div>
     </div>
 
@@ -228,23 +466,24 @@
 
         // Notification types and their configurations
         const notificationTypes = {
-            success: { bgColor: 'bg-green-50 dark:bg-green-900', textColor: 'text-green-800 dark:text-green-200', borderColor: 'border-green-200 dark:border-green-700', icon: '✓' },
-            error: { bgColor: 'bg-red-50 dark:bg-red-900', textColor: 'text-red-800 dark:text-red-200', borderColor: 'border-red-200 dark:border-red-700', icon: '✕' },
-            warning: { bgColor: 'bg-yellow-50 dark:bg-yellow-900', textColor: 'text-yellow-800 dark:text-yellow-200', borderColor: 'border-yellow-200 dark:border-yellow-700', icon: '⚠' },
-            info: { bgColor: 'bg-blue-50 dark:bg-blue-900', textColor: 'text-blue-800 dark:text-blue-200', borderColor: 'border-blue-200 dark:border-blue-700', icon: 'ℹ' }
+            success: { bgColor: 'bg-success-50 dark:bg-success-900/30', textColor: 'text-success-800 dark:text-success-300', borderColor: 'border-success-200 dark:border-success-800', icon: '✓' },
+            error: { bgColor: 'bg-error-50 dark:bg-error-900/30', textColor: 'text-error-800 dark:text-error-300', borderColor: 'border-error-200 dark:border-error-800', icon: '✕' },
+            warning: { bgColor: 'bg-warning-50 dark:bg-warning-900/30', textColor: 'text-warning-800 dark:text-warning-300', borderColor: 'border-warning-200 dark:border-warning-800', icon: '⚠' },
+            info: { bgColor: 'bg-info-50 dark:bg-info-900/30', textColor: 'text-info-800 dark:text-info-300', borderColor: 'border-info-200 dark:border-info-800', icon: 'ℹ' }
         };
 
         // Show toast notification
         function showToast(message, type = 'info', duration = 5000) {
             const config = notificationTypes[type] || notificationTypes.info;
+            const safeMessage = escapeHtml(message);
 
             const toast = document.createElement('div');
-            toast.className = `${config.bgColor} ${config.textColor} ${config.borderColor} border rounded-lg shadow-lg p-4 transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.className = `${config.bgColor} ${config.textColor} ${config.borderColor} border rounded-xl shadow-lg p-4 transition-all duration-300 translate-x-full opacity-0 pointer-events-auto`;
             toast.innerHTML = `
-                <div class="flex items-start">
-                    <span class="text-lg mr-2">${config.icon}</span>
-                    <div class="flex-1 text-sm">${escapeHtml(message)}</div>
-                    <button class="ml-2 text-opacity-70 hover:text-opacity-100" onclick="this.parentElement.parentElement.remove()">
+                <div class="flex items-start gap-3">
+                    <span class="text-lg flex-shrink-0">${config.icon}</span>
+                    <div class="flex-1 text-sm font-medium">${safeMessage}</div>
+                    <button class="flex-shrink-0 p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-smooth" onclick="this.parentElement.parentElement.remove()">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                         </svg>
@@ -282,7 +521,7 @@
             };
 
             notifications.unshift(notification);
-            if (notifications.length > 50) notifications.pop(); // Keep only last 50
+            if (notifications.length > 50) notifications.pop();
             unreadCount++;
             updateNotificationBadge();
             renderNotificationCenter();
@@ -301,21 +540,22 @@
         // Render notification center
         function renderNotificationCenter() {
             if (notifications.length === 0) {
-                notificationList.innerHTML = '<p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</p>';
+                notificationList.innerHTML = '<p class="px-3 py-8 text-center text-sm text-surface-500 dark:text-surface-400">No notifications</p>';
                 return;
             }
 
             notificationList.innerHTML = notifications.map(notif => {
                 const config = notificationTypes[notif.type] || notificationTypes.info;
                 const timeAgo = formatTimeAgo(notif.timestamp);
+                const safeMessage = escapeHtml(notif.message);
 
                 return `
-                    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${notif.read ? 'opacity-60' : ''}" onclick="markAsRead(${notif.id})">
-                        <div class="flex items-start">
-                            <span class="text-sm mr-2">${config.icon}</span>
+                    <div class="px-3 py-3 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-700 cursor-pointer transition-smooth ${notif.read ? 'opacity-60' : ''}" onclick="markAsRead(${notif.id})">
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm flex-shrink-0 mt-0.5">${config.icon}</span>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 ${notif.read ? '' : 'font-bold'}">${escapeHtml(notif.message)}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${timeAgo}</p>
+                                <p class="text-sm font-medium text-surface-900 dark:text-surface-100 ${notif.read ? '' : 'font-bold'}">${safeMessage}</p>
+                                <p class="text-xs text-surface-500 dark:text-surface-400 mt-1">${timeAgo}</p>
                             </div>
                         </div>
                     </div>
@@ -383,26 +623,61 @@
             }
         });
 
-        // Request browser notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            // Show a toast asking user to enable notifications
+        // Request browser notification permission (with user preference persistence)
+        const NOTIFICATION_PREF_KEY = 'mehr_notification_dismissed';
+
+        function shouldShowNotificationPrompt() {
+            // Don't show if user explicitly denied at browser level
+            if (Notification.permission === 'denied') {
+                return false;
+            }
+            // Don't show if user already dismissed the prompt
+            if (localStorage.getItem(NOTIFICATION_PREF_KEY) === 'true') {
+                return false;
+            }
+            // Don't show if already granted
+            if (Notification.permission === 'granted') {
+                return false;
+            }
+            return true;
+        }
+
+        if ('Notification' in window && shouldShowNotificationPrompt()) {
             setTimeout(() => {
                 showToast('Enable browser notifications for task updates?', 'info', 0);
-                // Add enable button to the toast
                 const lastToast = toastContainer.lastElementChild;
                 if (lastToast) {
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'flex items-center gap-2 mt-2';
+
+                    // Enable button
                     const enableBtn = document.createElement('button');
-                    enableBtn.className = 'ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700';
+                    enableBtn.className = 'px-4 py-2 bg-gradient-to-r from-brand-600 to-violet-600 text-white text-sm rounded-xl font-semibold shadow-brand hover:shadow-brand-lg transition-all duration-200 hover:scale-105';
                     enableBtn.textContent = 'Enable';
                     enableBtn.onclick = function() {
                         Notification.requestPermission().then(permission => {
                             if (permission === 'granted') {
                                 showToast('Browser notifications enabled!', 'success');
                                 lastToast.remove();
+                            } else if (permission === 'denied') {
+                                localStorage.setItem(NOTIFICATION_PREF_KEY, 'true');
+                                lastToast.remove();
                             }
                         });
                     };
-                    lastToast.querySelector('.flex-1').appendChild(enableBtn);
+
+                    // Dismiss button ("Not now")
+                    const dismissBtn = document.createElement('button');
+                    dismissBtn.className = 'px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-all duration-200';
+                    dismissBtn.textContent = 'Not now';
+                    dismissBtn.onclick = function() {
+                        localStorage.setItem(NOTIFICATION_PREF_KEY, 'true');
+                        lastToast.remove();
+                    };
+
+                    buttonContainer.appendChild(enableBtn);
+                    buttonContainer.appendChild(dismissBtn);
+                    lastToast.querySelector('.flex-1').appendChild(buttonContainer);
                 }
             }, 5000);
         }
@@ -421,18 +696,21 @@
 
         // Listen for HTMX events to show notifications
         document.body.addEventListener('htmx:afterRequest', function(evt) {
-            const xhr = evt.detail.xhr;
-            const response = JSON.parse(xhr.responseText);
+            try {
+                const xhr = evt.detail.xhr;
+                const response = JSON.parse(xhr.responseText);
 
-            // Show notification based on response
-            if (response.error) {
-                showToast(response.error, 'error');
-                showBrowserNotification('Error', response.error, 'error');
-            } else if (response.success) {
-                if (response.message) {
-                    showToast(response.message, 'success');
-                    showBrowserNotification('Success', response.message, 'success');
+                if (response.error) {
+                    showToast(response.error, 'error');
+                    showBrowserNotification('Error', response.error, 'error');
+                } else if (response.success) {
+                    if (response.message) {
+                        showToast(response.message, 'success');
+                        showBrowserNotification('Success', response.message, 'success');
+                    }
                 }
+            } catch (e) {
+                // Response might not be JSON, ignore
             }
         });
 
