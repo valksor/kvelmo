@@ -8,6 +8,26 @@ import (
 	"github.com/valksor/go-mehrhof/internal/browser"
 )
 
+// handleBrowserUI renders the browser control panel page.
+func (s *Server) handleBrowserUI(w http.ResponseWriter, r *http.Request) {
+	if s.templates == nil {
+		s.writeError(w, http.StatusInternalServerError, "templates not loaded")
+
+		return
+	}
+
+	data := BrowserData{
+		Mode:             s.modeString(),
+		AuthEnabled:      s.config.AuthStore != nil,
+		CanSwitchProject: s.canSwitchProject(),
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.RenderBrowser(w, data); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
+	}
+}
+
 // handleBrowserStatus returns the browser connection status.
 func (s *Server) handleBrowserStatus(w http.ResponseWriter, r *http.Request) {
 	if s.config.Conductor == nil {
