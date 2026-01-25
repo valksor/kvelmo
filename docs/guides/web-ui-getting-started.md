@@ -88,7 +88,24 @@ flowchart TD
     A --> F[Settings]
 ```
 
-**[Screenshot: Dashboard showing empty state with "Create Task" button prominent]**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Mehrhof Dashboard                           │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Active Task: No active task                             │  │
+│  │                                                          │  │
+│  │  [+ Create Task]                                         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐  │
+│  │  Task History   │  │  Quick Actions  │  │   Settings    │  │
+│  │  (empty)        │  │                 │  │               │  │
+│  └─────────────────┘  └─────────────────┘  └───────────────┘  │
+│                                                                 │
+│  [Dark Mode Toggle]                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 The dashboard has several sections:
 
@@ -118,7 +135,22 @@ flowchart TD
     A --> E[From Provider]
 ```
 
-**[Screenshot: Create task dialog showing the four input options]**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Create Task                                                 │
+├─────────────────────────────────────────────────────────────┤
+│  [Write Task] [Upload File] [From URL] [From Provider]      │
+│  ─────────────────────────────────────────────────────────  │
+│  Title: [_________________________________________________] │
+│                                                              │
+│  Description:                                                │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │                                                    │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│                                    [Create Task] [Cancel]   │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### Option A: Write a Task (Recommended for First Time)
 
@@ -231,7 +263,19 @@ flowchart LR
     D --> E[Ready to Implement]
 ```
 
-**[Screenshot: Active task card showing "Idle" state with "Plan" button]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Active Task: Add Health Check Endpoint                       │
+├──────────────────────────────────────────────────────────────┤
+│  State: ● Idle                                                │
+│  Branch: feature/add-health-check                             │
+│                                                              │
+│  Actions:                                                    │
+│    [Plan] [Implement] [Review] [Finish] [Continue]           │
+│                                                              │
+│  Cost: $0.12  |  Sessions: 1  |  Checkpoint: 3/5             │
+└──────────────────────────────────────────────────────────────┘
+```
 
 1. Click the **"Plan"** button
 2. Watch as the AI analyzes your requirements
@@ -269,7 +313,24 @@ Use our existing HTTP router pattern from main.go
 
 This note will be included when the AI implements the task.
 
-**[Screenshot: Specifications section with "Add Note" button]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Specifications                                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  📄 specification-1.md                                       │
+│     # Implementation Plan: Add Health Check Endpoint         │
+│                                                              │
+│     ## Overview                                              │
+│     Create a /health endpoint that returns HTTP 200...       │
+│                                                              │
+│     ## Files to Create                                       │
+│     - internal/health/handler.go                             │
+│     - internal/health/handler_test.go                        │
+│                                                              │
+│  [+ Add Note]  [View Full Content]                           │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -304,7 +365,30 @@ Modified: cmd/server/main.go
 Created: internal/health/handler_test.go
 ```
 
-**[Screenshot: Agent output section showing file creation]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Agent Output (Live)                                          │
+├──────────────────────────────────────────────────────────────┤
+│  $ Analyzing codebase structure...                            │
+│  $ Reading specification files...                             │
+│  ✓ Found 3 specification files to process                     │
+│                                                              │
+│  → Creating internal/health/handler.go                        │
+│    • Defined HealthHandler struct                             │
+│    • Added ServeHTTP method                                   │
+│  ✓ Created successfully                                       │
+│                                                              │
+│  → Modifying cmd/server/main.go                               │
+│    • Registered /health route                                 │
+│  ✓ Modified successfully                                      │
+│                                                              │
+│  → Creating internal/health/handler_test.go                   │
+│    • Added TestHealthHandler                                  │
+│  ✓ Created successfully                                       │
+│                                                              │
+│  ▶ Streaming... (scrolling updates in real-time)              │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -316,7 +400,28 @@ After implementation completes, review what changed:
 2. See which files were created or modified
 3. Click on files to see the actual changes (diff view)
 
-**[Screenshot: File changes section with expandable diff view]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  File Changes (3 files)                                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ▼ internal/health/handler.go          [+ Created, 45 lines] │
+│     │  + package health                                         │
+│     │  +                                                        │
+│     │  + type HealthHandler struct { ... }                      │
+│     │  + func (h *HealthHandler) ServeHTTP(...)                │
+│                                                              │
+│  ▼ cmd/server/main.go                  [+ Modified, 3 lines] │
+│     │  @@ -15,6 +15,9 @@                                        │
+│     │           + "github.com/valksor/go-mehrhof/internal/health"│
+│     │   ...                                                     │
+│     │  +43:        mux.HandleFunc("/health", health.Handler)   │
+│                                                              │
+│  ▼ internal/health/handler_test.go      [+ Created, 32 lines]│
+│     │  [expand to view tests...]                                 │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Not Happy With Something?
 
@@ -347,7 +452,29 @@ This will:
 - Clean up the task branch
 - Mark the task as complete
 
-**[Screenshot: Finish dialog showing summary of changes]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ✓ Finish Task                                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Task: Add Health Check Endpoint                             │
+│  Status: Ready to finish                                     │
+│                                                              │
+│  Summary:                                                    │
+│  • 3 files created                                           │
+│  • 1 file modified                                           │
+│  • 0 files deleted                                           │
+│  • All tests passing                                         │
+│                                                              │
+│  What happens next:                                          │
+│  ✓ Quality checks will run                                   │
+│  ✓ Changes will merge to main branch                         │
+│  ✓ Feature branch will be deleted                            │
+│  ✓ Task will be marked complete                              │
+│                                                              │
+│                                    [Cancel] [Confirm Finish] │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 

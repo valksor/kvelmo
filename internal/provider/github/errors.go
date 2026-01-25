@@ -38,7 +38,7 @@ func wrapAPIError(err error) error {
 					"Set GITHUB_TOKEN in .mehrhof/.env",
 					"Or run: mehr provider validate github",
 				),
-				DocsURL: "https://mehrhof.valksor.com/docs/providers/github",
+				DocsURL: "https://valksor.com/docs/mehrhof/providers/github",
 				Err:     err,
 			}
 		case http.StatusForbidden:
@@ -65,7 +65,7 @@ func wrapAPIError(err error) error {
 					"Token may lack required scopes (repo, issues, etc.)",
 					"Check token permissions at: https://github.com/settings/tokens",
 				),
-				DocsURL: "https://mehrhof.valksor.com/docs/providers/github#authentication",
+				DocsURL: "https://valksor.com/docs/mehrhof/providers/github#authentication",
 				Err:     err,
 			}
 		case http.StatusNotFound:
@@ -77,7 +77,7 @@ func wrapAPIError(err error) error {
 					"Verify the issue/PR number is correct",
 					"Check the repository owner and name",
 				),
-				DocsURL: "https://mehrhof.valksor.com/docs/providers/github#references",
+				DocsURL: "https://valksor.com/docs/mehrhof/providers/github#references",
 				Err:     err,
 			}
 		}
@@ -91,7 +91,7 @@ func wrapAPIError(err error) error {
 			Message:     "network error",
 			Cause:       err.Error(),
 			Suggestions: append(provider.CommonHints.Network, "Verify the provider API is accessible"),
-			DocsURL:     "https://mehrhof.valksor.com/docs/providers/github#troubleshooting",
+			DocsURL:     "https://valksor.com/docs/mehrhof/providers/github#troubleshooting",
 			Err:         wrapped,
 		}
 	}

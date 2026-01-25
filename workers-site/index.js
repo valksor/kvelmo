@@ -9,16 +9,16 @@ export default {
 
         // Redirect directory paths without trailing slash (fixes relative path resolution)
         if (
-            url.pathname.startsWith("/docs") &&
+            url.pathname.startsWith("/docs/mehrhof") &&
             !url.pathname.endsWith("/") &&
             !url.pathname.split("/").pop().includes(".")
         ) {
             return Response.redirect(url.origin + url.pathname + "/", 301);
         }
 
-        // Strip /docs prefix for asset lookup
-        if (url.pathname.startsWith("/docs")) {
-            url.pathname = url.pathname.replace(/^\/docs/, "") || "/";
+        // Strip /docs/mehrhof prefix for asset lookup
+        if (url.pathname.startsWith("/docs/mehrhof")) {
+            url.pathname = url.pathname.replace(/^\/docs\/mehrhof/, "") || "/";
         }
 
         const modifiedRequest = new Request(url, request);

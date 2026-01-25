@@ -4,8 +4,8 @@ compatibility_date = "2026-01-03"
 compatibility_flags = ["nodejs_compat"]
 
 routes = [
-    { pattern = "mehrhof.valksor.com/docs", zone_name = "valksor.com" },
-    { pattern = "mehrhof.valksor.com/docs/*", zone_name = "valksor.com" }
+    { pattern = "valksor.com/docs/mehrhof", zone_name = "valksor.com" },
+    { pattern = "valksor.com/docs/mehrhof/*", zone_name = "valksor.com" }
 ]
 
 [site]
