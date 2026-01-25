@@ -48,6 +48,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleWorkflowAbandon)
 		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleWorkflowContinue)
 		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleWorkflowAuto)
+		mux.HandleFunc("GET /api/v1/workflow/diagram", s.handleWorkflowDiagram)
 
 		// Notes endpoints
 		mux.HandleFunc("POST /api/v1/tasks/{id}/notes", s.handleAddNote)
