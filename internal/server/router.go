@@ -98,9 +98,17 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /settings", s.handleSettingsPage)
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
+		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
+		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
 
 		// Project planning UI
 		mux.HandleFunc("GET /project", s.handleProjectUI)
+
+		// Browser control panel UI
+		mux.HandleFunc("GET /browser", s.handleBrowserUI)
+
+		// Task history UI
+		mux.HandleFunc("GET /history", s.handleHistoryUI)
 
 		// Project workflow endpoints
 		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
@@ -125,6 +133,8 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /settings", s.handleSettingsPage)
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
+		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
+		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
 	}
 
 	// Switch project route (available when started in global mode)
@@ -134,6 +144,10 @@ func (s *Server) setupRouter() http.Handler {
 
 	// SSE events endpoint
 	mux.HandleFunc("GET /api/v1/events", s.handleEvents)
+
+	// Agent logs streaming endpoints
+	mux.HandleFunc("GET /api/v1/agent/logs/stream", s.handleAgentLogs)
+	mux.HandleFunc("GET /api/v1/agent/logs/history", s.handleAgentLogsHistory)
 
 	// UI partial routes (for HTMX updates)
 	mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
