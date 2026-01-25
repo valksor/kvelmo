@@ -66,6 +66,32 @@
                 background: rgba(255, 152, 0, 0.05);
                 margin: 1em 0;
             }
+
+            .version-notice {
+                padding: 1em 1em;
+                border-left: 5px solid #ff6f00;
+                background: linear-gradient(
+                    90deg,
+                    rgba(255, 111, 0, 0.15) 0%,
+                    rgba(255, 111, 0, 0.05) 100%
+                );
+                margin: 0 0 2em 0;
+                border-radius: 0 4px 4px 0;
+                font-size: 0.95em;
+                color: #e65100;
+            }
+
+            .version-notice strong {
+                color: #bf360c;
+                font-weight: 600;
+            }
+
+            .version-notice code {
+                background: rgba(255, 255, 255, 0.5);
+                color: #bf360c;
+                padding: 2px 6px;
+                border-radius: 3px;
+            }
         </style>
     </head>
     <body>
@@ -105,6 +131,20 @@
                 formatUpdated: "{DD}.{MM}.{YYYY} {HH}:{mm}",
                 mergeNavbar: true,
                 themeColor: "#960018",
+                plugins: [
+                    function (hook, vm) {
+                        hook.beforeEach(function (content) {
+                            return (
+                                '<div class="version-notice">' +
+                                "<strong>Documentation Version Notice:</strong> " +
+                                "This documentation reflects the latest <strong>nightly build</strong> from the master branch. " +
+                                "Features described here may not yet be available in tagged releases. " +
+                                'To check your version, run <code>mehr version</code>.' +
+                                "</div>\n\n" + content
+                            );
+                        });
+                    },
+                ],
             };
         </script>
         <script src="./_media/js/bundle.min.js?v=1d90fdbd"></script>
