@@ -54,8 +54,16 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 			// Get guide info for actions
 			data.Guide = s.getGuideData()
 
-			// Get specifications
-			data.Specs = s.getSpecsData(activeTask.ID)
+			// Get specifications with progress
+			specs := s.getSpecsData(activeTask.ID)
+			total, done, progress := s.getSpecificationsProgress(activeTask.ID)
+			data.Specifications = SpecificationsData{
+				Specifications: specs,
+				Total:          total,
+				Done:           done,
+				Progress:       progress,
+			}
+			data.Specs = specs // Keep for backwards compatibility
 
 			// Get pending question
 			data.PendingQuestion = s.getPendingQuestionData(activeTask.ID)
@@ -140,7 +148,15 @@ func (s *Server) handleSpecsPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := s.getSpecsData(activeTask.ID)
+	specs := s.getSpecsData(activeTask.ID)
+	total, done, progress := s.getSpecificationsProgress(activeTask.ID)
+
+	data := SpecificationsData{
+		Specifications: specs,
+		Total:          total,
+		Done:           done,
+		Progress:       progress,
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.templates.RenderPartial(w, "specs", data); err != nil {
@@ -233,6 +249,26 @@ func (s *Server) handleProjectUI(w http.ResponseWriter, _ *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.templates.RenderProject(w, data); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
+	}
+}
+
+// handleHistoryUI renders the task history page.
+func (s *Server) handleHistoryUI(w http.ResponseWriter, _ *http.Request) {
+	if s.templates == nil {
+		s.writeError(w, http.StatusInternalServerError, "templates not loaded")
+
+		return
+	}
+
+	data := HistoryData{
+		Mode:             s.modeString(),
+		AuthEnabled:      s.config.AuthStore != nil,
+		CanSwitchProject: s.canSwitchProject(),
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.RenderHistory(w, data); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
 	}
 }
@@ -362,6 +398,39 @@ func (s *Server) getSpecsData(taskID string) []SpecData {
 	}
 
 	return specs
+}
+
+// getSpecificationsProgress calculates progress statistics for specifications.
+func (s *Server) getSpecificationsProgress(taskID string) (int, int, float64) {
+	if s.config.Conductor == nil {
+		return 0, 0, 0
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		return 0, 0, 0
+	}
+
+	specificationList, err := ws.ListSpecificationsWithStatus(taskID)
+	if err != nil {
+		return 0, 0, 0
+	}
+
+	total := len(specificationList)
+	if total == 0 {
+		return 0, 0, 0
+	}
+
+	done := 0
+	for _, specification := range specificationList {
+		if specification.Status == storage.SpecificationStatusDone {
+			done++
+		}
+	}
+
+	progress := float64(done) / float64(total) * 100
+
+	return total, done, progress
 }
 
 func (s *Server) getPendingQuestionData(taskID string) *QuestionData {

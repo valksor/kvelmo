@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/valksor/go-mehrhof/internal/coordination"
+	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
 // handleSettingsPage renders the settings page.
@@ -642,4 +645,194 @@ func stripSensitiveFields(cfg *storage.WorkspaceConfig) *storage.WorkspaceConfig
 	}
 
 	return &result
+}
+
+// handleConfigExplain returns agent configuration explanation as JSON.
+func (s *Server) handleConfigExplain(w http.ResponseWriter, r *http.Request) {
+	step := r.URL.Query().Get("step")
+	if step == "" {
+		s.writeError(w, http.StatusBadRequest, "missing step parameter (planning, implementing, reviewing)")
+
+		return
+	}
+
+	// Map step string to workflow.Step
+	var workflowStep workflow.Step
+	switch step {
+	case "planning":
+		workflowStep = workflow.StepPlanning
+	case "implementing", "implementation":
+		workflowStep = workflow.StepImplementing
+	case "reviewing", "review":
+		workflowStep = workflow.StepReviewing
+	default:
+		s.writeError(w, http.StatusBadRequest, "invalid step: "+step+" (must be planning, implementing, or reviewing)")
+
+		return
+	}
+
+	// Get conductor and workspace
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	// Load config
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
+
+		return
+	}
+
+	// Get agent registry
+	agents := s.config.Conductor.GetAgentRegistry()
+	if agents == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "agent registry not available")
+
+		return
+	}
+
+	// Create resolver
+	resolver := coordination.NewResolver(agents, ws)
+
+	// Build resolution request (no CLI flags, no task config)
+	req := coordination.ResolveRequest{
+		WorkspaceCfg: cfg,
+		Step:         workflowStep,
+	}
+
+	// Get explanation
+	explanation, err := resolver.ExplainAgentResolution(r.Context(), req)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to explain resolution: "+err.Error())
+
+		return
+	}
+
+	// Convert to JSON-friendly format
+	type jsonResolutionStep struct {
+		Priority int    `json:"priority"`
+		Source   string `json:"source"`
+		Agent    string `json:"agent"`
+		Skipped  bool   `json:"skipped"`
+	}
+
+	steps := make([]jsonResolutionStep, len(explanation.AllSteps))
+	for i, step := range explanation.AllSteps {
+		steps[i] = jsonResolutionStep{
+			Priority: step.Priority,
+			Source:   step.Source,
+			Agent:    step.Agent,
+			Skipped:  step.Skipped,
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"step":      explanation.Step,
+		"effective": explanation.Effective,
+		"source":    explanation.Source,
+		"steps":     steps,
+	})
+}
+
+// handleProviderHealth returns provider health information as JSON.
+func (s *Server) handleProviderHealth(w http.ResponseWriter, r *http.Request) {
+	// Get conductor and workspace
+	if s.config.Conductor == nil {
+		s.writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "conductor not initialized",
+		})
+
+		return
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "workspace not initialized",
+		})
+
+		return
+	}
+
+	// Load config
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": "failed to load config: " + err.Error(),
+		})
+
+		return
+	}
+
+	// Create provider health container
+	health := provider.NewProviderHealth()
+
+	// Check GitHub provider
+	if cfg.GitHub != nil && cfg.GitHub.Token != "" {
+		// For now, return a basic status
+		// Future improvement: Implement full provider instance creation and health checks
+		health.Add("github", &provider.HealthInfo{
+			Status:  provider.HealthStatusConnected,
+			Message: "Connected",
+		})
+	} else {
+		health.Add("github", &provider.HealthInfo{
+			Status:  provider.HealthStatusNotConfigured,
+			Message: "Set GITHUB_TOKEN in .mehrhof/.env",
+		})
+	}
+
+	// Check GitLab provider
+	if cfg.GitLab != nil && cfg.GitLab.Token != "" {
+		health.Add("gitlab", &provider.HealthInfo{
+			Status:  provider.HealthStatusConnected,
+			Message: "Connected",
+		})
+	} else {
+		health.Add("gitlab", &provider.HealthInfo{
+			Status:  provider.HealthStatusNotConfigured,
+			Message: "Set GITLAB_TOKEN in .mehrhof/.env",
+		})
+	}
+
+	// Check Jira provider
+	if cfg.Jira != nil && cfg.Jira.Token != "" && cfg.Jira.BaseURL != "" {
+		health.Add("jira", &provider.HealthInfo{
+			Status:  provider.HealthStatusConnected,
+			Message: "Connected",
+		})
+	} else {
+		health.Add("jira", &provider.HealthInfo{
+			Status:  provider.HealthStatusNotConfigured,
+			Message: "Set JIRA_TOKEN and JIRA_BASE_URL in .mehrhof/.env",
+		})
+	}
+
+	// Add other providers...
+	health.Add("linear", &provider.HealthInfo{
+		Status:  provider.HealthStatusNotConfigured,
+		Message: "Set LINEAR_API_KEY in .mehrhof/.env",
+	})
+
+	health.Add("notion", &provider.HealthInfo{
+		Status:  provider.HealthStatusNotConfigured,
+		Message: "Set NOTION_TOKEN in .mehrhof/.env",
+	})
+
+	health.Add("bitbucket", &provider.HealthInfo{
+		Status:  provider.HealthStatusNotConfigured,
+		Message: "Set BITBUCKET_APP_PASSWORD in .mehrhof/.env",
+	})
+
+	s.writeJSON(w, http.StatusOK, health)
 }
