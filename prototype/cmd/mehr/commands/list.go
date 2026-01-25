@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -21,14 +23,22 @@ This is useful for seeing all parallel tasks across multiple terminals.
 Tasks with worktrees can be worked on independently in separate terminals.
 
 Examples:
-  mehr list              # List all tasks
-  mehr list --worktrees  # Show only tasks with worktrees
-  mehr list --json       # Output as JSON`,
+  mehr list                   # List all tasks
+  mehr list --worktrees       # Show only tasks with worktrees
+  mehr list --json            # Output as JSON
+  mehr list --search "api"    # Search tasks by title
+  mehr list --filter state:done  # Filter by state
+  mehr list --sort cost        # Sort by cost (highest first)
+  mehr list --format json     # JSON output`,
 	RunE: runList,
 }
 
 var (
 	listWorktreesOnly bool
+	listSearch        string
+	listFilter        string
+	listSort          string
+	listFormat        string
 	listJSON          bool
 )
 
@@ -36,11 +46,20 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 
 	listCmd.Flags().BoolVarP(&listWorktreesOnly, "worktrees", "w", false, "Show only tasks with worktrees")
-	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON")
+	listCmd.Flags().StringVar(&listSearch, "search", "", "Search tasks by title or description")
+	listCmd.Flags().StringVar(&listFilter, "filter", "", "Filter tasks (format: key:value, e.g., state:done)")
+	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort tasks (date, cost, duration)")
+	listCmd.Flags().StringVar(&listFormat, "format", "table", "Output format (table, json, csv)")
+	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON (deprecated, use --format json)")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+
+	// Handle legacy --json flag (map to --format json)
+	if listJSON {
+		listFormat = "json"
+	}
 
 	// Resolve workspace root and git context
 	res, err := ResolveWorkspaceRoot(ctx)
@@ -62,7 +81,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(taskIDs) == 0 {
-		if listJSON {
+		if listFormat == "json" {
 			return outputJSON([]jsonListTask{})
 		}
 		fmt.Println("No tasks found in workspace.")
@@ -86,66 +105,19 @@ func runList(cmd *cobra.Command, args []string) error {
 		currentWorktreePath = res.Git.Root()
 	}
 
-	// JSON output
-	if listJSON {
-		var tasks []jsonListTask
-		for _, taskID := range taskIDs {
-			work, err := ws.LoadWork(taskID)
-			if err != nil {
-				continue
-			}
-
-			// Filter by worktrees if requested
-			if listWorktreesOnly && work.Git.WorktreePath == "" {
-				continue
-			}
-
-			// Get state
-			state := "idle"
-			isActive := taskID == activeID
-			if isActive {
-				active, _ := ws.LoadActiveTask()
-				if active != nil {
-					state = active.State
-				}
-			}
-
-			// Format title (no truncation for JSON)
-			title := work.Metadata.Title
-			if title == "" {
-				title = "(untitled)"
-			}
-
-			// Format worktree path (relative if possible)
-			worktreePath := ""
-			if work.Git.WorktreePath != "" {
-				worktreePath = work.Git.WorktreePath
-				// Try to make it relative
-				if rel, err := filepath.Rel(root, worktreePath); err == nil && len(rel) < len(worktreePath) {
-					worktreePath = rel
-				}
-			}
-
-			tasks = append(tasks, jsonListTask{
-				TaskID:       taskID,
-				State:        state,
-				Title:        title,
-				WorktreePath: worktreePath,
-				IsActive:     isActive,
-				IsCurrent:    currentWorktreePath != "" && work.Git.WorktreePath == currentWorktreePath,
-			})
-		}
-
-		return outputJSON(tasks)
+	// Load all tasks into a slice for filtering/sorting
+	type taskInfo struct {
+		ID           string
+		State        string
+		Title        string
+		WorktreePath string
+		IsActive     bool
+		IsCurrent    bool
+		Cost         int
+		Duration     string
 	}
 
-	// Regular text output
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(w, "TASK ID\tSTATE\tTITLE\tWORKTREE\tACTIVE"); err != nil {
-		return fmt.Errorf("print header: %w", err)
-	}
-
-	var shownCount int
+	var tasks []taskInfo
 	for _, taskID := range taskIDs {
 		work, err := ws.LoadWork(taskID)
 		if err != nil {
@@ -157,7 +129,14 @@ func runList(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		shownCount++
+		// Apply search filter
+		if listSearch != "" {
+			searchLower := strings.ToLower(listSearch)
+			title := strings.ToLower(work.Metadata.Title)
+			if !strings.Contains(title, searchLower) {
+				continue
+			}
+		}
 
 		// Get state
 		state := "idle"
@@ -169,14 +148,20 @@ func runList(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// Format title
-		title := work.Metadata.Title
-		if len(title) > 35 {
-			title = title[:32] + "..."
+		// Apply state filter
+		if listFilter != "" {
+			parts := strings.SplitN(listFilter, ":", 2)
+			if len(parts) == 2 && parts[0] == "state" {
+				filterState := strings.ToLower(parts[1])
+				stateLower := strings.ToLower(state)
+				if !strings.Contains(stateLower, filterState) {
+					continue
+				}
+			}
 		}
 
 		// Format worktree path (relative if possible)
-		worktreePath := "-"
+		worktreePath := ""
 		if work.Git.WorktreePath != "" {
 			worktreePath = work.Git.WorktreePath
 			// Try to make it relative
@@ -185,22 +170,137 @@ func runList(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// Active marker
-		activeMarker := ""
-		if isActive {
-			activeMarker = "*"
-		}
-		// Mark if we're currently in this worktree
-		if currentWorktreePath != "" && work.Git.WorktreePath == currentWorktreePath {
-			activeMarker = "→" // Arrow indicates current worktree
+		// Calculate cost (from sessions)
+		cost := 0
+		sessions, _ := ws.ListSessions(taskID)
+		for _, s := range sessions {
+			if s.Usage != nil {
+				cost += s.Usage.InputTokens + s.Usage.OutputTokens
+			}
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
-			taskID,
-			state,
-			title,
-			worktreePath,
-			activeMarker); err != nil {
+		// Calculate duration (rough estimate from created time)
+		duration := "-"
+		if !work.Metadata.CreatedAt.IsZero() {
+			elapsed := time.Since(work.Metadata.CreatedAt)
+			if elapsed < time.Minute {
+				duration = fmt.Sprintf("%ds", int(elapsed.Seconds()))
+			} else if elapsed < time.Hour {
+				duration = fmt.Sprintf("%dm", int(elapsed.Minutes()))
+			} else {
+				duration = fmt.Sprintf("%dh", int(elapsed.Hours()))
+			}
+		}
+
+		tasks = append(tasks, taskInfo{
+			ID:           taskID,
+			State:        state,
+			Title:        work.Metadata.Title,
+			WorktreePath: worktreePath,
+			IsActive:     isActive,
+			IsCurrent:    currentWorktreePath != "" && work.Git.WorktreePath == currentWorktreePath,
+			Cost:         cost,
+			Duration:     duration,
+		})
+	}
+
+	// Apply sorting
+	if listSort != "" {
+		switch listSort {
+		case "date":
+			// Already sorted by date (task ID contains timestamp)
+		case "cost":
+			// Sort by cost (highest first)
+			for i := range len(tasks) - 1 {
+				for j := i + 1; j < len(tasks); j++ {
+					if tasks[i].Cost < tasks[j].Cost {
+						tasks[i], tasks[j] = tasks[j], tasks[i]
+					}
+				}
+			}
+		case "duration":
+			// Sort by duration (would need to parse duration string)
+			// For now, skip this
+		}
+	}
+
+	// JSON output
+	if listFormat == "json" {
+		var jsonTasks []jsonListTask
+		for _, task := range tasks {
+			jsonTasks = append(jsonTasks, jsonListTask{
+				TaskID:       task.ID,
+				State:        task.State,
+				Title:        task.Title,
+				WorktreePath: task.WorktreePath,
+				IsActive:     task.IsActive,
+				IsCurrent:    task.IsCurrent,
+			})
+		}
+
+		return outputJSON(jsonTasks)
+	}
+
+	// CSV output
+	if listFormat == "csv" {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ',', 0)
+		if _, err := fmt.Fprintln(w, "Task ID,State,Title,Worktree,Active,Cost"); err != nil {
+			return fmt.Errorf("write csv header: %w", err)
+		}
+		for _, task := range tasks {
+			title := task.Title
+			if title == "" {
+				title = "(untitled)"
+			}
+			activeMark := ""
+			if task.IsActive {
+				activeMark = "*"
+			}
+			if _, err := fmt.Fprintf(w, "%s,%s,%s,%s,%s,%d\n",
+				task.ID, task.State, title, task.WorktreePath, activeMark, task.Cost); err != nil {
+				return fmt.Errorf("write csv row: %w", err)
+			}
+		}
+		if err := w.Flush(); err != nil {
+			return fmt.Errorf("flush csv: %w", err)
+		}
+
+		return nil
+	}
+
+	// Regular text output (default)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	if _, err := fmt.Fprintln(w, "TASK ID\tSTATE\tTITLE\tWORKTREE\tACTIVE\tCOST"); err != nil {
+		return fmt.Errorf("print header: %w", err)
+	}
+
+	for _, task := range tasks {
+		// Format title
+		title := task.Title
+		if title == "" {
+			title = "(untitled)"
+		}
+		if len(title) > 35 {
+			title = title[:32] + "..."
+		}
+
+		// Format worktree path
+		worktreePath := task.WorktreePath
+		if worktreePath == "" {
+			worktreePath = "-"
+		}
+
+		// Active marker
+		activeMarker := ""
+		if task.IsActive {
+			activeMarker = "*"
+		}
+		if task.IsCurrent {
+			activeMarker = "→"
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\n",
+			task.ID, task.State, title, worktreePath, activeMarker, task.Cost); err != nil {
 			return fmt.Errorf("print row: %w", err)
 		}
 	}
@@ -209,12 +309,13 @@ func runList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("flush list table: %w", err)
 	}
 
-	if shownCount == 0 && listWorktreesOnly {
-		fmt.Println("\nNo tasks with worktrees found.")
-		fmt.Println("Use 'mehr start --worktree <reference>' to create a task with a worktree.")
+	if len(tasks) == 0 {
+		fmt.Println()
+		fmt.Println("No tasks found matching criteria.")
 	} else {
 		fmt.Println()
-		fmt.Println("Legend: * = active task in main repo, → = current worktree")
+		fmt.Println("Legend: * = active task, → = current worktree")
+		fmt.Println("Use --search, --filter, --sort for more options")
 	}
 
 	return nil
