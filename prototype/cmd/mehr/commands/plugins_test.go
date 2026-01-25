@@ -147,7 +147,7 @@ func TestPluginsCommand_LongDescriptionContains(t *testing.T) {
 
 func TestPluginsListCommand_DocumentsLocations(t *testing.T) {
 	locations := []string{
-		"~/.mehrhof/plugins/",
+		"~/.valksor/mehrhof/plugins/",
 		".mehrhof/plugins/",
 	}
 

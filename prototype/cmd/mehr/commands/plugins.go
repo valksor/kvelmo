@@ -48,7 +48,7 @@ var pluginsListCmd = &cobra.Command{
 	Long: `List all discovered plugins from global and project directories.
 
 Plugin locations:
-  Global:  ~/.mehrhof/plugins/
+  Global:  ~/.valksor/mehrhof/plugins/
   Project: .mehrhof/plugins/
 
 The output shows:
