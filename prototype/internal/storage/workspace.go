@@ -40,8 +40,8 @@ type usageBuffer struct {
 type Workspace struct {
 	root          string // Repository root
 	taskRoot      string // .mehrhof directory in project (config, .env)
-	workspaceRoot string // ~/.mehrhof/workspaces/<project-id>/ (work/, .active_task)
-	workRoot      string // ~/.mehrhof/workspaces/<project-id>/work/
+	workspaceRoot string // ~/.valksor/mehrhof/workspaces/<project-id>/ (work/, .active_task)
+	workRoot      string // ~/.valksor/mehrhof/workspaces/<project-id>/work/
 
 	// Usage buffering for reducing I/O
 	usageMu   sync.RWMutex

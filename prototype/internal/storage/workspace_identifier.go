@@ -128,7 +128,7 @@ func GetGlobalWorkspaceRootWithOverride(homeDirOverride string) (string, error) 
 
 // GetWorkspaceDataDir returns the workspace data directory for a specific project.
 // This is where work/ and .active_task are stored.
-// Example: /home/user/.mehrhof/workspaces/github.com-user-repo.
+// Example: /home/user/.valksor/mehrhof/workspaces/github.com-user-repo.
 // The homeDirOverride parameter allows specifying a custom home directory (e.g., for tests).
 // Pass empty string to use the default user home directory.
 func GetWorkspaceDataDir(ctx context.Context, repoRoot string, homeDirOverride string) (string, error) {
