@@ -209,6 +209,29 @@ func (s *Server) modeString() string {
 	}
 }
 
+// isLocalRequest returns true if the request originates from localhost.
+// Used to determine whether to show sensitive data like API tokens.
+func isLocalRequest(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		// If we can't parse, assume it's the host without port
+		host = r.RemoteAddr
+	}
+
+	// Check for loopback addresses
+	if host == "127.0.0.1" || host == "::1" || host == "localhost" {
+		return true
+	}
+
+	// Also check if the IP is a loopback
+	ip := net.ParseIP(host)
+	if ip != nil && ip.IsLoopback() {
+		return true
+	}
+
+	return false
+}
+
 // switchToProject switches the server from global mode to project mode.
 // This updates the config, creates a conductor for the project, and rebuilds the router.
 func (s *Server) switchToProject(projectPath string) error {

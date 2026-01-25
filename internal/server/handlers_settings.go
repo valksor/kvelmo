@@ -93,7 +93,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
-		ShowSensitive:    s.config.Mode == ModeProject, // Only show tokens in project mode
+		ShowSensitive:    isLocalRequest(r), // Only show tokens when accessed locally
 		Config:           cfg,
 		Agents:           agents,
 		Success:          r.URL.Query().Get("success"),
