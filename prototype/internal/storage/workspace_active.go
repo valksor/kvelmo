@@ -82,5 +82,11 @@ func (w *Workspace) UpdateActiveTaskState(state string) error {
 	}
 	active.State = state
 
+	// Also update the work metadata with the state for history tracking
+	if work, err := w.LoadWork(active.ID); err == nil {
+		work.Metadata.State = state
+		_ = w.SaveWork(work) // Best effort - don't fail if work save fails
+	}
+
 	return w.SaveActiveTask(active)
 }

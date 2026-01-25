@@ -332,6 +332,7 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		task := map[string]any{
 			"id":         id,
 			"title":      work.Metadata.Title,
+			"state":      work.Metadata.State,
 			"created_at": work.Metadata.CreatedAt,
 		}
 

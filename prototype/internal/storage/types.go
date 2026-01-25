@@ -28,6 +28,7 @@ type TaskWork struct {
 type WorkMetadata struct {
 	ID        string    `yaml:"id"`
 	Title     string    `yaml:"title,omitempty"`
+	State     string    `yaml:"state,omitempty"` // idle, planning, implementing, reviewing, done, failed
 	CreatedAt time.Time `yaml:"created_at"`
 	UpdatedAt time.Time `yaml:"updated_at"`
 
