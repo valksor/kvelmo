@@ -268,3 +268,37 @@ func (s *Server) handleWorkflowAuto(w http.ResponseWriter, r *http.Request) {
 
 	s.writeJSON(w, http.StatusOK, resp)
 }
+
+// handleWorkflowDiagram returns an SVG workflow diagram showing current state.
+func (s *Server) handleWorkflowDiagram(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	// Get the workflow machine from conductor
+	machine := s.config.Conductor.GetMachine()
+	if machine == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workflow machine not available")
+
+		return
+	}
+
+	// Get current state from machine directly
+	currentState := machine.State()
+
+	// Generate SVG diagram with current state highlighted
+	opts := workflow.DiagramOptions{
+		CurrentState: currentState,
+		ShowEvents:   true,
+		Compact:      false,
+	}
+
+	svg := workflow.SVGDiagram(machine, opts)
+
+	// Set SVG content type
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(svg))
+}
