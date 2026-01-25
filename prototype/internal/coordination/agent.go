@@ -247,3 +247,146 @@ func ApplyArgs(agentInst agent.Agent, args ...string) agent.Agent {
 
 	return agentInst.WithArgs(args...)
 }
+
+// ResolutionStep explains one step in the resolution process.
+type ResolutionStep struct {
+	Priority int    // Priority level (1-7)
+	Source   string // Source name (cli-step, cli, task-step, task, workspace-step, workspace, auto)
+	Agent    string // Agent name at this level (empty if not set)
+	Skipped  bool   // True if this level was skipped (agent not found or not configured)
+}
+
+// ResolutionExplanation provides a detailed explanation of agent resolution.
+type ResolutionExplanation struct {
+	Step      string           // Workflow step being resolved
+	Effective string           // The agent that was selected
+	Source    string           // Where the effective agent came from
+	AllSteps  []ResolutionStep // All 7 priority levels with their status
+}
+
+// ExplainAgentResolution explains how an agent would be resolved for a given step.
+// Returns a detailed explanation showing all 7 priority levels and which one won.
+func (r *Resolver) ExplainAgentResolution(ctx context.Context, req ResolveRequest) (*ResolutionExplanation, error) {
+	stepStr := req.Step.String()
+	steps := make([]ResolutionStep, 7)
+
+	var effectiveAgent string
+	var effectiveSource string
+	found := false
+
+	// Check each priority level
+	for priority := 1; priority <= 7; priority++ {
+		source, agentName, skipped := r.checkAgentAtPriority(ctx, req, priority, stepStr)
+
+		// Mark as skipped if we already found an agent at a previous priority
+		if found {
+			skipped = true
+		}
+
+		steps[priority-1] = ResolutionStep{
+			Priority: priority,
+			Source:   source,
+			Agent:    agentName,
+			Skipped:  skipped,
+		}
+
+		// First non-skipped level is the effective one
+		if !skipped && !found {
+			effectiveAgent = agentName
+			effectiveSource = source
+			found = true
+		}
+	}
+
+	return &ResolutionExplanation{
+		Step:      stepStr,
+		Effective: effectiveAgent,
+		Source:    effectiveSource,
+		AllSteps:  steps,
+	}, nil
+}
+
+// checkAgentAtPriority checks what agent (if any) is configured at a given priority level.
+// Returns (source, agentName, skipped).
+func (r *Resolver) checkAgentAtPriority(_ context.Context, req ResolveRequest, priority int, stepStr string) (string, string, bool) {
+	switch priority {
+	case 1: // CLI step-specific
+		if name, ok := req.CLISStepAgents[stepStr]; ok && name != "" {
+			if _, err := r.agents.Get(name); err == nil {
+				return "cli-step (CLI --agent-" + stepStr + ")", name, false
+			}
+		}
+
+		return "cli-step", "", true
+
+	case 2: // CLI global
+		if req.CLIAgent != "" {
+			if _, err := r.agents.Get(req.CLIAgent); err == nil {
+				return "cli (CLI --agent)", req.CLIAgent, false
+			}
+		}
+
+		return "cli", "", true
+
+	case 3: // Task frontmatter step-specific
+		if req.TaskConfig != nil && req.TaskConfig.Steps != nil {
+			if stepCfg, ok := req.TaskConfig.Steps[stepStr]; ok && stepCfg.Name != "" {
+				if _, err := r.agents.Get(stepCfg.Name); err == nil {
+					return "task-step (task frontmatter agent_steps." + stepStr + ".agent)", stepCfg.Name, false
+				}
+			}
+		}
+
+		return "task-step", "", true
+
+	case 4: // Task frontmatter default
+		if req.TaskConfig != nil && req.TaskConfig.Name != "" {
+			if _, err := r.agents.Get(req.TaskConfig.Name); err == nil {
+				return "task (task frontmatter agent)", req.TaskConfig.Name, false
+			}
+		}
+
+		return "task", "", true
+
+	case 5: // Workspace step-specific
+		cfg := req.WorkspaceCfg
+		if cfg == nil {
+			if _, err := r.workspace.LoadConfig(); err != nil {
+				return "workspace-step", "", true
+			}
+		}
+		if cfg != nil {
+			if stepCfg, ok := cfg.Agent.Steps[stepStr]; ok && stepCfg.Name != "" {
+				if _, err := r.agents.Get(stepCfg.Name); err == nil {
+					return "workspace-step (config agent.steps." + stepStr + ".name)", stepCfg.Name, false
+				}
+			}
+		}
+
+		return "workspace-step", "", true
+
+	case 6: // Workspace default
+		cfg := req.WorkspaceCfg
+		if cfg == nil {
+			if _, err := r.workspace.LoadConfig(); err != nil {
+				return "workspace (config agent.default)", "", true
+			}
+		}
+		if cfg != nil && cfg.Agent.Default != "" {
+			if _, err := r.agents.Get(cfg.Agent.Default); err == nil {
+				return "workspace (config agent.default)", cfg.Agent.Default, false
+			}
+		}
+
+		return "workspace", "", true
+
+	case 7: // Auto-detect
+		if agentInst, err := r.agents.Detect(); err == nil {
+			return "auto (first available agent)", agentInst.Name(), false
+		}
+
+		return "auto", "", true
+	}
+
+	return "", "", true
+}
