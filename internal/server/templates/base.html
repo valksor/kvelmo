@@ -377,50 +377,62 @@
         const themeToggleDarkIconMobile = document.getElementById('theme-toggle-dark-icon-mobile');
         const themeToggleLightIconMobile = document.getElementById('theme-toggle-light-icon-mobile');
 
-        // Check localStorage or system preference on load
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            if (themeToggleLightIcon) themeToggleLightIcon.classList.remove('hidden');
-            if (themeToggleLightIconMobile) themeToggleLightIconMobile.classList.remove('hidden');
-        } else {
-            document.documentElement.classList.remove('dark');
-            if (themeToggleDarkIcon) themeToggleDarkIcon.classList.remove('hidden');
-            if (themeToggleDarkIconMobile) themeToggleDarkIconMobile.classList.remove('hidden');
+        // Helper function to update icons based on current theme state
+        function updateThemeIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            // Show light icon (sun) when in dark mode (to switch to light)
+            // Show dark icon (moon) when in light mode (to switch to dark)
+            if (themeToggleLightIcon) {
+                themeToggleLightIcon.classList.toggle('hidden', !isDark);
+            }
+            if (themeToggleDarkIcon) {
+                themeToggleDarkIcon.classList.toggle('hidden', isDark);
+            }
+            if (themeToggleLightIconMobile) {
+                themeToggleLightIconMobile.classList.toggle('hidden', !isDark);
+            }
+            if (themeToggleDarkIconMobile) {
+                themeToggleDarkIconMobile.classList.toggle('hidden', isDark);
+            }
+        }
+
+        // Initialize theme on page load
+        function initTheme() {
+            const storedTheme = localStorage.getItem('color-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            // Determine initial theme
+            if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                if (!storedTheme) {
+                    localStorage.setItem('color-theme', 'light');
+                }
+            }
+            updateThemeIcons();
         }
 
         // Toggle theme function
         function toggleTheme() {
-            // Toggle icons for desktop
-            if (themeToggleDarkIcon && themeToggleLightIcon) {
-                themeToggleDarkIcon.classList.toggle('hidden');
-                themeToggleLightIcon.classList.toggle('hidden');
-            }
-            // Toggle icons for mobile
-            if (themeToggleDarkIconMobile && themeToggleLightIconMobile) {
-                themeToggleDarkIconMobile.classList.toggle('hidden');
-                themeToggleLightIconMobile.classList.toggle('hidden');
+            const isDark = document.documentElement.classList.contains('dark');
+
+            // Toggle theme state
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
             }
 
-            // If is set in localStorage
-            if (localStorage.getItem('color-theme')) {
-                if (localStorage.getItem('color-theme') === 'light') {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                }
-            } else {
-                // If NOT set in localStorage
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                }
-            }
+            // Update icons after theme state has changed
+            updateThemeIcons();
         }
+
+        // Initialize on page load
+        initTheme();
 
         // Add event listeners for both desktop and mobile toggle buttons
         if (themeToggleBtn) {
