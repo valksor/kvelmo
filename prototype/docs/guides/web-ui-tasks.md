@@ -33,7 +33,23 @@ flowchart TD
 4. Drag and drop your file (or click to browse)
 5. Click **"Create Task"**
 
-**[Screenshot: Upload file dialog with drag-drop zone]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Upload File                                                 │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│              ┌─────────────────────────────────┐             │
+│              │                                 │             │
+│              │     Drag & drop file here       │             │
+│              │     or click to browse          │             │
+│              │                                 │             │
+│              └─────────────────────────────────┘             │
+│                                                              │
+│  Supported: .md, .txt (max 5MB)                              │
+│                                                              │
+│                              [Cancel]         [Upload]       │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Supported File Types
 
@@ -99,7 +115,20 @@ flowchart TD
 
 Mehrhof will fetch the issue title, description, and comments automatically.
 
-**[Screenshot: Provider dialog with GitHub selected and issue number input]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Create Task from Provider                                   │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Provider: [GitHub ▼]  ← (GitLab, Jira, Linear, ...)         │
+│                                                              │
+│  Issue Number: [123________________]                          │
+│                                                              │
+│  ℹ️ Fetching from: github.com/valksor/go-mehrhof             │
+│                                                              │
+│                              [Cancel]         [Create Task]   │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Supported Providers
 
@@ -228,7 +257,22 @@ flowchart TD
     B -->|No| D[Click task in History]
 ```
 
-**[Screenshot: Active task card showing current state]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Active Task: Add User OAuth Authentication                   │
+├──────────────────────────────────────────────────────────────┤
+│  State: ● Implementing                                       │
+│  Branch: feature/user-oauth                                  │
+│  Progress: ████████░░░░ 80%                                  │
+│                                                              │
+│  Last Action: "Implement" - 2 minutes ago                     │
+│  Next Step: Review                                            │
+│                                                              │
+│  [Continue] [Plan] [Implement] [Review] [Finish]             │
+│                                                              │
+│  💾 Checkpoint 5/6  |  💰 $0.45 spent                        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Resuming Workflow
 
@@ -244,7 +288,24 @@ If your task is in the **"Idle"** state after planning:
 2. Add any notes if needed
 3. Click **"Implement"** to continue
 
-**[Screenshot: Task in Idle state with specifications visible]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Specifications (2 files)                                    │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  📄 specification-1.md                                       │
+│     ✓ OAuth Provider Setup                                   │
+│     ✓ Database Schema for Sessions                           │
+│     ✓ Login/Logout Endpoints                                 │
+│                                                              │
+│  📄 specification-2.md                                       │
+│     ✓ Token Validation Middleware                            │
+│     ✓ Session Management                                     │
+│     ✓ Security Considerations                                │
+│                                                              │
+│  [+ Add another specification]                               │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -260,7 +321,33 @@ flowchart TD
     B --> E[Click task to view]
 ```
 
-**[Screenshot: Task history section with filter and search controls]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Task History                                                │
+├──────────────────────────────────────────────────────────────┤
+│  🔍 [Search tasks by title...]            Filter: [All ▼]    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ 📋 Add user authentication          │ [Done]         │    │
+│  │ State: Done  Branch: main  Created: 2h ago          │    │
+│  │                                    [View] [Load]    │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ 📋 Health check endpoint             │ [Implementing]│    │
+│  │ State: Implementing  Branch: feature/health         │    │
+│  │                                    [View] [Load]    │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ 📋 Fix login bug                    │ [Failed]       │    │
+│  │ State: Failed  Branch: fix/login  Created: 1d ago  │    │
+│  │                                    [View] [Load]    │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  Showing 3 of 12 tasks                                        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Features
 
@@ -286,8 +373,6 @@ Each task card shows:
 └─────────────────────────────────────┘
 ```
 
-**[Screenshot: Task history card with labels]**
-
 ---
 
 ## Browser Automation Panel
@@ -303,7 +388,27 @@ flowchart TD
     B --> F[Inspect Elements]
 ```
 
-**[Screenshot: Browser automation panel with tab list and controls]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Browser Automation                                          │
+├──────────────────────────────────────────────────────────────┤
+│  Chrome detected: chrome (port 9222)                         │
+│                                                              │
+│  Open Tabs:                                                  │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]    │      │
+│  │ 🌐 Localhost:8080 - Health Endpoint                │      │
+│  │ 🌐 Google - "How to implement OAuth"               │      │
+│  └────────────────────────────────────────────────────┘      │
+│                                                              │
+│  Controls:                                                   │
+│  URL: [____________________]  [Goto]  [Refresh]              │
+│                                                              │
+│  [Screenshot] [Console] [DOM Query] [Close Tab]              │
+│                                                              │
+│  Last action: Navigated to localhost:8080/health             │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Starting the Browser
 
@@ -347,7 +452,25 @@ flowchart TD
     B --> F[Provider Settings]
 ```
 
-**[Screenshot: Settings page with tab navigation]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Workspace Settings                                          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  [Git] [Agent] [Workflow] [Browser] [Providers]              │
+│  ─────────────────────────────────────────────────────────  │
+│                                                              │
+│  Git Settings:                                               │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Auto-commit:     [✓ Enabled]                       │      │
+│  │ Target branch:   [main            ]                 │      │
+│  │ Branch pattern:  [{type}/{key}--{slug}]            │      │
+│  │ Commit prefix:   [{key}]            ]                 │      │
+│  └────────────────────────────────────────────────────┘      │
+│                                                              │
+│                                        [Reset] [Save]       │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Available Settings
 
@@ -420,7 +543,29 @@ Monitor your API usage in the **Costs** section:
 - Estimated costs per task
 - Charts showing spending over time
 
-**[Screenshot: Cost tracking section with bar chart]**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Costs & Usage                                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  This Session: $0.45  |  Tasks: 3  |  Tokens: 145,231        │
+│                                                              │
+│  Cost by Task:                                              │
+│                                                              │
+│  Add Health Check              $0.12  ███████░░░░            │
+│  User OAuth Auth               $0.28  ████████████████       │
+│  Fix Login Bug                  $0.05  ██░░░░░░░░░░░░         │
+│                                                              │
+│  Token Usage (Last 7 Days):                                  │
+│  Mon   ████████░░  92K tokens                                │
+│  Tue   ██████████  115K tokens                               │
+│  Wed   ██████░░░░  78K tokens                                │
+│  Thu   ████████░░  95K tokens                                │
+│  Fri   ███████░░░  88K tokens                                │
+│                                                              │
+│  Estimated: $0.68/day  |  Budget: $5.00/day  (13.6% used)    │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 

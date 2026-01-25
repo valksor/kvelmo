@@ -182,4 +182,4 @@ agents:
 ## See Also
 
 - [README.md](README.md) - User-facing documentation, installation, quick start
-- [Documentation](https://mehrhof.valksor.com/docs) - Full guides and API reference
+- [Documentation](https://valksor.com/docs/mehrhof) - Full guides and API reference

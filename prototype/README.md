@@ -1,4 +1,4 @@
-# Valksor Mehrhof - AI-Powered Task Automation CLI
+# Valksor Mehrhof - AI-Powered Development Assistant
 
 [![valksor](https://badgen.net/static/org/valksor/green)](https://github.com/valksor)
 [![BSD-3-Clause](https://img.shields.io/badge/BSD--3--Clause-green?style=flat)](https://github.com/valksor/go-mehrhof/blob/master/LICENSE)
@@ -27,7 +27,7 @@ We are gradually testing and hardening integrations. Report issues at [github.co
 
 ## Why Mehrhof?
 
-Mehrhof is a command-line tool that orchestrates AI agents to perform **planning, implementation, and code review** workflows for software development tasks.
+Mehrhof is an AI-powered development assistant that helps you plan, implement, and review code changes through an intuitive Web UI or command-line interface.
 
 **Key benefits:**
 - **Parallel tasks** - Run multiple AI tasks simultaneously using git worktrees for isolated development
@@ -44,136 +44,27 @@ Mehrhof is a command-line tool that orchestrates AI agents to perform **planning
 - **Prompt optimization** - Automatically refine prompts for clarity and effectiveness with `--optimize`
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
 
-## Quick Start
+## Quick Start with Web UI
 
-### Prerequisites
+The fastest way to get started - **no command-line expertise required!**
 
-- **Go 1.25+** (for building from source)
-- **Git** (for version control operations)
-- **Claude CLI** - Mehrhof wraps Claude CLI for AI operations (see [quickstart](https://mehrhof.valksor.com/docs/#/quickstart))
-- **Chrome or Chromium** (optional, required for browser automation features)
-
-> **Browser Features**: Browser automation (`mehr browser` commands) requires Chrome or Chromium to be installed. See [Browser Documentation](https://mehrhof.valksor.com/docs/#/cli/browser) for installation instructions.
-
-### Installation
-
-#### Option 1: Install Script (Recommended)
+### 3 Steps to Your First Task
 
 ```bash
-# Latest stable release
+# 1. Install Mehrhof (one command)
 curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
 
-# Nightly build (latest master)
-curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- --nightly
+# 2. Navigate to your project
+cd /path/to/your/project
 
-# Specific version
-curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- -v v1.2.3
+# 3. Start the Web UI
+mehr init           # One-time setup
+mehr serve --open   # Opens browser automatically
 ```
 
-The install script auto-detects your OS/architecture, verifies checksums (and Cosign signatures if available), and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
+Click **"Create Task"** in your browser and you're ready to go!
 
-#### Option 2: Pre-built Binary
-
-Download the latest release for your platform:
-
-| Platform | Architecture | Binary Name |
-|----------|--------------|-------------|
-| Linux | AMD64 | `mehr-linux-amd64` |
-| Linux | ARM64 | `mehr-linux-arm64` |
-| macOS | AMD64 (Intel) | `mehr-darwin-amd64` |
-| macOS | ARM64 (Apple Silicon) | `mehr-darwin-arm64` |
-
-> **Windows Users:** Native Windows binaries are not provided. Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux) and download the appropriate Linux binary (`mehr-linux-amd64` or `mehr-linux-arm64`).
-
-```bash
-# Download and install (example for macOS ARM64)
-curl -L https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64 -o mehr
-chmod +x mehr
-sudo mv mehr /usr/local/bin/
-
-# Verify
-mehr version
-```
-
-#### Option 3: Nightly Build (Pre-release)
-
-Get the latest commit build (always available, use with caution):
-
-```bash
-# Download latest nightly (example for macOS ARM64)
-curl -L https://github.com/valksor/go-mehrhof/releases/download/nightly/mehr-darwin-arm64 -o mehr
-chmod +x mehr
-sudo mv mehr /usr/local/bin/
-```
-
-**Note:** Nightly builds are pre-release and may contain untested changes. Prefer stable releases when available.
-
-#### Option 4: Build from Source
-
-```bash
-git clone https://github.com/valksor/go-mehrhof.git
-cd go-mehrhof
-make install
-
-# Verify
-mehr version
-```
-
-### First Task
-
-```bash
-# 1. Initialize workspace (one-time)
-mehr init
-
-# 2. Create a task file
-cat > task.md << 'EOF'
----
-title: Add health check endpoint
----
-Create a /health endpoint that returns HTTP 200 with JSON status.
-EOF
-
-# 3. Run workflow
-mehr start task.md    # Creates git branch
-mehr plan             # AI creates specifications (implementation plan)
-mehr implement        # AI writes code following specifications
-mehr finish           # Merge changes or create PR
-```
-
-**[See full guides](https://mehrhof.valksor.com/docs)** for:
-- Parallel tasks with worktrees
-- Provider integrations (GitHub, Jira, Notion, etc.)
-- Configuration options
-- Troubleshooting
-
----
-
-## Choose Your Interface
-
-Mehrhof works two ways: **Web UI** (visual, beginner-friendly) or **CLI** (command-line, scriptable). Both have the same features.
-
-```mermaid
-flowchart LR
-    A[Mehrhof Installed] --> B{Choose your path}
-    B -->|Visual & Easy| C[Web UI]
-    B -->|Commands & Scripting| D[CLI]
-    C --> E[Dashboard, One-click actions]
-    D -->F[Terminal commands]
-```
-
-| Web UI | CLI |
-|--------|-----|
-| 🖱️ Click buttons, fill forms | ⌨️ Type commands |
-| 👁️ See everything at once | 🔍 Request specific info |
-| 📊 Visual progress tracking | ⚡ Keyboard-driven speed |
-| 👥 Easy to screen-share | 🤖 Great for automation |
-| 🌐 Perfect for beginners | 💪 Powerful for experts |
-
-## Web UI
-
-> **New to Mehrhof?** Start with the Web UI for the easiest experience. No need to memorize commands!
-
-### How the Web UI Works: Plan → Implement → Review
+### How It Works: Plan → Implement → Review
 
 Mehrhof separates work into three phases. This gives you control over each step:
 
@@ -194,22 +85,35 @@ flowchart LR
 
 **Phase 3: Review** - Click "Review" to run quality checks, then "Finish" to merge your changes.
 
-### Quick Start (3 Steps)
+### Installation Options
 
+**Install Script (Recommended):**
 ```bash
-# 1. Navigate to your project directory
-cd /path/to/your/project
-
-# 2. Initialize (one-time per project)
-mehr init
-
-# 3. Start the web UI
-mehr serve --open
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
 ```
 
-Your browser opens automatically. Click **"Create Task"** and you're ready to go!
+**Pre-built Binary:**
+```bash
+# Download for your platform (macOS ARM64 example)
+curl -L https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64 -o mehr
+chmod +x mehr
+sudo mv mehr /usr/local/bin/
+```
 
-### What You Can Do in the Web UI
+**Build from Source:**
+```bash
+git clone https://github.com/valksor/go-mehrhof.git
+cd go-mehrhof
+make install
+```
+
+See [Installation Guide](https://valksor.com/docs/mehrhof/#/quickstart) for more options.
+
+---
+
+## Web UI Features
+
+Everything you need to manage AI-powered development tasks from your browser:
 
 | Feature | Description |
 |---------|-------------|
@@ -259,11 +163,45 @@ ssh -L 3000:localhost:3000 your-server.com
 # Then open http://localhost:3000 in your browser
 ```
 
-**[Full Web UI Documentation](https://mehrhof.valksor.com/docs/#/guides/web-ui-getting-started)** - Complete walkthrough with screenshots
+**[Full Web UI Documentation](https://valksor.com/docs/mehrhof/#/guides/web-ui-getting-started)** - Complete walkthrough with ASCII visualizations
 
 ---
 
-## How It Works
+---
+
+## For CLI Users
+
+Prefer the command line? Mehrhof's CLI offers the same features with scriptable automation.
+
+### CLI Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  mehr init  →  mehr start  →  mehr plan  →                  │
+│       ↓                                                    │
+│  mehr simplify  ←  (at any stage to refine content)         │
+│       ↓                                                    │
+│  →  mehr implement  →  mehr review  →  mehr finish          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Initialize** (`mehr init`) - Set up workspace (one-time)
+2. **Start** (`mehr start`) - Begin a task; creates git branch automatically
+3. **Plan** (`mehr plan`) - AI generates implementation specifications
+4. **Simplify** (`mehr simplify`) - Refine content based on current state (optional)
+5. **Implement** (`mehr implement`) - AI executes the specifications
+6. **Review** (`mehr review`) - Run automated code review
+7. **Finish** (`mehr finish`) - Merge changes and clean up
+
+**Recovery commands:**
+- `mehr continue` - Resume workflow, optionally auto-execute (`--auto`)
+- `mehr undo` / `mehr redo` - Revert to previous checkpoint
+- `mehr abandon` - Abandon task without merging
+- `mehr simplify` - Auto-detects what to simplify (task input, specs, or code)
+
+---
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -322,7 +260,7 @@ ssh -L 3000:localhost:3000 your-server.com
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
-**See [CLI Reference](https://mehrhof.valksor.com/docs/#/cli/index) for all commands and flags.**
+**See [CLI Reference](https://valksor.com/docs/mehrhof/#/cli/index) for all commands and flags.**
 
 ## Task Providers
 
@@ -332,21 +270,21 @@ Mehrhof supports 16+ task sources. Use provider schemes to load tasks:
 
 | Provider | Scheme | Example | Docs |
 |----------|--------|---------|------|
-| Empty | `empty:` | `empty:FEATURE-1` | [empty](https://mehrhof.valksor.com/docs/#/providers/empty) |
-| File | `file:` | `file:task.md` | [file](https://mehrhof.valksor.com/docs/#/providers/file) |
-| Directory | `dir:` | `dir:./tasks/` | [directory](https://mehrhof.valksor.com/docs/#/providers/directory) |
-| GitHub | `github:` | `github:123` | [github](https://mehrhof.valksor.com/docs/#/providers/github) |
-| GitLab | `gitlab:` | `gitlab:123` | [gitlab](https://mehrhof.valksor.com/docs/#/providers/gitlab) |
-| Bitbucket | `bitbucket:` | `bitbucket:123` | [bitbucket](https://mehrhof.valksor.com/docs/#/providers/bitbucket) |
-| Jira | `jira:` | `jira:PROJ-123` | [jira](https://mehrhof.valksor.com/docs/#/providers/jira) |
-| Linear | `linear:` | `linear:ENG-123` | [linear](https://mehrhof.valksor.com/docs/#/providers/linear) |
-| Asana | `asana:` | `asana:1234...` | [asana](https://mehrhof.valksor.com/docs/#/providers/asana) |
-| ClickUp | `clickup:` | `clickup:abc123` | [clickup](https://mehrhof.valksor.com/docs/#/providers/clickup) |
-| Azure DevOps | `azdo:` | `azdo:123` | [azure-devops](https://mehrhof.valksor.com/docs/#/providers/azure-devops) |
-| Notion | `notion:` | `notion:<uuid>` | [notion](https://mehrhof.valksor.com/docs/#/providers/notion) |
-| Trello | `trello:` | `trello:<id>` | [trello](https://mehrhof.valksor.com/docs/#/providers/trello) |
-| Wrike | `wrike:` | `wrike:<id>` | [wrike](https://mehrhof.valksor.com/docs/#/providers/wrike) |
-| YouTrack | `youtrack:` | `youtrack:ABC-123` | [youtrack](https://mehrhof.valksor.com/docs/#/providers/youtrack) |
+| Empty | `empty:` | `empty:FEATURE-1` | [empty](https://valksor.com/docs/mehrhof/#/providers/empty) |
+| File | `file:` | `file:task.md` | [file](https://valksor.com/docs/mehrhof/#/providers/file) |
+| Directory | `dir:` | `dir:./tasks/` | [directory](https://valksor.com/docs/mehrhof/#/providers/directory) |
+| GitHub | `github:` | `github:123` | [github](https://valksor.com/docs/mehrhof/#/providers/github) |
+| GitLab | `gitlab:` | `gitlab:123` | [gitlab](https://valksor.com/docs/mehrhof/#/providers/gitlab) |
+| Bitbucket | `bitbucket:` | `bitbucket:123` | [bitbucket](https://valksor.com/docs/mehrhof/#/providers/bitbucket) |
+| Jira | `jira:` | `jira:PROJ-123` | [jira](https://valksor.com/docs/mehrhof/#/providers/jira) |
+| Linear | `linear:` | `linear:ENG-123` | [linear](https://valksor.com/docs/mehrhof/#/providers/linear) |
+| Asana | `asana:` | `asana:1234...` | [asana](https://valksor.com/docs/mehrhof/#/providers/asana) |
+| ClickUp | `clickup:` | `clickup:abc123` | [clickup](https://valksor.com/docs/mehrhof/#/providers/clickup) |
+| Azure DevOps | `azdo:` | `azdo:123` | [azure-devops](https://valksor.com/docs/mehrhof/#/providers/azure-devops) |
+| Notion | `notion:` | `notion:<uuid>` | [notion](https://valksor.com/docs/mehrhof/#/providers/notion) |
+| Trello | `trello:` | `trello:<id>` | [trello](https://valksor.com/docs/mehrhof/#/providers/trello) |
+| Wrike | `wrike:` | `wrike:<id>` | [wrike](https://valksor.com/docs/mehrhof/#/providers/wrike) |
+| YouTrack | `youtrack:` | `youtrack:ABC-123` | [youtrack](https://valksor.com/docs/mehrhof/#/providers/youtrack) |
 
 **Default provider**: Configure in `.mehrhof/config.yaml` to use bare references:
 ```yaml
@@ -378,25 +316,9 @@ mehr project submit --provider wrike
 mehr project start --auto
 ```
 
-**Features:**
-- **Multiple source types** - Plan from directories, files, provider references, or URLs (via web API)
-- **AI task ordering** - Automatically optimize task order based on dependencies and priorities
-- **Provider integration** - Fetch task details from any supported provider (GitHub, Jira, etc.)
+**Features:** Multiple source types (files, directories, providers), AI task ordering, and provider integration.
 
-**Supported dependency types by provider:**
-
-| Provider | Dependency Support |
-|----------|-------------------|
-| Wrike | Native (FinishToStart) |
-| GitHub | Task lists in epic |
-| GitLab | Task lists in description |
-| Jira | Issue links (blocks/is-blocked-by) |
-| Asana | Native task dependencies |
-| ClickUp | Native task dependencies |
-| Azure DevOps | Work item links |
-| Linear, Trello, YouTrack, Bitbucket | Description-based |
-
-See [Project Planning documentation](https://mehrhof.valksor.com/docs/#/cli/project) for full workflow details.
+See [Project Planning documentation](https://valksor.com/docs/mehrhof/#/cli/project) for full workflow details and dependency support by provider.
 
 ## Parallel Tasks with Worktrees
 
@@ -430,7 +352,7 @@ Mehrhof supports AI agent plugins for custom backends. The primary agent is **Cl
 |-------|-------------|
 | Claude | Primary agent via Claude CLI (recommended) |
 
-**See [AI Agents documentation](https://mehrhof.valksor.com/docs/#/agents/index) for configuration and custom aliases.**
+**See [AI Agents documentation](https://valksor.com/docs/mehrhof/#/agents/index) for configuration and custom aliases.**
 
 ## Configuration
 
@@ -460,19 +382,19 @@ update:
 
 **Note**: Task data (specifications, sessions, notes) is stored in `~/.valksor/mehrhof/workspaces/<project-id>/` to keep project directories clean.
 
-**See [Configuration Guide](https://mehrhof.valksor.com/docs/#/configuration/index) for all options including agent aliases, per-step agents, and provider settings.**
+**See [Configuration Guide](https://valksor.com/docs/mehrhof/#/configuration/index) for all options including agent aliases, per-step agents, and provider settings.**
 
 ## Documentation
 
-- 📖 [Full Documentation](https://mehrhof.valksor.com/docs)
-- [Quickstart](https://mehrhof.valksor.com/docs/#/quickstart) - Install and first task in 5 minutes
-- [Guides](https://mehrhof.valksor.com/docs/#/guides/first-task) - Step-by-step tutorials
-- [Providers](https://mehrhof.valksor.com/docs/#/providers/index) - Task source integrations
-- [AI Agents](https://mehrhof.valksor.com/docs/#/agents/index) - Agent configuration and aliases
-- [CLI Reference](https://mehrhof.valksor.com/docs/#/cli/index) - All commands and flags
-- [Configuration](https://mehrhof.valksor.com/docs/#/configuration/index) - Customize behavior
-- [Concepts](https://mehrhof.valksor.com/docs/#/concepts/workflow) - Workflow, storage, architecture
-- [Troubleshooting](https://mehrhof.valksor.com/docs/#/troubleshooting/index) - Common issues
+- 📖 [Full Documentation](https://valksor.com/docs/mehrhof)
+- [Quickstart](https://valksor.com/docs/mehrhof/#/quickstart) - Install and first task in 5 minutes
+- [Guides](https://valksor.com/docs/mehrhof/#/guides/first-task) - Step-by-step tutorials
+- [Providers](https://valksor.com/docs/mehrhof/#/providers/index) - Task source integrations
+- [AI Agents](https://valksor.com/docs/mehrhof/#/agents/index) - Agent configuration and aliases
+- [CLI Reference](https://valksor.com/docs/mehrhof/#/cli/index) - All commands and flags
+- [Configuration](https://valksor.com/docs/mehrhof/#/configuration/index) - Customize behavior
+- [Concepts](https://valksor.com/docs/mehrhof/#/concepts/workflow) - Workflow, storage, architecture
+- [Troubleshooting](https://valksor.com/docs/mehrhof/#/troubleshooting/index) - Common issues
 
 ## Development
 
@@ -488,37 +410,9 @@ make hooks        # Enable versioned git hooks
 make lefthook     # Install pre-commit hooks (auto-format + lint)
 ```
 
-**CI/CD**: PRs trigger lint/test/build via GitHub Actions. Releases use [GoReleaser](https://goreleaser.com/) with Cosign signing and SBOM generation.
+**CI/CD**: PRs trigger lint/test/build via GitHub Actions. Releases use [GoReleaser](https://goreleaser.com/) with Cosign signing.
 
-### PR Review in CI/CD
-
-Mehrhof can review pull/merge requests automatically in CI/CD pipelines:
-
-```bash
-# Set required environment variable for state verification
-export MEHRHOF_STATE_SECRET="$(openssl rand -base64 32)"
-
-# Run PR review
-mehr review pr --pr-number 123 --token "$GITHUB_TOKEN"
-```
-
-**Important**: The `MEHRHOF_STATE_SECRET` environment variable is **REQUIRED** for PR review state verification. This secret:
-- Enables secure HMAC signing of embedded review state
-- Prevents tampering with review history
-- Must be at least 32 characters long
-- Should be generated with a cryptographically secure random generator
-
-**CI/CD Example** (GitHub Actions):
-```yaml
-- name: Review PR
-  env:
-    MEHRHOF_STATE_SECRET: ${{ secrets.STATE_SECRET }}
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  run: |
-    mehr review pr --pr-number ${{ github.event.pull_request.number }}
-```
-
-See [https://mehrhof.valksor.com/docs/#/guides/pr-review-state](https://mehrhof.valksor.com/docs/#/guides/pr-review-state) for detailed documentation on PR review state management.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and PR review setup.
 
 ## Contributing
 

@@ -155,8 +155,8 @@ Now that Mehrhof is installed, follow the **[Your First Task Tutorial](guides/fi
 | `mehr note "..."` | Add context for the AI |
 | `mehr finish` | Complete and merge |
 | `mehr abandon` | Discard task without merging |
-| `mehr browser ...` | Browser automation *(full build only)* |
-| `mehr mcp` | MCP server for AI agents *(full build only)* |
+| `mehr browser ...` | Browser automation |
+| `mehr mcp` | MCP server for AI agents |
 
 ## Updating
 

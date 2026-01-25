@@ -67,8 +67,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/valksor/go-toolkit v0.0.0-20260122184555-64b2f5908bc3 h1:SB+K4A0ROtowi4T+LlqZx7Nj3i0w6UyY7OgtAdYXuBk=
-github.com/valksor/go-toolkit v0.0.0-20260122184555-64b2f5908bc3/go.mod h1:uFVeJLjin0HK+uxfqoxu3vRoFShmBhhZn58jrUmUWRY=
+github.com/valksor/go-toolkit v0.0.0-20260125194044-c2e29df39395 h1:uvFMS+VOIOXY6jX9vlhfZbWuvNIlCXGOeBHP0yYykJk=
+github.com/valksor/go-toolkit v0.0.0-20260125194044-c2e29df39395/go.mod h1:uFVeJLjin0HK+uxfqoxu3vRoFShmBhhZn58jrUmUWRY=
 github.com/ysmood/fetchup v0.2.3 h1:ulX+SonA0Vma5zUFXtv52Kzip/xe7aj4vqT5AJwQ+ZQ=
 github.com/ysmood/fetchup v0.2.3/go.mod h1:xhibcRKziSvol0H1/pj33dnKrYyI2ebIvz5cOOkYGns=
 github.com/ysmood/goob v0.4.0 h1:HsxXhyLBeGzWXnqVKtmT9qM7EuVs/XOgkX7T6r1o1AQ=
