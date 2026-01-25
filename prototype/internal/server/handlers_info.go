@@ -260,6 +260,37 @@ func (s *Server) handleListAgents(w http.ResponseWriter, r *http.Request) {
 			if mp, ok := a.(agent.MetadataProvider); ok {
 				meta := mp.Metadata()
 				info.Description = meta.Description
+				info.Version = meta.Version
+
+				// Add capabilities
+				if meta.Capabilities.Streaming || meta.Capabilities.ToolUse ||
+					meta.Capabilities.FileOperations || meta.Capabilities.CodeExecution ||
+					meta.Capabilities.MultiTurn || meta.Capabilities.SystemPrompt ||
+					len(meta.Capabilities.AllowedTools) > 0 {
+					info.Capabilities = &agentCapabilitiesInfo{
+						Streaming:      meta.Capabilities.Streaming,
+						ToolUse:        meta.Capabilities.ToolUse,
+						FileOperations: meta.Capabilities.FileOperations,
+						CodeExecution:  meta.Capabilities.CodeExecution,
+						MultiTurn:      meta.Capabilities.MultiTurn,
+						SystemPrompt:   meta.Capabilities.SystemPrompt,
+					}
+					if len(meta.Capabilities.AllowedTools) > 0 {
+						info.Capabilities.AllowedTools = meta.Capabilities.AllowedTools
+					}
+				}
+
+				// Add models
+				for _, m := range meta.Models {
+					info.Models = append(info.Models, agentModelInfo{
+						ID:         m.ID,
+						Name:       m.Name,
+						Default:    m.Default,
+						MaxTokens:  m.MaxTokens,
+						InputCost:  m.InputCost,
+						OutputCost: m.OutputCost,
+					})
+				}
 			}
 		}
 
