@@ -9,6 +9,19 @@
     {{template "task_card_content" .Task}}
 </div>
 
+<!-- Workflow State Diagram -->
+<div id="workflow-diagram" class="card">
+    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Workflow State</h3>
+        <div class="text-xs text-surface-500 dark:text-surface-400">Updates automatically as you work</div>
+    </div>
+    <div class="p-6 flex items-center justify-center" hx-get="/api/v1/workflow/diagram" hx-trigger="sse:workflow_state_changed, every 30s" hx-swap="innerHTML">
+        <object data="/api/v1/workflow/diagram" type="image/svg+xml" class="w-full max-w-4xl" style="min-height: 300px;">
+            <div class="text-center text-surface-500 dark:text-surface-400 py-8">Loading workflow diagram...</div>
+        </object>
+    </div>
+</div>
+
 <!-- Actions -->
 <div id="actions" hx-get="/ui/partials/actions" hx-trigger="sse:workflow_state_changed" hx-swap="outerHTML">
     {{template "actions_content" .Guide}}
