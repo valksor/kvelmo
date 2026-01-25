@@ -1,10 +1,22 @@
 package events
 
-import "time"
+import (
+	"time"
 
-// Type identifies event categories.
-type Type string
+	"github.com/valksor/go-toolkit/eventbus"
+)
 
+// Re-export generic types from go-toolkit for backward compatibility.
+type (
+	// Event is the base event structure.
+	Event = eventbus.Event
+	// Eventer interface for typed events.
+	Eventer = eventbus.Eventer
+	// Type identifies event categories.
+	Type = eventbus.Type
+)
+
+// Domain-specific event type constants for mehrhof.
 const (
 	TypeStateChanged   Type = "state_changed"
 	TypeProgress       Type = "progress"
@@ -25,18 +37,6 @@ const (
 	TypeBrowserTabOpened  Type = "browser_tab_opened"
 	TypeBrowserScreenshot Type = "browser_screenshot"
 )
-
-// Event is the base event structure.
-type Event struct {
-	Timestamp time.Time
-	Data      map[string]any
-	Type      Type
-}
-
-// Eventer interface for typed events.
-type Eventer interface {
-	ToEvent() Event
-}
 
 // StateChangedEvent when workflow state changes.
 type StateChangedEvent struct {
