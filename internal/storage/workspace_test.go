@@ -2459,7 +2459,7 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 				t.Fatalf("OpenWorkspace: %v", err)
 			}
 
-			// WorkRoot is in ~/.mehrhof/workspaces/<project-id>/<workDir>
+			// WorkRoot is in ~/.valksor/mehrhof/workspaces/<project-id>/<workDir>
 			if !strings.HasSuffix(ws.WorkRoot(), tt.wantWorkRootSfx) {
 				t.Errorf("WorkRoot() = %q, want suffix %q", ws.WorkRoot(), tt.wantWorkRootSfx)
 			}
