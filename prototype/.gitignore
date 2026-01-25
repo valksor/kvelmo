@@ -9,7 +9,6 @@
 .mcp.json
 .mehrhof/.env
 .wrangler/
-/CLAUDE.md
 build/
 bun.lock
 covprofile
