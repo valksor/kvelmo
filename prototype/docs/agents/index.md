@@ -160,9 +160,9 @@ agent_steps:
 ### CLI Flags
 
 ```bash
-mehr plan --agent-planning claude-opus
-mehr implement --agent-implementing sonnet-fast
-mehr review --agent-reviewing claude-opus
+mehr plan --agent-plan claude-opus
+mehr implement --agent-implement sonnet-fast
+mehr review --agent-review claude-opus
 
 mehr start --agent claude file:task.md
 ```
@@ -171,7 +171,7 @@ mehr start --agent claude file:task.md
 
 For each step, agent is resolved (highest to lowest):
 
-1. CLI step-specific (`--agent-planning`)
+1. CLI step-specific (`--agent-plan`)
 2. CLI global (`--agent`)
 3. Task frontmatter step (`agent_steps.planning.agent`)
 4. Task frontmatter default (`agent`)

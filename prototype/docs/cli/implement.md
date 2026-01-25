@@ -27,7 +27,7 @@ The `implement` command runs the implementation phase where the AI agent:
 | ---------------------- | ----- | ------ | ------- | --------------------------------- |
 | `--dry-run`            | `-n`  | bool   | false   | Preview changes without applying  |
 | `--verbose`            | `-v`  | bool   | false   | Show agent output in real-time    |
-| `--agent-implementing` |       | string |         | Override agent for implementation |
+| `--agent-implement` |       | string |         | Override agent for implementation |
 | `--optimize`           |       | bool   | false   | Optimize prompt before sending to agent |
 
 ## Examples
@@ -75,7 +75,7 @@ See the agent's reasoning and code generation in real-time.
 ### Override Implementation Agent
 
 ```bash
-mehr implement --agent-implementing claude
+mehr implement --agent-implement claude
 ```
 
 Use a specific agent for code generation. See [AI Agents](../agents/index.md#per-step-agent-configuration).

@@ -76,7 +76,7 @@ Examples:
   mehr finish --merge --push       # Merge and push to remote
   mehr finish --merge --squash     # Squash merge instead of regular merge
   mehr finish --target develop     # Merge to specific branch
-  mehr finish --skip-quality       # Skip quality checks
+  mehr finish --no-quality         # Skip quality checks
   mehr finish --quality-target lint # Use custom make target
   mehr finish --draft              # Create PR as draft
   mehr finish --pr-title "Fix bug" # Custom PR title
@@ -93,7 +93,7 @@ func init() {
 	finishCmd.Flags().BoolVar(&finishPush, "push", false, "Push to remote after local merge")
 	finishCmd.Flags().BoolVar(&finishSquash, "squash", false, "Use squash merge instead of regular merge")
 	finishCmd.Flags().StringVarP(&finishTargetBranch, "target", "t", "", "Target branch to merge into")
-	finishCmd.Flags().BoolVar(&finishSkipQuality, "skip-quality", false, "Skip quality checks (make quality)")
+	finishCmd.Flags().BoolVar(&finishSkipQuality, "no-quality", false, "Skip quality checks (make quality)")
 	finishCmd.Flags().StringVar(&finishQualityTarget, "quality-target", "quality", "Make target for quality checks")
 	finishCmd.Flags().BoolVar(&finishDeleteWork, "delete-work", false, "Delete work directory after finishing")
 
