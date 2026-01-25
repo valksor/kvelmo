@@ -123,11 +123,35 @@ type guideAction struct {
 
 // agentInfo represents information about an agent.
 type agentInfo struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Extends     string `json:"extends,omitempty"`
-	Description string `json:"description,omitempty"`
-	Available   bool   `json:"available"`
+	Name         string                 `json:"name"`
+	Type         string                 `json:"type"`
+	Extends      string                 `json:"extends,omitempty"`
+	Description  string                 `json:"description,omitempty"`
+	Version      string                 `json:"version,omitempty"`
+	Available    bool                   `json:"available"`
+	Capabilities *agentCapabilitiesInfo `json:"capabilities,omitempty"`
+	Models       []agentModelInfo       `json:"models,omitempty"`
+}
+
+// agentCapabilitiesInfo represents agent capabilities.
+type agentCapabilitiesInfo struct {
+	Streaming      bool     `json:"streaming"`
+	ToolUse        bool     `json:"tool_use"`
+	FileOperations bool     `json:"file_operations"`
+	CodeExecution  bool     `json:"code_execution"`
+	MultiTurn      bool     `json:"multi_turn"`
+	SystemPrompt   bool     `json:"system_prompt"`
+	AllowedTools   []string `json:"allowed_tools,omitempty"`
+}
+
+// agentModelInfo represents an available model for an agent.
+type agentModelInfo struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Default    bool    `json:"default"`
+	MaxTokens  int     `json:"max_tokens,omitempty"`
+	InputCost  float64 `json:"input_cost_usd,omitempty"`
+	OutputCost float64 `json:"output_cost_usd,omitempty"`
 }
 
 // agentsListResponse is the response for GET /api/v1/agents.

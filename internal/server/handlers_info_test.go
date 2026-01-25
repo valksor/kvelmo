@@ -306,3 +306,191 @@ func TestHandler_ListProviders_CountMatchesLength(t *testing.T) {
 
 	assert.Equal(t, len(result.Providers), result.Count)
 }
+
+func TestHandler_ListAgents_ResponseStructure(t *testing.T) {
+	cond, tmpDir := createTestConductor(t)
+
+	cfg := Config{
+		Port:          0,
+		Mode:          ModeProject,
+		Conductor:     cond,
+		WorkspaceRoot: tmpDir,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/agents")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Verify response contains JSON structure
+	assert.Contains(t, string(respBody), `"agents"`, "response should contain agents field")
+	assert.Contains(t, string(respBody), `"count"`, "response should contain count field")
+
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(respBody, &result))
+
+	// Verify basic structure
+	_, hasAgents := result["agents"]
+	_, hasCount := result["count"]
+	assert.True(t, hasAgents, "response should have agents field")
+	assert.True(t, hasCount, "response should have count field")
+}
+
+func TestHandler_ListAgents_WithCapabilities(t *testing.T) {
+	cond, tmpDir := createTestConductor(t)
+
+	cfg := Config{
+		Port:          0,
+		Mode:          ModeProject,
+		Conductor:     cond,
+		WorkspaceRoot: tmpDir,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/agents")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Parse as map to handle potential nil slices
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(respBody, &result))
+
+	// Verify response structure is correct
+	agentsField, hasAgents := result["agents"]
+	count, hasCount := result["count"]
+
+	assert.True(t, hasAgents, "response should have agents field")
+	assert.True(t, hasCount, "response should have count field")
+
+	// Extract agents slice for count validation
+	var agentsSlice []any
+	if agents, ok := agentsField.([]any); ok {
+		agentsSlice = agents
+
+		// Verify structure of each agent
+		for _, agentAny := range agentsSlice {
+			if agent, ok := agentAny.(map[string]any); ok {
+				assert.NotEmpty(t, agent["name"], "agent should have name")
+				assert.NotEmpty(t, agent["type"], "agent should have type")
+			}
+		}
+	}
+
+	// Verify count is correct
+	if countFloat, ok := count.(float64); ok {
+		assert.Equal(t, float64(len(agentsSlice)), countFloat, "count should match agents length")
+	}
+}
+
+func TestHandler_ListAgents_WithModels(t *testing.T) {
+	cond, tmpDir := createTestConductor(t)
+
+	cfg := Config{
+		Port:          0,
+		Mode:          ModeProject,
+		Conductor:     cond,
+		WorkspaceRoot: tmpDir,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/agents")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	respBody, _ := io.ReadAll(resp.Body)
+	var result agentsListResponse
+	require.NoError(t, json.Unmarshal(respBody, &result))
+
+	// Verify model structure is correct (if any agents have models)
+	for _, agent := range result.Agents {
+		for _, model := range agent.Models {
+			assert.NotEmpty(t, model.ID, "model should have ID")
+			assert.NotEmpty(t, model.Name, "model should have Name")
+		}
+	}
+}
+
+func TestHandler_WorkflowDiagram_NoConductor(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/workflow/diagram")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+
+	respBody, _ := io.ReadAll(resp.Body)
+	var result map[string]string
+	require.NoError(t, json.Unmarshal(respBody, &result))
+	assert.Contains(t, result["error"], "conductor not initialized")
+}
+
+func TestHandler_WorkflowDiagram_ReturnsSVG(t *testing.T) {
+	// Create conductor for this test
+	cond, tmpDir := createTestConductor(t)
+
+	cfg := Config{
+		Port:          0,
+		Mode:          ModeProject,
+		Conductor:     cond,
+		WorkspaceRoot: tmpDir,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/workflow/diagram")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Verify content type is SVG
+	contentType := resp.Header.Get("Content-Type")
+	assert.Equal(t, "image/svg+xml", contentType)
+
+	// Verify body contains SVG content
+	body, _ := io.ReadAll(resp.Body)
+	bodyStr := string(body)
+	assert.Contains(t, bodyStr, "<svg", "response should contain SVG")
+	assert.Contains(t, bodyStr, "state-box", "SVG should contain state boxes")
+	assert.Contains(t, bodyStr, "</svg>", "response should close SVG tag")
+}
