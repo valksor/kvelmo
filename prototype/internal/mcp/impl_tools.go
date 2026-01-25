@@ -40,7 +40,18 @@ func NewToolRegistry(rootCmd *cobra.Command) *ToolRegistry {
 
 // RegisterCommand registers a Cobra command as an MCP tool.
 func (r *ToolRegistry) RegisterCommand(cmd *cobra.Command, argMapper func(map[string]interface{}) []string) {
-	toolName := "mehr_" + strings.ReplaceAll(cmd.CommandPath(), " ", "_")
+	// Strip root command name from path, use rest as tool name
+	// e.g., "mehr list" -> "list", "mehr browser status" -> "browser_status"
+	cmdPath := cmd.CommandPath()
+	pathParts := strings.Split(cmdPath, " ")
+	var toolName string
+	if len(pathParts) > 1 {
+		// Remove root command (first element) and join the rest
+		toolName = strings.Join(pathParts[1:], "_")
+	} else {
+		// Edge case: root command itself
+		toolName = "root"
+	}
 
 	// Build JSON Schema for input
 	inputSchema := r.buildInputSchema(cmd)
