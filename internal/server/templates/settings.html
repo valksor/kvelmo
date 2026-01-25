@@ -169,6 +169,61 @@
             </div>
         </div>
 
+        <!-- Effective Agent Configuration -->
+        <div class="card">
+            <div class="card-header">Effective Agent Configuration</div>
+            <p class="text-sm text-gray-600 mb-4">
+                See how agents are resolved for each workflow step based on the 7-level priority system.
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Workflow Step</label>
+                    <select id="explain-step"
+                            onchange="explainAgentConfig()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="planning">Planning</option>
+                        <option value="implementing">Implementing</option>
+                        <option value="reviewing">Reviewing</option>
+                    </select>
+                </div>
+                <div id="explain-results" class="hidden">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-blue-900">Effective Agent:</span>
+                            <span id="explain-effective" class="text-lg font-bold text-blue-700"></span>
+                        </div>
+                        <div class="text-sm text-blue-800 mb-4">
+                            <span class="font-medium">Source:</span> <span id="explain-source"></span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="text-sm font-medium text-blue-900">Resolution Path:</div>
+                            <div id="explain-path" class="space-y-1 text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="explain-loading" class="hidden">
+                    <div class="flex items-center justify-center py-4">
+                        <div class="animate-spin text-2xl">&#9696;</div>
+                        <span class="ml-2 text-sm text-gray-600">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Health -->
+        <div class="card">
+            <div class="card-header">Provider Health</div>
+            <p class="text-sm text-gray-600 mb-4">
+                Check the connection status of all configured providers.
+            </p>
+            <div id="provider-health-results" class="space-y-2">
+                <div class="flex items-center justify-center py-4">
+                    <div class="animate-spin text-2xl">&#9696;</div>
+                    <span class="ml-2 text-sm text-gray-600">Loading provider health...</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Workflow Settings -->
         <div class="card">
             <div class="card-header">Workflow Settings</div>
@@ -543,3 +598,159 @@
     {{end}}
 </div>
 {{end}}
+
+<script>
+function explainAgentConfig() {
+    const step = document.getElementById('explain-step').value;
+    const resultsDiv = document.getElementById('explain-results');
+    const loadingDiv = document.getElementById('explain-loading');
+    const effectiveSpan = document.getElementById('explain-effective');
+    const sourceSpan = document.getElementById('explain-source');
+    const pathDiv = document.getElementById('explain-path');
+
+    // Show loading, hide results
+    loadingDiv.classList.remove('hidden');
+    resultsDiv.classList.add('hidden');
+
+    fetch('/api/v1/settings/explain?step=' + step)
+        .then(response => response.json())
+        .then(data => {
+            loadingDiv.classList.add('hidden');
+            resultsDiv.classList.remove('hidden');
+
+            effectiveSpan.textContent = data.effective || 'None';
+            sourceSpan.textContent = data.source || '';
+
+            // Build resolution path HTML
+            let pathHtml = '';
+            if (data.steps) {
+                data.steps.forEach((stepInfo, index) => {
+                    const priority = stepInfo.priority;
+                    const source = stepInfo.source;
+                    const agent = stepInfo.agent;
+                    const skipped = stepInfo.skipped;
+
+                    if (skipped) {
+                        pathHtml += `<div class="flex items-center text-gray-500">
+                            <span class="w-6 text-center mr-2">${priority}.</span>
+                            <span class="flex-1">${source}</span>
+                            <span class="text-xs text-gray-400">(not set)</span>
+                        </div>`;
+                    } else if (agent === data.effective) {
+                        pathHtml += `<div class="flex items-center bg-green-100 -mx-2 px-2 py-1 rounded">
+                            <span class="w-6 text-center mr-2 font-bold text-green-700">${priority}.</span>
+                            <span class="flex-1 font-medium text-green-800">${source}</span>
+                            <span class="font-bold text-green-700">${agent}</span>
+                            <span class="ml-2 text-xs font-bold text-green-600">&#10003; selected</span>
+                        </div>`;
+                    } else {
+                        pathHtml += `<div class="flex items-center text-gray-700">
+                            <span class="w-6 text-center mr-2">${priority}.</span>
+                            <span class="flex-1">${source}</span>
+                            <span class="font-medium text-gray-900">${agent}</span>
+                        </div>`;
+                    }
+                });
+            }
+            pathDiv.innerHTML = pathHtml;
+        })
+        .catch(error => {
+            loadingDiv.classList.add('hidden');
+            console.error('Error fetching agent explanation:', error);
+            resultsDiv.classList.remove('hidden');
+            effectiveSpan.textContent = 'Error';
+            sourceSpan.textContent = 'Failed to load agent configuration';
+            pathDiv.innerHTML = '<div class="text-red-600">Failed to fetch agent resolution path. Check the server logs for details.</div>';
+        });
+}
+
+// Load explanation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    explainAgentConfig();
+    loadProviderHealth();
+});
+
+function loadProviderHealth() {
+    const resultsDiv = document.getElementById('provider-health-results');
+
+    fetch('/api/v1/settings/provider-health')
+        .then(response => response.json())
+        .then(data => {
+            let html = '';
+
+            // Status icons
+            const icons = {
+                connected: '<span class="text-green-500">&#9679;</span>',
+                not_configured: '<span class="text-gray-400">&#9675;</span>',
+                error: '<span class="text-red-500">&#10005;</span>',
+            };
+
+            // Status badges
+            const badges = {
+                connected: '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">Connected</span>',
+                not_configured: '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">Not configured</span>',
+                error: '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Error</span>',
+            };
+
+            // Provider display names
+            const displayNames = {
+                github: 'GitHub',
+                gitlab: 'GitLab',
+                jira: 'Jira',
+                linear: 'Linear',
+                notion: 'Notion',
+                bitbucket: 'Bitbucket',
+            };
+
+            // Sort providers by status (connected first, then not_configured, then error)
+            const sortedProviders = Object.entries(data.providers || {}).sort((a, b) => {
+                const statusOrder = { connected: 0, not_configured: 1, error: 2 };
+                return statusOrder[a[1].status] - statusOrder[b[1].status];
+            });
+
+            // Generate provider rows
+            sortedProviders.forEach(([key, info]) => {
+                const displayName = displayNames[key] || key;
+                const icon = icons[info.status] || '?';
+                const badge = badges[info.status] || info.status;
+
+                html += `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">`;
+                html += `<div class="flex items-center space-x-3">`;
+                html += `<span class="text-lg">${icon}</span>`;
+                html += `<span class="font-medium text-gray-900">${displayName}</span>`;
+                html += `</div>`;
+                html += `<div class="flex items-center space-x-2">`;
+                html += badge;
+
+                // Add rate limit if available
+                if (info.rate_limit) {
+                    html += `<span class="text-xs text-gray-500 ml-2">`;
+                    html += `Rate: ${info.rate_limit.used}/${info.rate_limit.limit}`;
+                    if (info.rate_limit.reset_in) {
+                        html += ` • Reset: ${info.rate_limit.reset_in}`;
+                    }
+                    html += `</span>`;
+                }
+
+                html += `</div>`;
+                html += `</div>`;
+
+                // Add message if available
+                if (info.message) {
+                    html += `<div class="ml-8 text-sm text-gray-600 mt-1">${info.message}</div>`;
+                }
+
+                // Add error if available
+                if (info.error) {
+                    html += `<div class="ml-8 text-sm text-red-600 mt-1">${info.error}</div>`;
+                }
+            });
+
+            resultsDiv.innerHTML = html || '<div class="text-center text-gray-500 py-4">No providers configured</div>';
+        })
+        .catch(error => {
+            console.error('Error fetching provider health:', error);
+            resultsDiv.innerHTML = '<div class="text-center text-red-600 py-4">Failed to load provider health information</div>';
+        });
+}
+</script>
