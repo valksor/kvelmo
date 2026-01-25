@@ -477,10 +477,78 @@ flowchart TD
 | Section | What You Configure |
 |---------|-------------------|
 | **Git** | Auto-commit, branch patterns, target branch |
-| **Agent** | Default agent, timeout, retries |
+| **Agent** | Default agent, timeout, retries, aliases |
 | **Workflow** | Session retention, cleanup options |
 | **Browser** | Chrome port, headless mode |
 | **Providers** | API tokens and connection details |
+| **Agents List** | View available agents with capabilities and models |
+| **Providers List** | View all available task providers with schemes |
+| **Provider Health** | Monitor connection status and rate limits |
+
+### Viewing Agents and Providers
+
+The Settings page includes dedicated sections for discovering available agents and providers:
+
+#### Agents List
+
+Shows all registered AI agents with detailed information:
+
+- **Built-in agents** like Claude with version and capabilities
+- **Custom aliases** with their configurations
+- **Capabilities** including streaming, tool use, file operations
+- **Available models** with token limits and default selection
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Available Agents                                             │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Claude (Built-in)                        [Available]│      │
+│  │ Claude AI via Claude CLI, v1.0.0                  │      │
+│  │ Capabilities: [Streaming] [Tool Use] [File Ops]  │      │
+│  │ Models:                                          │      │
+│  │   • Claude 3.5 Sonnet (200k tokens) [default]    │      │
+│  │   • Claude 3 Opus (200k tokens)                  │      │
+│  └────────────────────────────────────────────────────┘      │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ work-fast (Alias)                      [Available]│      │
+│  │ Fast implementation with Sonnet                   │      │
+│  │ Extends: claude                                   │      │
+│  └────────────────────────────────────────────────────┘      │
+│  2 agent(s) available                                           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Providers List
+
+Shows all available task sources with their schemes:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Available Providers                                          │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ File                                 [Available]   │      │
+│  │ Load tasks from markdown files                     │      │
+│  │ Scheme: file or f (e.g., file:task.md)            │      │
+│  └────────────────────────────────────────────────────┘      │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ GitHub                               [Available]   │      │
+│  │ Load tasks from GitHub issues                     │      │
+│  │ Scheme: github (e.g., github:123)                 │      │
+│  └────────────────────────────────────────────────────┘      │
+│  16 provider(s) available                                        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Provider Health
+
+Monitor connection status and rate limits for configured providers:
+
+- **Connection status** (connected, error, not configured)
+- **Rate limit** information (requests remaining, reset time)
+- **Last sync** timestamp
+- **Quick actions** to reconfigure or test connections
 
 ### Making Changes
 

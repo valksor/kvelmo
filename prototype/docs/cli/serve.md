@@ -238,8 +238,9 @@ curl -X POST http://localhost:PORT/api/v1/workflow/plan
 | `/api/v1/projects` | GET | List all projects (global mode only) |
 | `/api/v1/events` | GET | SSE stream for real-time updates |
 | `/api/v1/guide` | GET | Get state-specific guidance on next actions |
-| `/api/v1/agents` | GET | List available AI agents |
+| `/api/v1/agents` | GET | List available AI agents with capabilities and models |
 | `/api/v1/providers` | GET | List available task providers |
+| `/api/v1/workflow/diagram` | GET | Get SVG workflow state diagram |
 | `/api/v1/costs` | GET | Get costs for all tasks with totals |
 
 ### Workflow Actions (POST)
@@ -515,6 +516,110 @@ curl -X POST http://localhost:8080/api/v1/templates/apply \
   -H "Content-Type: application/json" \
   -d '{"template_name": "feature", "file_path": "task.md"}'
 ```
+
+### List Agents
+
+View available AI agents with their capabilities and models:
+
+```bash
+curl http://localhost:8080/api/v1/agents
+
+# Response:
+{
+  "agents": [
+    {
+      "name": "claude",
+      "type": "builtin",
+      "description": "Claude AI via Claude CLI",
+      "version": "1.0.0",
+      "available": true,
+      "capabilities": {
+        "streaming": true,
+        "tool_use": true,
+        "file_operations": true,
+        "code_execution": false,
+        "multi_turn": true
+      },
+      "models": [
+        {"id": "claude-sonnet-4-20250514", "name": "Claude 3.5 Sonnet", "max_tokens": 200000, "default": true},
+        {"id": "claude-opus-4-20250514", "name": "Claude 3 Opus", "max_tokens": 200000}
+      ]
+    },
+    {
+      "name": "work-fast",
+      "type": "alias",
+      "description": "Fast implementation with Sonnet",
+      "extends": "claude",
+      "available": true,
+      "capabilities": {
+        "streaming": true,
+        "tool_use": true,
+        "file_operations": true,
+        "multi_turn": true
+      },
+      "models": [
+        {"id": "claude-sonnet-4-20250514", "name": "Claude 3.5 Sonnet", "max_tokens": 200000}
+      ]
+    }
+  ],
+  "count": 2
+}
+```
+
+### List Providers
+
+View available task providers:
+
+```bash
+curl http://localhost:8080/api/v1/providers
+
+# Response:
+{
+  "providers": [
+    {
+      "scheme": "file",
+      "shorthand": "f",
+      "name": "File",
+      "description": "Load tasks from markdown files",
+      "example": "file:task.md or f:task.md"
+    },
+    {
+      "scheme": "github",
+      "name": "GitHub",
+      "description": "Load tasks from GitHub issues",
+      "example": "github:123"
+    },
+    {
+      "scheme": "jira",
+      "name": "Jira",
+      "description": "Load tasks from Jira tickets",
+      "example": "jira:PROJ-123"
+    }
+  ],
+  "count": 16
+}
+```
+
+### Workflow Diagram
+
+Get an SVG visualization of the workflow state machine:
+
+```bash
+# Get the diagram (returns SVG image)
+curl http://localhost:8080/api/v1/workflow/diagram \
+  --output workflow-diagram.svg
+
+# Or embed directly in HTML
+<img src="/api/v1/workflow/diagram" alt="Workflow State Diagram" />
+
+# The SVG highlights the current state
+# and shows all valid state transitions
+```
+
+The workflow diagram automatically highlights:
+- **Current state** - Filled with accent color
+- **Valid transitions** - Shown as arrows from current state
+- **All states** - idle, planning, implementing, reviewing, done, failed, waiting, checkpointing, reverting, restoring
 
 ### Settings
 

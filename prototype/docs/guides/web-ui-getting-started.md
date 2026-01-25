@@ -112,10 +112,33 @@ The dashboard has several sections:
 | Section | What It Does |
 |---------|--------------|
 | **Active Task** | Shows your current task (or "No active task") |
+| **Workflow Diagram** | Visual state machine showing current workflow state and valid transitions |
 | **Quick Actions** | Buttons to continue, undo, redo |
 | **Task History** | List of all past tasks |
 | **Settings** | Configure agents, providers, and workflow |
 | **Dark Mode Toggle** | Switch between light/dark theme (top right) |
+
+### Workflow Diagram
+
+At the top of the dashboard, you'll see an interactive workflow diagram that visualizes the current state:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ┌─────┐    plan    ┌───────┐    implement    ┌─────────┐   │
+│  │ IDLE│ ──────────>│PLANING│ ──────────────> │IMPLEMENT│   │
+│  └─────┘             └───────│                  └────┬────┘   │
+│    ▲                        │                      │         │
+│    │                        │ finish              │ review  │
+│    └────────────────────────┴──────────────────────┴─────────┤
+│                         ◀── DONE ◀──                           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Current state** is highlighted in color
+- **Valid transitions** are shown as arrows
+- The diagram updates automatically as the workflow progresses
+
+This helps you understand where you are in the workflow and what actions are available.
 
 ---
 
