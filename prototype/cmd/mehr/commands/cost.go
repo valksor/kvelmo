@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/cost"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	tkdisplay "github.com/valksor/go-toolkit/display"
@@ -22,6 +23,7 @@ var (
 	costAllTasks bool
 	costSummary  bool
 	costJSON     bool
+	costChart    bool
 )
 
 var costCmd = &cobra.Command{
@@ -37,6 +39,7 @@ Examples:
   mehr cost --breakdown   # Break down by workflow step
   mehr cost --all         # Show costs for all tasks
   mehr cost --summary     # Summary of all tasks
+  mehr cost --chart       # Show ASCII charts
   mehr cost --json        # Output as JSON`,
 	RunE: runCost,
 }
@@ -48,6 +51,7 @@ func init() {
 	costCmd.Flags().BoolVar(&costAllTasks, "all", false, "Show costs for all tasks")
 	costCmd.Flags().BoolVarP(&costSummary, "summary", "s", false, "Show summary of all tasks")
 	costCmd.Flags().BoolVar(&costJSON, "json", false, "Output as JSON")
+	costCmd.Flags().BoolVar(&costChart, "chart", false, "Show ASCII charts")
 }
 
 func runCost(cmd *cobra.Command, args []string) error {
@@ -270,6 +274,12 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 		}
 	}
 
+	// Show chart if requested
+	if costChart {
+		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
+		renderStepCostChart(costs.ByStep)
+	}
+
 	return nil
 }
 
@@ -418,6 +428,12 @@ func showAllCosts(ws *storage.Workspace, summaryMode bool) error {
 		formatCost(float64(grandTotalCost)/10000),
 	)
 
+	// Show chart if requested
+	if costChart {
+		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
+		renderAllTasksChart(ws, taskIDs)
+	}
+
 	return nil
 }
 
@@ -545,6 +561,12 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 		_ = w.Flush()
 	}
 
+	// Show chart if requested
+	if costChart {
+		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
+		renderSummaryChart(stepTotals)
+	}
+
 	return nil
 }
 
@@ -595,4 +617,215 @@ func formatStepName(step string) string {
 	}
 
 	return strings.ToUpper(step[:1]) + step[1:]
+}
+
+// renderStepCostChart renders a bar chart of costs by workflow step.
+func renderStepCostChart(byStep map[string]storage.StepCostStats) {
+	if len(byStep) == 0 {
+		fmt.Println("  No step data available for chart.")
+
+		return
+	}
+
+	// Prepare bars for the chart
+	var bars []cost.Bar
+	maxVal := 0
+
+	for _, stats := range byStep {
+		totalTokens := stats.InputTokens + stats.OutputTokens
+		if totalTokens > maxVal {
+			maxVal = totalTokens
+		}
+	}
+
+	// Sort steps by name
+	steps := make([]string, 0, len(byStep))
+	for step := range byStep {
+		steps = append(steps, step)
+	}
+	slices.Sort(steps)
+
+	// Create bars
+	for _, step := range steps {
+		stats := byStep[step]
+		totalTokens := stats.InputTokens + stats.OutputTokens
+		bars = append(bars, cost.Bar{
+			Label: formatStepName(step),
+			Value: totalTokens,
+		})
+	}
+
+	// Generate horizontal bar chart
+	opts := cost.ChartOptions{
+		Title:      "Token Usage by Step",
+		Width:      50,
+		ShowValues: true,
+		ScaleLabel: "tokens",
+	}
+	chart := cost.ASCIIBarChart(bars, opts)
+	fmt.Print(chart)
+}
+
+// renderAllTasksChart renders a bar chart comparing costs across all tasks.
+func renderAllTasksChart(ws *storage.Workspace, taskIDs []string) {
+	type taskCostData struct {
+		ID    string
+		Title string
+		Cost  int
+	}
+
+	var tasks []taskCostData
+	maxCost := 0
+
+	for _, taskID := range taskIDs {
+		work, err := ws.LoadWork(taskID)
+		if err != nil {
+			continue
+		}
+
+		totalCost := work.Costs.TotalInputTokens + work.Costs.TotalOutputTokens
+		if totalCost > maxCost {
+			maxCost = totalCost
+		}
+
+		title := work.Metadata.Title
+		if title == "" {
+			title = "(untitled)"
+		}
+		if len(title) > 20 {
+			title = title[:17] + "..."
+		}
+
+		tasks = append(tasks, taskCostData{
+			ID:    taskID,
+			Title: title,
+			Cost:  totalCost,
+		})
+	}
+
+	if len(tasks) == 0 {
+		fmt.Println("  No task data available for chart.")
+
+		return
+	}
+
+	// Sort by cost (highest first)
+	for i := range len(tasks) - 1 {
+		for j := i + 1; j < len(tasks); j++ {
+			if tasks[i].Cost < tasks[j].Cost {
+				tasks[i], tasks[j] = tasks[j], tasks[i]
+			}
+		}
+	}
+
+	// Limit to top 10 tasks for readability
+	if len(tasks) > 10 {
+		tasks = tasks[:10]
+	}
+
+	// Create bars
+	var bars []cost.Bar
+	for _, task := range tasks {
+		label := task.Title
+		if len(label) > 15 {
+			label = label[:12] + "..."
+		}
+		bars = append(bars, cost.Bar{
+			Label: label,
+			Value: task.Cost,
+		})
+	}
+
+	// Generate horizontal bar chart
+	opts := cost.ChartOptions{
+		Title:      "Token Usage by Task (Top 10)",
+		Width:      50,
+		ShowValues: true,
+		ScaleLabel: "tokens",
+	}
+	chart := cost.ASCIIBarChart(bars, opts)
+	fmt.Print(chart)
+}
+
+// renderSummaryChart renders charts for the summary view.
+func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
+	if len(stepTotals) == 0 {
+		fmt.Println("  No step data available for chart.")
+
+		return
+	}
+
+	// First, render bar chart
+	var bars []cost.Bar
+	maxVal := 0
+
+	// Sort steps by name
+	steps := make([]string, 0, len(stepTotals))
+	for step := range stepTotals {
+		steps = append(steps, step)
+	}
+	slices.Sort(steps)
+
+	for _, stepName := range steps {
+		stats := stepTotals[stepName]
+		totalTokens := stats.InputTokens + stats.OutputTokens
+		if totalTokens > maxVal {
+			maxVal = totalTokens
+		}
+	}
+
+	for _, stepName := range steps {
+		stats := stepTotals[stepName]
+		totalTokens := stats.InputTokens + stats.OutputTokens
+		bars = append(bars, cost.Bar{
+			Label: formatStepName(stepName),
+			Value: totalTokens,
+		})
+	}
+
+	// Generate horizontal bar chart
+	barOpts := cost.ChartOptions{
+		Title:      "Total Token Usage by Step",
+		Width:      50,
+		ShowValues: true,
+		ScaleLabel: "tokens",
+	}
+	chart := cost.ASCIIBarChart(bars, barOpts)
+	fmt.Print(chart)
+
+	// Second, render pie chart
+	var slices []struct {
+		Label   string
+		Value   int
+		Percent float64
+	}
+
+	totalTokens := 0
+	for _, stats := range stepTotals {
+		totalTokens += stats.InputTokens + stats.OutputTokens
+	}
+
+	for _, step := range steps {
+		stats := stepTotals[step]
+		stepTotal := stats.InputTokens + stats.OutputTokens
+		percent := 0.0
+		if totalTokens > 0 {
+			percent = float64(stepTotal) / float64(totalTokens) * 100
+		}
+		slices = append(slices, struct {
+			Label   string
+			Value   int
+			Percent float64
+		}{
+			Label:   formatStepName(step),
+			Value:   stepTotal,
+			Percent: percent,
+		})
+	}
+
+	pieOpts := cost.ChartOptions{
+		Title: "\nToken Distribution by Step",
+	}
+	pieChart := cost.ASCIIPieChart(slices, pieOpts)
+	fmt.Print(pieChart)
 }
