@@ -1,0 +1,368 @@
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Browser Control Panel</h1>
+    <p class="mt-2 text-gray-600">Control and monitor browser automation</p>
+  </div>
+
+  <!-- Browser Status Section -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-medium text-gray-900">Connection Status</h2>
+    </div>
+    <div class="px-6 py-4" id="browser-status">
+      <div class="flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-gray-600">Loading browser status...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Management Section -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-lg font-medium text-gray-900">Open Tabs</h2>
+      <button id="refresh-tabs" class="text-sm text-blue-600 hover:text-blue-800">Refresh</button>
+    </div>
+    <div class="px-6 py-4" id="tabs-list">
+      <p class="text-gray-500">No tabs open</p>
+    </div>
+  </div>
+
+  <!-- Screenshot Section -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-lg font-medium text-gray-900">Screenshot</h2>
+      <div class="flex space-x-2">
+        <button id="capture-screenshot" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Capture</button>
+        <button id="auto-refresh-toggle" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Auto: Off</button>
+      </div>
+    </div>
+    <div class="px-6 py-4" id="screenshot-container">
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <p class="mt-2 text-sm text-gray-600">Click "Capture" to take a screenshot</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Controls -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-medium text-gray-900">Navigation Controls</h2>
+    </div>
+    <div class="px-6 py-4">
+      <form id="goto-form" class="flex space-x-2 mb-4">
+        <input type="url" id="goto-url" placeholder="https://example.com" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Go</button>
+      </form>
+      <div class="flex space-x-2">
+        <button id="nav-back" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">← Back</button>
+        <button id="nav-forward" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">Forward →</button>
+        <button id="nav-reload" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">Reload</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Console -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-medium text-gray-900">JavaScript Console</h2>
+    </div>
+    <div class="px-6 py-4">
+      <form id="eval-form" class="flex space-x-2 mb-4">
+        <input type="text" id="eval-expression" placeholder="document.title" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm">
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Evaluate</button>
+      </form>
+      <div id="console-output" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+        <p class="text-gray-500">// Results will appear here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOM Inspector -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-medium text-gray-900">DOM Inspector</h2>
+    </div>
+    <div class="px-6 py-4">
+      <form id="dom-form" class="flex space-x-2 mb-4">
+        <input type="text" id="dom-selector" placeholder="CSS selector (e.g., .button, #main)" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm">
+        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Query</button>
+        <label class="flex items-center space-x-2 px-3">
+          <input type="checkbox" id="dom-all" class="rounded">
+          <span class="text-sm">All</span>
+        </label>
+      </form>
+      <div id="dom-output" class="bg-gray-50 p-4 rounded-lg text-sm max-h-64 overflow-y-auto">
+        <p class="text-gray-500">// Element info will appear here</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let autoRefreshInterval = null;
+let currentTabId = null;
+
+// Load browser status on page load
+document.addEventListener('DOMContentLoaded', function() {
+  loadBrowserStatus();
+  loadTabs();
+});
+
+async function loadBrowserStatus() {
+  try {
+    const response = await fetch('/api/v1/browser/status');
+    const data = await response.json();
+    renderStatus(data);
+  } catch (error) {
+    renderStatus({ connected: false, error: error.message });
+  }
+}
+
+function renderStatus(data) {
+  const container = document.getElementById('browser-status');
+  if (data.connected) {
+    container.innerHTML = `
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          <span class="w-2 h-2 mr-2 bg-green-500 rounded-full"></span>
+          Connected to ${data.host || 'localhost'}:${data.port || '9222'}
+        </span>
+        <span class="text-sm text-gray-500">${data.tabs?.length || 0} tab(s) open</span>
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+          <span class="w-2 h-2 mr-2 bg-red-500 rounded-full"></span>
+          Not connected
+        </span>
+        <span class="text-sm text-gray-500">${data.error || 'Browser not configured'}</span>
+      </div>
+    `;
+  }
+}
+
+async function loadTabs() {
+  try {
+    const response = await fetch('/api/v1/browser/tabs');
+    const data = await response.json();
+    renderTabs(data.tabs || []);
+  } catch (error) {
+    console.error('Failed to load tabs:', error);
+  }
+}
+
+function renderTabs(tabs) {
+  const container = document.getElementById('tabs-list');
+  if (tabs.length === 0) {
+    container.innerHTML = '<p class="text-gray-500">No tabs open</p>';
+    return;
+  }
+
+  currentTabId = tabs[0]?.id;
+  const html = tabs.map((tab, index) => `
+    <div class="flex items-center justify-between py-2 px-3 ${index === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : ''} hover:bg-gray-50 rounded cursor-pointer" data-tab-id="${tab.id}">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-gray-900 truncate">${tab.title || 'Untitled'}</p>
+        <p class="text-xs text-gray-500 truncate">${tab.url || 'about:blank'}</p>
+      </div>
+      <div class="flex space-x-2 ml-4">
+        <button class="switch-tab text-blue-600 hover:text-blue-800 text-sm" data-tab-id="${tab.id}">Switch</button>
+        <button class="close-tab text-red-600 hover:text-red-800 text-sm" data-tab-id="${tab.id}">Close</button>
+      </div>
+    </div>
+  `).join('');
+  container.innerHTML = html;
+
+  // Add event listeners
+  container.querySelectorAll('.switch-tab').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      switchTab(e.target.dataset.tabId);
+    });
+  });
+
+  container.querySelectorAll('.close-tab').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeTab(e.target.dataset.tabId);
+    });
+  });
+}
+
+async function switchTab(tabId) {
+  // In current implementation, we just update currentTabId for operations
+  currentTabId = tabId;
+  loadTabs(); // Refresh to update highlighting
+}
+
+async function closeTab(tabId) {
+  try {
+    await fetch('/api/v1/browser/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: tabId })
+    });
+    loadTabs();
+  } catch (error) {
+    console.error('Failed to close tab:', error);
+  }
+}
+
+async function captureScreenshot() {
+  const container = document.getElementById('screenshot-container');
+  container.innerHTML = `
+    <div class="flex items-center justify-center py-12">
+      <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+  `;
+
+  try {
+    const response = await fetch('/api/v1/browser/screenshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, format: 'png' })
+    });
+    const data = await response.json();
+
+    if (data.success && data.data) {
+      container.innerHTML = `
+        <img src="data:image/png;base64,${data.data}" alt="Screenshot" class="w-full rounded-lg border border-gray-300">
+        <p class="text-xs text-gray-500 mt-2">${data.size} bytes</p>
+      `;
+    } else {
+      container.innerHTML = `<p class="text-red-600">Failed to capture screenshot</p>`;
+    }
+  } catch (error) {
+    container.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
+  }
+}
+
+// Event listeners
+document.getElementById('capture-screenshot').addEventListener('click', captureScreenshot);
+document.getElementById('refresh-tabs').addEventListener('click', loadTabs);
+document.getElementById('auto-refresh-toggle').addEventListener('click', function() {
+  const btn = this;
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+    btn.textContent = 'Auto: Off';
+  } else {
+    captureScreenshot();
+    autoRefreshInterval = setInterval(captureScreenshot, 5000);
+    btn.textContent = 'Auto: On';
+  }
+});
+
+document.getElementById('goto-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const url = document.getElementById('goto-url').value;
+  if (!url) return;
+
+  try {
+    await fetch('/api/v1/browser/navigate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, tab_id: currentTabId })
+    });
+    loadTabs();
+  } catch (error) {
+    console.error('Failed to navigate:', error);
+  }
+});
+
+document.getElementById('nav-back').addEventListener('click', async () => {
+  await navigateBrowser('back');
+});
+
+document.getElementById('nav-forward').addEventListener('click', async () => {
+  await navigateBrowser('forward');
+});
+
+document.getElementById('nav-reload').addEventListener('click', async () => {
+  try {
+    await fetch('/api/v1/browser/reload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId })
+    });
+  } catch (error) {
+    console.error('Failed to reload:', error);
+  }
+});
+
+document.getElementById('eval-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const expr = document.getElementById('eval-expression').value;
+  if (!expr) return;
+
+  const output = document.getElementById('console-output');
+  try {
+    const response = await fetch('/api/v1/browser/eval', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expression: expr, tab_id: currentTabId })
+    });
+    const data = await response.json();
+    output.innerHTML = `<p class="text-green-400">> ${expr}</p><p class="text-blue-400">${JSON.stringify(data.result, null, 2)}</p>`;
+  } catch (error) {
+    output.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+  }
+});
+
+document.getElementById('dom-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const selector = document.getElementById('dom-selector').value;
+  if (!selector) return;
+
+  const all = document.getElementById('dom-all').checked;
+  const output = document.getElementById('dom-output');
+
+  try {
+    const response = await fetch('/api/v1/browser/dom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selector, all, tab_id: currentTabId, html: true })
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      if (data.element) {
+        output.innerHTML = `
+          <p class="font-mono text-xs"><span class="text-purple-600">&lt;${data.element.tag_name}&gt;</span> ${data.element.text_content?.substring(0, 100) || ''}</p>
+          <pre class="mt-2 text-xs bg-gray-800 text-gray-300 p-2 rounded overflow-x-auto">${escapeHtml(data.element.outer_html || '')}</pre>
+          <p class="mt-2 text-xs ${data.element.visible ? 'text-green-600' : 'text-red-600'}">${data.element.visible ? 'Visible' : 'Hidden'}</p>
+        `;
+      } else if (data.elements) {
+        output.innerHTML = `<p class="text-gray-600 mb-2">${data.count} element(s), showing ${data.showing}</p>` +
+          data.elements.map(el => `
+            <div class="mb-2 pb-2 border-b border-gray-200">
+              <p class="font-mono text-xs"><span class="text-purple-600">&lt;${el.tag_name}&gt;</span> ${el.text_content?.substring(0, 50) || ''}</p>
+            </div>
+          `).join('');
+      }
+    }
+  } catch (error) {
+    output.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
+  }
+});
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+{{end}}

@@ -18,6 +18,8 @@ type Templates struct {
 	login     *template.Template
 	settings  *template.Template
 	project   *template.Template
+	browser   *template.Template
+	history   *template.Template
 	partials  map[string]*template.Template
 }
 
@@ -84,6 +86,28 @@ func LoadTemplates() (*Templates, error) {
 	}
 	t.project = project
 
+	// Load browser template
+	browser, err := template.New("browser.html").Funcs(templateFuncs()).ParseFS(
+		templateFS,
+		"templates/base.html",
+		"templates/browser.html",
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.browser = browser
+
+	// Load history template
+	history, err := template.New("history.html").Funcs(templateFuncs()).ParseFS(
+		templateFS,
+		"templates/base.html",
+		"templates/history.html",
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.history = history
+
 	// Load partials
 	partialNames := []string{"task_card", "actions", "specs", "question", "costs"}
 	for _, name := range partialNames {
@@ -130,6 +154,16 @@ func (t *Templates) RenderProject(w io.Writer, data ProjectData) error {
 	return t.project.ExecuteTemplate(w, "base", data)
 }
 
+// RenderBrowser renders the browser control panel page.
+func (t *Templates) RenderBrowser(w io.Writer, data BrowserData) error {
+	return t.browser.ExecuteTemplate(w, "base", data)
+}
+
+// RenderHistory renders the task history page.
+func (t *Templates) RenderHistory(w io.Writer, data HistoryData) error {
+	return t.history.ExecuteTemplate(w, "base", data)
+}
+
 // DashboardData holds data for the dashboard template.
 type DashboardData struct {
 	Mode             string
@@ -141,6 +175,7 @@ type DashboardData struct {
 	Task             *TaskData
 	Guide            *GuideData
 	Specs            []SpecData
+	Specifications   SpecificationsData
 	PendingQuestion  *QuestionData
 	Costs            *CostsData
 }
@@ -175,6 +210,14 @@ type SpecData struct {
 	Name   string
 	Title  string
 	Status string
+}
+
+// SpecificationsData holds specifications list with progress information.
+type SpecificationsData struct {
+	Specifications []SpecData
+	Total          int
+	Done           int
+	Progress       float64
 }
 
 // QuestionData holds pending question information.
@@ -218,6 +261,20 @@ type SettingsData struct {
 
 // ProjectData holds data for the project planning template.
 type ProjectData struct {
+	Mode             string
+	AuthEnabled      bool
+	CanSwitchProject bool
+}
+
+// BrowserData holds data for the browser control panel template.
+type BrowserData struct {
+	Mode             string
+	AuthEnabled      bool
+	CanSwitchProject bool
+}
+
+// HistoryData holds data for the task history template.
+type HistoryData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool

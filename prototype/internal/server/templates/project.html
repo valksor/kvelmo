@@ -66,17 +66,42 @@
 
                 <!-- File Upload -->
                 <div id="source-file" class="source-input">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
-                         ondragover="event.preventDefault(); this.classList.add('border-blue-500', 'bg-blue-50');"
-                         ondragleave="this.classList.remove('border-blue-500', 'bg-blue-50');"
-                         ondrop="event.preventDefault(); this.classList.remove('border-blue-500', 'bg-blue-50'); handleFileDrop(event);">
+                    <div id="drop-zone"
+                         class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center transition-colors"
+                         ondragover="event.preventDefault(); this.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900');"
+                         ondragleave="this.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900');"
+                         ondrop="event.preventDefault(); this.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900'); handleFileDrop(event);">
                         <input type="file" name="file" id="plan-file" accept=".md,.txt,.zip,.tar.gz" class="hidden" onchange="updatePlanFileName()">
-                        <div class="text-4xl text-gray-400 mb-2">📁</div>
-                        <p class="text-gray-600 mb-2">Drop file or archive here or
-                            <label for="plan-file" class="text-blue-600 hover:underline cursor-pointer">browse</label>
-                        </p>
-                        <p class="text-xs text-gray-400">Accepts .md, .txt, .zip, .tar.gz</p>
-                        <p id="plan-file-name" class="text-sm text-blue-600 mt-2 hidden"></p>
+                        <div id="upload-prompt">
+                            <div class="text-4xl text-gray-400 dark:text-gray-600 mb-2">📁</div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-2">Drop file or archive here or
+                                <label for="plan-file" class="text-blue-600 hover:underline cursor-pointer">browse</label>
+                            </p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500">Accepts .md, .txt, .zip, .tar.gz (max 10MB)</p>
+                        </div>
+                        <div id="upload-progress" class="hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <span id="upload-filename" class="text-sm text-gray-700 dark:text-gray-300"></span>
+                                <span id="upload-percent" class="text-sm text-gray-600 dark:text-gray-400">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div id="upload-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p id="upload-status" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Uploading...</p>
+                        </div>
+                        <div id="upload-complete" class="hidden">
+                            <div class="text-4xl text-green-500 mb-2">✓</div>
+                            <p id="upload-complete-name" class="text-sm text-gray-700 dark:text-gray-300 mb-2"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                <span id="upload-size"></span> • Uploaded successfully
+                            </p>
+                            <button onclick="resetUpload()" class="text-blue-600 hover:underline text-sm mt-2">Upload different file</button>
+                        </div>
+                        <div id="upload-error" class="hidden">
+                            <div class="text-4xl text-red-500 mb-2">✕</div>
+                            <p id="upload-error-message" class="text-sm text-red-600 dark:text-red-400"></p>
+                            <button onclick="resetUpload()" class="text-blue-600 hover:underline text-sm mt-2">Try again</button>
+                        </div>
                     </div>
                 </div>
 
@@ -163,6 +188,22 @@
             <!-- Tasks Table -->
             <div id="tasks-container" class="overflow-x-auto">
                 <p class="text-gray-500 text-center py-4">Select a queue to view tasks</p>
+            </div>
+
+            <!-- Dependency Graph Section -->
+            <div id="graph-section" class="hidden mt-6">
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Dependency Graph</h3>
+                        <div class="flex space-x-2">
+                            <button onclick="showGraphVisualization('tree')" class="btn btn-secondary btn-sm">Tree View</button>
+                            <button onclick="showGraphVisualization('critical')" class="btn btn-secondary btn-sm">Critical Path</button>
+                        </div>
+                    </div>
+                    <div id="graph-visualization" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                        <p class="text-gray-500 text-center">Select a view type to see the dependency graph</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Actions -->
@@ -277,19 +318,119 @@ function updateSourceInput() {
 // File handling
 function updatePlanFileName() {
     const input = document.getElementById('plan-file');
-    const nameEl = document.getElementById('plan-file-name');
     if (input.files.length > 0) {
-        nameEl.textContent = 'Selected: ' + input.files[0].name;
-        nameEl.classList.remove('hidden');
-    } else {
-        nameEl.classList.add('hidden');
+        const file = input.files[0];
+        validateAndUploadFile(file);
     }
 }
 
 function handleFileDrop(event) {
-    const input = document.getElementById('plan-file');
-    input.files = event.dataTransfer.files;
-    updatePlanFileName();
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        document.getElementById('plan-file').files = files;
+        validateAndUploadFile(file);
+    }
+}
+
+function validateAndUploadFile(file) {
+    const uploadPrompt = document.getElementById('upload-prompt');
+    const uploadProgress = document.getElementById('upload-progress');
+    const uploadComplete = document.getElementById('upload-complete');
+    const uploadError = document.getElementById('upload-error');
+
+    // Reset states
+    uploadPrompt.classList.add('hidden');
+    uploadProgress.classList.remove('hidden');
+    uploadComplete.classList.add('hidden');
+    uploadError.classList.add('hidden');
+
+    // Client-side validation
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+        showUploadError('File size exceeds 10MB limit');
+        return;
+    }
+
+    const validExtensions = ['.md', '.txt', '.markdown', '.zip', '.tar.gz'];
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!hasValidExtension) {
+        showUploadError('Invalid file type. Please upload .md, .txt, .zip, or .tar.gz files.');
+        return;
+    }
+
+    // Show file info and start "upload" (simulated progress for now)
+    document.getElementById('upload-filename').textContent = file.name;
+    document.getElementById('upload-status').textContent = 'Validating file...';
+    document.getElementById('upload-bar').style.width = '10%';
+    document.getElementById('upload-percent').textContent = '10%';
+
+    // Simulate upload progress (in real implementation, use XHR with progress events)
+    simulateUploadProgress(file);
+}
+
+function simulateUploadProgress(file) {
+    let progress = 10;
+    const progressBar = document.getElementById('upload-bar');
+    const progressPercent = document.getElementById('upload-percent');
+    const uploadStatus = document.getElementById('upload-status');
+
+    const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+
+            // Show complete state
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+
+            document.getElementById('upload-progress').classList.add('hidden');
+            document.getElementById('upload-complete').classList.remove('hidden');
+            document.getElementById('upload-complete-name').textContent = file.name;
+            document.getElementById('upload-size').textContent = formatFileSize(file.size);
+        } else {
+            progressBar.style.width = progress + '%';
+            progressPercent.textContent = Math.round(progress) + '%';
+
+            if (progress < 30) {
+                uploadStatus.textContent = 'Uploading...';
+            } else if (progress < 60) {
+                uploadStatus.textContent = 'Processing...';
+            } else if (progress < 90) {
+                uploadStatus.textContent = 'Almost done...';
+            }
+        }
+    }, 200);
+}
+
+function showUploadError(message) {
+    document.getElementById('upload-prompt').classList.add('hidden');
+    document.getElementById('upload-progress').classList.add('hidden');
+    document.getElementById('upload-complete').classList.add('hidden');
+    document.getElementById('upload-error').classList.remove('hidden');
+    document.getElementById('upload-error-message').textContent = message;
+}
+
+function resetUpload() {
+    document.getElementById('plan-file').value = '';
+    document.getElementById('upload-prompt').classList.remove('hidden');
+    document.getElementById('upload-progress').classList.add('hidden');
+    document.getElementById('upload-complete').classList.add('hidden');
+    document.getElementById('upload-error').classList.add('hidden');
+    document.getElementById('upload-bar').style.width = '0%';
+    document.getElementById('upload-percent').textContent = '0%';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
 // Plan form submission
@@ -511,6 +652,11 @@ async function loadTasks() {
         `;
 
         submitActions.classList.remove('hidden');
+
+        // Store tasks for graph visualization
+        currentTasks = data.tasks;
+        document.getElementById('graph-section').classList.remove('hidden');
+        showGraphVisualization('tree');
     } catch (err) {
         container.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load tasks: ' + err.message + '</p>';
     }
@@ -527,6 +673,188 @@ function statusClass(status) {
 
 function truncate(s, max) {
     return s.length > max ? s.substring(0, max - 3) + '...' : s;
+}
+
+// Show graph visualization
+let currentTasks = [];
+
+async function showGraphVisualization(viewType) {
+    const graphSection = document.getElementById('graph-section');
+    const graphVisualization = document.getElementById('graph-visualization');
+
+    if (!currentTasks || currentTasks.length === 0) {
+        graphVisualization.innerHTML = '<p class="text-gray-500 text-center py-4">No tasks to display</p>';
+        return;
+    }
+
+    graphSection.classList.remove('hidden');
+
+    if (viewType === 'tree') {
+        renderTreeGraph(currentTasks, graphVisualization);
+    } else if (viewType === 'critical') {
+        renderCriticalPath(currentTasks, graphVisualization);
+    }
+}
+
+function renderTreeGraph(tasks, container) {
+    // Build dependency tree
+    const taskMap = {};
+    tasks.forEach(t => taskMap[t.id] = t);
+
+    const edges = [];
+    tasks.forEach(t => {
+        if (t.depends_on) {
+            t.depends_on.forEach(depId => {
+                edges.push({ from: depId, to: t.id });
+            });
+        }
+    });
+
+    // Calculate levels
+    const levels = {};
+    const visited = new Set();
+
+    function calculateLevel(taskId) {
+        if (visited.has(taskId)) return levels[taskId] || 0;
+        visited.add(taskId);
+
+        let level = 0;
+        edges.forEach(e => {
+            if (e.to === taskId) {
+                const depLevel = calculateLevel(e.from);
+                level = Math.max(level, depLevel + 1);
+            }
+        });
+
+        levels[taskId] = level;
+        return level;
+    }
+
+    tasks.forEach(t => calculateLevel(t.id));
+
+    // Build level groups
+    const maxLevel = Math.max(...Object.values(levels), 0);
+    const levelGroups = [];
+    for (let i = 0; i <= maxLevel; i++) {
+        levelGroups[i] = [];
+    }
+    tasks.forEach(t => {
+        const level = levels[t.id] || 0;
+        levelGroups[level].push(t);
+    });
+
+    // Render HTML tree
+    let html = '<div class="space-y-4">';
+    levelGroups.forEach((group, level) => {
+        if (group.length === 0) return;
+
+        html += `<div class="flex flex-col items-start">`;
+        html += `<div class="text-xs font-semibold text-gray-500 mb-2">Level ${level}</div>`;
+        html += '<div class="flex flex-col space-y-2 ml-4">';
+
+        group.forEach(task => {
+            const deps = task.depends_on || [];
+            const hasChildren = edges.some(e => e.from === task.id);
+
+            html += `
+                <div class="relative">
+                    <div class="flex items-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <span class="mr-2">${getStatusIcon(task.status)}</span>
+                        <div>
+                            <div class="font-medium text-gray-900 dark:text-gray-100">${truncate(task.title, 30)}</div>
+                            <div class="text-xs text-gray-500">${task.id}</div>
+                        </div>
+                    </div>
+                    ${hasChildren ? '<div class="absolute left-4 top-full h-4 w-px bg-gray-300 dark:bg-gray-600"></div>' : ''}
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function renderCriticalPath(tasks, container) {
+    const taskMap = {};
+    tasks.forEach(t => taskMap[t.id] = t);
+
+    // Find root tasks (no dependencies)
+    const roots = tasks.filter(t => !t.depends_on || t.depends_on.length === 0);
+
+    // Find longest paths from each root
+    const paths = [];
+
+    function findPath(taskId, currentPath) {
+        currentPath = [...currentPath, taskId];
+
+        const task = taskMap[taskId];
+        const children = tasks.filter(t => t.depends_on && t.depends_on.includes(taskId));
+
+        if (children.length === 0) {
+            paths.push(currentPath);
+            return;
+        }
+
+        children.forEach(child => {
+            findPath(child.id, currentPath);
+        });
+    }
+
+    roots.forEach(root => {
+        findPath(root.id, []);
+    });
+
+    // Find the longest path
+    const longestPath = paths.reduce((longest, path) => path.length > longest.length ? path : longest, []);
+
+    // Render critical path
+    let html = '<div class="space-y-2">';
+    html += '<div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Critical Path (Longest Execution Path)</div>';
+
+    longestPath.forEach((taskId, index) => {
+        const task = taskMap[taskId];
+        const isLast = index === longestPath.length - 1;
+
+        html += `
+            <div class="flex items-center">
+                <div class="flex items-center p-3 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <span class="mr-2 text-blue-600 dark:text-blue-400 font-bold">${index + 1}</span>
+                    <span class="mr-2">${getStatusIcon(task.status)}</span>
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${truncate(task.title, 30)}</div>
+                        <div class="text-xs text-gray-500">${task.id}</div>
+                    </div>
+                </div>
+                ${!isLast ? '<div class="mx-2 text-gray-400">→</div>' : ''}
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    // Add path statistics
+    html += `
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                <strong>Path Length:</strong> ${longestPath.length} tasks<br>
+                <strong>Total Paths:</strong> ${paths.length}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function getStatusIcon(status) {
+    switch (status) {
+        case 'ready': return '●';
+        case 'blocked': return '⊘';
+        case 'submitted': return '◐';
+        default: return '○';
+    }
 }
 
 // Edit task modal

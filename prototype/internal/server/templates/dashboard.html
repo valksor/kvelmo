@@ -23,7 +23,7 @@
 
 <!-- Specifications -->
 <div id="specs" hx-get="/ui/partials/specs" hx-trigger="sse:spec_updated, every 30s" hx-swap="outerHTML">
-    {{template "specs_content" .Specs}}
+    {{template "specs_content" .Specifications}}
 </div>
 
 <!-- Costs -->
@@ -32,6 +32,20 @@
     {{template "costs_content" .Costs}}
 </div>
 {{end}}
+
+<!-- Agent Terminal Output -->
+<div id="agent-logs" class="card hidden">
+    <div class="card-header flex items-center justify-between">
+        <span>Agent Output</span>
+        <div class="flex items-center space-x-2">
+            <button onclick="clearAgentLogs()" class="text-xs text-gray-500 hover:text-gray-700">Clear</button>
+            <button onclick="toggleAgentLogs()" id="toggle-logs-btn" class="text-xs text-gray-500 hover:text-gray-700">▼</button>
+        </div>
+    </div>
+    <div id="agent-logs-container" class="bg-gray-900 dark:bg-black rounded p-4 font-mono text-sm text-gray-100 overflow-x-auto" style="max-height: 400px;">
+        <p id="agent-logs-content" class="text-green-400 whitespace-pre-wrap">// Agent output will appear here...</p>
+    </div>
+</div>
 
 {{else}}
 {{if .IsGlobalMode}}
@@ -297,6 +311,125 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Agent Logs Streaming
+let agentLogsEventSource = null;
+let agentLogsContainer = null;
+let agentLogsContent = null;
+let agentLogsExpanded = true;
+
+function connectAgentLogs() {
+    if (agentLogsEventSource) {
+        return; // Already connected
+    }
+
+    agentLogsContainer = document.getElementById('agent-logs-container');
+    agentLogsContent = document.getElementById('agent-logs-content');
+
+    // Connect to SSE endpoint
+    agentLogsEventSource = new EventSource('/api/v1/agent/logs/stream');
+
+    agentLogsEventSource.addEventListener('connected', function(e) {
+        addAgentLogMessage('System: Connected to agent output stream', 'system');
+    });
+
+    agentLogsEventSource.addEventListener('state_changed', function(e) {
+        const data = JSON.parse(e.data);
+        addAgentLogMessage(`State changed: ${data.from} → ${data.to}`, 'state');
+    });
+
+    agentLogsEventSource.addEventListener('progress', function(e) {
+        const data = JSON.parse(e.data);
+        if (data.message) {
+            addAgentLogMessage(data.message, 'progress');
+        }
+    });
+
+    agentLogsEventSource.addEventListener('error', function(e) {
+        console.error('SSE error:', e);
+        agentLogsEventSource.close();
+    });
+
+    // Auto-scroll to bottom
+    agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+}
+
+function addAgentLogMessage(message, type = 'info') {
+    if (!agentLogsContent) return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = type !== 'info' ? `[${type.toUpperCase()}] ` : '';
+
+    // Color coding based on type
+    let colorClass = 'text-gray-100';
+    if (type === 'error') colorClass = 'text-red-400';
+    if (type === 'progress') colorClass = 'text-blue-400';
+    if (type === 'state') colorClass = 'text-yellow-400';
+    if (type === 'system') colorClass = 'text-green-400';
+
+    agentLogsContent.innerHTML += `\n<span class="${colorClass}">${timestamp} ${prefix}${message}</span>`;
+
+    // Auto-scroll if expanded
+    if (agentLogsExpanded && agentLogsContainer) {
+        agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+    }
+}
+
+function clearAgentLogs() {
+    if (agentLogsContent) {
+        agentLogsContent.innerHTML = '// Agent output will appear here...';
+    }
+}
+
+function toggleAgentLogs() {
+    const container = document.getElementById('agent-logs-container');
+    const btn = document.getElementById('toggle-logs-btn');
+
+    if (agentLogsExpanded) {
+        container.style.maxHeight = '60px';
+        btn.textContent = '▶';
+        agentLogsExpanded = false;
+    } else {
+        container.style.maxHeight = '400px';
+        btn.textContent = '▼';
+        agentLogsExpanded = true;
+    }
+}
+
+function showAgentLogs() {
+    const agentLogs = document.getElementById('agent-logs');
+    if (agentLogs) {
+        agentLogs.classList.remove('hidden');
+        connectAgentLogs();
+    }
+}
+
+function hideAgentLogs() {
+    const agentLogs = document.getElementById('agent-logs');
+    if (agentLogs) {
+        agentLogs.classList.add('hidden');
+    }
+    if (agentLogsEventSource) {
+        agentLogsEventSource.close();
+        agentLogsEventSource = null;
+    }
+}
+
+// Check task state and show/hide agent logs
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for state changes via HTMX
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        const stateElement = document.querySelector('[data-state]');
+        if (stateElement) {
+            const state = stateElement.dataset.state;
+            if (state === 'planning' || state === 'implementing' || state === 'reviewing') {
+                showAgentLogs();
+            } else {
+                hideAgentLogs();
+            }
+        }
+    });
+});
 </script>
 
 <!-- Recent Tasks -->
@@ -413,9 +546,9 @@ document.addEventListener('DOMContentLoaded', function() {
 {{define "specs_content"}}
 <div class="card">
     <div class="card-header">Specifications</div>
-    {{if .}}
+    {{if .Specifications}}
     <ul class="space-y-2">
-        {{range .}}
+        {{range .Specifications}}
         <li class="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
             <span class="text-xl {{specColor .Status}}">{{specIcon .Status}}</span>
             <div class="flex-1">
@@ -430,16 +563,13 @@ document.addEventListener('DOMContentLoaded', function() {
     </ul>
 
     <!-- Progress summary -->
-    {{$total := len .}}
-    {{$done := 0}}
-    {{range .}}{{if eq .Status "done"}}{{$done = 1}}{{end}}{{end}}
     <div class="mt-4 pt-4 border-t border-gray-200">
         <div class="flex items-center justify-between text-sm text-gray-500">
             <span>Progress</span>
-            <span>{{$total}} specifications</span>
+            <span>{{.Done}}/{{.Total}} specifications</span>
         </div>
         <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div class="h-full bg-green-500 rounded-full" style="width: 0%"></div>
+            <div class="h-full bg-green-500 rounded-full" style="width: {{.Progress}}%"></div>
         </div>
     </div>
     {{else}}
