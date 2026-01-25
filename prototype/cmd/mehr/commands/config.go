@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/validation"
+	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/display"
 )
 
@@ -61,17 +63,43 @@ Examples:
 	RunE: runConfigInit,
 }
 
+var configExplainCmd = &cobra.Command{
+	Use:   "explain",
+	Short: "Explain configuration resolution",
+	Long: `Show how agent configuration is resolved for a workflow step.
+
+Displays the 7-level priority resolution path showing which configuration
+source wins and why. This helps debug agent selection issues.
+
+Priority order:
+  1. CLI step-specific flag (--agent-plan, --agent-implement, --agent-review)
+  2. CLI global flag (--agent)
+  3. Task frontmatter step-specific (agent_steps.planning.agent)
+  4. Task frontmatter default (agent)
+  5. Workspace config step-specific (agent.steps.planning.name)
+  6. Workspace config default (agent.default)
+  7. Auto-detect (first available agent)
+
+Examples:
+  mehr config explain --agent planning      # Show agent for planning step
+  mehr config explain --agent implementing   # Show agent for implementing step
+  mehr config explain --agent reviewing      # Show agent for reviewing step`,
+	RunE: runConfigExplain,
+}
+
 var (
-	validateStrict    bool
-	validateFormat    string
-	configInitForce   bool
-	configInitProject string // Project type hint (go, node, python, php)
+	validateStrict     bool
+	validateFormat     string
+	configInitForce    bool
+	configInitProject  string // Project type hint (go, node, python, php)
+	configExplainAgent string
 )
 
 func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configValidateCmd)
 	configCmd.AddCommand(configInitCmd)
+	configCmd.AddCommand(configExplainCmd)
 
 	configValidateCmd.Flags().BoolVar(&validateStrict, "strict", false,
 		"Treat warnings as errors (exit code 1 if warnings present)")
@@ -82,6 +110,9 @@ func init() {
 		"Overwrite existing config file without prompting")
 	configInitCmd.Flags().StringVar(&configInitProject, "project", "",
 		"Project type for intelligent defaults (go, node, python, php)")
+
+	configExplainCmd.Flags().StringVar(&configExplainAgent, "agent", "",
+		"Workflow step to explain (planning, implementing, reviewing)")
 }
 
 func runConfigValidate(cmd *cobra.Command, args []string) error {
@@ -257,6 +288,93 @@ func detectProjectType(dir string) string {
 	}
 
 	return ""
+}
+
+// runConfigExplain shows the agent resolution path for a given step.
+func runConfigExplain(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	// Validate step argument
+	if configExplainAgent == "" {
+		return errors.New("required flag --agent not specified (planning, implementing, reviewing)")
+	}
+
+	// Map step string to workflow.Step
+	var step workflow.Step
+	switch configExplainAgent {
+	case "planning":
+		step = workflow.StepPlanning
+	case "implementing", "implementation":
+		step = workflow.StepImplementing
+	case "reviewing", "review":
+		step = workflow.StepReviewing
+	default:
+		return fmt.Errorf("invalid step: %s (must be planning, implementing, or reviewing)", configExplainAgent)
+	}
+
+	// Initialize conductor to get registry and resolver
+	cond, err := initializeConductor(ctx, conductor.WithAutoInit(false))
+	if err != nil {
+		return fmt.Errorf("initialize conductor: %w", err)
+	}
+
+	// Get workspace config
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	ws, err := storage.OpenWorkspace(ctx, wd, nil)
+	if err != nil {
+		return fmt.Errorf("open workspace: %w", err)
+	}
+
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		// Continue without config - will show as skipped
+		cfg = nil
+	}
+
+	// Get agent registry
+	agents := cond.GetAgentRegistry()
+
+	// Create resolver
+	resolver := coordination.NewResolver(agents, ws)
+
+	// Build resolution request (no CLI flags, no task config)
+	req := coordination.ResolveRequest{
+		WorkspaceCfg: cfg,
+		Step:         step,
+	}
+
+	// Get explanation
+	explanation, err := resolver.ExplainAgentResolution(ctx, req)
+	if err != nil {
+		return fmt.Errorf("explain resolution: %w", err)
+	}
+
+	// Print output
+	fmt.Printf("Effective agent for %s: %s\n\n", display.Cyan(explanation.Step), display.Bold(explanation.Effective))
+	fmt.Printf("Source: %s\n\n", explanation.Source)
+
+	fmt.Println("Resolution path:")
+	for _, step := range explanation.AllSteps {
+		if step.Skipped {
+			fmt.Printf("  %d. %s %s\n", step.Priority, display.Muted(step.Source), display.Muted("(not set)"))
+		} else {
+			marker := " "
+			if step.Agent == explanation.Effective {
+				marker = display.Success("✓")
+			}
+			fmt.Printf("  %d. %s %s: %s %s\n", step.Priority, marker, display.Bold(step.Source), display.Cyan(step.Agent), display.Muted("(selected)"))
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("To override:")
+	fmt.Printf("  %s %s\n", display.Cyan("mehr plan"), display.Cyan("--agent-"+configExplainAgent+" <agent-name>"))
+
+	return nil
 }
 
 // applyProjectCustomizations customizes the config based on project type.

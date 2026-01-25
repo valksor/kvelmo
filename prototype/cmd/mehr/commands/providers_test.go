@@ -62,8 +62,8 @@ func TestProvidersCommand_Structure(t *testing.T) {
 func TestProvidersCommand_SubcommandsRegistered(t *testing.T) {
 	// Verify that providersCmd has the expected subcommands
 	subcommands := providersCmd.Commands()
-	if len(subcommands) != 2 {
-		t.Fatalf("expected 2 subcommands, got %d", len(subcommands))
+	if len(subcommands) != 3 {
+		t.Fatalf("expected 3 subcommands, got %d", len(subcommands))
 	}
 
 	subcommandNames := make(map[string]bool)
@@ -71,7 +71,7 @@ func TestProvidersCommand_SubcommandsRegistered(t *testing.T) {
 		subcommandNames[cmd.Name()] = true
 	}
 
-	expectedSubcommands := []string{"list", "info"}
+	expectedSubcommands := []string{"list", "info", "status"}
 	for _, expected := range expectedSubcommands {
 		if !subcommandNames[expected] {
 			t.Errorf("missing subcommand %q", expected)

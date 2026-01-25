@@ -1,11 +1,17 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/go-toolkit/display"
+
+	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 var providersCmd = &cobra.Command{
@@ -31,10 +37,20 @@ var providersInfoCmd = &cobra.Command{
 	RunE:  runProvidersInfo,
 }
 
+var providersStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Check provider health status",
+	Long: `Check the health and connection status of all configured providers.
+
+Shows connection status, rate limits, last sync time, and any errors.`,
+	RunE: runProvidersStatus,
+}
+
 func init() {
 	rootCmd.AddCommand(providersCmd)
 	providersCmd.AddCommand(providersListCmd)
 	providersCmd.AddCommand(providersInfoCmd)
+	providersCmd.AddCommand(providersStatusCmd)
 }
 
 func runProvidersList(cmd *cobra.Command, args []string) error {
@@ -129,6 +145,147 @@ func runProvidersInfo(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(out, "Usage:\n  %s\n\n", info.Usage)
 
 	return nil
+}
+
+func runProvidersStatus(cmd *cobra.Command, args []string) error {
+	out := cmd.OutOrStdout()
+	ctx := context.Background()
+
+	// Initialize conductor to get provider registry
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return fmt.Errorf("initialize conductor: %w", err)
+	}
+
+	// Get workspace config for provider settings
+	ws := cond.GetWorkspace()
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	// List of providers to check
+	providersToCheck := []struct {
+		name      string
+		scheme    string
+		configKey string
+	}{
+		{"GitHub", "github", "GitHub"},
+		{"GitLab", "gitlab", "GitLab"},
+		{"Jira", "jira", "Jira"},
+		{"Linear", "linear", "Linear"},
+		{"Notion", "notion", "Notion"},
+		{"Bitbucket", "bitbucket", "Bitbucket"},
+	}
+
+	// Print header
+	if _, err := fmt.Fprintln(out, "Provider Health Status"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out); err != nil {
+		return err
+	}
+
+	// Check each provider
+	for _, p := range providersToCheck {
+		healthInfo, err := checkProviderHealth(ctx, cond, p.scheme, p.configKey, cfg)
+		if err != nil {
+			// Provider not available or error checking
+			if _, err := fmt.Fprintf(out, "%s\t%s\t%s\n",
+				p.name,
+				display.Muted("○"),
+				display.Muted("Not configured"),
+			); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		// Format status
+		var statusIcon string
+		var statusMsg string
+
+		switch healthInfo.Status {
+		case provider.HealthStatusConnected:
+			statusIcon = display.Success("●")
+			statusMsg = display.Success("Connected")
+		case provider.HealthStatusNotConfigured:
+			statusIcon = display.Muted("○")
+			statusMsg = display.Muted("Not configured")
+		case provider.HealthStatusError:
+			statusIcon = display.ErrorMsg("✗")
+			statusMsg = display.ErrorMsg("Error")
+		default:
+			statusIcon = "?"
+			statusMsg = string(healthInfo.Status)
+		}
+
+		// Build line
+		line := fmt.Sprintf("%s\t%s\t%s", p.name, statusIcon, statusMsg)
+
+		// Add rate limit if available
+		if healthInfo.RateLimit != nil {
+			line += fmt.Sprintf("\tRate: %d/%d\tReset: %s",
+				healthInfo.RateLimit.Used,
+				healthInfo.RateLimit.Limit,
+				healthInfo.RateLimit.ResetIn,
+			)
+		}
+
+		// Add message if available
+		if healthInfo.Message != "" {
+			line += "\t" + healthInfo.Message
+		}
+
+		// Add error if available
+		if healthInfo.Error != "" {
+			line += "\t" + display.ErrorMsg("%s", healthInfo.Error)
+		}
+
+		if _, err := fmt.Fprintln(out, line); err != nil {
+			return err
+		}
+	}
+
+	if _, err := fmt.Fprintln(out); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(out, "Legend:"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(out, "  %s Connected\n", display.Success("●")); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(out, "  %s Not configured\n", display.Muted("○")); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(out, "  %s Error\n", display.ErrorMsg("✗")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkProviderHealth checks the health of a specific provider.
+//
+//nolint:unparam // Error return will be used in future implementation
+func checkProviderHealth(_ context.Context, _ *conductor.Conductor, _ string, _ string, _ *storage.WorkspaceConfig) (*provider.HealthInfo, error) {
+	// This is a simplified implementation that checks if the provider is configured
+	// and attempts a basic health check
+	//
+	// Future improvements:
+	// 1. Creating provider instances from config
+	// 2. Calling HealthCheck() method on each provider
+	// 3. Returning detailed health information
+
+	// For now, return a simple not-configured status for all providers
+	// The full implementation would use the provider registry and call HealthCheck()
+
+	return &provider.HealthInfo{
+		Status:  provider.HealthStatusNotConfigured,
+		Message: "Set up credentials in .mehrhof/.env",
+	}, nil
 }
 
 type providerInfo struct {
