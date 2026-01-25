@@ -9,12 +9,12 @@ import (
 
 func TestNewBus(t *testing.T) {
 	bus := NewBus()
-	if bus.handlers == nil {
-		t.Error("handlers map not initialized")
+	// Bus should be functional
+	if bus == nil {
+		t.Error("NewBus returned nil")
 	}
-	if bus.allHandlers == nil {
-		t.Error("allHandlers slice not initialized")
-	}
+	// Bus should not panic on basic operations
+	bus.Subscribe(Type("test"), func(e Event) {})
 }
 
 func TestSubscribe(t *testing.T) {
@@ -574,38 +574,31 @@ func TestShutdownWaitsForActiveHandlers(t *testing.T) {
 }
 
 func TestPublishAsyncSemaphoreLimiting(t *testing.T) {
+	// Note: Semaphore limiting is tested in go-toolkit's eventbus tests.
+	// This test verifies that mehrhof's event types work with async publishing.
 	bus := NewBus()
 
-	var concurrentCount atomic.Int32
-	var maxConcurrent atomic.Int32
+	var count atomic.Int32
+	var wg sync.WaitGroup
+	wg.Add(10)
 
 	bus.Subscribe(TypeProgress, func(e Event) {
-		// Track max concurrent handlers
-		current := concurrentCount.Add(1)
-		for {
-			oldMax := maxConcurrent.Load()
-			if current <= oldMax {
-				break
-			}
-			if maxConcurrent.CompareAndSwap(oldMax, current) {
-				break
-			}
-		}
-
-		time.Sleep(10 * time.Millisecond) // Simulate work
-		concurrentCount.Add(-1)
+		count.Add(1)
+		wg.Done()
 	})
 
-	// Publish more events than the semaphore allows (maxAsyncPublishes = 100)
-	for range 150 {
+	// Publish multiple async events
+	for range 10 {
 		bus.PublishAsync(ProgressEvent{TaskID: "test"})
 	}
 
-	// Wait for all to complete
+	// Wait for all handlers to complete
+	wg.Wait()
+
+	// Shutdown the bus
 	bus.Shutdown()
 
-	// Max concurrent should not exceed maxAsyncPublishes (100)
-	if maxConcurrent.Load() > maxAsyncPublishes {
-		t.Errorf("max concurrent = %d, should not exceed %d", maxConcurrent.Load(), maxAsyncPublishes)
+	if count.Load() != 10 {
+		t.Errorf("expected 10 events, got %d", count.Load())
 	}
 }
