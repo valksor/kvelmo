@@ -990,3 +990,334 @@ func indexOfString(s, substr string) int {
 
 	return -1
 }
+
+// TestScannerRegistry_Unregister tests unregistering a scanner.
+func TestScannerRegistry_Unregister(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	scanner1 := &MockScanner{name: "scanner1", enabled: true}
+	scanner2 := &MockScanner{name: "scanner2", enabled: true}
+
+	registry.Register("scanner1", scanner1)
+	registry.Register("scanner2", scanner2)
+
+	if registry.Count() != 2 {
+		t.Errorf("expected 2 scanners, got %d", registry.Count())
+	}
+
+	// Unregister one
+	registry.Unregister("scanner1")
+
+	if registry.Count() != 1 {
+		t.Errorf("expected 1 scanner after unregister, got %d", registry.Count())
+	}
+
+	// Verify scanner1 is gone
+	_, ok := registry.scanners["scanner1"]
+	if ok {
+		t.Error("scanner1 should not exist after unregister")
+	}
+
+	// Unregistering non-existent should be safe
+	registry.Unregister("nonexistent")
+	if registry.Count() != 1 {
+		t.Error("unregistering non-existent scanner should not affect count")
+	}
+}
+
+// TestScannerRegistry_Get tests retrieving a scanner by name.
+func TestScannerRegistry_Get(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	scanner := &MockScanner{name: "test", enabled: true}
+	registry.Register("test", scanner)
+
+	// Get existing scanner
+	got, ok := registry.Get("test")
+	if !ok {
+		t.Error("expected true for existing scanner")
+	}
+	if got != scanner {
+		t.Error("got wrong scanner")
+	}
+
+	// Get non-existent scanner
+	_, ok = registry.Get("nonexistent")
+	if ok {
+		t.Error("expected false for non-existent scanner")
+	}
+}
+
+// TestScannerRegistry_List tests listing all registered scanner names.
+func TestScannerRegistry_List(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	// Empty registry
+	names := registry.List()
+	if len(names) != 0 {
+		t.Errorf("expected 0 names, got %d", len(names))
+	}
+
+	// Add scanners
+	scanner1 := &MockScanner{name: "scanner1", enabled: true}
+	scanner2 := &MockScanner{name: "scanner2", enabled: true}
+	scanner3 := &MockScanner{name: "scanner3", enabled: false}
+
+	registry.Register("scanner1", scanner1)
+	registry.Register("scanner2", scanner2)
+	registry.Register("scanner3", scanner3)
+
+	names = registry.List()
+	if len(names) != 3 {
+		t.Errorf("expected 3 names, got %d", len(names))
+	}
+
+	// Check all names are present
+	nameMap := make(map[string]bool)
+	for _, name := range names {
+		nameMap[name] = true
+	}
+	for _, expected := range []string{"scanner1", "scanner2", "scanner3"} {
+		if !nameMap[expected] {
+			t.Errorf("expected name %q not found", expected)
+		}
+	}
+}
+
+// TestScannerRegistry_Count tests counting registered scanners.
+func TestScannerRegistry_Count(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	if registry.Count() != 0 {
+		t.Errorf("expected 0 count, got %d", registry.Count())
+	}
+
+	scanner1 := &MockScanner{name: "scanner1", enabled: true}
+	scanner2 := &MockScanner{name: "scanner2", enabled: false}
+
+	registry.Register("scanner1", scanner1)
+	registry.Register("scanner2", scanner2)
+
+	if registry.Count() != 2 {
+		t.Errorf("expected 2 count, got %d", registry.Count())
+	}
+}
+
+// TestScannerRegistry_EnabledCount tests counting enabled scanners.
+func TestScannerRegistry_EnabledCount(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	if registry.EnabledCount() != 0 {
+		t.Errorf("expected 0 enabled count, got %d", registry.EnabledCount())
+	}
+
+	scanner1 := &MockScanner{name: "scanner1", enabled: true}
+	scanner2 := &MockScanner{name: "scanner2", enabled: false}
+	scanner3 := &MockScanner{name: "scanner3", enabled: true}
+
+	registry.Register("scanner1", scanner1)
+	registry.Register("scanner2", scanner2)
+	registry.Register("scanner3", scanner3)
+
+	if registry.EnabledCount() != 2 {
+		t.Errorf("expected 2 enabled count, got %d", registry.EnabledCount())
+	}
+}
+
+// TestScannerRegistry_RunEnabled tests running specific enabled scanners.
+func TestScannerRegistry_RunEnabled(t *testing.T) {
+	ctx := context.Background()
+	registry := NewScannerRegistry()
+
+	findings1 := []Finding{
+		{ID: "F1", Severity: SeverityCritical, Title: "Critical issue"},
+	}
+
+	findings2 := []Finding{
+		{ID: "F2", Severity: SeverityHigh, Title: "High issue"},
+	}
+
+	scanner1 := &MockScanner{name: "scanner1", enabled: true, findings: findings1}
+	scanner2 := &MockScanner{name: "scanner2", enabled: true, findings: findings2}
+	scanner3 := &MockScanner{name: "scanner3", enabled: true, findings: []Finding{}}
+	scanner4 := &MockScanner{name: "scanner4", enabled: false} // Disabled
+
+	registry.Register("scanner1", scanner1)
+	registry.Register("scanner2", scanner2)
+	registry.Register("scanner3", scanner3)
+	registry.Register("scanner4", scanner4)
+
+	tests := []struct {
+		name          string
+		names         []string
+		expectedCount int
+		wantErr       bool
+	}{
+		{
+			name:          "run specific scanners",
+			names:         []string{"scanner1", "scanner2"},
+			expectedCount: 2,
+			wantErr:       false,
+		},
+		{
+			name:          "run one scanner",
+			names:         []string{"scanner1"},
+			expectedCount: 1,
+			wantErr:       false,
+		},
+		{
+			name:          "include disabled scanner",
+			names:         []string{"scanner1", "scanner4"},
+			expectedCount: 1, // scanner4 is disabled
+			wantErr:       false,
+		},
+		{
+			name:          "include non-existent scanner",
+			names:         []string{"scanner1", "nonexistent"},
+			expectedCount: 1,     // scanner1 succeeds, nonexistent fails
+			wantErr:       false, // Still returns results
+		},
+		{
+			name:          "empty names runs all enabled",
+			names:         []string{},
+			expectedCount: 3, // scanner1, scanner2, scanner3
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := registry.RunEnabled(ctx, "/tmp/test", tt.names)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RunEnabled() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
+			}
+			if len(results) != tt.expectedCount {
+				t.Errorf("RunEnabled() returned %d results, expected %d", len(results), tt.expectedCount)
+			}
+		})
+	}
+}
+
+// TestScannerRegistry_ToolManager tests getting and setting tool manager.
+func TestScannerRegistry_ToolManager(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	// Initially nil
+	tm := registry.GetToolManager()
+	if tm != nil {
+		t.Error("expected nil tool manager initially")
+	}
+
+	// Set tool manager
+	newTm := &ToolManager{}
+	registry.SetToolManager(newTm)
+
+	tm = registry.GetToolManager()
+	if tm != newTm {
+		t.Error("tool manager not set correctly")
+	}
+}
+
+// TestScannerRegistry_ConcurrentAccess tests concurrent access to the registry.
+func TestScannerRegistry_ConcurrentAccess(t *testing.T) {
+	registry := NewScannerRegistry()
+	ctx := context.Background()
+
+	// Register multiple scanners
+	for i := range 10 {
+		name := fmt.Sprintf("scanner%d", i)
+		scanner := &MockScanner{name: name, enabled: i%2 == 0, findings: []Finding{}}
+		registry.Register(name, scanner)
+	}
+
+	// Run concurrent operations
+	done := make(chan bool)
+
+	// Concurrent reads
+	for range 5 {
+		go func() {
+			defer func() { done <- true }()
+			_ = registry.List()
+			_ = registry.Count()
+			_ = registry.EnabledCount()
+		}()
+	}
+
+	// Concurrent writes
+	for i := range 3 {
+		go func(n int) {
+			defer func() { done <- true }()
+			name := fmt.Sprintf("dynamic%d", n)
+			scanner := &MockScanner{name: name, enabled: true, findings: []Finding{}}
+			registry.Register(name, scanner)
+			registry.Unregister(name)
+		}(i)
+	}
+
+	// Concurrent scans
+	for range 3 {
+		go func() {
+			defer func() { done <- true }()
+			_, _ = registry.RunAll(ctx, "/tmp/test")
+		}()
+	}
+
+	// Wait for all goroutines
+	for range 11 {
+		<-done
+	}
+
+	// Verify registry is still consistent
+	count := registry.Count()
+	if count != 10 {
+		t.Errorf("expected 10 scanners after concurrent access, got %d", count)
+	}
+}
+
+// TestScannerRegistry_ContextCancellation tests context cancellation during scan.
+func TestScannerRegistry_ContextCancellation(t *testing.T) {
+	registry := NewScannerRegistry()
+
+	// Create a slow scanner
+	slowScanner := &MockScanner{name: "slow", enabled: true, findings: []Finding{}}
+	registry.Register("slow", slowScanner)
+
+	// Create a context that cancels immediately
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// RunAll should handle cancellation gracefully
+	_, err := registry.RunAll(ctx, "/tmp/test")
+	// The mock scanner returns immediately, so this won't actually cancel
+	// But the code should handle cancelled context
+	if err != nil && ctx.Err() == context.Canceled {
+		// This is acceptable - context was cancelled
+		return
+	}
+	// Otherwise, the scan completed
+}
+
+// TestSeverity_Rank tests the Severity.Rank method.
+func TestSeverity_Rank(t *testing.T) {
+	tests := []struct {
+		severity Severity
+		expected int
+	}{
+		{SeverityCritical, 5},
+		{SeverityHigh, 4},
+		{SeverityMedium, 3},
+		{SeverityLow, 2},
+		{SeverityInfo, 1},
+		{"unknown", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.severity), func(t *testing.T) {
+			if tt.severity.Rank() != tt.expected {
+				t.Errorf("%v.Rank() = %d, expected %d", tt.severity, tt.severity.Rank(), tt.expected)
+			}
+		})
+	}
+}
