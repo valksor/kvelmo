@@ -608,29 +608,67 @@ Passwords are hashed using bcrypt and never stored in plain text.
 
 The web UI uses:
 - **HTMX** for dynamic updates without full page reloads
-- **Tailwind CSS** for styling
-- **Server-Sent Events** for real-time state updates
+- **Tailwind CSS** for styling with dark mode support
+- **Server-Sent Events** for real-time state updates and agent output streaming
 
 ### Dashboard
 
 The main dashboard shows:
-- Current server mode (project/global)
-- Workflow state (idle, planning, implementing, etc.)
-- Active task information
-- Quick links to API endpoints
+- **Current server mode** (project/global)
+- **Workflow state diagram** - Interactive visualization of current state and available transitions
+- **Active task information** - Title, state, specifications progress
+- **Real-time agent output** - Terminal-like view with color-coded logs and auto-scroll
+- **Quick actions** - Start, plan, implement, review, finish, undo/redo buttons
+- **Cost tracking** - Token usage with interactive charts
+- **Guidance** - Context-aware suggestions on what to do next
+
+### Browser Control Panel
+
+The browser control panel (`/browser`) provides a web interface for browser automation:
+
+- **Screenshot preview** - Live screenshot with auto-refresh option
+- **Tab management** - List, switch between, and close browser tabs
+- **DOM inspector** - Query DOM elements with CSS selectors
+- **JavaScript console** - View console output (log levels: info, warn, error)
+- **Navigation controls** - Back, forward, reload page
+- **URL navigation** - Navigate to any URL
+- **Element interaction** - Click and type into elements
+
+### Task History
+
+The task history page (`/history`) allows browsing and managing past tasks:
+
+- **Search** - Find tasks by title or description
+- **Filter** - Filter by state (done, failed, idle, etc.), date range, agent
+- **Sort** - Sort by date, cost, duration
+- **Timeline view** - Visual representation of task completion over time
+- **Cost trends** - Charts showing cost patterns across tasks
 
 ### Settings Page
 
 The settings page (`/settings`) allows you to configure all workspace settings through the web UI:
 
 - **Git Settings**: auto_commit, sign_commits, commit_prefix, branch_pattern, stash_on_start, auto_pop_stash
-- **Agent Settings**: default agent, timeout, max_retries, global instructions
+- **Agent Settings**: default agent, timeout, max_retries, global instructions, step-specific agents
+- **Agent Resolution** - Debug which agent is selected for each workflow step
 - **Workflow Settings**: auto_init, session_retention_days, delete_work_on_finish, delete_work_on_abandon
 - **Browser Settings**: enabled, headless, port, timeout, screenshot_dir, cookie settings
-- **Update Settings**: enabled, check_interval
 - **Provider Settings**: GitHub, GitLab, Jira, Linear, Notion, Bitbucket tokens and configuration
+- **Provider Health** - Monitor connection status and rate limits for all configured providers
 
 Changes are saved to `.mehrhof/config.yaml`.
+
+### User Interface Features
+
+- **Dark mode** - Toggle theme with automatic system preference detection
+- **Mobile responsive** - Full feature support on mobile and tablet devices
+  - Collapsible sidebar navigation (hamburger menu)
+  - Touch-friendly controls (min-height 44px)
+  - Stacked layouts on small screens
+- **Notifications** - Stay informed of task events
+  - Toast notifications for operation updates
+  - Browser notifications for task completion (requires permission)
+  - Notification center showing recent alerts
 
 #### Global Mode Project Picker
 

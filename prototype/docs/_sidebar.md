@@ -82,6 +82,8 @@
     - [mcp](cli/mcp.md)
     - [update](cli/update.md)
     - [version](cli/version.md)
+  - **Project Planning**
+    - [project](cli/project.md)
   - **Web UI**
     - [serve](cli/serve.md)
     - [register](cli/register.md)

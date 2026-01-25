@@ -21,10 +21,14 @@ The `list` command displays all tasks in the workspace with their worktree paths
 
 ## Flags
 
-| Flag          | Short | Type | Default | Description                    |
-| ------------- | ----- | ---- | ------- | ------------------------------ |
-| `--worktrees` | `-w`  | bool | false   | Show only tasks with worktrees |
-| `--json`      |       | bool | false   | Output as JSON for programmatic use |
+| Flag           | Short | Type   | Default | Description                                    |
+| -------------- | ----- | ------ | ------- | ---------------------------------------------- |
+| `--search`     |       | string | ""      | Search tasks by title or description           |
+| `--filter`     |       | string | ""      | Filter tasks (format: key:value, e.g., state:done) |
+| `--sort`       |       | string | ""      | Sort tasks (date, cost, duration)               |
+| `--format`     |       | string | "table" | Output format (table, json, csv)               |
+| `--worktrees`  | `-w`  | bool   | false   | Show only tasks with worktrees                |
+| `--json`       |       | bool   | false   | Output as JSON (deprecated, use --format json) |
 
 ## Examples
 
@@ -46,6 +50,40 @@ f3g4h5i6    done            Refactor logging         -
 Legend: * = active task in main repo, → = current worktree
 ```
 
+### Search Tasks
+
+```bash
+mehr list --search "auth"
+```
+
+Shows tasks matching "auth" in title or description.
+
+### Filter Tasks
+
+```bash
+# Filter by state
+mehr list --filter state:done
+
+# Filter by cost (greater than)
+mehr list --filter cost:>1.0
+
+# Combine filters
+mehr list --filter state:implementing --filter cost:>0.5
+```
+
+### Sort Tasks
+
+```bash
+# Sort by date (newest first)
+mehr list --sort date
+
+# Sort by cost (highest first)
+mehr list --sort cost
+
+# Sort by duration (longest first)
+mehr list --sort duration
+```
+
 ### List Only Worktree Tasks
 
 ```bash
@@ -60,6 +98,20 @@ a1b2c3d4    implementing    Add authentication       ../project-worktrees/a1b2c3
 e5f6g7h8    planning        Fix database queries     ../project-worktrees/e5f6g7h8
 
 Legend: * = active task in main repo, → = current worktree
+```
+
+### CSV Output
+
+```bash
+mehr list --format csv
+```
+
+Output:
+
+```csv
+Task ID,State,Title,Worktree,Active,Cost
+a1b2c3d4,implementing,Add authentication,../project-worktrees/a1b2c3d4,,1.235
+e5f6g7h8,planning,Fix database queries,../project-worktrees/e5f6g7h8,*,0.450
 ```
 
 ### JSON Output

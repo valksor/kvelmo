@@ -24,6 +24,7 @@ Cost tracking works by:
 | `--breakdown`   |       | Break down costs by workflow step        | `false` |
 | `--all`         |       | Show costs for all tasks in workspace    | `false` |
 | `--summary`     | `-s`  | Show aggregate summary across all tasks  | `false` |
+| `--chart`       |       | Display ASCII bar/line/pie charts        | `false` |
 | `--json`        |       | Output as JSON for programmatic use      | `false` |
 
 ## Output
@@ -85,6 +86,37 @@ All Tasks Summary:
   Cached Tokens: 80,000
   Total Cost: $1.5770
 ```
+
+### Chart Visualization
+
+The `--chart` flag displays ASCII visualizations for cost trends:
+
+```bash
+$ mehr cost --chart --all
+
+Cost by Task (Last 7 Days)
+Add authentication  ████████ $1.2350
+Fix database       ██ $0.2790
+Update docs        █ $0.0630
+
+Total: $1.5770
+
+Cost Over Time
+Mon  ██ 12,345
+Tue  ████ 45,678
+Wed  ██████ 67,890
+...
+
+Step Cost Breakdown
+Planning      ████████ 45.0%
+Implementing  ████████████████ 65.0%
+Reviewing     ██ 10.0%
+```
+
+The chart visualization supports:
+- **Bar charts** - Compare costs across tasks or steps
+- **Line charts** - Track cost trends over time
+- **Pie charts** - Show percentage breakdown by step
 
 ### JSON Output
 

@@ -7,6 +7,7 @@ List and manage task providers.
 ```bash
 mehr providers list
 mehr providers info <provider>
+mehr providers status
 ```
 
 ## Description
@@ -70,6 +71,33 @@ Configuration (in .mehrhof/config.yaml):
 Usage:
   mehr start github:owner/repo#123
 ```
+
+### `mehr providers status`
+
+Check health and connection status for all configured providers.
+
+```bash
+$ mehr providers status
+
+Provider Health Status
+
+GitHub    ● Connected  Rate: 4998/5000  Reset: 5m
+GitLab    ● Connected  Rate: 4500/5000  Reset: 10m
+Jira      ○ Not configured  Set JIRA_TOKEN in .mehrhof/.env
+Linear    ● Connected
+Notion    ✗ Error      Authentication failed
+
+Legend:
+  ● Connected  ○ Not configured  ✗ Error
+```
+
+**Status indicators:**
+- `● Connected` - Provider is configured and connection successful
+- `○ Not configured` - Provider credentials not set (check environment variables)
+- `✗ Error` - Provider configured but connection failed (check credentials/permissions)
+
+**Rate limit info:**
+Shows API rate limit status when available (format: `used/limit` with reset time)
 
 ## Provider Aliases
 
