@@ -1,74 +1,37 @@
 package plugin
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
-// JSON-RPC 2.0 protocol types for plugin communication.
-
-// Request represents a JSON-RPC 2.0 request.
-type Request struct {
-	Params  any    `json:"params,omitempty"`
-	JSONRPC string `json:"jsonrpc"`
-	Method  string `json:"method"`
-	ID      int64  `json:"id"`
-}
-
-// NewRequest creates a new JSON-RPC request.
-func NewRequest(id int64, method string, params any) *Request {
-	return &Request{
-		JSONRPC: "2.0",
-		ID:      id,
-		Method:  method,
-		Params:  params,
-	}
-}
-
-// Response represents a JSON-RPC 2.0 response.
-type Response struct {
-	Error   *RPCError       `json:"error,omitempty"`
-	JSONRPC string          `json:"jsonrpc"`
-	Result  json.RawMessage `json:"result,omitempty"`
-	ID      int64           `json:"id"`
-}
-
-// RPCError represents a JSON-RPC 2.0 error.
-type RPCError struct {
-	Data    any    `json:"data,omitempty"`
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-}
-
-func (e *RPCError) Error() string {
-	return e.Message
-}
+// Re-export generic JSON-RPC types from go-toolkit.
+type (
+	// Request represents a JSON-RPC 2.0 request.
+	Request = jsonrpc.Request
+	// Response represents a JSON-RPC 2.0 response.
+	Response = jsonrpc.Response
+	// RPCError represents a JSON-RPC 2.0 error.
+	RPCError = jsonrpc.RPCError
+	// Notification represents a JSON-RPC 2.0 notification.
+	Notification = jsonrpc.Notification
+	// StreamEvent represents a streaming event from an agent plugin.
+	StreamEvent = jsonrpc.StreamEvent
+)
 
 // Standard JSON-RPC error codes.
 const (
-	ErrCodeParseError     = -32700
-	ErrCodeInvalidRequest = -32600
-	ErrCodeMethodNotFound = -32601
-	ErrCodeInvalidParams  = -32602
-	ErrCodeInternalError  = -32603
-
-	// Custom error codes (application-specific, -32000 to -32099).
-	ErrCodePluginError     = -32000
-	ErrCodeNotImplemented  = -32001
-	ErrCodeCapabilityError = -32002
+	ErrCodeParseError     = jsonrpc.ErrCodeParseError
+	ErrCodeInvalidRequest = jsonrpc.ErrCodeInvalidRequest
+	ErrCodeMethodNotFound = jsonrpc.ErrCodeMethodNotFound
+	ErrCodeInvalidParams  = jsonrpc.ErrCodeInvalidParams
+	ErrCodeInternalError  = jsonrpc.ErrCodeInternalError
 )
 
-// Notification represents a JSON-RPC 2.0 notification (no ID, no response expected).
-type Notification struct {
-	Params  any    `json:"params,omitempty"`
-	JSONRPC string `json:"jsonrpc"`
-	Method  string `json:"method"`
-}
-
-// StreamEvent represents a streaming event from an agent plugin.
-type StreamEvent struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data,omitempty"`
+// NewRequest creates a new JSON-RPC request.
+func NewRequest(id int64, method string, params any) *Request {
+	return jsonrpc.NewRequest(id, method, params)
 }
 
 // Stream event types (aligned with agent.EventType).
@@ -80,6 +43,13 @@ const (
 	StreamEventUsage      = "usage"
 	StreamEventComplete   = "complete"
 	StreamEventError      = "error"
+)
+
+// Custom error codes (application-specific, -32000 to -32099).
+const (
+	ErrCodePluginError     = -32000
+	ErrCodeNotImplemented  = -32001
+	ErrCodeCapabilityError = -32002
 )
 
 // Provider protocol types.
