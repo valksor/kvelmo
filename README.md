@@ -118,6 +118,7 @@ Everything you need to manage AI-powered development tasks from your browser:
 | Feature | Description |
 |---------|-------------|
 | 📊 **Dashboard** | See all your tasks at a glance with real-time progress |
+| 🎨 **Workflow Diagram** | Visual state diagram showing current workflow state and available transitions |
 | 🤖 **AI Workflow** | Plan, implement, review, and finish tasks with one click |
 | 📝 **Task Creation** | Write tasks directly in the browser or upload files |
 | 📜 **Live Output** | Watch the AI think and work as it happens |
@@ -125,6 +126,8 @@ Everything you need to manage AI-powered development tasks from your browser:
 | 💬 **Notes** | Add context for the AI at any point |
 | ⚙️ **Settings** | Configure agents, providers, and workflow options |
 | 🔍 **History** | Browse and search past tasks |
+| 🤖 **Agents Info** | View available AI agents with capabilities, models, and status |
+| 🔌 **Providers Info** | View available task providers (GitHub, Jira, Linear, etc.) |
 | 🌐 **Browser Automation** | Control Chrome for web testing (when enabled) |
 | 🌓 **Dark Mode** | Toggle between light and dark themes |
 | 📱 **Mobile Ready** | Full functionality on your phone or tablet |
