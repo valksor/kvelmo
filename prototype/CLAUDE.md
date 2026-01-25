@@ -61,6 +61,8 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 
 ### Key Patterns
 
+**go-toolkit for Reusable Code**: Common utilities are extracted to `github.com/valksor/go-toolkit` library. When adding generic, reusable code (event bus, validation, JSON-RPC, etc.), consider placing it in go-toolkit instead of this codebase. Current re-exports: `internal/events/`, `internal/validation/`, `internal/plugin/protocol.go`.
+
 **State Machine**: The workflow package implements an explicit FSM:
 - States: `idle` → `planning` → `implementing` → `reviewing` → `done`/`failed`
 - Additional states: `waiting`, `checkpointing`, `reverting`, `restoring`
@@ -77,6 +79,7 @@ The web UI uses Go's `html/template` package with:
 - **HTMX** for real-time interactivity and SSE (Server-Sent Events)
 - **Tailwind CSS** via CDN for styling with custom brand colors
 - **Dark mode** via `class`-based toggle
+- **SVG Workflow Diagram** at `/api/v1/workflow/diagram` - generates visual state diagram with current state highlighted
 
 **Template Structure** (`internal/server/templates/`):
 - `base.html` - Base layout with HTMX + Tailwind, dark mode support
@@ -141,6 +144,10 @@ agents:
 ```
 
 **Step-specific args**: Agents implement `StepArgsProvider` to provide workflow-step-specific CLI args (e.g., Claude uses `--permission-mode plan` for planning, `--permission-mode acceptEdits` for implementing). See `internal/agent/claude/claude.go:348`.
+
+**Agent Metadata**: Agents implement `MetadataProvider` to expose capabilities and models to the Web UI:
+- Capabilities: `Streaming`, `ToolUse`, `FileOperations`, `CodeExecution`, `MultiTurn`, `SystemPrompt`, `AllowedTools`
+- Models: `ID`, `Name`, `Default`, `MaxTokens`, `InputCost`, `OutputCost`
 
 ### Workflow States
 
