@@ -307,6 +307,6 @@ git checkout task/a1b2c3d4
 
 ## See Also
 
-- [delete](./delete.md) - Abandon without merging
+- [abandon](./abandon.md) - Abandon without merging
 - [review](./review.md) - Review before finishing
 - [Workflow](../concepts/workflow.md) - Task lifecycle
