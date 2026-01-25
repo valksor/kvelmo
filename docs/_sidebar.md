@@ -4,6 +4,9 @@
 
 - **Guides**
   - [Your First Task](guides/first-task.md)
+  - [Web UI Getting Started](guides/web-ui-getting-started.md)
+  - [Web UI Task Management](guides/web-ui-tasks.md)
+  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
   - [Iterative Workflow](guides/iterative-workflow.md)
   - [Recovery & Undo](guides/recovery.md)
   - [PR Review State Management](guides/pr-review-state.md)
