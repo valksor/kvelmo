@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	statusAll  bool
-	statusJSON bool
+	statusAll     bool
+	statusJSON    bool
+	statusDiagram bool
 )
 
 var statusCmd = &cobra.Command{
@@ -48,13 +49,15 @@ RELATED COMMANDS:
 
 OUTPUT FORMATS:
   Default: Human-readable text with colors
-  --json:  Machine-parseable JSON (for scripts and integrations)
+  --json:   Machine-parseable JSON (for scripts and integrations)
+  --diagram: Show workflow state machine diagram
 
 Examples:
-  mehr status        # Full details for active task
-  mehr st            # Same (shorthand alias)
-  mehr status --all  # List all tasks in workspace
-  mehr status --json # JSON output for scripting`,
+  mehr status         # Full details for active task
+  mehr st             # Same (shorthand alias)
+  mehr status --all   # List all tasks in workspace
+  mehr status --json  # JSON output for scripting
+  mehr status --diagram  # Show workflow state diagram`,
 	RunE: runStatus,
 }
 
@@ -63,6 +66,7 @@ func init() {
 
 	statusCmd.Flags().BoolVarP(&statusAll, "all", "a", false, "Show all tasks in workspace")
 	statusCmd.Flags().BoolVar(&statusJSON, "json", false, "Output as JSON")
+	statusCmd.Flags().BoolVar(&statusDiagram, "diagram", false, "Show workflow state diagram")
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
@@ -178,6 +182,22 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 	// Show spec icon legend if there are specifications
 	if len(specifications) > 0 {
 		printSpecLegend()
+	}
+
+	// Show workflow diagram if requested
+	if statusDiagram {
+		// Get conductor to access the state machine
+		cond, err := initializeConductor(ctx)
+		if err == nil {
+			machine := cond.GetMachine()
+			if machine != nil {
+				diagram := workflow.ASCIIDiagram(machine, workflow.DiagramOptions{
+					CurrentState: machine.State(),
+					ShowEvents:   true,
+				})
+				fmt.Printf("\n%s\n", diagram)
+			}
+		}
 	}
 
 	// Show next actions
@@ -307,6 +327,22 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 	// Show spec icon legend if there are specifications
 	if len(specifications) > 0 {
 		printSpecLegend()
+	}
+
+	// Show workflow diagram if requested
+	if statusDiagram {
+		// Get conductor to access the state machine
+		cond, err := initializeConductor(ctx)
+		if err == nil {
+			machine := cond.GetMachine()
+			if machine != nil {
+				diagram := workflow.ASCIIDiagram(machine, workflow.DiagramOptions{
+					CurrentState: machine.State(),
+					ShowEvents:   true,
+				})
+				fmt.Printf("\n%s\n", diagram)
+			}
+		}
 	}
 
 	// Show next actions based on state
