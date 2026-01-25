@@ -146,6 +146,123 @@ mehr finish           # Merge changes or create PR
 - Configuration options
 - Troubleshooting
 
+---
+
+## Choose Your Interface
+
+Mehrhof works two ways: **Web UI** (visual, beginner-friendly) or **CLI** (command-line, scriptable). Both have the same features.
+
+```mermaid
+flowchart LR
+    A[Mehrhof Installed] --> B{Choose your path}
+    B -->|Visual & Easy| C[Web UI]
+    B -->|Commands & Scripting| D[CLI]
+    C --> E[Dashboard, One-click actions]
+    D -->F[Terminal commands]
+```
+
+| Web UI | CLI |
+|--------|-----|
+| 🖱️ Click buttons, fill forms | ⌨️ Type commands |
+| 👁️ See everything at once | 🔍 Request specific info |
+| 📊 Visual progress tracking | ⚡ Keyboard-driven speed |
+| 👥 Easy to screen-share | 🤖 Great for automation |
+| 🌐 Perfect for beginners | 💪 Powerful for experts |
+
+## Web UI
+
+> **New to Mehrhof?** Start with the Web UI for the easiest experience. No need to memorize commands!
+
+### How the Web UI Works: Plan → Implement → Review
+
+Mehrhof separates work into three phases. This gives you control over each step:
+
+```mermaid
+flowchart LR
+    A[Create Task] --> B[1. Plan]
+    B --> C[AI Creates Specifications]
+    C --> D[2. Implement]
+    D --> E[AI Writes Code]
+    E --> F[3. Review]
+    F --> G[Quality Checks]
+    G --> H[Finish]
+```
+
+**Phase 1: Plan** - Click "Plan" to create specifications. The AI analyzes your codebase and creates a detailed blueprint. Review this before any code is written.
+
+**Phase 2: Implement** - Click "Implement" to execute the specifications. The AI writes code following the plan.
+
+**Phase 3: Review** - Click "Review" to run quality checks, then "Finish" to merge your changes.
+
+### Quick Start (3 Steps)
+
+```bash
+# 1. Navigate to your project directory
+cd /path/to/your/project
+
+# 2. Initialize (one-time per project)
+mehr init
+
+# 3. Start the web UI
+mehr serve --open
+```
+
+Your browser opens automatically. Click **"Create Task"** and you're ready to go!
+
+### What You Can Do in the Web UI
+
+| Feature | Description |
+|---------|-------------|
+| 📊 **Dashboard** | See all your tasks at a glance with real-time progress |
+| 🤖 **AI Workflow** | Plan, implement, review, and finish tasks with one click |
+| 📝 **Task Creation** | Write tasks directly in the browser or upload files |
+| 📜 **Live Output** | Watch the AI think and work as it happens |
+| 🔙 **Undo/Redo** | Easy checkpoint navigation - go back if something goes wrong |
+| 💬 **Notes** | Add context for the AI at any point |
+| ⚙️ **Settings** | Configure agents, providers, and workflow options |
+| 🔍 **History** | Browse and search past tasks |
+| 🌐 **Browser Automation** | Control Chrome for web testing (when enabled) |
+| 🌓 **Dark Mode** | Toggle between light and dark themes |
+| 📱 **Mobile Ready** | Full functionality on your phone or tablet |
+
+### Starting the Server
+
+```bash
+# Basic start (opens browser automatically)
+mehr serve --open
+
+# Specify a port
+mehr serve --port 3000
+
+# Global mode - see all registered projects
+mehr serve --global
+```
+
+By default, the server runs on `localhost` only and requires no authentication.
+
+### Advanced Options
+
+**Remote Access** (requires authentication):
+
+```bash
+# Set up authentication first
+mehr serve auth add admin yourpassword
+
+# Then start on all network interfaces
+mehr serve --host 0.0.0.0 --port 8080
+```
+
+**Access via SSH Tunnel** (recommended for remote):
+
+```bash
+ssh -L 3000:localhost:3000 your-server.com
+# Then open http://localhost:3000 in your browser
+```
+
+**[Full Web UI Documentation](https://mehrhof.valksor.com/docs/#/guides/web-ui-getting-started)** - Complete walkthrough with screenshots
+
+---
+
 ## How It Works
 
 ```
@@ -314,51 +431,6 @@ Mehrhof supports AI agent plugins for custom backends. The primary agent is **Cl
 | Claude | Primary agent via Claude CLI (recommended) |
 
 **See [AI Agents documentation](https://mehrhof.valksor.com/docs/#/agents/index) for configuration and custom aliases.**
-
-## Web UI
-
-Mehrhof includes a web-based UI for browser-based task management with full CLI feature parity:
-
-```bash
-# Start web UI (project mode)
-mehr serve
-
-# Start on specific port and open browser
-mehr serve --port 3000 --open
-
-# Global mode - see all projects
-mehr serve --global
-
-# Remote access (requires authentication)
-mehr serve auth add admin mypassword
-mehr serve --host 0.0.0.0 --port 8080
-```
-
-The web UI provides:
-- **Full workflow control** - Start, plan, implement, review, finish, undo/redo via REST API
-- **Auto mode** - Run complete automation cycles (`POST /api/v1/workflow/auto`)
-- **Continue/resume** - Resume work with optional auto-execute next step
-- **Real-time updates** - Server-Sent Events for live state changes and agent output
-- **Cost tracking** - View token usage and costs per task or across all tasks with interactive charts
-- **Guidance** - State-specific suggestions on what to do next
-- **Notes** - Add notes to tasks for AI context
-- **Task history** - Browse past tasks with search, filter, and sort capabilities
-- **Settings page** - Configure all workspace settings via web UI (Git, Agent, Workflow, Browser, Providers)
-- **Provider health** - Monitor provider connection status and rate limits
-- **Agent resolution** - Debug which agent is selected for each workflow step
-- **Global mode project picker** - In global mode, select and configure any registered project's settings
-- **Browser automation** - Control Chrome for testing via dedicated control panel
-- **Dark mode** - Toggle theme with system preference detection
-- **Mobile responsive** - Full feature support on mobile devices
-- **Notifications** - Toast alerts and browser notifications for task events
-- **Workflow visualization** - Interactive state diagram showing current workflow state
-- **Security scanning** - Run SAST, secrets, and vulnerability scans
-- **Memory search** - Query semantic memory for past task context
-- **Agent/provider info** - List available AI agents and task providers
-- **Authentication** - Secure access for network-accessible servers
-- **SSH tunnel support** - Secure remote access
-
-**See [Web UI documentation](https://mehrhof.valksor.com/docs/#/cli/serve) for API details and examples.**
 
 ## Configuration
 
