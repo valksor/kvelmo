@@ -154,10 +154,10 @@ func TestHandler_SettingsPage_Success(t *testing.T) {
 	bodyStr := string(body)
 	assert.Contains(t, bodyStr, "Settings")
 	assert.Contains(t, bodyStr, "Git Settings")
-	assert.Contains(t, bodyStr, "Agent Settings")
-	assert.Contains(t, bodyStr, "Workflow Settings")
+	assert.Contains(t, bodyStr, "Agent Configuration")
+	assert.Contains(t, bodyStr, "Workflow Configuration")
 	assert.Contains(t, bodyStr, "Browser Automation")
-	assert.Contains(t, bodyStr, "Provider Settings")
+	assert.Contains(t, bodyStr, "Default Provider")
 }
 
 func TestHandler_SettingsPage_ShowsSensitiveInProjectMode(t *testing.T) {
@@ -1199,7 +1199,7 @@ func TestHandler_SettingsPage_LoadsAvailableAgents(t *testing.T) {
 	assert.Contains(t, bodyStr, "<select")
 }
 
-func TestHandler_SettingsPage_BackToDashboardLink(t *testing.T) {
+func TestHandler_SettingsPage_CancelLinkToDashboard(t *testing.T) {
 	cond, tmpDir := createTestConductor(t)
 
 	srv := startSettingsTestServer(t, Config{
@@ -1215,7 +1215,7 @@ func TestHandler_SettingsPage_BackToDashboardLink(t *testing.T) {
 
 	body, _ := io.ReadAll(resp.Body)
 	assert.Contains(t, string(body), `href="/"`)
-	assert.Contains(t, string(body), "Back to Dashboard")
+	assert.Contains(t, string(body), "Cancel") // Cancel button links back to dashboard
 }
 
 func TestHandler_SettingsPage_ProviderConfiguredBadges(t *testing.T) {
