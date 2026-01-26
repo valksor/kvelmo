@@ -129,18 +129,18 @@ mehr serve --host 0.0.0.0 --port 8080
 For secure remote access without exposing ports:
 
 ```bash
-# On the server, start mehr serve normally
-mehr serve --port 3000 --tunnel-info
+# Show tunnel instructions (helper flag - exits without starting server)
+mehr serve --tunnel-info
 
 # Output includes SSH tunnel instructions:
 # SSH Tunnel Instructions:
-#   Local tunnel (access from your machine):
-#     ssh -L 8080:localhost:3000 user@server
-#     Then open: http://localhost:8080
+#   Access remote serve from your local machine (-L flag):
+#     ssh -L 8080:localhost:3000 user@remote-server
+#     Then open: http://localhost:8080 on YOUR local machine
 #
-#   Reverse tunnel (expose via remote server):
+#   Access local serve from remote server (-R flag):
 #     ssh -R 8080:localhost:3000 user@remote-server
-#     Then access: http://remote-server:8080
+#     Then open: http://localhost:8080 on THE REMOTE server
 ```
 
 #### Option 3: Third-party Tunnels

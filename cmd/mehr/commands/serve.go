@@ -164,6 +164,23 @@ func init() {
 func runServe(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
+	// Handle --tunnel-info flag: show info and exit without starting server
+	if serveTunnelInfo {
+		port := servePort
+		if port == 0 {
+			port = 3000 // Default port for documentation
+		}
+		fmt.Printf("SSH Tunnel Instructions:\n")
+		fmt.Printf("  Access remote serve from your local machine (-L flag):\n")
+		fmt.Printf("    ssh -L 8080:localhost:%d user@remote-server\n", port)
+		fmt.Printf("    Then open: http://localhost:8080 on YOUR local machine\n")
+		fmt.Printf("\n  Access local serve from remote server (-R flag):\n")
+		fmt.Printf("    ssh -R 8080:localhost:%d user@remote-server\n", port)
+		fmt.Printf("    Then open: http://localhost:8080 on THE REMOTE server\n")
+
+		return nil
+	}
+
 	// Create server config
 	cfg := server.Config{
 		Port: servePort,
@@ -260,17 +277,6 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	// Show security notice for network binding
 	if requiresAuth {
 		fmt.Println("\nNetwork access enabled - authentication required")
-	}
-
-	// Show tunnel info if requested
-	if serveTunnelInfo {
-		fmt.Printf("\nSSH Tunnel Instructions:\n")
-		fmt.Printf("  Local tunnel (access from your machine):\n")
-		fmt.Printf("    ssh -L 8080:localhost:%d user@this-server\n", srv.Port())
-		fmt.Printf("    Then open: http://localhost:8080\n")
-		fmt.Printf("\n  Reverse tunnel (expose via remote server):\n")
-		fmt.Printf("    ssh -R 8080:localhost:%d user@remote-server\n", srv.Port())
-		fmt.Printf("    Then access: http://remote-server:8080\n")
 	}
 
 	fmt.Println("\nPress Ctrl+C to stop")
