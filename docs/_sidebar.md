@@ -4,12 +4,29 @@
 
 - **Guides**
   - [Your First Task](guides/first-task.md)
-  - [Web UI Getting Started](guides/web-ui-getting-started.md)
-  - [Web UI Task Management](guides/web-ui-tasks.md)
-  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
   - [Iterative Workflow](guides/iterative-workflow.md)
   - [Recovery & Undo](guides/recovery.md)
   - [PR Review State Management](guides/pr-review-state.md)
+  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
+
+- **Web UI**
+  - [Overview](web-ui/index.md)
+  - [Getting Started](web-ui/getting-started.md)
+  - [Creating Tasks](web-ui/creating-tasks.md)
+  - [Planning](web-ui/planning.md)
+  - [Implementing](web-ui/implementing.md)
+  - [Reviewing](web-ui/reviewing.md)
+  - [Finishing](web-ui/finishing.md)
+  - [Continuing](web-ui/continuing.md)
+  - [Undo & Redo](web-ui/undo-redo.md)
+  - [Notes](web-ui/notes.md)
+  - [Dashboard](web-ui/dashboard.md)
+  - [Task History](web-ui/task-history.md)
+  - [Settings](web-ui/settings.md)
+  - [Browser Control](web-ui/browser.md)
+  - [Remote Access](web-ui/remote-access.md)
+  - [Authentication](web-ui/authentication.md)
+  - [REST API](web-ui/api.md)
 
 - **Core Concepts**
   - [Workflow](concepts/workflow.md)
@@ -20,6 +37,7 @@
 - **AI Agents**
   - [Overview & Config](agents/index.md)
   - [Claude](agents/claude.md)
+  - [Codex](agents/codex.md)
 
 - **Task Providers**
   - [Overview](providers/index.md)
@@ -82,13 +100,12 @@
     - [scan](cli/scan.md)
     - [login](cli/login.md)
     - [generate-secret](cli/generate-secret.md)
-    - [migrate-tokens](cli/migrate-tokens.md)
     - [mcp](cli/mcp.md)
     - [update](cli/update.md)
     - [version](cli/version.md)
   - **Project Planning**
     - [project](cli/project.md)
-  - **Web UI**
+  - **Server**
     - [serve](cli/serve.md)
     - [register](cli/register.md)
 
