@@ -55,7 +55,7 @@ signs:
         artifacts: checksum
         env:
             - MINISIGN_KEY_FILE=/tmp/minisign.key
-            - MINISIGN_PASSWORD=${env.MINISIGN_PASSWORD}
+            - MINISIGN_PASSWORD={{.Env.MINISIGN_PASSWORD}}
 
 # SBOM generation
 sboms:
