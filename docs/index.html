@@ -1,128 +1,129 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Documentation | Valksor Mehrhof</title>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-        <meta
-            name="description"
-            content="AI-powered task automation CLI documentation"
-        />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
-        />
-        <link rel="stylesheet" href="./_media/css/github.min.css" />
-        <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-        <style>
-            :root {
-                --theme-color: #960018;
-                --color-bg: #f0eee9;
-                --color-text: #2b2c30;
-                scrollbar-color: color-mix(
-                        in oklch,
-                        var(--theme-color) 100%,
-                        transparent
-                    )
-                    var(--color-bg);
-            }
+<head>
+    <meta charset="UTF-8"/>
+    <title>Documentation | Valksor Mehrhof</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta
+        name="description"
+        content="AI-powered task automation CLI documentation"
+    />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <link rel="stylesheet" href="./_media/css/github.min.css"/>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico"/>
+    <style>
+        :root {
+            --theme-color: #960018;
+            --color-bg: #f0eee9;
+            --color-text: #2b2c30;
+            scrollbar-color: color-mix(
+                in oklch,
+                var(--theme-color) 100%,
+                transparent
+            ) var(--color-bg);
+        }
 
-            .anchor span {
-                color: var(--color-text);
-            }
+        .anchor span {
+            color: var(--color-text);
+        }
 
-            .sidebar-nav > ul > li > a {
-                font-weight: 600;
-            }
+        .sidebar-nav > ul > li > a {
+            font-weight: 600;
+        }
 
-            .markdown-section pre {
-                border: 1px solid var(--color-text);
-            }
+        .markdown-section pre {
+            border: 1px solid var(--color-text);
+        }
 
-            .markdown-section pre,
-            .markdown-section code {
-                background-color: var(--color-bg);
-            }
+        .markdown-section pre,
+        .markdown-section code {
+            background-color: var(--color-bg);
+        }
 
-            .markdown-section code {
-                border-radius: 3px;
-                padding: 2px 6px;
-            }
+        .markdown-section code {
+            border-radius: 3px;
+            padding: 2px 6px;
+        }
 
-            .markdown-section pre > code {
-                padding: 1em;
-            }
+        .markdown-section pre > code {
+            padding: 1em;
+        }
 
-            .tip {
-                padding: 1em;
-                border-left: 4px solid var(--theme-color);
-                background: rgba(63, 81, 181, 0.05);
-                margin: 1em 0;
-            }
+        .tip {
+            padding: 1em;
+            border-left: 4px solid var(--theme-color);
+            background: rgba(63, 81, 181, 0.05);
+            margin: 1em 0;
+        }
 
-            .warning {
-                padding: 1em;
-                border-left: 4px solid #ff9800;
-                background: rgba(255, 152, 0, 0.05);
-                margin: 1em 0;
-            }
+        .warning {
+            padding: 1em;
+            border-left: 4px solid #ff9800;
+            background: rgba(255, 152, 0, 0.05);
+            margin: 1em 0;
+        }
 
-        </style>
-    </head>
-    <body>
-        <div id="app">Loading...</div>
-        <script>
-            window.$docsify = {
-                name: "Valksor Mehrhof",
-                nameLink: "/docs/mehrhof/",
-                repo: "https://github.com/valksor/go-mehrhof",
-                loadSidebar: true,
-                alias: {
-                    "/.*/_sidebar.md": "/_sidebar.md",
-                },
-                autoHeader: true,
-                subMaxLevel: 3,
-                auto2top: true,
-                coverpage: true,
-                onlyCover: false,
-                search: {
-                    placeholder: "Search documentation",
-                    noData: "No results found",
-                    depth: 3,
-                },
-                copyCode: {
-                    buttonText: "Copy",
-                    successText: "Copied",
-                },
-                tabs: {
-                    persist: true,
-                    sync: true,
-                },
-                pagination: {
-                    previousText: "Previous",
-                    nextText: "Next",
-                    crossChapter: true,
-                },
-                formatUpdated: "{DD}.{MM}.{YYYY} {HH}:{mm}",
-                mergeNavbar: true,
-                themeColor: "#960018",
-                plugins: [
-                    function (hook, vm) {
-                        hook.doneEach(function () {
-                            const path = window.location.pathname;
-                            const versionEl = document.querySelector('.app-name-link');
-                            if (versionEl) {
-                                if (path.includes('/nightly')) {
-                                    versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:red;font-weight:bold">(nightly)</small>';
-                                } else if (path.includes('/latest')) {
-                                    versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:green;font-weight:bold">(latest)</small>';
-                                }
-                            }
-                        });
-                    },
-                ],
-            };
-        </script>
-        <script src="./_media/js/bundle.min.js?v=1d90fdbd"></script>
-    </body>
+    </style>
+</head>
+<body>
+<div id="app">Loading...</div>
+<script>
+    const docPath = window.location.pathname;
+    const isNightly = docPath.includes('/nightly');
+    const isLatest = docPath.includes('/latest');
+    window.$docsify = {
+        name: isNightly ? 'Valksor Mehrhof (nightly)' : isLatest ? 'Valksor Mehrhof (latest)' : 'Valksor Mehrhof',
+        nameLink: isNightly ? '/docs/mehrhof/nightly/' : isLatest ? '/docs/mehrhof/latest/' : '/docs/mehrhof/',
+        repo: "https://github.com/valksor/go-mehrhof",
+        loadSidebar: true,
+        alias: {
+            "/.*/_sidebar.md": "/_sidebar.md",
+        },
+        autoHeader: true,
+        subMaxLevel: 3,
+        auto2top: true,
+        coverpage: true,
+        onlyCover: false,
+        search: {
+            placeholder: "Search documentation",
+            noData: "No results found",
+            depth: 3,
+        },
+        copyCode: {
+            buttonText: "Copy",
+            successText: "Copied",
+        },
+        tabs: {
+            persist: true,
+            sync: true,
+        },
+        pagination: {
+            previousText: "Previous",
+            nextText: "Next",
+            crossChapter: true,
+        },
+        formatUpdated: "{DD}.{MM}.{YYYY} {HH}:{mm}",
+        mergeNavbar: true,
+        themeColor: "#960018",
+        plugins: [
+            function (hook) {
+                hook.doneEach(function () {
+                    const versionEl = document.querySelector('.app-name-link');
+                    if (versionEl) {
+                        if (isNightly) {
+                            versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:red;font-weight:bold">(nightly)</small>';
+                        } else if (isLatest) {
+                            versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:green;font-weight:bold">(latest)</small>';
+                        }
+                    }
+                });
+            },
+        ],
+    };
+</script>
+<script src="./_media/js/bundle.min.js?v=1d90fdbd"></script>
+</body>
 </html>
