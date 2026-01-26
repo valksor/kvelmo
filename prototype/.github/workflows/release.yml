@@ -63,6 +63,7 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
                     GORELEASER_CURRENT_TAG: ${{ !github.event.release.prerelease && github.event.release.tag_name || '' }}
+                    MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
 
             -   name: Restore release title
                 env:
