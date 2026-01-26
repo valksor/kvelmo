@@ -6,116 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mehrhof Web UI</title>
 
-    <!-- Google Fonts: Inter for premium, readable typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Self-hosted CSS with fonts (Tailwind v4) -->
+    <link href="/static/css/styles.css" rel="stylesheet">
 
-    <!-- HTMX for real-time interactivity -->
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        // Brand colors
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                        },
-                        // Light theme backgrounds
-                        surface: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        },
-                        // Semantic colors
-                        success: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                        },
-                        warning: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                        },
-                        error: {
-                            50: '#fef2f2',
-                            100: '#fee2e2',
-                            500: '#ef4444',
-                            600: '#dc2626',
-                            700: '#b91c1c',
-                        },
-                        info: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                        },
-                    },
-                    boxShadow: {
-                        'brand': '0 4px 20px -2px rgba(99, 102, 241, 0.15)',
-                        'brand-lg': '0 10px 40px -10px rgba(99, 102, 241, 0.25)',
-                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
-                        'card-hover': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out',
-                        'slide-up': 'slideUp 0.4s ease-out',
-                        'scale-in': 'scaleIn 0.2s ease-out',
-                        'shimmer': 'shimmer 2s infinite',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            'from': { opacity: '0' },
-                            'to': { opacity: '1' },
-                        },
-                        slideUp: {
-                            'from': { opacity: '0', transform: 'translateY(10px)' },
-                            'to': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        scaleIn: {
-                            'from': { opacity: '0', transform: 'scale(0.95)' },
-                            'to': { opacity: '1', transform: 'scale(1)' },
-                        },
-                        shimmer: {
-                            '0%': { backgroundPosition: '-1000px 0' },
-                            '100%': { backgroundPosition: '1000px 0' },
-                        },
-                    },
-                },
-            },
-        }
-    </script>
+    <!-- HTMX for real-time interactivity (self-hosted) -->
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/sse.js"></script>
     <style>
         /* Base styles */
         .htmx-indicator { display: none; }
@@ -215,9 +111,14 @@
         .state-waiting { @apply bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300; }
     </style>
 </head>
-<body class="bg-surface-50 dark:bg-surface-900 min-h-screen transition-colors duration-300 font-sans">
+<body hx-boost="true" class="bg-surface-50 dark:bg-surface-900 min-h-screen transition-colors duration-300 font-sans">
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-brand-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+        Skip to main content
+    </a>
+
     <!-- Navbar with gradient -->
-    <nav class="sticky top-0 z-40 glass border-b border-surface-200 dark:border-surface-700 shadow-sm">
+    <nav class="sticky top-0 z-40 glass border-b border-surface-200 dark:border-surface-700 shadow-sm bg-surface-200 dark:bg-surface-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20">
                 <!-- Logo and mode badge -->
@@ -248,17 +149,24 @@
                         <a href="/dashboard" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             Dashboard
                         </a>
+                        {{if not .IsGlobalMode}}
                         <a href="/project" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             Planning
                         </a>
+                        {{end}}
                         <a href="/settings" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             Settings
                         </a>
+                        {{if not .IsGlobalMode}}
                         <a href="/browser" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             Browser
                         </a>
                         <a href="/history" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             History
+                        </a>
+                        {{end}}
+                        <a href="/license" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            License
                         </a>
                     </div>
 
@@ -272,9 +180,15 @@
                             <span id="notification-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-gradient-to-r from-error-600 to-error-500 text-white text-xs rounded-full font-semibold shadow-lg">0</span>
                         </button>
 
+                        <!-- Connection Status Indicator -->
+                        <div id="connection-status" class="hidden md:flex items-center gap-2 ml-2 pl-4 border-l border-surface-200 dark:border-surface-700">
+                            <span id="connection-dot" class="w-2 h-2 rounded-full bg-success-500"></span>
+                            <span id="connection-text" class="text-xs text-surface-500 dark:text-surface-400">Connected</span>
+                        </div>
+
                         <!-- Dark mode toggle -->
                         <button id="theme-toggle" class="p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Toggle dark mode">
-                            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <svg id="theme-toggle-light-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
                             </svg>
                             <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -293,7 +207,7 @@
                 <!-- Mobile menu button -->
                 <div class="md:hidden flex items-center gap-2">
                     <button id="theme-toggle-mobile" class="p-2.5 rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth" aria-label="Toggle dark mode">
-                        <svg id="theme-toggle-light-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg id="theme-toggle-light-icon-mobile" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
                         </svg>
                         <svg id="theme-toggle-dark-icon-mobile" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -321,17 +235,24 @@
                     <a href="/dashboard" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         Dashboard
                     </a>
+                    {{if not .IsGlobalMode}}
                     <a href="/project" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         Planning
                     </a>
+                    {{end}}
                     <a href="/settings" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         Settings
                     </a>
+                    {{if not .IsGlobalMode}}
                     <a href="/browser" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         Browser
                     </a>
                     <a href="/history" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         History
+                    </a>
+                    {{end}}
+                    <a href="/license" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        License
                     </a>
                     {{if .AuthEnabled}}
                     <a href="/logout" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
@@ -343,8 +264,11 @@
         </div>
     </nav>
 
+    <!-- ARIA Live Region for Screen Readers -->
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="a11y-announcements"></div>
+
     <!-- Main content with animation -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-slide-up">
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-slide-up" tabindex="-1">
         {{template "content" .}}
     </main>
 
@@ -369,6 +293,28 @@
     </div>
 
     <script>
+        /**
+         * @typedef {'success'|'error'|'warning'|'info'} NotificationType
+         * Type of notification message
+         */
+
+        /**
+         * @typedef {Object} NotificationConfig
+         * @property {string} bgColor - Tailwind background color classes
+         * @property {string} textColor - Tailwind text color classes
+         * @property {string} borderColor - Tailwind border color classes
+         * @property {string} icon - Icon character for the notification
+         */
+
+        /**
+         * @typedef {Object} Notification
+         * @property {number} id - Unique notification ID (timestamp)
+         * @property {string} message - The notification message
+         * @property {NotificationType} type - The notification type
+         * @property {Date} timestamp - When the notification was created
+         * @property {boolean} read - Whether the notification has been read
+         */
+
         // Dark mode toggle functionality
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
@@ -377,70 +323,181 @@
         const themeToggleDarkIconMobile = document.getElementById('theme-toggle-dark-icon-mobile');
         const themeToggleLightIconMobile = document.getElementById('theme-toggle-light-icon-mobile');
 
-        // Helper function to update icons based on current theme state
+        /**
+         * Update theme toggle button icons based on current theme state.
+         * Shows the light icon (sun) when in dark mode, and dark icon (moon) when in light mode.
+         * @return {void}
+         */
         function updateThemeIcons() {
             const isDark = document.documentElement.classList.contains('dark');
-            // Show light icon (sun) when in dark mode (to switch to light)
-            // Show dark icon (moon) when in light mode (to switch to dark)
-            if (themeToggleLightIcon) {
-                themeToggleLightIcon.classList.toggle('hidden', !isDark);
+
+            // Desktop icons: show sun in dark mode (to switch to light), show moon in light mode (to switch to dark)
+            if (isDark) {
+                themeToggleLightIcon?.classList.remove('hidden');
+                themeToggleDarkIcon?.classList.add('hidden');
+            } else {
+                themeToggleLightIcon?.classList.add('hidden');
+                themeToggleDarkIcon?.classList.remove('hidden');
             }
-            if (themeToggleDarkIcon) {
-                themeToggleDarkIcon.classList.toggle('hidden', isDark);
-            }
-            if (themeToggleLightIconMobile) {
-                themeToggleLightIconMobile.classList.toggle('hidden', !isDark);
-            }
-            if (themeToggleDarkIconMobile) {
-                themeToggleDarkIconMobile.classList.toggle('hidden', isDark);
+
+            // Mobile icons: same logic as desktop
+            if (isDark) {
+                themeToggleLightIconMobile?.classList.remove('hidden');
+                themeToggleDarkIconMobile?.classList.add('hidden');
+            } else {
+                themeToggleLightIconMobile?.classList.add('hidden');
+                themeToggleDarkIconMobile?.classList.remove('hidden');
             }
         }
 
-        // Initialize theme on page load
+        /**
+         * Initialize theme on page load by checking localStorage and system preference.
+         * Applies 'dark' class to document element if dark mode is preferred.
+         * @return {void}
+         */
         function initTheme() {
             const storedTheme = localStorage.getItem('color-theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            console.log('[Theme] initTheme - storedTheme:', storedTheme, 'prefersDark:', prefersDark);
 
             // Determine initial theme
             if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
                 document.documentElement.classList.add('dark');
                 localStorage.setItem('color-theme', 'dark');
+                console.log('[Theme] initTheme - Set to DARK mode, html.className:', document.documentElement.className);
             } else {
                 document.documentElement.classList.remove('dark');
                 if (!storedTheme) {
                     localStorage.setItem('color-theme', 'light');
                 }
+                console.log('[Theme] initTheme - Set to LIGHT mode, html.className:', document.documentElement.className);
             }
             updateThemeIcons();
+            console.log('[Theme] initTheme - Icons updated, isDark:', document.documentElement.classList.contains('dark'));
         }
 
-        // Toggle theme function
+        /**
+         * Toggle between light and dark theme.
+         * Updates DOM classes, localStorage, and icon visibility.
+         * @return {void}
+         */
         function toggleTheme() {
             const isDark = document.documentElement.classList.contains('dark');
+            console.log('[Theme] toggleTheme called, current isDark:', isDark);
 
             // Toggle theme state
             if (isDark) {
                 document.documentElement.classList.remove('dark');
                 localStorage.setItem('color-theme', 'light');
+                console.log('[Theme] Removed dark class, set localStorage to light');
             } else {
                 document.documentElement.classList.add('dark');
                 localStorage.setItem('color-theme', 'dark');
+                console.log('[Theme] Added dark class, set localStorage to dark');
             }
+
+            // Verify the change
+            const newIsDark = document.documentElement.classList.contains('dark');
+            console.log('[Theme] After toggle, isDark:', newIsDark);
+            console.log('[Theme] html className:', document.documentElement.className);
+            console.log('[Theme] html classList.value:', document.documentElement.classList.value);
 
             // Update icons after theme state has changed
             updateThemeIcons();
+            console.log('[Theme] Icons updated');
         }
 
-        // Initialize on page load
-        initTheme();
+        // Initialize on page load with error handling
+        try {
+            initTheme();
+            console.log('[Theme] Initialized successfully');
+        } catch (error) {
+            console.error('[Theme] Failed to initialize:', error);
+        }
 
         // Add event listeners for both desktop and mobile toggle buttons
         if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', toggleTheme);
+            themeToggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent event from bubbling to body delegation
+                try {
+                    toggleTheme();
+                } catch (error) {
+                    console.error('[Theme] Failed to toggle:', error);
+                }
+            });
+            console.log('[Theme] Desktop button listener attached');
+        } else {
+            console.warn('[Theme] Desktop button not found');
         }
+
         if (themeToggleBtnMobile) {
-            themeToggleBtnMobile.addEventListener('click', toggleTheme);
+            themeToggleBtnMobile.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent event from bubbling to body delegation
+                try {
+                    toggleTheme();
+                } catch (error) {
+                    console.error('[Theme] Failed to toggle:', error);
+                }
+            });
+            console.log('[Theme] Mobile button listener attached');
+        } else {
+            console.warn('[Theme] Mobile button not found');
         }
+
+        // Fallback: Use event delegation to catch clicks on theme toggle buttons
+        // This ensures theme toggle works even if elements are added dynamically
+        document.body.addEventListener('click', function(e) {
+            const btn = e.target.closest('#theme-toggle, #theme-toggle-mobile');
+            if (btn) {
+                console.log('[Theme] Click caught by delegation, target:', e.target, 'target.id:', e.target.id, 'button:', btn.id, 'button.tagName:', btn.tagName);
+                e.preventDefault();
+                try {
+                    toggleTheme();
+                } catch (error) {
+                    console.error('[Theme] Failed to toggle via delegation:', error);
+                }
+            }
+        });
+
+        // Project persistence functions (mirrors theme persistence pattern)
+        const PROJECT_KEY = 'mehr-selected-project';
+
+        /**
+         * Get the currently selected project ID from localStorage.
+         * @return {string|null} The project ID or null if not set
+         */
+        function getSelectedProject() {
+            return localStorage.getItem(PROJECT_KEY);
+        }
+
+        /**
+         * Set the selected project ID in localStorage.
+         * @param {string} projectId - The project ID to store
+         * @return {void}
+         */
+        function setSelectedProject(projectId) {
+            localStorage.setItem(PROJECT_KEY, projectId);
+        }
+
+        /**
+         * Clear the selected project ID from localStorage.
+         * @return {void}
+         */
+        function clearSelectedProject() {
+            localStorage.removeItem(PROJECT_KEY);
+        }
+
+        // Expose project functions globally for use in other templates
+        window.getSelectedProject = getSelectedProject;
+        window.setSelectedProject = setSelectedProject;
+        window.clearSelectedProject = clearSelectedProject;
+
+        // Expose theme functions globally for HTMX afterSwap handler
+        window.updateThemeIcons = updateThemeIcons;
+        window.toggleTheme = toggleTheme;
+        window.initTheme = initTheme;
 
         // Mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -452,6 +509,7 @@
             });
         }
 
+
         // HTMX configuration
         document.body.addEventListener('htmx:beforeRequest', function(evt) {
             // Add loading state to buttons
@@ -462,6 +520,91 @@
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             if (evt.detail.elt.tagName === 'BUTTON') {
                 evt.detail.elt.disabled = false;
+            }
+        });
+
+        // HTMX configuration for smoother navigation
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            evt.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
+        });
+
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            if (evt.detail.pathInfo.requestPath !== window.location.pathname) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            // Re-initialize theme from localStorage after HTMX swaps content
+            // This ensures the dark class is properly applied to documentElement
+            initTheme();
+            updateThemeIcons();
+        });
+
+        // SSE Reconnection Logic
+        let sseRetryCount = 0;
+        const MAX_RETRIES = 10;
+        const BASE_RETRY_DELAY = 1000;
+
+        /**
+         * Update the SSE connection status indicator in the navbar.
+         * @param {'connected'|'connecting'|'disconnected'} status - The connection status
+         * @return {void}
+         */
+        function updateConnectionStatus(status) {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+            if (!dot || !text) return;
+
+            switch (status) {
+                case 'connected':
+                    dot.className = 'w-2 h-2 rounded-full bg-success-500';
+                    text.textContent = 'Connected';
+                    sseRetryCount = 0;
+                    break;
+                case 'connecting':
+                    dot.className = 'w-2 h-2 rounded-full bg-warning-500 animate-pulse';
+                    text.textContent = 'Connecting...';
+                    break;
+                case 'disconnected':
+                    dot.className = 'w-2 h-2 rounded-full bg-error-500';
+                    text.textContent = 'Disconnected';
+                    break;
+            }
+        }
+
+        document.body.addEventListener('htmx:sseError', function(evt) {
+            console.error('[SSE] Connection error:', evt);
+            updateConnectionStatus('disconnected');
+            if (sseRetryCount < MAX_RETRIES) {
+                const delay = BASE_RETRY_DELAY * Math.pow(2, sseRetryCount);
+                sseRetryCount++;
+                setTimeout(() => updateConnectionStatus('connecting'), delay);
+            }
+        });
+
+        document.body.addEventListener('htmx:sseOpen', function(evt) {
+            updateConnectionStatus('connected');
+        });
+
+        /**
+         * Announce a message to screen readers via ARIA live region.
+         * @param {string} message - The message to announce
+         * @return {void}
+         */
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('a11y-announcements');
+            if (announcer) {
+                announcer.textContent = '';
+                setTimeout(() => { announcer.textContent = message; }, 100);
+            }
+        }
+
+        // Announce SSE state changes to screen readers
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            const stateElement = evt.detail.target.querySelector('[data-state]');
+            if (stateElement) {
+                announceToScreenReader('Workflow state: ' + stateElement.dataset.state);
             }
         });
 
@@ -484,7 +627,13 @@
             info: { bgColor: 'bg-info-50 dark:bg-info-900/30', textColor: 'text-info-800 dark:text-info-300', borderColor: 'border-info-200 dark:border-info-800', icon: 'ℹ' }
         };
 
-        // Show toast notification
+        /**
+         * Show a toast notification with animation and auto-dismiss.
+         * @param {string} message - The notification message to display
+         * @param {'success'|'error'|'warning'|'info'} [type='info'] - The notification type
+         * @param {number} [duration=5000] - Auto-dismiss duration in ms (0 for no auto-dismiss)
+         * @return {void}
+         */
         function showToast(message, type = 'info', duration = 5000) {
             const config = notificationTypes[type] || notificationTypes.info;
             const safeMessage = escapeHtml(message);
@@ -522,7 +671,12 @@
             addNotification(message, type);
         }
 
-        // Add notification to center
+        /**
+         * Add a notification to the notification center.
+         * @param {string} message - The notification message
+         * @param {'success'|'error'|'warning'|'info'} [type='info'] - The notification type
+         * @return {void}
+         */
         function addNotification(message, type = 'info') {
             const notification = {
                 id: Date.now(),
@@ -575,7 +729,11 @@
             }).join('');
         }
 
-        // Mark notification as read
+        /**
+         * Mark a notification as read by ID.
+         * @param {number} id - The notification ID
+         * @return {void}
+         */
         function markAsRead(id) {
             const notif = notifications.find(n => n.id === id);
             if (notif && !notif.read) {
@@ -586,7 +744,10 @@
             }
         }
 
-        // Mark all as read
+        /**
+         * Mark all notifications as read.
+         * @return {void}
+         */
         function markAllAsRead() {
             notifications.forEach(n => n.read = true);
             unreadCount = 0;
@@ -594,7 +755,11 @@
             renderNotificationCenter();
         }
 
-        // Format time ago
+        /**
+         * Format a date as a relative time string (e.g., "5m ago", "2h ago").
+         * @param {Date} date - The date to format
+         * @return {string} The formatted relative time string
+         */
         function formatTimeAgo(date) {
             const now = new Date();
             const diff = now - date;
@@ -638,6 +803,11 @@
         // Request browser notification permission (with user preference persistence)
         const NOTIFICATION_PREF_KEY = 'mehr_notification_dismissed';
 
+        /**
+         * Check if the browser notification permission prompt should be shown.
+         * Considers browser permission state and user's dismissal preference.
+         * @return {boolean} True if the prompt should be shown
+         */
         function shouldShowNotificationPrompt() {
             // Don't show if user explicitly denied at browser level
             if (Notification.permission === 'denied') {
@@ -694,7 +864,13 @@
             }, 5000);
         }
 
-        // Show browser notification
+        /**
+         * Show a native browser notification (if permission granted).
+         * @param {string} title - The notification title
+         * @param {string} body - The notification body text
+         * @param {'success'|'error'|'warning'|'info'} [type='info'] - The notification type
+         * @return {void}
+         */
         function showBrowserNotification(title, body, type = 'info') {
             if ('Notification' in window && Notification.permission === 'granted') {
                 const options = {
@@ -726,7 +902,11 @@
             }
         });
 
-        // Escape HTML to prevent XSS
+        /**
+         * Escape HTML special characters to prevent XSS attacks.
+         * @param {string} text - The text to escape
+         * @return {string} The escaped HTML string
+         */
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;

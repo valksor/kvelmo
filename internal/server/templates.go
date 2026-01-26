@@ -20,6 +20,7 @@ type Templates struct {
 	project   *template.Template
 	browser   *template.Template
 	history   *template.Template
+	license   *template.Template
 	partials  map[string]*template.Template
 }
 
@@ -47,6 +48,7 @@ func LoadTemplates() (*Templates, error) {
 		templateFS,
 		"templates/base.html",
 		"templates/dashboard.html",
+		"templates/partials/specification.html",
 	)
 	if err != nil {
 		return nil, err
@@ -108,8 +110,19 @@ func LoadTemplates() (*Templates, error) {
 	}
 	t.history = history
 
+	// Load license template
+	license, err := template.New("license.html").Funcs(templateFuncs()).ParseFS(
+		templateFS,
+		"templates/base.html",
+		"templates/license.html",
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.license = license
+
 	// Load partials
-	partialNames := []string{"task_card", "actions", "specs", "question", "costs"}
+	partialNames := []string{"task_card", "actions", "specification", "question", "costs", "card", "modal", "input", "skeleton"}
 	for _, name := range partialNames {
 		partial, err := template.New(name+".html").Funcs(templateFuncs()).ParseFS(
 			templateFS,
@@ -164,6 +177,11 @@ func (t *Templates) RenderHistory(w io.Writer, data HistoryData) error {
 	return t.history.ExecuteTemplate(w, "base", data)
 }
 
+// RenderLicense renders the license page.
+func (t *Templates) RenderLicense(w io.Writer, data LicenseData) error {
+	return t.license.ExecuteTemplate(w, "base", data)
+}
+
 // DashboardData holds data for the dashboard template.
 type DashboardData struct {
 	Mode             string
@@ -174,7 +192,6 @@ type DashboardData struct {
 	HasTask          bool
 	Task             *TaskData
 	Guide            *GuideData
-	Specs            []SpecData
 	Specifications   SpecificationsData
 	PendingQuestion  *QuestionData
 	Costs            *CostsData
@@ -205,16 +222,21 @@ type ActionData struct {
 	Dangerous   bool
 }
 
-// SpecData holds specification information.
-type SpecData struct {
-	Name   string
-	Title  string
-	Status string
+// SpecificationData holds specification information.
+type SpecificationData struct {
+	Number      int
+	Name        string
+	Title       string
+	Status      string
+	Description string
+	Component   string
+	CreatedAt   string
+	CompletedAt string
 }
 
 // SpecificationsData holds specifications list with progress information.
 type SpecificationsData struct {
-	Specifications []SpecData
+	Specifications []SpecificationData
 	Total          int
 	Done           int
 	Progress       float64
@@ -241,6 +263,7 @@ type LoginData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
+	IsGlobalMode     bool   // True when in global mode
 	Error            string
 	Redirect         string
 }
@@ -250,6 +273,7 @@ type SettingsData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
+	IsGlobalMode     bool                      // True when in global mode
 	ShowSensitive    bool                      // true for Project mode, false for Global mode
 	Config           *storage.WorkspaceConfig  // Reuse existing config struct
 	Agents           []string                  // Available agents for dropdown
@@ -264,6 +288,8 @@ type ProjectData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
+	IsGlobalMode     bool                      // True when in global mode
+	Projects         []storage.ProjectMetadata // Available projects for picker
 }
 
 // BrowserData holds data for the browser control panel template.
@@ -271,6 +297,8 @@ type BrowserData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
+	IsGlobalMode     bool                      // True when in global mode
+	Projects         []storage.ProjectMetadata // Available projects for picker
 }
 
 // HistoryData holds data for the task history template.
@@ -278,6 +306,17 @@ type HistoryData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
+	IsGlobalMode     bool                      // True when in global mode
+	Projects         []storage.ProjectMetadata // Available projects for picker
+}
+
+// LicenseData holds data for the license template.
+type LicenseData struct {
+	Mode             string
+	AuthEnabled      bool
+	CanSwitchProject bool
+	IsGlobalMode     bool // True when in global mode
+	ProjectLicense   string
 }
 
 // Template helper functions.
