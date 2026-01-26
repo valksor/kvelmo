@@ -61,7 +61,7 @@ func (sm *SessionManager) ConnectOrCreate(ctx context.Context) (*Session, error)
 	// First, try to load existing session
 	session, err := sm.loadSession()
 	if err == nil && session != nil {
-		// Validate the session
+		// Validate the session metadata
 		if err := sm.validateSession(session); err != nil {
 			slog.Warn("invalid session, will create new", "error", err)
 			sm.cleanupStaleSession()
@@ -69,21 +69,37 @@ func (sm *SessionManager) ConnectOrCreate(ctx context.Context) (*Session, error)
 			return sm.launchBrowserUnlocked(ctx)
 		}
 
-		// Verify the session is still alive AND responsive
-		if sm.isProcessAlive(session.PID) {
-			if sm.isEndpointResponsive(ctx, session.Host, session.Port) {
-				slog.Info("reusing existing browser session", "pid", session.PID, "port", session.Port)
-				sm.session = session
-
-				return session, nil
+		// Fast path: check if anything is listening on the port
+		// This is much faster than isProcessAlive (which can be fooled by zombies/PID reuse)
+		// and faster than isEndpointResponsive (which waits for HTTP timeout)
+		if !sm.isPortInUse(ctx, session.Host, session.Port) {
+			// Nothing listening - definitely stale
+			slog.Debug("port not in use, session is stale", "port", session.Port, "pid", session.PID)
+			// Try to kill the process if it's still running (cleanup zombie or orphan)
+			if sm.isProcessAlive(session.PID) {
+				slog.Warn("killing stale browser process", "pid", session.PID)
+				sm.killProcess(session.PID)
 			}
-			// Process alive but not responding - kill it
+			sm.cleanupStaleSession()
+
+			return sm.launchBrowserUnlocked(ctx)
+		}
+
+		// Port is in use - verify it's actually Chrome responding
+		if sm.isEndpointResponsive(ctx, session.Host, session.Port) {
+			slog.Info("reusing existing browser session", "pid", session.PID, "port", session.Port)
+			sm.session = session
+
+			return session, nil
+		}
+
+		// Something else is using the port, or Chrome is hung
+		// Try to kill Chrome if it's still running
+		if sm.isProcessAlive(session.PID) {
 			slog.Warn("browser process unresponsive, cleaning up", "pid", session.PID, "port", session.Port)
 			sm.killProcess(session.PID)
 		}
 
-		// Session file exists but process is dead/unresponsive, clean it up
-		slog.Debug("browser session not usable, will create new", "pid", session.PID)
 		sm.cleanupStaleSession()
 	}
 
@@ -426,6 +442,8 @@ func (sm *SessionManager) sessionPath() string {
 }
 
 // isProcessAlive checks if a process with the given PID is running.
+// Note: On Linux, this can return true for zombie processes or reused PIDs.
+// Use isPortInUse for more reliable session validation.
 func (sm *SessionManager) isProcessAlive(pid int) bool {
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -435,6 +453,23 @@ func (sm *SessionManager) isProcessAlive(pid int) bool {
 	err = process.Signal(syscall.Signal(0))
 
 	return err == nil
+}
+
+// isPortInUse checks if something is listening on the given host:port.
+// This is faster and more reliable than isProcessAlive for detecting stale sessions.
+func (sm *SessionManager) isPortInUse(ctx context.Context, host string, port int) bool {
+	// Use a short timeout for quick port check (200ms is enough for local connections)
+	ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+
+	dialer := &net.Dialer{}
+	conn, err := dialer.DialContext(ctx, "tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+
+	return true
 }
 
 // isEndpointResponsive checks if Chrome's HTTP endpoint is responding.
