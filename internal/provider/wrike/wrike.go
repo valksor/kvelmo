@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 const (
@@ -163,7 +163,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		},
 		ExternalKey: numericID,
 		TaskType:    "task",
-		Slug:        naming.Slugify(task.Title, 50),
+		Slug:        slug.Slugify(task.Title, 50),
 	}
 
 	return wu, nil
@@ -373,6 +373,6 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 		},
 		ExternalKey: numericID,
 		TaskType:    "task",
-		Slug:        naming.Slugify(task.Title, 50),
+		Slug:        slug.Slugify(task.Title, 50),
 	}
 }

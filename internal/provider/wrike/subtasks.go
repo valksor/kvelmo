@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // SubtaskInfo holds summary information about a subtask.
@@ -98,7 +98,7 @@ func (p *Provider) subtaskToWorkUnit(task *Task, parentID string) *provider.Work
 		},
 		ExternalKey: numericID,
 		TaskType:    "subtask",
-		Slug:        naming.Slugify(task.Title, 50),
+		Slug:        slug.Slugify(task.Title, 50),
 	}
 }
 

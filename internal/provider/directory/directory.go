@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/file"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the registered name for this provider.
@@ -129,7 +130,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Naming fields
 		ExternalKey: externalKey,
 		TaskType:    taskType,
-		Slug:        naming.Slugify(title, 50),
+		Slug:        slug.Slugify(title, 50),
 	}
 
 	// Apply frontmatter overrides from README if present

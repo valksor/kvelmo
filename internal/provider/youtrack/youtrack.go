@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // Provider implements the YouTrack task provider.
@@ -172,7 +172,7 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 		},
 		ExternalKey: issue.IDReadable,
 		TaskType:    p.inferTaskType(issue),
-		Slug:        naming.Slugify(issue.Summary, 50),
+		Slug:        slug.Slugify(issue.Summary, 50),
 		Metadata: map[string]any{
 			"yt_id":         issue.ID,
 			"yt_project":    issue.Project.ShortName,

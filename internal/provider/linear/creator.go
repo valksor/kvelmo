@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit creates a new Linear issue
@@ -68,7 +68,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: issue.Identifier,
 		TaskType:    inferTaskTypeFromLabels(opts.Labels),
-		Slug:        naming.Slugify(issue.Title, 50),
+		Slug:        slug.Slugify(issue.Title, 50),
 		Metadata:    buildMetadata(issue),
 	}
 

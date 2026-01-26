@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // List retrieves pages from Notion database.
@@ -135,7 +135,7 @@ func pageToWorkUnit(page Page, statusProperty, labelsProperty string) *provider.
 		},
 		ExternalKey: page.ID[:8], // Use first 8 chars of UUID
 		TaskType:    "page",
-		Slug:        naming.Slugify(extractTitle(page), 50),
+		Slug:        slug.Slugify(extractTitle(page), 50),
 		Metadata:    buildMetadata(page, nil),
 	}
 }

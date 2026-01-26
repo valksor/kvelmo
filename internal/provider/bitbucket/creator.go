@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit implements the provider.WorkUnitCreator interface.
@@ -72,7 +72,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: strconv.Itoa(issue.ID),
 		TaskType:    mapBitbucketKind(issue.Kind),
-		Slug:        naming.Slugify(issue.Title, 50),
+		Slug:        slug.Slugify(issue.Title, 50),
 		Metadata: map[string]any{
 			"web_url":        webURL,
 			"workspace":      workspace,

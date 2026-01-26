@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
-// MockEventBus is a mock implementation of events.Bus for testing.
+// MockEventBus is a mock implementation of eventbus.Bus for testing.
 type MockEventBus struct {
 	mu            sync.Mutex
-	events        []events.Event
-	subscriptions map[string][]events.Handler // eventType -> handlers
-	allHandlers   []events.Handler
-	publishedRaw  []events.Event
+	events        []eventbus.Event
+	subscriptions map[string][]eventbus.Handler // eventType -> handlers
+	allHandlers   []eventbus.Handler
+	publishedRaw  []eventbus.Event
 	closed        bool
 	closeError    error
 }
@@ -22,15 +22,15 @@ type MockEventBus struct {
 // NewMockEventBus creates a new mock event bus.
 func NewMockEventBus() *MockEventBus {
 	return &MockEventBus{
-		events:        make([]events.Event, 0),
-		subscriptions: make(map[string][]events.Handler),
-		allHandlers:   make([]events.Handler, 0),
-		publishedRaw:  make([]events.Event, 0),
+		events:        make([]eventbus.Event, 0),
+		subscriptions: make(map[string][]eventbus.Handler),
+		allHandlers:   make([]eventbus.Handler, 0),
+		publishedRaw:  make([]eventbus.Event, 0),
 	}
 }
 
 // Subscribe subscribes to events of a specific type.
-func (m *MockEventBus) Subscribe(eventType events.Type, handler events.Handler) string {
+func (m *MockEventBus) Subscribe(eventType eventbus.Type, handler eventbus.Handler) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -41,7 +41,7 @@ func (m *MockEventBus) Subscribe(eventType events.Type, handler events.Handler) 
 }
 
 // SubscribeAll subscribes to all events.
-func (m *MockEventBus) SubscribeAll(handler events.Handler) string {
+func (m *MockEventBus) SubscribeAll(handler eventbus.Handler) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -56,7 +56,7 @@ func (m *MockEventBus) Unsubscribe(id string) {
 }
 
 // PublishRaw publishes a raw event.
-func (m *MockEventBus) PublishRaw(event events.Event) {
+func (m *MockEventBus) PublishRaw(event eventbus.Event) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -82,7 +82,7 @@ func (m *MockEventBus) PublishRaw(event events.Event) {
 }
 
 // Publish publishes a typed event (converts to Event and calls PublishRaw).
-func (m *MockEventBus) Publish(eventer events.Eventer) {
+func (m *MockEventBus) Publish(eventer eventbus.Eventer) {
 	event := eventer.ToEvent()
 	m.PublishRaw(event)
 }
@@ -98,23 +98,23 @@ func (m *MockEventBus) Close() error {
 }
 
 // Events returns all captured events.
-func (m *MockEventBus) Events() []events.Event {
+func (m *MockEventBus) Events() []eventbus.Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	// Return a copy to avoid race conditions
-	eventsCopy := make([]events.Event, len(m.events))
+	eventsCopy := make([]eventbus.Event, len(m.events))
 	copy(eventsCopy, m.events)
 
 	return eventsCopy
 }
 
 // PublishedRaw returns all raw published events.
-func (m *MockEventBus) PublishedRaw() []events.Event {
+func (m *MockEventBus) PublishedRaw() []eventbus.Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	eventsCopy := make([]events.Event, len(m.publishedRaw))
+	eventsCopy := make([]eventbus.Event, len(m.publishedRaw))
 	copy(eventsCopy, m.publishedRaw)
 
 	return eventsCopy
@@ -125,8 +125,8 @@ func (m *MockEventBus) Clear() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.events = make([]events.Event, 0)
-	m.publishedRaw = make([]events.Event, 0)
+	m.events = make([]eventbus.Event, 0)
+	m.publishedRaw = make([]eventbus.Event, 0)
 }
 
 // Count returns the count of captured events.
@@ -138,7 +138,7 @@ func (m *MockEventBus) Count() int {
 }
 
 // CountByType returns the count of events of a specific type.
-func (m *MockEventBus) CountByType(eventType events.Type) int {
+func (m *MockEventBus) CountByType(eventType eventbus.Type) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -153,11 +153,11 @@ func (m *MockEventBus) CountByType(eventType events.Type) int {
 }
 
 // FindByType returns events of a specific type.
-func (m *MockEventBus) FindByType(eventType events.Type) []events.Event {
+func (m *MockEventBus) FindByType(eventType eventbus.Type) []eventbus.Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	found := make([]events.Event, 0)
+	found := make([]eventbus.Event, 0)
 	for _, e := range m.events {
 		if e.Type == eventType {
 			found = append(found, e)
@@ -168,7 +168,7 @@ func (m *MockEventBus) FindByType(eventType events.Type) []events.Event {
 }
 
 // LastEvent returns the last captured event.
-func (m *MockEventBus) LastEvent() *events.Event {
+func (m *MockEventBus) LastEvent() *eventbus.Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -181,12 +181,12 @@ func (m *MockEventBus) LastEvent() *events.Event {
 }
 
 // HasEventType checks if an event of the given type was published.
-func (m *MockEventBus) HasEventType(eventType events.Type) bool {
+func (m *MockEventBus) HasEventType(eventType eventbus.Type) bool {
 	return m.CountByType(eventType) > 0
 }
 
 // AssertEventType asserts that an event of the given type was published.
-func (m *MockEventBus) AssertEventType(t TestingT, eventType events.Type) bool {
+func (m *MockEventBus) AssertEventType(t TestingT, eventType eventbus.Type) bool {
 	t.Helper()
 	if !m.HasEventType(eventType) {
 		t.Errorf("expected event type %q, but none was published. Got events: %v", eventType, m.events)
@@ -198,7 +198,7 @@ func (m *MockEventBus) AssertEventType(t TestingT, eventType events.Type) bool {
 }
 
 // AssertEventCount asserts the number of events of a type.
-func (m *MockEventBus) AssertEventCount(t TestingT, eventType events.Type, expected int) bool {
+func (m *MockEventBus) AssertEventCount(t TestingT, eventType eventbus.Type, expected int) bool {
 	t.Helper()
 	count := m.CountByType(eventType)
 	if count != expected {
@@ -211,7 +211,7 @@ func (m *MockEventBus) AssertEventCount(t TestingT, eventType events.Type, expec
 }
 
 // AssertMinEventCount asserts at least N events of a type.
-func (m *MockEventBus) AssertMinEventCount(t TestingT, eventType events.Type, minimum int) bool {
+func (m *MockEventBus) AssertMinEventCount(t TestingT, eventType eventbus.Type, minimum int) bool {
 	t.Helper()
 	count := m.CountByType(eventType)
 	if count < minimum {
@@ -231,7 +231,7 @@ func (m *MockEventBus) SetCloseError(err error) {
 }
 
 // SubscriberCount returns the number of subscribers for an event type.
-func (m *MockEventBus) SubscriberCount(eventType events.Type) int {
+func (m *MockEventBus) SubscriberCount(eventType eventbus.Type) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -284,7 +284,7 @@ func (a *AssertHelper) GetErrors() []string {
 }
 
 // AssertEventTypeWithoutT is like AssertEventType but without requiring testing.T.
-func (m *MockEventBus) AssertEventTypeWithoutT(eventType events.Type) *AssertHelper {
+func (m *MockEventBus) AssertEventTypeWithoutT(eventType eventbus.Type) *AssertHelper {
 	h := &AssertHelper{}
 	m.AssertEventType(h, eventType)
 

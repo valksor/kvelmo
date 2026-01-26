@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit creates a new task in Asana.
@@ -52,6 +52,6 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: task.GID,
 		TaskType:    "task",
-		Slug:        naming.Slugify(task.Name, 50),
+		Slug:        slug.Slugify(task.Name, 50),
 	}, nil
 }

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the canonical name for this provider.
@@ -687,8 +687,8 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 	result = strings.ReplaceAll(result, "{id}", task.ID)
 
 	// Slugify title
-	slug := naming.Slugify(task.Title, 50)
-	result = strings.ReplaceAll(result, "{slug}", slug)
+	titleSlug := slug.Slugify(task.Title, 50)
+	result = strings.ReplaceAll(result, "{slug}", titleSlug)
 
 	return result
 }

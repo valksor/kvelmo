@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit creates a new Jira issue.
@@ -92,7 +92,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: issue.Key,
 		TaskType:    inferTaskTypeFromLabels(opts.Labels),
-		Slug:        naming.Slugify(issue.Fields.Summary, 50),
+		Slug:        slug.Slugify(issue.Fields.Summary, 50),
 		Metadata:    buildMetadata(issue),
 	}
 
