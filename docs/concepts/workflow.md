@@ -10,13 +10,13 @@ Mehrhof uses a state machine to manage the task lifecycle. Understanding the wor
 
 ### Primary States
 
-| State            | Description                       | Available Actions                                 |
-| ---------------- | --------------------------------- | ------------------------------------------------- |
-| **idle**         | Task registered, ready for action | plan, implement, review, finish, undo, redo      |
-| **planning**     | AI creating specifications        | Wait for completion                               |
-| **implementing** | AI generating code                | Wait for completion                               |
-| **reviewing**    | Code review in progress           | Wait for completion                               |
-| **done**         | Task completed and merged         | None (terminal)                                   |
+| State            | Description                       | CLI Action | Web UI Action |
+| ---------------- | --------------------------------- | ----------- | ------------ |
+| **idle**         | Task registered, ready for action | `mehr plan` | Click **Plan** button |
+| **planning**     | AI creating specifications        | Wait | Watch output |
+| **implementing** | AI generating code                | Wait | Watch output |
+| **reviewing**    | Code review in progress           | Wait | Watch output |
+| **done**         | Task completed and merged         | None | None |
 
 ### Auxiliary States
 
@@ -31,14 +31,16 @@ Mehrhof uses a state machine to manage the task lifecycle. Understanding the wor
 
 ### 1. Start Phase
 
-Register a task and prepare the workspace:
+Register a task and prepare the workspace.
 
+**CLI:**
 ```bash
 mehr start task.md
 ```
 
-What happens:
+**Web UI:** Click **"Create Task"** button on dashboard
 
+What happens:
 - Task ID is generated
 - Git branch `task/<id>` is created
 - Work directory `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/` is initialized
@@ -46,14 +48,16 @@ What happens:
 
 ### 2. Planning Phase
 
-AI analyzes requirements and creates specifications:
+AI analyzes requirements and creates specifications.
 
+**CLI:**
 ```bash
 mehr plan
 ```
 
-What happens:
+**Web UI:** Click **"Plan"** button in Active Task card
 
+What happens:
 - AI reads the source content and any notes
 - Specifications (specification files) are generated
 - Files are saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/specifications/`
@@ -61,18 +65,18 @@ What happens:
 
 ### 3. Implementation Phase
 
-AI implements the specifications:
+AI implements the specifications.
 
+**CLI:**
 ```bash
 mehr implement
 ```
 
-Requirements:
+**Web UI:** Click **"Implement"** button in Active Task card
 
-- At least one specification file must exist
+**Requirements:** At least one specification file must exist
 
 What happens:
-
 - AI reads all specification files and notes
 - Code is generated or modified
 - Changes are committed with checkpoint
@@ -80,28 +84,32 @@ What happens:
 
 ### 4. Review Phase (Optional)
 
-Automated code review:
+Automated code review.
 
+**CLI:**
 ```bash
 mehr review
 ```
 
-What happens:
+**Web UI:** Click **"Review"** button in Active Task card
 
+What happens:
 - CodeRabbit analyzes the changes
 - Review saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/reviews/`
 - Issues are reported for your attention
 
 ### 5. Finish Phase
 
-Complete and merge the task:
+Complete and merge the task.
 
+**CLI:**
 ```bash
 mehr finish
 ```
 
-What happens:
+**Web UI:** Click **"Finish"** button in Active Task card
 
+What happens:
 - Quality checks run (if `make quality` exists)
 - Changes squash-merged to target branch
 - Task branch deleted
@@ -136,6 +144,7 @@ Events trigger state transitions:
 
 ## Typical User Journey
 
+**CLI:**
 ```
 1. mehr start task.md     → idle (task registered)
 2. mehr plan              → planning → idle (specifications created)
@@ -148,12 +157,27 @@ Events trigger state transitions:
 9. mehr finish            → done (merged)
 ```
 
+**Web UI:**
+```
+1. Click "Create Task"    → idle (task registered)
+2. Click "Plan"           → planning → idle (specifications created)
+3. [Review specifications, add notes with "Add Note" button]
+4. Click "Implement"     → implementing → idle (code generated)
+5. [Review changes, maybe use "Undo"]
+6. Click "Review"        → reviewing → idle (review done)
+7. Click "Finish"        → done (merged)
+```
+
 ## Parallel Workflows
 
 Each task runs in its own branch. You can:
-
 - Switch between task branches
 - Work on multiple tasks
 - Use git worktrees for isolation
 
-See [Tasks](concepts/tasks.md) for more on managing multiple tasks.
+See [Tasks](tasks.md) for more on managing multiple tasks.
+
+## See Also
+
+- [CLI: workflow](../cli/workflow.md) - CLI workflow commands
+- [Web UI: Overview](../web-ui/index.md) - Web UI guide
