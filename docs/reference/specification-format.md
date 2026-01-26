@@ -129,6 +129,7 @@ Create `internal/api/health_test.go` with:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `priority` | int | 1 | Implementation priority |
+| `component` | string | - | Component name (e.g., backend, frontend, tests, api, ui) for targeted implementation |
 | `created_at` | datetime | - | Creation timestamp |
 | `updated_at` | datetime | - | Last modification |
 | `completed_at` | datetime | null | Completion timestamp |
