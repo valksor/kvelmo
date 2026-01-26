@@ -65,6 +65,8 @@ jobs:
 
             -   name: Test
                 run: make test
+                env:
+                    CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 
             -   name: Test (Race Detector)
                 if: matrix.goos == 'linux' && matrix.goarch == 'amd64'

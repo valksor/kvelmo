@@ -517,6 +517,13 @@ func (sm *SessionManager) killProcess(pid int) {
 
 // findChrome locates the Chrome executable on the system.
 func findChrome() (string, error) {
+	// Check explicit environment variable first (for CI/custom installs)
+	if path := os.Getenv("CHROME_PATH"); path != "" {
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+
 	// Try PATH first (covers most Linux distributions)
 	executables := []string{
 		"google-chrome",
