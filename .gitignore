@@ -14,7 +14,6 @@ bun.lock
 covprofile
 internal/agent/browser/.mehrhof
 internal/memory/.mehrhof
-internal/server/static/licenses.json
 node_modules/
 /mehr
 .mehrhof/browser.json
