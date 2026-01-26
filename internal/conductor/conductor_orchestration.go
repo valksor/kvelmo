@@ -3,13 +3,23 @@ package conductor
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/agent/orchestration"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // getOrchestratorConfig returns the orchestration configuration for a step.
+// Returns ad-hoc config from ParallelCount option if set, otherwise uses YAML config.
 func (c *Conductor) getOrchestratorConfig(step string) (*orchestration.OrchestratorConfig, bool) {
+	// Check for ad-hoc parallel execution from ParallelCount option
+	if c.opts.ParallelCount != "" {
+		if adHocConfig := c.createAdHocParallelConfig(step, c.opts.ParallelCount); adHocConfig != nil {
+			return adHocConfig, true
+		}
+	}
+
 	cfg, err := c.workspace.LoadConfig()
 	if err != nil {
 		return nil, false
@@ -26,6 +36,87 @@ func (c *Conductor) getOrchestratorConfig(step string) (*orchestration.Orchestra
 
 	// Convert storage config to orchestration config
 	return convertOrchestratorConfig(&stepConfig, step), true
+}
+
+// createAdHocParallelConfig creates an ad-hoc orchestration config from ParallelCount option.
+// ParallelCount can be:
+//   - A number like "2", "3", "4" - runs N agents in parallel using the default agent
+//   - Comma-separated agent names like "claude,gemini" - runs specific agents in parallel
+func (c *Conductor) createAdHocParallelConfig(_ string, parallelCount string) *orchestration.OrchestratorConfig {
+	var agentNames []string
+	mode := orchestration.ModeParallel
+
+	// Parse parallel count - could be a number or comma-separated agents
+	if strings.Contains(parallelCount, ",") {
+		// Comma-separated agent names
+		agentNames = strings.Split(parallelCount, ",")
+		for i, name := range agentNames {
+			agentNames[i] = strings.TrimSpace(name)
+		}
+	} else {
+		// Numeric count - use default agent that many times
+		count, err := strconv.Atoi(parallelCount)
+		if err != nil || count < 2 {
+			// Invalid or less than 2, no point in parallel
+			return nil
+		}
+
+		// Get default agent name from coordination or use first available
+		defaultAgent := c.getDefaultAgentName()
+		if defaultAgent == "" {
+			return nil
+		}
+
+		for range count {
+			agentNames = append(agentNames, defaultAgent)
+		}
+	}
+
+	// Create agent steps for parallel execution
+	config := &orchestration.OrchestratorConfig{
+		Mode:   mode,
+		Agents: make([]orchestration.AgentStep, 0, len(agentNames)),
+	}
+
+	for i, agentName := range agentNames {
+		config.Agents = append(config.Agents, orchestration.AgentStep{
+			Name:  fmt.Sprintf("parallel-%d", i+1),
+			Agent: agentName,
+			Role:  fmt.Sprintf("Parallel agent %d", i+1),
+		})
+	}
+
+	return config
+}
+
+// getDefaultAgentName returns the default agent name for parallel execution.
+// Tries to get the step-specific agent, then default agent from config.
+func (c *Conductor) getDefaultAgentName() string {
+	// Handle nil workspace (e.g., in tests)
+	if c.workspace == nil {
+		return "claude"
+	}
+
+	// Try to get agent from coordination
+	cfg, err := c.workspace.LoadConfig()
+	if err != nil {
+		return "claude"
+	}
+
+	// Check for step-specific agent
+	if cfg.Agent.Steps != nil {
+		if stepConfig, ok := cfg.Agent.Steps["implementing"]; ok && stepConfig.Name != "" {
+			return stepConfig.Name
+		}
+	}
+
+	// Check for default agent
+	if cfg.Agent.Default != "" {
+		return cfg.Agent.Default
+	}
+
+	// Fallback to "claude" as the default
+	return "claude"
 }
 
 // convertOrchestratorConfig converts storage orchestration config to internal format.

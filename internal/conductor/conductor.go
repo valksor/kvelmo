@@ -219,6 +219,24 @@ func (c *Conductor) logVerbosef(format string, args ...any) {
 	}
 }
 
+// SetImplementationOptions temporarily sets implementation options for the next implement call.
+// This is used by the Web UI to pass component filter and parallel mode via query parameters.
+func (c *Conductor) SetImplementationOptions(component, parallel string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.opts.OnlyComponent = component
+	c.opts.ParallelCount = parallel
+}
+
+// ClearImplementationOptions clears temporary implementation options.
+// Should be called after implementation to reset to defaults.
+func (c *Conductor) ClearImplementationOptions() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.opts.OnlyComponent = ""
+	c.opts.ParallelCount = ""
+}
+
 // logError logs an error using the callback if configured.
 func (c *Conductor) logError(err error) {
 	if c.opts.OnError != nil {
