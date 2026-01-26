@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the registered name for this provider.
@@ -193,7 +193,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Naming fields
 		ExternalKey: strconv.Itoa(issue.ID),
 		TaskType:    mapBitbucketKind(issue.Kind),
-		Slug:        naming.Slugify(issue.Title, 50),
+		Slug:        slug.Slugify(issue.Title, 50),
 
 		Metadata: map[string]any{
 			"web_url":        webURL,

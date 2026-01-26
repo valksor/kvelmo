@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit creates a new GitHub issue.
@@ -61,7 +61,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: strconv.Itoa(issue.GetNumber()),
 		TaskType:    inferTaskTypeFromLabels(opts.Labels),
-		Slug:        naming.Slugify(opts.Title, 50),
+		Slug:        slug.Slugify(opts.Title, 50),
 		Metadata: map[string]any{
 			"html_url":     issue.GetHTMLURL(),
 			"owner":        owner,

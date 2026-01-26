@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
@@ -85,7 +85,7 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 			Status:      status,
 			Priority:    provider.PriorityNormal,
 			TaskType:    "subtask",
-			Slug:        naming.Slugify(task.Text, 50),
+			Slug:        slug.Slugify(task.Text, 50),
 			CreatedAt:   createdAt,
 			UpdatedAt:   updatedAt,
 			Source: provider.SourceInfo{

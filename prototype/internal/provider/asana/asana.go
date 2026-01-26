@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the canonical name for this provider.
@@ -264,7 +264,7 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 		Provider:    ProviderName,
 		Title:       task.Name,
 		Description: task.Notes,
-		Slug:        naming.Slugify(task.Name, 50),
+		Slug:        slug.Slugify(task.Name, 50),
 		Status:      mapAsanaStatus(task),
 		Priority:    provider.PriorityNormal, // Asana doesn't have built-in priority
 		TaskType:    mapTaskType(task),
@@ -478,8 +478,8 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 	result = strings.ReplaceAll(result, "{id}", task.ID)
 
 	// Slugify title
-	slug := naming.Slugify(task.Title, 50)
-	result = strings.ReplaceAll(result, "{slug}", slug)
+	titleSlug := slug.Slugify(task.Title, 50)
+	result = strings.ReplaceAll(result, "{slug}", titleSlug)
 
 	return result
 }

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // taskListPattern matches GitHub/GitLab-style task list items
@@ -95,7 +95,7 @@ func parseTaskListToWorkUnits(body, parentID string) []*provider.WorkUnit {
 			},
 			ExternalKey: fmt.Sprintf("task-%d", i),
 			TaskType:    "subtask",
-			Slug:        naming.Slugify(title, 50),
+			Slug:        slug.Slugify(title, 50),
 			Metadata: map[string]any{
 				"parent_id":   parentID,
 				"is_subtask":  true,

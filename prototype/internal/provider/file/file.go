@@ -11,6 +11,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the registered name for this provider.
@@ -110,7 +111,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Naming fields
 		ExternalKey: externalKey,
 		TaskType:    taskType,
-		Slug:        naming.Slugify(parsed.Title, 50),
+		Slug:        slug.Slugify(parsed.Title, 50),
 	}
 
 	// Extract attachment references from markdown

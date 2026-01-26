@@ -2,6 +2,8 @@ package naming
 
 import (
 	"testing"
+
+	"github.com/valksor/go-toolkit/slug"
 )
 
 func TestSlugify(t *testing.T) {
@@ -75,9 +77,9 @@ func TestSlugify(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Slugify(tt.title, tt.maxLen)
+			got := slug.Slugify(tt.title, tt.maxLen)
 			if got != tt.want {
-				t.Errorf("Slugify(%q, %d) = %q, want %q", tt.title, tt.maxLen, got, tt.want)
+				t.Errorf("slug.Slugify(%q, %d) = %q, want %q", tt.title, tt.maxLen, got, tt.want)
 			}
 		})
 	}

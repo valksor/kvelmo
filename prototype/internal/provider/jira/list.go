@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // List retrieves issues from Jira.
@@ -144,7 +144,7 @@ func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
 		},
 		ExternalKey: issue.Key,
 		TaskType:    inferTaskTypeFromLabels(issue.Fields.Labels),
-		Slug:        naming.Slugify(issue.Fields.Summary, 50),
+		Slug:        slug.Slugify(issue.Fields.Summary, 50),
 		Metadata:    buildMetadata(issue),
 	}
 }

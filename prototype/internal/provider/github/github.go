@@ -9,9 +9,9 @@ import (
 
 	gh "github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/cache"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // ProviderName is the registered name for this provider.
@@ -225,7 +225,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Naming fields for branch/commit customization
 		ExternalKey: strconv.Itoa(issue.GetNumber()),
 		TaskType:    inferTypeFromLabels(issue.Labels),
-		Slug:        naming.Slugify(issue.GetTitle(), 50),
+		Slug:        slug.Slugify(issue.GetTitle(), 50),
 
 		Metadata: map[string]any{
 			"html_url":       issue.GetHTMLURL(),

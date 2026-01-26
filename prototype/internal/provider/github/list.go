@@ -8,8 +8,8 @@ import (
 
 	gh "github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // List retrieves issues from the repository.
@@ -104,7 +104,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 			},
 			ExternalKey: strconv.Itoa(issue.GetNumber()),
 			TaskType:    inferTypeFromLabels(issue.Labels),
-			Slug:        naming.Slugify(issue.GetTitle(), 50),
+			Slug:        slug.Slugify(issue.GetTitle(), 50),
 			Metadata: map[string]any{
 				"html_url":     issue.GetHTMLURL(),
 				"owner":        owner,

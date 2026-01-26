@@ -11,8 +11,8 @@ import (
 
 	gl "gitlab.com/gitlab-org/api/client-go"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // hashURL generates a stable 8-character hash from a URL for attachment IDs.
@@ -223,7 +223,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Naming fields for branch/commit customization
 		ExternalKey: strconv.FormatInt(issue.IID, 10),
 		TaskType:    inferTypeFromLabels(issue.Labels),
-		Slug:        naming.Slugify(issue.Title, 50),
+		Slug:        slug.Slugify(issue.Title, 50),
 
 		Metadata: map[string]any{
 			"web_url":        issue.WebURL,

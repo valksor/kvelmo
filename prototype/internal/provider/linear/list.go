@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // List retrieves issues from Linear.
@@ -126,7 +126,7 @@ func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
 		},
 		ExternalKey: issue.Identifier,
 		TaskType:    "issue",
-		Slug:        naming.Slugify(issue.Title, 50),
+		Slug:        slug.Slugify(issue.Title, 50),
 		Metadata:    buildMetadata(issue),
 	}
 }

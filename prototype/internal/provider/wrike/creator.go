@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // CreateWorkUnit implements the provider.WorkUnitCreator interface.
@@ -70,7 +70,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		},
 		ExternalKey: numericID,
 		TaskType:    "task",
-		Slug:        naming.Slugify(task.Title, 50),
+		Slug:        slug.Slugify(task.Title, 50),
 	}, nil
 }
 
