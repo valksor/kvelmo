@@ -50,9 +50,7 @@ signs:
             - "${artifact}"
             - "-s"
             - "${env.MINISIGN_KEY_FILE}"
-            - "-P"
-            - "${env.MINISIGN_PASSWORD}"
-            - "-o"
+            - "-x"
             - "${signature}"
         artifacts: checksum
         env:
