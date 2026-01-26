@@ -263,7 +263,7 @@ type LoginData struct {
 	Mode             string
 	AuthEnabled      bool
 	CanSwitchProject bool
-	IsGlobalMode     bool   // True when in global mode
+	IsGlobalMode     bool // True when in global mode
 	Error            string
 	Redirect         string
 }
