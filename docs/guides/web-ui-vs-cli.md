@@ -287,7 +287,7 @@ flowchart TD
 
 ### New to Mehrhof?
 
-Start with the **[Web UI Getting Started guide](web-ui-getting-started.md)** to learn the basics visually.
+Start with the **[Web UI Getting Started guide](../web-ui/getting-started.md)** to learn the basics visually.
 
 ### Already Comfortable with CLI?
 
@@ -318,7 +318,7 @@ Jump to the **[Your First Task](first-task.md)** CLI tutorial.
 
 ## Further Reading
 
-- [Web UI Getting Started](web-ui-getting-started.md) - Step-by-step Web UI tutorial
+- [Web UI Getting Started](../web-ui/getting-started.md) - Step-by-step Web UI tutorial
 - [Your First Task (CLI)](first-task.md) - Step-by-step CLI tutorial
-- [Managing Tasks with Web UI](web-ui-tasks.md) - Advanced Web UI workflows
+- [Managing Tasks with Web UI](../web-ui/creating-tasks.md) - Advanced Web UI workflows
 - [CLI Reference](../cli/index.md) - Complete command documentation
