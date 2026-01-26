@@ -104,7 +104,7 @@ mehr serve --open
 - Real-time streaming of the AI's output
 - Cost tracking and task history
 
-**[Full Web UI Guide](guides/web-ui-getting-started.md)** - Complete walkthrough with screenshots
+**[Full Web UI Guide](web-ui/getting-started.md)** - Complete walkthrough with screenshots
 
 ### CLI (For Automation Enthusiasts)
 

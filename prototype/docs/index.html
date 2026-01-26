@@ -113,9 +113,9 @@
                             const versionEl = document.querySelector('.app-name-link');
                             if (versionEl) {
                                 if (path.includes('/nightly')) {
-                                    versionEl.textContent = 'Valksor Mehrhof (nightly)';
+                                    versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:red;font-weight:bold">(nightly)</small>';
                                 } else if (path.includes('/latest')) {
-                                    versionEl.textContent = 'Valksor Mehrhof (latest)';
+                                    versionEl.innerHTML = 'Valksor Mehrhof <small style="font-size:14px;color:green;font-weight:bold">(latest)</small>';
                                 }
                             }
                         });
