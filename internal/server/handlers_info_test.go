@@ -494,3 +494,65 @@ func TestHandler_WorkflowDiagram_ReturnsSVG(t *testing.T) {
 	assert.Contains(t, bodyStr, "state-box", "SVG should contain state boxes")
 	assert.Contains(t, bodyStr, "</svg>", "response should close SVG tag")
 }
+
+func TestHandler_License(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil, // License endpoint doesn't require conductor
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// Test project license endpoint
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/license")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, _ := io.ReadAll(resp.Body)
+	assert.Contains(t, string(body), "BSD 3-Clause")
+	assert.Contains(t, string(body), "SIA Valksor")
+}
+
+func TestHandler_LicenseInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil, // License info endpoint doesn't require conductor
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/license/info")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, _ := io.ReadAll(resp.Body)
+	var result licensesListResponse
+	require.NoError(t, json.Unmarshal(body, &result))
+
+	assert.Greater(t, result.Count, 0, "expected at least one license")
+	assert.NotEmpty(t, result.Licenses)
+
+	// Check structure
+	for _, lic := range result.Licenses {
+		assert.NotEmpty(t, lic.Path, "license path should not be empty")
+		assert.NotEmpty(t, lic.License, "license should not be empty")
+	}
+}

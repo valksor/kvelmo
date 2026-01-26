@@ -375,6 +375,7 @@ type MLPredictionsConfig struct {
 type AgentAliasConfig struct {
 	Extends     string            `yaml:"extends"`               // Base agent name to wrap
 	Description string            `yaml:"description,omitempty"` // Human-readable description
+	Components  []string          `yaml:"components,omitempty"`  // Components this agent handles (e.g., backend, frontend, tests)
 	Env         map[string]string `yaml:"env,omitempty"`         // Environment variables to pass
 	Args        []string          `yaml:"args,omitempty"`        // CLI arguments to pass
 }
@@ -903,6 +904,7 @@ func expandEnvInAgentAliasConfig(cfg AgentAliasConfig) AgentAliasConfig {
 	return AgentAliasConfig{
 		Extends:     expandEnvInString(cfg.Extends),
 		Description: expandEnvInString(cfg.Description),
+		Components:  cfg.Components, // Components list doesn't need env expansion
 		Env:         expandEnvInMap(cfg.Env),
 		Args:        expandEnvInStringSlice(cfg.Args),
 	}

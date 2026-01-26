@@ -1,10 +1,15 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"slices"
+	"strings"
+
+	"github.com/valksor/go-toolkit/licensing"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/server/static"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
@@ -423,4 +428,183 @@ func enhanceTaskResponseWithPendingQuestion(response map[string]any, ws *storage
 			}
 		}
 	}
+}
+
+// handleLicense returns the project license text.
+func (s *Server) handleLicense(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(licensing.GetProjectLicense()))
+}
+
+// handleLicenseInfo returns all dependency licenses.
+// Licenses are embedded at build time via go:embed for instant access.
+func (s *Server) handleLicenseInfo(w http.ResponseWriter, r *http.Request) {
+	// Read embedded licenses.json
+	data, err := static.FS.ReadFile("licenses.json")
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to read licenses: "+err.Error())
+
+		return
+	}
+
+	var response licensesListResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to parse licenses: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// handleListAgentAliases returns all configured agent aliases.
+func (s *Server) handleListAgentAliases(w http.ResponseWriter, r *http.Request) {
+	ws := s.getWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
+
+		return
+	}
+
+	// Return agents map (aliases)
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"agents": cfg.Agents,
+	})
+}
+
+// handleCreateAgentAlias creates a new agent alias.
+func (s *Server) handleCreateAgentAlias(w http.ResponseWriter, r *http.Request) {
+	ws := s.getWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	var req struct {
+		Name        string   `json:"name"`
+		Extends     string   `json:"extends"`
+		Description string   `json:"description"`
+		Components  []string `json:"components"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+
+		return
+	}
+
+	if req.Name == "" {
+		s.writeError(w, http.StatusBadRequest, "name is required")
+
+		return
+	}
+	if req.Extends == "" {
+		s.writeError(w, http.StatusBadRequest, "extends is required")
+
+		return
+	}
+
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
+
+		return
+	}
+
+	if cfg.Agents == nil {
+		cfg.Agents = make(map[string]storage.AgentAliasConfig)
+	}
+
+	cfg.Agents[req.Name] = storage.AgentAliasConfig{
+		Extends:     req.Extends,
+		Description: req.Description,
+		Components:  req.Components,
+	}
+
+	if err := ws.SaveConfig(cfg); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, map[string]string{
+		"status":  "created",
+		"message": "Agent alias created",
+	})
+}
+
+// handleDeleteAgentAlias deletes an agent alias.
+func (s *Server) handleDeleteAgentAlias(w http.ResponseWriter, r *http.Request) {
+	ws := s.getWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	// Extract alias name from path (after /api/v1/agents/aliases/)
+	// The router pattern is DELETE /api/v1/agents/aliases/
+	// We need to get the name from the path
+	path := r.URL.Path
+	prefix := "/api/v1agents/aliases/"
+	if !strings.HasPrefix(path, prefix) {
+		// Try with full path
+		prefix = "/api/v1/agents/aliases/"
+	}
+
+	name := strings.TrimPrefix(path, prefix)
+	if name == "" {
+		s.writeError(w, http.StatusBadRequest, "alias name is required")
+
+		return
+	}
+
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
+
+		return
+	}
+
+	if cfg.Agents == nil {
+		s.writeError(w, http.StatusNotFound, "alias not found")
+
+		return
+	}
+
+	if _, exists := cfg.Agents[name]; !exists {
+		s.writeError(w, http.StatusNotFound, "alias not found: "+name)
+
+		return
+	}
+
+	delete(cfg.Agents, name)
+
+	if err := ws.SaveConfig(cfg); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]string{
+		"status":  "deleted",
+		"message": "Agent alias deleted",
+	})
+}
+
+// getWorkspace returns the workspace, handling both project and global modes.
+func (s *Server) getWorkspace() *storage.Workspace {
+	if s.config.Mode == ModeProject && s.config.Conductor != nil {
+		return s.config.Conductor.GetWorkspace()
+	}
+
+	return nil
 }
