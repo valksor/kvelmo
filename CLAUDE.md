@@ -101,7 +101,7 @@ See [README.md](README.md) for full documentation.
 mehr start <ref> | plan | implement | review | finish | continue | auto <ref>
 ```
 
-Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`
+Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
 
 ## Architecture
 
@@ -135,6 +135,11 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 | `internal/registration/` | Standard agent and provider registration functions |
 | `internal/update/` | Self-update mechanism from GitHub releases |
 | `internal/template/` | Template system for prompts and specifications |
+| `internal/export/` | AI task plan output parsing into structured format |
+| `internal/cost/` | ASCII chart generation for cost visualization |
+| `internal/validation/` | Workspace configuration validation with error codes |
+| `internal/project/` | Dependency graph generation for task visualization |
+| `internal/display/` | Display formatting utilities (wraps go-toolkit display) |
 
 ### Key Patterns
 
@@ -149,6 +154,18 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 **Registry Pattern**: Providers and agents register themselves and are looked up by name/scheme at runtime.
 
 **Event-Driven**: Components communicate via `events.Bus`, enabling loose coupling.
+
+**Plugin System**: External agents and providers can be added via plugins. Plugins use JSON-RPC over stdio and are configured via `plugin.yaml` manifests.
+
+**Plugin manifest structure:**
+```yaml
+name: my-provider
+version: 1.0.0
+type: provider
+entry: ./bin/my-provider
+```
+
+See `internal/plugin/` for protocol details and registration.
 
 ### Web UI Architecture
 
