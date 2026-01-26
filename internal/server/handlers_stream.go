@@ -19,6 +19,7 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		s.writeError(w, http.StatusInternalServerError, "streaming not supported")
+
 		return
 	}
 
@@ -38,12 +39,14 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 
 	if taskID == "" {
 		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "no active task"})
+
 		return
 	}
 
 	// Subscribe to agent output events
 	if s.config.EventBus == nil {
 		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "event bus not available"})
+
 		return
 	}
 

@@ -745,6 +745,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 		// Render and return the full dashboard HTML
 		// HTMX will swap the body content, URL stays the same
 		s.handleDashboard(w, r)
+
 		return
 	}
 
