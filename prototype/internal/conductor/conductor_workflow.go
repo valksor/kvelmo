@@ -67,6 +67,16 @@ func (c *Conductor) Implement(ctx context.Context) error {
 		return errors.New("no specifications found - run 'task plan' first")
 	}
 
+	// Filter by component if OnlyComponent is set
+	if c.opts.OnlyComponent != "" {
+		filtered := c.filterSpecificationsByComponent(c.activeTask.ID, specifications, c.opts.OnlyComponent)
+		if len(filtered) == 0 {
+			return fmt.Errorf("no specifications found for component: %s", c.opts.OnlyComponent)
+		}
+		c.logVerbosef("Filtered to %d specification(s) for component: %s", len(filtered), c.opts.OnlyComponent)
+		specifications = filtered
+	}
+
 	// Update machine with specifications
 	wu := c.machine.WorkUnit()
 	if wu != nil {
@@ -517,4 +527,26 @@ func (c *Conductor) askUserFinishAction() string {
 			fmt.Println("Invalid choice. Please enter 1, 2, or 3.")
 		}
 	}
+}
+
+// filterSpecificationsByComponent filters specifications by component name.
+// Matches if the spec's component field exactly matches or is contained in the component list.
+func (c *Conductor) filterSpecificationsByComponent(taskID string, specNumbers []int, component string) []int {
+	var filtered []int
+
+	for _, num := range specNumbers {
+		spec, err := c.workspace.ParseSpecification(taskID, num)
+		if err != nil {
+			c.logVerbosef("Failed to parse spec %d: %v", num, err)
+
+			continue
+		}
+
+		// Check if component matches
+		if spec.Component == component {
+			filtered = append(filtered, num)
+		}
+	}
+
+	return filtered
 }

@@ -38,6 +38,10 @@ type Options struct {
 	// Prompt optimization
 	OptimizePrompts bool // Optimize prompts before sending to working agent
 
+	// Component filtering
+	OnlyComponent string // Only implement this component (e.g., "backend", "frontend", "tests")
+	ParallelCount string // Parallel execution: count (N) or comma-separated agents
+
 	// Output
 	Stdout io.Writer // Where to write output (default: os.Stdout)
 	Stderr io.Writer // Where to write errors (default: os.Stderr)
@@ -300,6 +304,20 @@ func WithHomeDir(dir string) Option {
 func WithBrowserConfig(cfg browser.Config) Option {
 	return func(o *Options) {
 		o.BrowserConfig = &cfg
+	}
+}
+
+// WithOnlyComponent sets component filtering to only implement one component.
+func WithOnlyComponent(component string) Option {
+	return func(o *Options) {
+		o.OnlyComponent = component
+	}
+}
+
+// WithParallel sets parallel execution mode (count or comma-separated agents).
+func WithParallel(parallel string) Option {
+	return func(o *Options) {
+		o.ParallelCount = parallel
 	}
 }
 

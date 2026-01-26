@@ -18,6 +18,8 @@ var (
 	implementDryRun            bool
 	implementAgentImplementing string
 	implementOptimize          bool
+	implementOnly              string
+	implementParallel          string
 )
 
 var implementCmd = &cobra.Command{
@@ -43,6 +45,8 @@ func init() {
 	implementCmd.Flags().BoolVarP(&implementDryRun, "dry-run", "n", false, "Don't apply file changes (preview only)")
 	implementCmd.Flags().StringVar(&implementAgentImplementing, "agent-implement", "", "Agent for implementation step")
 	implementCmd.Flags().BoolVar(&implementOptimize, "optimize", false, "Optimize prompt before sending to agent")
+	implementCmd.Flags().StringVar(&implementOnly, "only", "", "Only implement this component (e.g., backend, frontend, tests)")
+	implementCmd.Flags().StringVar(&implementParallel, "parallel", "", "Run N agents in parallel, or comma-separated agent list")
 }
 
 func runImplement(cmd *cobra.Command, args []string) error {
@@ -62,6 +66,16 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	// Prompt optimization
 	if implementOptimize {
 		opts = append(opts, conductor.WithOptimizePrompts(true))
+	}
+
+	// Component filtering
+	if implementOnly != "" {
+		opts = append(opts, conductor.WithOnlyComponent(implementOnly))
+	}
+
+	// Parallel execution
+	if implementParallel != "" {
+		opts = append(opts, conductor.WithParallel(implementParallel))
 	}
 
 	// Use deduplicating stdout in verbose mode to suppress duplicate lines
