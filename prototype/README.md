@@ -159,11 +159,12 @@ mehr serve auth add admin yourpassword
 mehr serve --host 0.0.0.0 --port 8080
 ```
 
-**Access via SSH Tunnel** (recommended for remote):
+**Access via SSH Reverse Tunnel** (serve locally, access from remote):
 
 ```bash
-ssh -L 3000:localhost:3000 your-server.com
-# Then open http://localhost:3000 in your browser
+# On your local machine, create reverse tunnel to remote server:
+ssh -R 3000:localhost:3000 user@your-server.com
+# Then on the remote server, open: http://localhost:3000
 ```
 
 **[Full Web UI Documentation](https://valksor.com/docs/mehrhof/#/guides/web-ui-getting-started)** - Complete walkthrough with ASCII visualizations
