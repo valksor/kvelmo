@@ -93,6 +93,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
 		ShowSensitive:    isLocalRequest(r), // Only show tokens when accessed locally
 		Config:           cfg,
 		Agents:           agents,

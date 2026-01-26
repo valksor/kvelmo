@@ -340,10 +340,10 @@ func (r *ToolRegistry) buildInputSchema(cmd *cobra.Command) map[string]interface
 	// Add local flags
 	cmd.LocalFlags().VisitAll(func(flag *pflag.Flag) {
 		properties[flag.Name] = r.mapFlagToSchema(flag)
-		// Mark as required if it has no default value and isn't optional
-		if flag.DefValue == "" && !flag.Changed {
-			// Skip required check for boolean flags (they default to false)
-			if flag.Value.Type() != "bool" {
+		// Only mark as required if explicitly marked via MarkFlagRequired()
+		// MarkFlagRequired sets the "cobra_annotation_bash_completion_one_required_flag" annotation
+		if flag.Annotations != nil {
+			if _, ok := flag.Annotations["cobra_annotation_bash_completion_one_required_flag"]; ok {
 				required = append(required, flag.Name)
 			}
 		}

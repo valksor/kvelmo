@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // handleBrowserUI renders the browser control panel page.
@@ -20,6 +21,14 @@ func (s *Server) handleBrowserUI(w http.ResponseWriter, r *http.Request) {
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
+	}
+
+	// Load projects in global mode for project picker
+	if s.config.Mode == ModeGlobal {
+		if registry, err := storage.LoadRegistry(); err == nil {
+			data.Projects = registry.List()
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
