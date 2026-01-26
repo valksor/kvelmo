@@ -232,6 +232,16 @@ func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Parse query parameters for implementation options
+	component := r.URL.Query().Get("component")
+	parallel := r.URL.Query().Get("parallel")
+
+	// Apply temporary options if specified
+	if component != "" || parallel != "" {
+		s.config.Conductor.SetImplementationOptions(component, parallel)
+		defer s.config.Conductor.ClearImplementationOptions()
+	}
+
 	// Enter implementing phase
 	if err := s.config.Conductor.Implement(r.Context()); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to enter implementing: "+err.Error())
@@ -727,7 +737,18 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("switched to project mode", "path", projectPath)
 
-	// Redirect to dashboard
+	// Check if this is an HTMX request (keep URL, return HTML)
+	// HTMX sets this header when making requests
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	if isHTMX {
+		// Render and return the full dashboard HTML
+		// HTMX will swap the body content, URL stays the same
+		s.handleDashboard(w, r)
+		return
+	}
+
+	// For non-HTMX requests, redirect to dashboard
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

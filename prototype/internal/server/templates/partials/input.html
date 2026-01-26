@@ -1,0 +1,30 @@
+{{define "input"}}
+<div class="space-y-2{{if .ContainerClass}} {{.ContainerClass}}{{end}}">
+    {{if .Label}}
+    <label for="{{.Id}}" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">
+        {{.Label}}
+        {{if .Required}}<span class="text-error-500">*</span>{{end}}
+    </label>
+    {{end}}
+    {{if eq .Type "textarea"}}
+    <textarea name="{{.Name}}" id="{{.Id}}"
+              {{if .Rows}}rows="{{.Rows}}"{{end}}
+              {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+              class="input {{.Class}}">{{.Value}}</textarea>
+    {{else if eq .Type "select"}}
+    <select name="{{.Name}}" id="{{.Id}}" class="input {{.Class}}">
+        {{range .Options}}
+        <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+        {{end}}
+    </select>
+    {{else}}
+    <input type="{{if .Type}}{{.Type}}{{else}}text{{end}}" name="{{.Name}}" id="{{.Id}}"
+           {{if .Value}}value="{{.Value}}"{{end}}
+           {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+           class="input {{.Class}}">
+    {{end}}
+    {{if .Help}}<p class="text-xs text-surface-400">{{.Help}}</p>{{end}}
+    {{if .Error}}<p class="text-sm text-error-600 dark:text-error-400">{{.Error}}</p>{{end}}
+</div>
+{{end}}
+{{template "input" .}}

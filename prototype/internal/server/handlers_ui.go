@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/valksor/go-toolkit/licensing"
+
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -55,15 +57,14 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 			data.Guide = s.getGuideData()
 
 			// Get specifications with progress
-			specs := s.getSpecsData(activeTask.ID)
+			specifications := s.getSpecificationData(activeTask.ID)
 			total, done, progress := s.getSpecificationsProgress(activeTask.ID)
 			data.Specifications = SpecificationsData{
-				Specifications: specs,
+				Specifications: specifications,
 				Total:          total,
 				Done:           done,
 				Progress:       progress,
 			}
-			data.Specs = specs // Keep for backwards compatibility
 
 			// Get pending question
 			data.PendingQuestion = s.getPendingQuestionData(activeTask.ID)
@@ -133,8 +134,8 @@ func (s *Server) handleActionsPartial(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleSpecsPartial renders the specifications partial.
-func (s *Server) handleSpecsPartial(w http.ResponseWriter, r *http.Request) {
+// handleSpecificationPartial renders the specifications partial.
+func (s *Server) handleSpecificationPartial(w http.ResponseWriter, r *http.Request) {
 	if s.templates == nil || s.config.Conductor == nil {
 		w.WriteHeader(http.StatusNoContent)
 
@@ -148,18 +149,18 @@ func (s *Server) handleSpecsPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	specs := s.getSpecsData(activeTask.ID)
+	specifications := s.getSpecificationData(activeTask.ID)
 	total, done, progress := s.getSpecificationsProgress(activeTask.ID)
 
 	data := SpecificationsData{
-		Specifications: specs,
+		Specifications: specifications,
 		Total:          total,
 		Done:           done,
 		Progress:       progress,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.RenderPartial(w, "specs", data); err != nil {
+	if err := s.templates.RenderPartial(w, "specification", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -223,6 +224,7 @@ func (s *Server) handleLoginPageUI(w http.ResponseWriter, r *http.Request, error
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
 		Error:            errorMsg,
 		Redirect:         r.URL.Query().Get("redirect"),
 	}
@@ -245,6 +247,14 @@ func (s *Server) handleProjectUI(w http.ResponseWriter, _ *http.Request) {
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
+	}
+
+	// Load projects in global mode for project picker
+	if s.config.Mode == ModeGlobal {
+		if registry, err := storage.LoadRegistry(); err == nil {
+			data.Projects = registry.List()
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -265,6 +275,14 @@ func (s *Server) handleHistoryUI(w http.ResponseWriter, _ *http.Request) {
 		Mode:             s.modeString(),
 		AuthEnabled:      s.config.AuthStore != nil,
 		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
+	}
+
+	// Load projects in global mode for project picker
+	if s.config.Mode == ModeGlobal {
+		if registry, err := storage.LoadRegistry(); err == nil {
+			data.Projects = registry.List()
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -366,7 +384,7 @@ func (s *Server) getGuideData() *GuideData {
 	return guide
 }
 
-func (s *Server) getSpecsData(taskID string) []SpecData {
+func (s *Server) getSpecificationData(taskID string) []SpecificationData {
 	if s.config.Conductor == nil {
 		return nil
 	}
@@ -381,23 +399,40 @@ func (s *Server) getSpecsData(taskID string) []SpecData {
 		return nil
 	}
 
-	var specs []SpecData
+	var specifications []SpecificationData
 	for _, spec := range specList {
 		status := "draft"
 		if spec.Status != "" {
 			status = spec.Status
 		}
 
-		name := "spec-" + itoa(spec.Number)
+		// Load specification content
+		description, _ := ws.LoadSpecification(taskID, spec.Number)
 
-		specs = append(specs, SpecData{
-			Name:   name,
-			Title:  spec.Title,
-			Status: status,
+		// Format timestamps
+		var createdAt, completedAt string
+		if !spec.CreatedAt.IsZero() {
+			createdAt = spec.CreatedAt.Format("2006-01-02 15:04")
+		}
+		if !spec.CompletedAt.IsZero() {
+			completedAt = spec.CompletedAt.Format("2006-01-02 15:04")
+		}
+
+		name := "specification-" + itoa(spec.Number)
+
+		specifications = append(specifications, SpecificationData{
+			Number:      spec.Number,
+			Name:        name,
+			Title:       spec.Title,
+			Status:      status,
+			Description: description,
+			Component:   spec.Component,
+			CreatedAt:   createdAt,
+			CompletedAt: completedAt,
 		})
 	}
 
-	return specs
+	return specifications
 }
 
 // getSpecificationsProgress calculates progress statistics for specifications.
@@ -545,6 +580,28 @@ func (s *Server) handleRecentTasksPartial(w http.ResponseWriter, _ *http.Request
 	html += `</ul>`
 
 	_, _ = w.Write([]byte(html))
+}
+
+// handleLicensePage renders the license information page.
+func (s *Server) handleLicensePage(w http.ResponseWriter, r *http.Request) {
+	if s.templates == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "templates not loaded")
+
+		return
+	}
+
+	data := LicenseData{
+		Mode:             s.modeString(),
+		AuthEnabled:      s.config.AuthStore != nil,
+		CanSwitchProject: s.canSwitchProject(),
+		IsGlobalMode:     s.config.Mode == ModeGlobal,
+		ProjectLicense:   licensing.GetProjectLicense(),
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.RenderLicense(w, data); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
+	}
 }
 
 // itoa converts int to string without importing strconv.

@@ -12,18 +12,20 @@ import (
 
 // handleAgentLogs streams agent output logs via SSE.
 func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
+	// Set CORS header first (before any error response)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Check if response writer supports flushing BEFORE setting SSE headers
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		s.writeError(w, http.StatusInternalServerError, "streaming not supported")
+		return
+	}
+
 	// Set SSE headers
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		s.writeError(w, http.StatusInternalServerError, "streaming not supported")
-
-		return
-	}
 
 	// Get task ID from query params
 	taskID := r.URL.Query().Get("task_id")
@@ -36,14 +38,12 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 
 	if taskID == "" {
 		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "no active task"})
-
 		return
 	}
 
 	// Subscribe to agent output events
 	if s.config.EventBus == nil {
 		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "event bus not available"})
-
 		return
 	}
 

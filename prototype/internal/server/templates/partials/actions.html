@@ -1,10 +1,56 @@
 {{define "actions"}}
 <div id="actions" hx-get="/ui/partials/actions" hx-trigger="sse:workflow_state_changed" hx-swap="outerHTML">
+    <!-- Implementation Options (shown when idle or planning, before implementing) -->
+    {{if or (eq .State "idle") (eq .State "planning")}}
     <div class="card">
+        <div class="card-header">Implementation Options</div>
+        <div class="p-4 space-y-4">
+            <!-- Component Filter -->
+            <div>
+                <label for="component-filter" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Component Filter</label>
+                <select id="component-filter" class="input text-sm w-full">
+                    <option value="">All components</option>
+                    <option value="backend">Backend</option>
+                    <option value="frontend">Frontend</option>
+                    <option value="tests">Tests</option>
+                    <option value="api">API</option>
+                    <option value="ui">UI</option>
+                    <option value="database">Database</option>
+                    <option value="infrastructure">Infrastructure</option>
+                </select>
+                <p class="text-xs text-surface-500 dark:text-surface-400 mt-1">Only implement the selected component</p>
+            </div>
+
+            <!-- Parallel Execution -->
+            <div>
+                <label for="parallel-count" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Parallel Agents</label>
+                <select id="parallel-count" class="input text-sm w-full">
+                    <option value="">Single agent</option>
+                    <option value="2">2 agents (parallel)</option>
+                    <option value="3">3 agents (parallel)</option>
+                    <option value="4">4 agents (parallel)</option>
+                </select>
+                <p class="text-xs text-surface-500 dark:text-surface-400 mt-1">Run multiple agents in parallel</p>
+            </div>
+        </div>
+    </div>
+    {{end}}
+
+    <div class="card mt-4">
         <div class="card-header">Actions</div>
         {{if .NextActions}}
         <div class="flex flex-wrap gap-3">
             {{range .NextActions}}
+            {{if eq .Command "implement"}}
+            <!-- Implement button with options -->
+            <button id="implement-btn"
+                    onclick="implementWithOptions(event)"
+                    class="btn btn-primary">
+                <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                {{.Description}}
+            </button>
+            {{else}}
+            <!-- Other action buttons -->
             <button hx-post="{{.Endpoint}}"
                     hx-target="#task-card"
                     hx-swap="outerHTML"
@@ -14,11 +60,33 @@
                 {{.Description}}
             </button>
             {{end}}
+            {{end}}
         </div>
         {{else}}
         <p class="text-gray-500">No actions available</p>
         {{end}}
     </div>
 </div>
+
+<script>
+/**
+ * Implement with component filter and/or parallel mode options.
+ * Reads values from the dropdowns and appends them as query parameters.
+ */
+function implementWithOptions(event) {
+    event.preventDefault();
+    const componentFilter = document.getElementById('component-filter')?.value || '';
+    const parallelCount = document.getElementById('parallel-count')?.value || '';
+
+    let url = '/api/v1/workflow/implement';
+    const params = [];
+    if (componentFilter) params.push('component=' + encodeURIComponent(componentFilter));
+    if (parallelCount) params.push('parallel=' + encodeURIComponent(parallelCount));
+    if (params.length > 0) url += '?' + params.join('&');
+
+    // Use HTMX to make the request
+    htmx.ajax('POST', url, {target: '#task-card', swap: 'outerHTML'});
+}
+</script>
 {{end}}
 {{template "actions" .}}
