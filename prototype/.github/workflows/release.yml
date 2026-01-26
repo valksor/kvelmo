@@ -136,7 +136,3 @@ jobs:
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
                         --clobber
-
-            -   name: Push to latest branch
-                if: ${{ !github.event.release.prerelease }}
-                run: git push origin ${{ github.event.release.tag_name }}:latest --force
