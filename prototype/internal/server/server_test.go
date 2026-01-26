@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestServer_StartStop(t *testing.T) {
@@ -266,7 +266,7 @@ func TestServer_GlobalMode_ProjectsEndpoint(t *testing.T) {
 
 func TestServer_SSE_Events(t *testing.T) {
 	// Create event bus
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 
 	cfg := Config{
 		Port:     0,

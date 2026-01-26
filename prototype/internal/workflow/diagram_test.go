@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // TestGenerateDiagram tests diagram generation.
 func TestGenerateDiagram(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{
 		CurrentState: StateIdle,
 		ShowEvents:   true,
@@ -87,7 +87,7 @@ func TestASCIIIDiagram(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			machine := NewMachine(events.NewBus())
+			machine := NewMachine(eventbus.NewBus())
 
 			result := ASCIIDiagram(machine, DiagramOptions{
 				CurrentState: tt.state,
@@ -114,7 +114,7 @@ func TestASCIIIDiagram(t *testing.T) {
 
 // TestASCIIIDiagramStructure tests the structure of the ASCII diagram.
 func TestASCIIDiagramStructure(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{}
 
 	result := ASCIIDiagram(machine, opts)
@@ -150,7 +150,7 @@ func TestASCIIDiagramStructure(t *testing.T) {
 
 // TestSVGDiagram tests SVG diagram generation.
 func TestSVGDiagram(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{
 		CurrentState: StateIdle,
 	}
@@ -211,7 +211,7 @@ func TestSVGDiagramWithDifferentStates(t *testing.T) {
 
 	for _, state := range states {
 		t.Run(string(state), func(t *testing.T) {
-			machine := NewMachine(events.NewBus())
+			machine := NewMachine(eventbus.NewBus())
 			opts := DiagramOptions{
 				CurrentState: state,
 			}
@@ -231,7 +231,7 @@ func TestSVGDiagramWithDifferentStates(t *testing.T) {
 
 // TestSVGDiagramHasCSSClasses tests that SVG diagram uses proper CSS classes.
 func TestSVGDiagramHasCSSClasses(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{}
 
 	result := SVGDiagram(machine, opts)
@@ -278,7 +278,7 @@ func TestGetValidTransitions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			machine := NewMachine(events.NewBus())
+			machine := NewMachine(eventbus.NewBus())
 
 			// If not idle, we'd need to transition there - for now just test with idle
 			if tt.state != StateIdle {
@@ -311,7 +311,7 @@ func TestGetValidTransitions(t *testing.T) {
 
 // TestGetValidTransitionsHasGlobalTransitions tests that global transitions are included.
 func TestGetValidTransitionsHasGlobalTransitions(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 
 	transitions := GetValidTransitions(machine)
 
@@ -331,7 +331,7 @@ func TestGetValidTransitionsHasGlobalTransitions(t *testing.T) {
 
 // TestWorkflowDiagramStructure tests the WorkflowDiagram struct.
 func TestWorkflowDiagramStructure(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{}
 
 	diagram := GenerateDiagram(machine, opts)
@@ -369,7 +369,7 @@ func TestWorkflowDiagramStructure(t *testing.T) {
 
 // TestStateNodeFields tests StateNode field population.
 func TestStateNodeFields(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{
 		CurrentState: StateIdle,
 	}
@@ -403,7 +403,7 @@ func TestStateNodeFields(t *testing.T) {
 
 // TestTransitionEdgeFields tests TransitionEdge field population.
 func TestTransitionEdgeFields(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{}
 
 	diagram := GenerateDiagram(machine, opts)
@@ -476,7 +476,7 @@ func TestDiagramOptions(t *testing.T) {
 
 // TestASCIIIDiagramWithCurrentMarker tests ASCII diagram highlights current state.
 func TestASCIIDiagramWithCurrentMarker(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{
 		CurrentState: StateIdle,
 	}
@@ -508,7 +508,7 @@ func TestASCIIDiagramWithCurrentMarker(t *testing.T) {
 
 // TestSVGDiagramDimensions tests SVG diagram has proper dimensions.
 func TestSVGDiagramDimensions(t *testing.T) {
-	machine := NewMachine(events.NewBus())
+	machine := NewMachine(eventbus.NewBus())
 	opts := DiagramOptions{}
 
 	result := SVGDiagram(machine, opts)

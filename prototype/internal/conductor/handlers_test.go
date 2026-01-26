@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestFormatSpecContent(t *testing.T) {
@@ -594,7 +594,7 @@ func TestApplyFiles_Create(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{
@@ -633,7 +633,7 @@ func TestApplyFiles_Update(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{
@@ -672,7 +672,7 @@ func TestApplyFiles_Delete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{
@@ -706,7 +706,7 @@ func TestApplyFiles_DeleteSentinel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{
@@ -734,7 +734,7 @@ func TestApplyFiles_DeleteNonExistent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{
@@ -768,7 +768,7 @@ func TestApplyFiles_Multiple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	files := []agent.FileChange{
 		{Path: "new.txt", Operation: agent.FileOpCreate, Content: "created"},
@@ -812,7 +812,7 @@ func TestApplyFiles_WithGitRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	c.eventBus = events.NewBus()
+	c.eventBus = eventbus.NewBus()
 
 	// Initialize to set git
 	_ = c.Initialize(ctx)
