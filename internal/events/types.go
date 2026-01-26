@@ -6,15 +6,13 @@ import (
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
-// Re-export generic types from go-toolkit for backward compatibility.
-type (
-	// Event is the base event structure.
-	Event = eventbus.Event
-	// Eventer interface for typed events.
-	Eventer = eventbus.Eventer
-	// Type identifies event categories.
-	Type = eventbus.Type
-)
+// Type identifies event categories.
+// This is an alias for go-toolkit's eventbus.Type for domain-specific event type constants.
+type Type = eventbus.Type
+
+// Event is the base event structure from go-toolkit.
+// This is an alias for convenience in defining domain-specific events.
+type Event = eventbus.Event
 
 // Domain-specific event type constants for mehrhof.
 const (
@@ -47,12 +45,12 @@ type StateChangedEvent struct {
 	Timestamp time.Time
 }
 
-func (e StateChangedEvent) ToEvent() Event {
+func (e StateChangedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeStateChanged,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -74,12 +72,12 @@ type ProgressEvent struct {
 	Total     int
 }
 
-func (e ProgressEvent) ToEvent() Event {
+func (e ProgressEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeProgress,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -100,7 +98,7 @@ type ErrorEvent struct {
 	Fatal     bool
 }
 
-func (e ErrorEvent) ToEvent() Event {
+func (e ErrorEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
@@ -109,7 +107,7 @@ func (e ErrorEvent) ToEvent() Event {
 		errMsg = e.Error.Error()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeError,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -128,12 +126,12 @@ type FileChangedEvent struct {
 	Timestamp time.Time
 }
 
-func (e FileChangedEvent) ToEvent() Event {
+func (e FileChangedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeFileChanged,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -152,12 +150,12 @@ type CheckpointEvent struct {
 	Message   string
 }
 
-func (e CheckpointEvent) ToEvent() Event {
+func (e CheckpointEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeCheckpoint,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -176,12 +174,12 @@ type AgentMessageEvent struct {
 	Timestamp time.Time
 }
 
-func (e AgentMessageEvent) ToEvent() Event {
+func (e AgentMessageEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeAgentMessage,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -199,12 +197,12 @@ type BlueprintReadyEvent struct {
 	BlueprintID string
 }
 
-func (e BlueprintReadyEvent) ToEvent() Event {
+func (e BlueprintReadyEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeBlueprintReady,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -221,12 +219,12 @@ type BranchCreatedEvent struct {
 	Branch    string
 }
 
-func (e BranchCreatedEvent) ToEvent() Event {
+func (e BranchCreatedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeBranchCreated,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -243,12 +241,12 @@ type PlanCompletedEvent struct {
 	SpecificationID int
 }
 
-func (e PlanCompletedEvent) ToEvent() Event {
+func (e PlanCompletedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypePlanCompleted,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -265,12 +263,12 @@ type ImplementDoneEvent struct {
 	DiffStat  string
 }
 
-func (e ImplementDoneEvent) ToEvent() Event {
+func (e ImplementDoneEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeImplementDone,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -288,12 +286,12 @@ type PRCreatedEvent struct {
 	PRNumber  int
 }
 
-func (e PRCreatedEvent) ToEvent() Event {
+func (e PRCreatedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypePRCreated,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -314,12 +312,12 @@ type BrowserActionEvent struct {
 	Error     string
 }
 
-func (e BrowserActionEvent) ToEvent() Event {
+func (e BrowserActionEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeBrowserAction,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -340,12 +338,12 @@ type BrowserTabOpenedEvent struct {
 	Title     string
 }
 
-func (e BrowserTabOpenedEvent) ToEvent() Event {
+func (e BrowserTabOpenedEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeBrowserTabOpened,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
@@ -364,12 +362,12 @@ type BrowserScreenshotEvent struct {
 	FullPath  string
 }
 
-func (e BrowserScreenshotEvent) ToEvent() Event {
+func (e BrowserScreenshotEvent) ToEvent() eventbus.Event {
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
 	}
 
-	return Event{
+	return eventbus.Event{
 		Type:      TypeBrowserScreenshot,
 		Timestamp: e.Timestamp,
 		Data: map[string]any{
