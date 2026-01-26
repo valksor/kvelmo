@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Mode represents the server operating mode.
@@ -37,7 +37,7 @@ type Config struct {
 	// Conductor is the conductor instance for project mode (nil for global mode).
 	Conductor *conductor.Conductor
 	// EventBus is the event bus for real-time updates.
-	EventBus *events.Bus
+	EventBus *eventbus.Bus
 	// WorkspaceRoot is the root directory of the workspace (for project mode).
 	WorkspaceRoot string
 	// AuthStore is the authentication store (nil means no auth required).

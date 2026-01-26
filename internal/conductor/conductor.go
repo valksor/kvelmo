@@ -43,6 +43,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Conductor orchestrates the task automation workflow.
@@ -51,7 +52,7 @@ type Conductor struct {
 
 	// Core components
 	machine   *workflow.Machine
-	eventBus  *events.Bus
+	eventBus  *eventbus.Bus
 	workspace *storage.Workspace
 	git       *vcs.Git
 
@@ -95,7 +96,7 @@ func New(opts ...Option) (*Conductor, error) {
 	options.Apply(opts...)
 
 	// Create event bus
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 
 	// Create state machine
 	machine := workflow.NewMachine(bus)
@@ -129,7 +130,7 @@ func (c *Conductor) GetAgentRegistry() *agent.Registry {
 }
 
 // GetEventBus returns the event bus.
-func (c *Conductor) GetEventBus() *events.Bus {
+func (c *Conductor) GetEventBus() *eventbus.Bus {
 	return c.eventBus
 }
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // MockController is a mock implementation of browser.Controller for testing.
@@ -182,19 +182,19 @@ func TestNewAdapter(t *testing.T) {
 	tests := []struct {
 		name       string
 		controller browser.Controller
-		eventBus   *events.Bus
+		eventBus   *eventbus.Bus
 		expectErr  bool
 	}{
 		{
 			name:       "valid adapter",
 			controller: &MockController{},
-			eventBus:   events.NewBus(),
+			eventBus:   eventbus.NewBus(),
 			expectErr:  false,
 		},
 		{
 			name:       "nil controller",
 			controller: nil,
-			eventBus:   events.NewBus(),
+			eventBus:   eventbus.NewBus(),
 			expectErr:  true,
 		},
 		{
@@ -237,7 +237,7 @@ func TestNewAdapter(t *testing.T) {
 // TestToolsReturnsAllTools verifies Tools() returns all expected tools.
 func TestToolsReturnsAllTools(t *testing.T) {
 	controller := &MockController{}
-	eventBus := events.NewBus()
+	eventBus := eventbus.NewBus()
 	adapter, err := NewAdapter(controller, eventBus)
 	if err != nil {
 		t.Fatalf("NewAdapter() failed: %v", err)
@@ -352,7 +352,7 @@ func TestOpenURLTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, err := NewAdapter(controller, events.NewBus())
+			adapter, err := NewAdapter(controller, eventbus.NewBus())
 			if err != nil {
 				t.Fatalf("NewAdapter() failed: %v", err)
 			}
@@ -422,7 +422,7 @@ func TestScreenshotTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -498,7 +498,7 @@ func TestClickTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -572,7 +572,7 @@ func TestTypeTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -642,7 +642,7 @@ func TestEvaluateTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -723,7 +723,7 @@ func TestQueryTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -794,7 +794,7 @@ func TestGetConsoleLogsTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -866,7 +866,7 @@ func TestDetectAuthTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -931,7 +931,7 @@ func TestWaitForLoginTool(t *testing.T) {
 			controller := &MockController{}
 			tt.setupMock(controller)
 
-			adapter, _ := NewAdapter(controller, events.NewBus())
+			adapter, _ := NewAdapter(controller, eventbus.NewBus())
 			tools := adapter.Tools()
 
 			var tool *Tool
@@ -985,7 +985,7 @@ func TestAdapterIntegration(t *testing.T) {
 	}
 	defer func() { _ = controller.Disconnect() }()
 
-	adapter, err := NewAdapter(controller, events.NewBus())
+	adapter, err := NewAdapter(controller, eventbus.NewBus())
 	if err != nil {
 		t.Fatalf("NewAdapter() failed: %v", err)
 	}

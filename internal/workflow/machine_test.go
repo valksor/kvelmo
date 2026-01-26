@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestNewMachine(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	if m == nil {
@@ -26,7 +27,7 @@ func TestNewMachine(t *testing.T) {
 }
 
 func TestSetWorkUnit(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	wu := &WorkUnit{
@@ -41,7 +42,7 @@ func TestSetWorkUnit(t *testing.T) {
 }
 
 func TestDispatch_ValidTransition(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	// Set up work unit with source (required by GuardHasSource)
@@ -73,7 +74,7 @@ func TestDispatch_ValidTransition(t *testing.T) {
 }
 
 func TestDispatch_InvalidTransition(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	// Try to dispatch PlanDone from idle (no transition defined)
@@ -84,7 +85,7 @@ func TestDispatch_InvalidTransition(t *testing.T) {
 }
 
 func TestDispatch_GuardFails(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	// No work unit - GuardHasSource should fail
@@ -99,7 +100,7 @@ func TestDispatch_GuardFails(t *testing.T) {
 }
 
 func TestDispatch_GlobalTransition(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	// Set up and move to planning state
@@ -123,7 +124,7 @@ func TestDispatch_GlobalTransition(t *testing.T) {
 }
 
 func TestCanDispatch(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
@@ -145,7 +146,7 @@ func TestCanDispatch(t *testing.T) {
 }
 
 func TestHistory(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
@@ -175,7 +176,7 @@ func TestHistory(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
@@ -199,7 +200,7 @@ func TestReset(t *testing.T) {
 }
 
 func TestUndoRedoStacks(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	// Initially empty
@@ -242,7 +243,7 @@ func TestUndoRedoStacks(t *testing.T) {
 }
 
 func TestPushUndoClearsRedo(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	m.PushUndo("checkpoint-1")
@@ -258,7 +259,7 @@ func TestPushUndoClearsRedo(t *testing.T) {
 }
 
 func TestAddListener(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	var mu sync.Mutex
@@ -297,7 +298,7 @@ func TestAddListener(t *testing.T) {
 }
 
 func TestEventBusIntegration(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	var received atomic.Bool
@@ -321,7 +322,7 @@ func TestEventBusIntegration(t *testing.T) {
 }
 
 func TestIsTerminal(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	if m.IsTerminal() {
@@ -356,7 +357,7 @@ func TestIsTerminal(t *testing.T) {
 }
 
 func TestConcurrentDispatch(t *testing.T) {
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	m := NewMachine(bus)
 
 	m.SetWorkUnit(&WorkUnit{
@@ -498,7 +499,7 @@ func TestTransitions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bus := events.NewBus()
+			bus := eventbus.NewBus()
 			m := NewMachine(bus)
 			tt.setup(m)
 

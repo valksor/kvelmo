@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestNewMachineBuilder(t *testing.T) {
@@ -133,7 +133,7 @@ func TestMachineBuilder_RegisterPhase_Validation(t *testing.T) {
 
 func TestMachineBuilder_Build(t *testing.T) {
 	builder := NewMachineBuilder()
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 
 	machine := builder.Build(bus)
 
@@ -181,7 +181,7 @@ func TestMachineBuilder_AddGuardToTransition(t *testing.T) {
 		t.Fatalf("AddGuardToTransition failed: %v", err)
 	}
 
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	machine := builder.Build(bus)
 	// Set a description to satisfy GuardHasDescription
 	machine.SetWorkUnit(&WorkUnit{
@@ -217,7 +217,7 @@ func TestMachineBuilder_WithPluginPhase(t *testing.T) {
 		t.Fatalf("RegisterPhase failed: %v", err)
 	}
 
-	bus := events.NewBus()
+	bus := eventbus.NewBus()
 	machine := builder.Build(bus)
 	machine.SetWorkUnit(&WorkUnit{
 		ID:             "test",

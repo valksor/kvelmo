@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // StateListener is called when state changes.
@@ -18,7 +19,7 @@ type Machine struct {
 
 	state     State
 	workUnit  *WorkUnit
-	eventBus  *events.Bus
+	eventBus  *eventbus.Bus
 	listeners []StateListener
 	history   []HistoryEntry
 
@@ -45,7 +46,7 @@ type HistoryEntry struct {
 
 // NewMachine creates a new state machine with default workflow configuration.
 // Use NewMachineBuilder().Build() for custom configurations.
-func NewMachine(eventBus *events.Bus) *Machine {
+func NewMachine(eventBus *eventbus.Bus) *Machine {
 	return &Machine{
 		state:       StateIdle,
 		eventBus:    eventBus,

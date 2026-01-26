@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // MachineBuilder constructs a Machine with custom phases, guards, and effects.
@@ -227,7 +227,7 @@ func (b *MachineBuilder) RegisterTransition(t Transition) {
 }
 
 // Build creates a Machine with the configured workflow.
-func (b *MachineBuilder) Build(eventBus *events.Bus) *Machine {
+func (b *MachineBuilder) Build(eventBus *eventbus.Bus) *Machine {
 	return &Machine{
 		state:             StateIdle,
 		eventBus:          eventBus,

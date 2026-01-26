@@ -16,6 +16,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Tool represents a browser operation available to agents.
@@ -28,11 +29,11 @@ type Tool struct {
 // Adapter provides browser tools to agents.
 type Adapter struct {
 	controller browser.Controller
-	eventBus   *events.Bus
+	eventBus   *eventbus.Bus
 }
 
 // NewAdapter creates a new browser adapter.
-func NewAdapter(controller browser.Controller, eventBus *events.Bus) (*Adapter, error) {
+func NewAdapter(controller browser.Controller, eventBus *eventbus.Bus) (*Adapter, error) {
 	if controller == nil {
 		return nil, errors.New("controller is required for browser adapter")
 	}
@@ -562,7 +563,7 @@ func (a *Adapter) importCookiesTool() Tool {
 }
 
 // publishEvent publishes a browser event to the event bus.
-func (a *Adapter) publishEvent(event events.Eventer) {
+func (a *Adapter) publishEvent(event eventbus.Eventer) {
 	if a.eventBus == nil {
 		slog.Warn("browser adapter: no event bus configured, event dropped",
 			"event_type", event.ToEvent().Type)
