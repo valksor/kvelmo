@@ -6,20 +6,6 @@ import (
 	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
-// Re-export generic JSON-RPC types from go-toolkit.
-type (
-	// Request represents a JSON-RPC 2.0 request.
-	Request = jsonrpc.Request
-	// Response represents a JSON-RPC 2.0 response.
-	Response = jsonrpc.Response
-	// RPCError represents a JSON-RPC 2.0 error.
-	RPCError = jsonrpc.RPCError
-	// Notification represents a JSON-RPC 2.0 notification.
-	Notification = jsonrpc.Notification
-	// StreamEvent represents a streaming event from an agent plugin.
-	StreamEvent = jsonrpc.StreamEvent
-)
-
 // Standard JSON-RPC error codes.
 const (
 	ErrCodeParseError     = jsonrpc.ErrCodeParseError
@@ -28,11 +14,6 @@ const (
 	ErrCodeInvalidParams  = jsonrpc.ErrCodeInvalidParams
 	ErrCodeInternalError  = jsonrpc.ErrCodeInternalError
 )
-
-// NewRequest creates a new JSON-RPC request.
-func NewRequest(id int64, method string, params any) *Request {
-	return jsonrpc.NewRequest(id, method, params)
-}
 
 // Stream event types (aligned with agent.EventType).
 const (

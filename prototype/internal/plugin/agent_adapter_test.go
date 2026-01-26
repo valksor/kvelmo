@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 func TestNewAgentAdapter(t *testing.T) {
@@ -210,14 +211,14 @@ func TestAgentAdapter_SetParser(t *testing.T) {
 func TestConvertStreamEvent(t *testing.T) {
 	tests := []struct {
 		name      string
-		input     *StreamEvent
+		input     *jsonrpc.StreamEvent
 		wantType  agent.EventType
 		wantText  string
 		checkData bool
 	}{
 		{
 			name: "text event with string",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventText,
 				Data: json.RawMessage(`"Hello world"`),
 			},
@@ -226,7 +227,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "text event with object",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventText,
 				Data: json.RawMessage(`{"text": "Object text"}`),
 			},
@@ -235,7 +236,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "tool use event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventToolUse,
 				Data: json.RawMessage(`{"name": "read_file", "description": "Read a file", "input": {"path": "/tmp/test"}}`),
 			},
@@ -243,7 +244,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "tool result event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventToolResult,
 				Data: json.RawMessage(`{"result": "success"}`),
 			},
@@ -252,7 +253,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "file event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventFile,
 				Data: json.RawMessage(`{"path": "test.go", "content": "package main"}`),
 			},
@@ -261,7 +262,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "usage event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventUsage,
 				Data: json.RawMessage(`{"tokens": 100}`),
 			},
@@ -270,7 +271,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "complete event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventComplete,
 				Data: json.RawMessage(`{}`),
 			},
@@ -278,7 +279,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "error event",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: StreamEventError,
 				Data: json.RawMessage(`"something went wrong"`),
 			},
@@ -286,7 +287,7 @@ func TestConvertStreamEvent(t *testing.T) {
 		},
 		{
 			name: "unknown event type",
-			input: &StreamEvent{
+			input: &jsonrpc.StreamEvent{
 				Type: "custom_event",
 				Data: json.RawMessage(`{"custom": "data"}`),
 			},
@@ -325,7 +326,7 @@ func TestConvertStreamEvent(t *testing.T) {
 }
 
 func TestConvertStreamEvent_ToolCall(t *testing.T) {
-	input := &StreamEvent{
+	input := &jsonrpc.StreamEvent{
 		Type: StreamEventToolUse,
 		Data: json.RawMessage(`{
 			"name": "read_file",

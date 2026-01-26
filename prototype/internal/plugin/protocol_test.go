@@ -3,6 +3,8 @@ package plugin
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ func TestNewRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := NewRequest(tt.id, tt.method, tt.params)
+			req := jsonrpc.NewRequest(tt.id, tt.method, tt.params)
 
 			if req.JSONRPC != "2.0" {
 				t.Errorf("JSONRPC = %q, want %q", req.JSONRPC, "2.0")
@@ -79,7 +81,7 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestNewRequest_JSONMarshal(t *testing.T) {
-	req := NewRequest(1, "test.method", map[string]int{"value": 42})
+	req := jsonrpc.NewRequest(1, "test.method", map[string]int{"value": 42})
 
 	data, err := json.Marshal(req)
 	if err != nil {
@@ -112,22 +114,22 @@ func TestNewRequest_JSONMarshal(t *testing.T) {
 func TestRPCError_Error(t *testing.T) {
 	tests := []struct {
 		name    string
-		err     *RPCError
+		err     *jsonrpc.RPCError
 		wantMsg string
 	}{
 		{
 			name:    "simple error message",
-			err:     &RPCError{Code: ErrCodeInternalError, Message: "internal error"},
+			err:     &jsonrpc.RPCError{Code: ErrCodeInternalError, Message: "internal error"},
 			wantMsg: "internal error",
 		},
 		{
 			name:    "error with data",
-			err:     &RPCError{Code: ErrCodePluginError, Message: "plugin failed", Data: map[string]string{"detail": "test"}},
+			err:     &jsonrpc.RPCError{Code: ErrCodePluginError, Message: "plugin failed", Data: map[string]string{"detail": "test"}},
 			wantMsg: "plugin failed",
 		},
 		{
 			name:    "empty message",
-			err:     &RPCError{Code: ErrCodeParseError, Message: ""},
+			err:     &jsonrpc.RPCError{Code: ErrCodeParseError, Message: ""},
 			wantMsg: "",
 		},
 	}
@@ -143,7 +145,7 @@ func TestRPCError_Error(t *testing.T) {
 }
 
 func TestRPCError_ImplementsError(t *testing.T) {
-	var _ error = &RPCError{}
+	var _ error = &jsonrpc.RPCError{}
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -225,12 +227,12 @@ func TestStreamEventTypeConstants(t *testing.T) {
 
 func TestResponse_JSONMarshal(t *testing.T) {
 	tests := []struct {
-		resp Response
+		resp jsonrpc.Response
 		name string
 	}{
 		{
 			name: "successful response",
-			resp: Response{
+			resp: jsonrpc.Response{
 				JSONRPC: "2.0",
 				ID:      1,
 				Result:  json.RawMessage(`{"status": "ok"}`),
@@ -238,10 +240,10 @@ func TestResponse_JSONMarshal(t *testing.T) {
 		},
 		{
 			name: "error response",
-			resp: Response{
+			resp: jsonrpc.Response{
 				JSONRPC: "2.0",
 				ID:      2,
-				Error: &RPCError{
+				Error: &jsonrpc.RPCError{
 					Code:    ErrCodeInternalError,
 					Message: "something failed",
 				},
@@ -256,7 +258,7 @@ func TestResponse_JSONMarshal(t *testing.T) {
 				t.Fatalf("json.Marshal error = %v", err)
 			}
 
-			var unmarshaled Response
+			var unmarshaled jsonrpc.Response
 			if err := json.Unmarshal(data, &unmarshaled); err != nil {
 				t.Fatalf("json.Unmarshal error = %v", err)
 			}
@@ -276,7 +278,7 @@ func TestResponse_JSONMarshal(t *testing.T) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 func TestNotification_JSONMarshal(t *testing.T) {
-	notif := Notification{
+	notif := jsonrpc.Notification{
 		JSONRPC: "2.0",
 		Method:  "stream",
 		Params:  map[string]string{"type": "text", "data": "hello"},
@@ -309,25 +311,25 @@ func TestNotification_JSONMarshal(t *testing.T) {
 func TestStreamEvent_JSONMarshal(t *testing.T) {
 	tests := []struct {
 		name  string
-		event StreamEvent
+		event jsonrpc.StreamEvent
 	}{
 		{
 			name: "text event",
-			event: StreamEvent{
+			event: jsonrpc.StreamEvent{
 				Type: StreamEventText,
 				Data: json.RawMessage(`"hello world"`),
 			},
 		},
 		{
 			name: "file event",
-			event: StreamEvent{
+			event: jsonrpc.StreamEvent{
 				Type: StreamEventFile,
 				Data: json.RawMessage(`{"path": "test.go", "content": "package main"}`),
 			},
 		},
 		{
 			name: "complete event without data",
-			event: StreamEvent{
+			event: jsonrpc.StreamEvent{
 				Type: StreamEventComplete,
 			},
 		},
@@ -340,7 +342,7 @@ func TestStreamEvent_JSONMarshal(t *testing.T) {
 				t.Fatalf("json.Marshal error = %v", err)
 			}
 
-			var unmarshaled StreamEvent
+			var unmarshaled jsonrpc.StreamEvent
 			if err := json.Unmarshal(data, &unmarshaled); err != nil {
 				t.Fatalf("json.Unmarshal error = %v", err)
 			}

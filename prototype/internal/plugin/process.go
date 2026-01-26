@@ -15,6 +15,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 const (
@@ -37,7 +39,7 @@ type Process struct {
 	stdout   *bufio.Reader
 	cancel   context.CancelFunc
 	manifest *Manifest
-	pending  map[int64]chan *Response
+	pending  map[int64]chan *jsonrpc.Response
 	streamCh chan json.RawMessage
 	reqID    atomic.Int64
 	mu       sync.Mutex
@@ -112,7 +114,7 @@ func startProcess(ctx context.Context, manifest *Manifest) (*Process, error) {
 		stdoutPipe: stdout, // Store original pipe for explicit cleanup
 		stdout:     bufio.NewReaderSize(stdout, defaultPluginBufferSize),
 		stderr:     stderr,
-		pending:    make(map[int64]chan *Response),
+		pending:    make(map[int64]chan *jsonrpc.Response),
 		done:       make(chan struct{}),
 		ctx:        procCtx,
 		cancel:     procCancel,
@@ -181,7 +183,7 @@ func (p *Process) readResponses() {
 		}
 
 		// Try to parse as response (has ID)
-		var resp Response
+		var resp jsonrpc.Response
 		if err := json.Unmarshal(line, &resp); err != nil {
 			continue // Skip malformed lines
 		}
@@ -196,7 +198,7 @@ func (p *Process) readResponses() {
 			p.mu.Unlock()
 		} else {
 			// This is a notification (streaming event)
-			var notif Notification
+			var notif jsonrpc.Notification
 			if err := json.Unmarshal(line, &notif); err != nil {
 				continue
 			}
@@ -243,11 +245,11 @@ func (p *Process) Call(ctx context.Context, method string, params any) (json.Raw
 	}
 
 	id := p.reqID.Add(1)
-	ch := make(chan *Response, 1)
+	ch := make(chan *jsonrpc.Response, 1)
 	p.pending[id] = ch
 	p.mu.Unlock()
 
-	req := NewRequest(id, method, params)
+	req := jsonrpc.NewRequest(id, method, params)
 	data, err := json.Marshal(req)
 	if err != nil {
 		p.mu.Lock()
@@ -304,7 +306,7 @@ func (p *Process) Stream(ctx context.Context, method string, params any) (<-chan
 	streamCh := p.streamCh
 	p.mu.Unlock()
 
-	req := NewRequest(0, method, params) // ID 0 for streaming (no response expected)
+	req := jsonrpc.NewRequest(0, method, params) // ID 0 for streaming (no response expected)
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
