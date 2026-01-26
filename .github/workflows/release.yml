@@ -33,13 +33,16 @@ jobs:
 
             -   name: Install Minisign
                 run: |
-                    curl -fsSL -o /tmp/minisign.tar.gz https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz
-                    cd /tmp && tar xzf minisign.tar.gz --no-same-permissions
-                    sudo mv /tmp/minisign-linux/x86_64/minisign /usr/local/bin/
+                    # Create random temp directory to avoid scanner interference
+                    TEMP_DIR=$(mktemp -d)
+                    gh release download 0.12 --repo jedisct1/minisign --pattern "minisign-0.12-linux.tar.gz" --clobber --dir "$TEMP_DIR"
+                    tar xzf "$TEMP_DIR"/minisign-0.12-linux.tar.gz -C "$TEMP_DIR" --strip-components=2 minisign-linux/x86_64/minisign
+                    sudo mv "$TEMP_DIR"/minisign /usr/local/bin/
                     sudo chmod +x /usr/local/bin/minisign
-                    rm -f /tmp/minisign.tar.gz
-                    rm -rf /tmp/minisign-linux
+                    rm -rf "$TEMP_DIR"
                     minisign --version
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
             -   name: Install Syft
                 uses: anchore/sbom-action/download-syft@v0
