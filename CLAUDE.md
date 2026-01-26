@@ -6,6 +6,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mehrhof is a Go CLI tool for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
 
+---
+
+## ⚠️ CRITICAL: go-toolkit Usage Guidelines
+
+**DO NOT re-export or wrap go-toolkit functionality unnecessarily.**
+
+go-mehrhof shares code with `github.com/valksor/go-toolkit` for reuse across Valksor projects. The purpose of go-toolkit is to **eliminate duplication**, not create additional abstraction layers.
+
+### What NOT to Do:
+
+```go
+// ❌ BAD - Type alias re-export
+type Bus = eventbus.Bus
+type Result = validate.Result
+type Request = jsonrpc.Request
+
+// ❌ BAD - Wrapper function
+func Slugify(title string, maxLen int) string {
+    return slug.Slugify(title, maxLen)
+}
+
+// ❌ BAD - Constructor wrapper
+func NewBus() *Bus {
+    return eventbus.NewBus()
+}
+
+// ❌ BAD - Variable re-export
+var NewResult = validate.NewResult
+```
+
+### What to Do Instead:
+
+```go
+// ✅ GOOD - Import and use go-toolkit directly
+import "github.com/valksor/go-toolkit/eventbus"
+
+bus := eventbus.NewBus()
+
+// ✅ GOOD - Domain-specific types that add value
+type AgentConfig struct {
+    Name        string
+    Description string
+    // ... mehrhof-specific agent configuration
+}
+
+// ✅ GOOD - Domain-specific functions with business logic
+func ColorState(state, displayName string) string {
+    // Maps mehrhof's workflow states to colors
+    // This is domain-specific, not a simple wrapper
+}
+```
+
+### When to Add Code to go-toolkit vs. go-mehrhof:
+
+| Criteria | go-toolkit | go-mehrhof |
+|----------|-----------|------------|
+| Generic, reusable utilities? | ✅ Yes | ❌ No |
+| Domain-specific business logic? | ❌ No | ✅ Yes |
+| No dependencies on mehrhof internals? | ✅ Yes | ❌ No |
+| Could be used by other Valksor projects? | ✅ Yes | ❌ No |
+
+### Examples of Correct Usage:
+
+- ✅ **eventbus**: Use `eventbus.Bus`, `eventbus.NewBus()` directly
+- ✅ **validate**: Use `validate.Result`, `validate.NewResult()`, `validate.SeverityError` directly
+- ✅ **jsonrpc**: Use `jsonrpc.Request`, `jsonrpc.Response`, `jsonrpc.NewRequest()` directly
+- ✅ **slug**: Use `slug.Slugify()` directly
+- ✅ **display colors**: Keep `ColorState()`, `ColorSpecStatus()` (domain-specific business logic)
+
+### Enforcement:
+
+- CI runs `make check-alias` to detect unnecessary import aliases
+- Code review should flag any new type aliases or wrapper functions
+- When in doubt, use go-toolkit directly
+
+---
+
 ## Commands
 
 ### Build & Development
@@ -61,7 +138,7 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 
 ### Key Patterns
 
-**go-toolkit for Reusable Code**: Common utilities are extracted to `github.com/valksor/go-toolkit` library. When adding generic, reusable code (event bus, validation, JSON-RPC, etc.), consider placing it in go-toolkit instead of this codebase. Current re-exports: `internal/events/`, `internal/validation/`, `internal/plugin/protocol.go`.
+**go-toolkit Integration**: Shared utilities live in `github.com/valksor/go-toolkit` for reuse across Valksor projects. **Always use go-toolkit packages directly** - do NOT create type aliases, wrapper functions, or re-exports. See the warning section above for detailed guidelines.
 
 **State Machine**: The workflow package implements an explicit FSM:
 - States: `idle` → `planning` → `implementing` → `reviewing` → `done`/`failed`
