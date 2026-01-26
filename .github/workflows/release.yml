@@ -33,7 +33,7 @@ jobs:
 
             -   name: Install Minisign
                 run: |
-                    curl -fsSL https://github.com/jedisct1/minisign/releases/latest/download/minisign-0.12-linux-x86_64.tar.gz | tar xz
+                    curl -fsSL https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz | tar xz
                     sudo mv minisign /usr/local/bin/
                     minisign --version
 
