@@ -9,6 +9,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/slug"
 )
 
 // gitInfo holds git branch/worktree information created during task start.
@@ -57,12 +58,12 @@ func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *n
 	}
 
 	// Resolve slug: CLI flag > workUnit > generated from title
-	slug := workUnit.Slug
-	if slug == "" {
-		slug = naming.Slugify(title, 50)
+	branchSlug := workUnit.Slug
+	if branchSlug == "" {
+		branchSlug = slug.Slugify(title, 50)
 	}
 	if c.opts.SlugOverride != "" {
-		slug = c.opts.SlugOverride
+		branchSlug = c.opts.SlugOverride
 	}
 
 	// Resolve branch pattern template: CLI flag > workspace config
@@ -82,7 +83,7 @@ func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *n
 		Key:    externalKey,
 		TaskID: taskID,
 		Type:   taskType,
-		Slug:   slug,
+		Slug:   branchSlug,
 		Title:  title,
 	}
 
@@ -95,7 +96,7 @@ func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *n
 	return &namingInfo{
 		externalKey:   externalKey,
 		taskType:      taskType,
-		slug:          slug,
+		slug:          branchSlug,
 		branchName:    branchName,
 		commitPrefix:  commitPrefix,
 		branchPattern: branchPattern,
