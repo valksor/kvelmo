@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 // AgentAdapter wraps a plugin process to implement the agent.Agent interface.
@@ -117,7 +118,7 @@ func (a *AgentAdapter) RunStream(ctx context.Context, prompt string) (<-chan age
 					return
 				}
 
-				var streamEvent StreamEvent
+				var streamEvent jsonrpc.StreamEvent
 				if err := json.Unmarshal(raw, &streamEvent); err != nil {
 					continue // Skip malformed events
 				}
@@ -239,14 +240,14 @@ func (a *AgentAdapter) SetParser(p agent.Parser) {
 // Conversion helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-func convertStreamEvent(e *StreamEvent) agent.Event {
+func convertStreamEvent(e *jsonrpc.StreamEvent) agent.Event {
 	event := agent.Event{
 		Timestamp: time.Now(),
 		Raw:       e.Data,
 	}
 
 	switch e.Type {
-	case StreamEventText:
+	case jsonrpc.StreamEventText:
 		event.Type = agent.EventText
 		var text string
 		if err := json.Unmarshal(e.Data, &text); err == nil {
@@ -297,10 +298,10 @@ func convertStreamEvent(e *StreamEvent) agent.Event {
 			event.Data = data
 		}
 
-	case StreamEventComplete:
+	case jsonrpc.StreamEventComplete:
 		event.Type = agent.EventComplete
 
-	case StreamEventError:
+	case jsonrpc.StreamEventError:
 		event.Type = agent.EventError
 		var errMsg string
 		if err := json.Unmarshal(e.Data, &errMsg); err == nil {
