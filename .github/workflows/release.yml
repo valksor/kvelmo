@@ -33,7 +33,7 @@ jobs:
 
             -   name: Install Minisign
                 run: |
-                    # Install from Ubuntu repos (older version but avoids build interference)
+                    # Install from Ubuntu repos
                     sudo apt-get update -qq
                     sudo apt-get install -y minisign
                     minisign --version
