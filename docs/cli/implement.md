@@ -27,8 +27,10 @@ The `implement` command runs the implementation phase where the AI agent:
 | ---------------------- | ----- | ------ | ------- | --------------------------------- |
 | `--dry-run`            | `-n`  | bool   | false   | Preview changes without applying  |
 | `--verbose`            | `-v`  | bool   | false   | Show agent output in real-time    |
-| `--agent-implement` |       | string |         | Override agent for implementation |
+| `--agent-implement`    |       | string |         | Override agent for implementation |
 | `--optimize`           |       | bool   | false   | Optimize prompt before sending to agent |
+| `--only`               |       | string |         | Only implement this component (e.g., backend, frontend, tests) |
+| `--parallel`           |       | string |         | Run N agents in parallel, or comma-separated agent list (e.g., "3" or "claude,gemini") |
 
 ## Examples
 
@@ -87,6 +89,38 @@ mehr implement --optimize
 ```
 
 Optimize the implementation prompt using an optimizer agent before sending to the working agent. This can improve clarity and effectiveness of the prompt, potentially leading to better code generation.
+
+### Component Filtering
+
+```bash
+mehr implement --only tests
+```
+
+Implement only a specific component (e.g., tests, backend, frontend, api). This is useful when you've planned a full feature but want to iteratively implement parts of it. Specifications must have a `component` field in their frontmatter:
+
+```yaml
+---
+component: tests
+---
+# Add unit tests for user authentication
+```
+
+### Parallel Execution
+
+```bash
+# Run 3 agents in parallel (same agent)
+mehr implement --parallel 3
+
+# Run specific agents in parallel
+mehr implement --parallel claude,gemini
+```
+
+Run multiple agents simultaneously to implement specifications faster. Each agent receives the same specifications and produces independent results. This is useful for:
+- Getting multiple approaches to the same problem
+- Speeding up implementation on large codebases
+- Cross-validation between different AI models
+
+**Note:** Parallel execution creates an ad-hoc orchestration configuration without requiring YAML setup. For persistent orchestration, see [Multi-Agent Orchestration](../agents/orchestration.md).
 
 ## What Happens
 

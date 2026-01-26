@@ -15,6 +15,11 @@ BINARY_NAME="mehr"
 VERSION=""
 NIGHTLY=false
 
+# Minisign public key for binary verification
+# Generated: 2025-01-26
+# Key ID: 1428C8FA1B9E89C5
+MINISIGN_PUBLIC_KEY="RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVpPw2"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -187,45 +192,40 @@ verify_checksum() {
     success "Checksum verified"
 }
 
-# Verify Cosign signature (if cosign is available)
-verify_cosign() {
-    local binary_url="$1"
-    local binary_file="$2"
-    local sig_url="${binary_url}.sig"
-    local cert_url="${binary_url}.pem"
-    local tmpdir="$3"
+# Verify Minisign signature (if minisign is available)
+verify_minisign() {
+    local base_url="$1"
+    local tmpdir="$2"
 
-    if ! command -v cosign &> /dev/null; then
-        info "cosign not found - skipping signature verification"
+    if ! command -v minisign &> /dev/null; then
+        info "minisign not found - skipping signature verification"
+        info "Install minisign to verify binary authenticity: https://github.com/jedisct1/minisign"
         return 0
     fi
 
-    info "Verifying Cosign signature..."
+    info "Verifying Minisign signature..."
 
-    local sig_file="${tmpdir}/binary.sig"
-    local cert_file="${tmpdir}/binary.pem"
+    # Download checksum signature and checksum file
+    local sig_url="${base_url}/checksums.txt.minisig"
+    local sig_file="${tmpdir}/checksums.txt.minisig"
+    local checksum_url="${base_url}/checksums.txt"
+    local checksum_file="${tmpdir}/checksums.txt"
 
-    # Download signature and certificate
     if ! curl -fsSL "$sig_url" -o "$sig_file" 2>/dev/null; then
         warn "Failed to download signature file - skipping signature verification"
         return 0
     fi
 
-    if ! curl -fsSL "$cert_url" -o "$cert_file" 2>/dev/null; then
-        warn "Failed to download certificate file - skipping signature verification"
+    if ! curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null; then
+        warn "Failed to download checksum file - skipping signature verification"
         return 0
     fi
 
-    # Verify with cosign
-    if cosign verify-blob \
-        --signature "$sig_file" \
-        --certificate "$cert_file" \
-        --certificate-identity-regexp ".*" \
-        --certificate-oidc-issuer-regexp ".*" \
-        "$binary_file" &>/dev/null; then
-        success "Cosign signature verified"
+    # Verify with minisign
+    if minisign -Vm "$checksum_file" -P "$MINISIGN_PUBLIC_KEY" -x "$sig_file" &>/dev/null; then
+        success "Minisign signature verified"
     else
-        error "Cosign signature verification failed!"
+        error "Minisign signature verification failed!"
     fi
 }
 
@@ -291,8 +291,8 @@ main() {
         warn "Checksum file not available - skipping checksum verification"
     fi
 
-    # Verify Cosign signature (opportunistic)
-    verify_cosign "$binary_url" "$binary_file" "$tmpdir"
+    # Verify Minisign signature (opportunistic)
+    verify_minisign "$base_url" "$tmpdir"
 
     # Make executable
     chmod +x "$binary_file"

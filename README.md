@@ -109,6 +109,44 @@ make install
 
 See [Installation Guide](https://valksor.com/docs/mehrhof/#/quickstart) for more options.
 
+## Verifying Binary Authenticity
+
+All stable releases are signed with [Minisign](https://github.com/jedisct1/minisign) to ensure authenticity.
+
+### Public Key
+
+```
+RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVpPw2
+```
+
+*Key ID: 1428C8FA1B9E89C5 | Generated: 2025-01-26*
+
+### Manual Verification
+
+1. **Download binary and signature:**
+```bash
+curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-linux-amd64
+curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/checksums.txt
+curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/checksums.txt.minisig
+```
+
+2. **Install Minisign:**
+```bash
+brew install minisign  # macOS
+# or download from https://github.com/jedisct1/minisign/releases
+```
+
+3. **Verify the checksum signature:**
+```bash
+minisign -Vm checksums.txt -P "RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVpPw2" \
+    -x checksums.txt.minisig
+```
+
+4. **Verify the binary:**
+```bash
+sha256sum -c checksums.txt --ignore-missing
+```
+
 ---
 
 ## Web UI Features
@@ -253,6 +291,9 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
+| `mehr specification view <number>` | View specification content (use `--all` for all, `-o` to save to file) |
+| `mehr license` | Display project license (BSD 3-Clause) |
+| `mehr license info` | List all dependency licenses with SPDX IDs (`--json`, `--unknown-only`) |
 | `mehr providers status` | Check provider health and connection status |
 | `mehr config explain` | Trace agent resolution path for debugging |
 | `mehr browser` | Browser automation commands (goto, screenshot, click, etc.) |
@@ -355,6 +396,7 @@ Mehrhof supports AI agent plugins for custom backends. The primary agent is **Cl
 | Agent | Description |
 |-------|-------------|
 | Claude | Primary agent via Claude CLI (recommended) |
+| Codex | Alternative agent via Codex CLI (experimental) |
 
 **See [AI Agents documentation](https://valksor.com/docs/mehrhof/#/agents/index) for configuration and custom aliases.**
 
@@ -414,7 +456,7 @@ make hooks        # Enable versioned git hooks
 make lefthook     # Install pre-commit hooks (auto-format + lint)
 ```
 
-**CI/CD**: PRs trigger lint/test/build via GitHub Actions. Releases use [GoReleaser](https://goreleaser.com/) with Cosign signing.
+**CI/CD**: PRs trigger lint/test/build via GitHub Actions. Releases use [GoReleaser](https://goreleaser.com/) with [Minisign](https://github.com/jedisct1/minisign) binary signing.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and PR review setup.
 

@@ -201,15 +201,33 @@ Maintainers will review your PR and provide feedback. Please address review comm
 
 ## Reporting Issues
 
-When reporting bugs or requesting features:
+### Bug Reports
+
+Before submitting a bug report, please verify the issue against different versions:
+
+1. **Check the latest release** - Confirm the bug exists in the latest stable release
+2. **Check the nightly build** - Test against the latest nightly build to see if it's already fixed
+3. **Decide whether to report**:
+   - ✅ **Submit an issue** if: Bug exists in both release AND nightly
+   - ✅ **Submit an issue** if: Bug exists ONLY in nightly (newly introduced)
+   - ❌ **Do NOT submit** if: Bug exists only in release but is FIXED in nightly
+
+### When Submitting Issues
 
 1. **Search existing issues** first to avoid duplicates
-2. **Use the issue templates** if available
-3. **Provide clear details**:
-   - Steps to reproduce (for bugs)
+2. **Provide clear details**:
+   - Version tested (release version and/or nightly build date)
+   - Steps to reproduce
    - Expected vs actual behavior
    - Environment details (OS, Go version)
    - Relevant logs or error messages
+
+### Feature Requests
+
+For feature requests, please:
+- Describe the use case clearly
+- Explain why existing functionality doesn't meet your needs
+- Consider if this would benefit most users or is specific to your workflow
 
 ## Getting Help
 
@@ -251,6 +269,4 @@ EOF
 
 ## License
 
-By contributing to Mehrhof, you agree that your contributions will be licensed under the [BSD 3-Clause License](license.md).
-
-The full contributing guide is also available in the [CONTRIBUTING.md](https://github.com/valksor/go-mehrhof/blob/master/CONTRIBUTING.md) file in the repository root.
+By contributing to Mehrhof, you agree that your contributions will be licensed under the [BSD 3-Clause License](https://github.com/valksor/go-mehrhof/blob/master/LICENSE).

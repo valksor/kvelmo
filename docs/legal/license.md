@@ -1,10 +1,6 @@
-# License
+BSD 3-Clause License
 
-Valksor Mehrhof is licensed under the **BSD 3-Clause License**.
-
-## BSD 3-Clause License
-
-Copyright (c) 2025+, Dāvis Zālītis (k0d3r1s)  
+Copyright (c) 2025+, Dāvis Zālītis (k0d3r1s)
 Copyright (c) 2025+, SIA Valksor
 
 Redistribution and use in source and binary forms, with or without
@@ -31,37 +27,3 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-## Third-Party Licenses
-
-Mehrhof uses third-party Go modules, each with their own licenses. You can view
-the full list of dependencies and their licenses by running:
-
-```bash
-go mod download
-go list -m all | xargs -I {} sh -c 'echo "{}:" && go mod download -json {} | jq -r ".License"'
-```
-
-Or check the `go.sum` file in the repository root for exact dependency versions.
-
-## What You Can Do
-
-Under this license, you are free to:
-
-- ✓ Use Mehrhof in commercial and personal projects
-- ✓ Modify the source code for your needs
-- ✓ Distribute modified versions (source or binary)
-- ✓ Sublicense the code
-
-## Requirements
-
-When redistributing, you must:
-
-1. Include the copyright notice and license text
-2. State any changes you made to the original code
-3. Not use the copyright holder's names to endorse your product
-
-## Full License Text
-
-The complete license text is also available in the [LICENSE](https://github.com/valksor/go-mehrhof/blob/master/LICENSE) file
-in the repository root.

@@ -9,16 +9,18 @@ export default {
 
         // Redirect directory paths without trailing slash (fixes relative path resolution)
         if (
-            url.pathname.startsWith("/docs/mehrhof") &&
+            url.pathname.match(/^\/docs\/mehrhof(\/|$)/) &&
             !url.pathname.endsWith("/") &&
             !url.pathname.split("/").pop().includes(".")
         ) {
             return Response.redirect(url.origin + url.pathname + "/", 301);
         }
 
-        // Strip /docs/mehrhof prefix for asset lookup
-        if (url.pathname.startsWith("/docs/mehrhof")) {
-            url.pathname = url.pathname.replace(/^\/docs\/mehrhof/, "") || "/";
+        // Strip /docs/mehrhof/latest or /docs/mehrhof/nightly prefix for asset lookup
+        if (url.pathname.startsWith("/docs/mehrhof/latest")) {
+            url.pathname = url.pathname.replace(/^\/docs\/mehrhof\/latest/, "") || "/";
+        } else if (url.pathname.startsWith("/docs/mehrhof/nightly")) {
+            url.pathname = url.pathname.replace(/^\/docs\/mehrhof\/nightly/, "") || "/";
         }
 
         const modifiedRequest = new Request(url, request);
