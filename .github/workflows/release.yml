@@ -31,11 +31,19 @@ jobs:
                     go-version: ${{ env.GO_VERSION }}
                     cache: true
 
-            -   name: Install Cosign
-                uses: sigstore/cosign-installer@v3
+            -   name: Install Minisign
+                run: |
+                    curl -fsSL https://github.com/jedisct1/minisign/releases/latest/download/minisign-0.12-linux-x86_64.tar.gz | tar xz
+                    sudo mv minisign /usr/local/bin/
+                    minisign --version
 
             -   name: Install Syft
                 uses: anchore/sbom-action/download-syft@v0
+
+            -   name: Decode Minisign Private Key
+                run: |
+                    echo "${{ secrets.MINISIGN_PRIVATE_KEY }}" | base64 -d > /tmp/minisign.key
+                    chmod 600 /tmp/minisign.key
 
             -   name: Save release title
                 id: release-title
@@ -80,34 +88,20 @@ jobs:
                     cp dist/mehr_linux_arm64_v8.0/mehr dist/mehr-linux-arm64
                     cp dist/mehr_darwin_amd64_v1/mehr dist/mehr-darwin-amd64
                     cp dist/mehr_darwin_arm64_v8.0/mehr dist/mehr-darwin-arm64
-                    # Copy signatures and certificates with correct names
-                    cp dist/mehr_linux_amd64_v1/mehr.sig dist/mehr-linux-amd64.sig
-                    cp dist/mehr_linux_amd64_v1/mehr.pem dist/mehr-linux-amd64.pem
-                    cp dist/mehr_linux_arm64_v8.0/mehr.sig dist/mehr-linux-arm64.sig
-                    cp dist/mehr_linux_arm64_v8.0/mehr.pem dist/mehr-linux-arm64.pem
-                    cp dist/mehr_darwin_amd64_v1/mehr.sig dist/mehr-darwin-amd64.sig
-                    cp dist/mehr_darwin_amd64_v1/mehr.pem dist/mehr-darwin-amd64.pem
-                    cp dist/mehr_darwin_arm64_v8.0/mehr.sig dist/mehr-darwin-arm64.sig
-                    cp dist/mehr_darwin_arm64_v8.0/mehr.pem dist/mehr-darwin-arm64.pem
+                    # Copy checksum signature
+                    cp dist/checksums.txt.minisig dist/checksums.txt.minisig
                     # Upload all artifacts
                     gh release upload "$RELEASE_TAG" \
                         dist/mehr-linux-amd64 \
                         dist/mehr-linux-arm64 \
                         dist/mehr-darwin-amd64 \
                         dist/mehr-darwin-arm64 \
-                        dist/mehr-linux-amd64.sig \
-                        dist/mehr-linux-amd64.pem \
-                        dist/mehr-linux-arm64.sig \
-                        dist/mehr-linux-arm64.pem \
-                        dist/mehr-darwin-amd64.sig \
-                        dist/mehr-darwin-amd64.pem \
-                        dist/mehr-darwin-arm64.sig \
-                        dist/mehr-darwin-arm64.pem \
+                        dist/checksums.txt \
+                        dist/checksums.txt.minisig \
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
-                        dist/checksums.txt \
                         dist/mehr-linux-amd64.sbom.spdx.json \
                         dist/mehr-linux-arm64.sbom.spdx.json \
                         dist/mehr-darwin-amd64.sbom.spdx.json \
@@ -126,3 +120,7 @@ jobs:
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
                         --clobber
+
+            -   name: Push to latest branch
+                if: ${{ !github.event.release.prerelease }}
+                run: git push origin ${{ github.event.release.tag_name }}:latest --force
