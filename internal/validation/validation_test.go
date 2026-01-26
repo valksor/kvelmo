@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/validate"
 )
 
 // openTestWorkspace creates a test workspace with a temporary home directory.
@@ -27,7 +28,7 @@ func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
 }
 
 func TestResultAddError(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 
 	r.AddError("TEST_CODE", "test message", "test.path", "test.yaml")
 
@@ -40,13 +41,13 @@ func TestResultAddError(t *testing.T) {
 	if len(r.Findings) != 1 {
 		t.Errorf("expected 1 finding, got %d", len(r.Findings))
 	}
-	if r.Findings[0].Severity != SeverityError {
+	if r.Findings[0].Severity != validate.SeverityError {
 		t.Errorf("expected error severity, got %s", r.Findings[0].Severity)
 	}
 }
 
 func TestResultAddWarning(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 
 	r.AddWarning("TEST_CODE", "test message", "test.path", "test.yaml")
 
@@ -59,10 +60,10 @@ func TestResultAddWarning(t *testing.T) {
 }
 
 func TestResultMerge(t *testing.T) {
-	r1 := NewResult()
+	r1 := validate.NewResult()
 	r1.AddError("CODE1", "error 1", "", "")
 
-	r2 := NewResult()
+	r2 := validate.NewResult()
 	r2.AddWarning("CODE2", "warning 1", "", "")
 
 	r1.Merge(r2)
@@ -79,7 +80,7 @@ func TestResultMerge(t *testing.T) {
 }
 
 func TestResultFormatJSON(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddError("TEST", "test message", "path", "file")
 
 	output := r.Format("json")
@@ -93,7 +94,7 @@ func TestResultFormatJSON(t *testing.T) {
 }
 
 func TestResultFormatText(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddError("TEST", "test message", "path", "file")
 
 	output := r.Format("text")
@@ -108,7 +109,7 @@ func TestValidateAgentAliases_CircularDependency(t *testing.T) {
 		"a": {Extends: "b"},
 		"b": {Extends: "a"},
 	}
-	result := NewResult()
+	result := validate.NewResult()
 	builtInAgents := []string{"claude"}
 
 	validateAgentAliases(aliases, "config.yaml", builtInAgents, result)
@@ -135,7 +136,7 @@ func TestValidateAgentAliases_UndefinedExtends(t *testing.T) {
 	aliases := map[string]storage.AgentAliasConfig{
 		"custom": {Extends: "nonexistent"},
 	}
-	result := NewResult()
+	result := validate.NewResult()
 	builtInAgents := []string{"claude"}
 
 	validateAgentAliases(aliases, "config.yaml", builtInAgents, result)
@@ -163,7 +164,7 @@ func TestValidateAgentAliases_ValidChain(t *testing.T) {
 		"b": {Extends: "a"},
 		"c": {Extends: "b"},
 	}
-	result := NewResult()
+	result := validate.NewResult()
 	builtInAgents := []string{"claude"}
 
 	validateAgentAliases(aliases, "config.yaml", builtInAgents, result)
@@ -177,7 +178,7 @@ func TestValidateAgentAliases_MissingExtends(t *testing.T) {
 	aliases := map[string]storage.AgentAliasConfig{
 		"bad": {Description: "no extends field"},
 	}
-	result := NewResult()
+	result := validate.NewResult()
 	builtInAgents := []string{"claude"}
 
 	validateAgentAliases(aliases, "config.yaml", builtInAgents, result)
@@ -201,7 +202,7 @@ func TestValidateGitPattern_ValidPlaceholders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateGitPattern(tt.pattern, "git.branch_pattern", "config.yaml", result)
 
 			hasWarning := result.Warnings > 0
@@ -291,7 +292,7 @@ func TestValidateGitSettings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateGitSettings(tt.git, "config.yaml", result)
 			if result.Errors != tt.wantErrors {
 				t.Errorf("expected %d errors, got %d", tt.wantErrors, result.Errors)
@@ -353,7 +354,7 @@ func TestValidateAgentSettings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateAgentSettings(tt.agent, "config.yaml", builtInAgents, aliases, result)
 			if result.Errors != tt.wantErrors {
 				t.Errorf("expected %d errors, got %d", tt.wantErrors, result.Errors)
@@ -387,7 +388,7 @@ func TestValidateWorkflowSettings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateWorkflowSettings(tt.workflow, "config.yaml", result)
 			if result.Warnings != tt.wantWarnings {
 				t.Errorf("expected %d warnings, got %d", tt.wantWarnings, result.Warnings)
@@ -429,7 +430,7 @@ func TestValidateEnvVarReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateEnvVarReferences(tt.env, "agents.test.env", "config.yaml", result)
 			if result.Warnings != tt.wantWarnings {
 				t.Errorf("expected %d warnings, got %d", tt.wantWarnings, result.Warnings)
@@ -469,7 +470,7 @@ func TestValidatePluginsConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validatePluginsConfig(tt.plugins, "config.yaml", result)
 			if result.Warnings != tt.wantWarnings {
 				t.Errorf("expected %d warnings, got %d", tt.wantWarnings, result.Warnings)
@@ -508,7 +509,7 @@ func TestValidateGitHubSettings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			validateGitHubSettings(tt.gh, "config.yaml", result)
 			if result.Warnings != tt.wantWarnings {
 				t.Errorf("expected %d warnings, got %d", tt.wantWarnings, result.Warnings)
@@ -518,7 +519,7 @@ func TestValidateGitHubSettings(t *testing.T) {
 }
 
 func TestResultAddInfo(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddInfo("TEST_CODE", "test message", "test.path", "test.yaml")
 
 	if !r.Valid {
@@ -533,13 +534,13 @@ func TestResultAddInfo(t *testing.T) {
 	if len(r.Findings) != 1 {
 		t.Errorf("expected 1 finding, got %d", len(r.Findings))
 	}
-	if r.Findings[0].Severity != SeverityInfo {
+	if r.Findings[0].Severity != validate.SeverityInfo {
 		t.Errorf("expected info severity, got %s", r.Findings[0].Severity)
 	}
 }
 
 func TestResultAddErrorWithSuggestion(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddErrorWithSuggestion("TEST_CODE", "test message", "test.path", "test.yaml", "fix it")
 
 	if r.Valid {
@@ -551,7 +552,7 @@ func TestResultAddErrorWithSuggestion(t *testing.T) {
 }
 
 func TestResultAddWarningWithSuggestion(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddWarningWithSuggestion("TEST_CODE", "test message", "test.path", "test.yaml", "fix it")
 
 	if !r.Valid {
@@ -563,7 +564,7 @@ func TestResultAddWarningWithSuggestion(t *testing.T) {
 }
 
 func TestResultMergeNil(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddError("CODE1", "error 1", "", "")
 
 	r.Merge(nil)
@@ -574,7 +575,7 @@ func TestResultMergeNil(t *testing.T) {
 }
 
 func TestResultFormatTextWithSuggestion(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddErrorWithSuggestion("TEST", "test message", "path", "file", "fix suggestion")
 
 	output := r.Format("text")
@@ -588,7 +589,7 @@ func TestResultFormatTextWithSuggestion(t *testing.T) {
 }
 
 func TestResultFormatTextValid(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 
 	output := r.Format("text")
 
@@ -601,7 +602,7 @@ func TestResultFormatTextValid(t *testing.T) {
 }
 
 func TestResultFormatTextWithWarnings(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddWarning("TEST", "test warning", "path", "file")
 
 	output := r.Format("text")
@@ -612,7 +613,7 @@ func TestResultFormatTextWithWarnings(t *testing.T) {
 }
 
 func TestResultFormatTextNoFile(t *testing.T) {
-	r := NewResult()
+	r := validate.NewResult()
 	r.AddError("TEST", "test message", "path", "")
 
 	output := r.Format("text")
@@ -648,7 +649,7 @@ func TestValidateWorkspaceConfig(t *testing.T) {
 		},
 	}
 
-	result := NewResult()
+	result := validate.NewResult()
 	validateWorkspaceConfig(cfg, "config.yaml", builtInAgents, result)
 
 	if !result.Valid {
@@ -747,7 +748,7 @@ func TestValidateStorageSettings_ValidPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
@@ -770,7 +771,7 @@ func TestValidateStorageSettings_AbsolutePaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
@@ -800,7 +801,7 @@ func TestValidateStorageSettings_HomeExpansion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
@@ -829,7 +830,7 @@ func TestValidateStorageSettings_PathTraversal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
@@ -869,7 +870,7 @@ func TestValidateStorageSettings_InvalidCharacters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewResult()
+			result := validate.NewResult()
 			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
@@ -920,7 +921,7 @@ func TestValidateWorkspaceConfig_WithStorageSettings(t *testing.T) {
 				Agent:   storage.AgentSettings{Default: "claude"},
 				Storage: tt.storage,
 			}
-			result := NewResult()
+			result := validate.NewResult()
 			validateWorkspaceConfig(cfg, "config.yaml", builtInAgents, result)
 
 			if result.Valid != tt.wantValid {
