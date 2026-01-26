@@ -65,6 +65,20 @@ jobs:
                     GORELEASER_CURRENT_TAG: ${{ !github.event.release.prerelease && github.event.release.tag_name || '' }}
                     MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
 
+            -   name: Deploy docs to Cloudflare Workers (nightly)
+                if: github.event.release.prerelease
+                uses: cloudflare/wrangler-action@v3
+                with:
+                    apiToken: ${{ secrets.CF_API_TOKEN }}
+                    command: deploy --env nightly
+
+            -   name: Deploy docs to Cloudflare Workers (latest)
+                if: ${{ !github.event.release.prerelease }}
+                uses: cloudflare/wrangler-action@v3
+                with:
+                    apiToken: ${{ secrets.CF_API_TOKEN }}
+                    command: deploy --env latest
+
             -   name: Restore release title
                 env:
                     GH_TOKEN: ${{ secrets.GH_TOKEN }}

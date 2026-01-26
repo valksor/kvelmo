@@ -44,6 +44,7 @@ signs:
     -   id: minisign
         cmd: minisign
         signature: "${artifact}.minisig"
+        stdin: "{{ .Env.MINISIGN_PASSWORD }}"
         args:
             - "-S"
             - "-m"
