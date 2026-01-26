@@ -61,6 +61,13 @@ type Server struct {
 
 // New creates a new server with the given configuration.
 func New(cfg Config) (*Server, error) {
+	// Create EventBus if not provided (for global mode)
+	// In project mode, the conductor provides the EventBus, but in global mode
+	// we need our own for SSE connections to work properly.
+	if cfg.EventBus == nil {
+		cfg.EventBus = eventbus.NewBus()
+	}
+
 	s := &Server{
 		config:              cfg,
 		sessions:            newSessionStore(),
