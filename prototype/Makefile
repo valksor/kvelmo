@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook
+.PHONY: build test quality install clean run hooks lefthook generate-licenses
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -15,10 +15,15 @@ LDFLAGS := -ldflags "-s -w -v -X github.com/valksor/go-toolkit/version.Version=$
 # Default target
 all: build ## Build the binary (default target)
 
-build: ## Compile the binary
+build: generate-licenses ## Compile the binary
+	@bun run assets:build
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
+
+generate-licenses: ## Generate licenses.json from go.mod dependencies
+	@echo "Generating dependency licenses..."
+	@go run scripts/gen_licenses.go
 
 test: ## Run tests with coverage
 	${MAKE} quality

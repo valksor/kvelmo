@@ -39,18 +39,24 @@ checksum:
     name_template: 'checksums.txt'
     algorithm: sha256
 
-# Cosign keyless signing
+# Minisign signing (signs checksum file only - simpler)
 signs:
-    -   cmd: cosign
-        signature: "${artifact}.sig"
-        certificate: "${artifact}.pem"
+    -   id: minisign
+        cmd: minisign
+        signature: "${artifact}.minisig"
         args:
-            - sign-blob
-            - --yes
-            - --output-signature=${signature}
-            - --output-certificate=${certificate}
-            - ${artifact}
-        artifacts: binary
+            - "-S"
+            - "-m"
+            - "${artifact}"
+            - "-s"
+            - "${env.MINISIGN_KEY_FILE}"
+            - "-P"
+            - "${env.MINISIGN_PASSWORD}"
+            - "-o"
+            - "${signature}"
+        artifacts: checksum
+        env:
+            - MINISIGN_KEY_FILE=/tmp/minisign.key
 
 # SBOM generation
 sboms:

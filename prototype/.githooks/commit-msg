@@ -27,7 +27,7 @@ else
 fi
 
 # Code paths regex (triggers CI build)
-CODE_PATHS="^cmd/|^internal/|^go\.mod$|^go\.sum$|^Makefile$"
+CODE_PATHS="^cmd/|^internal/|^scripts/|^go\.mod$|^go\.sum$|^Makefile$"
 echo "[DEBUG] CODE_PATHS='$CODE_PATHS'" >&2
 
 # Check if any staged file matches code paths
