@@ -70,6 +70,7 @@ jobs:
                 uses: cloudflare/wrangler-action@v3
                 with:
                     apiToken: ${{ secrets.CF_API_TOKEN }}
+                    wranglerVersion: '4'
                     command: deploy --env nightly
 
             -   name: Deploy docs to Cloudflare Workers (latest)
@@ -77,6 +78,7 @@ jobs:
                 uses: cloudflare/wrangler-action@v3
                 with:
                     apiToken: ${{ secrets.CF_API_TOKEN }}
+                    wranglerVersion: '4'
                     command: deploy --env latest
 
             -   name: Restore release title
