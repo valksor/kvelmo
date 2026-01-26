@@ -2214,3 +2214,185 @@ func TestWithSlugOverride(t *testing.T) {
 		t.Errorf("SlugOverride = %q, want %q", opts.SlugOverride, "custom-task-slug")
 	}
 }
+
+// Test WithOnlyComponent option.
+func TestWithOnlyComponent(t *testing.T) {
+	opts := DefaultOptions()
+	WithOnlyComponent("tests")(&opts)
+
+	if opts.OnlyComponent != "tests" {
+		t.Errorf("OnlyComponent = %q, want %q", opts.OnlyComponent, "tests")
+	}
+}
+
+// Test WithParallel option.
+func TestWithParallel(t *testing.T) {
+	tests := []struct {
+		name     string
+		parallel string
+		want     string
+	}{
+		{"numeric count", "3", "3"},
+		{"comma-separated agents", "claude,gemini", "claude,gemini"},
+		{"empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := DefaultOptions()
+			WithParallel(tt.parallel)(&opts)
+
+			if opts.ParallelCount != tt.want {
+				t.Errorf("ParallelCount = %q, want %q", opts.ParallelCount, tt.want)
+			}
+		})
+	}
+}
+
+// Test SetImplementationOptions and ClearImplementationOptions.
+func TestImplementationOptions(t *testing.T) {
+	c, err := New(WithWorkDir(t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Initially empty
+	if c.opts.OnlyComponent != "" {
+		t.Errorf("OnlyComponent = %q, want empty", c.opts.OnlyComponent)
+	}
+	if c.opts.ParallelCount != "" {
+		t.Errorf("ParallelCount = %q, want empty", c.opts.ParallelCount)
+	}
+
+	// Set options
+	c.SetImplementationOptions("backend", "3")
+	if c.opts.OnlyComponent != "backend" {
+		t.Errorf("OnlyComponent = %q, want %q", c.opts.OnlyComponent, "backend")
+	}
+	if c.opts.ParallelCount != "3" {
+		t.Errorf("ParallelCount = %q, want %q", c.opts.ParallelCount, "3")
+	}
+
+	// Clear options
+	c.ClearImplementationOptions()
+	if c.opts.OnlyComponent != "" {
+		t.Errorf("OnlyComponent = %q, want empty after clear", c.opts.OnlyComponent)
+	}
+	if c.opts.ParallelCount != "" {
+		t.Errorf("ParallelCount = %q, want empty after clear", c.opts.ParallelCount)
+	}
+}
+
+// TestImplementationOptions_ThreadSafety tests that implementation options are thread-safe.
+func TestImplementationOptions_ThreadSafety(t *testing.T) {
+	c, err := New(WithWorkDir(t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set from one goroutine, read from another
+	done := make(chan bool)
+	go func() {
+		c.SetImplementationOptions("backend", "2")
+		done <- true
+	}()
+
+	go func() {
+		c.ClearImplementationOptions()
+		done <- true
+	}()
+
+	// Wait for both goroutines to complete
+	<-done
+	<-done
+
+	// Verify we can still set options without deadlock
+	c.SetImplementationOptions("tests", "3")
+	c.ClearImplementationOptions()
+}
+
+// TestFilterSpecificationsByComponent tests the component filtering logic.
+func TestFilterSpecificationsByComponent(t *testing.T) {
+	t.Run("empty spec numbers returns empty", func(t *testing.T) {
+		c, err := New(WithWorkDir(t.TempDir()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := c.filterSpecificationsByComponent("task-123", []int{}, "backend")
+		if len(result) != 0 {
+			t.Errorf("expected empty result, got %d specs", len(result))
+		}
+	})
+
+	t.Run("various component names", func(t *testing.T) {
+		// Test that component parameter is passed through correctly
+		components := []string{"backend", "frontend", "tests", "api", "ui", "database", "infrastructure"}
+		for _, comp := range components {
+			// Just verify the function accepts these component names without error
+			c, err := New(WithWorkDir(t.TempDir()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Empty spec list should return empty for any component
+			result := c.filterSpecificationsByComponent("task-123", []int{}, comp)
+			if len(result) != 0 {
+				t.Errorf("component %q: expected empty result, got %d specs", comp, len(result))
+			}
+		}
+	})
+}
+
+// TestGetDefaultAgentName tests the default agent name resolution.
+func TestGetDefaultAgentName(t *testing.T) {
+	t.Run("nil workspace returns claude fallback", func(t *testing.T) {
+		c := &Conductor{}
+		name := c.getDefaultAgentName()
+		if name != "claude" {
+			t.Errorf("getDefaultAgentName() = %q, want %q", name, "claude")
+		}
+	})
+
+	t.Run("uninitialized workspace returns claude fallback", func(t *testing.T) {
+		c, err := New(WithWorkDir(t.TempDir()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Workspace exists but no config file
+		name := c.getDefaultAgentName()
+		if name != "claude" {
+			t.Errorf("getDefaultAgentName() = %q, want %q", name, "claude")
+		}
+	})
+}
+
+// TestOrchestrationOptions tests various orchestration option combinations.
+func TestOrchestrationOptions(t *testing.T) {
+	tests := []struct {
+		name          string
+		onlyComponent string
+		parallelCount string
+	}{
+		{"both options set", "backend", "3"},
+		{"only component", "frontend", ""},
+		{"only parallel", "", "2"},
+		{"both empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := New(WithWorkDir(t.TempDir()))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			c.SetImplementationOptions(tt.onlyComponent, tt.parallelCount)
+
+			if c.opts.OnlyComponent != tt.onlyComponent {
+				t.Errorf("OnlyComponent = %q, want %q", c.opts.OnlyComponent, tt.onlyComponent)
+			}
+			if c.opts.ParallelCount != tt.parallelCount {
+				t.Errorf("ParallelCount = %q, want %q", c.opts.ParallelCount, tt.parallelCount)
+			}
+		})
+	}
+}

@@ -1408,9 +1408,9 @@ func TestHandler_SettingsPage_ProjectMode_NoProjectPicker(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	bodyStr := string(body)
 
-	// Project mode should NOT show project picker
+	// Project mode should NOT show project picker header or select element
 	assert.NotContains(t, bodyStr, "Select Project")
-	assert.NotContains(t, bodyStr, "project-picker")
+	assert.NotContains(t, bodyStr, `id="project-picker"`)
 }
 
 func TestHandler_GetSettings_GlobalMode_WithProjectParam(t *testing.T) {

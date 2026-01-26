@@ -1,6 +1,7 @@
 package conductor
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/agent/orchestration"
@@ -86,4 +87,96 @@ func TestLogOrchestrationResult(t *testing.T) {
 
 	// This should not panic
 	c.logOrchestrationResult("planning", result)
+}
+
+// TestCreateAdHocParallelConfig tests ad-hoc parallel config creation.
+func TestCreateAdHocParallelConfig(t *testing.T) {
+	tests := []struct {
+		name          string
+		parallelCount string
+		wantMode      orchestration.OrchestratorMode
+		wantAgents    int
+	}{
+		{
+			name:          "numeric 2",
+			parallelCount: "2",
+			wantMode:      orchestration.ModeParallel,
+			wantAgents:    2,
+		},
+		{
+			name:          "numeric 4",
+			parallelCount: "4",
+			wantMode:      orchestration.ModeParallel,
+			wantAgents:    4,
+		},
+		{
+			name:          "comma-separated agents",
+			parallelCount: "claude,gemini",
+			wantMode:      orchestration.ModeParallel,
+			wantAgents:    2,
+		},
+		{
+			name:          "three comma-separated",
+			parallelCount: "claude, gemini, gpt",
+			wantMode:      orchestration.ModeParallel,
+			wantAgents:    3,
+		},
+		{
+			name:          "invalid - less than 2",
+			parallelCount: "1",
+			wantMode:      "",
+			wantAgents:    0,
+		},
+		{
+			name:          "invalid - not a number",
+			parallelCount: "abc",
+			wantMode:      "",
+			wantAgents:    0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a minimal conductor with initialized workspace
+			c, err := New(WithWorkDir(t.TempDir()))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			config := c.createAdHocParallelConfig("implementing", tt.parallelCount)
+
+			if tt.wantAgents == 0 {
+				if config != nil {
+					t.Errorf("expected nil config for invalid input, got %+v", config)
+				}
+
+				return
+			}
+
+			if config == nil {
+				t.Fatal("expected non-nil config, got nil")
+			}
+
+			if config.Mode != tt.wantMode {
+				t.Errorf("Mode = %v, want %v", config.Mode, tt.wantMode)
+			}
+
+			if len(config.Agents) != tt.wantAgents {
+				t.Errorf("Agents count = %d, want %d", len(config.Agents), tt.wantAgents)
+			}
+
+			// Verify agent names for comma-separated case
+			if strings.Contains(tt.parallelCount, ",") {
+				expectedNames := strings.Split(tt.parallelCount, ",")
+				for i, name := range expectedNames {
+					expectedNames[i] = strings.TrimSpace(name)
+				}
+				for i, agent := range config.Agents {
+					if agent.Agent != expectedNames[i] {
+						t.Errorf("Agent %d = %q, want %q", i, agent.Agent, expectedNames[i])
+					}
+				}
+			}
+		})
+	}
 }

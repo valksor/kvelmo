@@ -3193,3 +3193,144 @@ planned 2024-01-01 12:00
 		})
 	}
 }
+
+// TestSpecification_ComponentField tests the Component field in specification frontmatter.
+func TestSpecification_ComponentField(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create work directory first
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test123", source); err != nil {
+		t.Fatalf("CreateWork(test123): %v", err)
+	}
+
+	tests := []struct {
+		name              string
+		component         string
+		expectedComponent string
+	}{
+		{
+			name:              "backend component",
+			component:         "backend",
+			expectedComponent: "backend",
+		},
+		{
+			name:              "frontend component",
+			component:         "frontend",
+			expectedComponent: "frontend",
+		},
+		{
+			name:              "tests component",
+			component:         "tests",
+			expectedComponent: "tests",
+		},
+		{
+			name:              "empty component",
+			component:         "",
+			expectedComponent: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := `---
+title: Test Spec
+status: ready
+component: ` + tt.component + `
+---
+# Test Specification Content
+`
+			if err := ws.SaveSpecification("test123", 1, content); err != nil {
+				t.Fatalf("SaveSpecification failed: %v", err)
+			}
+
+			// Parse the specification
+			spec, err := ws.ParseSpecification("test123", 1)
+			if err != nil {
+				t.Fatalf("ParseSpecification failed: %v", err)
+			}
+
+			if spec.Component != tt.expectedComponent {
+				t.Errorf("Component = %q, want %q", spec.Component, tt.expectedComponent)
+			}
+		})
+	}
+}
+
+// TestAgentAliasConfig_ComponentsField tests the Components field in agent alias config.
+func TestAgentAliasConfig_ComponentsField(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Load config
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	// Add agent alias with components
+	if cfg.Agents == nil {
+		cfg.Agents = make(map[string]AgentAliasConfig)
+	}
+
+	cfg.Agents["backend-agent"] = AgentAliasConfig{
+		Extends:    "claude",
+		Components: []string{"backend", "api"},
+	}
+
+	cfg.Agents["frontend-agent"] = AgentAliasConfig{
+		Extends:    "claude",
+		Components: []string{"frontend", "ui"},
+	}
+
+	// Save config
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig failed: %v", err)
+	}
+
+	// Reload and verify
+	loadedCfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig (reload) failed: %v", err)
+	}
+
+	// Verify backend agent
+	backendAgent, ok := loadedCfg.Agents["backend-agent"]
+	if !ok {
+		t.Fatal("backend-agent alias not found")
+	}
+	if backendAgent.Extends != "claude" {
+		t.Errorf("backend-agent.Extends = %q, want %q", backendAgent.Extends, "claude")
+	}
+	expectedComponents := []string{"backend", "api"}
+	if len(backendAgent.Components) != len(expectedComponents) {
+		t.Fatalf("backend-agent.Components length = %d, want %d", len(backendAgent.Components), len(expectedComponents))
+	}
+	for i, comp := range backendAgent.Components {
+		if comp != expectedComponents[i] {
+			t.Errorf("backend-agent.Components[%d] = %q, want %q", i, comp, expectedComponents[i])
+		}
+	}
+
+	// Verify frontend agent
+	frontendAgent, ok := loadedCfg.Agents["frontend-agent"]
+	if !ok {
+		t.Fatal("frontend-agent alias not found")
+	}
+	expectedComponents = []string{"frontend", "ui"}
+	if len(frontendAgent.Components) != len(expectedComponents) {
+		t.Fatalf("frontend-agent.Components length = %d, want %d", len(frontendAgent.Components), len(expectedComponents))
+	}
+	for i, comp := range frontendAgent.Components {
+		if comp != expectedComponents[i] {
+			t.Errorf("frontend-agent.Components[%d] = %q, want %q", i, comp, expectedComponents[i])
+		}
+	}
+}

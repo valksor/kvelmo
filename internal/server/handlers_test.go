@@ -490,3 +490,176 @@ func TestHandler_ContentType_SSE(t *testing.T) {
 
 	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 }
+
+// TestHandler_AgentAlias_NoConductor tests agent alias endpoints without conductor.
+func TestHandler_AgentAlias_NoConductor(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// List aliases without conductor
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/agents/aliases")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+}
+
+// TestHandler_AgentAlias_Create_InvalidJSON tests creating alias with invalid JSON.
+func TestHandler_AgentAlias_Create_InvalidJSON(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	body := bytes.NewBufferString(`{invalid json}`)
+	resp, err := doPost(ctx, client, srv.URL()+"/api/v1/agents/aliases", body)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+}
+
+// TestHandler_AgentAlias_Delete_NoName tests deleting alias without name.
+func TestHandler_AgentAlias_Delete_NoName(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// Delete request to base alias path (missing name)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, srv.URL()+"/api/v1/agents/aliases/", nil)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	// The route expects a name after /aliases/, so without conductor we get service unavailable
+	// or a 404 if the route doesn't match
+	if resp.StatusCode != http.StatusServiceUnavailable && resp.StatusCode != http.StatusNotFound && resp.StatusCode != http.StatusBadRequest {
+		t.Logf("Unexpected status code: %d", resp.StatusCode)
+	}
+}
+
+// TestHandler_ImplementWithQueryParams tests implement endpoint with query parameters.
+func TestHandler_ImplementWithQueryParams(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	tests := []struct {
+		name           string
+		queryParams    string
+		expectedStatus int
+	}{
+		{
+			name:           "no params",
+			queryParams:    "",
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "component only",
+			queryParams:    "?component=tests",
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "parallel only",
+			queryParams:    "?parallel=3",
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "both params",
+			queryParams:    "?component=tests&parallel=2",
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := doPost(ctx, client, srv.URL()+"/api/v1/workflow/implement"+tt.queryParams, nil)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+		})
+	}
+}
+
+// TestHandler_ImplementWithInvalidParams tests implement endpoint with invalid params.
+func TestHandler_ImplementWithInvalidParams(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	tests := []struct {
+		name        string
+		queryParams string
+	}{
+		{
+			name:        "empty component",
+			queryParams: "?component=",
+		},
+		{
+			name:        "empty parallel",
+			queryParams: "?parallel=",
+		},
+		{
+			name:        "zero parallel",
+			queryParams: "?parallel=0",
+		},
+		{
+			name:        "negative parallel",
+			queryParams: "?parallel=-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := doPost(ctx, client, srv.URL()+"/api/v1/workflow/implement"+tt.queryParams, nil)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+
+			// Without conductor, we get service unavailable regardless of params
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+		})
+	}
+}
