@@ -35,8 +35,8 @@
 {{end}}
 
 <!-- Specifications -->
-<div id="specs" hx-get="/ui/partials/specs" hx-trigger="sse:spec_updated, every 30s" hx-swap="outerHTML">
-    {{template "specs_content" .Specifications}}
+<div id="specs" hx-get="/ui/partials/specification" hx-trigger="sse:spec_updated, every 30s" hx-swap="outerHTML">
+    {{template "specification" .Specifications.Specifications}}
 </div>
 
 <!-- Costs -->
@@ -65,6 +65,21 @@
 <!-- Global Mode: Project Picker -->
 <div class="card">
     <div class="text-center py-12">
+        <!-- Saved project link (shown if a project was previously selected) -->
+        <div id="saved-project-link" class="hidden mb-6 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-xl border border-brand-200 dark:border-brand-800">
+            <p class="text-sm text-surface-600 dark:text-surface-400 mb-3">
+                Your saved project: <strong id="saved-project-name" class="text-brand-600 dark:text-brand-400"></strong>
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="goToProjectSettings()" class="btn btn-secondary">
+                    View Project Settings
+                </button>
+                <button onclick="clearSavedProject()" class="btn btn-ghost">
+                    Clear
+                </button>
+            </div>
+        </div>
+
         <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-900/30 dark:to-brand-800/20 flex items-center justify-center">
             <svg class="w-10 h-10 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
@@ -479,7 +494,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Check for saved project in global mode
+    const savedProject = getSelectedProject();
+    if (savedProject) {
+        const link = document.getElementById('saved-project-link');
+        const nameEl = document.getElementById('saved-project-name');
+        // Try to find project name from the list (project cards have paths, we need to match)
+        const projectCards = document.querySelectorAll('form[action*="/api/v1/projects/select"]');
+        if (link && nameEl && projectCards.length > 0) {
+            // Find the card with matching path and extract the project name
+            projectCards.forEach(function(card) {
+                const pathInput = card.querySelector('input[name="path"]');
+                const projectName = card.querySelector('.font-semibold');
+                if (pathInput && projectName && pathInput.value === savedProject) {
+                    nameEl.textContent = projectName.textContent;
+                    link.classList.remove('hidden');
+                }
+            });
+        }
+    }
 });
+
+// Project navigation functions
+function goToProjectSettings() {
+    const project = getSelectedProject();
+    if (project) {
+        window.location.href = '/settings?project=' + encodeURIComponent(project);
+    }
+}
+
+function clearSavedProject() {
+    clearSelectedProject();
+    document.getElementById('saved-project-link').classList.add('hidden');
+}
 </script>
 
 <!-- Recent Tasks -->
@@ -602,46 +650,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </button>
         </form>
     </div>
-</div>
-{{end}}
-
-{{define "specs_content"}}
-<div class="card">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Specifications</h3>
-        <span class="text-sm text-surface-500 dark:text-surface-400">{{.Done}}/{{.Total}} completed</span>
-    </div>
-    {{if .Specifications}}
-    <div class="p-6">
-        <ul class="space-y-2">
-            {{range .Specifications}}
-            <li class="flex items-center gap-4 p-4 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth group">
-                <span class="text-2xl {{specColor .Status}}">{{specIcon .Status}}</span>
-                <div class="flex-1 min-w-0">
-                    <span class="font-semibold text-surface-900 dark:text-surface-100">{{.Name}}</span>
-                    {{if .Title}}
-                    <span class="text-surface-500 dark:text-surface-400"> - {{.Title}}</span>
-                    {{end}}
-                </div>
-                <span class="status-badge {{specColor .Status}} bg-opacity-10">{{.Status}}</span>
-            </li>
-            {{end}}
-        </ul>
-
-        <!-- Progress summary -->
-        <div class="mt-6 pt-6 border-t border-surface-200 dark:border-surface-700">
-            <div class="flex items-center justify-between text-sm text-surface-500 dark:text-surface-400 mb-3">
-                <span class="font-medium">Progress</span>
-                <span class="font-semibold">{{.Progress}}%</span>
-            </div>
-            <div class="h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-success-500 to-success-400 rounded-full transition-all duration-500 ease-out" style="width: {{.Progress}}%"></div>
-            </div>
-        </div>
-    </div>
-    {{else}}
-    <p class="text-surface-500 dark:text-surface-400 text-center py-8">No specifications yet</p>
-    {{end}}
 </div>
 {{end}}
 

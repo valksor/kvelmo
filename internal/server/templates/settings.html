@@ -59,11 +59,11 @@
                 </div>
                 <div class="p-6">
                     <select id="project-picker"
-                            onchange="if(this.value) window.location.href='/settings?project='+encodeURIComponent(this.value)"
+                            onchange="selectProject(this.value)"
                             class="w-full px-3 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all duration-200 ease-out text-sm">
                         <option value="">-- Select a project --</option>
                         {{range .Projects}}
-                        <option value="{{.ID}}" {{if eq .ID $.SelectedProject}}selected{{end}}>
+                        <option value="{{.ID}}" data-path="{{.Path}}" {{if eq .ID $.SelectedProject}}selected{{end}}>
                             {{.Name}} ({{.ID}})
                         </option>
                         {{end}}
@@ -277,6 +277,24 @@
                             </div>
                             <div id="agents-list-content" class="hidden">
                                 <!-- Agents will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Aliases -->
+                    <div class="card">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Agent Aliases</h3>
+                            <button type="button" onclick="showAliasForm()" class="text-sm bg-brand-600 dark:bg-brand-500 text-white px-3 py-1 rounded-lg hover:bg-brand-700 dark:hover:bg-brand-600 transition-colors">
+                                + Add Alias
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
+                                Create agent aliases with custom configuration and component mapping.
+                            </p>
+                            <div id="aliases-list">
+                                <!-- Aliases will be dynamically inserted here -->
                             </div>
                         </div>
                     </div>
@@ -1035,6 +1053,51 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProviderHealth();
     loadAgentsList();
     loadProvidersList();
+    loadAliasesList();
+
+    // Load saved project on page load
+    const savedProject = getSelectedProject();
+    const picker = document.getElementById('project-picker');
+    if (savedProject && picker && !picker.value) {
+        picker.value = savedProject;
+    }
 });
+
+// Project selection handler - saves to localStorage and switches to project mode
+function selectProject(projectId) {
+    if (projectId) {
+        setSelectedProject(projectId); // Save to localStorage
+
+        // Get return URL from query parameter, default to dashboard
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('return') || '/dashboard';
+
+        // Find the project path from the select options
+        const select = document.getElementById('project-picker');
+        const selectedOption = select.querySelector(`option[value="${projectId}"]`);
+        if (selectedOption) {
+            const projectPath = selectedOption.getAttribute('data-path');
+            if (projectPath) {
+                // Submit to the select endpoint with return URL
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/api/v1/projects/select?return=' + encodeURIComponent(returnUrl);
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'path';
+                input.value = projectPath;
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                return;
+            }
+        }
+
+        // Fallback: just navigate to settings
+        window.location.href = '/settings?project=' + encodeURIComponent(projectId);
+    }
+}
 </script>
 {{end}}

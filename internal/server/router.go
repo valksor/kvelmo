@@ -7,11 +7,16 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-mehrhof/internal/server/static"
 )
 
 // setupRouter creates and configures the HTTP router.
 func (s *Server) setupRouter() http.Handler {
 	mux := http.NewServeMux()
+
+	// Serve static assets (self-hosted JS/CSS)
+	staticFS := http.FileServer(http.FS(static.Public()))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", staticFS))
 
 	// Health check (public)
 	mux.HandleFunc("GET /health", s.handleHealth)
@@ -27,6 +32,11 @@ func (s *Server) setupRouter() http.Handler {
 	// API routes
 	mux.HandleFunc("GET /api/v1/status", s.handleStatus)
 	mux.HandleFunc("GET /api/v1/context", s.handleContext)
+
+	// License routes (available in both project and global modes)
+	mux.HandleFunc("GET /api/v1/license", s.handleLicense)
+	mux.HandleFunc("GET /api/v1/license/info", s.handleLicenseInfo)
+	mux.HandleFunc("GET /license", s.handleLicensePage)
 
 	// Project mode routes
 	if s.config.Mode == ModeProject {
@@ -64,6 +74,11 @@ func (s *Server) setupRouter() http.Handler {
 		// Info endpoints
 		mux.HandleFunc("GET /api/v1/agents", s.handleListAgents)
 		mux.HandleFunc("GET /api/v1/providers", s.handleListProviders)
+
+		// Agent Alias endpoints
+		mux.HandleFunc("GET /api/v1/agents/aliases", s.handleListAgentAliases)
+		mux.HandleFunc("POST /api/v1/agents/aliases", s.handleCreateAgentAlias)
+		mux.HandleFunc("DELETE /api/v1/agents/aliases/", s.handleDeleteAgentAlias)
 
 		// Browser automation endpoints
 		mux.HandleFunc("GET /api/v1/browser/status", s.handleBrowserStatus)
@@ -153,7 +168,7 @@ func (s *Server) setupRouter() http.Handler {
 	// UI partial routes (for HTMX updates)
 	mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
 	mux.HandleFunc("GET /ui/partials/actions", s.handleActionsPartial)
-	mux.HandleFunc("GET /ui/partials/specs", s.handleSpecsPartial)
+	mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
 	mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
 	mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
 	mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
@@ -193,12 +208,33 @@ func (s *Server) withMiddleware(h http.Handler) http.Handler {
 type responseWriter struct {
 	http.ResponseWriter
 
-	statusCode int
+	statusCode     int
+	headersWritten bool
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
+	if !rw.headersWritten {
+		rw.ResponseWriter.WriteHeader(code)
+		rw.headersWritten = true
+	}
+}
+
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	// Mark headers as written on first Write call
+	if !rw.headersWritten {
+		rw.headersWritten = true
+	}
+
+	return rw.ResponseWriter.Write(b)
+}
+
+// Flush implements http.Flusher for SSE (Server-Sent Events) support.
+// It delegates to the underlying ResponseWriter's Flush method if available.
+func (rw *responseWriter) Flush() {
+	if flusher, ok := rw.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 // Health check handler.
@@ -368,18 +404,20 @@ func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 
 // Events handler provides SSE stream of events.
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
+	// Set CORS header first (before any error response)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Check if response writer supports flushing BEFORE setting SSE headers
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		s.writeError(w, http.StatusInternalServerError, "streaming not supported")
+		return
+	}
+
 	// Set SSE headers
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		s.writeError(w, http.StatusInternalServerError, "streaming not supported")
-
-		return
-	}
 
 	// If no event bus, just keep connection alive
 	if s.config.EventBus == nil {
