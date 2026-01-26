@@ -76,6 +76,7 @@
     - [plugins](cli/plugins.md)
     - [templates](cli/templates.md)
     - [config](cli/config.md)
+    - [license](cli/license.md)
     - [browser](cli/browser.md)
     - [memory](cli/memory.md)
     - [scan](cli/scan.md)

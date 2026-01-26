@@ -3,10 +3,20 @@ main = "workers-site/index.min.js"
 compatibility_date = "2026-01-03"
 compatibility_flags = ["nodejs_compat"]
 
+[env.nightly]
 routes = [
-    { pattern = "valksor.com/docs/mehrhof", zone_name = "valksor.com" },
-    { pattern = "valksor.com/docs/mehrhof/*", zone_name = "valksor.com" }
+    { pattern = "valksor.com/docs/mehrhof/nightly", zone_name = "valksor.com" },
+    { pattern = "valksor.com/docs/mehrhof/nightly/*", zone_name = "valksor.com" }
 ]
 
-[site]
+[env.nightly.site]
+bucket = "./docs"
+
+[env.latest]
+routes = [
+    { pattern = "valksor.com/docs/mehrhof/latest", zone_name = "valksor.com" },
+    { pattern = "valksor.com/docs/mehrhof/latest/*", zone_name = "valksor.com" }
+]
+
+[env.latest.site]
 bucket = "./docs"

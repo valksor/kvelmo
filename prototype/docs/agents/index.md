@@ -31,6 +31,7 @@ When using other agents:
 | Agent | Description |
 |-------|-------------|
 | [Claude](claude.md) | Anthropic's Claude AI (Default, Primary) |
+| [Codex](codex.md) | OpenAI's Codex AI (Alternative, experimental - untested implementation) |
 
 ## Basic Configuration
 
