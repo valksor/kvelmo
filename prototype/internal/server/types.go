@@ -175,6 +175,19 @@ type providersListResponse struct {
 	Count     int            `json:"count"`
 }
 
+// licenseInfo represents information about a license.
+type licenseInfo struct {
+	Path    string `json:"path"`
+	License string `json:"license"`
+	Unknown bool   `json:"unknown"`
+}
+
+// licensesListResponse is the response for GET /api/v1/license/info.
+type licensesListResponse struct {
+	Licenses []licenseInfo `json:"licenses"`
+	Count    int           `json:"count"`
+}
+
 // browserGotoRequest is the request body for POST /api/v1/browser/goto.
 type browserGotoRequest struct {
 	URL string `json:"url"`

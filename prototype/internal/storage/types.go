@@ -92,6 +92,7 @@ type Specification struct {
 	Title            string    `yaml:"title,omitempty"`
 	Description      string    `yaml:"-"` // Parsed from markdown content
 	Status           string    `yaml:"status,omitempty"`
+	Component        string    `yaml:"component,omitempty"` // Component this spec belongs to (e.g., backend, frontend, tests)
 	CreatedAt        time.Time `yaml:"created_at,omitempty"`
 	UpdatedAt        time.Time `yaml:"updated_at,omitempty"`
 	CompletedAt      time.Time `yaml:"completed_at,omitempty"`
