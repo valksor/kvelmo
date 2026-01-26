@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/validate"
 )
 
 // Options configures validation behavior.
@@ -36,8 +37,8 @@ func (v *Validator) SetBuiltInAgents(names []string) {
 }
 
 // Validate runs workspace validation and returns the result.
-func (v *Validator) Validate(ctx context.Context) (*Result, error) {
-	result := NewResult()
+func (v *Validator) Validate(ctx context.Context) (*validate.Result, error) {
+	result := validate.NewResult()
 
 	// Validate workspace config
 	wsResult, err := v.validateWorkspace(ctx)
@@ -55,8 +56,8 @@ func (v *Validator) Validate(ctx context.Context) (*Result, error) {
 }
 
 // validateWorkspace validates the workspace configuration.
-func (v *Validator) validateWorkspace(ctx context.Context) (*Result, error) {
-	result := NewResult()
+func (v *Validator) validateWorkspace(ctx context.Context) (*validate.Result, error) {
+	result := validate.NewResult()
 
 	ws, err := storage.OpenWorkspace(ctx, v.workspacePath, nil)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/validate"
 )
 
 // Error codes for workspace validation.
@@ -32,7 +33,7 @@ var validGitPlaceholders = []string{"{key}", "{task_id}", "{type}", "{slug}", "{
 var envVarRefPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
 
 // validateWorkspaceConfig validates all aspects of a workspace configuration.
-func validateWorkspaceConfig(cfg *storage.WorkspaceConfig, configPath string, builtInAgents []string, result *Result) {
+func validateWorkspaceConfig(cfg *storage.WorkspaceConfig, configPath string, builtInAgents []string, result *validate.Result) {
 	validateGitSettings(cfg.Git, configPath, result)
 	validateAgentSettings(cfg.Agent, configPath, builtInAgents, cfg.Agents, result)
 	validateWorkflowSettings(cfg.Workflow, configPath, result)
@@ -46,7 +47,7 @@ func validateWorkspaceConfig(cfg *storage.WorkspaceConfig, configPath string, bu
 }
 
 // validateGitSettings validates git-related configuration.
-func validateGitSettings(git storage.GitSettings, configPath string, result *Result) {
+func validateGitSettings(git storage.GitSettings, configPath string, result *validate.Result) {
 	// Validate branch pattern
 	if git.BranchPattern == "" {
 		result.AddWarning(CodeGitPatternEmpty, "Branch pattern is empty", "git.branch_pattern", configPath)
@@ -61,7 +62,7 @@ func validateGitSettings(git storage.GitSettings, configPath string, result *Res
 }
 
 // validateGitPattern checks if a git pattern contains valid placeholders.
-func validateGitPattern(pattern, path, configPath string, result *Result) {
+func validateGitPattern(pattern, path, configPath string, result *validate.Result) {
 	// Find all placeholders in the pattern
 	placeholderPattern := regexp.MustCompile(`\{[^}]+\}`)
 	matches := placeholderPattern.FindAllString(pattern, -1)
@@ -88,7 +89,7 @@ func validateGitPattern(pattern, path, configPath string, result *Result) {
 }
 
 // validateAgentSettings validates agent-related configuration.
-func validateAgentSettings(agent storage.AgentSettings, configPath string, builtInAgents []string, aliases map[string]storage.AgentAliasConfig, result *Result) {
+func validateAgentSettings(agent storage.AgentSettings, configPath string, builtInAgents []string, aliases map[string]storage.AgentAliasConfig, result *validate.Result) {
 	// Validate default agent
 	if agent.Default != "" {
 		isBuiltIn := slices.Contains(builtInAgents, agent.Default)
@@ -116,7 +117,7 @@ func validateAgentSettings(agent storage.AgentSettings, configPath string, built
 }
 
 // validateWorkflowSettings validates workflow-related configuration.
-func validateWorkflowSettings(workflow storage.WorkflowSettings, configPath string, result *Result) {
+func validateWorkflowSettings(workflow storage.WorkflowSettings, configPath string, result *validate.Result) {
 	// Validate session retention days (reasonable range: 1-365)
 	if workflow.SessionRetentionDays < 0 || workflow.SessionRetentionDays > 365 {
 		result.AddWarning(CodeInvalidRange, fmt.Sprintf("Session retention days %d may be unreasonable (expected 1-365)", workflow.SessionRetentionDays), "workflow.session_retention_days", configPath)
@@ -124,7 +125,7 @@ func validateWorkflowSettings(workflow storage.WorkflowSettings, configPath stri
 }
 
 // validateStorageSettings validates storage-related configuration.
-func validateStorageSettings(storage storage.StorageSettings, configPath string, result *Result) {
+func validateStorageSettings(storage storage.StorageSettings, configPath string, result *validate.Result) {
 	if storage.WorkDir == "" {
 		return // Empty is fine, will use default
 	}
@@ -159,7 +160,7 @@ func validateStorageSettings(storage storage.StorageSettings, configPath string,
 }
 
 // validateAgentAliases validates agent alias configurations including circular dependency detection.
-func validateAgentAliases(aliases map[string]storage.AgentAliasConfig, configPath string, builtInAgents []string, result *Result) {
+func validateAgentAliases(aliases map[string]storage.AgentAliasConfig, configPath string, builtInAgents []string, result *validate.Result) {
 	if len(aliases) == 0 {
 		return
 	}
@@ -245,7 +246,7 @@ func validateAgentAliases(aliases map[string]storage.AgentAliasConfig, configPat
 }
 
 // validateEnvVarReferences checks if environment variable references can be resolved.
-func validateEnvVarReferences(env map[string]string, basePath, configPath string, result *Result) {
+func validateEnvVarReferences(env map[string]string, basePath, configPath string, result *validate.Result) {
 	for key, value := range env {
 		matches := envVarRefPattern.FindAllStringSubmatch(value, -1)
 		for _, match := range matches {
@@ -266,7 +267,7 @@ func validateEnvVarReferences(env map[string]string, basePath, configPath string
 }
 
 // validatePluginsConfig validates plugin configuration.
-func validatePluginsConfig(plugins storage.PluginsConfig, configPath string, result *Result) {
+func validatePluginsConfig(plugins storage.PluginsConfig, configPath string, result *validate.Result) {
 	// Note: We can't check if plugins actually exist without plugin discovery,
 	// so we only validate the configuration structure here
 	for pluginName := range plugins.Config {
@@ -290,7 +291,7 @@ func validatePluginsConfig(plugins storage.PluginsConfig, configPath string, res
 }
 
 // validateGitHubSettings validates GitHub provider configuration.
-func validateGitHubSettings(gh *storage.GitHubSettings, configPath string, result *Result) {
+func validateGitHubSettings(gh *storage.GitHubSettings, configPath string, result *validate.Result) {
 	// Validate branch pattern if specified
 	if gh.BranchPattern != "" {
 		validateGitPattern(gh.BranchPattern, "github.branch_pattern", configPath, result)
