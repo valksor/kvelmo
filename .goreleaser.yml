@@ -50,12 +50,10 @@ signs:
             - "-m"
             - "${artifact}"
             - "-s"
-            - "${env.MINISIGN_KEY_FILE}"
+            - "/tmp/minisign.key"
             - "-x"
             - "${signature}"
         artifacts: checksum
-        env:
-            - MINISIGN_KEY_FILE=/tmp/minisign.key
 
 # SBOM generation
 sboms:
