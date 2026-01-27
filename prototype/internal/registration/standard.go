@@ -21,6 +21,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider/jira"
 	"github.com/valksor/go-mehrhof/internal/provider/linear"
 	"github.com/valksor/go-mehrhof/internal/provider/notion"
+	"github.com/valksor/go-mehrhof/internal/provider/queue"
 	"github.com/valksor/go-mehrhof/internal/provider/trello"
 	"github.com/valksor/go-mehrhof/internal/provider/wrike"
 	"github.com/valksor/go-mehrhof/internal/provider/youtrack"
@@ -39,6 +40,7 @@ func RegisterStandardProviders(cond *conductor.Conductor) {
 	linear.Register(registry)
 	jira.Register(registry)
 	notion.Register(registry)
+	queue.Register(registry)
 	trello.Register(registry)
 	youtrack.Register(registry)
 	bitbucket.Register(registry)

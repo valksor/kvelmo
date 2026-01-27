@@ -61,22 +61,22 @@ func TestRegisterStandardProviders(t *testing.T) {
 		})
 	}
 
-	t.Run("all 15 providers registered", func(t *testing.T) {
+	t.Run("all 16 providers registered", func(t *testing.T) {
 		cond := helper_test.NewTestConductor(t)
 		registry := cond.GetProviderRegistry()
 
 		RegisterStandardProviders(cond)
 
 		providers := registry.List()
-		if len(providers) != 15 {
-			t.Errorf("got %d providers, want 15", len(providers))
+		if len(providers) != 16 {
+			t.Errorf("got %d providers, want 16", len(providers))
 		}
 
 		// Verify expected provider names are present
 		expectedNames := []string{
 			"file", "directory", "empty", "github", "gitlab", "wrike",
 			"linear", "jira", "notion", "trello", "youtrack",
-			"bitbucket", "asana", "clickup", "azuredevops",
+			"bitbucket", "asana", "clickup", "azuredevops", "queue",
 		}
 		actualNames := make([]string, len(providers))
 		for i, p := range providers {

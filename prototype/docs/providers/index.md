@@ -24,6 +24,7 @@ Providers are task sources that Mehrhof can read from and interact with. Each pr
 | **ClickUp** | `clickup:`, `cu:` | ClickUp tasks |
 | **Azure DevOps** | `azdo:`, `azure:` | Azure DevOps work items |
 | **Bitbucket** | `bitbucket:`, `bb:` | Bitbucket issues |
+| **Queue** | `queue:` | Local task queues |
 
 ## Provider Capabilities
 
@@ -90,6 +91,7 @@ Provider plugins communicate via JSON-RPC 2.0 over stdin/stdout. See the plugin 
 | ClickUp | `clickup:ID` or `clickup:TASK-ID` | `clickup:abc123xyz`, `clickup:TASK-123` |
 | Azure DevOps | `azdo:ID` or `azdo:org/project#ID` | `azdo:123`, `azdo:org/project#456` |
 | Bitbucket | `bitbucket:ID` or `bb:workspace/repo#ID` | `bb:123`, `bb:workspace/repo#456` |
+| Queue | `queue:queue-id/task-id` | `queue:backlog/fix-auth`, `queue:sprint-1/task-42` |
 
 ## Auto-Detection
 
