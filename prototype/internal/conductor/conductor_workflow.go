@@ -123,6 +123,29 @@ func (c *Conductor) Review(ctx context.Context) error {
 	return nil
 }
 
+// ResumePaused resumes a task that was paused due to budget limits.
+func (c *Conductor) ResumePaused(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return errors.New("no active task")
+	}
+	if c.activeTask.State != string(workflow.StatePaused) {
+		return fmt.Errorf("task is not paused (current state: %s)", c.activeTask.State)
+	}
+
+	c.activeTask.State = "idle"
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
+	}
+	if err := c.machine.Dispatch(ctx, workflow.EventResume); err != nil {
+		return fmt.Errorf("resume workflow: %w", err)
+	}
+
+	return nil
+}
+
 // Undo reverts to the previous checkpoint.
 func (c *Conductor) Undo(ctx context.Context) error {
 	c.mu.Lock()

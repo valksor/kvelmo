@@ -157,6 +157,16 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 				}
 			}
 		}
+		// Budget configuration from frontmatter
+		if parsed.Frontmatter.Budget != nil {
+			wu.Budget = &provider.BudgetConfig{
+				MaxTokens: parsed.Frontmatter.Budget.MaxTokens,
+				MaxCost:   parsed.Frontmatter.Budget.MaxCost,
+				Currency:  parsed.Frontmatter.Budget.Currency,
+				OnLimit:   parsed.Frontmatter.Budget.OnLimit,
+				WarningAt: parsed.Frontmatter.Budget.WarningAt,
+			}
+		}
 	}
 
 	return wu, nil

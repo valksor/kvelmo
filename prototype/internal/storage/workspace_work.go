@@ -218,12 +218,14 @@ func (w *Workspace) flushTaskUsageLocked(taskID string) error {
 	}
 
 	// Accumulate all buffered steps
+	var totalCostDelta float64
 	for step, buf := range steps {
 		// Update totals
 		work.Costs.TotalInputTokens += buf.inputTokens
 		work.Costs.TotalOutputTokens += buf.outputTokens
 		work.Costs.TotalCachedTokens += buf.cachedTokens
 		work.Costs.TotalCostUSD += buf.costUSD
+		totalCostDelta += buf.costUSD
 
 		// Update step stats
 		stepStats := work.Costs.ByStep[step]
@@ -238,6 +240,9 @@ func (w *Workspace) flushTaskUsageLocked(taskID string) error {
 	// Save work
 	if err := w.SaveWork(work); err != nil {
 		return fmt.Errorf("save work: %w", err)
+	}
+	if err := w.AddMonthlyBudgetSpend(totalCostDelta); err != nil {
+		return fmt.Errorf("update monthly budget: %w", err)
 	}
 
 	// Clear buffer for this task

@@ -16,6 +16,7 @@ const (
 	StateDone         State = "done"         // Task completed
 	StateFailed       State = "failed"       // Error state
 	StateWaiting      State = "waiting"      // Waiting for user answer to agent question
+	StatePaused       State = "paused"       // Paused due to budget limits
 
 	// Auxiliary states (entered during phases).
 	StateCheckpointing State = "checkpointing" // Creating git checkpoint
@@ -56,6 +57,8 @@ const (
 	// Waiting for user input (agent asked a question).
 	EventWait   Event = "wait"   // Agent asked a question
 	EventAnswer Event = "answer" // User answered the question
+	EventPause  Event = "pause"  // Pause execution (budget limit)
+	EventResume Event = "resume" // Resume after pause
 	EventReset  Event = "reset"  // Recover from failed state
 )
 
@@ -117,6 +120,12 @@ var StateRegistry = map[State]StateInfo{
 	StateWaiting: {
 		Name:        StateWaiting,
 		Description: "Waiting for user answer to agent question",
+		Terminal:    false,
+		Phase:       false,
+	},
+	StatePaused: {
+		Name:        StatePaused,
+		Description: "Paused due to budget limits",
 		Terminal:    false,
 		Phase:       false,
 	},

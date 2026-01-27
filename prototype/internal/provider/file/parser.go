@@ -15,6 +15,15 @@ type StepAgentFrontmatter struct {
 	Args  []string          `yaml:"args,omitempty"`  // Step-specific CLI args
 }
 
+// BudgetFrontmatter holds per-task budget configuration in frontmatter.
+type BudgetFrontmatter struct {
+	MaxTokens int     `yaml:"max_tokens,omitempty"`
+	MaxCost   float64 `yaml:"max_cost,omitempty"`
+	Currency  string  `yaml:"currency,omitempty"`
+	OnLimit   string  `yaml:"on_limit,omitempty"`   // warn | pause | stop
+	WarningAt float64 `yaml:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
+}
+
 // Frontmatter represents YAML frontmatter in markdown.
 type Frontmatter struct {
 	Title       string   `yaml:"title"`
@@ -34,6 +43,9 @@ type Frontmatter struct {
 	AgentEnv   map[string]string               `yaml:"agent_env,omitempty"`   // Inline environment variables
 	AgentArgs  []string                        `yaml:"agent_args,omitempty"`  // CLI arguments
 	AgentSteps map[string]StepAgentFrontmatter `yaml:"agent_steps,omitempty"` // Per-step agent overrides
+
+	// Budget configuration
+	Budget *BudgetFrontmatter `yaml:"budget,omitempty"`
 }
 
 // ParsedMarkdown contains parsed markdown file content.

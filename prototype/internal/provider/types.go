@@ -28,6 +28,9 @@ type WorkUnit struct {
 
 	// Agent configuration from task source
 	AgentConfig *AgentConfig // Per-task agent configuration (optional)
+
+	// Budget configuration from task source (optional)
+	Budget *BudgetConfig
 }
 
 // SourceInfo tracks where the work unit came from.
@@ -50,6 +53,15 @@ type AgentConfig struct {
 	Env   map[string]string          // Inline environment variables
 	Args  []string                   // CLI arguments
 	Steps map[string]StepAgentConfig // Per-step agent overrides
+}
+
+// BudgetConfig defines cost/token budgets for a task.
+type BudgetConfig struct {
+	MaxTokens int     // Maximum total tokens for the task (0 = unlimited)
+	MaxCost   float64 // Maximum total cost for the task (0 = unlimited)
+	Currency  string  // Currency code (e.g., "USD")
+	OnLimit   string  // warn | pause | stop
+	WarningAt float64 // Warning threshold (0-1, e.g., 0.8)
 }
 
 // Status represents work unit status.

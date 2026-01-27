@@ -161,6 +161,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		); err != nil {
 			c.logError(fmt.Errorf("record planning usage: %w", err))
 		}
+		if err := c.checkBudgets(ctx, "planning"); err != nil {
+			return err
+		}
 	}
 
 	// Save full transcript for archive (--full-context recovery)
@@ -448,6 +451,9 @@ Please retry the implementation, taking into account this error.
 		); err != nil {
 			c.logError(fmt.Errorf("record implementation usage: %w", err))
 		}
+		if err := c.checkBudgets(ctx, "implementing"); err != nil {
+			return err
+		}
 	}
 
 	// Save full transcript for archive
@@ -669,6 +675,9 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 			response.Usage.CostUSD,
 		); err != nil {
 			c.logError(fmt.Errorf("record review usage: %w", err))
+		}
+		if err := c.checkBudgets(ctx, "reviewing"); err != nil {
+			return err
 		}
 	}
 
@@ -996,6 +1005,9 @@ func (c *Conductor) runOrchestratedPlanning(ctx context.Context, taskID string, 
 	if totalTokens > 0 {
 		if err := c.workspace.AddUsage(taskID, "planning", totalTokens, 0, 0, totalCost); err != nil {
 			c.logError(fmt.Errorf("record planning usage: %w", err))
+		}
+		if err := c.checkBudgets(ctx, "planning"); err != nil {
+			return err
 		}
 	}
 
