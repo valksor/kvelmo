@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook generate-licenses
+.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -87,3 +87,29 @@ check-alias:
 		echo "$$alias_issues"; \
 		exit 1; \
 	fi
+
+# ──────────────────────────────────────────────────────────────────────────────
+# E2E Tests (Local Manual Only)
+# ──────────────────────────────────────────────────────────────────────────────
+#
+# Prerequisites:
+#   - ZAI_API_KEY: ZAI API key for glm agent
+#   - claude CLI installed and in PATH
+#
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Check E2E prerequisites
+e2e-check:
+	@echo "Checking E2E prerequisites..."
+	@which claude >/dev/null || (echo "ERROR: claude CLI not found in PATH" && exit 1)
+	@if test -n "$$ZAI_API_KEY"; then :; elif test -f .mehrhof/.env && grep -q "ZAI_API_KEY" .mehrhof/.env; then :; else echo "ERROR: ZAI_API_KEY not set (in environment or .mehrhof/.env)" && exit 1; fi
+	@echo "✓ All prerequisites met!"
+
+## Run fast E2E tests (~10 min, no git, no GitHub)
+e2e-fast: build e2e-check
+	@echo "Running fast E2E tests..."
+	ZAI_API_KEY="$(ZAI_API_KEY)" \
+	go test -v -tags=e2e_fast -timeout 20m ./e2e/fast/...
+
+## Run E2E tests (alias for e2e-fast)
+e2e: e2e-fast
