@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/sandbox"
 )
 
 const AgentName = "claude"
@@ -36,8 +37,9 @@ var scannerBufferPool = sync.Pool{
 
 // Agent wraps the Claude CLI.
 type Agent struct {
-	parser agent.Parser
-	config agent.Config
+	parser        agent.Parser
+	config        agent.Config
+	sandboxConfig *sandbox.Config
 }
 
 // New creates a Claude agent with default config.
@@ -50,7 +52,8 @@ func New() *Agent {
 			RetryCount:  3,
 			RetryDelay:  time.Second,
 		},
-		parser: agent.NewYAMLBlockParser(),
+		parser:        agent.NewYAMLBlockParser(),
+		sandboxConfig: nil,
 	}
 }
 
@@ -61,8 +64,9 @@ func NewWithConfig(cfg agent.Config) *Agent {
 	}
 
 	return &Agent{
-		config: cfg,
-		parser: agent.NewYAMLBlockParser(),
+		config:        cfg,
+		parser:        agent.NewYAMLBlockParser(),
+		sandboxConfig: nil,
 	}
 }
 
@@ -162,6 +166,32 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 	cmd.Env = os.Environ()
 	for k, v := range a.config.Environment {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// Apply sandbox if configured
+	if a.sandboxConfig != nil && a.sandboxConfig.Enabled {
+		sb, err := sandbox.New(a.sandboxConfig)
+		if err != nil {
+			return fmt.Errorf("sandbox initialization: %w", err)
+		}
+		if sb != nil {
+			// Prepare sandbox environment
+			if err := sb.Prepare(timeoutCtx); err != nil {
+				return fmt.Errorf("sandbox prepare: %w", err)
+			}
+			defer func() { //nolint:contextcheck // cleanup with detached context
+				if cleanupErr := sb.Cleanup(context.Background()); cleanupErr != nil {
+					slog.Warn("sandbox cleanup failed", "error", cleanupErr)
+				}
+			}()
+
+			// Wrap command with sandbox
+			wrappedCmd, err := sb.WrapCommand(cmd)
+			if err != nil {
+				return fmt.Errorf("sandbox wrap: %w", err)
+			}
+			cmd = wrappedCmd
+		}
 	}
 
 	// Get stdout pipe
@@ -288,8 +318,18 @@ func (a *Agent) WithWorkDir(dir string) *Agent {
 	newConfig.WorkDir = dir
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
+// WithSandbox sets the sandbox configuration for agent execution.
+func (a *Agent) WithSandbox(cfg *sandbox.Config) *Agent {
+	return &Agent{
+		config:        a.config,
+		parser:        a.parser,
+		sandboxConfig: cfg,
 	}
 }
 
@@ -321,8 +361,9 @@ func (a *Agent) WithEnv(key, value string) agent.Agent {
 	newConfig.Environment[key] = value
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
 	}
 }
 
@@ -335,8 +376,9 @@ func (a *Agent) WithArgs(args ...string) agent.Agent {
 	newConfig.Args = append(newArgs, args...)
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
 	}
 }
 

@@ -84,6 +84,7 @@ type Conductor struct {
 	// Active agent
 	activeAgent     agent.Agent
 	taskAgentConfig *provider.AgentConfig // Agent config from task source (if any)
+	agentOverride   string                // Temporary agent override (for Web UI API)
 
 	// Session tracking (for conversation history and token usage)
 	currentSession     *storage.Session
@@ -235,6 +236,23 @@ func (c *Conductor) ClearImplementationOptions() {
 	defer c.mu.Unlock()
 	c.opts.OnlyComponent = ""
 	c.opts.ParallelCount = ""
+}
+
+// SetAgent sets a temporary agent override for the next operation.
+// This is used by the Web UI to allow per-request agent selection.
+// The override is cleared after the operation completes (call ClearAgent).
+func (c *Conductor) SetAgent(agent string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.agentOverride = agent
+}
+
+// ClearAgent clears the temporary agent override.
+// Should be called after the operation that used the override.
+func (c *Conductor) ClearAgent() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.agentOverride = ""
 }
 
 // logError logs an error using the callback if configured.

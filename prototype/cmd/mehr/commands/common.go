@@ -98,11 +98,17 @@ type CommandOptions struct {
 	StepAgent       string // Per-step agent override (e.g., "planning", "implementing")
 	FullContext     bool
 	OptimizePrompts bool // Optimize prompts before sending to agents
+	Sandbox         bool // Enable sandboxing for agent execution
 }
 
 // IsQuiet returns true if quiet mode is enabled.
 func IsQuiet() bool {
 	return quiet
+}
+
+// IsSandbox returns true if sandbox mode is enabled.
+func IsSandbox() bool {
+	return sandbox
 }
 
 // BuildConductorOptions creates conductor options from command options.
@@ -122,6 +128,10 @@ func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 
 	if cmdOpts.OptimizePrompts {
 		opts = append(opts, conductor.WithOptimizePrompts(true))
+	}
+
+	if cmdOpts.Sandbox {
+		opts = append(opts, conductor.WithSandbox(true))
 	}
 
 	if cmdOpts.StepAgent != "" {

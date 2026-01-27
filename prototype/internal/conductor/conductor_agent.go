@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/plugin"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/sandbox"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/env"
@@ -80,6 +82,36 @@ func (c *Conductor) resolveAgentForTask() (agent.Agent, string, error) {
 		}
 	}
 
+	// Apply sandbox configuration if enabled
+	if c.opts.SandboxEnabled {
+		if wsCfg, err := c.workspace.LoadConfig(); err == nil && wsCfg.Sandbox != nil && wsCfg.Sandbox.Enabled {
+			projectDir, err := os.Getwd()
+			if err != nil {
+				projectDir = c.opts.WorkDir
+			}
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				homeDir = ""
+			}
+
+			sbCfg := &sandbox.Config{
+				Enabled:    true,
+				ProjectDir: projectDir,
+				HomeDir:    homeDir,
+				TmpDir:     wsCfg.Sandbox.TmpDir,
+				Tools:      wsCfg.Sandbox.Tools,
+				Network:    wsCfg.Sandbox.Network,
+				Profile:    "",
+			}
+
+			if sbAgent, ok := agentInst.(interface {
+				WithSandbox(cfg *sandbox.Config) agent.Agent
+			}); ok {
+				agentInst = sbAgent.WithSandbox(sbCfg)
+			}
+		}
+	}
+
 	return agentInst, source, nil
 }
 
@@ -127,6 +159,22 @@ func (c *Conductor) resolveAgentForStep(ctx context.Context, step workflow.Step)
 func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (agent.Agent, error) {
 	stepStr := step.String()
 
+	// Check for temporary agent override (set by Web UI for single-request agent selection)
+	c.mu.RLock()
+	override := c.agentOverride
+	c.mu.RUnlock()
+
+	if override != "" {
+		agentInst, err := c.agents.Get(override)
+		if err != nil {
+			return nil, fmt.Errorf("get override agent %q: %w", override, err)
+		}
+		// Apply step-specific args from the agent
+		agentInst = applyStepArgs(agentInst, stepStr)
+
+		return agentInst, nil
+	}
+
 	// Check if we have a cached resolution for this step in taskWork
 	if c.taskWork != nil && c.taskWork.Agent.Steps != nil {
 		if stepInfo, ok := c.taskWork.Agent.Steps[stepStr]; ok && stepInfo.Name != "" {
@@ -142,6 +190,36 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 				// Apply step-specific args from the agent
 				agentInst = applyStepArgs(agentInst, stepStr)
 
+				// Apply sandbox configuration if enabled
+				if c.opts.SandboxEnabled {
+					if wsCfg, loadErr := c.workspace.LoadConfig(); loadErr == nil && wsCfg.Sandbox != nil && wsCfg.Sandbox.Enabled {
+						projectDir, getErr := os.Getwd()
+						if getErr != nil {
+							projectDir = c.opts.WorkDir
+						}
+						homeDir, homeErr := os.UserHomeDir()
+						if homeErr != nil {
+							homeDir = ""
+						}
+
+						sbCfg := &sandbox.Config{
+							Enabled:    true,
+							ProjectDir: projectDir,
+							HomeDir:    homeDir,
+							TmpDir:     wsCfg.Sandbox.TmpDir,
+							Tools:      wsCfg.Sandbox.Tools,
+							Network:    wsCfg.Sandbox.Network,
+							Profile:    "",
+						}
+
+						if sbAgent, ok := agentInst.(interface {
+							WithSandbox(cfg *sandbox.Config) agent.Agent
+						}); ok {
+							agentInst = sbAgent.WithSandbox(sbCfg)
+						}
+					}
+				}
+
 				return agentInst, nil
 			}
 			// Fall through to re-resolve if stored agent not found
@@ -156,6 +234,38 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 
 	// Apply step-specific args from the agent
 	agentInst := applyStepArgs(resolution.Agent, stepStr)
+
+	// Apply sandbox configuration if enabled
+	if c.opts.SandboxEnabled {
+		// Load workspace config for sandbox settings
+		if wsCfg, err := c.workspace.LoadConfig(); err == nil && wsCfg.Sandbox != nil && wsCfg.Sandbox.Enabled {
+			projectDir, err := os.Getwd()
+			if err != nil {
+				projectDir = c.opts.WorkDir
+			}
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				homeDir = ""
+			}
+
+			sbCfg := &sandbox.Config{
+				Enabled:    true,
+				ProjectDir: projectDir,
+				HomeDir:    homeDir,
+				TmpDir:     wsCfg.Sandbox.TmpDir,
+				Tools:      wsCfg.Sandbox.Tools,
+				Network:    wsCfg.Sandbox.Network,
+				Profile:    "",
+			}
+
+			// Apply sandbox to agent if it supports WithSandbox
+			if sbAgent, ok := agentInst.(interface {
+				WithSandbox(cfg *sandbox.Config) agent.Agent
+			}); ok {
+				agentInst = sbAgent.WithSandbox(sbCfg)
+			}
+		}
+	}
 
 	// Cache the resolution in taskWork for persistence
 	if c.taskWork != nil {

@@ -31,6 +31,7 @@ var (
 	verbose bool
 	noColor bool
 	quiet   bool
+	sandbox bool
 )
 
 var rootCmd = &cobra.Command{
@@ -220,6 +221,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
+	rootCmd.PersistentFlags().BoolVar(&sandbox, "sandbox", false, "Enable agent sandboxing (Linux: user namespaces, macOS: sandbox-exec)")
 
 	// Add command groups for better help organization
 	rootCmd.AddGroup(&cobra.Group{

@@ -27,6 +27,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/sandbox"
+	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
 const AgentName = "codex"
@@ -50,8 +52,9 @@ var scannerBufferPool = sync.Pool{
 
 // Agent wraps the Codex CLI.
 type Agent struct {
-	parser agent.Parser
-	config agent.Config
+	parser        agent.Parser
+	config        agent.Config
+	sandboxConfig *sandbox.Config
 }
 
 // New creates a Codex agent with default config.
@@ -164,7 +167,7 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 	timeoutCtx, cancel := context.WithTimeout(ctx, a.config.Timeout)
 	defer cancel()
 
-	args := a.buildArgs(prompt)
+	args := a.buildArgs(ctx, prompt)
 	cmd := exec.CommandContext(timeoutCtx, a.config.Command[0], args...)
 
 	// Set working directory
@@ -271,7 +274,7 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 // Codex CLI structure differs from Claude:
 // - Uses "codex exec --json <prompt>" instead of "claude --print --verbose --output-format stream-json <prompt>"
 // - Does NOT have --print, --verbose, or --output-format flags (those are Claude-specific).
-func (a *Agent) buildArgs(prompt string) []string {
+func (a *Agent) buildArgs(ctx context.Context, prompt string) []string {
 	args := []string{}
 
 	// Start with 'exec' subcommand and '--json' flag (Codex-specific)
@@ -287,10 +290,35 @@ func (a *Agent) buildArgs(prompt string) []string {
 		args = append(args, a.config.Args...)
 	}
 
+	// Allow Codex to run outside a git repo automatically when needed.
+	if shouldSkipGitRepoCheck(ctx, a.config.WorkDir, args) {
+		args = append(args, "--skip-git-repo-check")
+	}
+
+	// Add --yolo flag when sandbox is enabled (sandbox provides isolation)
+	// This prevents Codex from asking for confirmations that can't be answered
+	if a.sandboxConfig != nil && a.sandboxConfig.Enabled {
+		args = append(args, "--yolo")
+	}
+
 	// Add prompt as positional argument (last)
 	args = append(args, prompt)
 
 	return args
+}
+
+func shouldSkipGitRepoCheck(ctx context.Context, workDir string, args []string) bool {
+	for _, arg := range args {
+		if arg == "--skip-git-repo-check" {
+			return false
+		}
+	}
+
+	if workDir == "" {
+		workDir = "."
+	}
+
+	return !vcs.IsRepo(ctx, workDir)
 }
 
 // SetParser allows overriding the default parser.
@@ -305,8 +333,9 @@ func (a *Agent) WithWorkDir(dir string) *Agent {
 	newConfig.WorkDir = dir
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
 	}
 }
 
@@ -317,8 +346,9 @@ func (a *Agent) WithTimeout(d time.Duration) *Agent {
 	newConfig.Timeout = d
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
 	}
 }
 
@@ -338,8 +368,9 @@ func (a *Agent) WithEnv(key, value string) agent.Agent {
 	newConfig.Environment[key] = value
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
 	}
 }
 
@@ -352,8 +383,21 @@ func (a *Agent) WithArgs(args ...string) agent.Agent {
 	newConfig.Args = append(newArgs, args...)
 
 	return &Agent{
-		config: newConfig,
-		parser: a.parser,
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
+// WithSandbox sets the sandbox configuration for the Codex agent.
+// When sandbox is enabled, the --yolo flag is added to skip confirmations.
+func (a *Agent) WithSandbox(cfg *sandbox.Config) agent.Agent {
+	newConfig := a.config
+
+	return &Agent{
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: cfg,
 	}
 }
 

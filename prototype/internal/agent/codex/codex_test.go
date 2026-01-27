@@ -138,20 +138,18 @@ func TestSetParser(t *testing.T) {
 
 func TestBuildArgs_BasicPrompt(t *testing.T) {
 	a := New()
-	args := a.buildArgs("Hello world")
+	args := a.buildArgs(context.Background(), "Hello world")
 
 	// Should include: exec, --json, prompt
 	// NOTE: Codex does NOT use --print, --verbose, --output-format (those are Claude-specific)
-	expectedArgs := []string{"exec", "--json", "Hello world"}
-
-	if len(args) != len(expectedArgs) {
-		t.Errorf("args length = %d, want %d", len(args), len(expectedArgs))
+	if len(args) < 3 {
+		t.Fatalf("args length = %d, want at least 3", len(args))
 	}
-
-	for i, expected := range expectedArgs {
-		if i < len(args) && args[i] != expected {
-			t.Errorf("args[%d] = %q, want %q", i, args[i], expected)
-		}
+	if args[0] != "exec" || args[1] != "--json" {
+		t.Errorf("expected [exec, --json], got [%v, %v]", args[0], args[1])
+	}
+	if args[len(args)-1] != "Hello world" {
+		t.Errorf("last arg = %q, want %q", args[len(args)-1], "Hello world")
 	}
 }
 
@@ -160,7 +158,7 @@ func TestBuildArgs_WithConfigArgs(t *testing.T) {
 		Command: []string{"codex", "--model", "gpt-5-codex"},
 	}
 	a := NewWithConfig(cfg)
-	args := a.buildArgs("test")
+	args := a.buildArgs(context.Background(), "test")
 
 	// Should include: exec, --json, --model, gpt-5-codex, test
 	if len(args) < 4 {
@@ -176,9 +174,44 @@ func TestBuildArgs_WithConfigArgs(t *testing.T) {
 	}
 }
 
+func TestBuildArgs_AutoSkipGitRepoCheck(t *testing.T) {
+	tmpDir := t.TempDir()
+	a := New().WithWorkDir(tmpDir)
+	args := a.buildArgs(context.Background(), "test")
+
+	hasSkip := false
+	for _, arg := range args {
+		if arg == "--skip-git-repo-check" {
+			hasSkip = true
+
+			break
+		}
+	}
+	if !hasSkip {
+		t.Fatal("expected --skip-git-repo-check when not in a git repo")
+	}
+}
+
+func TestBuildArgs_NoDuplicateSkipGitRepoCheck(t *testing.T) {
+	tmpDir := t.TempDir()
+	a := New().WithWorkDir(tmpDir)
+	a.config.Args = []string{"--skip-git-repo-check"}
+	args := a.buildArgs(context.Background(), "test")
+
+	count := 0
+	for _, arg := range args {
+		if arg == "--skip-git-repo-check" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected --skip-git-repo-check once, got %d", count)
+	}
+}
+
 func TestBuildArgs_NoClaudeFlags(t *testing.T) {
 	a := New()
-	args := a.buildArgs("test prompt")
+	args := a.buildArgs(context.Background(), "test prompt")
 
 	// Verify Codex does NOT use Claude-specific flags
 	claudeFlags := []string{"--print", "--verbose", "--output-format", "stream-json"}

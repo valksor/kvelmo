@@ -38,13 +38,14 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		if activeTask != nil {
 			data.HasTask = true
 			data.Task = &TaskData{
-				ID:       activeTask.ID,
-				Title:    "", // Will be populated from work metadata
-				State:    activeTask.State,
-				Branch:   activeTask.Branch,
-				Worktree: activeTask.WorktreePath,
-				Started:  activeTask.Started,
-				Ref:      activeTask.Ref,
+				ID:            activeTask.ID,
+				Title:         "", // Will be populated from work metadata
+				State:         activeTask.State,
+				Branch:        activeTask.Branch,
+				Worktree:      activeTask.WorktreePath,
+				Started:       activeTask.Started,
+				Ref:           activeTask.Ref,
+				SandboxActive: s.isSandboxActive(),
 			}
 
 			// Get title from work metadata
@@ -96,12 +97,13 @@ func (s *Server) handleTaskPartial(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := &TaskData{
-		ID:       activeTask.ID,
-		State:    activeTask.State,
-		Branch:   activeTask.Branch,
-		Worktree: activeTask.WorktreePath,
-		Started:  activeTask.Started,
-		Ref:      activeTask.Ref,
+		ID:            activeTask.ID,
+		State:         activeTask.State,
+		Branch:        activeTask.Branch,
+		Worktree:      activeTask.WorktreePath,
+		Started:       activeTask.Started,
+		Ref:           activeTask.Ref,
+		SandboxActive: s.isSandboxActive(),
 	}
 
 	taskWork := s.config.Conductor.GetTaskWork()
@@ -299,7 +301,9 @@ func (s *Server) getGuideData() *GuideData {
 	}
 
 	guide := &GuideData{
-		NextActions: []ActionData{},
+		NextActions:    []ActionData{},
+		SandboxEnabled: s.isSandboxEnabled(),
+		SandboxActive:  s.isSandboxActive(),
 	}
 
 	activeTask := s.config.Conductor.GetActiveTask()
