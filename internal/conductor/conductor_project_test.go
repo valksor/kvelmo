@@ -1,6 +1,7 @@
 package conductor
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -408,5 +409,222 @@ func TestSubmittedWorkUnit(t *testing.T) {
 	}
 	if wu.Title != "Test Task" {
 		t.Errorf("Title = %q, want %q", wu.Title, "Test Task")
+	}
+}
+
+func TestReadResearchSource(t *testing.T) {
+	t.Run("basic directory structure", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create test files
+		if err := os.WriteFile(tmpDir+"/README.md", []byte("# Test Project"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(tmpDir+"/tasks", 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tmpDir+"/tasks/README.md", []byte("# Tasks"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tmpDir+"/config.yaml", []byte("key: value"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		c := &Conductor{}
+		manifest, err := c.readResearchSource(tmpDir)
+		if err != nil {
+			t.Fatalf("readResearchSource() error = %v", err)
+		}
+
+		if manifest.BasePath != tmpDir {
+			t.Errorf("BasePath = %q, want %q", manifest.BasePath, tmpDir)
+		}
+
+		if manifest.FileCount != 3 {
+			t.Errorf("FileCount = %d, want 3", manifest.FileCount)
+		}
+
+		if len(manifest.EntryPoints) == 0 {
+			t.Error("EntryPoints should not be empty, expected at least README.md")
+		}
+
+		// Check entry points contain README.md
+		hasReadme := false
+		hasTasksReadme := false
+		for _, ep := range manifest.EntryPoints {
+			if strings.HasSuffix(ep, "README.md") {
+				if strings.Contains(ep, "tasks") {
+					hasTasksReadme = true
+				} else {
+					hasReadme = true
+				}
+			}
+		}
+		if !hasReadme {
+			t.Error("EntryPoints should contain root README.md")
+		}
+		if !hasTasksReadme {
+			t.Error("EntryPoints should contain tasks/README.md")
+		}
+
+		// Check categorization
+		docsFiles, ok := manifest.ByCategory["docs"]
+		if !ok {
+			t.Error("ByCategory should have 'docs' key")
+		} else if len(docsFiles) != 2 { // README.md and tasks/README.md
+			t.Errorf("ByCategory['docs'] = %d, want 2", len(docsFiles))
+		}
+
+		configFiles, ok := manifest.ByCategory["config"]
+		if !ok {
+			t.Error("ByCategory should have 'config' key")
+		} else if len(configFiles) != 1 {
+			t.Errorf("ByCategory['config'] = %d, want 1", len(configFiles))
+		}
+	})
+
+	t.Run("empty directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		c := &Conductor{}
+		manifest, err := c.readResearchSource(tmpDir)
+		if err != nil {
+			t.Fatalf("readResearchSource() error = %v", err)
+		}
+
+		if manifest.FileCount != 0 {
+			t.Errorf("FileCount = %d, want 0", manifest.FileCount)
+		}
+
+		if len(manifest.EntryPoints) != 0 {
+			t.Errorf("EntryPoints = %d, want 0", len(manifest.EntryPoints))
+		}
+	})
+
+	t.Run("non-existent path", func(t *testing.T) {
+		c := &Conductor{}
+		_, err := c.readResearchSource("/nonexistent/path/12345")
+
+		if err == nil {
+			t.Error("readResearchSource() should return error for non-existent path")
+		}
+	})
+
+	t.Run("file instead of directory", func(t *testing.T) {
+		tmpFile := t.TempDir() + "/test.md"
+		if err := os.WriteFile(tmpFile, []byte("# Test"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		c := &Conductor{}
+		_, err := c.readResearchSource(tmpFile)
+
+		if err == nil {
+			t.Error("readResearchSource() should return error for file path")
+		}
+	})
+
+	t.Run("skips hidden files and common exclusions", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create hidden file
+		if err := os.WriteFile(tmpDir+"/.hidden", []byte("hidden"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create node_modules directory
+		if err := os.MkdirAll(tmpDir+"/node_modules/pkg", 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tmpDir+"/node_modules/pkg/index.js", []byte("code"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a normal file
+		if err := os.WriteFile(tmpDir+"/visible.md", []byte("# Visible"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		c := &Conductor{}
+		manifest, err := c.readResearchSource(tmpDir)
+		if err != nil {
+			t.Fatalf("readResearchSource() error = %v", err)
+		}
+
+		if manifest.FileCount != 1 {
+			t.Errorf("FileCount = %d, want 1 (hidden and node_modules should be excluded)", manifest.FileCount)
+		}
+	})
+}
+
+func TestBuildResearchPlanningPrompt(t *testing.T) {
+	manifest := &ResearchManifest{
+		BasePath:  "/workspace/docs",
+		FileCount: 5,
+		Structure: []DirEntry{
+			{Path: "README.md", Name: "README.md", Type: "file", Size: 100, Category: "docs"},
+			{Path: "tasks", Name: "tasks", Type: "dir", Size: 0, Category: ""},
+		},
+		EntryPoints: []string{
+			"/workspace/docs/README.md",
+			"/workspace/docs/tasks/README.md",
+		},
+		ByCategory: map[string][]string{
+			"docs": {"/workspace/docs/README.md", "/workspace/docs/tasks/README.md"},
+		},
+	}
+
+	result := buildResearchPlanningPrompt("Test Project", manifest, "Preserve existing structure")
+
+	expectedContents := []string{
+		"Test Project",
+		"/workspace/docs",
+		"5 files",
+		"## Detected Entry Points",
+		"/workspace/docs/README.md",
+		"/workspace/docs/tasks/README.md",
+		"## Directory Structure",
+		"## Research Instructions",
+		"Read, Glob, and Grep tools",
+		"Preserve existing structure",
+		"## Output Format",
+		"### task-N: Task Title",
+	}
+
+	for _, expected := range expectedContents {
+		if !strings.Contains(result, expected) {
+			t.Errorf("buildResearchPlanningPrompt() missing %q in result", expected)
+		}
+	}
+}
+
+func TestBuildResearchPlanningPrompt_NoEntryPoints(t *testing.T) {
+	manifest := &ResearchManifest{
+		BasePath:    "/workspace/docs",
+		FileCount:   2,
+		Structure:   []DirEntry{},
+		EntryPoints: []string{},
+		ByCategory:  map[string][]string{},
+	}
+
+	result := buildResearchPlanningPrompt("Test", manifest, "")
+
+	if strings.Contains(result, "## Detected Entry Points") {
+		t.Error("buildResearchPlanningPrompt() should not include Entry Points section when empty")
+	}
+}
+
+func TestBuildResearchPlanningPrompt_NoCustomInstructions(t *testing.T) {
+	manifest := &ResearchManifest{
+		BasePath:   "/test",
+		FileCount:  1,
+		Structure:  []DirEntry{},
+		ByCategory: map[string][]string{},
+	}
+
+	result := buildResearchPlanningPrompt("Test", manifest, "")
+
+	if strings.Contains(result, "## Custom Instructions") {
+		t.Error("buildResearchPlanningPrompt() should not include Custom Instructions section when empty")
 	}
 }

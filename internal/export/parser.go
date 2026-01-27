@@ -145,7 +145,7 @@ func parseTaskContent(id, title, content string) *storage.QueuedTask {
 		deps := strings.Split(match[1], ",")
 		for _, dep := range deps {
 			dep = strings.TrimSpace(dep)
-			if dep != "" {
+			if dep != "" && strings.HasPrefix(dep, "task-") {
 				task.DependsOn = append(task.DependsOn, dep)
 			}
 		}

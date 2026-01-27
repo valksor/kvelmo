@@ -539,6 +539,15 @@ func TestParseUsage(t *testing.T) {
 			want: &UsageStats{InputTokens: 100, OutputTokens: 50, CachedTokens: 20},
 		},
 		{
+			name: "cached input tokens",
+			data: map[string]any{
+				"input_tokens":        float64(100),
+				"output_tokens":       float64(50),
+				"cached_input_tokens": float64(12),
+			},
+			want: &UsageStats{InputTokens: 100, OutputTokens: 50, CachedTokens: 12},
+		},
+		{
 			name: "partial fields",
 			data: map[string]any{
 				"input_tokens":  float64(100),
@@ -586,6 +595,8 @@ func TestJSONLineParser_ParseEvent(t *testing.T) {
 	}{
 		{"error event", `{"error":"something wrong"}`, EventError},
 		{"usage event", `{"usage":{"tokens":100}}`, EventUsage},
+		{"codex item completed", `{"type":"item.completed","item":{"type":"agent_message","text":"Hi"}}`, EventText},
+		{"codex turn completed", `{"type":"turn.completed","usage":{"input_tokens":1}}`, EventUsage},
 		{"text event", `{"text":"hello"}`, EventText},
 		{"plain text", "not json", EventText},
 	}
