@@ -39,6 +39,7 @@ type WorkspaceConfig struct {
 	Memory        *MemorySettings             `yaml:"memory,omitempty"`
 	Orchestration *OrchestrationSettings      `yaml:"orchestration,omitempty"`
 	ML            *MLSettings                 `yaml:"ml,omitempty"`
+	Sandbox       *SandboxSettings            `yaml:"sandbox,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -453,9 +454,18 @@ type SpecificationSettings struct {
 	SaveInProject bool `yaml:"save_in_project"` // Save specs in project .mehrhof/<task-id>/specifications/ (default: false)
 }
 
+// SandboxSettings holds agent sandboxing configuration.
+type SandboxSettings struct {
+	Enabled bool     `yaml:"enabled,omitempty"` // Enable sandboxing (default: false)
+	Network bool     `yaml:"network,omitempty"` // Allow network access (default: true - LLM APIs need this)
+	TmpDir  string   `yaml:"tmp_dir,omitempty"` // Tmpfs mount path (default: auto)
+	Tools   []string `yaml:"tools,omitempty"`   // Extra binary paths to allow (beyond defaults)
+}
+
 // ProvidersSettings holds provider-related configuration.
 type ProvidersSettings struct {
-	Default string `yaml:"default,omitempty"` // Default provider for bare references (e.g., "file", "directory", "github")
+	Default        string `yaml:"default,omitempty"`         // Default provider for bare references (e.g., "file", "directory", "github")
+	DefaultMention string `yaml:"default_mention,omitempty"` // Default mention text when submitting tasks (e.g., "@manager please review")
 }
 
 // NewDefaultWorkspaceConfig creates a WorkspaceConfig with default values.
@@ -782,6 +792,22 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 # Example:
 # specification:
 #     save_in_project: true          # Save specs in .mehrhof/<task-id>/specifications/ (default: false)
+`
+	}
+
+	// Add sandbox section comment if sandbox is nil or disabled
+	if cfg.Sandbox == nil || !cfg.Sandbox.Enabled {
+		content += `
+# Sandbox settings
+# Isolate agent execution for security (Linux: user namespaces, macOS: sandbox-exec)
+# Example:
+# sandbox:
+#     enabled: true                  # Enable sandboxing
+#     network: true                  # Allow network access (required for LLM APIs)
+#     tmp_dir: "/tmp/mehrhof-sandbox"  # Custom tmpfs mount path (optional)
+#     tools:                         # Additional tool paths to allow (optional)
+#         - /usr/local/bin/node
+#         - /usr/local/bin/python3
 `
 	}
 

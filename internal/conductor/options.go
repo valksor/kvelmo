@@ -56,6 +56,9 @@ type Options struct {
 	// Browser configuration
 	BrowserConfig *browser.Config // Browser automation configuration (nil = disabled)
 
+	// Sandbox configuration
+	SandboxEnabled bool // Enable sandbox for agent execution
+
 	// Naming overrides (CLI flags)
 	ExternalKey           string // Override external key (e.g., "FEATURE-123")
 	TitleOverride         string // Override task title
@@ -304,6 +307,13 @@ func WithHomeDir(dir string) Option {
 func WithBrowserConfig(cfg browser.Config) Option {
 	return func(o *Options) {
 		o.BrowserConfig = &cfg
+	}
+}
+
+// WithSandbox enables sandbox for agent execution.
+func WithSandbox(enabled bool) Option {
+	return func(o *Options) {
+		o.SandboxEnabled = enabled
 	}
 }
 

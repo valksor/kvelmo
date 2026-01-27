@@ -226,8 +226,17 @@ func runStart(cmd *cobra.Command, args []string) error {
 					}
 					opts = append(opts, conductor.WithBrowserConfig(browserCfg))
 				}
+				// Apply sandbox configuration if enabled
+				if wsCfg.Sandbox != nil && wsCfg.Sandbox.Enabled {
+					opts = append(opts, conductor.WithSandbox(true))
+				}
 			}
 		}
+	}
+
+	// CLI flag overrides config for sandbox
+	if sandbox {
+		opts = append(opts, conductor.WithSandbox(true))
 	}
 
 	// Naming override options

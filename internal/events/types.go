@@ -34,7 +34,28 @@ const (
 	TypeBrowserAction     Type = "browser_action"
 	TypeBrowserTabOpened  Type = "browser_tab_opened"
 	TypeBrowserScreenshot Type = "browser_screenshot"
+
+	// Sandbox-related events.
+	TypeSandboxStatusChanged Type = "sandbox_status_changed"
 )
+
+// SandboxStatusChangedEvent when sandbox status changes.
+type SandboxStatusChangedEvent struct {
+	Enabled  bool
+	Active   bool
+	Platform string
+}
+
+func (e SandboxStatusChangedEvent) ToEvent() eventbus.Event {
+	return eventbus.Event{
+		Type: TypeSandboxStatusChanged,
+		Data: map[string]any{
+			"enabled":  e.Enabled,
+			"active":   e.Active,
+			"platform": e.Platform,
+		},
+	}
+}
 
 // StateChangedEvent when workflow state changes.
 type StateChangedEvent struct {

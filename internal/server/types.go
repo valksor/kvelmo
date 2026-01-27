@@ -43,7 +43,17 @@ type autoResponse struct {
 
 // addNoteRequest is the request body for POST /api/v1/tasks/{id}/notes.
 type addNoteRequest struct {
-	Content string `json:"content"`
+	Content string `json:"content,omitempty"` // Legacy field name
+	Note    string `json:"note,omitempty"`    // New field name (preferred)
+}
+
+// getContent returns the note content, checking both fields for backward compatibility.
+func (r *addNoteRequest) getContent() string {
+	if r.Note != "" {
+		return r.Note
+	}
+
+	return r.Content
 }
 
 // noteResponse is the response for POST /api/v1/tasks/{id}/notes.
@@ -386,4 +396,21 @@ type templateApplyResponse struct {
 	Success     bool           `json:"success"`
 	Frontmatter map[string]any `json:"frontmatter,omitempty"`
 	Message     string         `json:"message"`
+}
+
+// optimizeRequest is the request body for POST /api/v1/quick/{id}/optimize.
+type optimizeRequest struct {
+	Agent string `json:"agent,omitempty"` // Agent override for this operation
+}
+
+// exportRequest is the request body for POST /api/v1/quick/{id}/export.
+type exportRequest struct {
+	Output string `json:"output,omitempty"` // Output file path (empty = download)
+}
+
+// submitRequest is the request body for POST /api/v1/quick/{id}/submit.
+type submitRequest struct {
+	Provider string   `json:"provider"`          // Required: target provider
+	Labels   []string `json:"labels,omitempty"`  // Additional labels to apply
+	DryRun   bool     `json:"dry_run,omitempty"` // Preview without submitting
 }

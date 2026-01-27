@@ -277,3 +277,35 @@ func (w *Workspace) NeedsMigration() bool {
 func (w *Workspace) GetLegacyTaskRoot() string {
 	return filepath.Join(w.root, taskDirName)
 }
+
+// ProjectRoot returns the repository root path (alias for Root()).
+func (w *Workspace) ProjectRoot() string {
+	return w.root
+}
+
+// AbsolutePath returns an absolute path for a potentially workspace-relative path.
+// If the path is already absolute, it is returned as-is.
+// Otherwise, it is joined with the project root.
+func (w *Workspace) AbsolutePath(path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+
+	return filepath.Join(w.root, path)
+}
+
+// SaveFile writes data to a file at the specified path.
+// The path can be absolute or relative to the project root.
+func (w *Workspace) SaveFile(path string, data []byte) error {
+	absPath := w.AbsolutePath(path)
+
+	return os.WriteFile(absPath, data, 0o644)
+}
+
+// DeleteFile removes a file at the specified path.
+// The path can be absolute or relative to the project root.
+func (w *Workspace) DeleteFile(path string) error {
+	absPath := w.AbsolutePath(path)
+
+	return os.Remove(absPath)
+}
