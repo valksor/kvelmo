@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -13,7 +14,10 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	kitdisplay "github.com/valksor/go-toolkit/display"
 )
+
+var noteTask string // Add note to queue task (format: <queue-id>/<task-id>)
 
 var noteCmd = &cobra.Command{
 	Use:     "note [message]",
@@ -24,10 +28,14 @@ var noteCmd = &cobra.Command{
 This command saves your input directly to notes.md in the work directory.
 Notes are included when the agent runs during plan/implement/review phases.
 
+You can also add notes to queue tasks (without starting them) using --task:
+  mehr note --task=quick-tasks/task-1 "Add requirement"
+
 WHEN TO USE:
   • You want to add requirements or context before running plan/implement
   • The agent is waiting for your answer to a question
   • You want to provide clarification or additional information
+  • You want to add notes to a quick task before optimizing or starting it
 
 USE THIS COMMAND FOR:
   Adding context, requirements, or answering agent questions
@@ -36,17 +44,20 @@ RELATED COMMANDS:
   plan      - Create implementation specifications (sees your notes)
   implement - Execute specifications (sees your notes)
   guide     - Check if an agent question is pending
+  optimize  - AI optimizes task based on notes
 
 Examples:
   mehr note                           # Enter interactive mode
   mehr note "Use PostgreSQL"          # Add a note
   mehr note "Add error handling"      # Add context before planning
+  mehr note --task=quick-tasks/task-1 "Add requirement"  # Add to queue task
   mehr answer "Yes, proceed"          # Answer agent question (alias)`,
 	RunE: runNote,
 }
 
 func init() {
 	rootCmd.AddCommand(noteCmd)
+	noteCmd.Flags().StringVar(&noteTask, "task", "", "Queue task ID (format: <queue-id>/<task-id>)")
 }
 
 func runNote(cmd *cobra.Command, args []string) error {
@@ -61,6 +72,11 @@ func runNote(cmd *cobra.Command, args []string) error {
 	cond, err := initializeConductor(ctx, opts...)
 	if err != nil {
 		return err
+	}
+
+	// If --task specified, add note to queue task
+	if noteTask != "" {
+		return addNoteToQueueTask(ctx, cond, noteTask, args)
 	}
 
 	// Check for active task
@@ -199,6 +215,65 @@ func runNote(cmd *cobra.Command, args []string) error {
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("read input: %w", err)
 	}
+
+	return nil
+}
+
+// addNoteToQueueTask adds a note to a queue task without starting it.
+//
+//nolint:unparam // ctx is kept for consistent signature with other command functions
+func addNoteToQueueTask(ctx context.Context, cond *conductor.Conductor, taskRef string, args []string) error {
+	// Parse queue task reference
+	queueID, taskID, err := conductor.ParseQueueTaskRef(taskRef)
+	if err != nil {
+		return err
+	}
+
+	ws := cond.GetWorkspace()
+
+	// Get the message
+	var message string
+	if len(args) > 0 {
+		message = strings.Join(args, " ")
+	} else {
+		// Interactive mode
+		fmt.Printf("Adding notes to: %s/%s\n", queueID, taskID)
+		fmt.Println("Enter your note below (empty line to finish, or Ctrl+C to cancel):")
+
+		reader := bufio.NewReader(os.Stdin)
+		var lines []string
+
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return fmt.Errorf("read input: %w", err)
+			}
+
+			line = strings.TrimSuffix(line, "\n")
+			if line == "" {
+				break
+			}
+			lines = append(lines, line)
+		}
+
+		message = strings.Join(lines, "\n")
+	}
+
+	if strings.TrimSpace(message) == "" {
+		return errors.New("note cannot be empty")
+	}
+
+	// Add note to queue task
+	if err := ws.AppendQueueNote(queueID, taskID, message); err != nil {
+		return fmt.Errorf("save note: %w", err)
+	}
+
+	fmt.Printf("✓ Note saved to %s/%s\n", queueID, taskID)
+
+	// Show next steps
+	fmt.Println("\nNext steps:")
+	fmt.Printf("  %s\n", kitdisplay.Cyan(fmt.Sprintf("mehr note --task=%s/%s \"more context\"", queueID, taskID)))
+	fmt.Printf("  %s\n", kitdisplay.Cyan(fmt.Sprintf("mehr optimize --task=%s/%s", queueID, taskID)))
 
 	return nil
 }

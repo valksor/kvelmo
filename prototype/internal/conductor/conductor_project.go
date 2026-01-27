@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,25 +29,60 @@ type ProjectPlanResult struct {
 	Blockers  []string
 }
 
+// ResearchManifest holds metadata about a research source directory.
+// Used for research: source type to provide file manifest without concatenation.
+type ResearchManifest struct {
+	BasePath    string              // Absolute path to research root
+	FileCount   int                 // Total files found
+	Structure   []DirEntry          // Directory tree structure
+	EntryPoints []string            // Detected entry point files (absolute paths)
+	ByCategory  map[string][]string // Files grouped by category
+}
+
+// DirEntry represents a file or directory in the research manifest.
+type DirEntry struct {
+	Path     string // Relative path from base
+	Name     string // File/directory name
+	Type     string // "file" or "dir"
+	Size     int64  // File size in bytes (0 for dirs)
+	Category string // "docs", "code", "config", "other"
+}
+
 // CreateProjectPlan creates a task breakdown from a source.
-// The source can be a directory path (dir:/path), file path (file:/path),
-// or provider reference (github:123, jira:PROJ-123, etc.).
+// The source can be:
+//   - research:/path - Directory for AI to research (agent explores selectively)
+//   - dir:/path - Directory of files to analyze (reads all content)
+//   - file:/path - Single file to analyze
+//   - github:123, jira:PROJ-123, etc. - Provider reference
 func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts ProjectPlanOptions) (*ProjectPlanResult, error) {
 	c.publishProgress("Creating project plan...", 0)
 
-	// Read source content
-	sourceContent, err := c.readProjectSource(ctx, source)
-	if err != nil {
-		return nil, fmt.Errorf("read source: %w", err)
+	var prompt string
+
+	// Handle research source type - uses manifest instead of concatenation
+	if strings.HasPrefix(source, "research:") {
+		dirPath := source[9:] // Strip "research:" prefix
+
+		manifest, err := c.readResearchSource(dirPath)
+		if err != nil {
+			return nil, fmt.Errorf("read research source: %w", err)
+		}
+
+		prompt = buildResearchPlanningPrompt(opts.Title, manifest, opts.CustomInstructions)
+		c.publishProgress("Research manifest prepared...", 20)
+	} else {
+		// Existing flow for dir:, file:, and providers
+		sourceContent, err := c.readProjectSource(ctx, source)
+		if err != nil {
+			return nil, fmt.Errorf("read source: %w", err)
+		}
+
+		prompt = buildProjectPlanningPrompt(opts.Title, sourceContent, opts.CustomInstructions)
+		c.publishProgress("Analyzing source content...", 20)
 	}
 
 	// Generate queue ID from title or source
 	queueID := generateQueueID(opts.Title, source)
-
-	// Build the planning prompt
-	prompt := buildProjectPlanningPrompt(opts.Title, sourceContent, opts.CustomInstructions)
-
-	c.publishProgress("Analyzing source content...", 20)
 
 	// Get agent for project planning (use planning step)
 	ag, err := c.GetAgentForStep(ctx, "planning")
@@ -105,6 +141,9 @@ type SubmitOptions struct {
 	CreateEpic bool     // Create an epic/project to group tasks
 	Labels     []string // Labels to apply to all tasks
 	DryRun     bool     // Preview only, don't actually submit
+	TaskIDs    []string // Optional: submit only these task IDs
+	Comment    string   // Optional: add comment when tasks already submitted
+	Mention    string   // Optional: mention/notification to add to all submitted tasks
 }
 
 // SubmitResult holds the result of submitting tasks to a provider.
@@ -261,18 +300,56 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 		return nil, fmt.Errorf("load queue: %w", err)
 	}
 
+	tasksToSubmit, err := selectSubmitTasks(queue, opts.TaskIDs)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasksToSubmit) == 0 {
+		return nil, errors.New("no tasks selected for submission")
+	}
+
+	if err := validateSubmitSelection(queue, tasksToSubmit, opts); err != nil {
+		return nil, err
+	}
+
 	if opts.DryRun {
-		return c.dryRunSubmit(queue, opts)
+		return c.dryRunSubmit(tasksToSubmit), nil
 	}
 
 	// Verify provider exists
-	_, _, ok := c.providers.Get(opts.Provider)
+	_, factory, ok := c.providers.Get(opts.Provider)
 	if !ok {
 		return nil, fmt.Errorf("provider not found: %s", opts.Provider)
 	}
 
+	workspaceCfg, _ := c.workspace.LoadConfig()
+	providerCfg := buildProviderConfig(workspaceCfg, opts.Provider)
+	providerInst, err := factory(ctx, providerCfg)
+	if err != nil {
+		return nil, fmt.Errorf("create provider: %w", err)
+	}
+
+	creator, _ := providerInst.(provider.WorkUnitCreator)
+	commenter, _ := providerInst.(provider.Commenter)
+
+	commentText := strings.TrimSpace(opts.Comment)
+	if commentText != "" && commenter == nil {
+		return nil, fmt.Errorf("provider %s does not support comments", opts.Provider)
+	}
+
+	var newTasks []*storage.QueuedTask
+	for _, task := range tasksToSubmit {
+		if task.Status == storage.TaskStatusSubmitted || task.ExternalID != "" {
+			continue
+		}
+		newTasks = append(newTasks, task)
+	}
+	if len(newTasks) > 0 && creator == nil {
+		return nil, fmt.Errorf("provider %s does not support task creation", opts.Provider)
+	}
+
 	result := &SubmitResult{
-		Tasks:  make([]*SubmittedTask, 0, len(queue.Tasks)),
+		Tasks:  make([]*SubmittedTask, 0, len(tasksToSubmit)),
 		DryRun: false,
 	}
 
@@ -280,33 +357,29 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 
 	// Track mapping from local task IDs to external IDs for dependency resolution
 	localToExternal := make(map[string]string)
+	for _, task := range queue.Tasks {
+		if task.Status == storage.TaskStatusSubmitted && task.ExternalID != "" {
+			localToExternal[task.ID] = task.ExternalID
+		}
+	}
 
 	// First pass: submit all tasks (without dependencies)
-	for i, task := range queue.Tasks {
-		if task.Status == storage.TaskStatusSubmitted {
-			// Already submitted - add to mapping
-			if task.ExternalID != "" {
-				localToExternal[task.ID] = task.ExternalID
-			}
-
-			continue
-		}
-
-		progress := int((float64(i+1) / float64(len(queue.Tasks))) * 50) // First pass is 50%
-		c.publishProgress(fmt.Sprintf("Creating task %d/%d...", i+1, len(queue.Tasks)), progress)
+	for i, task := range newTasks {
+		progress := int((float64(i+1) / float64(len(tasksToSubmit))) * 50) // First pass is 50%
+		c.publishProgress(fmt.Sprintf("Creating task %d/%d...", i+1, len(tasksToSubmit)), progress)
 
 		// Create work unit in provider (without dependencies for now)
-		workUnit, err := c.submitTaskToProvider(ctx, task, opts, nil)
+		workUnit, err := c.submitTaskToProvider(ctx, creator, task, opts)
 		if err != nil {
 			return result, fmt.Errorf("submit task %s: %w", task.ID, err)
 		}
 
 		// Track mapping
-		localToExternal[task.ID] = workUnit.ID
+		localToExternal[task.ID] = workUnit.ExternalID
 
 		// Update local task with external references
 		if err := queue.UpdateTask(task.ID, func(t *storage.QueuedTask) {
-			t.ExternalID = workUnit.ID
+			t.ExternalID = workUnit.ExternalID
 			t.ExternalURL = workUnit.URL
 			t.Status = storage.TaskStatusSubmitted
 		}); err != nil {
@@ -315,7 +388,7 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 
 		result.Tasks = append(result.Tasks, &SubmittedTask{
 			LocalID:     task.ID,
-			ExternalID:  workUnit.ID,
+			ExternalID:  workUnit.ExternalID,
 			ExternalURL: workUnit.URL,
 			Title:       task.Title,
 		})
@@ -323,13 +396,13 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 
 	// Second pass: create dependencies using the external IDs
 	c.publishProgress("Creating dependencies...", 55)
-	for i, task := range queue.Tasks {
+	for i, task := range newTasks {
 		if len(task.DependsOn) == 0 {
 			continue
 		}
 
-		progress := 55 + int((float64(i+1)/float64(len(queue.Tasks)))*40)
-		c.publishProgress(fmt.Sprintf("Creating dependencies for task %d/%d...", i+1, len(queue.Tasks)), progress)
+		progress := 55 + int((float64(i+1)/float64(len(tasksToSubmit)))*40)
+		c.publishProgress(fmt.Sprintf("Creating dependencies for task %d/%d...", i+1, len(tasksToSubmit)), progress)
 
 		// Convert local dependency IDs to external IDs
 		externalDeps := make([]string, 0, len(task.DependsOn))
@@ -347,8 +420,54 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 		}
 	}
 
+	if commentText != "" {
+		for _, task := range tasksToSubmit {
+			if task.ExternalID == "" {
+				return nil, fmt.Errorf("task %s has no external ID for commenting", task.ID)
+			}
+			if _, err := commenter.AddComment(ctx, task.ExternalID, commentText); err != nil {
+				return nil, fmt.Errorf("comment task %s: %w", task.ID, err)
+			}
+			found := false
+			for _, submitted := range result.Tasks {
+				if submitted.LocalID == task.ID {
+					found = true
+
+					break
+				}
+			}
+			if !found {
+				result.Tasks = append(result.Tasks, &SubmittedTask{
+					LocalID:     task.ID,
+					ExternalID:  task.ExternalID,
+					ExternalURL: task.ExternalURL,
+					Title:       task.Title,
+				})
+			}
+		}
+	}
+
+	// Add mentions as comments to all submitted tasks (if provider supports it and mention is specified)
+	if opts.Mention != "" && commenter != nil {
+		for _, submitted := range result.Tasks {
+			if _, err := commenter.AddComment(ctx, submitted.ExternalID, opts.Mention); err != nil {
+				c.logError(fmt.Errorf("add mention to task %s: %w", submitted.LocalID, err))
+			}
+		}
+	}
+
 	// Update queue status
-	queue.Status = storage.QueueStatusSubmitted
+	allSubmitted := true
+	for _, task := range queue.Tasks {
+		if task.Status != storage.TaskStatusSubmitted {
+			allSubmitted = false
+
+			break
+		}
+	}
+	if allSubmitted {
+		queue.Status = storage.QueueStatusSubmitted
+	}
 
 	// Save the updated queue
 	if err := queue.Save(); err != nil {
@@ -360,10 +479,139 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 	return result, nil
 }
 
+func selectSubmitTasks(queue *storage.TaskQueue, taskIDs []string) ([]*storage.QueuedTask, error) {
+	if len(taskIDs) == 0 {
+		return queue.Tasks, nil
+	}
+
+	targets := make(map[string]bool, len(taskIDs))
+	for _, id := range taskIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		targets[id] = true
+	}
+	if len(targets) == 0 {
+		return nil, errors.New("no valid task IDs provided")
+	}
+
+	var selected []*storage.QueuedTask
+	for _, task := range queue.Tasks {
+		if targets[task.ID] {
+			selected = append(selected, task)
+			delete(targets, task.ID)
+		}
+	}
+
+	if len(targets) > 0 {
+		missing := make([]string, 0, len(targets))
+		for id := range targets {
+			missing = append(missing, id)
+		}
+
+		return nil, fmt.Errorf("tasks not found in queue: %s", strings.Join(missing, ", "))
+	}
+
+	return selected, nil
+}
+
+func validateSubmitSelection(queue *storage.TaskQueue, selected []*storage.QueuedTask, opts SubmitOptions) error {
+	if len(opts.TaskIDs) == 0 {
+		return nil
+	}
+
+	var alreadySubmitted []string
+	submitted := make(map[string]bool)
+	for _, task := range queue.Tasks {
+		if task.Status == storage.TaskStatusSubmitted || task.ExternalID != "" {
+			submitted[task.ID] = true
+		}
+	}
+
+	selectedSet := make(map[string]bool, len(selected))
+	for _, task := range selected {
+		selectedSet[task.ID] = true
+		if submitted[task.ID] {
+			alreadySubmitted = append(alreadySubmitted, task.ID)
+		}
+	}
+	if len(alreadySubmitted) > 0 {
+		if strings.TrimSpace(opts.Comment) == "" {
+			return fmt.Errorf("task(s) already submitted: %s", strings.Join(alreadySubmitted, ", "))
+		}
+	}
+
+	var missingDeps []string
+	for _, task := range selected {
+		for _, dep := range task.DependsOn {
+			if selectedSet[dep] || submitted[dep] {
+				continue
+			}
+			missingDeps = append(missingDeps, fmt.Sprintf("%s -> %s", task.ID, dep))
+		}
+	}
+	if len(missingDeps) > 0 {
+		return fmt.Errorf("missing dependencies (submit them first or include with --task): %s", strings.Join(missingDeps, ", "))
+	}
+
+	return nil
+}
+
+func mergeLabels(taskLabels, submitLabels []string) []string {
+	seen := make(map[string]bool)
+	var labels []string
+
+	for _, label := range append(taskLabels, submitLabels...) {
+		label = strings.TrimSpace(label)
+		if label == "" || seen[label] {
+			continue
+		}
+		seen[label] = true
+		labels = append(labels, label)
+	}
+
+	return labels
+}
+
+func mapQueuedPriority(priority int) provider.Priority {
+	switch {
+	case priority <= 1:
+		return provider.PriorityHigh
+	case priority == 2:
+		return provider.PriorityNormal
+	case priority >= 3:
+		return provider.PriorityLow
+	default:
+		return provider.PriorityNormal
+	}
+}
+
+func extractWorkUnitURL(workUnit *provider.WorkUnit) string {
+	if workUnit == nil {
+		return ""
+	}
+	if workUnit.Metadata == nil {
+		return ""
+	}
+	if v, ok := workUnit.Metadata["html_url"].(string); ok && v != "" {
+		return v
+	}
+	if v, ok := workUnit.Metadata["web_url"].(string); ok && v != "" {
+		return v
+	}
+	if v, ok := workUnit.Metadata["permalink_url"].(string); ok && v != "" {
+		return v
+	}
+	if v, ok := workUnit.Metadata["url"].(string); ok && v != "" {
+		return v
+	}
+
+	return ""
+}
+
 // submitTaskToProvider creates a work unit in the provider for the given task.
-// For now, returns a stub implementation - actual provider integration will use
-// the provider.WorkUnitCreator interface.
-func (c *Conductor) submitTaskToProvider(_ context.Context, task *storage.QueuedTask, opts SubmitOptions, _ []string) (*submittedWorkUnit, error) {
+func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.WorkUnitCreator, task *storage.QueuedTask, opts SubmitOptions) (*submittedWorkUnit, error) {
 	// Validate required fields
 	if task == nil || task.ID == "" {
 		return nil, errors.New("task is required")
@@ -371,25 +619,39 @@ func (c *Conductor) submitTaskToProvider(_ context.Context, task *storage.Queued
 	if opts.Provider == "" {
 		return nil, errors.New("provider is required")
 	}
-
-	// Build description with labels and any metadata
-	description := task.Description
-	if len(task.Labels) > 0 {
-		description += "\n\n**Labels:** " + strings.Join(task.Labels, ", ")
+	if creator == nil {
+		return nil, errors.New("provider does not support task creation")
 	}
 
-	// For now, return a stub implementation
-	// Full provider integration would:
-	// 1. Get provider factory and create instance
-	// 2. Check for WorkUnitCreator interface
-	// 3. Create work unit with proper options
-	// 4. Handle dependencies via provider-specific APIs (e.g., Wrike's CreateDependency)
-	_ = description
+	labels := mergeLabels(task.Labels, opts.Labels)
+	assignees := []string{}
+	if task.Assignee != "" {
+		assignees = append(assignees, task.Assignee)
+	}
+
+	createOpts := provider.CreateWorkUnitOptions{
+		Title:       task.Title,
+		Description: task.Description,
+		Labels:      labels,
+		Assignees:   assignees,
+		Priority:    mapQueuedPriority(task.Priority),
+	}
+
+	workUnit, err := creator.CreateWorkUnit(ctx, createOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	externalID := workUnit.ExternalID
+	if externalID == "" {
+		externalID = workUnit.ID
+	}
 
 	return &submittedWorkUnit{
-		ID:    "ext-" + task.ID,
-		URL:   fmt.Sprintf("https://%s.example.com/%s", opts.Provider, task.ID),
-		Title: task.Title,
+		ID:         workUnit.ID,
+		ExternalID: externalID,
+		URL:        extractWorkUnitURL(workUnit),
+		Title:      workUnit.Title,
 	}, nil
 }
 
@@ -407,19 +669,20 @@ func (c *Conductor) createProviderDependencies(ctx context.Context, providerName
 }
 
 type submittedWorkUnit struct {
-	ID    string
-	URL   string
-	Title string
+	ID         string
+	ExternalID string
+	URL        string
+	Title      string
 }
 
 // dryRunSubmit simulates submission and returns what would be created.
-func (c *Conductor) dryRunSubmit(queue *storage.TaskQueue, _ SubmitOptions) (*SubmitResult, error) {
+func (c *Conductor) dryRunSubmit(tasks []*storage.QueuedTask) *SubmitResult {
 	result := &SubmitResult{
-		Tasks:  make([]*SubmittedTask, 0, len(queue.Tasks)),
+		Tasks:  make([]*SubmittedTask, 0, len(tasks)),
 		DryRun: true,
 	}
 
-	for _, task := range queue.Tasks {
+	for _, task := range tasks {
 		if task.Status == storage.TaskStatusSubmitted {
 			continue
 		}
@@ -432,7 +695,7 @@ func (c *Conductor) dryRunSubmit(queue *storage.TaskQueue, _ SubmitOptions) (*Su
 		})
 	}
 
-	return result, nil
+	return result
 }
 
 // StartNextTask begins implementing the next ready task from the queue.
@@ -544,7 +807,7 @@ func (c *Conductor) RunProjectAuto(ctx context.Context, source string, opts Proj
 
 		if autoResult.FinishDone {
 			tasksCompleted++
-			// Update task in queue as completed
+			// Update task status
 			_ = planResult.Queue.UpdateTask(nextTask.ID, func(t *storage.QueuedTask) {
 				t.Status = storage.TaskStatusSubmitted // Mark as done
 			})
@@ -558,6 +821,218 @@ func (c *Conductor) RunProjectAuto(ctx context.Context, source string, opts Proj
 	c.publishProgress("Project automation complete", 100)
 
 	return result, nil //nolint:nilerr // StartNextTask error means no more ready tasks, which is success
+}
+
+// readResearchSource scans a directory and builds a research manifest.
+// This does NOT read file contents - it builds metadata for agent exploration.
+// Used for research: source type to avoid token bloat from large documentation bases.
+func (c *Conductor) readResearchSource(dirPath string) (*ResearchManifest, error) {
+	absPath, err := filepath.Abs(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve path: %w", err)
+	}
+
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("stat path: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("not a directory: %s", absPath)
+	}
+
+	manifest := &ResearchManifest{
+		BasePath:    absPath,
+		Structure:   make([]DirEntry, 0),
+		EntryPoints: make([]string, 0),
+		ByCategory:  make(map[string][]string),
+	}
+
+	// Entry point patterns to detect
+	entryPointPatterns := []string{
+		"tasks/README.md", "tasks/index.md",
+		"README.md", "readme.md",
+		"TODOS.md", "TODO.md", "ROADMAP.md",
+	}
+
+	// File extension categories
+	docExts := map[string]bool{".md": true, ".txt": true, ".rst": true, ".adoc": true}
+	codeExts := map[string]bool{
+		".go": true, ".js": true, ".ts": true, ".tsx": true, ".jsx": true,
+		".py": true, ".java": true, ".rs": true, ".rb": true, ".php": true, ".c": true, ".cpp": true,
+	}
+	configExts := map[string]bool{".yaml": true, ".yml": true, ".json": true, ".toml": true, ".xml": true}
+
+	// Walk directory and collect metadata
+	err = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // Skip unreadable files
+		}
+
+		// Skip hidden files/directories
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		// Skip common exclusions
+		if info.IsDir() {
+			switch info.Name() {
+			case "node_modules", "vendor", "target", "build", "dist", ".git", "venv", "__pycache__":
+				return filepath.SkipDir
+			}
+		}
+
+		relPath, _ := filepath.Rel(absPath, path)
+
+		entry := DirEntry{
+			Path: relPath,
+			Name: info.Name(),
+			Type: map[bool]string{true: "dir", false: "file"}[info.IsDir()],
+			Size: info.Size(),
+		}
+
+		if info.IsDir() {
+			manifest.Structure = append(manifest.Structure, entry)
+
+			return nil
+		}
+
+		// Categorize file
+		ext := strings.ToLower(filepath.Ext(path))
+		switch {
+		case docExts[ext]:
+			entry.Category = "docs"
+		case codeExts[ext]:
+			entry.Category = "code"
+		case configExts[ext]:
+			entry.Category = "config"
+		default:
+			entry.Category = "other"
+		}
+
+		manifest.Structure = append(manifest.Structure, entry)
+		manifest.FileCount++
+
+		// Track by category (store absolute paths)
+		manifest.ByCategory[entry.Category] = append(manifest.ByCategory[entry.Category], path)
+
+		// Check for entry points
+		if entry.Category == "docs" {
+			for _, pattern := range entryPointPatterns {
+				if strings.EqualFold(relPath, pattern) ||
+					strings.Contains(strings.ToLower(relPath), strings.ToLower(pattern)) {
+					manifest.EntryPoints = append(manifest.EntryPoints, path)
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("walk directory: %w", err)
+	}
+
+	// Sort entry points by path length (shorter first = more likely to be root-level)
+	sort.Slice(manifest.EntryPoints, func(i, j int) bool {
+		return len(manifest.EntryPoints[i]) < len(manifest.EntryPoints[j])
+	})
+
+	return manifest, nil
+}
+
+// buildResearchPlanningPrompt creates the prompt for research-based planning.
+// The prompt provides a file manifest and instructs the agent to use Read/Grep tools
+// for selective exploration, rather than concatenating all file contents.
+func buildResearchPlanningPrompt(title string, manifest *ResearchManifest, customInstructions string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf(`You are an expert project manager and software architect. Your task is to research documentation and create a structured task breakdown.
+
+Current timestamp: %s
+
+## Project
+%s
+
+## Research Base Path
+%s
+
+## Documentation Structure
+This directory contains %d files for you to research.
+`, currentTime, title, manifest.BasePath, manifest.FileCount))
+
+	// Entry points
+	if len(manifest.EntryPoints) > 0 {
+		sb.WriteString("## Detected Entry Points\n")
+		sb.WriteString("The following files appear to be task/index files:\n\n")
+		for i, ep := range manifest.EntryPoints {
+			sb.WriteString(fmt.Sprintf("%d. %s\n", i+1, ep))
+		}
+		sb.WriteString("\nStart by reading these files to understand existing task structure.\n\n")
+	}
+
+	// Directory tree
+	sb.WriteString("## Directory Structure\n\n")
+	sb.WriteString("```\n")
+	for _, entry := range manifest.Structure {
+		indent := strings.Repeat("  ", strings.Count(entry.Path, string(filepath.Separator)))
+		if entry.Type == "dir" {
+			sb.WriteString(fmt.Sprintf("%s%s/\n", indent, entry.Name))
+		} else {
+			sb.WriteString(fmt.Sprintf("%s%s (%s, %d bytes)\n", indent, entry.Name, entry.Category, entry.Size))
+		}
+	}
+	sb.WriteString("```\n\n")
+
+	// Custom instructions
+	if customInstructions != "" {
+		sb.WriteString(fmt.Sprintf(`## Custom Instructions
+%s
+
+`, customInstructions))
+	}
+
+	sb.WriteString(`## Research Instructions
+
+IMPORTANT: You have access to Read, Glob, and Grep tools to explore these files.
+
+1. **Start with entry points** - Read the detected entry point files first to understand any existing task structure
+2. **Explore selectively** - Use Glob to find relevant files, Grep to search content, and Read to examine specific files
+3. **Preserve existing structure** - If tasks/README.md or similar exists, incorporate those tasks rather than creating new ones
+4. **Categorize intelligently** - Group related tasks based on the documentation structure you discover
+
+## Output Format
+
+Create a structured task breakdown in the following format:
+
+## Tasks
+
+For each task, use this format:
+
+### task-N: Task Title
+- **Priority**: N (1 = highest)
+- **Status**: ready OR blocked
+- **Labels**: comma, separated, labels
+- **Depends on**: task-X, task-Y (if blocked)
+- **Description**: Detailed description of what needs to be done
+
+## Questions
+List any questions that need to be resolved before implementation:
+1. Question one?
+2. Question two?
+
+## Blockers
+List any blockers that prevent progress:
+- Blocker description
+
+Do not include any other text or explanation. Only output the structured task breakdown.
+`)
+
+	return sb.String()
 }
 
 // readProjectSource reads content from various source types.
