@@ -117,6 +117,11 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
 
+		// Sandbox endpoints
+		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
+		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
+		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
+
 		// Project planning UI
 		mux.HandleFunc("GET /project", s.handleProjectUI)
 
@@ -138,6 +143,20 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/project/reorder", s.handleProjectReorder)
 		mux.HandleFunc("POST /api/v1/project/submit", s.handleProjectSubmit)
 		mux.HandleFunc("POST /api/v1/project/start", s.handleProjectStart)
+
+		// Quick tasks endpoints
+		mux.HandleFunc("GET /quick", s.handleQuickTasksUI)
+		mux.HandleFunc("GET /api/v1/quick", s.handleQuickTaskList)
+		mux.HandleFunc("POST /api/v1/quick", s.handleQuickTaskCreate)
+		// Quick task item endpoints using Go 1.22+ wildcard patterns
+		mux.HandleFunc("GET /api/v1/quick/{taskId}", s.handleQuickTaskGet)
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/note", s.handleQuickTaskNote)
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/optimize", s.handleQuickTaskOptimize)
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/export", s.handleQuickTaskExport)
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/submit", s.handleQuickTaskSubmit)
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleQuickTaskStart)
+		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleQuickTaskDelete)
+		mux.HandleFunc("GET /api/v1/quick/{taskId}/card", s.handleQuickTaskCard)
 	}
 
 	// Global mode routes
@@ -151,6 +170,11 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+
+		// Sandbox endpoints (also available in global mode)
+		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
+		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
+		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
 	}
 
 	// Switch project route (available when started in global mode)

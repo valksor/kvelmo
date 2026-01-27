@@ -101,6 +101,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		Error:            errorMsg,
 		Projects:         projects,
 		SelectedProject:  selectedProject,
+		SandboxStatus:    s.getSandboxStatus(),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

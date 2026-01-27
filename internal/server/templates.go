@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/sandbox"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -21,6 +22,7 @@ type Templates struct {
 	browser   *template.Template
 	history   *template.Template
 	license   *template.Template
+	quick     *template.Template
 	partials  map[string]*template.Template
 }
 
@@ -121,6 +123,17 @@ func LoadTemplates() (*Templates, error) {
 	}
 	t.license = license
 
+	// Load quick template
+	quick, err := template.New("quick.html").Funcs(templateFuncs()).ParseFS(
+		templateFS,
+		"templates/base.html",
+		"templates/quick.html",
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.quick = quick
+
 	// Load partials
 	partialNames := []string{"task_card", "actions", "specification", "question", "costs", "card", "modal", "input", "skeleton"}
 	for _, name := range partialNames {
@@ -182,6 +195,11 @@ func (t *Templates) RenderLicense(w io.Writer, data LicenseData) error {
 	return t.license.ExecuteTemplate(w, "base", data)
 }
 
+// RenderQuick renders the quick tasks page.
+func (t *Templates) RenderQuick(w io.Writer, data QuickData) error {
+	return t.quick.ExecuteTemplate(w, "base", data)
+}
+
 // DashboardData holds data for the dashboard template.
 type DashboardData struct {
 	Mode             string
@@ -199,18 +217,21 @@ type DashboardData struct {
 
 // TaskData holds task information for display.
 type TaskData struct {
-	ID       string
-	Title    string
-	State    string
-	Branch   string
-	Worktree string
-	Started  time.Time
-	Ref      string
+	ID            string
+	Title         string
+	State         string
+	Branch        string
+	Worktree      string
+	Started       time.Time
+	Ref           string
+	SandboxActive bool
 }
 
 // GuideData holds guidance information.
 type GuideData struct {
-	NextActions []ActionData
+	NextActions    []ActionData
+	SandboxEnabled bool
+	SandboxActive  bool
 }
 
 // ActionData holds action button information.
@@ -281,6 +302,7 @@ type SettingsData struct {
 	Error            string                    // Error message
 	Projects         []storage.ProjectMetadata // Available projects for picker (global mode)
 	SelectedProject  string                    // Currently selected project ID (global mode)
+	SandboxStatus    sandbox.Status            // Sandbox status information
 }
 
 // ProjectData holds data for the project planning template.
@@ -317,6 +339,14 @@ type LicenseData struct {
 	CanSwitchProject bool
 	IsGlobalMode     bool // True when in global mode
 	ProjectLicense   string
+}
+
+// QuickData holds data for the quick tasks template.
+type QuickData struct {
+	Mode             string
+	AuthEnabled      bool
+	IsGlobalMode     bool
+	CanSwitchProject bool
 }
 
 // Template helper functions.

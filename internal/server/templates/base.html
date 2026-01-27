@@ -76,6 +76,24 @@
             @apply w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all duration-200 ease-out;
         }
 
+        /* Enhanced input with better border contrast for dark mode */
+        .input-enhanced {
+            @apply border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-900;
+        }
+
+        /* Select dropdown with custom arrow */
+        select.input-enhanced {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25rem;
+            padding-right: 2.5rem;
+        }
+        .dark select.input-enhanced {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        }
+
         /* Status badge */
         .status-badge {
             @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium;
@@ -150,24 +168,39 @@
                             Dashboard
                         </a>
                         {{if not .IsGlobalMode}}
+                        <a href="/quick" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                            Quick Tasks
+                        </a>
                         <a href="/project" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                             Planning
                         </a>
                         {{end}}
-                        <a href="/settings" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
-                            Settings
-                        </a>
-                        {{if not .IsGlobalMode}}
-                        <a href="/browser" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
-                            Browser
-                        </a>
-                        <a href="/history" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
-                            History
-                        </a>
-                        {{end}}
-                        <a href="/license" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
-                            License
-                        </a>
+
+                        <!-- More dropdown menu -->
+                        <div class="relative">
+                            <button id="more-menu-btn" class="nav-link px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 transition-smooth rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 flex items-center gap-1">
+                                More
+                                <svg class="w-4 h-4 transition-transform duration-200" id="more-menu-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="more-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-surface-800 rounded-xl shadow-lg border border-surface-200 dark:border-surface-700 py-1 z-50">
+                                <a href="/settings" class="block px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth">
+                                    Settings
+                                </a>
+                                {{if not .IsGlobalMode}}
+                                <a href="/browser" class="block px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth">
+                                    Browser
+                                </a>
+                                <a href="/history" class="block px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth">
+                                    History
+                                </a>
+                                {{end}}
+                                <a href="/license" class="block px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth">
+                                    License
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -236,6 +269,9 @@
                         Dashboard
                     </a>
                     {{if not .IsGlobalMode}}
+                    <a href="/quick" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
+                        Quick Tasks
+                    </a>
                     <a href="/project" class="px-4 py-3 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-xl transition-smooth">
                         Planning
                     </a>
@@ -509,6 +545,89 @@
             });
         }
 
+        // Store cleanup functions to remove old listeners before adding new ones
+        let moreMenuClickOutsideHandler = null;
+        let moreMenuEscapeHandler = null;
+        let moreMenuBtnClickHandler = null;
+
+        /**
+         * Initialize the "More" dropdown menu functionality.
+         * Re-queries DOM elements each time to get fresh references after HTMX swaps.
+         * @return {void}
+         */
+        function initMoreMenu() {
+            const moreMenuBtn = document.getElementById('more-menu-btn');
+            const moreMenu = document.getElementById('more-menu');
+            const moreMenuChevron = document.getElementById('more-menu-chevron');
+
+            // Only initialize if the More menu button exists
+            if (!moreMenuBtn || !moreMenu) {
+                return;
+            }
+
+            // Remove old button click handler if it exists
+            if (moreMenuBtnClickHandler && moreMenuBtn) {
+                moreMenuBtn.removeEventListener('click', moreMenuBtnClickHandler);
+            }
+
+            // Remove old document-level listeners to prevent accumulation
+            if (moreMenuClickOutsideHandler) {
+                document.removeEventListener('click', moreMenuClickOutsideHandler);
+            }
+            if (moreMenuEscapeHandler) {
+                document.removeEventListener('keydown', moreMenuEscapeHandler);
+            }
+
+            // Button click handler - toggle dropdown
+            moreMenuBtnClickHandler = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                moreMenu.classList.toggle('hidden');
+                if (moreMenuChevron) {
+                    moreMenuChevron.classList.toggle('rotate-180');
+                }
+            };
+            moreMenuBtn.addEventListener('click', moreMenuBtnClickHandler);
+
+            // Click outside to close
+            moreMenuClickOutsideHandler = function(e) {
+                const currentMoreMenu = document.getElementById('more-menu');
+                const currentMoreMenuBtn = document.getElementById('more-menu-btn');
+                const currentMoreMenuChevron = document.getElementById('more-menu-chevron');
+
+                if (currentMoreMenu && !currentMoreMenu.classList.contains('hidden')) {
+                    if (!currentMoreMenuBtn || !currentMoreMenuBtn.contains(e.target)) {
+                        currentMoreMenu.classList.add('hidden');
+                        if (currentMoreMenuChevron) {
+                            currentMoreMenuChevron.classList.remove('rotate-180');
+                        }
+                    }
+                }
+            };
+
+            // Escape key to close
+            moreMenuEscapeHandler = function(e) {
+                const currentMoreMenu = document.getElementById('more-menu');
+                const currentMoreMenuChevron = document.getElementById('more-menu-chevron');
+
+                if (e.key === 'Escape' && currentMoreMenu && !currentMoreMenu.classList.contains('hidden')) {
+                    currentMoreMenu.classList.add('hidden');
+                    if (currentMoreMenuChevron) {
+                        currentMoreMenuChevron.classList.remove('rotate-180');
+                    }
+                }
+            };
+
+            document.addEventListener('click', moreMenuClickOutsideHandler);
+            document.addEventListener('keydown', moreMenuEscapeHandler);
+        }
+
+        // Initialize on page load
+        initMoreMenu();
+
+        // Expose initMoreMenu globally for HTMX afterSwap handler
+        window.initMoreMenu = initMoreMenu;
+
 
         // HTMX configuration
         document.body.addEventListener('htmx:beforeRequest', function(evt) {
@@ -539,6 +658,8 @@
             // This ensures the dark class is properly applied to documentElement
             initTheme();
             updateThemeIcons();
+            // Re-initialize the More menu dropdown to get fresh DOM references
+            initMoreMenu();
         });
 
         // SSE Reconnection Logic

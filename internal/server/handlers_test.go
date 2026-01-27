@@ -66,6 +66,16 @@ func doPost(ctx context.Context, client *http.Client, url string, body io.Reader
 	return client.Do(req)
 }
 
+// doDelete performs a DELETE request with context.
+func doDelete(ctx context.Context, client *http.Client, url string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Do(req)
+}
+
 func TestHandler_WorkflowStart_NoConductor(t *testing.T) {
 	cfg := Config{
 		Port:      0,

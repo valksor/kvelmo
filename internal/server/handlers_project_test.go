@@ -194,6 +194,7 @@ func TestProjectSubmitRequest(t *testing.T) {
 		CreateEpic: true,
 		Labels:     []string{"q1", "feature"},
 		DryRun:     true,
+		Mention:    "@manager please review",
 	}
 
 	data, err := json.Marshal(req)
@@ -217,6 +218,9 @@ func TestProjectSubmitRequest(t *testing.T) {
 	}
 	if decoded.DryRun != req.DryRun {
 		t.Errorf("DryRun = %v, want %v", decoded.DryRun, req.DryRun)
+	}
+	if decoded.Mention != req.Mention {
+		t.Errorf("Mention = %q, want %q", decoded.Mention, req.Mention)
 	}
 }
 
@@ -305,6 +309,88 @@ func TestProjectTaskResponse(t *testing.T) {
 	}
 	if len(decoded.Blocks) != 2 {
 		t.Errorf("Blocks length = %d, want 2", len(decoded.Blocks))
+	}
+}
+
+func TestProjectPlanResponse(t *testing.T) {
+	resp := projectPlanResponse{
+		QueueID: "queue-abc123",
+		Title:   "Test Project",
+		Source:  "research:/workspace/docs",
+		Tasks: []*projectTaskResponse{
+			{
+				ID:     "task-1",
+				Title:  "Task 1",
+				Status: "ready",
+			},
+		},
+		Questions: []string{"What is the scope?"},
+		Blockers:  []string{"Needs API access"},
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatalf("Failed to marshal: %v", err)
+	}
+
+	var decoded projectPlanResponse
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if decoded.QueueID != resp.QueueID {
+		t.Errorf("QueueID = %q, want %q", decoded.QueueID, resp.QueueID)
+	}
+	if decoded.Title != resp.Title {
+		t.Errorf("Title = %q, want %q", decoded.Title, resp.Title)
+	}
+	if decoded.Source != resp.Source {
+		t.Errorf("Source = %q, want %q", decoded.Source, resp.Source)
+	}
+	if len(decoded.Tasks) != 1 {
+		t.Errorf("Tasks length = %d, want 1", len(decoded.Tasks))
+	}
+	if len(decoded.Questions) != 1 {
+		t.Errorf("Questions length = %d, want 1", len(decoded.Questions))
+	}
+	if len(decoded.Blockers) != 1 {
+		t.Errorf("Blockers length = %d, want 1", len(decoded.Blockers))
+	}
+}
+
+func TestProjectQueueSummary(t *testing.T) {
+	summary := projectQueueSummary{
+		ID:        "queue-xyz",
+		Title:     "My Project",
+		Source:    "dir:/workspace/specs",
+		Status:    "draft",
+		TaskCount: 5,
+	}
+
+	data, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("Failed to marshal: %v", err)
+	}
+
+	var decoded projectQueueSummary
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if decoded.ID != summary.ID {
+		t.Errorf("ID = %q, want %q", decoded.ID, summary.ID)
+	}
+	if decoded.Title != summary.Title {
+		t.Errorf("Title = %q, want %q", decoded.Title, summary.Title)
+	}
+	if decoded.Source != summary.Source {
+		t.Errorf("Source = %q, want %q", decoded.Source, summary.Source)
+	}
+	if decoded.Status != summary.Status {
+		t.Errorf("Status = %q, want %q", decoded.Status, summary.Status)
+	}
+	if decoded.TaskCount != summary.TaskCount {
+		t.Errorf("TaskCount = %d, want %d", decoded.TaskCount, summary.TaskCount)
 	}
 }
 

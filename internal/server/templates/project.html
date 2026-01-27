@@ -289,6 +289,7 @@
                         <option value="asana">Asana</option>
                         <option value="clickup">ClickUp</option>
                     </select>
+                    <input type="text" id="submit-mention" placeholder="@manager please review" class="input py-2 text-sm flex-1 min-w-[200px]" title="Mention/notification to add to all submitted tasks">
                     <button type="button" onclick="submitTasks(true)" class="btn btn-secondary">Dry Run</button>
                     <button type="button" onclick="submitTasks(false)" class="btn btn-primary">Submit to Provider</button>
                     <button type="button" onclick="startImplementation()" class="btn btn-success">Start Implementation</button>
@@ -542,7 +543,12 @@ document.getElementById('plan-form').addEventListener('submit', async function(e
             throw new Error(err.error || 'Failed to create plan');
         }
         const planData = await planResp.json();
-        successEl.textContent = 'Plan created! Queue ID: ' + planData.queue_id + ', ' + planData.tasks.length + ' tasks identified.';
+        const sourceInfo = getSourceTypeLabel(planData.source || '');
+        const sourceBadge = sourceInfo.label !== 'Unknown' ?
+            ` <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-${sourceInfo.color}-100 dark:bg-${sourceInfo.color}-900/30 text-${sourceInfo.color}-700 dark:text-${sourceInfo.color}-400">
+                ${sourceInfo.label}
+            </span>` : '';
+        successEl.innerHTML = 'Plan created! Queue ID: ' + escapeHtml(planData.queue_id) + ', ' + planData.tasks.length + ' tasks identified.' + sourceBadge;
         successEl.classList.remove('hidden');
         setTimeout(() => {
             showProjectTab('tasks');
@@ -568,10 +574,17 @@ async function loadQueues() {
             container.innerHTML = '<p class="text-surface-500 dark:text-surface-400 text-center py-8">No queues yet. Create a plan to get started.</p>';
             return;
         }
-        container.innerHTML = data.queues.map(q => `
+        container.innerHTML = data.queues.map(q => {
+            const sourceInfo = getSourceTypeLabel(q.source);
+            return `
             <div class="p-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth flex items-center justify-between">
                 <div>
-                    <div class="font-semibold text-surface-900 dark:text-surface-100">${escapeHtml(q.title || q.id)}</div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-surface-900 dark:text-surface-100">${escapeHtml(q.title || q.id)}</span>
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-${sourceInfo.color}-100 dark:bg-${sourceInfo.color}-900/30 text-${sourceInfo.color}-700 dark:text-${sourceInfo.color}-400">
+                            ${sourceInfo.label}
+                        </span>
+                    </div>
                     <div class="text-sm text-surface-500 dark:text-surface-400">${q.task_count} tasks - ${escapeHtml(q.status)}</div>
                 </div>
                 <div class="flex gap-2">
@@ -579,7 +592,7 @@ async function loadQueues() {
                     <button type="button" onclick="deleteQueue('${q.id}')" class="btn btn-danger text-sm py-2">Delete</button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     } catch (err) {
         container.innerHTML = '<p class="text-error-600 dark:text-error-400 text-center py-4">Failed to load queues: ' + err.message + '</p>';
     }
@@ -693,6 +706,21 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Returns label and color for source type badge
+function getSourceTypeLabel(source) {
+    if (!source) return { label: 'Unknown', color: 'gray' };
+    if (source.startsWith('research:')) {
+        return { label: 'Reusing Docs', color: 'brand' };
+    } else if (source.startsWith('dir:')) {
+        return { label: 'From Files', color: 'surface' };
+    } else if (source.startsWith('file:')) {
+        return { label: 'From File', color: 'surface' };
+    } else if (source.includes(':')) {
+        return { label: 'From ' + source.split(':')[0], color: 'surface' };
+    }
+    return { label: 'New Plan', color: 'surface' };
 }
 
 let currentTasks = [];
@@ -933,11 +961,16 @@ async function autoReorder() {
 async function submitTasks(dryRun) {
     const queueId = document.getElementById('queue-selector').value;
     const provider = document.getElementById('submit-provider').value;
+    const mention = document.getElementById('submit-mention').value;
+    const body = {queue_id: queueId, provider: provider, dry_run: dryRun};
+    if (mention) {
+        body.mention = mention;
+    }
     try {
         const resp = await fetch('/api/v1/project/submit', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({queue_id: queueId, provider: provider, dry_run: dryRun})
+            body: JSON.stringify(body)
         });
         const data = await resp.json();
         if (dryRun) {

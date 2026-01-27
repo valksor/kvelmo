@@ -23,6 +23,7 @@ type projectPlanRequest struct {
 type projectPlanResponse struct {
 	QueueID   string                 `json:"queue_id"`
 	Title     string                 `json:"title"`
+	Source    string                 `json:"source"`
 	Tasks     []*projectTaskResponse `json:"tasks"`
 	Questions []string               `json:"questions,omitempty"`
 	Blockers  []string               `json:"blockers,omitempty"`
@@ -65,6 +66,7 @@ type projectSubmitRequest struct {
 	CreateEpic bool     `json:"create_epic,omitempty"`
 	Labels     []string `json:"labels,omitempty"`
 	DryRun     bool     `json:"dry_run,omitempty"`
+	Mention    string   `json:"mention,omitempty"` // Mention/notification to add to all submitted tasks
 }
 
 type projectSubmitResponse struct {
@@ -104,6 +106,7 @@ type projectQueueListResponse struct {
 type projectQueueSummary struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
+	Source    string `json:"source"`
 	Status    string `json:"status"`
 	TaskCount int    `json:"task_count"`
 }
@@ -145,6 +148,7 @@ func (s *Server) handleProjectPlan(w http.ResponseWriter, r *http.Request) {
 	resp := projectPlanResponse{
 		QueueID:   result.Queue.ID,
 		Title:     result.Queue.Title,
+		Source:    result.Queue.Source,
 		Tasks:     convertTasks(result.Tasks),
 		Questions: result.Questions,
 		Blockers:  result.Blockers,
@@ -185,6 +189,7 @@ func (s *Server) handleProjectQueues(w http.ResponseWriter, r *http.Request) {
 		queues = append(queues, &projectQueueSummary{
 			ID:        queue.ID,
 			Title:     queue.Title,
+			Source:    queue.Source,
 			Status:    string(queue.Status),
 			TaskCount: len(queue.Tasks),
 		})
@@ -538,6 +543,18 @@ func (s *Server) handleProjectSubmit(w http.ResponseWriter, r *http.Request) {
 		CreateEpic: req.CreateEpic,
 		Labels:     req.Labels,
 		DryRun:     req.DryRun,
+		Mention:    req.Mention,
+	}
+
+	// Use default mention from config if not provided in request
+	if opts.Mention == "" && s.config.Conductor != nil {
+		ws := s.config.Conductor.GetWorkspace()
+		if ws != nil {
+			cfg, err := ws.LoadConfig()
+			if err == nil && cfg.Providers.DefaultMention != "" {
+				opts.Mention = cfg.Providers.DefaultMention
+			}
+		}
 	}
 
 	result, err := s.config.Conductor.SubmitProjectTasks(r.Context(), queueID, opts)
