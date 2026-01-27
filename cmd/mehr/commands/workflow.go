@@ -24,6 +24,7 @@ States:
   implementing  AI agent implementing code
   reviewing     Code review in progress
   waiting       Waiting for your answer to agent question
+  paused        Paused due to budget limits
   checkpointing Creating git checkpoint
   reverting     Undo operation (restore previous checkpoint)
   restoring     Redo operation (restore forward checkpoint)
@@ -128,6 +129,10 @@ COMMANDS BY STATE:
     mehr answer "<response>"  Answer agent's question
     mehr note "<message>"     Add a note to the conversation
 
+  From paused (budget limit reached):
+    mehr budget status            Review budget limits
+    mehr budget resume --confirm  Resume after budget pause
+
   From done:
     mehr start <ref>     Start a new task
     mehr status --all     View all tasks
@@ -136,11 +141,15 @@ KEY TRANSITIONS:
   • idle → planning         "mehr plan"
   • planning → idle         Planning completes
   • planning → waiting      Agent asks question
+  • planning → paused       Budget limit reached
   • waiting → idle          Answer provided, ready to continue
   • idle → implementing     "mehr implement" (requires specifications)
+  • implementing → paused   Budget limit reached
   • implementing → idle     Implementation completes
   • idle → reviewing        "mehr review" (optional)
+  • reviewing → paused      Budget limit reached
   • reviewing → idle        Review completes
+  • paused → idle           Resume after budget confirmation
   • idle → done             "mehr finish"
   • idle → reverting        "mehr undo"
   • idle → restoring        "mehr redo"

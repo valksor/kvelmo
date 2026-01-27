@@ -152,8 +152,12 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		spinner := display.NewSpinner(spinnerMsg)
 		spinner.Start()
 		implErr = cond.RunImplementation(ctx)
-		if implErr != nil {
+		if implErr != nil && !errors.Is(implErr, conductor.ErrBudgetPaused) && !errors.Is(implErr, conductor.ErrBudgetStopped) {
 			spinner.StopWithError("Implementation failed")
+		} else if errors.Is(implErr, conductor.ErrBudgetPaused) {
+			spinner.StopWithWarning("Implementation paused due to budget limit")
+		} else if errors.Is(implErr, conductor.ErrBudgetStopped) {
+			spinner.StopWithError("Implementation stopped due to budget limit")
 		} else {
 			if implementDryRun {
 				spinner.StopWithSuccess("Implementation preview complete")
@@ -161,6 +165,22 @@ func runImplement(cmd *cobra.Command, args []string) error {
 				spinner.StopWithSuccess("Implementation complete")
 			}
 		}
+	}
+	if errors.Is(implErr, conductor.ErrBudgetPaused) {
+		fmt.Println(tkdisplay.WarningMsg("Task paused due to budget limit."))
+		fmt.Println(tkdisplay.Muted("Review budgets and resume when ready:"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget status"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget resume --confirm"))
+
+		return nil
+	}
+	if errors.Is(implErr, conductor.ErrBudgetStopped) {
+		fmt.Println(tkdisplay.ErrorMsg("Task stopped due to budget limit."))
+		fmt.Println(tkdisplay.Muted("Update budgets or start a new task:"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget set"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr start <ref>"))
+
+		return nil
 	}
 	if implErr != nil {
 		return fmt.Errorf("run implementation: %w", implErr)

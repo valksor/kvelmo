@@ -55,6 +55,7 @@ func TestWorkflowCommand_DocumentsAllStates(t *testing.T) {
 		"implementing",
 		"reviewing",
 		"waiting",
+		"paused",
 		"checkpointing",
 		"reverting",
 		"restoring",

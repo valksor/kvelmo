@@ -192,6 +192,10 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	case workflow.StateWaiting:
 		fmt.Println("  mehr answer \"response\"       # Respond to agent question")
 
+	case workflow.StatePaused:
+		fmt.Println("  mehr budget status            # Review budget limits")
+		fmt.Println("  mehr budget resume --confirm  # Resume after budget pause")
+
 	case workflow.StateCheckpointing:
 		fmt.Println("  mehr status                # View checkpoint progress")
 

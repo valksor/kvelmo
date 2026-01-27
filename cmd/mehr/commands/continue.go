@@ -154,6 +154,9 @@ func runContinue(cmd *cobra.Command, args []string) error {
 		fmt.Println("  mehr implement  # Retry implementation")
 	case workflow.StateWaiting:
 		fmt.Println("  mehr answer     # Respond to agent question")
+	case workflow.StatePaused:
+		fmt.Println("  mehr budget resume --confirm  # Resume after budget pause")
+		fmt.Println("  mehr budget status            # Review budget limits")
 	case workflow.StateCheckpointing:
 		fmt.Println("  Please wait...  # Creating checkpoint")
 	case workflow.StateReverting:
@@ -213,6 +216,10 @@ func executeNextStep(ctx context.Context, cond *conductor.Conductor, status *con
 		fmt.Println("Agent is waiting for a response - cannot auto-continue")
 
 		return errors.New("agent is waiting for user input")
+	case workflow.StatePaused:
+		fmt.Println("Task is paused due to budget limits - resume required")
+
+		return errors.New("task is paused due to budget limits")
 	case workflow.StateCheckpointing, workflow.StateReverting, workflow.StateRestoring:
 		fmt.Println("Operation in progress - please wait")
 
