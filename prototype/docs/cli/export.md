@@ -188,19 +188,6 @@ project/
     └── ideas.md
 ```
 
-## Web UI
-
-When running `mehr serve`, export is available via:
-
-- **POST /api/v1/quick/{taskId}/export** - Export task API
-
-Request body:
-```json
-{
-  "output": "specs/feature.md"
-}
-```
-
 ## See Also
 
 - [quick](quick.md) - Create quick tasks

@@ -180,10 +180,7 @@ mehr project tasks --queue-id=quick-tasks
 
 ### Delete Tasks
 
-```bash
-# Via Web UI (when running mehr serve)
-# Navigate to /quick and click delete on a task
-```
+Tasks can be deleted via the Web UI or API. See [REST API](../web-ui/api.md#quick-tasks) for details.
 
 ## Task Priority Levels
 
@@ -210,15 +207,6 @@ mehr plan
 mehr implement
 mehr finish
 ```
-
-## Web UI
-
-When running `mehr serve`, quick tasks are accessible at:
-
-- **http://localhost:8080/quick** - Quick tasks UI
-- **POST /api/v1/quick** - Create task API
-- **GET /api/v1/quick** - List tasks API
-- **GET /api/v1/quick/{taskId}** - Get task API
 
 ## See Also
 

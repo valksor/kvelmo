@@ -33,6 +33,7 @@ Description of what needs to be done.
 | `agent_args` | array | CLI arguments for the agent |
 | `agent_env` | object | Environment variables for the agent |
 | `agent_steps` | object | Per-step agent configuration |
+| `budget` | object | Task budget configuration (cost/tokens) |
 
 ## Frontmatter Examples
 
@@ -98,6 +99,20 @@ agent_steps:
 ```
 
 See [AI Agents](../agents/index.md#per-step-agent-configuration) for details on agent configuration.
+
+### With Budget Limits
+
+```yaml
+---
+title: Webhook Integration
+budget:
+  max_cost: 5.00
+  max_tokens: 50000
+  currency: USD
+  on_limit: pause
+  warning_at: 0.8
+---
+```
 
 ## Body Content
 

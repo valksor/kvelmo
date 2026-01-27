@@ -173,6 +173,60 @@ Configure external task provider connections:
 
 Click **"Configure"** to set up provider credentials.
 
+### License Information
+
+View license and dependency information:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  License Information                                         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Project License: BSD 3-Clause                              │
+│  Copyright (c) 2025+, Dāvis Zālītis (k0d3r1s)                 │
+│  Copyright (c) 2025+, SIA Valksor                             │
+│                                                              │
+│  [View Full License Text]                                     │
+│                                                              │
+│  Dependency Licenses:                                         │
+│    MIT                    12 packages                           │
+│    BSD-3-Clause           8 packages                           │
+│    BSD-style              5 packages                           │
+│    Unknown                1 package                            │
+│                                                              │
+│  [Export Attribution] [Filter Unknown]                        │
+│                                                              │
+│  Open Source Licenses Used:                                  │
+│    • google.golang.org/protobuf    BSD-3-Clause               │
+│    • github.com/stretchr/testify    MIT                       │
+│    • github.com/valksor/go-toolkit  BSD-3-Clause               │
+│    • gopkg.in/yaml.v3               MIT                       │
+│    • golang.org/x/crypto            BSD-style                  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+- **View Project License** - Full BSD 3-Clause license text
+- **Dependency List** - All Go module dependencies with licenses
+- **SPRF Detection** - Standardized license identifiers (MIT, Apache-2.0, etc.)
+- **Export Attribution** - Generate machine-readable attribution data
+- **Filter Unknown** - Show only packages with undetectable licenses
+
+**License Types:**
+
+| Type | Examples |
+|------|----------|
+| Permissive | MIT, BSD, Apache-2.0 |
+| Reciprocal | GPL-2.0, MPL-2.0 |
+| Restricted | AGPL-3.0, GPL-3.0 |
+| Unknown | Custom or undetectable |
+
+When distributing software that includes Mehrhof, ensure you:
+1. Preserve license notices
+2. Acknowledge dependencies
+3. Comply with reciprocal license terms
+
 ## Saving Changes
 
 1. Make your desired changes

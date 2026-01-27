@@ -2,6 +2,8 @@
 
 List and manage task providers.
 
+> **Note:** Provider management is CLI-only. Provider authentication is configured in the [Web UI Settings](../web-ui/settings.md) under Providers.
+
 ## Synopsis
 
 ```bash

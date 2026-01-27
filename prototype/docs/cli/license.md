@@ -130,26 +130,6 @@ The detector classifies licenses into these types:
 | Restricted    | AGPL-3.0, GPL-3.0                            |
 | Unknown       | Custom or undetectable license text          |
 
-## Web UI
-
-License information is also available in the web UI:
-
-- Navigate to **Settings → License**
-- View project license and all dependency licenses
-- Export license information for attribution
-
-## API Endpoints
-
-When using `mehr serve`, license information is available via API:
-
-```bash
-# Get project license
-curl http://localhost:8080/api/v1/license
-
-# Get dependency licenses
-curl http://localhost:8080/api/v1/license/info
-```
-
 ## Attribution
 
 When distributing software that includes Mehrhof, ensure you:

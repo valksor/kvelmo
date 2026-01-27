@@ -12,20 +12,40 @@
 - **Web UI**
   - [Overview](web-ui/index.md)
   - [Getting Started](web-ui/getting-started.md)
+  - [Dashboard](web-ui/dashboard.md)
+
+  **Task Workflows**
   - [Creating Tasks](web-ui/creating-tasks.md)
   - [Planning](web-ui/planning.md)
   - [Implementing](web-ui/implementing.md)
   - [Reviewing](web-ui/reviewing.md)
   - [Finishing](web-ui/finishing.md)
   - [Continuing](web-ui/continuing.md)
+  - [Auto Mode](web-ui/auto.md)
   - [Undo & Redo](web-ui/undo-redo.md)
-  - [Notes](web-ui/notes.md)
-  - [Dashboard](web-ui/dashboard.md)
+
+  **Quick Tasks**
+  - [Quick Tasks](web-ui/quick-tasks.md)
+
+  **Project Planning**
+  - [Project Planning](web-ui/project-planning.md)
+
+  **Management**
   - [Task History](web-ui/task-history.md)
+  - [Notes](web-ui/notes.md)
+  - [Security & Quality](web-ui/security-quality.md)
+  - [Memory](web-ui/memory.md)
+  - [Templates](web-ui/templates.md)
+
+  **Configuration**
   - [Settings](web-ui/settings.md)
+  - [Authentication](web-ui/authentication.md)
+
+  **Tools**
   - [Browser Control](web-ui/browser.md)
   - [Remote Access](web-ui/remote-access.md)
-  - [Authentication](web-ui/authentication.md)
+
+  **Reference**
   - [REST API](web-ui/api.md)
 
 - **Core Concepts**

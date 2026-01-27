@@ -189,19 +189,6 @@ For cost-sensitive workflows, consider:
 - Using a faster/cheaper model for optimization
 - Manually editing exported markdown files
 
-## Web UI
-
-When running `mehr serve`, optimization is available via:
-
-- **POST /api/v1/quick/{taskId}/optimize** - Optimize task API
-
-Request body:
-```json
-{
-  "agent": "claude-opus"  // optional agent override
-}
-```
-
 ## See Also
 
 - [quick](quick.md) - Create quick tasks

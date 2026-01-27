@@ -101,6 +101,7 @@ The `guide` command provides different suggestions based on the current workflow
 | `reviewing`    | `status`, `finish`, `implement`                                 |
 | `done`         | Start new task                                                  |
 | `waiting`      | `answer` (respond to question)                                  |
+| `paused`       | `budget status`, `budget resume --confirm`                      |
 | `failed`       | `status`, `note`, start new task                                |
 
 ## Worktree Support

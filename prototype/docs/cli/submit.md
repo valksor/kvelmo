@@ -212,21 +212,6 @@ Submitting a task that was already submitted will:
 - Add a comment if `--comment` is provided
 - Not create a duplicate
 
-## Web UI
-
-When running `mehr serve`, submission is available via:
-
-- **POST /api/v1/quick/{taskId}/submit** - Submit task API
-
-Request body:
-```json
-{
-  "provider": "github",
-  "labels": ["urgent", "bug"],
-  "dry_run": false
-}
-```
-
 ## See Also
 
 - [quick](quick.md) - Create quick tasks

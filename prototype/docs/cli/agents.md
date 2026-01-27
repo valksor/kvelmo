@@ -2,6 +2,8 @@
 
 Manage AI agents including built-in agents and user-defined aliases.
 
+> **Note:** Agent listing is CLI-only. Agents are configured in the [Web UI Settings](../web-ui/settings.md) under the Agent section.
+
 ## Synopsis
 
 ```bash

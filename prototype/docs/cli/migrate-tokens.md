@@ -2,6 +2,8 @@
 
 Migrate provider authentication tokens from plaintext to environment variable references.
 
+> **Note:** This is a CLI-only maintenance command. Run once to migrate your configuration to the recommended `${VAR}` syntax.
+
 ## Synopsis
 
 ```bash
