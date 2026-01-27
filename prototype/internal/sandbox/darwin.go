@@ -34,6 +34,7 @@ func newPlatformSandbox(cfg *Config) (Sandbox, error) {
 // Prepare generates the SBPL profile and writes it to a temp file.
 func (s *DarwinSandbox) Prepare(ctx context.Context) error {
 	s.profile = s.buildSBPLProfile()
+
 	return nil
 }
 
@@ -46,7 +47,7 @@ func (s *DarwinSandbox) Cleanup(ctx context.Context) error {
 // WrapCommand wraps the command with sandbox-exec.
 func (s *DarwinSandbox) WrapCommand(cmd *exec.Cmd) (*exec.Cmd, error) {
 	// If a custom profile is provided, write it to a temp file
-	profilePath := ""
+	var profilePath string
 	if s.cfg.Profile != "" {
 		var err error
 		profilePath, err = s.writeProfileFile(s.cfg.Profile)
@@ -59,7 +60,7 @@ func (s *DarwinSandbox) WrapCommand(cmd *exec.Cmd) (*exec.Cmd, error) {
 	}
 
 	// Build sandbox-exec command
-	newCmd := exec.Command("sandbox-exec")
+	newCmd := exec.CommandContext(context.Background(), "sandbox-exec")
 	if profilePath != "" {
 		newCmd.Args = []string{"sandbox-exec", "-f", profilePath}
 	} else {
@@ -157,13 +158,13 @@ func (s *DarwinSandbox) writeExecRules(b *strings.Builder) {
 	}
 	for _, tool := range commonTools {
 		if _, err := os.Stat(tool); err == nil {
-			b.WriteString(fmt.Sprintf("(allow process-exec (literal \"%s\"))\n", tool))
+			fmt.Fprintf(b, "(allow process-exec (literal \"%s\"))\n", tool)
 		}
 	}
 
 	// Custom tools from config
 	for _, tool := range s.cfg.Tools {
-		b.WriteString(fmt.Sprintf("(allow process-exec (literal \"%s\"))\n", tool))
+		fmt.Fprintf(b, "(allow process-exec (literal \"%s\"))\n", tool)
 	}
 }
 
@@ -174,6 +175,7 @@ func (s *DarwinSandbox) writeProfileFile(profile string) (string, error) {
 	if err := os.WriteFile(tmpFile, []byte(profile), 0o644); err != nil {
 		return "", fmt.Errorf("write profile file: %w", err)
 	}
+
 	return tmpFile, nil
 }
 
@@ -182,6 +184,7 @@ func sanitizePath(p string) string {
 	// Escape backslashes and quotes
 	p = strings.ReplaceAll(p, "\\", "\\\\")
 	p = strings.ReplaceAll(p, "\"", "\\\"")
+
 	return p
 }
 
@@ -211,5 +214,6 @@ func DefaultToolPaths() []string {
 			}
 		}
 	}
+
 	return result
 }
