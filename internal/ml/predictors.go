@@ -61,6 +61,10 @@ func (n *NextActionPredictor) Predict(ctx context.Context, task *storage.TaskWor
 		nextAction = "finish"
 		confidence = 0.9
 		reasoning = "Review complete, ready to finish"
+	case workflow.StatePaused:
+		nextAction = "budget resume"
+		confidence = 0.6
+		reasoning = "Task paused due to budget limits, resume required"
 	case workflow.StateDone, workflow.StateFailed, workflow.StateWaiting, workflow.StateCheckpointing, workflow.StateReverting, workflow.StateRestoring:
 		nextAction = "continue"
 		confidence = 0.5

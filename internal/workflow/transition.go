@@ -44,6 +44,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 	{StatePlanning, EventWait}: {
 		{From: StatePlanning, Event: EventWait, To: StateWaiting},
 	},
+	{StatePlanning, EventPause}: {
+		{From: StatePlanning, Event: EventPause, To: StatePaused},
+	},
 
 	// === Waiting (agent asked question) ===
 	{StateWaiting, EventAnswer}: {
@@ -51,6 +54,14 @@ var TransitionTable = map[TransitionKey][]Transition{
 	},
 	{StateWaiting, EventPlan}: {
 		{From: StateWaiting, Event: EventPlan, To: StatePlanning}, // Re-enter planning after answer
+	},
+	{StateWaiting, EventPause}: {
+		{From: StateWaiting, Event: EventPause, To: StatePaused},
+	},
+
+	// === Paused (budget limits) ===
+	{StatePaused, EventResume}: {
+		{From: StatePaused, Event: EventResume, To: StateIdle},
 	},
 
 	// === Implementation Phase ===
@@ -69,6 +80,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 	{StateImplementing, EventUndo}: {
 		{From: StateImplementing, Event: EventUndo, To: StateReverting, Guards: []GuardFunc{GuardCanUndo}},
 	},
+	{StateImplementing, EventPause}: {
+		{From: StateImplementing, Event: EventPause, To: StatePaused},
+	},
 
 	// === Review Phase ===
 	{StateIdle, EventReview}: {
@@ -79,6 +93,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 	},
 	{StateReviewing, EventError}: {
 		{From: StateReviewing, Event: EventError, To: StateIdle},
+	},
+	{StateReviewing, EventPause}: {
+		{From: StateReviewing, Event: EventPause, To: StatePaused},
 	},
 
 	// === Finish ===

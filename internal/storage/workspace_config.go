@@ -14,6 +14,7 @@ type WorkspaceConfig struct {
 	Git           GitSettings                 `yaml:"git"`
 	Agent         AgentSettings               `yaml:"agent"`
 	Workflow      WorkflowSettings            `yaml:"workflow"`
+	Budget        BudgetSettings              `yaml:"budget,omitempty"`
 	Providers     ProvidersSettings           `yaml:"providers,omitempty"`
 	Env           map[string]string           `yaml:"env,omitempty"`
 	Agents        map[string]AgentAliasConfig `yaml:"agents,omitempty"`
@@ -40,6 +41,7 @@ type WorkspaceConfig struct {
 	Orchestration *OrchestrationSettings      `yaml:"orchestration,omitempty"`
 	ML            *MLSettings                 `yaml:"ml,omitempty"`
 	Sandbox       *SandboxSettings            `yaml:"sandbox,omitempty"`
+	Labels        *LabelSettings              `yaml:"labels,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -437,6 +439,20 @@ type WorkflowSettings struct {
 	Simplify             SimplifySettings `yaml:"simplify,omitempty"`     // Simplification command settings
 }
 
+// BudgetSettings holds budget configuration for costs and tokens.
+type BudgetSettings struct {
+	PerTask       BudgetConfig          `yaml:"per_task,omitempty"`       // Default budget for tasks
+	Monthly       MonthlyBudgetSettings `yaml:"monthly,omitempty"`        // Monthly workspace budget
+	ExchangeRates map[string]float64    `yaml:"exchange_rates,omitempty"` // Currency conversion rates (to USD)
+}
+
+// MonthlyBudgetSettings defines a workspace monthly budget.
+type MonthlyBudgetSettings struct {
+	MaxCost   float64 `yaml:"max_cost,omitempty"`
+	Currency  string  `yaml:"currency,omitempty"`
+	WarningAt float64 `yaml:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
+}
+
 // UpdateSettings holds update-related configuration.
 type UpdateSettings struct {
 	Enabled       bool `yaml:"enabled"`        // Enable automatic update checks
@@ -468,6 +484,19 @@ type ProvidersSettings struct {
 	DefaultMention string `yaml:"default_mention,omitempty"` // Default mention text when submitting tasks (e.g., "@manager please review")
 }
 
+// LabelDefinition defines a label with optional color.
+type LabelDefinition struct {
+	Name  string `yaml:"name"`            // Label name (e.g., "priority:high")
+	Color string `yaml:"color,omitempty"` // Optional CSS color class (overrides hash-based color)
+}
+
+// LabelSettings holds label-related configuration.
+type LabelSettings struct {
+	Enabled     bool              `yaml:"enabled,omitempty"`     // Enable label system (default: true)
+	Defined     []LabelDefinition `yaml:"defined,omitempty"`     // Predefined labels with colors
+	Suggestions []string          `yaml:"suggestions,omitempty"` // Suggested labels for autocomplete
+}
+
 // NewDefaultWorkspaceConfig creates a WorkspaceConfig with default values.
 func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 	return &WorkspaceConfig{
@@ -490,6 +519,20 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			DeleteWorkOnFinish:   false, // Keep work dirs by default on finish
 			DeleteWorkOnAbandon:  true,  // Delete work dirs by default on abandon
 		},
+		Budget: BudgetSettings{
+			PerTask: BudgetConfig{
+				MaxTokens: 100000,
+				MaxCost:   10.00,
+				Currency:  "USD",
+				OnLimit:   "warn",
+				WarningAt: 0.8,
+			},
+			Monthly: MonthlyBudgetSettings{
+				MaxCost:   100.00,
+				Currency:  "USD",
+				WarningAt: 0.8,
+			},
+		},
 		Providers: ProvidersSettings{
 			Default: "file",
 		},
@@ -502,6 +545,31 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 		},
 		Specification: SpecificationSettings{
 			SaveInProject: false, // Default: disabled (specs stored in ~/.mehrhof only)
+		},
+		Labels: &LabelSettings{
+			Enabled: true,
+			Defined: []LabelDefinition{
+				{Name: "priority:critical"},
+				{Name: "priority:high"},
+				{Name: "priority:medium"},
+				{Name: "priority:low"},
+				{Name: "type:bug"},
+				{Name: "type:feature"},
+				{Name: "type:refactor"},
+				{Name: "type:docs"},
+				{Name: "type:test"},
+				{Name: "team:frontend"},
+				{Name: "team:backend"},
+				{Name: "team:devops"},
+				{Name: "status:blocked"},
+				{Name: "status:in-review"},
+			},
+			Suggestions: []string{
+				"priority:critical", "priority:high", "priority:medium", "priority:low",
+				"type:bug", "type:feature", "type:refactor", "type:docs", "type:test",
+				"team:frontend", "team:backend", "team:devops",
+				"status:blocked", "status:in-review",
+			},
 		},
 		Env: make(map[string]string),
 	}
@@ -824,6 +892,38 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #             - Use descriptive names (no abbreviations)
 #             - Keep functions under 50 lines
 #             - Prefer composition over inheritance
+`
+	}
+
+	// Add labels section comment if labels is nil or default
+	if cfg.Labels == nil || (len(cfg.Labels.Defined) == 0 && len(cfg.Labels.Suggestions) == 0) {
+		content += `
+# Label settings
+# Configure predefined labels and suggestions for task organization
+# Example:
+# labels:
+#     enabled: true                  # Enable label system
+#     defined:                       # Predefined labels with custom colors
+#         - name: priority:critical
+#           color: bg-red-100 text-red-800
+#         - name: priority:high
+#         - name: type:bug
+#         - name: team:frontend
+#     suggestions:                   # Suggested labels for autocomplete
+#         - priority:critical
+#         - priority:high
+#         - priority:medium
+#         - priority:low
+#         - type:bug
+#         - type:feature
+#         - type:refactor
+#         - type:docs
+#         - type:test
+#         - team:frontend
+#         - team:backend
+#         - team:devops
+#         - status:blocked
+#         - status:in-review
 `
 	}
 

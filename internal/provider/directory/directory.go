@@ -158,6 +158,16 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 				}
 			}
 		}
+		// Budget configuration from frontmatter
+		if frontmatter.Budget != nil {
+			wu.Budget = &provider.BudgetConfig{
+				MaxTokens: frontmatter.Budget.MaxTokens,
+				MaxCost:   frontmatter.Budget.MaxCost,
+				Currency:  frontmatter.Budget.Currency,
+				OnLimit:   frontmatter.Budget.OnLimit,
+				WarningAt: frontmatter.Budget.WarningAt,
+			}
+		}
 	}
 
 	// Scan directory and track all files as attachments

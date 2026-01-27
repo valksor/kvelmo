@@ -560,6 +560,16 @@ func (c *Conductor) registerTask(taskID, reference string, workUnit *provider.Wo
 	if c.taskAgentConfig != nil && len(c.taskAgentConfig.Env) > 0 {
 		work.Agent.InlineEnv = c.taskAgentConfig.Env
 	}
+	// Store task budget if provided by the source
+	if workUnit.Budget != nil {
+		work.Budget = &storage.BudgetConfig{
+			MaxTokens: workUnit.Budget.MaxTokens,
+			MaxCost:   workUnit.Budget.MaxCost,
+			Currency:  workUnit.Budget.Currency,
+			OnLimit:   workUnit.Budget.OnLimit,
+			WarningAt: workUnit.Budget.WarningAt,
+		}
+	}
 
 	if err := c.workspace.SaveWork(work); err != nil {
 		return fmt.Errorf("save work: %w", err)

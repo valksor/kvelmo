@@ -16,12 +16,14 @@ type ActiveTask struct {
 
 // TaskWork represents the work directory structure (.mehrhof/work/<id>/).
 type TaskWork struct {
-	Version  string       `yaml:"version"`
-	Metadata WorkMetadata `yaml:"metadata"`
-	Source   SourceInfo   `yaml:"source"`
-	Git      GitInfo      `yaml:"git,omitempty"`
-	Agent    AgentInfo    `yaml:"agent,omitempty"`
-	Costs    CostStats    `yaml:"costs,omitempty"`
+	Version      string        `yaml:"version"`
+	Metadata     WorkMetadata  `yaml:"metadata"`
+	Source       SourceInfo    `yaml:"source"`
+	Git          GitInfo       `yaml:"git,omitempty"`
+	Agent        AgentInfo     `yaml:"agent,omitempty"`
+	Costs        CostStats     `yaml:"costs,omitempty"`
+	Budget       *BudgetConfig `yaml:"budget,omitempty"`
+	BudgetStatus *BudgetStatus `yaml:"budget_status,omitempty"`
 }
 
 // WorkMetadata holds task identification.
@@ -33,9 +35,10 @@ type WorkMetadata struct {
 	UpdatedAt time.Time `yaml:"updated_at"`
 
 	// Naming fields for branch/commit customization
-	ExternalKey string `yaml:"external_key,omitempty"` // User-facing key (e.g., "FEATURE-123")
-	TaskType    string `yaml:"task_type,omitempty"`    // Task type (e.g., "feature", "fix")
-	Slug        string `yaml:"slug,omitempty"`         // URL-safe title slug
+	ExternalKey string   `yaml:"external_key,omitempty"` // User-facing key (e.g., "FEATURE-123")
+	TaskType    string   `yaml:"task_type,omitempty"`    // Task type (e.g., "feature", "fix")
+	Slug        string   `yaml:"slug,omitempty"`         // URL-safe title slug
+	Labels      []string `yaml:"labels,omitempty"`       // Task labels for filtering and grouping
 }
 
 // SourceInfo tracks the original source (read-only reference).
@@ -155,6 +158,23 @@ type StepCostStats struct {
 	CachedTokens int     `yaml:"cached_tokens,omitempty"`
 	CostUSD      float64 `yaml:"cost_usd"`
 	Calls        int     `yaml:"calls"` // Number of agent calls in this step
+}
+
+// BudgetConfig defines cost/token budgets for a task.
+type BudgetConfig struct {
+	MaxTokens int     `yaml:"max_tokens,omitempty"`
+	MaxCost   float64 `yaml:"max_cost,omitempty"`
+	Currency  string  `yaml:"currency,omitempty"`
+	OnLimit   string  `yaml:"on_limit,omitempty"`   // warn | pause | stop
+	WarningAt float64 `yaml:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
+}
+
+// BudgetStatus tracks warning/limit status for a task budget.
+type BudgetStatus struct {
+	Warned     bool      `yaml:"warned,omitempty"`
+	WarnedAt   time.Time `yaml:"warned_at,omitempty"`
+	LimitHit   bool      `yaml:"limit_hit,omitempty"`
+	LimitHitAt time.Time `yaml:"limit_hit_at,omitempty"`
 }
 
 // Exchange represents a single message in a session.
