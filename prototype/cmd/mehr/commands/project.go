@@ -43,6 +43,9 @@ var (
 	projectSubmitCreateEpic bool
 	projectSubmitLabels     string
 	projectSubmitDryRun     bool
+	projectSubmitTasks      string
+	projectSubmitComment    string
+	projectSubmitMention    string
 
 	// start flags.
 	projectStartAuto bool
@@ -54,7 +57,7 @@ var projectCmd = &cobra.Command{
 	Long: `Project planning workflow that creates local task queues from any source.
 
 The project workflow:
-1. Create a plan from any source (dir, file, provider reference)
+1. Create a plan from any source (dir, research, file, provider reference)
 2. Review and edit tasks locally
 3. Submit tasks to an external provider
 4. Start implementing tasks in order
@@ -68,7 +71,7 @@ COMMANDS:
   start     Start implementing tasks from the queue
 
 EXAMPLES:
-  mehr project plan dir:/workspace/.final/ --title "Q1 Features"
+  mehr project plan research:/workspace/docs/ --title "Q1 Features"
   mehr project tasks --status ready
   mehr project edit task-2 --priority 1
   mehr project submit --provider wrike
@@ -81,8 +84,9 @@ var projectPlanCmd = &cobra.Command{
 	Long: `Create a task breakdown from a source using AI.
 
 SOURCES:
-  dir:/path/to/dir        Directory of files to analyze
+  dir:/path/to/dir        Directory of files to analyze (reads all content)
   file:/path/to/file.md   Single file to analyze
+  research:/path/to/dir   Directory for AI to research (agent explores selectively)
   github:123              GitHub issue
   jira:PROJ-123           Jira issue
   wrike:abc123            Wrike task
@@ -90,8 +94,15 @@ SOURCES:
 The AI will analyze the source content and create a structured
 task breakdown with dependencies, priorities, and labels.
 
+DIFFERENCES BETWEEN SOURCE TYPES:
+  dir:         Reads ALL file contents into the prompt (best for <50 files)
+  research:    Provides file manifest, AI uses Read/Grep tools (best for large docs)
+  file:        Single file analysis
+  <provider>:  Fetches from external task provider
+
 EXAMPLES:
-  mehr project plan dir:/workspace/.final/
+  mehr project plan research:/workspace/.final/ --title "Reports System"
+  mehr project plan dir:/workspace/specs/
   mehr project plan file:requirements.md --title "Auth System"
   mehr project plan github:123`,
 	Args: cobra.ExactArgs(1),
@@ -220,6 +231,9 @@ func init() {
 	projectSubmitCmd.Flags().BoolVar(&projectSubmitCreateEpic, "create-epic", false, "Create epic/project")
 	projectSubmitCmd.Flags().StringVar(&projectSubmitLabels, "labels", "", "Labels (comma-separated)")
 	projectSubmitCmd.Flags().BoolVar(&projectSubmitDryRun, "dry-run", false, "Preview only")
+	projectSubmitCmd.Flags().StringVar(&projectSubmitTasks, "task", "", "Submit only these task IDs (comma-separated, e.g. task-3,task-5)")
+	projectSubmitCmd.Flags().StringVar(&projectSubmitComment, "comment", "", "Comment to add to already-submitted tasks when using --task")
+	projectSubmitCmd.Flags().StringVar(&projectSubmitMention, "mention", "", "Mention/notification to add to all submitted tasks (e.g. @manager)")
 
 	// start flags
 	projectStartCmd.Flags().BoolVar(&projectStartAuto, "auto", false, "Auto-chain through all tasks")
@@ -548,6 +562,25 @@ func runProjectSubmit(cmd *cobra.Command, args []string) error {
 		CreateEpic: projectSubmitCreateEpic,
 		Labels:     labels,
 		DryRun:     projectSubmitDryRun,
+	}
+	if projectSubmitTasks != "" {
+		tasks := strings.Split(projectSubmitTasks, ",")
+		for i, task := range tasks {
+			tasks[i] = strings.TrimSpace(task)
+		}
+		opts.TaskIDs = tasks
+	}
+	if projectSubmitComment != "" {
+		opts.Comment = projectSubmitComment
+	}
+	if projectSubmitMention != "" {
+		opts.Mention = projectSubmitMention
+	} else {
+		// Use default mention from config if flag not provided
+		cfg, err := cond.GetWorkspace().LoadConfig()
+		if err == nil && cfg.Providers.DefaultMention != "" {
+			opts.Mention = cfg.Providers.DefaultMention
+		}
 	}
 
 	result, err := cond.SubmitProjectTasks(ctx, queueID, opts)

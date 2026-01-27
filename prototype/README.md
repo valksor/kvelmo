@@ -36,6 +36,7 @@ Mehrhof is an AI-powered development assistant that helps you plan, implement, a
 - **Browser automation** - Chrome automation for web testing, scraping, and authentication flows
 - **MCP server** - Expose commands and workspace data to AI agents via Model Context Protocol
 - **Semantic memory** - Store and search past tasks using vector embeddings for context-aware AI
+- **Agent sandboxing** - Isolate agent execution with Linux user namespaces or macOS sandbox-exec
 - **Security scanning** - Integrated SAST (gosec), secret detection (gitleaks), and vulnerability scanning (govulncheck) with automatic tool downloading and caching
 - **Multi-agent orchestration** - Run multiple agents in parallel, sequentially, or consensus modes
 - **ML predictions** - Predict task complexity and resource requirements from historical data
@@ -288,6 +289,7 @@ Mehrhof supports 16+ task sources. Use provider schemes to load tasks:
 | Empty | `empty:` | `empty:FEATURE-1` | [empty](https://valksor.com/docs/mehrhof/nightly/#/providers/empty) |
 | File | `file:` | `file:task.md` | [file](https://valksor.com/docs/mehrhof/nightly/#/providers/file) |
 | Directory | `dir:` | `dir:./tasks/` | [directory](https://valksor.com/docs/mehrhof/nightly/#/providers/directory) |
+| Research | `research:` | `research:/path/to/docs` | [CLI-only, agent explores large docs](#project-planning-with-dependencies) |
 | GitHub | `github:` | `github:123` | [github](https://valksor.com/docs/mehrhof/nightly/#/providers/github) |
 | GitLab | `gitlab:` | `gitlab:123` | [gitlab](https://valksor.com/docs/mehrhof/nightly/#/providers/gitlab) |
 | Bitbucket | `bitbucket:` | `bitbucket:123` | [bitbucket](https://valksor.com/docs/mehrhof/nightly/#/providers/bitbucket) |
@@ -312,8 +314,11 @@ providers:
 Plan multi-task projects with dependency tracking:
 
 ```bash
-# Create task breakdown from specs
-mehr project plan dir:/workspace/.final/ --title "Auth System"
+# Create task breakdown from specs (reads all files)
+mehr project plan dir:/workspace/specs/ --title "Auth System"
+
+# Create task breakdown from large docs (agent explores selectively)
+mehr project plan research:/workspace/.final/ --title "Reports System"
 
 # Plan from a provider task (fetches details from provider)
 mehr project plan github:123 --title "From Issue"
@@ -331,7 +336,16 @@ mehr project submit --provider wrike
 mehr project start --auto
 ```
 
-**Features:** Multiple source types (files, directories, providers), AI task ordering, and provider integration.
+**Source Types:**
+
+| Source | Description | Best For |
+|--------|-------------|----------|
+| `dir:` | Reads ALL file contents into prompt | <50 files, small codebases |
+| `research:` | Provides file manifest, AI uses Read/Grep tools | Large docs (200+ files), existing task structure |
+| `file:` | Single file analysis | Individual requirement files |
+| `provider:` | Fetches from external task provider | GitHub/Jira/Wrike issues |
+
+**Features:** Multiple source types (files, directories, research, providers), AI task ordering, and provider integration.
 
 See [Project Planning documentation](https://valksor.com/docs/mehrhof/nightly/#/cli/project) for full workflow details and dependency support by provider.
 

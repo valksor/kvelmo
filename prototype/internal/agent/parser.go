@@ -386,6 +386,9 @@ func (p *YAMLBlockParser) parseUsage(data map[string]any) *UsageStats {
 	if v, ok := data["cache_read_input_tokens"].(float64); ok {
 		stats.CachedTokens = int(v)
 	}
+	if v, ok := data["cached_input_tokens"].(float64); ok {
+		stats.CachedTokens = int(v)
+	}
 
 	return stats
 }
@@ -411,6 +414,35 @@ func (p *JSONLineParser) ParseEvent(line []byte) (Event, error) {
 		event.Data["text"] = string(line)
 		//nolint:nilerr // JSON parse failure: treat as plain text
 		return event, nil
+	}
+
+	// Codex CLI event format handling.
+	if typ, ok := event.Data["type"].(string); ok {
+		switch typ {
+		case "item.completed":
+			if item, ok := event.Data["item"].(map[string]any); ok {
+				itemType, _ := item["type"].(string)
+				text, _ := item["text"].(string)
+				if text != "" && (itemType == "agent_message" || itemType == "assistant_message" || itemType == "message") {
+					event.Type = EventText
+					event.Text = text
+					event.Data["text"] = text
+
+					return event, nil
+				}
+			}
+		case "turn.completed":
+			if usage, ok := event.Data["usage"].(map[string]any); ok {
+				event.Type = EventUsage
+				event.Data = usage
+
+				return event, nil
+			}
+		case "error":
+			event.Type = EventError
+
+			return event, nil
+		}
 	}
 
 	// Determine type from data
