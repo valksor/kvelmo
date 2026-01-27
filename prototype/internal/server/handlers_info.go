@@ -153,6 +153,19 @@ func getGuideActions(state workflow.State, specifications int) []guideAction {
 				Endpoint:    "POST /api/v1/workflow/finish",
 			},
 		}
+	case workflow.StatePaused:
+		return []guideAction{
+			{
+				Command:     "mehr budget status",
+				Description: "Review budget limits",
+				Endpoint:    "GET /api/v1/costs",
+			},
+			{
+				Command:     "mehr budget resume --confirm",
+				Description: "Resume after budget pause",
+				Endpoint:    "POST /api/v1/workflow/resume",
+			},
+		}
 
 	case workflow.StateReviewing:
 		return []guideAction{

@@ -55,6 +55,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/workflow/undo", s.handleWorkflowUndo)
 		mux.HandleFunc("POST /api/v1/workflow/redo", s.handleWorkflowRedo)
 		mux.HandleFunc("POST /api/v1/workflow/answer", s.handleWorkflowAnswer)
+		mux.HandleFunc("POST /api/v1/workflow/resume", s.handleWorkflowResume)
 		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleWorkflowAbandon)
 		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleWorkflowContinue)
 		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleWorkflowAuto)
@@ -63,6 +64,11 @@ func (s *Server) setupRouter() http.Handler {
 		// Notes endpoints
 		mux.HandleFunc("POST /api/v1/tasks/{id}/notes", s.handleAddNote)
 		mux.HandleFunc("GET /api/v1/tasks/{id}/notes", s.handleGetNotes)
+
+		// Labels endpoints
+		mux.HandleFunc("GET /api/v1/task/labels", s.handleTaskLabels)
+		mux.HandleFunc("POST /api/v1/task/labels", s.handleTaskLabels)
+		mux.HandleFunc("GET /api/v1/labels", s.handleListLabels)
 
 		// Cost tracking endpoints
 		mux.HandleFunc("GET /api/v1/tasks/{id}/costs", s.handleGetTaskCosts)
@@ -195,6 +201,7 @@ func (s *Server) setupRouter() http.Handler {
 	mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
 	mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
 	mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
+	mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
 	mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
 
 	// Main dashboard

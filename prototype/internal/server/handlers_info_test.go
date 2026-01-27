@@ -140,6 +140,12 @@ func TestGetGuideActions(t *testing.T) {
 			wantEndpoint:   "POST /api/v1/workflow/answer",
 		},
 		{
+			name:           "paused",
+			state:          workflow.StatePaused,
+			specifications: 1,
+			wantEndpoint:   "POST /api/v1/workflow/resume",
+		},
+		{
 			name:           "planning",
 			state:          workflow.StatePlanning,
 			specifications: 0,

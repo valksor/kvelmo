@@ -530,6 +530,13 @@ function clearSavedProject() {
 }
 </script>
 
+<!-- Workspace Stats (when no active task) -->
+{{if .WorkspaceStats}}
+<div id="workspace-stats" hx-get="/ui/partials/workspace-stats" hx-trigger="load, every 60s" hx-swap="outerHTML">
+    <div class="text-surface-500 dark:text-surface-400 text-center py-8">Loading...</div>
+</div>
+{{end}}
+
 <!-- Recent Tasks -->
 <div class="card" hx-get="/ui/partials/recent-tasks" hx-trigger="load" hx-swap="innerHTML">
     <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">

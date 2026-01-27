@@ -2,6 +2,8 @@ package server
 
 import (
 	"net/http"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // handleGetTaskCosts returns the costs for a specific task.
@@ -52,6 +54,9 @@ func (s *Server) handleGetTaskCosts(w http.ResponseWriter, r *http.Request) {
 		CachedPercent: cachedPercent,
 		TotalCostUSD:  costs.TotalCostUSD,
 	}
+	if cfg, err := ws.LoadConfig(); err == nil {
+		resp.Budget = buildBudgetInfo(work, cfg)
+	}
 
 	// Add by-step breakdown if available
 	if len(costs.ByStep) > 0 {
@@ -97,6 +102,7 @@ func (s *Server) handleGetAllCosts(w http.ResponseWriter, r *http.Request) {
 	var grandTotalInput, grandTotalOutput, grandTotalCached int
 	var grandTotalCost float64
 
+	cfg, _ := ws.LoadConfig()
 	for _, taskID := range taskIDs {
 		work, err := ws.LoadWork(taskID)
 		if err != nil {
@@ -126,6 +132,9 @@ func (s *Server) handleGetAllCosts(w http.ResponseWriter, r *http.Request) {
 			CachedPercent: cachedPercent,
 			TotalCostUSD:  costs.TotalCostUSD,
 		}
+		if cfg != nil {
+			taskCost.Budget = buildBudgetInfo(work, cfg)
+		}
 
 		// Add by-step breakdown
 		if len(costs.ByStep) > 0 {
@@ -150,6 +159,19 @@ func (s *Server) handleGetAllCosts(w http.ResponseWriter, r *http.Request) {
 		grandTotalCost += costs.TotalCostUSD
 	}
 
+	var monthly *monthlyBudgetInfo
+	if cfg != nil && cfg.Budget.Monthly.MaxCost > 0 {
+		if state, err := ws.LoadMonthlyBudgetState(); err == nil {
+			monthly = &monthlyBudgetInfo{
+				Month:       state.Month,
+				Spent:       state.Spent,
+				MaxCost:     cfg.Budget.Monthly.MaxCost,
+				WarningAt:   cfg.Budget.Monthly.WarningAt,
+				WarningSent: state.WarningSent,
+			}
+		}
+	}
+
 	s.writeJSON(w, http.StatusOK, allCostsResponse{
 		Tasks: tasks,
 		GrandTotal: grandTotal{
@@ -159,5 +181,35 @@ func (s *Server) handleGetAllCosts(w http.ResponseWriter, r *http.Request) {
 			CachedTokens: grandTotalCached,
 			CostUSD:      grandTotalCost,
 		},
+		Monthly: monthly,
 	})
+}
+
+func buildBudgetInfo(work *storage.TaskWork, cfg *storage.WorkspaceConfig) *budgetInfo {
+	if work == nil || cfg == nil {
+		return nil
+	}
+
+	budget := cfg.Budget.PerTask
+	if work.Budget != nil {
+		budget = *work.Budget
+	}
+
+	info := &budgetInfo{
+		MaxTokens: budget.MaxTokens,
+		MaxCost:   budget.MaxCost,
+		Currency:  budget.Currency,
+		OnLimit:   budget.OnLimit,
+		WarningAt: budget.WarningAt,
+	}
+	if work.BudgetStatus != nil {
+		info.Warned = work.BudgetStatus.Warned
+		info.LimitHit = work.BudgetStatus.LimitHit
+	}
+
+	if info.MaxTokens == 0 && info.MaxCost == 0 && info.OnLimit == "" && info.WarningAt == 0 {
+		return nil
+	}
+
+	return info
 }

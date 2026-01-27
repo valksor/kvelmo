@@ -80,6 +80,7 @@ type taskCostResponse struct {
 	CachedPercent float64             `json:"cached_percent,omitempty"`
 	TotalCostUSD  float64             `json:"total_cost_usd"`
 	ByStep        map[string]stepCost `json:"by_step,omitempty"`
+	Budget        *budgetInfo         `json:"budget,omitempty"`
 }
 
 // stepCost represents cost data for a workflow step.
@@ -105,6 +106,27 @@ type grandTotal struct {
 type allCostsResponse struct {
 	Tasks      []taskCostResponse `json:"tasks"`
 	GrandTotal grandTotal         `json:"grand_total"`
+	Monthly    *monthlyBudgetInfo `json:"monthly,omitempty"`
+}
+
+// budgetInfo exposes budget settings and status for API responses.
+type budgetInfo struct {
+	MaxTokens int     `json:"max_tokens,omitempty"`
+	MaxCost   float64 `json:"max_cost,omitempty"`
+	Currency  string  `json:"currency,omitempty"`
+	OnLimit   string  `json:"on_limit,omitempty"`
+	WarningAt float64 `json:"warning_at,omitempty"`
+	Warned    bool    `json:"warned,omitempty"`
+	LimitHit  bool    `json:"limit_hit,omitempty"`
+}
+
+// monthlyBudgetInfo exposes monthly budget status.
+type monthlyBudgetInfo struct {
+	Month       string  `json:"month"`
+	Spent       float64 `json:"spent"`
+	MaxCost     float64 `json:"max_cost,omitempty"`
+	WarningAt   float64 `json:"warning_at,omitempty"`
+	WarningSent bool    `json:"warning_sent,omitempty"`
 }
 
 // guideResponse is the response for GET /api/v1/guide.

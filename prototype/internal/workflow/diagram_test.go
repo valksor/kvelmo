@@ -69,6 +69,7 @@ func TestASCIIIDiagram(t *testing.T) {
 				"done",
 				"Auxiliary States:",
 				"waiting",
+				"paused",
 				"checkpointing",
 				"reverting",
 				"restoring",
@@ -139,7 +140,7 @@ func TestASCIIDiagramStructure(t *testing.T) {
 	// Should contain state names
 	states := []string{
 		"idle", "planning", "implementing", "reviewing", "done",
-		"waiting", "checkpointing", "reverting", "restoring", "failed",
+		"waiting", "paused", "checkpointing", "reverting", "restoring", "failed",
 	}
 	for _, state := range states {
 		if !strings.Contains(result, state) {
