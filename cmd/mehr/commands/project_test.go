@@ -304,6 +304,9 @@ func TestProjectSubmitCommand_Flags(t *testing.T) {
 		{"create-epic flag", "create-epic", "false"},
 		{"labels flag", "labels", ""},
 		{"dry-run flag", "dry-run", "false"},
+		{"task flag", "task", ""},
+		{"comment flag", "comment", ""},
+		{"mention flag", "mention", ""},
 	}
 
 	for _, tt := range tests {
