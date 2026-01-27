@@ -90,6 +90,7 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		Verbose:         verbose,
 		FullContext:     planFullContext,
 		OptimizePrompts: planOptimize,
+		Sandbox:         sandbox,
 	})
 
 	// Add --auto-approve flag for planning
