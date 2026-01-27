@@ -215,6 +215,11 @@ func (r *ToolRegistry) CallTool(ctx context.Context, name string, args map[strin
 	execCtx, execCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer execCancel()
 
+	// Cobra only propagates context to a subcommand if it doesn't already have one.
+	// Since MCP executes commands repeatedly in-process, subcommands can retain a
+	// canceled context from a previous run. Reset it to ensure a fresh context.
+	cmd.SetContext(execCtx)
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
