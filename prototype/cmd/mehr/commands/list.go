@@ -40,6 +40,9 @@ var (
 	listSort          string
 	listFormat        string
 	listJSON          bool
+	listLabelFilter   string
+	listLabelAny      []string
+	listNoLabel       bool
 )
 
 func init() {
@@ -51,6 +54,9 @@ func init() {
 	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort tasks (date, cost, duration)")
 	listCmd.Flags().StringVar(&listFormat, "format", "table", "Output format (table, json, csv)")
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON (deprecated, use --format json)")
+	listCmd.Flags().StringVar(&listLabelFilter, "label", "", "Filter by label (e.g., --label=priority:high)")
+	listCmd.Flags().StringSliceVar(&listLabelAny, "label-any", nil, "Filter by any label (OR logic)")
+	listCmd.Flags().BoolVar(&listNoLabel, "no-label", false, "Show only tasks without labels")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -115,6 +121,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		IsCurrent    bool
 		Cost         int
 		Duration     string
+		Labels       string
 	}
 
 	var tasks []taskInfo
@@ -160,6 +167,46 @@ func runList(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		// Apply label filter (AND - must have all specified labels)
+		if listLabelFilter != "" {
+			found := false
+			for _, label := range work.Metadata.Labels {
+				if label == listLabelFilter {
+					found = true
+
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		// Apply label-any filter (OR - must have at least one)
+		if len(listLabelAny) > 0 {
+			found := false
+			for _, requiredLabel := range listLabelAny {
+				for _, label := range work.Metadata.Labels {
+					if label == requiredLabel {
+						found = true
+
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		// Filter for tasks without labels
+		if listNoLabel && len(work.Metadata.Labels) > 0 {
+			continue
+		}
+
 		// Format worktree path (relative if possible)
 		worktreePath := ""
 		if work.Git.WorktreePath != "" {
@@ -201,6 +248,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			IsCurrent:    currentWorktreePath != "" && work.Git.WorktreePath == currentWorktreePath,
 			Cost:         cost,
 			Duration:     duration,
+			Labels:       formatLabels(work.Metadata.Labels),
 		})
 	}
 
@@ -228,6 +276,12 @@ func runList(cmd *cobra.Command, args []string) error {
 	if listFormat == "json" {
 		var jsonTasks []jsonListTask
 		for _, task := range tasks {
+			// Load work to get labels
+			var labels []string
+			if work, err := ws.LoadWork(task.ID); err == nil {
+				labels = work.Metadata.Labels
+			}
+
 			jsonTasks = append(jsonTasks, jsonListTask{
 				TaskID:       task.ID,
 				State:        task.State,
@@ -235,6 +289,7 @@ func runList(cmd *cobra.Command, args []string) error {
 				WorktreePath: task.WorktreePath,
 				IsActive:     task.IsActive,
 				IsCurrent:    task.IsCurrent,
+				Labels:       labels,
 			})
 		}
 
@@ -270,7 +325,7 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Regular text output (default)
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(w, "TASK ID\tSTATE\tTITLE\tWORKTREE\tACTIVE\tCOST"); err != nil {
+	if _, err := fmt.Fprintln(w, "TASK ID\tSTATE\tTITLE\tWORKTREE\tACTIVE\tCOST\tLABELS"); err != nil {
 		return fmt.Errorf("print header: %w", err)
 	}
 
@@ -299,8 +354,8 @@ func runList(cmd *cobra.Command, args []string) error {
 			activeMarker = "→"
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\n",
-			task.ID, task.State, title, worktreePath, activeMarker, task.Cost); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+			task.ID, task.State, title, worktreePath, activeMarker, task.Cost, task.Labels); err != nil {
 			return fmt.Errorf("print row: %w", err)
 		}
 	}
@@ -323,10 +378,20 @@ func runList(cmd *cobra.Command, args []string) error {
 
 // JSON output structures for list command.
 type jsonListTask struct {
-	TaskID       string `json:"task_id"`
-	State        string `json:"state"`
-	Title        string `json:"title"`
-	WorktreePath string `json:"worktree_path,omitempty"`
-	IsActive     bool   `json:"is_active"`
-	IsCurrent    bool   `json:"is_current_worktree"`
+	TaskID       string   `json:"task_id"`
+	State        string   `json:"state"`
+	Title        string   `json:"title"`
+	WorktreePath string   `json:"worktree_path,omitempty"`
+	IsActive     bool     `json:"is_active"`
+	IsCurrent    bool     `json:"is_current_worktree"`
+	Labels       []string `json:"labels,omitempty"`
+}
+
+// formatLabels formats a slice of labels as a comma-separated string.
+func formatLabels(labels []string) string {
+	if len(labels) == 0 {
+		return "-"
+	}
+
+	return strings.Join(labels, ", ")
 }

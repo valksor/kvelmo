@@ -133,10 +133,14 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		spinner := display.NewSpinner("Creating specifications...")
 		spinner.Start()
 		planErr = cond.RunPlanning(ctx)
-		if planErr != nil && !errors.Is(planErr, conductor.ErrPendingQuestion) {
+		if planErr != nil && !errors.Is(planErr, conductor.ErrPendingQuestion) && !errors.Is(planErr, conductor.ErrBudgetPaused) && !errors.Is(planErr, conductor.ErrBudgetStopped) {
 			spinner.StopWithError("Planning failed")
 		} else if errors.Is(planErr, conductor.ErrPendingQuestion) {
 			spinner.Stop()
+		} else if errors.Is(planErr, conductor.ErrBudgetPaused) {
+			spinner.StopWithWarning("Planning paused due to budget limit")
+		} else if errors.Is(planErr, conductor.ErrBudgetStopped) {
+			spinner.StopWithError("Planning stopped due to budget limit")
 		} else {
 			spinner.StopWithSuccess("Planning complete")
 		}
@@ -166,6 +170,22 @@ func runPlan(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s\n", tkdisplay.Cyan("mehr answer \"your response\""))
 			fmt.Printf("  %s\n", tkdisplay.Cyan("mehr plan")+" "+tkdisplay.Muted("(to continue after answering)"))
 		}
+
+		return nil
+	}
+	if errors.Is(err, conductor.ErrBudgetPaused) {
+		fmt.Println(tkdisplay.WarningMsg("Task paused due to budget limit."))
+		fmt.Println(tkdisplay.Muted("Review budgets and resume when ready:"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget status"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget resume --confirm"))
+
+		return nil
+	}
+	if errors.Is(err, conductor.ErrBudgetStopped) {
+		fmt.Println(tkdisplay.ErrorMsg("Task stopped due to budget limit."))
+		fmt.Println(tkdisplay.Muted("Update budgets or start a new task:"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr budget set"))
+		fmt.Printf("  %s\n", tkdisplay.Cyan("mehr start <ref>"))
 
 		return nil
 	}
