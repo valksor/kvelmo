@@ -26,6 +26,26 @@
             Cache hit rate: {{printf "%.1f" .CachedPercent}}%
         </div>
         {{end}}
+        {{if or (gt .BudgetMaxCost 0) (gt .BudgetMaxTokens 0)}}
+        <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500">
+                <span>Budget</span>
+                <span>
+                    {{if gt .BudgetMaxCost 0}}
+                        {{formatCost .TotalCostUSD}} / {{formatCost .BudgetMaxCost}}
+                    {{else}}
+                        {{.TotalTokens}} / {{.BudgetMaxTokens}} tokens
+                    {{end}}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                <div class="h-2 rounded-full {{if .BudgetLimitHit}}bg-red-500{{else if .BudgetWarned}}bg-yellow-500{{else}}bg-green-500{{end}}" style="width: {{if gt .BudgetPercent 100.0}}100{{else}}{{printf "%.0f" .BudgetPercent}}{{end}}%"></div>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">
+                On limit: {{if .BudgetOnLimit}}{{.BudgetOnLimit}}{{else}}warn{{end}} • Warning at: {{if gt .BudgetWarningAt 0.0}}{{printf "%.0f" (mul .BudgetWarningAt 100.0)}}%{{else}}80%{{end}}
+            </div>
+        </div>
+        {{end}}
     </div>
 </div>
 {{else}}

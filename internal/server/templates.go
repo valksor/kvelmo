@@ -29,13 +29,19 @@ type Templates struct {
 // templateFuncs returns the function map for templates.
 func templateFuncs() template.FuncMap {
 	return template.FuncMap{
-		"stateIcon":  stateIcon,
-		"stateColor": stateColor,
-		"stateBadge": stateBadge,
-		"specIcon":   specIcon,
-		"specColor":  specColor,
-		"timeAgo":    timeAgo,
-		"formatCost": formatCost,
+		"stateIcon":    stateIcon,
+		"stateColor":   stateColor,
+		"stateBadge":   stateBadge,
+		"specIcon":     specIcon,
+		"specColor":    specColor,
+		"timeAgo":      timeAgo,
+		"formatCost":   formatCost,
+		"formatNumber": formatNumber,
+		"formatPct":    formatPct,
+		"labelColor":   labelColor,
+		"mul": func(a, b float64) float64 {
+			return a * b
+		},
 	}
 }
 
@@ -51,6 +57,7 @@ func LoadTemplates() (*Templates, error) {
 		"templates/base.html",
 		"templates/dashboard.html",
 		"templates/partials/specification.html",
+		"templates/partials/labels.html",
 	)
 	if err != nil {
 		return nil, err
@@ -135,7 +142,7 @@ func LoadTemplates() (*Templates, error) {
 	t.quick = quick
 
 	// Load partials
-	partialNames := []string{"task_card", "actions", "specification", "question", "costs", "card", "modal", "input", "skeleton"}
+	partialNames := []string{"task_card", "actions", "specification", "question", "costs", "workspace_stats", "card", "modal", "input", "skeleton", "labels"}
 	for _, name := range partialNames {
 		partial, err := template.New(name+".html").Funcs(templateFuncs()).ParseFS(
 			templateFS,
@@ -213,6 +220,7 @@ type DashboardData struct {
 	Specifications   SpecificationsData
 	PendingQuestion  *QuestionData
 	Costs            *CostsData
+	WorkspaceStats   *WorkspaceStatsData // Workspace-level stats when no active task
 }
 
 // TaskData holds task information for display.
@@ -225,6 +233,7 @@ type TaskData struct {
 	Started       time.Time
 	Ref           string
 	SandboxActive bool
+	Labels        []string
 }
 
 // GuideData holds guidance information.
@@ -271,12 +280,35 @@ type QuestionData struct {
 
 // CostsData holds cost information.
 type CostsData struct {
-	TotalCostUSD  float64
-	TotalTokens   int
-	InputTokens   int
-	OutputTokens  int
-	CachedTokens  int
-	CachedPercent float64
+	TotalCostUSD    float64
+	TotalTokens     int
+	InputTokens     int
+	OutputTokens    int
+	CachedTokens    int
+	CachedPercent   float64
+	BudgetMaxCost   float64
+	BudgetMaxTokens int
+	BudgetOnLimit   string
+	BudgetWarningAt float64
+	BudgetPercent   float64
+	BudgetWarned    bool
+	BudgetLimitHit  bool
+}
+
+// WorkspaceStatsData holds workspace-level statistics for the dashboard.
+type WorkspaceStatsData struct {
+	TotalTasks   int                // Total number of tasks
+	ByState      map[string]int     // Tasks grouped by state
+	ByStatePct   map[string]float64 // Percentage of tasks per state
+	TotalCostUSD float64            // Total cost across all tasks
+	TotalTokens  int                // Total tokens across all tasks
+	InputTokens  int                // Total input tokens
+	OutputTokens int                // Total output tokens
+	CachedTokens int                // Total cached tokens
+	MonthlySpent float64            // Monthly budget spent
+	MonthlyMax   float64            // Monthly budget max
+	MonthlyPct   float64            // Monthly budget percentage
+	HasMonthly   bool               // Whether monthly budget is configured
 }
 
 // LoginData holds data for the login template.
@@ -367,6 +399,8 @@ func stateIcon(state string) string {
 		return "✗"
 	case "waiting":
 		return "?"
+	case "paused":
+		return "||"
 	default:
 		return "○"
 	}
@@ -388,6 +422,8 @@ func stateColor(state string) string {
 		return "text-red-500"
 	case "waiting":
 		return "text-orange-500"
+	case "paused":
+		return "text-amber-600"
 	default:
 		return "text-gray-500"
 	}
@@ -409,6 +445,8 @@ func stateBadge(state string) string {
 		return "Failed"
 	case "waiting":
 		return "Waiting for input"
+	case "paused":
+		return "Paused (budget limit)"
 	default:
 		return state
 	}
@@ -495,4 +533,81 @@ func formatCost(cost float64) string {
 	result += string(rune('0' + remainder%10))
 
 	return result
+}
+
+// formatNumber formats a large number with K/M/B suffixes.
+func formatNumber(n int) string {
+	if n < 1000 {
+		return itoa(n)
+	}
+	if n < 1_000_000 {
+		// Show as XK (e.g., 1.2K)
+		k := float64(n) / 1000
+
+		return formatFloat(k) + "K"
+	}
+	if n < 1_000_000_000 {
+		// Show as XM (e.g., 1.2M)
+		m := float64(n) / 1_000_000
+
+		return formatFloat(m) + "M"
+	}
+	// Show as XB
+	b := float64(n) / 1_000_000_000
+
+	return formatFloat(b) + "B"
+}
+
+// formatFloat formats a float with 1 decimal place, without fmt.Sprintf.
+func formatFloat(f float64) string {
+	whole := int(f)
+	tenths := int((f - float64(whole)) * 10)
+	if tenths < 0 {
+		tenths = -tenths
+	}
+	result := itoa(whole) + "."
+	result += string(rune('0' + tenths))
+
+	return result
+}
+
+// formatPct formats a percentage with optional decimal.
+func formatPct(pct float64) string {
+	if pct < 1 {
+		// Show as "<1%" for small values
+		return "<1%"
+	}
+	whole := int(pct)
+	if pct == float64(whole) {
+		return itoa(whole) + "%"
+	}
+	// One decimal place
+	tenths := int((pct - float64(whole)) * 10)
+
+	return itoa(whole) + "." + string(rune('0'+tenths)) + "%"
+}
+
+// labelColor returns a CSS color class for a label based on its hash.
+// This ensures consistent colors for the same label across renders.
+func labelColor(label string) string {
+	colors := []string{
+		"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+		"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+		"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+		"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+		"bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+		"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+		"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+		"bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+		"bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+	}
+
+	// Simple hash of label string
+	hash := 0
+	for _, c := range label {
+		hash += int(c)
+	}
+
+	return colors[hash%len(colors)]
 }

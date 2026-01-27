@@ -642,6 +642,23 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// handleWorkflowResume resumes a task paused due to budget limits.
+func (s *Server) handleWorkflowResume(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	if err := s.config.Conductor.ResumePaused(r.Context()); err != nil {
+		s.writeError(w, http.StatusBadRequest, err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 // handleLogout clears the session.
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	// Get and delete session
@@ -761,4 +778,156 @@ func (s *Server) handleSwitchProject(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to dashboard
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// labelRequest represents a label modification request.
+type labelRequest struct {
+	Action string   `json:"action"` // add, remove, set
+	Labels []string `json:"labels"`
+}
+
+// handleTaskLabels handles GET/POST for task labels.
+// GET: Returns labels for the active task.
+// POST: Modifies labels (add/remove/set) on the active task.
+func (s *Server) handleTaskLabels(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	activeTask := s.config.Conductor.GetActiveTask()
+	if activeTask == nil {
+		s.writeError(w, http.StatusBadRequest, "no active task")
+
+		return
+	}
+
+	taskID := activeTask.ID
+
+	switch r.Method {
+	case http.MethodGet:
+		labels, err := ws.GetLabels(taskID)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "failed to get labels: "+err.Error())
+
+			return
+		}
+
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"task_id": taskID,
+			"labels":  labels,
+		})
+
+	case http.MethodPost:
+		var req labelRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
+
+		switch req.Action {
+		case "add":
+			for _, label := range req.Labels {
+				if err := ws.AddLabel(taskID, label); err != nil {
+					s.writeError(w, http.StatusInternalServerError, "failed to add label: "+err.Error())
+
+					return
+				}
+			}
+
+		case "remove":
+			for _, label := range req.Labels {
+				if err := ws.RemoveLabel(taskID, label); err != nil {
+					s.writeError(w, http.StatusInternalServerError, "failed to remove label: "+err.Error())
+
+					return
+				}
+			}
+
+		case "set":
+			if err := ws.SetLabels(taskID, req.Labels); err != nil {
+				s.writeError(w, http.StatusInternalServerError, "failed to set labels: "+err.Error())
+
+				return
+			}
+
+		default:
+			s.writeError(w, http.StatusBadRequest, "invalid action: "+req.Action)
+
+			return
+		}
+
+		// Get updated labels
+		labels, _ := ws.GetLabels(taskID)
+
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"action":  req.Action,
+			"labels":  labels,
+		})
+
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// handleListLabels returns all unique labels across all tasks with counts.
+func (s *Server) handleListLabels(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	taskIDs, err := ws.ListWorks()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to list tasks: "+err.Error())
+
+		return
+	}
+
+	// Count labels across all tasks
+	labelCounts := make(map[string]int)
+	for _, taskID := range taskIDs {
+		work, err := ws.LoadWork(taskID)
+		if err != nil {
+			continue
+		}
+
+		for _, label := range work.Metadata.Labels {
+			labelCounts[label]++
+		}
+	}
+
+	// Convert to sorted slice
+	type labelInfo struct {
+		Label string `json:"label"`
+		Count int    `json:"count"`
+	}
+
+	var labels []labelInfo
+	for label, count := range labelCounts {
+		labels = append(labels, labelInfo{Label: label, Count: count})
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"labels": labels,
+		"count":  len(labels),
+	})
 }

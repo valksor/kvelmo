@@ -33,45 +33,54 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get active task info
-	if s.config.Mode == ModeProject && s.config.Conductor != nil {
-		activeTask := s.config.Conductor.GetActiveTask()
-		if activeTask != nil {
-			data.HasTask = true
-			data.Task = &TaskData{
-				ID:            activeTask.ID,
-				Title:         "", // Will be populated from work metadata
-				State:         activeTask.State,
-				Branch:        activeTask.Branch,
-				Worktree:      activeTask.WorktreePath,
-				Started:       activeTask.Started,
-				Ref:           activeTask.Ref,
-				SandboxActive: s.isSandboxActive(),
+	if s.config.Mode == ModeProject {
+		if s.config.Conductor != nil {
+			activeTask := s.config.Conductor.GetActiveTask()
+			if activeTask != nil {
+				data.HasTask = true
+				data.Task = &TaskData{
+					ID:            activeTask.ID,
+					Title:         "", // Will be populated from work metadata
+					State:         activeTask.State,
+					Branch:        activeTask.Branch,
+					Worktree:      activeTask.WorktreePath,
+					Started:       activeTask.Started,
+					Ref:           activeTask.Ref,
+					SandboxActive: s.isSandboxActive(),
+					Labels:        []string{}, // Will be populated from work metadata
+				}
+
+				// Get title and labels from work metadata
+				taskWork := s.config.Conductor.GetTaskWork()
+				if taskWork != nil {
+					data.Task.Title = taskWork.Metadata.Title
+					data.Task.Labels = taskWork.Metadata.Labels
+				}
+
+				// Get guide info for actions
+				data.Guide = s.getGuideData()
+
+				// Get specifications with progress
+				specifications := s.getSpecificationData(activeTask.ID)
+				total, done, progress := s.getSpecificationsProgress(activeTask.ID)
+				data.Specifications = SpecificationsData{
+					Specifications: specifications,
+					Total:          total,
+					Done:           done,
+					Progress:       progress,
+				}
+
+				// Get pending question
+				data.PendingQuestion = s.getPendingQuestionData(activeTask.ID)
+
+				// Get costs
+				data.Costs = s.getCostsData(activeTask.ID)
 			}
+		}
 
-			// Get title from work metadata
-			taskWork := s.config.Conductor.GetTaskWork()
-			if taskWork != nil {
-				data.Task.Title = taskWork.Metadata.Title
-			}
-
-			// Get guide info for actions
-			data.Guide = s.getGuideData()
-
-			// Get specifications with progress
-			specifications := s.getSpecificationData(activeTask.ID)
-			total, done, progress := s.getSpecificationsProgress(activeTask.ID)
-			data.Specifications = SpecificationsData{
-				Specifications: specifications,
-				Total:          total,
-				Done:           done,
-				Progress:       progress,
-			}
-
-			// Get pending question
-			data.PendingQuestion = s.getPendingQuestionData(activeTask.ID)
-
-			// Get costs
-			data.Costs = s.getCostsData(activeTask.ID)
+		// Always load workspace stats in project mode when there's no active task
+		if !data.HasTask {
+			data.WorkspaceStats = s.getWorkspaceStatsData()
 		}
 	}
 
@@ -104,11 +113,13 @@ func (s *Server) handleTaskPartial(w http.ResponseWriter, r *http.Request) {
 		Started:       activeTask.Started,
 		Ref:           activeTask.Ref,
 		SandboxActive: s.isSandboxActive(),
+		Labels:        []string{},
 	}
 
 	taskWork := s.config.Conductor.GetTaskWork()
 	if taskWork != nil {
 		data.Title = taskWork.Metadata.Title
+		data.Labels = taskWork.Metadata.Labels
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -368,6 +379,19 @@ func (s *Server) getGuideData() *GuideData {
 			Endpoint:    "/api/v1/workflow/undo",
 			Method:      "POST",
 		})
+	case "paused":
+		guide.NextActions = append(guide.NextActions, ActionData{
+			Command:     "budget",
+			Description: "Review budget",
+			Endpoint:    "/api/v1/costs",
+			Method:      "GET",
+		})
+		guide.NextActions = append(guide.NextActions, ActionData{
+			Command:     "resume",
+			Description: "Resume after budget pause",
+			Endpoint:    "/api/v1/workflow/resume",
+			Method:      "POST",
+		})
 
 	case "failed":
 		guide.NextActions = append(guide.NextActions, ActionData{
@@ -529,14 +553,116 @@ func (s *Server) getCostsData(taskID string) *CostsData {
 		cachedPercent = float64(costs.TotalCachedTokens) / float64(total) * 100
 	}
 
-	return &CostsData{
-		TotalCostUSD:  costs.TotalCostUSD,
-		TotalTokens:   total,
-		InputTokens:   costs.TotalInputTokens,
-		OutputTokens:  costs.TotalOutputTokens,
-		CachedTokens:  costs.TotalCachedTokens,
-		CachedPercent: cachedPercent,
+	var budget storage.BudgetConfig
+	if cfg, err := ws.LoadConfig(); err == nil {
+		budget = cfg.Budget.PerTask
 	}
+	if work.Budget != nil {
+		budget = *work.Budget
+	}
+
+	budgetPercent := 0.0
+	if budget.MaxCost > 0 {
+		budgetPercent = (costs.TotalCostUSD / budget.MaxCost) * 100
+	} else if budget.MaxTokens > 0 {
+		budgetPercent = (float64(total) / float64(budget.MaxTokens)) * 100
+	}
+
+	budgetWarned := false
+	budgetLimitHit := false
+	if work.BudgetStatus != nil {
+		budgetWarned = work.BudgetStatus.Warned
+		budgetLimitHit = work.BudgetStatus.LimitHit
+	}
+
+	return &CostsData{
+		TotalCostUSD:    costs.TotalCostUSD,
+		TotalTokens:     total,
+		InputTokens:     costs.TotalInputTokens,
+		OutputTokens:    costs.TotalOutputTokens,
+		CachedTokens:    costs.TotalCachedTokens,
+		CachedPercent:   cachedPercent,
+		BudgetMaxCost:   budget.MaxCost,
+		BudgetMaxTokens: budget.MaxTokens,
+		BudgetOnLimit:   budget.OnLimit,
+		BudgetWarningAt: budget.WarningAt,
+		BudgetPercent:   budgetPercent,
+		BudgetWarned:    budgetWarned,
+		BudgetLimitHit:  budgetLimitHit,
+	}
+}
+
+// getWorkspaceStatsData aggregates workspace-level statistics.
+func (s *Server) getWorkspaceStatsData() *WorkspaceStatsData {
+	// Always return non-nil stats for template safety
+	stats := &WorkspaceStatsData{
+		ByState:    make(map[string]int),
+		ByStatePct: make(map[string]float64),
+	}
+
+	if s.config.Conductor == nil {
+		return stats
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		return stats
+	}
+
+	taskIDs, err := ws.ListWorks()
+	if err != nil || len(taskIDs) == 0 {
+		return stats
+	}
+
+	stats.TotalTasks = len(taskIDs)
+	stats.InputTokens = 0
+	stats.OutputTokens = 0
+	stats.CachedTokens = 0
+
+	// Aggregate stats across all tasks
+	for _, taskID := range taskIDs {
+		work, err := ws.LoadWork(taskID)
+		if err != nil {
+			continue
+		}
+
+		state := work.Metadata.State
+		if state == "" {
+			state = "idle"
+		}
+		stats.ByState[state]++
+
+		// Aggregate costs and tokens
+		costs := work.Costs
+		stats.TotalCostUSD += costs.TotalCostUSD
+		stats.InputTokens += costs.TotalInputTokens
+		stats.OutputTokens += costs.TotalOutputTokens
+		stats.CachedTokens += costs.TotalCachedTokens
+	}
+
+	stats.TotalTokens = stats.InputTokens + stats.OutputTokens
+
+	// Calculate percentages for each state
+	if stats.TotalTasks > 0 {
+		for state, count := range stats.ByState {
+			stats.ByStatePct[state] = float64(count) / float64(stats.TotalTasks) * 100
+		}
+	}
+
+	// Load monthly budget info if configured
+	cfg, _ := ws.LoadConfig()
+	if cfg != nil && cfg.Budget.Monthly.MaxCost > 0 {
+		if state, err := ws.LoadMonthlyBudgetState(); err == nil {
+			stats.MonthlySpent = state.Spent
+			stats.MonthlyMax = cfg.Budget.Monthly.MaxCost
+			if stats.MonthlyMax > 0 {
+				stats.MonthlyPct = (stats.MonthlySpent / stats.MonthlyMax) * 100
+			}
+			stats.HasMonthly = true
+		}
+	}
+
+	return stats
 }
 
 // handleRecentTasksPartial renders the recent tasks list.
@@ -584,6 +710,28 @@ func (s *Server) handleRecentTasksPartial(w http.ResponseWriter, _ *http.Request
 	html += `</ul>`
 
 	_, _ = w.Write([]byte(html))
+}
+
+// handleWorkspaceStatsPartial renders the workspace statistics card.
+func (s *Server) handleWorkspaceStatsPartial(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if s.templates == nil {
+		_, _ = w.Write([]byte(`<p class="text-surface-500 dark:text-surface-400 text-center py-4">Templates not loaded</p>`))
+
+		return
+	}
+
+	stats := s.getWorkspaceStatsData()
+	if stats == nil {
+		_, _ = w.Write([]byte(`<p class="text-surface-500 dark:text-surface-400 text-center py-4">No workspace configured</p>`))
+
+		return
+	}
+
+	if err := s.templates.RenderPartial(w, "workspace_stats", stats); err != nil {
+		_, _ = w.Write([]byte(`<p class="text-error-500 text-center py-4">Error loading stats</p>`))
+	}
 }
 
 // handleLicensePage renders the license information page.

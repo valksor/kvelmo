@@ -172,6 +172,12 @@ func TestGetNextActionsForState(t *testing.T) {
 			wantContains:   "POST /api/v1/workflow/answer",
 		},
 		{
+			name:           "paused",
+			state:          workflow.StatePaused,
+			specifications: 1,
+			wantContains:   "POST /api/v1/workflow/resume",
+		},
+		{
 			name:           "done",
 			state:          workflow.StateDone,
 			specifications: 1,

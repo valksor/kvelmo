@@ -116,7 +116,7 @@ func ASCIIDiagram(machine *Machine, opts DiagramOptions) string {
 	sb.WriteString("\n\n")
 
 	// Auxiliary states (bottom row)
-	auxStates := []State{StateWaiting, StateCheckpointing, StateReverting, StateRestoring, StateFailed}
+	auxStates := []State{StateWaiting, StatePaused, StateCheckpointing, StateReverting, StateRestoring, StateFailed}
 
 	sb.WriteString("Auxiliary States:\n")
 	for i, state := range auxStates {
@@ -247,7 +247,7 @@ func SVGDiagram(machine *Machine, opts DiagramOptions) string {
 	}
 
 	// Draw auxiliary states below
-	auxStates := []State{StateWaiting, StateCheckpointing, StateReverting, StateRestoring, StateFailed}
+	auxStates := []State{StateWaiting, StatePaused, StateCheckpointing, StateReverting, StateRestoring, StateFailed}
 	auxY := 250
 	auxStartX := 50
 

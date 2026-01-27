@@ -120,7 +120,7 @@ func executeNextStep(ctx context.Context, cond *conductor.Conductor, status *con
 	case workflow.StateDone:
 		return "none", nil
 
-	case workflow.StateFailed, workflow.StateWaiting:
+	case workflow.StateFailed, workflow.StateWaiting, workflow.StatePaused:
 		return "none", nil // User intervention required
 
 	case workflow.StateCheckpointing, workflow.StateReverting, workflow.StateRestoring:
@@ -177,6 +177,11 @@ func getNextActionsForState(state workflow.State, specifications int) []string {
 	case workflow.StateWaiting:
 		return []string{
 			"POST /api/v1/workflow/answer",
+		}
+	case workflow.StatePaused:
+		return []string{
+			"POST /api/v1/workflow/resume",
+			"GET /api/v1/costs",
 		}
 
 	case workflow.StateDone:
