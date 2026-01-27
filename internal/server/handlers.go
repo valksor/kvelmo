@@ -739,7 +739,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 
 	// Check if this is an HTMX request (keep URL, return HTML)
 	// HTMX sets this header when making requests
-	isHTMX := r.Header.Get("HX-Request") == "true"
+	isHTMX := r.Header.Get("Hx-Request") == "true"
 
 	if isHTMX {
 		// Render and return the full dashboard HTML
