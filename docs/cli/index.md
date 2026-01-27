@@ -30,6 +30,15 @@ These flags work with any command:
 | [sync](cli/sync.md)         | Sync task from provider and generate delta spec |
 | [abandon](cli/abandon.md)   | Abandon task without merging               |
 
+### Quick Tasks
+
+| Command                       | Description                              |
+| ----------------------------- | ---------------------------------------- |
+| [quick](cli/quick.md)         | Create a task quickly in a queue        |
+| [optimize](cli/optimize.md)   | AI optimize a task based on notes        |
+| [export](cli/export.md)       | Export queue task to markdown file       |
+| [submit](cli/submit.md)       | Submit queue task to external provider   |
+
 ### Workflow
 
 | Command                       | Description                                        |

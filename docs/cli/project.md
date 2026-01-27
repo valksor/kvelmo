@@ -25,8 +25,9 @@ mehr project plan <source> [flags]
 
 **Arguments:**
 - `source` - Source input:
-  - `dir:/path` - Directory of files to scan
+  - `dir:/path` - Directory of files to scan (reads all content)
   - `file:spec.md` - Single file
+  - `research:/path` - Directory for AI to research (agent explores selectively, best for large docs)
   - `github:123`, `jira:PROJ-123` - Provider reference (fetches task details from provider)
   - URL - Fetch requirements from a URL (via web API only)
 
@@ -39,8 +40,11 @@ mehr project plan <source> [flags]
 **Examples:**
 
 ```bash
-# Plan from a directory of specs
-mehr project plan dir:/workspace/.final/
+# Plan from a directory of specs (reads all files)
+mehr project plan dir:/workspace/specs/
+
+# Plan from large documentation base (agent explores selectively)
+mehr project plan research:/workspace/.final/ --title "Reports System"
 
 # Plan from a single file
 mehr project plan file:requirements.md --title "Q1 Features"
@@ -48,6 +52,15 @@ mehr project plan file:requirements.md --title "Q1 Features"
 # Plan from a provider reference
 mehr project plan github:123
 ```
+
+**Source Type Differences:**
+
+| Source    | Description                              | Best For                    |
+|-----------|------------------------------------------|-----------------------------|
+| `dir:`     | Reads ALL file contents into prompt    | <50 files, small codebases |
+| `research:`| Provides file manifest, AI uses tools  | Large docs, existing tasks |
+| `file:`    | Single file analysis                   | Individual requirement files |
+| `provider:`| Fetches from external task provider    | GitHub/Jira/Wrike issues      |
 
 The AI will analyze the source and produce a structured task breakdown with dependencies.
 
@@ -169,24 +182,59 @@ mehr project submit [flags]
 ```
 
 **Flags:**
-| Flag            | Short | Description                          |
-| --------------- | ----- | ------------------------------------ |
-| `--provider`    | `-p`  | Target provider (github, jira, etc.) |
-| `--create-epic` |       | Create parent epic/folder            |
-| `--labels`      |       | Additional labels for all tasks      |
-| `--dry-run`     |       | Preview without creating             |
+| Flag            | Short | Description                                     |
+| --------------- | ----- | ------------------------------------------------ |
+| `--provider`    | `-p`  | Target provider (github, jira, etc.)            |
+| `--create-epic` |       | Create parent epic/folder                        |
+| `--labels`      |       | Additional labels for all tasks                  |
+| `--dry-run`     |       | Preview without creating                          |
+| `--task`        |       | Submit only specific tasks (comma-separated IDs)  |
+| `--comment`     |       | Comment to add when tasks are already submitted |
+| `--mention`     |       | Mention/notification to add to all submitted tasks |
 
 **Examples:**
 
 ```bash
-# Submit to Wrike with dependencies
+# Submit all tasks to Wrike
 mehr project submit --provider wrike
+
+# Submit only specific tasks
+mehr project submit --provider github --task task-3,task-5
 
 # Preview what would be created
 mehr project submit --provider github --dry-run
 
 # Submit with epic
 mehr project submit --provider jira --create-epic
+
+# Add comment when re-submitting already-submitted tasks
+mehr project submit --provider wrike --task task-4 --comment "Updated per code review"
+
+# Submit with manager notification
+mehr project submit --provider jira --mention "@manager please review"
+```
+
+**Partial Task Submission:**
+
+By default, `submit` submits all tasks in the queue. Use `--task` to submit specific tasks:
+
+```bash
+# Submit only task-3 and task-5
+mehr project submit --provider github --task task-3,task-5
+```
+
+This is useful when:
+- You want to review tasks before submitting in batches
+- Some tasks need more work before being ready
+- You're working with a provider that has rate limits
+
+**Re-submitting Tasks:**
+
+If some tasks were already submitted, you can add a comment using `--comment`:
+
+```bash
+# Add comment to already-submitted tasks
+mehr project submit --provider github --task task-3,task-5 --comment "Updated per feedback"
 ```
 
 **Dependency Support:**
