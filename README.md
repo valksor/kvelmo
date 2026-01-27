@@ -163,8 +163,10 @@ Everything you need to manage AI-powered development tasks from your browser:
 | 📜 **Live Output** | Watch the AI think and work as it happens |
 | 🔙 **Undo/Redo** | Easy checkpoint navigation - go back if something goes wrong |
 | 💬 **Notes** | Add context for the AI at any point |
+| 💰 **Budgets** | Set cost/token limits with warnings and auto-pause |
 | ⚙️ **Settings** | Configure agents, providers, and workflow options |
 | 🔍 **History** | Browse and search past tasks |
+| 🏷️ **Labels** | Organize tasks with custom labels for filtering and grouping |
 | 🤖 **Agents Info** | View available AI agents with capabilities, models, and status |
 | 🔌 **Providers Info** | View available task providers (GitHub, Jira, Linear, etc.) |
 | 🌐 **Browser Automation** | Control Chrome for web testing (when enabled) |
@@ -257,11 +259,13 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr status` | Show full task details with workflow state diagram |
 | `mehr guide` | What should I do next? (quick suggestion) |
 | `mehr continue` | Resume work on task |
+| `mehr budget` | Manage cost and token budgets |
 | `mehr finish` | Complete task and merge changes |
 | `mehr list` | List all tasks with search, filter, and sort (`--search`, `--filter`, `--sort`, `--format`) |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
+| `mehr label` | Manage task labels (add, remove, set, list) |
 | `mehr specification view <number>` | View specification content (use `--all` for all, `-o` to save to file) |
 | `mehr license` | Display project license (BSD 3-Clause) |
 | `mehr license info` | List all dependency licenses with SPDX IDs (`--json`, `--unknown-only`) |
@@ -451,4 +455,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 ## License
 
 By contributing to Mehrhof, you agree that your contributions will be licensed under the [BSD 3-Clause License](LICENSE).
-

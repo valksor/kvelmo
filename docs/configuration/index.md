@@ -67,6 +67,7 @@ env:
 | `sandbox` | Agent execution sandboxing | [Sandbox Guide](../advanced/sandbox.md) |
 | `browser` | Browser automation | [Browser Configuration](browser.md) |
 | `storage` | Task data and caches | [Storage Configuration](storage.md) |
+| `budget` | Cost and token budgets | (see below) |
 
 ### providers
 
@@ -83,6 +84,23 @@ workflow:
   session_retention_days: 30       # Keep sessions for N days
   delete_work_on_finish: false     # Delete work dirs after finish
   delete_work_on_abandon: true     # Delete work dirs on abandon
+```
+
+### budget
+
+```yaml
+budget:
+  per_task:
+    max_tokens: 100000
+    max_cost: 10.00
+    currency: USD
+    on_limit: warn   # warn | pause | stop
+    warning_at: 0.8
+
+  monthly:
+    max_cost: 100.00
+    currency: USD
+    warning_at: 0.8
 ```
 
 ### env

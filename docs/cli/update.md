@@ -2,6 +2,8 @@
 
 Update mehr to the latest version from GitHub releases.
 
+> **Note:** Self-update is CLI-only. Use this command to keep your CLI installation up to date.
+
 ## Synopsis
 
 ```bash

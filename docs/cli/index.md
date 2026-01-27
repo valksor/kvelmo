@@ -88,7 +88,9 @@ These flags work with any command:
 | [plugins](cli/plugins.md) | Manage extension plugins                 |
 | [templates](cli/templates.md) | Manage task templates               |
 | [cost](cli/cost.md)       | Show token usage and costs               |
+| [budget](cli/budget.md)   | Manage cost and token budgets            |
 | [license](cli/license.md) | Display license information              |
+| [label](cli/label.md)     | Manage task labels                        |
 | [list](cli/list.md)       | List all tasks in workspace              |
 | [version](cli/version.md) | Print version information                |
 | [mcp](cli/mcp.md)         | Start MCP server for AI agent integration |

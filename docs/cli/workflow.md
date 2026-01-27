@@ -81,6 +81,7 @@ mehr guide
 | **implementing** | AI generating code            | Wait for completion or answer          |
 | **reviewing** | Code review in progress           | Wait for completion                    |
 | **waiting**   | Agent needs your input            | Answer with `mehr note` or `mehr answer` |
+| **paused**    | Paused due to budget limits       | `mehr budget status`, `mehr budget resume --confirm` |
 | **done**      | Task completed                    | Start a new task                       |
 | **failed**    | Error occurred                    | Restart task                           |
 
@@ -103,10 +104,14 @@ For a deeper understanding of the workflow state machine, guards, and lifecycle,
 | ------------ | ------------ | --------------- | -------------------------------------- |
 | idle         | planning     | `mehr plan`     | Task has valid source                  |
 | planning     | idle         | (completion)    | Specifications created                 |
+| planning     | paused       | (budget limit)  | Budget limit reached                   |
 | idle         | implementing | `mehr implement` | Specifications exist                   |
+| implementing | paused       | (budget limit)  | Budget limit reached                   |
 | implementing | idle         | (completion)    | Code generated                         |
 | idle         | reviewing    | `mehr review`   | Code changes exist                     |
+| reviewing    | paused       | (budget limit)  | Budget limit reached                   |
 | idle         | done         | `mehr finish`   | Quality checks pass                    |
+| paused       | idle         | `mehr budget resume --confirm` | Resume after budget pause |
 
 ## See Also
 

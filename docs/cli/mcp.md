@@ -2,6 +2,8 @@
 
 Start an MCP (Model Context Protocol) server for AI agent integration.
 
+> **Note:** This is a CLI-only feature. No web UI equivalent exists for the MCP server, as it is designed for stdio-based communication with AI agents.
+
 ## Synopsis
 
 ```bash

@@ -197,23 +197,6 @@ mehr serve register --list
 mehr serve unregister
 ```
 
-## Web UI Documentation
-
-The Web UI provides comprehensive features including:
-
-- **Dashboard** - Task management, real-time updates, workflow visualization
-- **Settings** - Configure agents, providers, git, and workflow options
-- **Browser Control** - Automate Chrome for testing and authentication
-- **REST API** - Programmatic access to all features
-- **Remote Access** - SSH tunnels, Cloudflare, Tailscale integration
-
-For complete Web UI documentation, see:
-- [Web UI Overview](../web-ui/index.md)
-- [Getting Started](../web-ui/getting-started.md)
-- [REST API Reference](../web-ui/api.md)
-- [Remote Access](../web-ui/remote-access.md)
-- [Authentication](../web-ui/authentication.md)
-
 ## Notes
 
 - The server binds to `localhost` by default for security

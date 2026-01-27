@@ -169,6 +169,113 @@ Task token usage and cost breakdown.
 curl http://localhost:PORT/api/v1/tasks/a1b2c3d4/costs
 ```
 
+**Response (example):**
+```json
+{
+  "task_id": "a1b2c3d4",
+  "total_tokens": 12000,
+  "input_tokens": 7000,
+  "output_tokens": 5000,
+  "cached_tokens": 1000,
+  "total_cost_usd": 4.25,
+  "budget": {
+    "max_cost": 5.0,
+    "currency": "USD",
+    "on_limit": "pause",
+    "warning_at": 0.8,
+    "warned": true
+  }
+}
+```
+
+### GET /api/v1/task/labels
+
+Get labels for the active task.
+
+```bash
+curl http://localhost:PORT/api/v1/task/labels
+```
+
+**Response:**
+```json
+{
+  "task_id": "a1b2c3d4",
+  "labels": ["priority:high", "type:bug", "team:backend"]
+}
+```
+
+### POST /api/v1/task/labels
+
+Manage labels for the active task.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/task/labels \
+  -H "Content-Type: application/json" \
+  -d '{"action": "add", "labels": ["priority:high", "type:bug"]}'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `action` | string | Operation: `add`, `remove`, or `set` |
+| `labels` | array | Labels to operate on |
+
+**Actions:**
+- `add` - Add labels (ignores duplicates)
+- `remove` - Remove labels (ignores non-existent)
+- `set` - Replace all labels (empty array clears all)
+
+**Response (add action):**
+```json
+{
+  "task_id": "a1b2c3d4",
+  "action": "add",
+  "added_labels": ["priority:high", "type:bug"],
+  "labels": ["priority:high", "type:bug", "team:backend"]
+}
+```
+
+**Response (remove action):**
+```json
+{
+  "task_id": "a1b2c3d4",
+  "action": "remove",
+  "removed_labels": ["priority:high"],
+  "labels": ["type:bug", "team:backend"]
+}
+```
+
+**Response (set action):**
+```json
+{
+  "task_id": "a1b2c3d4",
+  "action": "set",
+  "labels": ["priority:critical"]
+}
+```
+
+### GET /api/v1/labels
+
+List all unique labels across all tasks with counts.
+
+```bash
+curl http://localhost:PORT/api/v1/labels
+```
+
+**Response:**
+```json
+{
+  "labels": {
+    "priority:high": 5,
+    "type:bug": 3,
+    "team:backend": 7,
+    "status:blocked": 1
+  },
+  "total_tasks": 12,
+  "labeled_tasks": 10
+}
+```
+
 ### GET /api/v1/projects
 
 List all projects (global mode only).
@@ -244,6 +351,28 @@ Get costs for all tasks with totals.
 curl http://localhost:PORT/api/v1/costs
 ```
 
+**Response (example):**
+```json
+{
+  "tasks": [
+    {
+      "task_id": "a1b2c3d4",
+      "total_cost_usd": 4.25
+    }
+  ],
+  "grand_total": {
+    "total_tokens": 12000,
+    "cost_usd": 4.25
+  },
+  "monthly": {
+    "month": "2026-01",
+    "spent": 12.5,
+    "max_cost": 100,
+    "warning_at": 0.8
+  }
+}
+```
+
 ---
 
 ## Workflow Actions (POST)
@@ -316,6 +445,14 @@ Submit answer to pending question.
 curl -X POST http://localhost:PORT/api/v1/workflow/answer \
   -H "Content-Type: application/json" \
   -d '{"content": "Use PostgreSQL"}'
+```
+
+### POST /api/v1/workflow/resume
+
+Resume a task paused due to budget limits.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/workflow/resume
 ```
 
 ### POST /api/v1/workflow/abandon

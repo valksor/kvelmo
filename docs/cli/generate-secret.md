@@ -2,6 +2,8 @@
 
 Generate a cryptographically secure secret for PR review state signing.
 
+> **Note:** This is a CLI-only utility. For authentication setup in the web UI, see [Web UI Authentication](../web-ui/authentication.md).
+
 ## Synopsis
 
 ```bash
