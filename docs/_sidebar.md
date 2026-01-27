@@ -53,6 +53,7 @@
   - [ClickUp](providers/clickup.md)
   - [Azure DevOps](providers/azure-devops.md)
   - [Notion](providers/notion.md)
+  - [Queue](providers/queue.md)
   - [Trello](providers/trello.md)
   - [Wrike](providers/wrike.md)
   - [YouTrack](providers/youtrack.md)
@@ -82,6 +83,11 @@
     - [list](cli/list.md)
     - [sync](cli/sync.md)
     - [abandon](cli/abandon.md)
+  - **Quick Tasks**
+    - [quick](cli/quick.md)
+    - [optimize](cli/optimize.md)
+    - [export](cli/export.md)
+    - [submit](cli/submit.md)
   - **History**
     - [undo](cli/undo.md)
     - [redo](cli/redo.md)
@@ -118,6 +124,7 @@
   - [Performance & Cost](advanced/optimization.md)
   - [Multi-Agent Orchestration](advanced/multi-agent.md)
   - [Semantic Memory](advanced/semantic-memory.md)
+  - [Agent Sandboxing](advanced/sandbox.md)
   - [Security Scanning](advanced/security.md)
   - [ML Predictions](advanced/predictions.md)
 
