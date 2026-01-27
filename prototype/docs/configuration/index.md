@@ -43,6 +43,10 @@ agent:
   default: claude
   timeout: 300
 
+sandbox:
+  enabled: false
+  network: true
+
 providers:
   default: file
 
@@ -60,6 +64,7 @@ env:
 |---------|-------------|---------|
 | `git` | Version control integration | [Git Configuration](git.md) |
 | `agent` | AI agent behavior and aliases | [Agents Guide](../agents/index.md) |
+| `sandbox` | Agent execution sandboxing | [Sandbox Guide](../advanced/sandbox.md) |
 | `browser` | Browser automation | [Browser Configuration](browser.md) |
 | `storage` | Task data and caches | [Storage Configuration](storage.md) |
 

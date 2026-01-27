@@ -31,6 +31,8 @@ curl -b cookies.txt http://localhost:PORT/api/v1/status
 | **Authentication** | Login, logout |
 | **Read** | Status, context, tasks, specs, sessions, notes, costs |
 | **Workflow** | start, plan, implement, review, finish, undo, redo, continue, auto |
+| **Project** | plan, tasks, submit, reorder, start |
+| **Quick Tasks** | list, get, create, note, optimize, export, submit, start, delete, card |
 | **Browser** | Status, tabs, goto, navigate, screenshot, click, type, eval, dom, close |
 | **Settings** | Get, update settings |
 | **Templates** | List, get, apply |
@@ -675,6 +677,387 @@ curl -X POST http://localhost:PORT/api/v1/settings \
     "agent": {"timeout": 600}
   }'
 ```
+
+---
+
+## Project Planning
+
+The project planning API provides a complete workflow for planning and executing multi-task projects with dependencies.
+
+### POST /api/v1/project/plan
+
+Create a project plan from a source (directory, file, or provider reference).
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/project/plan \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file:requirements.md",
+    "title": "Q1 Features"
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | Source: `dir:/path`, `file:/path`, `github:123`, `jira:PROJ-123`, URL |
+| `title` | string | Optional project title |
+| `instructions` | string | Optional custom instructions for AI |
+
+**Response:**
+```json
+{
+  "queue_id": "auth-system-abc123",
+  "title": "Q1 Features",
+  "tasks": [...],
+  "questions": [],
+  "blockers": []
+}
+```
+
+### GET /api/v1/project/tasks
+
+List tasks in a project queue.
+
+```bash
+curl "http://localhost:PORT/api/v1/project/tasks?queue_id=auth-system-abc123"
+```
+
+**Query Parameters:**
+| Parameter | Description |
+|-----------|-------------|
+| `queue_id` | Queue ID (default: most recent) |
+| `status` | Filter by status (ready, blocked, submitted) |
+| `show_deps` | Show dependency graph |
+
+### POST /api/v1/project/submit
+
+Submit tasks to an external provider (GitHub, Jira, Wrike, etc.).
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/project/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queue_id": "auth-system-abc123",
+    "provider": "wrike",
+    "create_epic": true,
+    "labels": ["q1", "feature"],
+    "dry_run": false,
+    "mention": "@manager please review"
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `queue_id` | string | Queue ID (default: most recent) |
+| `provider` | string | Provider name (wrike, github, jira, etc.) |
+| `create_epic` | boolean | Create parent epic/project |
+| `labels` | array | Labels to apply to all tasks |
+| `dry_run` | boolean | Preview without creating |
+| `task` | array | Submit only specific task IDs (e.g., ["task-3", "task-5"]) |
+| `comment` | string | Comment to add when tasks already submitted |
+| `mention` | string | Mention/notification to add to all submitted tasks |
+
+**Response:**
+```json
+{
+  "dry_run": false,
+  "epic": {
+    "external_id": "EXT-100",
+    "external_url": "https://wrike.com/...",
+    "title": "Auth System"
+  },
+  "tasks": [
+    {
+      "local_id": "task-1",
+      "external_id": "EXT-101",
+      "external_url": "https://wrike.com/...",
+      "title": "Set up JWT authentication"
+    }
+  ]
+}
+```
+
+### POST /api/v1/project/reorder
+
+Reorder tasks in the queue.
+
+**AI-based reordering:**
+```bash
+curl -X POST http://localhost:PORT/api/v1/project/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"auto": true}'
+```
+
+**Manual reordering:**
+```bash
+curl -X POST http://localhost:PORT/api/v1/project/reorder \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_id": "task-3",
+    "position": "before",
+    "reference_id": "task-1"
+  }'
+```
+
+### POST /api/v1/project/start
+
+Start implementing tasks from the queue.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/project/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queue_id": "auth-system-abc123",
+    "auto": false
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `queue_id` | string | Queue ID (default: most recent) |
+| `task_id` | string | Optional specific task to start |
+| `auto` | boolean | Auto-chain through all tasks |
+
+---
+
+## Quick Tasks
+
+The quick tasks API provides rapid task capture and management without the full project planning workflow.
+
+### GET /api/v1/quick
+
+List all quick tasks.
+
+```bash
+curl http://localhost:PORT/api/v1/quick
+```
+
+**Response:**
+```json
+{
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Fix typo in README",
+      "priority": 1,
+      "labels": ["documentation", "typo-fix"],
+      "status": "pending",
+      "note_count": 2
+    }
+  ],
+  "count": 1
+}
+```
+
+### GET /api/v1/quick/{taskId}
+
+Get a specific quick task.
+
+```bash
+curl http://localhost:PORT/api/v1/quick/task-1
+```
+
+**Response:**
+```json
+{
+  "id": "task-1",
+  "title": "Fix typo in README",
+  "description": "The word Installation is misspelled...",
+  "priority": 1,
+  "labels": ["documentation"],
+  "status": "pending",
+  "created_at": "2025-01-15T10:30:00Z",
+  "notes": [
+    {"timestamp": "2025-01-15T10:35:00Z", "content": "Found in getting started section"}
+  ]
+}
+```
+
+### POST /api/v1/quick
+
+Create a new quick task.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "fix typo in README line 42",
+    "title": "Fix README typo",
+    "priority": 1,
+    "labels": ["documentation", "typo-fix"]
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | Task description (required) |
+| `title` | string | Optional custom title (auto-extracted from description if not provided) |
+| `priority` | number | Priority level (1=high, 2=normal, 3=low, default: 2) |
+| `labels` | array | Labels to apply |
+| `queue` | string | Target queue ID (default: "quick-tasks") |
+
+**Response:**
+```json
+{
+  "id": "task-1",
+  "title": "Fix README typo",
+  "queue_id": "quick-tasks",
+  "message": "Task created"
+}
+```
+
+### POST /api/v1/quick/{taskId}/note
+
+Add a note to a quick task.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/task-1/note \
+  -H "Content-Type: application/json" \
+  -d '{"note": "The typo is on line 42"}'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `note` | string | Note content (preferred field name) |
+| `content` | string | Legacy field name (still supported for backward compatibility) |
+
+### POST /api/v1/quick/{taskId}/optimize
+
+AI optimize a task based on its notes.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/task-1/optimize \
+  -H "Content-Type: application/json" \
+  -d '{"agent": "claude-opus"}'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `agent` | string | Optional agent override for optimization |
+
+**Response:**
+```json
+{
+  "original_title": "fix typo",
+  "optimized_title": "Fix typo: Installaton → Installation in README",
+  "original_description": "...",
+  "optimized_description": "...",
+  "added_labels": ["documentation", "typo-fix"],
+  "improvement_notes": [
+    "Title expanded to include specific location and correction",
+    "Description includes file location and context"
+  ]
+}
+```
+
+### POST /api/v1/quick/{taskId}/export
+
+Export a quick task to a markdown file.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/task-1/export \
+  -H "Content-Type: application/json" \
+  -d '{"output": "specs/readme-typo.md"}'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `output` | string | Output file path (required) |
+
+**Response:**
+```json
+{
+  "file": "specs/readme-typo.md",
+  "content": "---\ntitle: Fix typo...\n---\n\n# Fix typo...",
+  "message": "Task exported"
+}
+```
+
+### POST /api/v1/quick/{taskId}/submit
+
+Submit a quick task to an external provider.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/task-1/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "github",
+    "labels": ["bug", "urgent"],
+    "dry_run": false
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `provider` | string | Provider name (required) - github, jira, wrike, etc. |
+| `labels` | array | Additional labels to apply |
+| `dry_run` | boolean | Preview without submitting (default: false) |
+
+**Response:**
+```json
+{
+  "dry_run": false,
+  "tasks": [{
+    "local_id": "task-1",
+    "external_id": "valksor/go-mehrhof#123",
+    "external_url": "https://github.com/valksor/go-mehrhof/issues/123",
+    "title": "Fix typo in README"
+  }],
+  "message": "Task submitted successfully"
+}
+```
+
+### POST /api/v1/quick/{taskId}/start
+
+Start standard workflow from a quick task.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/task-1/start \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Response:**
+```json
+{
+  "task_id": "abc12345",
+  "message": "Workflow started",
+  "state": "idle"
+}
+```
+
+### DELETE /api/v1/quick/{taskId}
+
+Delete a quick task.
+
+```bash
+curl -X DELETE http://localhost:PORT/api/v1/quick/task-1
+```
+
+**Response:**
+```json
+{
+  "message": "Task deleted"
+}
+```
+
+### GET /api/v1/quick/{taskId}/card
+
+Get task card HTML for UI rendering.
+
+```bash
+curl http://localhost:PORT/api/v1/quick/task-1/card
+```
+
+**Response:** HTML fragment for embedding in UI.
 
 ---
 
