@@ -147,6 +147,7 @@
   - [Agent Sandboxing](advanced/sandbox.md)
   - [Security Scanning](advanced/security.md)
   - [ML Predictions](advanced/predictions.md)
+  - [E2E Testing](advanced/e2e.md)
 
 - **Troubleshooting**
   - [Common Issues](troubleshooting/index.md)

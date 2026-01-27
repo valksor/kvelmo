@@ -442,7 +442,24 @@ make fmt          # Format code (gofmt, goimports, gofumpt)
 make tidy         # Tidy dependencies
 make hooks        # Enable versioned git hooks
 make lefthook     # Install pre-commit hooks (auto-format + lint)
+make e2e          # Run fast E2E tests (~10 min, local only)
 ```
+
+### E2E Tests
+
+Fast E2E tests validate the core AI workflow (start → plan → implement → review → finish) using your local configuration.
+
+**Prerequisites:**
+- `ZAI_API_KEY` environment variable
+- `claude` CLI in PATH
+- Local `.mehrhof/config.yaml` and `.mehrhof/.env`
+
+```bash
+make e2e-fast     # Run fast E2E tests (~10 min)
+make e2e-check    # Verify E2E prerequisites
+```
+
+Tests run in temporary directories and use your local `glm` agent configuration. No git operations or GitHub access required.
 
 **CI/CD**: PRs trigger lint/test/build via GitHub Actions. Releases use [GoReleaser](https://goreleaser.com/) with [Minisign](https://github.com/jedisct1/minisign) binary signing.
 

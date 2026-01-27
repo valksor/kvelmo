@@ -152,6 +152,20 @@ func TestParse(t *testing.T) {
 }
 ```
 
+### E2E Tests
+
+For changes affecting the core workflow, run fast E2E tests locally:
+
+```bash
+# Check prerequisites (ZAI_API_KEY, claude CLI)
+make e2e-check
+
+# Run fast E2E tests (~10 min)
+make e2e
+```
+
+E2E tests validate the full workflow (start → plan → implement → review → finish) using your local configuration. See [E2E Testing](https://valksor.com/docs/mehrhof/nightly/#/advanced/e2e) for details.
+
 ## Pull Request Process
 
 ### Before Submitting
