@@ -32,6 +32,26 @@
                 </select>
                 <p class="text-xs text-surface-500 dark:text-surface-400 mt-1">Run multiple agents in parallel</p>
             </div>
+
+            <!-- Sandbox Toggle -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <label for="sandbox-toggle" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">Sandbox</label>
+                    <p class="text-xs text-surface-500 dark:text-surface-400">Isolate agent execution</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="sandbox-toggle" class="sr-only peer"
+                           {{if .SandboxEnabled}}checked{{end}}>
+                    <div class="w-11 h-6 bg-surface-200 peer-focus:outline-none peer-focus:ring-4
+                                peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer
+                                dark:bg-surface-700 peer-checked:after:translate-x-full
+                                peer-checked:after:border-white after:content-[''] after:absolute
+                                after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300
+                                after:border after:rounded-full after:h-5 after:w-5 after:transition-all
+                                dark:border-surface-600 peer-checked:bg-brand-600">
+                    </label>
+                </label>
+            </div>
         </div>
     </div>
     {{end}}
@@ -87,6 +107,29 @@ function implementWithOptions(event) {
     // Use HTMX to make the request
     htmx.ajax('POST', url, {target: '#task-card', swap: 'outerHTML'});
 }
+
+// Sandbox toggle handler
+document.addEventListener('DOMContentLoaded', function() {
+    const sandboxToggle = document.getElementById('sandbox-toggle');
+    if (sandboxToggle) {
+        sandboxToggle.addEventListener('change', function(e) {
+            const endpoint = e.target.checked ? '/api/v1/sandbox/enable' : '/api/v1/sandbox/disable';
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => {
+                if (response.ok) {
+                    // Refresh the task card to show updated sandbox status
+                    htmx.trigger('#task-card', 'sandboxStatusChanged');
+                }
+            }).catch(err => {
+                console.error('Failed to toggle sandbox:', err);
+                // Revert toggle on error
+                e.target.checked = !e.target.checked;
+            });
+        });
+    }
+});
 </script>
 {{end}}
 {{template "actions" .}}
