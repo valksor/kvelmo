@@ -8,10 +8,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
+
+// mehrBinPath is the path to the mehr binary to test.
+// Relative to repository root, built by `make build`.
+var mehrBinPath = findMehrBinary()
 
 // Helper wraps testing.T and directory for running mehr commands.
 type Helper struct {
@@ -26,7 +33,18 @@ func NewHelper(t *testing.T, dir string) *Helper {
 	return &Helper{t: t, dir: dir}
 }
 
+// findMehrBinary finds the mehr binary relative to this test file.
+func findMehrBinary() string {
+	// Get path to this test file
+	_, testFile, _, _ := runtime.Caller(0)
+	// Navigate from e2e/fast/helper_test.go to repo root
+	// e2e/fast/helper_test.go -> build/mehr
+	repoRoot := filepath.Dir(filepath.Dir(filepath.Dir(testFile)))
+	return filepath.Join(repoRoot, "build", "mehr")
+}
+
 // InitWithLocalConfig copies the local .mehrhof/config.yaml and .env into the test workspace.
+// Also validates that the default agent is "glm" to ensure tests use ZAI endpoint.
 func (h *Helper) InitWithLocalConfig() {
 	localMehrhofDir := h.findLocalMehrhofDir()
 	if localMehrhofDir == "" {
@@ -44,12 +62,38 @@ func (h *Helper) InitWithLocalConfig() {
 		h.t.Fatalf("failed to copy config.yaml: %v", err)
 	}
 
+	// Validate that default agent is "glm" (E2E tests require ZAI endpoint)
+	h.validateDefaultAgent(testConfig)
+
 	localEnv := filepath.Join(localMehrhofDir, ".env")
 	if _, err := os.Stat(localEnv); err == nil {
 		testEnv := filepath.Join(testConfigDir, ".env")
 		if err := copyFile(localEnv, testEnv); err != nil {
 			h.t.Fatalf("failed to copy .env: %v", err)
 		}
+	}
+}
+
+// validateDefaultAgent checks that the config's default agent is "glm".
+// E2E tests must use ZAI endpoint to avoid consuming Claude API quota.
+func (h *Helper) validateDefaultAgent(configPath string) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		h.t.Fatalf("failed to read config: %v", err)
+	}
+
+	var config struct {
+		Agent struct {
+			Default string `yaml:"default"`
+		} `yaml:"agent"`
+	}
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		h.t.Fatalf("failed to parse config: %v", err)
+	}
+
+	if config.Agent.Default != "glm" {
+		h.t.Skipf("E2E tests require agent.default=glm (got %q) to use ZAI endpoint. "+
+			"Set agent.default: glm in .mehrhof/config.yaml to run E2E tests.", config.Agent.Default)
 	}
 }
 
@@ -73,9 +117,9 @@ func (h *Helper) findLocalMehrhofDir() string {
 
 // Run executes a mehr command.
 func (h *Helper) Run(args ...string) {
-	cmd := exec.Command("mehr", args...)
+	cmd := exec.Command(mehrBinPath, args...)
 	cmd.Dir = h.dir
-	cmd.Env = append(os.Environ(), "ZAI_API_KEY="+os.Getenv("ZAI_API_KEY"))
+	// Subprocess inherits parent environment - mehrhof loads .env via Overload()
 
 	out, err := cmd.CombinedOutput()
 	h.lastOut = string(out)
@@ -94,9 +138,9 @@ func (h *Helper) Run(args ...string) {
 
 // RunWithTimeout executes a mehr command with a timeout.
 func (h *Helper) RunWithTimeout(cmd string, timeout time.Duration, args ...string) {
-	c := exec.Command("mehr", append([]string{cmd}, args...)...)
+	c := exec.Command(mehrBinPath, append([]string{cmd}, args...)...)
 	c.Dir = h.dir
-	c.Env = append(os.Environ(), "ZAI_API_KEY="+os.Getenv("ZAI_API_KEY"))
+	// Subprocess inherits parent environment - mehrhof loads .env via Overload()
 
 	done := make(chan error, 1)
 	go func() {
@@ -154,6 +198,17 @@ func (h *Helper) AssertFileContains(file, content string) {
 	}
 	if !contains(string(data), content) {
 		h.t.Errorf("%s does not contain %q\ncontent:\n%s", file, content, string(data))
+	}
+}
+
+// AssertFileNotExists checks that a file or directory does not exist.
+func (h *Helper) AssertFileNotExists(path string) {
+	fullPath := path
+	if !filepath.IsAbs(path) {
+		fullPath = filepath.Join(h.dir, path)
+	}
+	if _, err := os.Stat(fullPath); err == nil {
+		h.t.Errorf("path %q should not exist but it does", path)
 	}
 }
 

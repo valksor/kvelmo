@@ -10,10 +10,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if os.Getenv("ZAI_API_KEY") == "" {
-		println("Skipping e2e-fast: ZAI_API_KEY not set")
-		os.Exit(0)
-	}
 	os.Exit(m.Run())
 }
 
@@ -33,9 +29,9 @@ Create hello.go with a function Hello() string that returns "Hello, World!"
 
 	h.Run("start", "file:simple.md", "--no-branch")
 	h.AssertSuccess()
-	h.AssertOutputContains("Started task")
+	h.AssertOutputContains("Task started")
 
-	h.RunWithTimeout("plan", 5*time.Minute)
+	h.RunWithTimeout("plan", 5*time.Minute, "--auto-approve")
 	h.AssertSuccess()
 
 	h.RunWithTimeout("implement", 5*time.Minute)
@@ -89,9 +85,9 @@ Add a README.md file with a simple description.
 
 	h.Run("start", "file:task.md", "--no-branch")
 	h.AssertSuccess()
-	h.AssertOutputContains("Started task")
+	h.AssertOutputContains("Task started")
 
-	h.RunWithTimeout("plan", 3*time.Minute)
+	h.RunWithTimeout("plan", 3*time.Minute, "--auto-approve")
 	h.AssertSuccess()
 }
 
@@ -112,9 +108,43 @@ Add a comment to main.go
 	h.Run("start", "file:task.md", "--no-branch")
 	h.AssertSuccess()
 
-	h.RunWithTimeout("plan", 3*time.Minute)
+	h.RunWithTimeout("plan", 3*time.Minute, "--auto-approve")
 	h.AssertSuccess()
 
 	h.RunWithTimeout("implement", 3*time.Minute, "--dry-run")
 	h.AssertSuccess()
+}
+
+// TestAbsolutePathHandling verifies that files are created in the correct location
+// even when the agent specification contains absolute paths.
+// This is a regression test for the bug where paths like /tmp/test/hello.md
+// would create nested directories like /tmp/test/tmp/test/hello.md.
+func TestAbsolutePathHandling(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	h.WriteTask("task.md", `---
+title: Create hello file
+---
+
+Create a file hello.md in the current directory with content "Hello, World!"
+`)
+
+	h.Run("start", "file:task.md", "--no-branch")
+	h.AssertSuccess()
+
+	h.RunWithTimeout("plan", 3*time.Minute, "--auto-approve")
+	h.AssertSuccess()
+
+	h.RunWithTimeout("implement", 3*time.Minute)
+	h.AssertSuccess()
+
+	// Verify file is created in the correct location (not nested)
+	h.AssertFileExists("hello.md")
+	h.AssertFileContains("hello.md", "Hello, World!")
+
+	// Verify no nested directories were created (e.g., agent didn't create /tmp/test/hello.md)
+	h.AssertFileNotExists("tmp")
 }
