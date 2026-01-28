@@ -327,7 +327,7 @@ func (sm *SessionManager) tryLaunchBrowser(ctx context.Context, port int) (*Sess
 	}
 
 	// Try to find Chrome executable
-	chromePath, err := findChrome()
+	chromePath, err := FindChrome()
 	if err != nil {
 		_ = os.RemoveAll(userDataDir)
 
@@ -515,8 +515,8 @@ func (sm *SessionManager) killProcess(pid int) {
 	_, _ = process.Wait()
 }
 
-// findChrome locates the Chrome executable on the system.
-func findChrome() (string, error) {
+// FindChrome locates the Chrome executable on the system.
+func FindChrome() (string, error) {
 	// Check explicit environment variable first (for CI/custom installs)
 	if path := os.Getenv("CHROME_PATH"); path != "" {
 		if _, err := os.Stat(path); err == nil {
@@ -559,4 +559,11 @@ func findChrome() (string, error) {
 	}
 
 	return "", fmt.Errorf("chrome not found (tried PATH: %v, plus known locations)", executables)
+}
+
+// ChromeAvailable returns true if Chrome is found on the system.
+func ChromeAvailable() bool {
+	_, err := FindChrome()
+
+	return err == nil
 }

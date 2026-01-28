@@ -10,10 +10,20 @@ import (
 	"time"
 )
 
+// skipIfNoChrome skips the test if Chrome is not available.
+func skipIfNoChrome(t *testing.T) {
+	t.Helper()
+	if !ChromeAvailable() {
+		t.Skip("Chrome not found - skipping browser integration tests. " +
+			"Install Chrome or set CHROME_PATH environment variable.")
+	}
+}
+
 // TestBrowserIntegration tests end-to-end browser functionality.
 // This is an integration test that requires Chrome to be installed.
 // Headless mode is the default. Set TEST_BROWSER_VISIBLE=true to see the browser window.
 func TestBrowserIntegration(t *testing.T) {
+	skipIfNoChrome(t)
 	// Use headless mode by default
 	// Set TEST_BROWSER_VISIBLE=true to see the browser window
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
@@ -157,6 +167,7 @@ func TestMonitorLifecycle(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping monitor lifecycle test in short mode")
 	}
+	skipIfNoChrome(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -216,6 +227,7 @@ func TestMultipleTabs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping multiple tabs test in short mode")
 	}
+	skipIfNoChrome(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -272,6 +284,7 @@ func TestNavigationTests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping navigation test in short mode")
 	}
+	skipIfNoChrome(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -324,6 +337,7 @@ func TestNavigationTests(t *testing.T) {
 
 // TestErrorHandling tests error handling for invalid operations.
 func TestErrorHandling(t *testing.T) {
+	skipIfNoChrome(t)
 	ctx := context.Background()
 
 	cfg := Config{
@@ -408,6 +422,7 @@ func TestDOMOperations(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping DOM operations test in short mode")
 	}
+	skipIfNoChrome(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -464,6 +479,7 @@ func TestReconnect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping reconnect test in short mode")
 	}
+	skipIfNoChrome(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
