@@ -42,6 +42,39 @@ func validatePathInWorkspace(resolved, root string) error {
 	return nil
 }
 
+// normalizeAgentPath normalizes a file path from an agent to prevent path nesting.
+// Agents may return paths that are:
+// - Prefixed with ./
+// - Absolute paths within the root (when they shouldn't be)
+// - Already relative to root
+//
+// The function ensures the path is relative before joining with root.
+func normalizeAgentPath(agentPath, root string) string {
+	// If path is empty, return as-is
+	if agentPath == "" {
+		return agentPath
+	}
+
+	// Strip leading ./ if present
+	agentPath = strings.TrimPrefix(agentPath, "."+string(filepath.Separator))
+
+	// If path is absolute, check if it starts with root
+	if filepath.IsAbs(agentPath) {
+		// If the path is within root, make it relative
+		if rel, err := filepath.Rel(root, agentPath); err == nil {
+			// Check if rel doesn't start with .. (path is within root)
+			if !strings.HasPrefix(rel, "..") {
+				return rel
+			}
+		}
+		// Path is outside root or error - return as-is (validation will catch it)
+		return agentPath
+	}
+
+	// Path is already relative, return as-is
+	return agentPath
+}
+
 // applyFiles writes agent file changes to disk.
 func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error {
 	root := c.opts.WorkDir
@@ -63,7 +96,9 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 	}
 
 	for _, fc := range files {
-		path := filepath.Join(root, fc.Path)
+		// Normalize the path to prevent nesting when agent returns absolute paths
+		normalizedPath := normalizeAgentPath(fc.Path, root)
+		path := filepath.Join(root, normalizedPath)
 
 		// Validate the path is within workspace (prevent path traversal attacks)
 		// Resolve symlinks in the target path and validate it stays within root
@@ -99,7 +134,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			c.eventBus.PublishRaw(events.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
-					"path":      fc.Path,
+					"path":      normalizedPath,
 					"operation": "create",
 				},
 			})
@@ -119,7 +154,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			c.eventBus.PublishRaw(events.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
-					"path":      fc.Path,
+					"path":      normalizedPath,
 					"operation": "update",
 				},
 			})
@@ -133,7 +168,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			c.eventBus.PublishRaw(events.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
-					"path":      fc.Path,
+					"path":      normalizedPath,
 					"operation": "delete",
 				},
 			})

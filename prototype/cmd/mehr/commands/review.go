@@ -30,8 +30,8 @@ var reviewCmd = &cobra.Command{
 	Short: "Run code review on current changes",
 	Long: `Run an automated code review on the current task's changes.
 
-By default, this runs CodeRabbit CLI to review code changes. The review
-output is saved to the task's work directory.
+By default, this uses the AI agent to review code changes for bugs, improvements,
+and best practices. Alternatively, you can specify an external tool like CodeRabbit.
 
 Review Status:
   COMPLETE - Review passed with no issues
@@ -39,16 +39,16 @@ Review Status:
   ERROR    - Review tool failed to run
 
 Examples:
-  mehr review                     # Run CodeRabbit review
-  mehr review --tool coderabbit   # Explicitly specify tool
-  mehr review --output review.txt # Save to specific file`,
+  mehr review                       # Run AI agent code review
+  mehr review --tool coderabbit     # Use external tool instead
+  mehr review --output review.txt    # Save to specific file`,
 	RunE: runReview,
 }
 
 func init() {
 	rootCmd.AddCommand(reviewCmd)
 
-	reviewCmd.Flags().StringVar(&reviewTool, "tool", "coderabbit", "Review tool to use (coderabbit)")
+	reviewCmd.Flags().StringVar(&reviewTool, "tool", "", "Review tool to use (empty skips external tool review)")
 	reviewCmd.Flags().StringVarP(&reviewOutput, "output", "o", "", "Output file name (default: review-N.txt)")
 	reviewCmd.Flags().StringVar(&reviewAgentReviewing, "agent-review", "", "Agent for review step (when using agent-based review)")
 	reviewCmd.Flags().BoolVar(&reviewOptimize, "optimize", false, "Optimize prompt before sending to agent")
@@ -83,6 +83,14 @@ func runReview(cmd *cobra.Command, args []string) error {
 	ws := cond.GetWorkspace()
 	if ws == nil {
 		return errors.New("workspace not available")
+	}
+
+	// Check if review tool is specified
+	if reviewTool == "" {
+		// Use agent-based code review when no external tool is specified
+		fmt.Println("Running agent-based code review...")
+
+		return cond.RunReview(ctx)
 	}
 
 	// Check if review tool is available

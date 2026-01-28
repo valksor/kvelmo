@@ -75,6 +75,17 @@ func (w *Workspace) AddMonthlyBudgetSpend(delta float64) error {
 	return w.SaveMonthlyBudgetState(state)
 }
 
+// ResetMonthlyBudget resets the monthly budget tracking to zero.
+func (w *Workspace) ResetMonthlyBudget() error {
+	state := &MonthlyBudgetState{
+		Month:       currentBudgetMonth(),
+		Spent:       0,
+		WarningSent: false,
+	}
+
+	return w.SaveMonthlyBudgetState(state)
+}
+
 func currentBudgetMonth() string {
 	return time.Now().Format("2006-01")
 }

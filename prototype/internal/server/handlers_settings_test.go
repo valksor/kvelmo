@@ -95,7 +95,7 @@ func TestHandler_SettingsPage_NoConductor(t *testing.T) {
 	assert.Contains(t, bodyStr, "workspace not initialized")
 }
 
-func TestHandler_SettingsPage_NoTemplates(t *testing.T) {
+func TestHandler_SettingsPage_NoRenderer(t *testing.T) {
 	cond, tmpDir := createTestConductor(t)
 
 	cfg := Config{
@@ -108,8 +108,8 @@ func TestHandler_SettingsPage_NoTemplates(t *testing.T) {
 	srv, err := New(cfg)
 	require.NoError(t, err)
 
-	// Clear templates to simulate template loading failure
-	srv.templates = nil
+	// Clear renderer to simulate template loading failure
+	srv.renderer = nil
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

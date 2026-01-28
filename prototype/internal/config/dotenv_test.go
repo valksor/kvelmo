@@ -83,9 +83,9 @@ func TestLoadDotEnv_SystemEnvTakesPriority(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	// System var should take priority - godotenv.Load doesn't override existing vars
-	if got := os.Getenv("TEST_DOTENV_PRIORITY_VAR"); got != "from_system" {
-		t.Errorf("TEST_DOTENV_PRIORITY_VAR = %q, want %q (system env should take priority)", got, "from_system")
+	// .env file should take priority - godotenv.Overload overrides existing vars
+	if got := os.Getenv("TEST_DOTENV_PRIORITY_VAR"); got != "from_file" {
+		t.Errorf("TEST_DOTENV_PRIORITY_VAR = %q, want %q (.env should override system env)", got, "from_file")
 	}
 }
 

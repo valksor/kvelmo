@@ -212,26 +212,24 @@ func convertToWorkflowSecurityResults(results []*security.ScanResult) *workflow.
 
 // registerScannersFromConfig registers scanners based on workspace security config.
 func registerScannersFromConfig(registry *security.ScannerRegistry, settings *storage.SecuritySettings) {
-	tm := registry.GetToolManager()
-
 	// Register SAST scanners (e.g., gosec)
 	if settings.Scanners.SAST != nil && settings.Scanners.SAST.Enabled {
 		if security.IsToolEnabled(settings.Scanners.SAST.Tools, "gosec") {
-			registry.Register("gosec", security.NewGosecScanner(true, &security.GosecConfig{}, tm))
+			registry.Register("gosec", security.NewGosecScanner(true, &security.GosecConfig{}))
 		}
 	}
 
 	// Register secret scanners (e.g., gitleaks)
 	if settings.Scanners.Secrets != nil && settings.Scanners.Secrets.Enabled {
 		if security.IsToolEnabled(settings.Scanners.Secrets.Tools, "gitleaks") {
-			registry.Register("gitleaks", security.NewGitleaksScanner(true, &security.GitleaksConfig{}, tm))
+			registry.Register("gitleaks", security.NewGitleaksScanner(true, &security.GitleaksConfig{}))
 		}
 	}
 
 	// Register dependency scanners (e.g., govulncheck)
 	if settings.Scanners.Dependencies != nil && settings.Scanners.Dependencies.Enabled {
 		if security.IsToolEnabled(settings.Scanners.Dependencies.Tools, "govulncheck") {
-			registry.Register("govulncheck", security.NewGovulncheckScanner(true, tm))
+			registry.Register("govulncheck", security.NewGovulncheckScanner(true))
 		}
 	}
 }

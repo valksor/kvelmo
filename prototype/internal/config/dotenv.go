@@ -15,8 +15,8 @@ const (
 )
 
 // LoadDotEnv loads environment variables from .mehrhof/.env if it exists.
-// It uses godotenv.Load() which respects existing environment variables
-// (system env vars take priority over .env values).
+// It uses godotenv.Overload() which overrides existing environment variables
+// (.env values take priority over system env vars).
 // Returns nil if the file doesn't exist (not an error condition).
 // Returns error only if the file exists but cannot be parsed.
 func LoadDotEnv(baseDir string) error {
@@ -27,8 +27,8 @@ func LoadDotEnv(baseDir string) error {
 		return nil
 	}
 
-	// Load the .env file - godotenv.Load() does NOT override existing vars
-	return godotenv.Load(envPath)
+	// Load the .env file - override any existing shell env vars
+	return godotenv.Overload(envPath)
 }
 
 // LoadDotEnvFromCwd loads .env from current working directory's .mehrhof/.env.

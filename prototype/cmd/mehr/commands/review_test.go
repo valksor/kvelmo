@@ -39,7 +39,7 @@ func TestReviewCommand_Flags(t *testing.T) {
 			name:         "tool flag",
 			flagName:     "tool",
 			shorthand:    "",
-			defaultValue: "coderabbit",
+			defaultValue: "",
 		},
 		{
 			name:         "output flag",
@@ -160,8 +160,8 @@ func TestReviewCommand_DefaultTool(t *testing.T) {
 
 		return
 	}
-	if flag.DefValue != "coderabbit" {
-		t.Errorf("tool flag default = %q, want 'coderabbit'", flag.DefValue)
+	if flag.DefValue != "" {
+		t.Errorf("tool flag default = %q, want '' (empty)", flag.DefValue)
 	}
 }
 

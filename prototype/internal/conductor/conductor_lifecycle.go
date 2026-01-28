@@ -76,15 +76,6 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 		}
 	}
 
-	// Auto-migrate legacy workspace if detected
-	if ws.NeedsMigration() {
-		c.publishProgress("Migrating workspace to home directory...", 0)
-		if err := ws.MigrateFromLegacy(); err != nil {
-			return fmt.Errorf("migrate workspace: %w", err)
-		}
-		c.publishProgress("Workspace migrated successfully", 100)
-	}
-
 	// Handle task detection differently based on context
 	if c.git != nil && c.git.IsWorktree() {
 		// Auto-detect task from worktree path
