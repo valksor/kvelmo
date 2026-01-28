@@ -746,7 +746,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Switch to project mode
-	if err := s.switchToProject(projectPath); err != nil {
+	if err := s.switchToProject(r.Context(), projectPath); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to switch project: "+err.Error())
 
 		return

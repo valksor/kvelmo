@@ -3,19 +3,21 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
 // handleSettingsPage renders the settings page.
 func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
-	if s.templates == nil {
-		s.writeError(w, http.StatusInternalServerError, "templates not loaded")
+	if s.renderer == nil {
+		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
 
 		return
 	}
@@ -23,6 +25,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 	var cfg *storage.WorkspaceConfig
 	var loadErr string
 	var projects []storage.ProjectMetadata
+	var workspaceRoot string // Track workspace root for language detection
 	selectedProject := r.URL.Query().Get("project")
 
 	// Global mode: need to handle project selection
@@ -36,9 +39,13 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 
 		if selectedProject != "" {
 			// Load selected project's config
-			cfg, _, loadErr = loadProjectConfig(r.Context(), selectedProject)
+			var ws *storage.Workspace
+			cfg, ws, loadErr = loadProjectConfig(r.Context(), selectedProject)
 			if cfg == nil {
 				cfg = storage.NewDefaultWorkspaceConfig()
+			}
+			if ws != nil {
+				workspaceRoot = ws.Root()
 			}
 		} else if len(projects) > 0 {
 			// No project selected, show picker with message
@@ -55,11 +62,15 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		if s.config.Conductor != nil {
 			ws := s.config.Conductor.GetWorkspace()
 			if ws != nil {
+				workspaceRoot = ws.Root()
 				var err error
 				cfg, err = ws.LoadConfig()
 				if err != nil {
 					loadErr = "failed to load config: " + err.Error()
 					cfg = storage.NewDefaultWorkspaceConfig()
+				} else if !ws.HasConfig() {
+					// Workspace opened but no config file exists yet
+					loadErr = "workspace not initialized - showing default settings"
 				}
 			} else {
 				loadErr = "workspace not initialized - showing default settings"
@@ -89,23 +100,35 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		errorMsg = loadErr
 	}
 
-	data := SettingsData{
-		Mode:             s.modeString(),
-		AuthEnabled:      s.config.AuthStore != nil,
-		CanSwitchProject: s.canSwitchProject(),
-		IsGlobalMode:     s.config.Mode == ModeGlobal,
-		ShowSensitive:    isLocalRequest(r), // Only show tokens when accessed locally
-		Config:           cfg,
-		Agents:           agents,
-		Success:          r.URL.Query().Get("success"),
-		Error:            errorMsg,
-		Projects:         projects,
-		SelectedProject:  selectedProject,
-		SandboxStatus:    s.getSandboxStatus(),
+	pageData := views.ComputePageData(
+		s.modeString(),
+		s.config.Mode == ModeGlobal,
+		s.config.AuthStore != nil,
+		s.canSwitchProject(),
+		s.getCurrentUser(r),
+	)
+	pageData.Success = r.URL.Query().Get("success")
+	pageData.Error = errorMsg
+
+	// Compute project info for security scanner detection
+	var projectInfo *views.ProjectInfoData
+	if workspaceRoot != "" {
+		projectInfo = views.ComputeProjectInfo(workspaceRoot)
+	}
+
+	data := views.SettingsData{
+		PageData:        pageData,
+		ShowSensitive:   isLocalRequest(r), // Only show tokens when accessed locally
+		Config:          cfg,
+		Agents:          agents,
+		Projects:        views.ComputeSettingsProjects(projects),
+		SelectedProject: selectedProject,
+		SandboxStatus:   s.getSandboxStatus(),
+		ProjectInfo:     projectInfo,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.RenderSettings(w, data); err != nil {
+	if err := s.renderer.RenderSettings(w, data); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
 	}
 }
@@ -201,19 +224,30 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	if ws == nil {
 		if s.config.Mode == ModeGlobal {
 			s.writeError(w, http.StatusBadRequest, "select a project first")
-		} else {
-			s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-		}
 
-		return
+			return
+		}
+		// Project mode: open workspace directly using WorkspaceRoot
+		// This allows saving settings even when workspace isn't initialized yet
+		if s.config.WorkspaceRoot == "" {
+			s.writeError(w, http.StatusServiceUnavailable, "workspace root not configured")
+
+			return
+		}
+		var err error
+		ws, err = storage.OpenWorkspace(r.Context(), s.config.WorkspaceRoot, nil)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "failed to open workspace: "+err.Error())
+
+			return
+		}
 	}
 
-	// Load existing config to merge with
+	// Load existing config to merge with, or use defaults if not initialized
 	cfg, err = ws.LoadConfig()
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
-
-		return
+		// If config doesn't exist, use defaults (expected for uninitialized workspace)
+		cfg = storage.NewDefaultWorkspaceConfig()
 	}
 
 	if contentType == "application/json" {
@@ -251,6 +285,14 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 
 		return
+	}
+
+	// Reinitialize conductor to pick up the newly created/updated workspace
+	if s.config.Conductor != nil {
+		if err := s.config.Conductor.Initialize(r.Context()); err != nil {
+			// Log but don't fail - settings were saved, conductor refresh is secondary
+			slog.Warn("failed to reinitialize conductor after saving settings", "error", err)
+		}
 	}
 
 	// For HTMX form submission, redirect with success
@@ -364,6 +406,38 @@ func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSe
 	if v := r.FormValue("update.check_interval"); v != "" {
 		if interval, err := strconv.Atoi(v); err == nil && interval > 0 {
 			cfg.Update.CheckInterval = interval
+		}
+	}
+
+	// Budget settings - per task
+	if v := r.FormValue("budget.per_task.max_cost"); v != "" {
+		if cost, err := strconv.ParseFloat(v, 64); err == nil && cost >= 0 {
+			cfg.Budget.PerTask.MaxCost = cost
+		}
+	}
+	if v := r.FormValue("budget.per_task.max_tokens"); v != "" {
+		if tokens, err := strconv.Atoi(v); err == nil && tokens >= 0 {
+			cfg.Budget.PerTask.MaxTokens = tokens
+		}
+	}
+	if v := r.FormValue("budget.per_task.on_limit"); v != "" {
+		cfg.Budget.PerTask.OnLimit = v
+	}
+	if v := r.FormValue("budget.per_task.warning_at"); v != "" {
+		if pct, err := strconv.ParseFloat(v, 64); err == nil && pct >= 0 && pct <= 1 {
+			cfg.Budget.PerTask.WarningAt = pct
+		}
+	}
+
+	// Budget settings - monthly
+	if v := r.FormValue("budget.monthly.max_cost"); v != "" {
+		if cost, err := strconv.ParseFloat(v, 64); err == nil && cost >= 0 {
+			cfg.Budget.Monthly.MaxCost = cost
+		}
+	}
+	if v := r.FormValue("budget.monthly.warning_at"); v != "" {
+		if pct, err := strconv.ParseFloat(v, 64); err == nil && pct >= 0 && pct <= 1 {
+			cfg.Budget.Monthly.WarningAt = pct
 		}
 	}
 

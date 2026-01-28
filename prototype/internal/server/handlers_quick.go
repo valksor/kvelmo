@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -595,21 +596,26 @@ func (s *Server) handleQuickTaskDeleteWithID(w http.ResponseWriter, r *http.Requ
 // handleQuickTasksUI renders the quick tasks management page.
 // GET /quick.
 func (s *Server) handleQuickTasksUI(w http.ResponseWriter, r *http.Request) {
-	if s.templates == nil {
-		http.Error(w, "templates not loaded", http.StatusInternalServerError)
+	if s.renderer == nil {
+		http.Error(w, "renderer not loaded", http.StatusInternalServerError)
 
 		return
 	}
 
-	data := QuickData{
-		Mode:             s.modeString(),
-		AuthEnabled:      s.config.AuthStore != nil,
-		IsGlobalMode:     s.config.Mode == ModeGlobal,
-		CanSwitchProject: s.canSwitchProject(),
+	pageData := views.ComputePageData(
+		s.modeString(),
+		s.config.Mode == ModeGlobal,
+		s.config.AuthStore != nil,
+		s.canSwitchProject(),
+		s.getCurrentUser(r),
+	)
+
+	data := views.QuickTasksData{
+		PageData: pageData,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.RenderQuick(w, data); err != nil {
+	if err := s.renderer.RenderQuick(w, data); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
 	}
 }
