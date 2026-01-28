@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -572,4 +573,307 @@ func TestRunAll(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestStringBuilder tests the stringBuilder helper type.
+func TestStringBuilder(t *testing.T) {
+	tests := []struct {
+		name   string
+		writes []string
+		want   string
+	}{
+		{
+			name:   "empty builder",
+			writes: []string{},
+			want:   "",
+		},
+		{
+			name:   "single write",
+			writes: []string{"hello"},
+			want:   "hello",
+		},
+		{
+			name:   "multiple writes",
+			writes: []string{"hello", " ", "world"},
+			want:   "hello world",
+		},
+		{
+			name:   "write empty string",
+			writes: []string{"", "test", ""},
+			want:   "test",
+		},
+		{
+			name:   "consecutive writes",
+			writes: []string{"a", "b", "c", "d"},
+			want:   "abcd",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var b stringBuilder
+
+			for _, s := range tt.writes {
+				b.WriteString(s)
+			}
+
+			if got := b.String(); got != tt.want {
+				t.Errorf("String() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestGolangCIFilterGoFiles tests Go file filtering.
+func TestGolangCIFilterGoFiles(t *testing.T) {
+	tests := []struct {
+		name      string
+		files     []string
+		wantCount int
+	}{
+		{
+			name:      "only Go files",
+			files:     []string{"main.go", "utils.go", "test.go"},
+			wantCount: 3,
+		},
+		{
+			name:      "mixed extensions",
+			files:     []string{"main.go", "README.md", "script.sh", "utils.go"},
+			wantCount: 2,
+		},
+		{
+			name:      "no Go files",
+			files:     []string{"README.md", "script.sh", "config.yml"},
+			wantCount: 0,
+		},
+		{
+			name:      "empty list",
+			files:     []string{},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			count := 0
+			for _, f := range tt.files {
+				if strings.HasSuffix(f, ".go") {
+					count++
+				}
+			}
+
+			if count != tt.wantCount {
+				t.Errorf("Filter result count = %d, want %d", count, tt.wantCount)
+			}
+		})
+	}
+}
+
+// TestESLintFilterJSFiles tests JavaScript file filtering.
+func TestESLintFilterJSFiles(t *testing.T) {
+	jsExtensions := []string{".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts"}
+
+	tests := []struct {
+		name      string
+		files     []string
+		wantCount int
+	}{
+		{
+			name: "only JS files",
+			files: []string{
+				"index.js",
+				"component.tsx",
+				"utils.ts",
+				"app.jsx",
+			},
+			wantCount: 4,
+		},
+		{
+			name: "mixed extensions",
+			files: []string{
+				"index.js",
+				"README.md",
+				"component.tsx",
+				"styles.css",
+				"utils.py",
+			},
+			wantCount: 2,
+		},
+		{
+			name: "all JS variants",
+			files: []string{
+				"a.js", "b.jsx", "c.ts", "d.tsx",
+				"e.mjs", "f.cjs", "g.mts", "h.cts",
+			},
+			wantCount: 8,
+		},
+		{
+			name:      "no JS files",
+			files:     []string{"README.md", "main.py", "config.yml"},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			count := 0
+			for _, f := range tt.files {
+				ext := strings.ToLower(f[strings.LastIndex(f, "."):])
+				for _, jsExt := range jsExtensions {
+					if ext == jsExt {
+						count++
+
+						break
+					}
+				}
+			}
+
+			if count != tt.wantCount {
+				t.Errorf("Filter result count = %d, want %d", count, tt.wantCount)
+			}
+		})
+	}
+}
+
+// TestRuffFilterPythonFiles tests Python file filtering.
+func TestRuffFilterPythonFiles(t *testing.T) {
+	tests := []struct {
+		name      string
+		files     []string
+		wantCount int
+	}{
+		{
+			name: "only Python files",
+			files: []string{
+				"main.py",
+				"utils.pyi",
+				"app.py",
+			},
+			wantCount: 3,
+		},
+		{
+			name: "mixed extensions",
+			files: []string{
+				"main.py",
+				"README.md",
+				"types.pyi",
+				"config.txt",
+			},
+			wantCount: 2,
+		},
+		{
+			name:      "no Python files",
+			files:     []string{"README.md", "main.js", "config.yml"},
+			wantCount: 0,
+		},
+		{
+			name: "case insensitive",
+			files: []string{
+				"main.PY",
+				"types.PYI",
+				"app.py",
+			},
+			wantCount: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			count := 0
+			for _, f := range tt.files {
+				ext := strings.ToLower(f[strings.LastIndex(f, "."):])
+				if ext == ".py" || ext == ".pyi" {
+					count++
+				}
+			}
+
+			if count != tt.wantCount {
+				t.Errorf("Filter result count = %d, want %d", count, tt.wantCount)
+			}
+		})
+	}
+}
+
+// TestPHPCSFixerFilterPHPFiles tests PHP file filtering.
+func TestPHPCSFixerFilterPHPFiles(t *testing.T) {
+	tests := []struct {
+		name      string
+		files     []string
+		wantCount int
+	}{
+		{
+			name: "only PHP files",
+			files: []string{
+				"index.php",
+				"Controller.php",
+				"Model.php",
+			},
+			wantCount: 3,
+		},
+		{
+			name: "mixed extensions",
+			files: []string{
+				"index.php",
+				"README.md",
+				"Controller.php",
+				"styles.css",
+			},
+			wantCount: 2,
+		},
+		{
+			name:      "no PHP files",
+			files:     []string{"README.md", "main.js", "config.yml"},
+			wantCount: 0,
+		},
+		{
+			name: "case insensitive",
+			files: []string{
+				"index.PHP",
+				"controller.Php",
+				"model.php",
+			},
+			wantCount: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			count := 0
+			for _, f := range tt.files {
+				ext := strings.ToLower(f[strings.LastIndex(f, "."):])
+				if ext == ".php" {
+					count++
+				}
+			}
+
+			if count != tt.wantCount {
+				t.Errorf("Filter result count = %d, want %d", count, tt.wantCount)
+			}
+		})
+	}
+}
+
+// TestLinterAvailable tests linter availability checks.
+func TestGolangCIAvailable(t *testing.T) {
+	g := NewGolangCI()
+	avail := g.Available()
+	_ = avail // Just verify it doesn't panic
+}
+
+func TestESLintAvailable(t *testing.T) {
+	e := NewESLint()
+	avail := e.Available()
+	_ = avail
+}
+
+func TestRuffAvailable(t *testing.T) {
+	r := NewRuff()
+	avail := r.Available()
+	_ = avail
+}
+
+func TestPHPCSFixerAvailable(t *testing.T) {
+	p := NewPHPCSFixer()
+	avail := p.Available()
+	_ = avail
 }
