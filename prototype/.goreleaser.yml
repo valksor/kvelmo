@@ -39,7 +39,7 @@ checksum:
     name_template: 'checksums.txt'
     algorithm: sha256
 
-# Minisign signing (signs checksum file only - simpler)
+# Minisign signing (signs a checksum file only - simpler)
 signs:
     -   id: minisign
         cmd: minisign
@@ -62,7 +62,7 @@ sboms:
             - "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}.sbom.spdx.json"
 
 changelog:
-    sort: asc
+    sort: ""
 
 release:
     # Append changelog to existing release notes (keeps "Full Changelog" link and custom text)
