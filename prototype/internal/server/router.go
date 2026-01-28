@@ -121,6 +121,10 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/workflow/sync", s.handleWorkflowSync)
 		mux.HandleFunc("POST /api/v1/workflow/simplify", s.handleWorkflowSimplify)
 
+		// Standalone review/simplify endpoints (no active task required)
+		mux.HandleFunc("POST /api/v1/workflow/review/standalone", s.handleStandaloneReview)
+		mux.HandleFunc("POST /api/v1/workflow/simplify/standalone", s.handleStandaloneSimplify)
+
 		// Templates endpoints
 		mux.HandleFunc("GET /api/v1/templates", s.handleListTemplates)
 		mux.HandleFunc("GET /api/v1/templates/{name}", s.handleGetTemplate)
