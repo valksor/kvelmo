@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mehrhof is a Go CLI tool for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
+Mehrhof is a **Go CLI tool + Web UI** for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
+
+**⚠️ ALL features must be implemented for BOTH CLI and Web UI interfaces.** See the "Dual Interface Implementation" section below.
 
 ---
 
@@ -83,6 +85,136 @@ func ColorState(state, displayName string) string {
 
 ---
 
+## ⚠️ CRITICAL: Dual Interface Implementation - CLI + Web UI
+
+**ALL features must be implemented for BOTH CLI and Web UI unless explicitly CLI-only.**
+
+Mehrhof has two user interfaces that must maintain feature parity:
+1. **CLI** - Command-line interface via `cmd/mehr/commands/`
+2. **Web UI** - Web interface via `internal/server/`
+
+### Implementation Checklist
+
+When adding a new feature, complete ALL applicable items:
+
+- [ ] **CLI Command**: Add command in `cmd/mehr/commands/*.go` using Cobra
+- [ ] **Web UI Handler**: Add handler in `internal/server/handlers*.go` or `internal/server/api/`
+- [ ] **Router Registration**: Update `internal/server/router.go` to register new routes
+- [ ] **Template/View**: Add template in `internal/server/templates/` or `internal/server/views/`
+- [ ] **Navigation**: Update menus/navigation if feature is user-facing
+- [ ] **SSE Streaming**: Add Server-Sent Events for long-running operations
+- [ ] **Documentation**: Update relevant docs if new pattern introduced
+
+### Implementation Patterns
+
+Both interfaces should delegate to **shared core logic** in `internal/conductor/`:
+
+```go
+// CLI Pattern (cmd/mehr/commands/plan.go)
+var planCmd = &cobra.Command{
+    Use:   "plan [topic]",
+    Short: "Enter planning phase",
+    RunE: runPlan,
+}
+
+func runPlan(cmd *cobra.Command, args []string) error {
+    cond, err := initializeConductor(ctx, opts...)
+    if err != nil {
+        return err
+    }
+    if err := cond.Plan(ctx); err != nil {
+        return fmt.Errorf("plan: %w", err)
+    }
+    return nil
+}
+```
+
+```go
+// Web UI Pattern (internal/server/handlers.go)
+func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
+    if s.config.Conductor == nil {
+        s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+        return
+    }
+
+    if err := s.config.Conductor.Plan(r.Context()); err != nil {
+        s.writeError(w, http.StatusInternalServerError, "failed to enter planning: "+err.Error())
+        return
+    }
+
+    s.writeJSON(w, http.StatusOK, map[string]any{
+        "success": true,
+        "message": "planning completed",
+    })
+}
+```
+
+**Key Point**: Both CLI and Web UI call `cond.Plan(ctx)` - the core logic is shared. The interfaces are just thin adapters.
+
+### SSE Streaming for Long-Running Operations
+
+For operations that take time (planning, implementing, reviewing), use SSE to stream progress:
+
+```go
+// Web UI SSE Pattern
+func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
+    flusher, ok := w.(http.Flusher)
+    if !ok {
+        s.writeError(w, http.StatusBadRequest, "streaming not supported")
+        return
+    }
+
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    w.Header().Set("Connection", "keep-alive")
+
+    // Stream events as operation progresses
+    fmt.Fprintf(w, "event: status\ndata: {\"message\": \"Starting planning...\"}\n\n")
+    flusher.Flush()
+
+    // ... execute operation ...
+
+    fmt.Fprintf(w, "event: complete\ndata: {\"success\": true}\n\n")
+    flusher.Flush()
+}
+```
+
+### Current Feature Parity Gaps
+
+These CLI commands **lack Web UI equivalents** (candidates for future implementation):
+
+| CLI Command | Web UI Status |
+|-------------|---------------|
+| `budget status/set/task set/resume/reset` | ❌ Missing - only basic stats in dashboard |
+| `memory search/index/stats` | ⚠️ Partial - API exists, no UI |
+| `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
+| `continue` | ❌ Missing |
+| `optimize` | ❌ Missing |
+| `export` | ❌ Missing |
+| `scan` | ⚠️ Partial - API endpoint exists, no UI |
+
+### When CLI-Only Is Appropriate
+
+Some commands are intentionally CLI-only:
+
+- **One-shot operations**: `generate-secret`, `update check/install`
+- **Developer utilities**: `hooks`, `lefthook`, `config validate`
+- **Debugging/diagnostic**: `status --diagram`, `cost --breakdown`
+
+If a feature is CLI-only, document the rationale in code comments.
+
+### Verification
+
+Before considering a feature "done":
+
+1. Test both CLI and Web UI implementations
+2. Verify error handling works for both interfaces
+3. Check that CLI flags map to Web UI form inputs appropriately
+4. Ensure SSE streaming works for long-running operations
+5. Update feature parity table above if adding new dual-interface features
+
+---
+
 ## Commands
 
 ### Build & Development
@@ -103,11 +235,14 @@ mehr start <ref> | plan | implement | review | finish | continue | auto <ref>
 
 Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
 
+**Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Dual Interface Implementation" section above for parity status.
+
 ## Architecture
 
 ### Entry Point Flow
 
-`cmd/mehr/main.go` → `commands.Execute()` → Cobra command handlers
+**CLI Path**: `cmd/mehr/main.go` → `commands.Execute()` → Cobra command handlers
+**Web UI Path**: `cmd/mehr/main.go` → `serve` command → `internal/server/server.go` → HTTP handlers
 
 ### Core Packages
 
@@ -183,12 +318,27 @@ The web UI uses Go's `html/template` package with:
 - `history.html` - Session history and replay
 - `browser.html` - Browser automation control panel
 - `settings.html` - Workspace configuration management
-- `partials/` - Reusable template components
-  - `actions.html` - Action buttons and controls
-  - `costs.html` - Token cost display
+- `quick.html` - Quick tasks page
+- `license.html` - License information page
+- `partials/` - Reusable template components (loaded via HTMX)
+  - `actions.html` - Workflow action buttons
+  - `active_work.html` - Current task/quick/project display
+  - `costs.html` - Token usage and cost display
   - `question.html` - Agent question prompts
-  - `specs.html` - Specification displays
+  - `specifications.html` - Specification list with progress
+  - `stats.html` - Workspace statistics
+  - `recent_tasks.html` - Recent tasks list
+  - `labels.html` - Task labels
   - `task_card.html` - Task summary cards
+- `partials/empty_states/` - Empty state displays
+  - `no_task.html`, `no_stats.html`, `no_project.html`, `no_recent_tasks.html`
+
+**Views Package** (`internal/server/views/`):
+- `data.go` - View data structures for all pages
+- `render.go` - Template rendering with type-safe methods
+- `compute.go` - Data computation from conductor/storage
+- `constants.go` - State displays, colors, SSE event names
+- `format.go` - Formatting utilities (time, numbers, etc.)
 
 ### Provider Capability System
 
@@ -260,6 +410,7 @@ agents:
 
 ## Code Style
 
+- **Dual Interface**: ALL features must have both CLI and Web UI implementations (see "Dual Interface Implementation" section)
 - **Imports**: standard library → third-party → local (each group sorted alphabetically)
 - **Naming**: PascalCase for exported, camelCase for unexported
 - **Errors**: `fmt.Errorf("prefix: %w", err)` for wrapping; `errors.Join(errs...)` for multiple

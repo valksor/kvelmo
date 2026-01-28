@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mehrhof is a Go CLI tool for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
+Mehrhof is a **Go CLI tool + Web UI** for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
+
+**⚠️ ALL features must be implemented for BOTH CLI and Web UI interfaces.** See the "Dual Interface Implementation" section below.
 
 ---
 
@@ -83,6 +85,401 @@ func ColorState(state, displayName string) string {
 
 ---
 
+## ⚠️ CRITICAL: Dual Interface Implementation - CLI + Web UI
+
+**ALL features must be implemented for BOTH CLI and Web UI unless explicitly CLI-only.**
+
+Mehrhof has two user interfaces that must maintain feature parity:
+1. **CLI** - Command-line interface via `cmd/mehr/commands/`
+2. **Web UI** - Web interface via `internal/server/`
+
+### Implementation Checklist
+
+When adding a new feature, complete ALL applicable items:
+
+- [ ] **CLI Command**: Add command in `cmd/mehr/commands/*.go` using Cobra
+- [ ] **Web UI Handler**: Add handler in `internal/server/handlers*.go` or `internal/server/api/`
+- [ ] **Router Registration**: Update `internal/server/router.go` to register new routes
+- [ ] **Template/View**: Add template in `internal/server/templates/` or `internal/server/views/`
+- [ ] **Navigation**: Update menus/navigation if feature is user-facing
+- [ ] **SSE Streaming**: Add Server-Sent Events for long-running operations
+- [ ] **Tests**: Write comprehensive tests for new functionality (see "Testing Requirements" section below)
+- [ ] **Documentation**: Update docs/ (CLI and/or Web UI), README.md, and CLAUDE.md as needed (see "Documentation Requirements" section below)
+
+### Implementation Patterns
+
+Both interfaces should delegate to **shared core logic** in `internal/conductor/`:
+
+```go
+// CLI Pattern (cmd/mehr/commands/plan.go)
+var planCmd = &cobra.Command{
+    Use:   "plan [topic]",
+    Short: "Enter planning phase",
+    RunE: runPlan,
+}
+
+func runPlan(cmd *cobra.Command, args []string) error {
+    cond, err := initializeConductor(ctx, opts...)
+    if err != nil {
+        return err
+    }
+    if err := cond.Plan(ctx); err != nil {
+        return fmt.Errorf("plan: %w", err)
+    }
+    return nil
+}
+```
+
+```go
+// Web UI Pattern (internal/server/handlers.go)
+func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
+    if s.config.Conductor == nil {
+        s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+        return
+    }
+
+    if err := s.config.Conductor.Plan(r.Context()); err != nil {
+        s.writeError(w, http.StatusInternalServerError, "failed to enter planning: "+err.Error())
+        return
+    }
+
+    s.writeJSON(w, http.StatusOK, map[string]any{
+        "success": true,
+        "message": "planning completed",
+    })
+}
+```
+
+**Key Point**: Both CLI and Web UI call `cond.Plan(ctx)` - the core logic is shared. The interfaces are just thin adapters.
+
+### SSE Streaming for Long-Running Operations
+
+For operations that take time (planning, implementing, reviewing), use SSE to stream progress:
+
+```go
+// Web UI SSE Pattern
+func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
+    flusher, ok := w.(http.Flusher)
+    if !ok {
+        s.writeError(w, http.StatusBadRequest, "streaming not supported")
+        return
+    }
+
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    w.Header().Set("Connection", "keep-alive")
+
+    // Stream events as operation progresses
+    fmt.Fprintf(w, "event: status\ndata: {\"message\": \"Starting planning...\"}\n\n")
+    flusher.Flush()
+
+    // ... execute operation ...
+
+    fmt.Fprintf(w, "event: complete\ndata: {\"success\": true}\n\n")
+    flusher.Flush()
+}
+```
+
+### Current Feature Parity Gaps
+
+These CLI commands **lack Web UI equivalents** (candidates for future implementation):
+
+| CLI Command | Web UI Status |
+|-------------|---------------|
+| `budget status/set/task set/resume/reset` | ❌ Missing - only basic stats in dashboard |
+| `memory search/index/stats` | ⚠️ Partial - API exists, no UI |
+| `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
+| `continue` | ❌ Missing |
+| `optimize` | ❌ Missing |
+| `export` | ❌ Missing |
+| `scan` | ⚠️ Partial - API endpoint exists, no UI |
+
+### When CLI-Only Is Appropriate
+
+Some commands are intentionally CLI-only:
+
+- **One-shot operations**: `generate-secret`, `update check/install`
+- **Developer utilities**: `hooks`, `lefthook`, `config validate`
+- **Debugging/diagnostic**: `status --diagram`, `cost --breakdown`
+
+If a feature is CLI-only, document the rationale in code comments.
+
+### Verification
+
+Before considering a feature "done":
+
+1. Test both CLI and Web UI implementations
+2. Verify error handling works for both interfaces
+3. Check that CLI flags map to Web UI form inputs appropriately
+4. Ensure SSE streaming works for long-running operations
+5. Update feature parity table above if adding new dual-interface features
+
+---
+
+## ⚠️ CRITICAL: Feature Requirements - Tests, Docs, and CLAUDE.md
+
+**ALL new features MUST include tests and documentation updates.**
+
+### Testing Requirements
+
+Every new feature MUST have corresponding tests:
+
+| Test Type | When Required | Location | Target Coverage |
+|-----------|---------------|----------|-----------------|
+| Unit tests | Always | `*_test.go` next to source file | 80%+ for new code |
+| Integration tests | For handlers, conductors, providers | `*_test.go` or `internal/helper_test/` | Critical paths |
+| E2E tests | For user-facing workflows | `e2e/fast/` or `e2e/full/` | Main workflows |
+| Table-driven tests | For functions with multiple input cases | `*_test.go` | All edge cases |
+
+### Testing Guidelines
+
+1. **Write tests FIRST** (TDD) when implementing features
+2. **Use table-driven tests** for functions with multiple input scenarios:
+   ```go
+   tests := []struct {
+       name    string
+       input   string
+       want    string
+       wantErr bool
+   }{
+       {"valid input", "foo", "bar", false},
+       {"empty input", "", "", true},
+   }
+   for _, tt := range tests {
+       t.Run(tt.name, func(t *testing.T) {
+           // test logic
+       })
+   }
+   ```
+3. **Test utilities** are available in `internal/helper_test/` (mocks, fixtures, conductor helpers)
+4. **Run `make test`** before committing - all tests must pass
+5. **Run `make coverage-html`** to verify coverage - new code should be 80%+ covered
+
+### Documentation Requirements
+
+Every new feature MUST update relevant documentation:
+
+| Documentation | When to Update | Location |
+|---------------|----------------|----------|
+| CLI docs | CLI commands added/changed | `docs/cli/*.md` |
+| Web UI docs | Web UI features added/changed | `docs/web-ui/*.md` |
+| README.md | User-facing features, installation changes | `README.md` |
+| CLAUDE.md | New patterns, architecture changes, critical rules | `CLAUDE.md` |
+| Configuration docs | New config options | `docs/configuration/*.md` |
+
+### Documentation Checklist
+
+Before considering a feature complete:
+
+- [ ] **CLI doc**: Add/update `docs/cli/feature-name.md` with command usage, examples, flags
+- [ ] **Web UI doc**: Add/update `docs/web-ui/feature-name.md` with UI usage, screenshots if applicable
+- [ ] **README.md**: Update if feature is user-visible or affects installation/quickstart
+- [ ] **CLAUDE.md**: Update if:
+  - New architecture pattern is introduced
+  - New critical rule or guideline is needed
+  - Feature parity table changes
+  - New package or major code organization change
+
+### Documentation Content Standards
+
+All documentation must include:
+
+1. **Purpose**: What the feature does and why it exists
+2. **Usage**: How to use it (commands, UI, config)
+3. **Examples**: At least one working example
+4. **Requirements**: Prerequisites or dependencies
+5. **Troubleshooting**: Common issues and solutions (if applicable)
+
+### When README.md Updates Are Required
+
+Update `README.md` when:
+
+- **New user-facing feature** is added
+- **Installation process** changes
+- **Quickstart** instructions need updating
+- **Configuration** examples need new options
+- **Breaking changes** are introduced
+
+### When CLAUDE.md Updates Are Required
+
+Update `CLAUDE.md` when:
+
+- **New architecture pattern** is introduced (add to Architecture section)
+- **New critical rule** is needed (add as "⚠️ CRITICAL" section)
+- **Feature parity** changes (update the parity table)
+- **New package** is added (update Core Packages table)
+- **Code style** conventions change (update Code Style section)
+- **New workflow state** is added (update Workflow States table)
+
+### Examples
+
+#### ✅ GOOD: Complete Feature Delivery
+
+```
+Added budget feature:
+✅ cmd/mehr/commands/budget.go               # CLI command
+✅ cmd/mehr/commands/budget_test.go           # Unit tests (85% coverage)
+✅ internal/server/handlers_budget.go        # Web UI handler
+✅ internal/server/handlers_budget_test.go   # Handler tests
+✅ internal/server/templates/budget.html     # UI template
+✅ docs/cli/budget.md                         # CLI documentation
+✅ docs/web-ui/budget.md                      # Web UI documentation
+✅ README.md                                  # Updated feature list
+```
+
+#### ❌ BAD: Incomplete Feature Delivery
+
+```
+Added budget feature:
+✅ cmd/mehr/commands/budget.go               # CLI command
+❌ No tests
+❌ No Web UI implementation
+❌ No documentation
+```
+
+### Verification
+
+Before marking a feature as complete:
+
+1. **Tests**: `make test` passes, `make coverage-html` shows 80%+ for new code
+2. **CLI doc**: Documentation exists in `docs/cli/` with usage examples
+3. **Web UI doc**: Documentation exists in `docs/web-ui/` with UI instructions
+4. **README**: Updated if feature is user-facing
+5. **CLAUDE.md**: Updated if new patterns/rules introduced
+6. **Both interfaces tested**: CLI and Web UI both work
+
+---
+
+## ⚠️ CRITICAL: Documentation Organization - Separate by Interface Type
+
+**Documentation MUST be organized by interface type.**
+
+### Directory Structure
+
+| Directory | Purpose |
+|-----------|---------|
+| `docs/cli/` | CLI-specific documentation only |
+| `docs/web-ui/` | Web UI-specific documentation only |
+| `docs/concepts/` | Interface-agnostic concepts (workflows, architecture) |
+| `docs/guides/` | Procedural guides (should be split by interface if interface-specific) |
+| `docs/configuration/` | Shared configuration concepts (interface-specific config should be in `docs/cli/` or `docs/web-ui/`) |
+| `docs/providers/` | Provider documentation (interface-agnostic) |
+| `docs/agents/` | Agent documentation (interface-agnostic) |
+| `docs/advanced/` | Advanced topics (interface-agnostic) |
+| `docs/reference/` | Technical reference (interface-agnostic) |
+
+### Rules
+
+1. **Single Interface per Document**: A documentation file should cover EITHER CLI OR Web UI, never both.
+2. **Use Interface-Specific Directories**: Place CLI docs in `docs/cli/`, Web UI docs in `docs/web-ui/`.
+3. **Cross-Reference**: If a concept applies to both interfaces, document it in the interface-specific docs and cross-reference:
+   - CLI doc: "See [Web UI equivalent](/docs/web-ui/feature.md) for the web interface."
+   - Web UI doc: "See [CLI equivalent](/docs/cli/feature.md) for the command-line interface."
+
+### Exceptions (When Both Interfaces in One Doc Is OK)
+
+The ONLY situations where a single document may cover both CLI and Web UI:
+
+1. **Comparison Docs**: Files that explicitly compare the two interfaces (e.g., `docs/guides/web-ui-vs-cli.md`)
+2. **Feature Parity Tables**: Documents that track implementation status across interfaces
+3. **Architecture/Conceptual Docs**: Files that describe underlying architecture that both interfaces share (e.g., workflow state machine, storage model)
+
+### Examples
+
+#### ✅ GOOD: Interface-Specific Documentation
+```
+docs/cli/scan.md              # CLI scanning commands only
+docs/web-ui/security-quality.md  # Web UI security/quality tools only
+docs/cli/memory.md            # CLI memory commands
+docs/web-ui/memory.md         # Web UI memory features
+```
+
+#### ❌ BAD: Mixed Interface Documentation
+```
+docs/configuration/index.md   # Covers both CLI flags AND Web UI settings
+docs/guides/first-task.md     # If it covers both CLI and Web UI workflows
+```
+
+#### ✅ GOOD: Split Mixed Docs Into:
+```
+docs/configuration/cli-flags.md       # CLI-specific flags
+docs/configuration/web-ui-settings.md # Web UI-specific settings
+docs/configuration/shared.md          # Settings common to both
+
+docs/cli/first-task.md        # CLI first task walkthrough
+docs/web-ui/getting-started.md # Web UI getting started
+```
+
+### When Creating New Documentation
+
+1. **Identify the interface**: Is this for CLI, Web UI, or both?
+2. **Choose the right directory**:
+   - CLI-only → `docs/cli/`
+   - Web UI-only → `docs/web-ui/`
+   - Interface-agnostic concept → `docs/concepts/`
+3. **Check for existing related docs** and add cross-references
+4. **Avoid duplication**: If a feature works identically in both interfaces, document in `docs/concepts/` and reference from both interface-specific docs
+
+### Verification
+
+Before submitting documentation changes:
+
+1. Confirm the file is in the correct directory (`docs/cli/`, `docs/web-ui/`, or appropriate conceptual dir)
+2. Verify content covers only ONE interface (unless it's a comparison/parity doc)
+3. Check for cross-references to the equivalent interface's documentation
+4. Run `make docs` (if available) to verify documentation builds correctly
+
+---
+
+## ⚠️ CRITICAL: Use Make Commands for Build Operations
+
+**ALWAYS use `make` commands instead of direct `go` commands.**
+
+The Makefile provides standardized, consistent commands that may run multiple operations (e.g., `make quality` runs linting, formatting, AND vuln checking).
+
+### Common Commands
+
+| Operation | Make Command | What It Does |
+|-----------|--------------|--------------|
+| Build | `make build` | Compiles binary with embedded licenses |
+| Install | `make install` | Builds and installs to GOPATH/bin |
+| Format | `make fmt` | Runs gofmt, goimports, gofumpt |
+| Quality | `make quality` | Runs linter, formatter, vuln check, alias check |
+| Test | `make test` | Runs all tests with coverage |
+| Coverage | `make coverage` | Generates coverage profile |
+| Coverage HTML | `make coverage-html` | Generates HTML coverage report |
+| Clean | `make clean` | Removes build artifacts |
+| Tidy | `make tidy` | Cleans and tidies dependencies |
+
+### What NOT to Do:
+
+```bash
+# ❌ BAD - Direct go commands
+go build ./cmd/mehr
+go fmt ./...
+go test ./...
+golangci-lint run
+```
+
+### What to Do Instead:
+
+```bash
+# ✅ GOOD - Use make commands
+make build
+make fmt
+make test
+make quality
+```
+
+### Why Use Make?
+
+1. **Consistency**: All developers use the same commands
+2. **Multi-step operations**: `make quality` runs linter, formatter, vuln check, and alias check in one command
+3. **Embedded assets**: `make build` includes license generation and asset bundling
+4. **Version injection**: Build metadata (version, commit, build time) is automatically injected
+
+---
+
 ## Commands
 
 ### Build & Development
@@ -103,11 +500,14 @@ mehr start <ref> | plan | implement | review | finish | continue | auto <ref>
 
 Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
 
+**Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Dual Interface Implementation" section above for parity status.
+
 ## Architecture
 
 ### Entry Point Flow
 
-`cmd/mehr/main.go` → `commands.Execute()` → Cobra command handlers
+**CLI Path**: `cmd/mehr/main.go` → `commands.Execute()` → Cobra command handlers
+**Web UI Path**: `cmd/mehr/main.go` → `serve` command → `internal/server/server.go` → HTTP handlers
 
 ### Core Packages
 
@@ -183,12 +583,27 @@ The web UI uses Go's `html/template` package with:
 - `history.html` - Session history and replay
 - `browser.html` - Browser automation control panel
 - `settings.html` - Workspace configuration management
-- `partials/` - Reusable template components
-  - `actions.html` - Action buttons and controls
-  - `costs.html` - Token cost display
+- `quick.html` - Quick tasks page
+- `license.html` - License information page
+- `partials/` - Reusable template components (loaded via HTMX)
+  - `actions.html` - Workflow action buttons
+  - `active_work.html` - Current task/quick/project display
+  - `costs.html` - Token usage and cost display
   - `question.html` - Agent question prompts
-  - `specs.html` - Specification displays
+  - `specifications.html` - Specification list with progress
+  - `stats.html` - Workspace statistics
+  - `recent_tasks.html` - Recent tasks list
+  - `labels.html` - Task labels
   - `task_card.html` - Task summary cards
+- `partials/empty_states/` - Empty state displays
+  - `no_task.html`, `no_stats.html`, `no_project.html`, `no_recent_tasks.html`
+
+**Views Package** (`internal/server/views/`):
+- `data.go` - View data structures for all pages
+- `render.go` - Template rendering with type-safe methods
+- `compute.go` - Data computation from conductor/storage
+- `constants.go` - State displays, colors, SSE event names
+- `format.go` - Formatting utilities (time, numbers, etc.)
 
 ### Provider Capability System
 
@@ -260,12 +675,13 @@ agents:
 
 ## Code Style
 
+- **Dual Interface**: ALL features must have both CLI and Web UI implementations (see "Dual Interface Implementation" section)
 - **Imports**: standard library → third-party → local (each group sorted alphabetically)
 - **Naming**: PascalCase for exported, camelCase for unexported
 - **Errors**: `fmt.Errorf("prefix: %w", err)` for wrapping; `errors.Join(errs...)` for multiple
 - **Logging**: Use `log/slog`
 - **Formatting**: Run `make fmt` (uses gofmt, goimports, gofumpt)
-- **Linting**: Configured in `.golangci.yml` - CI runs on every PR
+- **Linting/Quality**: Run `make quality` (runs golangci-lint, gofmt, goimports, gofumpt, govulncheck, check-alias)
 
 ### Modern Go Practices (Go 1.25+)
 
@@ -275,6 +691,8 @@ agents:
 
 ## Testing
 
+- **Run tests**: Use `make test` (runs all tests with coverage)
+- **Coverage report**: Use `make coverage-html` (generates HTML report at `.coverage/coverage.html`)
 - Tests use the standard `testing` package
 - Table-driven tests preferred: `tests := []struct{...}{...}`
 - Test utilities in `internal/helper_test/` (mocks, fixtures, conductor helpers)
