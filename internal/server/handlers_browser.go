@@ -6,33 +6,31 @@ import (
 	"net/http"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
-	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 )
 
 // handleBrowserUI renders the browser control panel page.
 func (s *Server) handleBrowserUI(w http.ResponseWriter, r *http.Request) {
-	if s.templates == nil {
-		s.writeError(w, http.StatusInternalServerError, "templates not loaded")
+	if s.renderer == nil {
+		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
 
 		return
 	}
 
-	data := BrowserData{
-		Mode:             s.modeString(),
-		AuthEnabled:      s.config.AuthStore != nil,
-		CanSwitchProject: s.canSwitchProject(),
-		IsGlobalMode:     s.config.Mode == ModeGlobal,
-	}
+	pageData := views.ComputePageData(
+		s.modeString(),
+		s.config.Mode == ModeGlobal,
+		s.config.AuthStore != nil,
+		s.canSwitchProject(),
+		s.getCurrentUser(r),
+	)
 
-	// Load projects in global mode for project picker
-	if s.config.Mode == ModeGlobal {
-		if registry, err := storage.LoadRegistry(); err == nil {
-			data.Projects = registry.List()
-		}
+	data := views.BrowserData{
+		PageData: pageData,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.RenderBrowser(w, data); err != nil {
+	if err := s.renderer.RenderBrowser(w, data); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
 	}
 }
