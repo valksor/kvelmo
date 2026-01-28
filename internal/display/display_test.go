@@ -2,6 +2,8 @@ package display
 
 import (
 	"errors"
+	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -523,5 +525,90 @@ func TestFormatConfirmation(t *testing.T) {
 	}
 	if !contains(got, "This is a warning") {
 		t.Errorf("FormatConfirmation() = %v, want containing warning", got)
+	}
+}
+
+func TestPrintNextSteps(t *testing.T) {
+	tests := []struct {
+		name           string
+		steps          []string
+		wantContains   []string
+		wantNotContain []string
+	}{
+		{
+			name:           "empty steps",
+			steps:          []string{},
+			wantContains:   nil,
+			wantNotContain: []string{"Next steps:"},
+		},
+		{
+			name:  "single step with delimiter",
+			steps: []string{"mehr status - Check current status"},
+			wantContains: []string{
+				"Next steps:",
+				"mehr status",
+				"Check current status",
+			},
+		},
+		{
+			name: "multiple steps with delimiter",
+			steps: []string{
+				"mehr status - Check current status",
+				"mehr note - Add a note",
+				"mehr plan - Start planning",
+			},
+			wantContains: []string{
+				"mehr status",
+				"mehr note",
+				"mehr plan",
+				"Check current status",
+				"Add a note",
+				"Start planning",
+			},
+		},
+		{
+			name:  "step without delimiter",
+			steps: []string{"mehr status"},
+			wantContains: []string{
+				"Next steps:",
+				"mehr status",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Capture stdout
+			old := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			PrintNextSteps(tt.steps...)
+
+			// Close writer to flush
+			_ = w.Close()
+
+			// Restore stdout
+			os.Stdout = old
+
+			// Read output
+			var buf strings.Builder
+			_, _ = io.Copy(&buf, r)
+			output := buf.String()
+
+			// Check expected content
+			for _, want := range tt.wantContains {
+				if !contains(output, want) {
+					t.Errorf("PrintNextSteps() output should contain %q, got: %s", want, output)
+				}
+			}
+
+			// Check unexpected content
+			for _, notWant := range tt.wantNotContain {
+				if contains(output, notWant) {
+					t.Errorf("PrintNextSteps() output should not contain %q, got: %s", notWant, output)
+				}
+			}
+		})
 	}
 }
