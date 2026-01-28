@@ -15,6 +15,18 @@ Mehrhof integrates security scanners that run automatically during implementatio
 - **Secret Detection** - Scan for leaked credentials and secrets
 - **Dependency Scanning** - Check for known vulnerabilities in dependencies
 
+## Supported Languages
+
+Scanners are **auto-detected** based on your project type:
+
+| Language | SAST Scanner | Dependency Scanner |
+|----------|--------------|-------------------|
+| **Cross-language** | Semgrep | - |
+| **Secrets** | Gitleaks | - |
+| **Go** | Gosec | Govulncheck |
+| **JavaScript/TypeScript** | ESLint Security | npm audit |
+| **Python** | Bandit | pip-audit |
+
 ## Configuration
 
 Security scanning is disabled by default. Enable it in `.mehrhof/config.yaml`:
@@ -208,7 +220,43 @@ Found 1 issue(s):
 
 ## Scanners
 
-### Gosec (SAST)
+### Cross-Language Scanners
+
+#### Semgrep (SAST)
+
+[Semgrep](https://semgrep.dev) is a cross-language static analysis tool supporting 30+ languages.
+
+**Installation:**
+```bash
+pip install semgrep
+# or
+brew install semgrep
+```
+
+**What it detects:**
+- Security vulnerabilities across multiple languages
+- OWASP Top 10 issues
+- Custom security rules
+
+#### Gitleaks (Secrets)
+
+[Gitleaks](https://github.com/gitleaks/gitleaks) scans for secrets, credentials, and other sensitive data.
+
+**Installation:**
+```bash
+brew install gitleaks
+# or download from https://github.com/gitleaks/gitleaks/releases
+```
+
+**What it detects:**
+- API keys
+- Passwords and tokens
+- Certificates and SSH keys
+- Cloud credentials
+
+### Go Scanners
+
+#### Gosec (SAST)
 
 [Gosec](https://github.com/securego/gosec) inspects Go source code for security problems.
 
@@ -222,35 +270,80 @@ go install github.com/securego/gosec/v2/cmd/gosec@latest
 - Command injection
 - Weak cryptographic algorithms
 - Unhandled errors
-- Timing attacks
 
-### Gitleaks (Secrets)
-
-[Gitleaks](https://github.com/gitleaks/gitleaks) scans for secrets, credentials, and other sensitive data.
-
-**Installation:**
-```bash
-go install github.com/zricethezav/gitleaks/v8/cmd/gitleaks@latest
-```
-
-**What it detects:**
-- API keys
-- Passwords
-- Tokens
-- Certificates
-- SSH keys
-
-### Govulncheck (Dependencies)
+#### Govulncheck (Dependencies)
 
 [Govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) checks for known vulnerabilities in Go dependencies.
 
 **Installation:**
-Included with Go 1.21+ (or via `go install golang.org/x/vuln/cmd/govulncheck@latest`)
+```bash
+go install golang.org/x/vuln/cmd/govulncheck@latest
+```
 
 **What it detects:**
 - CVEs in dependencies
 - Vulnerable function calls
-- Standard library vulnerabilities
+
+### JavaScript/TypeScript Scanners
+
+#### npm audit (Dependencies)
+
+Built-in to npm, checks for known vulnerabilities in npm packages.
+
+**Installation:** Built-in to npm >= 6.0
+
+**Requires:** `package-lock.json`
+
+**What it detects:**
+- CVEs in npm packages
+- Direct and transitive dependency vulnerabilities
+
+#### ESLint Security (SAST)
+
+[eslint-plugin-security](https://github.com/eslint-community/eslint-plugin-security) provides security-focused ESLint rules.
+
+**Installation:**
+```bash
+npm install eslint eslint-plugin-security
+```
+
+**What it detects:**
+- Dynamic code execution vulnerabilities
+- Command injection via child_process
+- SQL injection patterns
+- Object injection vulnerabilities
+
+### Python Scanners
+
+#### Bandit (SAST)
+
+[Bandit](https://bandit.readthedocs.io) is a security linter for Python code.
+
+**Installation:**
+```bash
+pip install bandit
+```
+
+**What it detects:**
+- Hardcoded passwords
+- SQL injection
+- Command injection
+- Insecure cryptography
+
+#### pip-audit (Dependencies)
+
+[pip-audit](https://github.com/pypa/pip-audit) checks Python dependencies for known vulnerabilities.
+
+**Installation:**
+```bash
+pip install pip-audit
+```
+
+**Requires:** `requirements.txt` or `pyproject.toml`
+
+**What it detects:**
+- CVEs in Python packages
+- PyPI advisory vulnerabilities
 
 ## Integration with Workflow
 
