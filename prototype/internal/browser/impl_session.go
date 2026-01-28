@@ -534,7 +534,10 @@ func findChrome() (string, error) {
 	}
 	for _, exe := range executables {
 		if path, err := exec.LookPath(exe); err == nil {
-			return path, nil
+			// Verify the binary actually exists (LookPath may return stale PATH entries)
+			if _, err := os.Stat(path); err == nil {
+				return path, nil
+			}
 		}
 	}
 
