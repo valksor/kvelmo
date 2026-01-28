@@ -95,7 +95,10 @@ func runPlan(cmd *cobra.Command, args []string) error {
 
 	// Add --auto-approve flag for planning
 	if planAutoApprove {
-		opts = append(opts, conductor.WithUseDefaults(true))
+		opts = append(opts,
+			conductor.WithUseDefaults(true),
+			conductor.WithSkipAgentQuestions(true),
+		)
 	}
 
 	// Per-step agent override for planning

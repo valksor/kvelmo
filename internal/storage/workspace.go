@@ -265,19 +265,6 @@ func (w *Workspace) UpdateGitignore() error {
 	return nil
 }
 
-// NeedsMigration checks if the old .mehrhof directory exists in repo root.
-func (w *Workspace) NeedsMigration() bool {
-	oldTaskRoot := filepath.Join(w.root, taskDirName)
-	info, err := os.Stat(oldTaskRoot)
-
-	return err == nil && info.IsDir()
-}
-
-// GetLegacyTaskRoot returns the old .mehrhof path for migration.
-func (w *Workspace) GetLegacyTaskRoot() string {
-	return filepath.Join(w.root, taskDirName)
-}
-
 // ProjectRoot returns the repository root path (alias for Root()).
 func (w *Workspace) ProjectRoot() string {
 	return w.root

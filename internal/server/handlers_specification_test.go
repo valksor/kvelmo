@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 )
 
-func TestSpecificationData_Structure(t *testing.T) {
-	// Test that SpecificationData has the correct fields
-	spec := SpecificationData{
+func TestSpecItemData_Structure(t *testing.T) {
+	// Test that SpecItemData has the correct fields
+	spec := views.SpecItemData{
 		Number:      1,
 		Name:        "specification-1",
 		Title:       "Test Specification",
@@ -31,8 +32,8 @@ func TestSpecificationData_Structure(t *testing.T) {
 
 func TestSpecificationsData_Structure(t *testing.T) {
 	// Test that SpecificationsData has the correct fields
-	data := SpecificationsData{
-		Specifications: []SpecificationData{
+	data := views.SpecificationsData{
+		Items: []views.SpecItemData{
 			{
 				Number:      1,
 				Name:        "specification-1",
@@ -49,6 +50,6 @@ func TestSpecificationsData_Structure(t *testing.T) {
 	assert.Equal(t, 1, data.Total)
 	assert.Equal(t, 0, data.Done)
 	assert.Equal(t, 0.0, data.Progress)
-	assert.Len(t, data.Specifications, 1)
-	assert.Equal(t, "specification-1", data.Specifications[0].Name)
+	assert.Len(t, data.Items, 1)
+	assert.Equal(t, "specification-1", data.Items[0].Name)
 }

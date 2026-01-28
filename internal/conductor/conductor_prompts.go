@@ -28,18 +28,19 @@ const (
 //
 // If useDefaults is true, the agent will provide best-guess default answers for unknowns
 // without asking the user. If false (default), the agent will ask the user for clarification.
-func buildPlanningPrompt(workspace *storage.Workspace, title, sourceContent, notes, existingSpecs, customInstructions string, useDefaults bool) string {
+func buildPlanningPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, notes, existingSpecs, customInstructions string, useDefaults bool) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 	prompt := fmt.Sprintf(`You are an expert software engineer specializing in architecture and system design. Analyze this task and create a detailed implementation specification.
 
 Current timestamp: %s
+Working directory: %s
 
 ## Task
 %s
 
 ## Source Content
 %s
-`, currentTime, title, sourceContent)
+`, currentTime, workingDir, title, sourceContent)
 
 	if existingSpecs != "" {
 		prompt += fmt.Sprintf(`
@@ -183,13 +184,14 @@ Your response MUST include:
 //   - Build specification status and tracking summaries
 //
 // If workspace is nil, these features are disabled.
-func buildImplementationPrompt(workspace *storage.Workspace, title, sourceContent, specsContent, notes, customInstructions, specStatusSummary, specTrackingSummary string) string {
+func buildImplementationPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, specsContent, notes, customInstructions, specStatusSummary, specTrackingSummary string) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 
 	// Phase 1: Context (Task, Requirements, Specifications)
 	prompt := fmt.Sprintf(`You are an expert software engineer. Implement the following task according to the specifications.
 
 Current timestamp: %s
+Working directory: %s
 
 ## Task
 %s
@@ -199,7 +201,7 @@ Current timestamp: %s
 
 ## Specifications
 %s
-`, currentTime, title, sourceContent, specsContent)
+`, currentTime, workingDir, title, sourceContent, specsContent)
 
 	if notes != "" {
 		prompt += fmt.Sprintf(`
@@ -232,10 +234,11 @@ Current timestamp: %s
 ## Instructions
 Implement this task according to the specifications. For each file you create or modify:
 1. Use yaml:file blocks with path, operation (create/update/delete), and content
-2. Follow existing code style and patterns
-3. Include necessary imports
-4. Add appropriate error handling
-5. Write clean, maintainable code
+2. File paths must be relative to the working directory (e.g., "internal/foo.go" NOT "/full/path/foo.go")
+3. Follow existing code style and patterns
+4. Include necessary imports
+5. Add appropriate error handling
+6. Write clean, maintainable code
 
 Output each file change in a yaml:file block.
 `
