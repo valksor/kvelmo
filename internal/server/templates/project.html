@@ -64,15 +64,15 @@
 
     <!-- Segmented Control for Tabs -->
     <div class="inline-flex p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl">
-        <button onclick="showProjectTab('create')" id="project-tab-create"
+        <button data-action="show-project-tab" data-tab="create" id="project-tab-create"
                 class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl bg-white dark:bg-surface-700 text-brand-600 dark:text-brand-400 shadow-sm transition-smooth">
             Create Plan
         </button>
-        <button onclick="showProjectTab('queues')" id="project-tab-queues"
+        <button data-action="show-project-tab" data-tab="queues" id="project-tab-queues"
                 class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
             Queues
         </button>
-        <button onclick="showProjectTab('tasks')" id="project-tab-tasks"
+        <button data-action="show-project-tab" data-tab="tasks" id="project-tab-tasks"
                 class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
             Tasks
         </button>
@@ -158,14 +158,14 @@
                             <p class="text-xs text-surface-500 dark:text-surface-400">
                                 <span id="upload-size"></span> • Uploaded successfully
                             </p>
-                            <button type="button" onclick="resetUpload()" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Upload different file</button>
+                            <button type="button" data-action="reset-upload" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Upload different file</button>
                         </div>
                         <div id="upload-error" class="hidden">
                             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-error-50 dark:bg-error-900/20 flex items-center justify-center">
                                 <svg class="w-8 h-8 text-error-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
                             </div>
                             <p id="upload-error-message" class="text-sm font-medium text-error-600 dark:text-error-400"></p>
-                            <button type="button" onclick="resetUpload()" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Try again</button>
+                            <button type="button" data-action="reset-upload" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Try again</button>
                         </div>
                     </div>
                 </div>
@@ -228,7 +228,7 @@
         <div class="card">
             <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Task Queues</h3>
-                <button type="button" onclick="loadQueues()" class="btn btn-secondary">Refresh</button>
+                <button type="button" data-action="load-queues" class="btn btn-secondary">Refresh</button>
             </div>
             <div id="queues-list" class="divide-y divide-surface-200 dark:divide-surface-700">
                 <p class="text-surface-500 dark:text-surface-400 text-center py-8">Loading queues...</p>
@@ -242,10 +242,10 @@
             <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between gap-4">
                 <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Tasks</h3>
                 <div class="flex items-center gap-3">
-                    <select id="queue-selector" onchange="loadTasks()" class="input text-sm py-2">
+                    <select id="queue-selector" data-action-change="load-tasks" class="input text-sm py-2">
                         <option value="">Select Queue...</option>
                     </select>
-                    <button type="button" onclick="loadTasks()" class="btn btn-secondary">Refresh</button>
+                    <button type="button" data-action="load-tasks" class="btn btn-secondary">Refresh</button>
                 </div>
             </div>
 
@@ -260,8 +260,8 @@
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Dependency Graph</h3>
                         <div class="flex gap-2">
-                            <button type="button" onclick="showGraphVisualization('tree')" class="btn btn-secondary">Tree View</button>
-                            <button type="button" onclick="showGraphVisualization('critical')" class="btn btn-secondary">Critical Path</button>
+                            <button type="button" data-action="show-graph" data-view="tree" class="btn btn-secondary">Tree View</button>
+                            <button type="button" data-action="show-graph" data-view="critical" class="btn btn-secondary">Critical Path</button>
                         </div>
                     </div>
                     <div id="graph-visualization" class="bg-surface-50 dark:bg-surface-800/50 rounded-2xl p-6 overflow-x-auto min-h-[200px]">
@@ -273,7 +273,7 @@
             <!-- Actions -->
             <div id="submit-actions" class="hidden mt-6 pt-6 border-t border-surface-200 dark:border-surface-700">
                 <div class="flex flex-wrap gap-4 mb-4">
-                    <button type="button" onclick="autoReorder()" id="reorder-btn" class="btn btn-secondary">
+                    <button type="button" data-action="auto-reorder" id="reorder-btn" class="btn btn-secondary">
                         <span id="reorder-spinner" class="htmx-indicator hidden animate-spin mr-2">&#9696;</span>
                         AI Suggest Order
                     </button>
@@ -290,9 +290,9 @@
                         <option value="clickup">ClickUp</option>
                     </select>
                     <input type="text" id="submit-mention" placeholder="@manager please review" class="input py-2 text-sm flex-1 min-w-[200px]" title="Mention/notification to add to all submitted tasks">
-                    <button type="button" onclick="submitTasks(true)" class="btn btn-secondary">Dry Run</button>
-                    <button type="button" onclick="submitTasks(false)" class="btn btn-primary">Submit to Provider</button>
-                    <button type="button" onclick="startImplementation()" class="btn btn-success">Start Implementation</button>
+                    <button type="button" data-action="submit-tasks" data-dry-run="true" class="btn btn-secondary">Dry Run</button>
+                    <button type="button" data-action="submit-tasks" data-dry-run="false" class="btn btn-primary">Submit to Provider</button>
+                    <button type="button" data-action="start-implementation" class="btn btn-success">Start Implementation</button>
                 </div>
             </div>
         </div>
@@ -304,7 +304,7 @@
     <div class="bg-white dark:bg-surface-800 rounded-2xl shadow-2xl max-w-lg w-full">
         <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
             <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Edit Task</h3>
-            <button type="button" onclick="closeEditModal()" class="p-2 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700">
+            <button type="button" data-action="close-modal" class="p-2 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
             </button>
         </div>
@@ -349,7 +349,7 @@
             </div>
             <div id="edit-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+                <button type="button" data-action="close-modal" class="btn btn-secondary">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
@@ -588,8 +588,8 @@ async function loadQueues() {
                     <div class="text-sm text-surface-500 dark:text-surface-400">${q.task_count} tasks - ${escapeHtml(q.status)}</div>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" onclick="viewQueue('${q.id}')" class="btn btn-secondary text-sm py-2">View Tasks</button>
-                    <button type="button" onclick="deleteQueue('${q.id}')" class="btn btn-danger text-sm py-2">Delete</button>
+                    <button type="button" data-action="view-queue" data-queue="${q.id}" class="btn btn-secondary text-sm py-2">View Tasks</button>
+                    <button type="button" data-action="delete-queue" data-queue="${q.id}" class="btn btn-danger text-sm py-2">Delete</button>
                 </div>
             </div>
         `}).join('');
@@ -673,7 +673,7 @@ async function loadTasks() {
                             <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.priority}</td>
                             <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.depends_on ? t.depends_on.join(', ') : '-'}</td>
                             <td class="px-4 py-3 text-sm">
-                                <button type="button" onclick="editTask('${t.id}')" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">Edit</button>
+                                <button type="button" data-action="edit-task" data-task="${t.id}" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">Edit</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -1007,6 +1007,20 @@ async function startImplementation() {
 document.addEventListener('DOMContentLoaded', function() {
     loadQueueSelector();
 });
+
+// Expose functions for event delegation handlers
+window.loadQueues = loadQueues;
+window.loadQueueSelector = loadQueueSelector;
+window.loadTasks = loadTasks;
+window.viewQueue = viewQueue;
+window.deleteQueue = deleteQueue;
+window.editTask = editTask;
+window.autoReorder = autoReorder;
+window.submitTasks = submitTasks;
+window.startImplementation = startImplementation;
+window.showGraphVisualization = showGraphVisualization;
+window.closeEditModal = closeEditModal;
+window.resetUpload = resetUpload;
 </script>
 {{end}}
 {{end}}

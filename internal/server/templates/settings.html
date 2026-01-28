@@ -1,4 +1,4 @@
-{{define "content"}}
+/workspace/valksor/go-assern{{define "content"}}
 <div class="max-w-6xl mx-auto">
     <!-- Page Header -->
     <div class="mb-8">
@@ -10,43 +10,55 @@
         <!-- Sidebar Navigation (Desktop) -->
         <aside class="lg:w-64 flex-shrink-0">
             <nav class="lg:sticky lg:top-24 space-y-1">
-                <button onclick="showSection('general')" id="nav-general" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300">
+                <button data-action="show-section" data-section="general" id="nav-general" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         General
                     </span>
                 </button>
-                <button onclick="showSection('agents')" id="nav-agents" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="agents" id="nav-agents" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                         Agents
                     </span>
                 </button>
-                <button onclick="showSection('workflow')" id="nav-workflow" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="workflow" id="nav-workflow" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                         Workflow
                     </span>
                 </button>
-                <button onclick="showSection('browser')" id="nav-browser" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="browser" id="nav-browser" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                         Browser
                     </span>
                 </button>
-                <button onclick="showSection('sandbox')" id="nav-sandbox" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="sandbox" id="nav-sandbox" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-6 0 9 9 0 0116 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V3l-10 9h10V9z" opacity="0.4"/></svg>
                         Sandbox
                     </span>
                 </button>
-                <button onclick="showSection('providers')" id="nav-providers" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="security" id="nav-security" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Security
+                    </span>
+                </button>
+                <button data-action="show-section" data-section="budget" id="nav-budget" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Budget
+                    </span>
+                </button>
+                <button data-action="show-section" data-section="providers" id="nav-providers" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
                         Integrations
                     </span>
                 </button>
-                <button onclick="showSection('health')" id="nav-health" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                <button data-action="show-section" data-section="health" id="nav-health" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Health Check
@@ -320,7 +332,7 @@
                     <div class="card">
                         <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                             <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Available Agents</h3>
-                            <button type="button" onclick="loadAgentsList()" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">
+                            <button type="button" data-action="load-agents" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Refresh
                             </button>
@@ -340,7 +352,7 @@
                     <div class="card">
                         <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                             <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Agent Aliases</h3>
-                            <button type="button" onclick="showAliasForm()" class="text-sm bg-brand-600 dark:bg-brand-500 text-white px-3 py-1 rounded-lg hover:bg-brand-700 dark:hover:bg-brand-600 transition-colors">
+                            <button type="button" data-action="show-alias-form" class="text-sm bg-brand-600 dark:bg-brand-500 text-white px-3 py-1 rounded-lg hover:bg-brand-700 dark:hover:bg-brand-600 transition-colors">
                                 + Add Alias
                             </button>
                         </div>
@@ -559,6 +571,127 @@
                     </div>
                 </div>
 
+                <!-- Budget Section -->
+                <div id="section-budget" class="settings-section hidden">
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Per-Task Budget Defaults
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-sm text-surface-600 dark:text-surface-400 mb-6">
+                                Set default budget limits for new tasks. Individual tasks can override these settings.
+                            </p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="budget-task-max-cost" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Max Cost (USD)</label>
+                                    <input type="number" name="budget.per_task.max_cost" id="budget-task-max-cost" step="0.01" min="0"
+                                           value="{{if .Config.Budget.PerTask.MaxCost}}{{.Config.Budget.PerTask.MaxCost}}{{end}}"
+                                           placeholder="e.g., 5.00"
+                                           class="input text-sm">
+                                    <p class="text-xs text-surface-400 mt-1">Maximum cost per task in USD (0 = unlimited)</p>
+                                </div>
+                                <div>
+                                    <label for="budget-task-max-tokens" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Max Tokens</label>
+                                    <input type="number" name="budget.per_task.max_tokens" id="budget-task-max-tokens" min="0"
+                                           value="{{if .Config.Budget.PerTask.MaxTokens}}{{.Config.Budget.PerTask.MaxTokens}}{{end}}"
+                                           placeholder="e.g., 100000"
+                                           class="input text-sm">
+                                    <p class="text-xs text-surface-400 mt-1">Maximum total tokens per task (0 = unlimited)</p>
+                                </div>
+                                <div>
+                                    <label for="budget-task-on-limit" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">On Limit Reached</label>
+                                    <select name="budget.per_task.on_limit" id="budget-task-on-limit" class="input text-sm">
+                                        <option value="warn" {{if eq .Config.Budget.PerTask.OnLimit "warn"}}selected{{end}}>Warn Only</option>
+                                        <option value="pause" {{if eq .Config.Budget.PerTask.OnLimit "pause"}}selected{{end}}>Pause Task</option>
+                                        <option value="stop" {{if eq .Config.Budget.PerTask.OnLimit "stop"}}selected{{end}}>Stop Task</option>
+                                    </select>
+                                    <p class="text-xs text-surface-400 mt-1">Action when budget limit is reached</p>
+                                </div>
+                                <div>
+                                    <label for="budget-task-warning-at" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Warning Threshold (%)</label>
+                                    <input type="number" name="budget.per_task.warning_at" id="budget-task-warning-at" step="0.01" min="0" max="1"
+                                           value="{{if .Config.Budget.PerTask.WarningAt}}{{.Config.Budget.PerTask.WarningAt}}{{else}}0.8{{end}}"
+                                           placeholder="0.8"
+                                           class="input text-sm">
+                                    <p class="text-xs text-surface-400 mt-1">Warn at this percentage of budget (0.8 = 80%)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Monthly Workspace Budget
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-sm text-surface-600 dark:text-surface-400 mb-6">
+                                Set a monthly spending limit across all tasks in this workspace.
+                            </p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="budget-monthly-max-cost" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Monthly Max Cost (USD)</label>
+                                    <input type="number" name="budget.monthly.max_cost" id="budget-monthly-max-cost" step="0.01" min="0"
+                                           value="{{if .Config.Budget.Monthly.MaxCost}}{{.Config.Budget.Monthly.MaxCost}}{{end}}"
+                                           placeholder="e.g., 50.00"
+                                           class="input text-sm">
+                                    <p class="text-xs text-surface-400 mt-1">Maximum monthly spending in USD (0 = unlimited)</p>
+                                </div>
+                                <div>
+                                    <label for="budget-monthly-warning-at" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Warning Threshold (%)</label>
+                                    <input type="number" name="budget.monthly.warning_at" id="budget-monthly-warning-at" step="0.01" min="0" max="1"
+                                           value="{{if .Config.Budget.Monthly.WarningAt}}{{.Config.Budget.Monthly.WarningAt}}{{else}}0.8{{end}}"
+                                           placeholder="0.8"
+                                           class="input text-sm">
+                                    <p class="text-xs text-surface-400 mt-1">Warn at this percentage of budget (0.8 = 80%)</p>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Budget Status -->
+                            <div id="budget-monthly-status" class="mt-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700"
+                                 hx-get="/api/v1/budget/monthly/status" hx-trigger="load" hx-swap="innerHTML" hx-target="this">
+                                <div class="flex items-center justify-center py-4">
+                                    <div class="animate-spin text-xl text-brand-600">&#9696;</div>
+                                    <span class="ml-3 text-sm text-surface-600 dark:text-surface-400">Loading monthly status...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Budget Actions
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex flex-wrap gap-4">
+                                <button type="button"
+                                        hx-post="/api/v1/budget/monthly/reset"
+                                        hx-target="#budget-monthly-status"
+                                        hx-confirm="Reset monthly budget tracking? This will clear the current month's spending data."
+                                        class="btn btn-secondary">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    Reset Monthly Budget
+                                </button>
+                                <button type="button"
+                                        hx-post="/api/v1/workflow/resume"
+                                        hx-target="body"
+                                        class="btn btn-primary hidden" id="budget-resume-btn">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Resume Paused Task
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Providers Section -->
                 <div id="section-providers" class="settings-section hidden">
                     <!-- Default Provider -->
@@ -592,7 +725,7 @@
                     <div class="card mb-6">
                         <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                             <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Available Providers</h3>
-                            <button type="button" onclick="loadProvidersList()" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">
+                            <button type="button" data-action="load-providers" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Refresh
                             </button>
@@ -805,6 +938,93 @@
                     </button>
                 </div>
             </form>
+
+            <!-- Security Scan Form - OUTSIDE main settings form (HTML forbids nested forms) -->
+            <div id="section-security" class="settings-section hidden">
+                <div class="card mb-6">
+                    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            Security Scan
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-sm text-surface-600 dark:text-surface-400 mb-6">
+                            Run security scans on your codebase to identify vulnerabilities, secrets, and code quality issues.
+                        </p>
+
+                        <form hx-post="/api/v1/scan" hx-target="#scan-results" hx-indicator="#scan-indicator" class="space-y-6">
+                            {{if .ProjectInfo}}
+                            <div class="p-3 rounded-lg bg-info-50 dark:bg-info-900/20 border border-info-200 dark:border-info-800 text-info-700 dark:text-info-300 text-sm">
+                                <strong>Detected:</strong> {{range $i, $lang := .ProjectInfo.Languages}}{{if $i}}, {{end}}{{$lang}}{{else}}No specific language detected{{end}}
+                            </div>
+                            {{end}}
+                            <div>
+                                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Available Scanners</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {{if .ProjectInfo}}{{range .ProjectInfo.ApplicableScanners}}
+                                    <label class="flex items-start gap-3 p-4 rounded-xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-smooth">
+                                        <input type="checkbox" name="scanners" value="{{.Name}}" {{if .AlwaysShow}}checked{{end}}
+                                               class="mt-0.5 h-5 w-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500">
+                                        <div>
+                                            <span class="block font-semibold text-surface-900 dark:text-surface-100">{{.DisplayName}}</span>
+                                            <span class="text-xs text-surface-500 dark:text-surface-400">{{.Description}}</span>
+                                            {{if .AlwaysShow}}<span class="text-xs text-success-600 dark:text-success-400 block mt-1">All languages</span>
+                                            {{else if .Languages}}<span class="text-xs text-brand-600 dark:text-brand-400 block mt-1">{{range $i, $l := .Languages}}{{if $i}}, {{end}}{{$l}}{{end}}</span>{{end}}
+                                        </div>
+                                    </label>
+                                    {{end}}{{else}}
+                                    <!-- Fallback when no project info -->
+                                    <label class="flex items-start gap-3 p-4 rounded-xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-smooth">
+                                        <input type="checkbox" name="scanners" value="gitleaks" checked
+                                               class="mt-0.5 h-5 w-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500">
+                                        <div>
+                                            <span class="block font-semibold text-surface-900 dark:text-surface-100">Gitleaks</span>
+                                            <span class="text-xs text-surface-500 dark:text-surface-400">Secret detection</span>
+                                            <span class="text-xs text-success-600 dark:text-success-400 block mt-1">All languages</span>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-start gap-3 p-4 rounded-xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-smooth">
+                                        <input type="checkbox" name="scanners" value="semgrep" checked
+                                               class="mt-0.5 h-5 w-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500">
+                                        <div>
+                                            <span class="block font-semibold text-surface-900 dark:text-surface-100">Semgrep</span>
+                                            <span class="text-xs text-surface-500 dark:text-surface-400">Cross-language SAST</span>
+                                            <span class="text-xs text-success-600 dark:text-success-400 block mt-1">All languages</span>
+                                        </div>
+                                    </label>
+                                    {{end}}
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end gap-4 pt-6 border-t border-surface-200 dark:border-surface-700">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                    </svg>
+                                    Run Security Scan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Scan Results -->
+                <div id="scan-results">
+                    <div class="card">
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-surface-600 dark:text-surface-400">No scan results yet.</p>
+                            <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">Run a security scan to check your codebase.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             {{else}}
             <!-- Global mode without project selected -->
             <div class="card">
