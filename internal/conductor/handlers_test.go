@@ -116,7 +116,7 @@ func TestBuildPlanningPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildPlanningPrompt(nil, tt.title, tt.sourceContent, tt.notes, tt.existingSpecs, "", false)
+			got := buildPlanningPrompt(nil, ".", tt.title, tt.sourceContent, tt.notes, tt.existingSpecs, "", false)
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
 					t.Errorf("buildPlanningPrompt() missing %q", want)
@@ -132,7 +132,7 @@ func TestBuildPlanningPrompt(t *testing.T) {
 }
 
 func TestBuildPlanningPromptWithCustomInstructions(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "Focus on security.", false)
+	got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "Focus on security.", false)
 
 	if !strings.Contains(got, "## Custom Instructions") {
 		t.Error("buildPlanningPrompt() should contain custom instructions section")
@@ -173,7 +173,7 @@ func TestBuildImplementationPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildImplementationPrompt(nil, tt.title, tt.source, tt.specs, tt.notes, "", "", "")
+			got := buildImplementationPrompt(nil, ".", tt.title, tt.source, tt.specs, tt.notes, "", "", "")
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
 					t.Errorf("buildImplementationPrompt() missing %q", want)
@@ -189,7 +189,7 @@ func TestBuildImplementationPrompt(t *testing.T) {
 }
 
 func TestBuildImplementationPromptWithCustomInstructions(t *testing.T) {
-	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "Write tests first.", "", "")
+	got := buildImplementationPrompt(nil, ".", "Task", "Source", "Specs", "", "Write tests first.", "", "")
 
 	if !strings.Contains(got, "## Custom Instructions") {
 		t.Error("buildImplementationPrompt() should contain custom instructions section")
@@ -1232,7 +1232,7 @@ func TestBuildPlanningPromptUseDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", tt.useDefaults)
+			got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", tt.useDefaults)
 
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {
@@ -1358,7 +1358,7 @@ func TestBuildBrowserToolsSectionForStep(t *testing.T) {
 // Tests for chain-of-thought sections
 
 func TestPlanningPromptChainOfThought(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+	got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", false)
 
 	wantIn := []string{
 		"## Approach",
@@ -1400,7 +1400,7 @@ func TestReviewPromptChainOfThought(t *testing.T) {
 // Tests for actionable constraints
 
 func TestPlanningPromptActionableConstraints(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+	got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", false)
 
 	wantIn := []string{
 		"If the approach has flaws, explain the specific problem",
@@ -1456,7 +1456,7 @@ func TestReviewPromptActionableConstraints(t *testing.T) {
 // Tests for concrete examples
 
 func TestPlanningPromptHasExample(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+	got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", false)
 
 	wantIn := []string{
 		"## Example Specification",
@@ -1476,7 +1476,7 @@ func TestPlanningPromptHasExample(t *testing.T) {
 }
 
 func TestImplementationPromptHasExample(t *testing.T) {
-	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", "")
+	got := buildImplementationPrompt(nil, ".", "Task", "Source", "Specs", "", "", "", "")
 
 	wantIn := []string{
 		"## Example Output",
@@ -1498,7 +1498,7 @@ func TestImplementationPromptHasExample(t *testing.T) {
 // Tests for Implementation prompt structure (phase order)
 
 func TestImplementationPromptStructure(t *testing.T) {
-	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "Notes", "Custom", "StatusSum", "TrackingSum")
+	got := buildImplementationPrompt(nil, ".", "Task", "Source", "Specs", "Notes", "Custom", "StatusSum", "TrackingSum")
 
 	// Verify phases appear in correct order
 	phases := []string{
@@ -1562,12 +1562,12 @@ func TestPromptRoles(t *testing.T) {
 	}{
 		{
 			name:     "planning prompt",
-			prompt:   buildPlanningPrompt(nil, "Task", "Source", "", "", "", false),
+			prompt:   buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", false),
 			wantRole: "expert software engineer specializing in architecture and system design",
 		},
 		{
 			name:     "implementation prompt",
-			prompt:   buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", ""),
+			prompt:   buildImplementationPrompt(nil, ".", "Task", "Source", "Specs", "", "", "", ""),
 			wantRole: "expert software engineer",
 		},
 		{
@@ -1636,7 +1636,7 @@ func TestReviewPromptHasIterationStructure(t *testing.T) {
 }
 
 func TestPlanningPromptHasOutputFormat(t *testing.T) {
-	got := buildPlanningPrompt(nil, "Task", "Source", "", "", "", false)
+	got := buildPlanningPrompt(nil, ".", "Task", "Source", "", "", "", false)
 
 	required := []string{
 		"## Required Output Format",
@@ -1651,7 +1651,7 @@ func TestPlanningPromptHasOutputFormat(t *testing.T) {
 }
 
 func TestImplementationPromptHasOutputFormat(t *testing.T) {
-	got := buildImplementationPrompt(nil, "Task", "Source", "Specs", "", "", "", "")
+	got := buildImplementationPrompt(nil, ".", "Task", "Source", "Specs", "", "", "", "")
 
 	required := []string{
 		"## Required Output Format",

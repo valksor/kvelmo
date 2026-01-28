@@ -1,5 +1,5 @@
 {{define "task_card"}}
-<div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:workflow_state_changed, every 30s" hx-swap="outerHTML">
+<div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:{{eventWorkflowStateChanged}}, every 30s" hx-swap="outerHTML">
     <div class="card">
         <div class="flex items-start justify-between">
             <div class="flex-1">

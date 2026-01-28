@@ -1,0 +1,56 @@
+{{/* Recent tasks partial - replaces the Go string builder implementation */}}
+{{define "recent_tasks"}}
+<div class="card p-6" id="recent-tasks-section">
+    <h3 class="card-header">Recent Tasks</h3>
+
+    {{if .}}
+    <ul class="mt-4 divide-y divide-surface-200 dark:divide-surface-700">
+        {{range .}}
+        <li class="py-3 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 px-2 -mx-2 rounded-lg transition-smooth cursor-pointer"
+            hx-post="/api/v1/workflow/start"
+            hx-vals='{"ref": "{{.ID}}"}'
+            hx-target="#main-content"
+            title="Click to resume this task"
+        >
+            <div class="flex items-center gap-3 min-w-0">
+                {{/* State icon */}}
+                <span class="text-lg {{.StateColor}}" aria-label="{{.State}}">{{.StateIcon}}</span>
+
+                <div class="min-w-0">
+                    {{/* Title */}}
+                    <p class="font-medium text-surface-900 dark:text-surface-100 truncate">
+                        {{.Title}}
+                    </p>
+
+                    {{/* Metadata */}}
+                    <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+                        {{if .Ref}}
+                        <span>{{.Ref}}</span>
+                        <span>&bull;</span>
+                        {{end}}
+                        <span>{{.TimeAgo}}</span>
+                    </div>
+                </div>
+            </div>
+
+            {{/* Short ID */}}
+            <span class="ml-4 text-xs text-surface-400 dark:text-surface-500 font-mono flex-shrink-0">
+                {{.ShortID}}
+            </span>
+        </li>
+        {{end}}
+    </ul>
+
+    {{/* View all link */}}
+    <div class="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 text-center">
+        <a href="/history" class="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium">
+            View all tasks →
+        </a>
+    </div>
+    {{else}}
+    <p class="mt-4 text-surface-500 dark:text-surface-400 text-center py-8">
+        No tasks yet. Start your first task!
+    </p>
+    {{end}}
+</div>
+{{end}}

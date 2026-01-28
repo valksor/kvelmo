@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/registration"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/eventbus"
 )
@@ -51,7 +53,7 @@ type Server struct {
 	listener   net.Listener
 	router     http.Handler
 	sessions   *sessionStore
-	templates  *Templates
+	renderer   *views.Renderer // Template renderer
 
 	mu                  sync.RWMutex
 	running             bool
@@ -74,13 +76,12 @@ func New(cfg Config) (*Server, error) {
 		startedInGlobalMode: cfg.Mode == ModeGlobal,
 	}
 
-	// Load templates
-	templates, err := LoadTemplates()
+	// Load template renderer
+	renderer, err := views.NewRenderer(templateFS)
 	if err != nil {
-		slog.Warn("failed to load templates, using fallback UI", "error", err)
-	} else {
-		s.templates = templates
+		return nil, fmt.Errorf("load templates: %w", err)
 	}
+	s.renderer = renderer
 
 	// Create router
 	s.router = s.setupRouter()
@@ -165,6 +166,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
+	// Stop the session cleanup goroutine
+	if s.sessions != nil {
+		s.sessions.stop()
+	}
+
 	if s.httpServer != nil {
 		hs := s.httpServer
 		s.mu.Unlock()
@@ -241,7 +247,7 @@ func isLocalRequest(r *http.Request) bool {
 
 // switchToProject switches the server from global mode to project mode.
 // This updates the config, creates a conductor for the project, and rebuilds the router.
-func (s *Server) switchToProject(projectPath string) error {
+func (s *Server) switchToProject(ctx context.Context, projectPath string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -249,6 +255,19 @@ func (s *Server) switchToProject(projectPath string) error {
 	cond, err := conductor.New(conductor.WithWorkDir(projectPath))
 	if err != nil {
 		return fmt.Errorf("create conductor: %w", err)
+	}
+
+	// Register standard providers
+	registration.RegisterStandardProviders(cond)
+
+	// Register standard agents
+	if err := registration.RegisterStandardAgents(cond); err != nil {
+		return fmt.Errorf("register agents: %w", err)
+	}
+
+	// Initialize the conductor to open the workspace
+	if err := cond.Initialize(ctx); err != nil {
+		return fmt.Errorf("initialize conductor: %w", err)
 	}
 
 	// Update server config
@@ -292,4 +311,19 @@ func (s *Server) canSwitchProject() bool {
 	defer s.mu.RUnlock()
 
 	return s.startedInGlobalMode
+}
+
+// getCurrentUser returns the username from the session, if available.
+func (s *Server) getCurrentUser(r *http.Request) string {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return ""
+	}
+
+	sess, ok := s.sessions.get(cookie.Value)
+	if !ok || sess == nil {
+		return ""
+	}
+
+	return sess.Username
 }

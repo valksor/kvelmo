@@ -1,0 +1,73 @@
+{{/* Stats partial - displays workspace statistics */}}
+{{define "stats"}}
+<div class="card p-6">
+    <h3 class="card-header">Workspace Statistics</h3>
+
+    {{if .}}
+    <div class="mt-4 space-y-4">
+        {{/* Total tasks */}}
+        <div class="flex items-center justify-between">
+            <span class="text-surface-600 dark:text-surface-400">Total Tasks</span>
+            <span class="font-semibold text-surface-900 dark:text-surface-100">{{.TotalTasks}}</span>
+        </div>
+
+        {{/* Total cost */}}
+        <div class="flex items-center justify-between">
+            <span class="text-surface-600 dark:text-surface-400">Total Cost</span>
+            <span class="font-semibold text-surface-900 dark:text-surface-100">{{.TotalCost}}</span>
+        </div>
+
+        {{/* Total tokens */}}
+        <div class="flex items-center justify-between">
+            <span class="text-surface-600 dark:text-surface-400">Total Tokens</span>
+            <span class="font-semibold text-surface-900 dark:text-surface-100">{{.TotalTokens}}</span>
+        </div>
+
+        {{/* Cached tokens */}}
+        {{if .CachedTokens}}
+        <div class="flex items-center justify-between">
+            <span class="text-surface-600 dark:text-surface-400">Cached</span>
+            <span class="font-medium text-success-600 dark:text-success-400">{{.CachedTokens}} ({{.CachedPct}})</span>
+        </div>
+        {{end}}
+
+        {{/* State breakdown */}}
+        {{if .StateLines}}
+        <div class="pt-4 border-t border-surface-200 dark:border-surface-700">
+            <h4 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">By State</h4>
+            <div class="space-y-2">
+                {{range .StateLines}}
+                <div class="flex items-center gap-3">
+                    <span class="{{.Color}} text-lg">{{.Icon}}</span>
+                    <span class="flex-1 text-sm text-surface-600 dark:text-surface-400">{{.Badge}}</span>
+                    <span class="text-sm font-medium text-surface-900 dark:text-surface-100">{{.Count}}</span>
+                    <div class="w-16 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                        <div class="h-full {{.BarColor}}" style="width: {{.Percent}}"></div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
+        {{/* Monthly budget */}}
+        {{if .HasMonthly}}
+        <div class="pt-4 border-t border-surface-200 dark:border-surface-700">
+            <h4 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Monthly Budget</h4>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-surface-600 dark:text-surface-400">{{.MonthlyMonth}}</span>
+                    <span class="font-medium text-surface-900 dark:text-surface-100">{{.MonthlySpent}} / {{.MonthlyMax}}</span>
+                </div>
+                <div class="h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                    <div class="h-full {{.MonthlyColor}} transition-all duration-300" style="width: {{.MonthlyPct}}%"></div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="text-surface-500 dark:text-surface-400 text-center py-8">No statistics available</p>
+    {{end}}
+</div>
+{{end}}

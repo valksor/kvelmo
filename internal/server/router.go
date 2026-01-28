@@ -107,6 +107,10 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/memory/index", s.handleMemoryIndex)
 		mux.HandleFunc("GET /api/v1/memory/stats", s.handleMemoryStats)
 
+		// Budget endpoints
+		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
+		mux.HandleFunc("POST /api/v1/budget/monthly/reset", s.handleBudgetMonthlyReset)
+
 		// Sync and simplify endpoints
 		mux.HandleFunc("POST /api/v1/workflow/sync", s.handleWorkflowSync)
 		mux.HandleFunc("POST /api/v1/workflow/simplify", s.handleWorkflowSimplify)
@@ -136,6 +140,9 @@ func (s *Server) setupRouter() http.Handler {
 
 		// Task history UI
 		mux.HandleFunc("GET /history", s.handleHistoryUI)
+
+		// Memory UI
+		mux.HandleFunc("GET /memory", s.handleMemoryUI)
 
 		// Project workflow endpoints
 		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
@@ -176,6 +183,9 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+
+		// Budget status endpoint (returns placeholder when no workspace)
+		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
 
 		// Sandbox endpoints (also available in global mode)
 		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
@@ -473,48 +483,6 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 	// Wait for client disconnect
 	<-r.Context().Done()
-}
-
-// Index handler serves the main UI page (fallback when templates fail to load).
-func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
-	// For now, return a simple HTML page
-	// Future: Replace with proper Go templates for richer UI
-	html := `<!DOCTYPE html>
-<html>
-<head>
-    <title>Mehrhof Web UI</title>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto p-8">
-        <h1 class="text-3xl font-bold mb-4">Mehrhof Web UI</h1>
-        <p class="text-gray-600 mb-8">Mode: ` + s.modeString() + `</p>
-
-        <div class="bg-white rounded-lg shadow p-6 mb-4">
-            <h2 class="text-xl font-semibold mb-2">Status</h2>
-            <div id="status" hx-get="/api/v1/status" hx-trigger="load" hx-swap="innerHTML">
-                Loading...
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-2">API Endpoints</h2>
-            <ul class="list-disc list-inside text-gray-700">
-                <li><a href="/health" class="text-blue-600 hover:underline">/health</a> - Health check</li>
-                <li><a href="/api/v1/status" class="text-blue-600 hover:underline">/api/v1/status</a> - Server status</li>
-                <li><a href="/api/v1/context" class="text-blue-600 hover:underline">/api/v1/context</a> - Server context</li>
-                <li><a href="/api/v1/tasks" class="text-blue-600 hover:underline">/api/v1/tasks</a> - List tasks</li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>`
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write([]byte(html)); err != nil {
-		slog.Error("failed to write HTML response", "error", err)
-	}
 }
 
 // writeJSON writes a JSON response.
