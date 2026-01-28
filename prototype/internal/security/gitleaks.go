@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 type GitleaksScanner struct {
 	enabled bool
 	config  *GitleaksConfig
-	tm      *ToolManager
 }
 
 // GitleaksConfig holds configuration for the gitleaks scanner.
@@ -57,7 +57,7 @@ type GitleaksOutput struct {
 }
 
 // NewGitleaksScanner creates a new gitleaks scanner.
-func NewGitleaksScanner(enabled bool, config *GitleaksConfig, tm *ToolManager) *GitleaksScanner {
+func NewGitleaksScanner(enabled bool, config *GitleaksConfig) *GitleaksScanner {
 	if config == nil {
 		config = &GitleaksConfig{}
 	}
@@ -65,7 +65,6 @@ func NewGitleaksScanner(enabled bool, config *GitleaksConfig, tm *ToolManager) *
 	return &GitleaksScanner{
 		enabled: enabled,
 		config:  config,
-		tm:      tm,
 	}
 }
 
@@ -115,21 +114,18 @@ func (g *GitleaksScanner) Scan(ctx context.Context, dir string) (*ScanResult, er
 		args = append(args, "--verbose")
 	}
 
-	// Get gitleaks binary path
-	binaryName := "gitleaks"
-	if g.tm != nil {
-		spec := ToolSpec{
-			Name:       "gitleaks",
-			Repository: "zricethezav/gitleaks",
-			BinaryName: "gitleaks",
-		}
-		binaryPath, toolErr := g.tm.EnsureTool(ctx, spec)
-		// Tool not available - skip it
-		if toolErr == nil {
-			binaryName = binaryPath
-		} else {
-			return skippedResult(g.Name(), time.Since(start)), nil
-		}
+	// Check if gitleaks is installed
+	binaryName, lookupErr := exec.LookPath("gitleaks")
+	if lookupErr != nil {
+		//nolint:nilerr // Error is communicated via ScanResult.Error for partial scan support
+		return &ScanResult{
+			Scanner:  g.Name(),
+			Status:   ScanStatusSkipped,
+			Findings: []Finding{},
+			Summary:  Summary{Total: 0, BySeverity: make(map[Severity]int)},
+			Duration: time.Since(start),
+			Error:    errors.New("gitleaks not installed. Run: brew install gitleaks (or download from https://github.com/gitleaks/gitleaks/releases)"),
+		}, nil
 	}
 
 	// Run gitleaks

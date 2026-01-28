@@ -16,14 +16,12 @@ import (
 // GovulncheckScanner wraps the govulncheck vulnerability scanner.
 type GovulncheckScanner struct {
 	enabled bool
-	tm      *ToolManager
 }
 
 // NewGovulncheckScanner creates a new govulncheck scanner.
-func NewGovulncheckScanner(enabled bool, tm *ToolManager) *GovulncheckScanner {
+func NewGovulncheckScanner(enabled bool) *GovulncheckScanner {
 	return &GovulncheckScanner{
 		enabled: enabled,
-		tm:      tm,
 	}
 }
 
@@ -48,21 +46,18 @@ func (g *GovulncheckScanner) Scan(ctx context.Context, dir string) (*ScanResult,
 		dir,
 	}
 
-	// Get govulncheck binary path
-	binaryName := "govulncheck"
-	if g.tm != nil {
-		spec := ToolSpec{
-			Name:       "govulncheck",
-			Repository: "golang.org/x/vuln",
-			BinaryName: "govulncheck",
-		}
-		binaryPath, toolErr := g.tm.EnsureTool(ctx, spec)
-		// Tool not available - skip it
-		if toolErr == nil {
-			binaryName = binaryPath
-		} else {
-			return skippedResult(g.Name(), time.Since(start)), nil
-		}
+	// Check if govulncheck is installed
+	binaryName, lookupErr := exec.LookPath("govulncheck")
+	if lookupErr != nil {
+		//nolint:nilerr // Error is communicated via ScanResult.Error for partial scan support
+		return &ScanResult{
+			Scanner:  g.Name(),
+			Status:   ScanStatusSkipped,
+			Findings: []Finding{},
+			Summary:  Summary{Total: 0, BySeverity: make(map[Severity]int)},
+			Duration: time.Since(start),
+			Error:    errors.New("govulncheck not installed. Run: go install golang.org/x/vuln/cmd/govulncheck@latest"),
+		}, nil
 	}
 
 	// Run govulncheck
