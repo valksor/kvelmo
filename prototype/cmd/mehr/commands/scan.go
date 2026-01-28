@@ -26,12 +26,13 @@ var scanCmd = &cobra.Command{
 	Short: "Run security scans on codebase",
 	Long: `Run security scanners to detect vulnerabilities, secrets, and compliance issues.
 
-Scans available:
-  - sast: Static application security testing (gosec)
-  - secrets: Secret detection (gitleaks)
-  - dependencies: Dependency vulnerability scanning (govulncheck)
+Scanners auto-detected by project type:
+  Cross-language:  semgrep, gitleaks (secrets)
+  Go:              gosec (SAST), govulncheck (dependencies)
+  JavaScript/TS:   npm-audit (dependencies), eslint-security (SAST)
+  Python:          bandit (SAST), pip-audit (dependencies)
 
-By default, runs all enabled scanners from configuration.
+By default, runs all applicable scanners for detected project languages.
 
 Exit codes:
   0 - No findings or only below failure threshold
@@ -39,11 +40,12 @@ Exit codes:
   2 - Scanner errors
 
 Examples:
-  mehr scan                      # Scan current directory
-  mehr scan --scanners sast       # Run only SAST scanners
-  mehr scan --dir ./src           # Scan specific directory
-  mehr scan --format sarif        # Generate SARIF report
-  mehr scan --output report.txt   # Save to file`,
+  mehr scan                           # Scan with auto-detected scanners
+  mehr scan --scanners gosec,gitleaks # Run specific scanners
+  mehr scan --scanners semgrep        # Run cross-language SAST
+  mehr scan --dir ./src               # Scan specific directory
+  mehr scan --format sarif            # Generate SARIF report
+  mehr scan --output report.txt       # Save to file`,
 	RunE: runScan,
 }
 
@@ -141,10 +143,19 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// Validate scanner names
 	if len(scanScanners) > 0 {
-		validScanners := map[string]bool{"gosec": true, "gitleaks": true, "govulncheck": true}
+		validScanners := map[string]bool{
+			"gosec":           true,
+			"gitleaks":        true,
+			"govulncheck":     true,
+			"semgrep":         true,
+			"npm-audit":       true,
+			"eslint-security": true,
+			"bandit":          true,
+			"pip-audit":       true,
+		}
 		for _, scanner := range scanScanners {
 			if !validScanners[scanner] {
-				return fmt.Errorf("invalid scanner '%s': must be one of gosec, gitleaks, govulncheck", scanner)
+				return fmt.Errorf("invalid scanner '%s': must be one of gosec, gitleaks, govulncheck, semgrep, npm-audit, eslint-security, bandit, pip-audit", scanner)
 			}
 		}
 	}
@@ -211,8 +222,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 // registerScannersFromConfig registers scanners based on workspace config.
 func registerScannersFromConfig(registry *security.ScannerRegistry, cfg *storage.SecuritySettings) {
-	tm := registry.GetToolManager()
-
 	// Register SAST scanners
 	if cfg.Scanners.SAST != nil && cfg.Scanners.SAST.Enabled {
 		for _, tool := range cfg.Scanners.SAST.Tools {
@@ -233,7 +242,7 @@ func registerScannersFromConfig(registry *security.ScannerRegistry, cfg *storage
 				if confidence, ok := tool["confidence"].(string); ok {
 					gosecCfg.Confidence = confidence
 				}
-				registry.Register("gosec", security.NewGosecScanner(enabled, gosecCfg, tm))
+				registry.Register("gosec", security.NewGosecScanner(enabled, gosecCfg))
 			}
 		}
 	}
@@ -258,7 +267,7 @@ func registerScannersFromConfig(registry *security.ScannerRegistry, cfg *storage
 				if maxDepth, ok := tool["max_depth"].(int); ok {
 					gitleaksCfg.MaxDepth = maxDepth
 				}
-				registry.Register("gitleaks", security.NewGitleaksScanner(enabled, gitleaksCfg, tm))
+				registry.Register("gitleaks", security.NewGitleaksScanner(enabled, gitleaksCfg))
 			}
 		}
 	}
@@ -276,20 +285,32 @@ func registerScannersFromConfig(registry *security.ScannerRegistry, cfg *storage
 			}
 
 			if name == "govulncheck" {
-				registry.Register("govulncheck", security.NewGovulncheckScanner(enabled, tm))
+				registry.Register("govulncheck", security.NewGovulncheckScanner(enabled))
 			}
 		}
 	}
 }
 
-// registerDefaultScanners registers all scanners with default settings.
+// registerDefaultScanners registers all scanners with default settings based on detected project.
 func registerDefaultScanners(registry *security.ScannerRegistry) {
-	tm := registry.GetToolManager()
+	// Enable all scanners by default - detect project and register appropriate scanners
+	// Note: This is called when no security config is present, so we use default settings
 
-	// Enable all scanners by default
-	registry.Register("gosec", security.NewGosecScanner(true, &security.GosecConfig{}, tm))
-	registry.Register("gitleaks", security.NewGitleaksScanner(true, &security.GitleaksConfig{}, tm))
-	registry.Register("govulncheck", security.NewGovulncheckScanner(true, tm))
+	// Always register cross-language scanners
+	registry.Register("gitleaks", security.NewGitleaksScanner(true, &security.GitleaksConfig{}))
+	registry.Register("semgrep", security.NewSemgrepScanner(true, &security.SemgrepConfig{}))
+
+	// Register Go scanners (will skip if not a Go project at scan time)
+	registry.Register("gosec", security.NewGosecScanner(true, &security.GosecConfig{}))
+	registry.Register("govulncheck", security.NewGovulncheckScanner(true))
+
+	// Register JavaScript/TypeScript scanners
+	registry.Register("npm-audit", security.NewNpmAuditScanner(true, &security.NpmAuditConfig{}))
+	registry.Register("eslint-security", security.NewESLintScanner(true, &security.ESLintConfig{}))
+
+	// Register Python scanners
+	registry.Register("bandit", security.NewBanditScanner(true, &security.BanditConfig{}))
+	registry.Register("pip-audit", security.NewPipAuditScanner(true, &security.PipAuditConfig{}))
 }
 
 // saveOutput saves output to file.

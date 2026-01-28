@@ -4,32 +4,49 @@ Integrated security scanning for SAST, secret detection, and dependency vulnerab
 
 ## Overview
 
-The security system integrates multiple scanners into the Mehrhof workflow:
+The security system integrates multiple scanners into the Mehrhof workflow.
+
+### Multi-Language Support
+
+Scanners are **auto-detected** based on project marker files:
+
+| Marker File | Language | Scanners |
+|-------------|----------|----------|
+| `go.mod` | Go | Gosec, Govulncheck |
+| `package.json` | JavaScript/TypeScript | npm audit, ESLint Security |
+| `requirements.txt`, `pyproject.toml` | Python | Bandit, pip-audit |
+| (always) | Cross-language | Semgrep, Gitleaks |
 
 ```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│    Gosec     │     │  Gitleaks    │     │ Govulncheck  │
-│   (SAST)     │     │  (Secrets)    │     │ (Dependencies)│
-└──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-       │                    │                    │
-       └────────────────────┼────────────────────┘
-                            │
-                    ▼───────────────▼
-              ┌──────────────────┐
-              │ Scanner Registry │
-              └────────┬─────────┘
-                       │
-                       ▼
-              ┌──────────────────┐
-              │  Report Builder  │
-              └────────┬─────────┘
-                       │
-        ┌──────────────┴───────────────┐
-        ▼                              ▼
-   ┌─────────┐                   ┌─────────┐
-   │  SARIF  │                   │  Text   │
-   │ Report  │                   │ Output  │
-   └─────────┘                   └─────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    Project Detection                             │
+│  go.mod? package.json? requirements.txt? pyproject.toml?        │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+│ Semgrep │ │Gitleaks │ │ Gosec   │ │Govuln   │ │npm audit│ │ Bandit  │
+│ (SAST)  │ │(Secrets)│ │(Go SAST)│ │(Go Deps)│ │(JS Deps)│ │(Py SAST)│
+└────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘
+     │           │           │           │           │           │
+     └───────────┼───────────┼───────────┼───────────┼───────────┘
+                 │           │           │           │
+                 ▼───────────▼───────────▼───────────▼
+                       ┌──────────────────┐
+                       │ Scanner Registry │
+                       └────────┬─────────┘
+                                │
+                                ▼
+                       ┌──────────────────┐
+                       │  Report Builder  │
+                       └────────┬─────────┘
+                                │
+                 ┌──────────────┴───────────────┐
+                 ▼                              ▼
+            ┌─────────┐                   ┌─────────┐
+            │  SARIF  │                   │  Text   │
+            │ Report  │                   │ Output  │
+            └─────────┘                   └─────────┘
 ```
 
 ## Scanner Architecture
