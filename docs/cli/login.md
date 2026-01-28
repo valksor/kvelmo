@@ -119,20 +119,6 @@ mehr github login
 mehr gh login
 ```
 
-## Migration from Old Format
-
-If you have plaintext tokens in `config.yaml` from an older version, migrate them:
-
-```bash
-mehr migrate-tokens
-```
-
-This command:
-1. Reads your `config.yaml`
-2. Finds plaintext tokens (not using `${VAR}` syntax)
-3. Moves token values to `.mehrhof/.env`
-4. Updates `config.yaml` to use `${VAR}` references
-
 ## Getting Tokens
 
 ### GitHub

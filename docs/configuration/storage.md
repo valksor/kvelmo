@@ -48,10 +48,6 @@ The `<project-id>` is automatically derived from your git remote:
 | `https://gitlab.com/group/subgroup/project` | `gitlab.com-group-subgroup-project` |
 | No remote (local) | `local-<hash>` |
 
-## Migration
-
-If you have an existing `.mehrhof/work/` directory or `.active_task` file in your project, they will be automatically migrated to `~/.valksor/mehrhof/workspaces/<project-id>/` when you run any mehrhof command. The `config.yaml` and `.env` files remain in the project.
-
 ## See Also
 
 - [Storage Structure Reference](../reference/storage.md) - Complete storage documentation
