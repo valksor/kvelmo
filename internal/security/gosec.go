@@ -55,7 +55,6 @@ func (b *limitedBuffer) Reset() {
 type GosecScanner struct {
 	enabled bool
 	config  *GosecConfig
-	tm      *ToolManager
 }
 
 // GosecConfig holds configuration for the gosec scanner.
@@ -87,7 +86,7 @@ type GosecOutput struct {
 }
 
 // NewGosecScanner creates a new gosec scanner.
-func NewGosecScanner(enabled bool, config *GosecConfig, tm *ToolManager) *GosecScanner {
+func NewGosecScanner(enabled bool, config *GosecConfig) *GosecScanner {
 	if config == nil {
 		config = &GosecConfig{}
 	}
@@ -95,7 +94,6 @@ func NewGosecScanner(enabled bool, config *GosecConfig, tm *ToolManager) *GosecS
 	return &GosecScanner{
 		enabled: enabled,
 		config:  config,
-		tm:      tm,
 	}
 }
 
@@ -146,21 +144,18 @@ func (g *GosecScanner) Scan(ctx context.Context, dir string) (*ScanResult, error
 
 	args = append(args, dir)
 
-	// Get gosec binary path
-	binaryName := "gosec"
-	if g.tm != nil {
-		spec := ToolSpec{
-			Name:       "gosec",
-			Repository: "securego/gosec",
-			BinaryName: "gosec",
-		}
-		binaryPath, toolErr := g.tm.EnsureTool(ctx, spec)
-		// Tool not available - skip it
-		if toolErr == nil {
-			binaryName = binaryPath
-		} else {
-			return skippedResult(g.Name(), time.Since(start)), nil
-		}
+	// Check if gosec is installed
+	binaryName, lookupErr := exec.LookPath("gosec")
+	if lookupErr != nil {
+		//nolint:nilerr // Error is communicated via ScanResult.Error for partial scan support
+		return &ScanResult{
+			Scanner:  g.Name(),
+			Status:   ScanStatusSkipped,
+			Findings: []Finding{},
+			Summary:  Summary{Total: 0, BySeverity: make(map[Severity]int)},
+			Duration: time.Since(start),
+			Error:    errors.New("gosec not installed. Run: go install github.com/securego/gosec/v2/cmd/gosec@latest"),
+		}, nil
 	}
 
 	// Run gosec
