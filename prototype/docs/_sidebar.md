@@ -33,6 +33,7 @@
   **Management**
   - [Task History](web-ui/task-history.md)
   - [Notes](web-ui/notes.md)
+  - [Quick Question](web-ui/questions.md)
   - [Security & Quality](web-ui/security-quality.md)
   - [Memory](web-ui/memory.md)
   - [Templates](web-ui/templates.md)
@@ -100,6 +101,7 @@
     - [status](cli/status.md)
     - [continue](cli/continue.md)
     - [note](cli/note.md)
+    - [question](cli/question.md)
     - [list](cli/list.md)
     - [sync](cli/sync.md)
     - [abandon](cli/abandon.md)

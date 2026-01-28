@@ -172,16 +172,19 @@ func runGuide(cmd *cobra.Command, args []string) error {
 
 	case workflow.StatePlanning:
 		fmt.Println("  mehr status                # View planning progress")
+		fmt.Println("  mehr question              # Ask the agent a question")
 		fmt.Println("  mehr note                  # Add context")
 
 	case workflow.StateImplementing:
 		fmt.Println("  mehr status                # View implementation progress")
+		fmt.Println("  mehr question              # Ask the agent a question")
 		fmt.Println("  mehr note                  # Add notes")
 		fmt.Println("  mehr undo                  # Revert last change")
 		fmt.Println("  mehr finish                # Complete and merge")
 
 	case workflow.StateReviewing:
 		fmt.Println("  mehr status                # View review results")
+		fmt.Println("  mehr question              # Ask the agent a question")
 		fmt.Println("  mehr finish                # Complete and merge")
 		fmt.Println("  mehr implement              # Make more changes")
 

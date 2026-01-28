@@ -83,6 +83,7 @@ These flags work with any command:
 | Command                   | Description                              |
 | ------------------------- | ---------------------------------------- |
 | [init](cli/init.md)       | Initialize task workspace                |
+| [find](cli/find.md)       | AI-powered code search with focused results |
 | [agents](cli/agents.md)   | List available AI agents                 |
 | [config](cli/config.md)   | Validate configuration files             |
 | [plugins](cli/plugins.md) | Manage extension plugins                 |

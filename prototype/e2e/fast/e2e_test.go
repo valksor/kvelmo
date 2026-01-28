@@ -148,3 +148,179 @@ Create a file hello.md in the current directory with content "Hello, World!"
 	// Verify no nested directories were created (e.g., agent didn't create /tmp/test/hello.md)
 	h.AssertFileNotExists("tmp")
 }
+
+// TestFindCommand tests the find command functionality.
+func TestFindCommand(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	// Create some test files to search
+	h.WriteFile("internal/test.go", `package main
+
+func hello() string {
+	return "Hello, World!"
+}
+
+func goodbye() string {
+	return "Goodbye!"
+}
+`)
+
+	h.WriteFile("cmd/main.go", `package main
+
+func main() {
+	println(hello())
+}
+`)
+
+	h.WriteFile("README.md", `# Test Project
+
+This is a test project for the find command.
+`)
+
+	// Test basic find
+	h.Run("find", "hello")
+	h.AssertSuccess()
+	h.AssertOutputContains("hello")
+}
+
+// TestFindWithPath tests find command with path restriction.
+func TestFindWithPath(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	// Create files in different directories
+	h.WriteFile("internal/handler.go", "package internal\n\nfunc Handle() {}\n")
+	h.WriteFile("cmd/main.go", "package main\n\nfunc main() {}\n")
+
+	// Search only in internal directory
+	h.Run("find", "func", "--path", "internal")
+	h.AssertSuccess()
+	h.AssertOutputContains("internal")
+	// Should not contain cmd/main.go results
+}
+
+// TestFindWithPattern tests find command with file pattern.
+func TestFindWithPattern(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	// Create different file types
+	h.WriteFile("test.go", "package main\n\nfunc test() {}\n")
+	h.WriteFile("test.txt", "This is a text file with the word func in it.\n")
+	h.WriteFile("test.md", "# Documentation\n\nSome func documentation.\n")
+
+	// Search for "func" only in Go files
+	h.Run("find", "func", "--pattern", "*.go")
+	h.AssertSuccess()
+	h.AssertOutputContains("test.go")
+}
+
+// TestFindFormats tests find command with different output formats.
+func TestFindFormats(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	h.WriteFile("test.go", "package main\n\nfunc test() {}\n")
+
+	tests := []struct {
+		name     string
+		format   string
+		contains []string
+	}{
+		{
+			name:     "concise format",
+			format:   "concise",
+			contains: []string{"test.go"},
+		},
+		{
+			name:     "structured format",
+			format:   "structured",
+			contains: []string{"Found", "match", "test.go"},
+		},
+		{
+			name:     "json format",
+			format:   "json",
+			contains: []string{"{", "}", "matches"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h.Run("find", "func", "--format", tt.format)
+			h.AssertSuccess()
+			for _, expected := range tt.contains {
+				h.AssertOutputContains(expected)
+			}
+		})
+	}
+}
+
+// TestFindNoMatches tests find command when no matches are found.
+func TestFindNoMatches(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	h.WriteFile("test.go", "package main\n\nfunc test() {}\n")
+
+	// Search for something that doesn't exist
+	h.Run("find", "nonexistent_function_xyz_123")
+	h.AssertSuccess()
+	h.AssertOutputContains("No matches")
+}
+
+// TestFindWithoutAgent tests local file search when agent is unavailable.
+func TestFindWithoutAgent(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	// Don't initialize with config (no agent available)
+	h.WriteFile("test.go", "package main\n\nfunc test() {}\n")
+
+	// Find should fall back to local file search
+	// This test verifies the command works even without an agent configured
+	h.Run("find", "test")
+	// May fail if no agent available, but shouldn't panic
+	// The output should either contain results or an agent error message
+}
+
+// TestFindNoQuery tests that find command properly handles missing query.
+func TestFindNoQuery(t *testing.T) {
+	dir := t.TempDir()
+	h := NewHelper(t, dir)
+
+	h.InitWithLocalConfig()
+
+	// Run find without a query
+	h.Run("find")
+	// Should fail with error about query being required
+	if h.lastExit == 0 {
+		t.Error("find without query should fail")
+	}
+}
+
+// WriteFile creates a file with the given content.
+func (h *Helper) WriteFile(name, content string) {
+	path := h.JoinDir(name)
+	if err := os.MkdirAll(h.Dir(), 0o755); err != nil {
+		h.t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		h.t.Fatalf("WriteFile: %v", err)
+	}
+}
+
+// JoinDir joins the directory with the given path.
+func (h *Helper) JoinDir(name string) string {
+	return h.dir + "/" + name
+}

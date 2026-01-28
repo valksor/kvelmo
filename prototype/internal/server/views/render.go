@@ -102,6 +102,7 @@ func (r *Renderer) loadTemplates() error {
 		"license",
 		"quick",
 		"memory",
+		"find",
 	}
 
 	for _, page := range pages {
@@ -253,6 +254,11 @@ func (r *Renderer) RenderQuick(w io.Writer, data QuickTasksData) error {
 // RenderMemory renders the memory page.
 func (r *Renderer) RenderMemory(w io.Writer, data MemoryData) error {
 	return r.Render(w, "memory", data)
+}
+
+// RenderFind renders the find page.
+func (r *Renderer) RenderFind(w io.Writer, data interface{}) error {
+	return r.Render(w, "find", data)
 }
 
 // TemplateNotFoundError is returned when a template is not found.

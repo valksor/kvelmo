@@ -133,6 +133,11 @@ func getGuideActions(state workflow.State, specifications int) []guideAction {
 				Description: "View planning progress",
 				Endpoint:    "GET /api/v1/task",
 			},
+			{
+				Command:     "mehr question",
+				Description: "Ask the agent a question",
+				Endpoint:    "POST /api/v1/workflow/question",
+			},
 		}
 
 	case workflow.StateImplementing:
@@ -141,6 +146,11 @@ func getGuideActions(state workflow.State, specifications int) []guideAction {
 				Command:     "mehr status",
 				Description: "View implementation progress",
 				Endpoint:    "GET /api/v1/task",
+			},
+			{
+				Command:     "mehr question",
+				Description: "Ask the agent a question",
+				Endpoint:    "POST /api/v1/workflow/question",
 			},
 			{
 				Command:     "mehr undo",
@@ -173,6 +183,11 @@ func getGuideActions(state workflow.State, specifications int) []guideAction {
 				Command:     "mehr finish",
 				Description: "Complete and merge",
 				Endpoint:    "POST /api/v1/workflow/finish",
+			},
+			{
+				Command:     "mehr question",
+				Description: "Ask the agent a question",
+				Endpoint:    "POST /api/v1/workflow/question",
 			},
 			{
 				Command:     "mehr implement",
