@@ -44,6 +44,11 @@ Review results are saved to the work directory.
 | `--tool`   |       | string | coderabbit   | Review tool to use |
 | `--output` | `-o`  | string | REVIEW-N.txt | Output file name   |
 | `--optimize` |     | bool   | false        | Optimize prompt before sending to agent |
+| `--standalone` |   | bool   | false        | Review without active task (see Standalone Mode) |
+| `--branch` |       | string | ""           | Compare current branch vs base (standalone only) |
+| `--range`  |       | string | ""           | Compare commit range (standalone only) |
+| `--context` |      | int    | 3            | Lines of context in diff (standalone only) |
+| `--agent`  |       | string | ""           | Agent to use for review |
 
 ## Examples
 
@@ -205,6 +210,120 @@ Ensure you have uncommitted changes or are on a task branch with modifications.
 ### "Review timeout"
 
 Large changesets may take longer. The tool will retry automatically.
+
+## Standalone Review Mode
+
+Review code changes **without an active task**. Useful for quick code reviews, reviewing uncommitted changes, or comparing branches directly.
+
+### Synopsis
+
+```bash
+mehr review --standalone [flags] [files...]
+```
+
+### Standalone Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--standalone` | bool | false | Enable standalone mode (no active task required) |
+| `--branch` | string | "" | Compare current branch against base branch (auto-detects main/master) |
+| `--range` | string | "" | Compare specific commit range (e.g., `HEAD~3..HEAD`) |
+| `--context` | int | 3 | Lines of context in diff |
+| `--agent` | string | "" | Agent to use for review |
+| `--fix` | bool | false | Apply suggested fixes (modifies files) |
+| `--checkpoint` | bool | true | Create checkpoint before applying fixes (use with --fix) |
+
+### Standalone Examples
+
+**Review uncommitted changes (default):**
+```bash
+mehr review --standalone
+```
+
+**Review current branch vs main:**
+```bash
+mehr review --standalone --branch
+```
+
+**Review current branch vs specific base:**
+```bash
+mehr review --standalone --branch develop
+```
+
+**Review specific commit range:**
+```bash
+mehr review --standalone --range HEAD~3..HEAD
+```
+
+**Review specific files:**
+```bash
+mehr review --standalone src/foo.go src/bar.go
+```
+
+**Use specific agent:**
+```bash
+mehr review --standalone --agent opus
+```
+
+### Fix Mode
+
+Use `--fix` to review code AND apply fixes for issues found:
+
+**Review and fix uncommitted changes:**
+```bash
+mehr review --standalone --fix
+```
+
+**Review and fix branch changes:**
+```bash
+mehr review --standalone --fix --branch
+```
+
+**Skip checkpoint creation (not recommended):**
+```bash
+mehr review --standalone --fix --checkpoint=false
+```
+
+> **Safety Note**: By default, `--fix` creates a git checkpoint before modifying files. Use `mehr undo` or `git checkout .` to revert if needed.
+
+### Standalone Output
+
+```bash
+$ mehr review --standalone
+
+ℹ Reviewing uncommitted changes (staged + unstaged)...
+Agent reviewing changes...
+
+✓ Review complete
+
+Verdict: NEEDS_CHANGES
+
+Summary:
+The code changes introduce a potential nil pointer dereference in the handler function.
+
+Issues:
+  [HIGH] handler.go:45 - Missing nil check before accessing user.Name
+  [MEDIUM] handler.go:52 - Unused variable 'ctx' should be removed
+
+Tokens: 1234 input, 567 output ($0.0042)
+```
+
+### When to Use Standalone Mode
+
+- **Quick reviews**: Review changes without starting a full task
+- **Pre-commit checks**: Review uncommitted changes before committing
+- **Branch comparisons**: Compare feature branches against main
+- **CI/CD pipelines**: Review changes in automated workflows
+- **Code exploration**: Review historical changes via commit ranges
+
+### Configuration
+
+Set a default branch for standalone reviews in `.mehrhof/config.yaml`:
+
+```yaml
+git:
+  default_branch: develop  # Used when --branch is specified without a value
+```
 
 ## Review Pull Requests
 
