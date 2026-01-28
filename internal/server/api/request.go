@@ -194,22 +194,22 @@ func AcceptsHTML(r *http.Request) bool {
 
 // IsHTMXRequest returns true if this is an HTMX request.
 func IsHTMXRequest(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
+	return r.Header.Get("Hx-Request") == "true"
 }
 
 // HTMXTrigger returns the HX-Trigger header value (element that triggered the request).
 func HTMXTrigger(r *http.Request) string {
-	return r.Header.Get("HX-Trigger")
+	return r.Header.Get("Hx-Trigger")
 }
 
 // HTMXTarget returns the HX-Target header value (target element ID).
 func HTMXTarget(r *http.Request) string {
-	return r.Header.Get("HX-Target")
+	return r.Header.Get("Hx-Target")
 }
 
 // HTMXCurrentURL returns the HX-Current-URL header value.
 func HTMXCurrentURL(r *http.Request) string {
-	return r.Header.Get("HX-Current-URL")
+	return r.Header.Get("Hx-Current-Url")
 }
 
 // ContentType returns the Content-Type header without parameters.
