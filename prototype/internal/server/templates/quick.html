@@ -73,7 +73,7 @@
             <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Tasks</h2>
             <span id="task-count" class="text-sm text-surface-500 dark:text-surface-400">Loading...</span>
         </div>
-        <div id="task-list" hx-get="/api/v1/quick" hx-trigger="load, sse:quick_tasks_updated" hx-swap="innerHTML">
+        <div id="task-list" hx-get="/api/v1/quick" hx-trigger="load, sse:{{eventQuickTasksUpdated}}" hx-swap="innerHTML">
             <div class="text-center text-surface-500 dark:text-surface-400 py-12">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
                     <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
