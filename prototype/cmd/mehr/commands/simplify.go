@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/conductor"
@@ -13,10 +14,15 @@ import (
 var (
 	simplifyNoCheckpoint bool
 	simplifyAgent        string
+	// Standalone mode flags.
+	simplifyStandalone  bool
+	simplifyBranch      string
+	simplifyRange       string
+	simplifyContextSize int
 )
 
 var simplifyCmd = &cobra.Command{
-	Use:   "simplify",
+	Use:   "simplify [files...]",
 	Short: "Simplify content based on current workflow state",
 	Long: `Simplify and refine content based on the current workflow state.
 
@@ -27,6 +33,13 @@ STATE-BASED BEHAVIOR:
   - Pre-plan (no specs): Simplifies task input/description
   - After planning: Simplifies specification files (specification-*.md)
   - After implementing: Simplifies code changes (even if review exists)
+
+STANDALONE MODE (--standalone):
+  Simplify code without an active task. Useful for simplifying:
+  - Uncommitted changes (default)
+  - Current branch vs main/master (--branch)
+  - Specific commit ranges (--range)
+  - Specific files (positional args)
 
 SAFETY:
   - Creates a git checkpoint before modifying files
@@ -41,7 +54,14 @@ SAFETY:
   mehr simplify --agent opus
 
   # Skip checkpoint creation (not recommended)
-  mehr simplify --no-checkpoint`,
+  mehr simplify --no-checkpoint
+
+  # Standalone mode (no active task needed)
+  mehr simplify --standalone              # Simplify uncommitted changes
+  mehr simplify --standalone --branch     # Simplify current branch vs main
+  mehr simplify --standalone --branch develop  # Simplify vs develop branch
+  mehr simplify --standalone --range HEAD~3..HEAD  # Simplify commit range
+  mehr simplify --standalone src/foo.go src/bar.go  # Simplify specific files`,
 	RunE: runSimplify,
 }
 
@@ -52,10 +72,21 @@ func init() {
 		"Skip creating a checkpoint before simplifying")
 	simplifyCmd.Flags().StringVar(&simplifyAgent, "agent", "",
 		"Agent to use for simplification")
+
+	// Standalone mode flags
+	simplifyCmd.Flags().BoolVar(&simplifyStandalone, "standalone", false, "Simplify without an active task")
+	simplifyCmd.Flags().StringVar(&simplifyBranch, "branch", "", "Compare current branch against base branch (use with --standalone)")
+	simplifyCmd.Flags().StringVar(&simplifyRange, "range", "", "Compare specific commit range, e.g. HEAD~3..HEAD (use with --standalone)")
+	simplifyCmd.Flags().IntVar(&simplifyContextSize, "context", 3, "Lines of context in diff (use with --standalone)")
 }
 
 func runSimplify(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+
+	// Handle standalone mode
+	if simplifyStandalone {
+		return runStandaloneSimplify(cmd, args)
+	}
 
 	opts := BuildConductorOptions(CommandOptions{
 		Verbose: verbose,
@@ -71,6 +102,11 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 	}
 
 	if !RequireActiveTask(cond) {
+		fmt.Println()
+		fmt.Println(tkdisplay.InfoMsg("Tip: Use --standalone to simplify without an active task:"))
+		fmt.Println("  mehr simplify --standalone              # Simplify uncommitted changes")
+		fmt.Println("  mehr simplify --standalone --branch     # Simplify current branch vs main")
+
 		return nil
 	}
 
@@ -118,4 +154,134 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 	)
 
 	return nil
+}
+
+// runStandaloneSimplify runs code simplification without requiring an active task.
+func runStandaloneSimplify(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	// Build conductor options
+	opts := BuildConductorOptions(CommandOptions{
+		Verbose: verbose,
+	})
+
+	if simplifyAgent != "" {
+		opts = append(opts, conductor.WithStepAgent("simplifying", simplifyAgent))
+	}
+
+	// Initialize conductor
+	cond, err := initializeConductor(ctx, opts...)
+	if err != nil {
+		return err
+	}
+
+	// Set up progress callback using helper
+	if verbose {
+		SetupVerboseEventHandlers(cond)
+	}
+
+	// Determine diff mode based on flags
+	diffOpts := conductor.StandaloneDiffOptions{
+		Context: simplifyContextSize,
+	}
+
+	switch {
+	case simplifyRange != "":
+		diffOpts.Mode = conductor.DiffModeRange
+		diffOpts.Range = simplifyRange
+	case simplifyBranch != "" || cmd.Flags().Changed("branch"):
+		diffOpts.Mode = conductor.DiffModeBranch
+		diffOpts.BaseBranch = simplifyBranch // May be empty, will auto-detect
+	case len(args) > 0:
+		diffOpts.Mode = conductor.DiffModeFiles
+		diffOpts.Files = args
+	default:
+		diffOpts.Mode = conductor.DiffModeUncommitted
+	}
+
+	// Build simplify options
+	simplifyOpts := conductor.StandaloneSimplifyOptions{
+		StandaloneDiffOptions: diffOpts,
+		Agent:                 simplifyAgent,
+		CreateCheckpoint:      !simplifyNoCheckpoint,
+	}
+
+	// Show what we're simplifying
+	printSimplifyModeInfo(diffOpts)
+
+	// Run standalone simplify with spinner in non-verbose mode
+	var result *conductor.StandaloneSimplifyResult
+	var simplifyErr error
+	if verbose {
+		fmt.Println(tkdisplay.InfoMsg("Simplifying..."))
+		result, simplifyErr = cond.SimplifyStandalone(ctx, simplifyOpts)
+	} else {
+		spinner := display.NewSpinner("Simplifying code...")
+		spinner.Start()
+		result, simplifyErr = cond.SimplifyStandalone(ctx, simplifyOpts)
+		if simplifyErr != nil {
+			spinner.StopWithError("Simplification failed")
+		} else {
+			spinner.StopWithSuccess("Simplification complete")
+		}
+	}
+
+	if simplifyErr != nil {
+		return fmt.Errorf("simplify: %w", simplifyErr)
+	}
+
+	// Print results
+	fmt.Println()
+	printStandaloneSimplifyResult(result)
+
+	return nil
+}
+
+// printSimplifyModeInfo prints information about what is being simplified.
+func printSimplifyModeInfo(opts conductor.StandaloneDiffOptions) {
+	switch opts.Mode {
+	case conductor.DiffModeUncommitted:
+		fmt.Println(tkdisplay.InfoMsg("Simplifying uncommitted changes (staged + unstaged)..."))
+	case conductor.DiffModeBranch:
+		if opts.BaseBranch != "" {
+			fmt.Printf("%s Simplifying current branch vs %s...\n", tkdisplay.InfoMsg(""), opts.BaseBranch)
+		} else {
+			fmt.Println(tkdisplay.InfoMsg("Simplifying current branch vs default branch..."))
+		}
+	case conductor.DiffModeRange:
+		fmt.Printf("%s Simplifying commit range: %s...\n", tkdisplay.InfoMsg(""), opts.Range)
+	case conductor.DiffModeFiles:
+		fmt.Printf("%s Simplifying files: %s...\n", tkdisplay.InfoMsg(""), strings.Join(opts.Files, ", "))
+	}
+}
+
+// printStandaloneSimplifyResult prints the simplification results to stdout.
+func printStandaloneSimplifyResult(result *conductor.StandaloneSimplifyResult) {
+	fmt.Println(tkdisplay.SuccessMsg("✓ Simplification complete"))
+
+	// Print summary
+	if result.Summary != "" {
+		fmt.Println()
+		fmt.Println(tkdisplay.Bold("Summary:"))
+		fmt.Println(result.Summary)
+	}
+
+	// Print changes
+	if len(result.Changes) > 0 {
+		fmt.Println()
+		fmt.Println(tkdisplay.Bold("Suggested Changes:"))
+		for _, change := range result.Changes {
+			fmt.Printf("  [%s] %s\n", strings.ToUpper(string(change.Operation)), change.Path)
+		}
+	}
+
+	// Print usage info
+	if result.Usage != nil {
+		fmt.Println()
+		fmt.Printf("Tokens: %d input, %d output", result.Usage.InputTokens, result.Usage.OutputTokens)
+		if result.Usage.CostUSD > 0 {
+			fmt.Printf(" ($%.4f)", result.Usage.CostUSD)
+		}
+		fmt.Println()
+	}
 }
