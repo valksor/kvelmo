@@ -389,8 +389,9 @@ type GitSettings struct {
 	BranchPattern string `yaml:"branch_pattern"`
 	AutoCommit    bool   `yaml:"auto_commit"`
 	SignCommits   bool   `yaml:"sign_commits"`
-	StashOnStart  bool   `yaml:"stash_on_start"` // Auto-stash changes before creating task branch
-	AutoPopStash  bool   `yaml:"auto_pop_stash"` // Auto-pop stash after branch creation (if stashed)
+	StashOnStart  bool   `yaml:"stash_on_start"`           // Auto-stash changes before creating task branch
+	AutoPopStash  bool   `yaml:"auto_pop_stash"`           // Auto-pop stash after branch creation (if stashed)
+	DefaultBranch string `yaml:"default_branch,omitempty"` // Override default branch detection (e.g., "main", "develop")
 }
 
 // StepAgentConfig holds agent configuration for a specific workflow step.
