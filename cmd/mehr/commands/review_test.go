@@ -11,8 +11,8 @@ import (
 )
 
 func TestReviewCommand_Properties(t *testing.T) {
-	if reviewCmd.Use != "review" {
-		t.Errorf("Use = %q, want %q", reviewCmd.Use, "review")
+	if reviewCmd.Use != "review [files...]" {
+		t.Errorf("Use = %q, want %q", reviewCmd.Use, "review [files...]")
 	}
 
 	if reviewCmd.Short == "" {
@@ -101,8 +101,8 @@ func TestReviewCommand_LongDescriptionContains(t *testing.T) {
 
 func TestReviewCommand_DocumentsReviewStatuses(t *testing.T) {
 	statuses := []string{
-		"COMPLETE",
-		"ISSUES",
+		"APPROVED",
+		"NEEDS_CHANGES",
 		"ERROR",
 	}
 
@@ -130,7 +130,7 @@ func TestReviewCommand_Examples(t *testing.T) {
 func TestReviewCommand_RegisteredInRoot(t *testing.T) {
 	found := false
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "review" {
+		if cmd.Use == "review [files...]" {
 			found = true
 
 			break
