@@ -92,6 +92,18 @@ func GetStateDescription(state workflow.State) string {
 	return ""
 }
 
+// GetStateDescriptionWithContext returns a state description with additional context.
+// For example, if state is "idle" but implementation has completed, it returns
+// a more specific message like "Implementation complete - ready for review or finish".
+func GetStateDescriptionWithContext(state workflow.State, hasImplementedFiles bool) string {
+	// Special case: idle state after implementation has completed
+	if state == workflow.StateIdle && hasImplementedFiles {
+		return "Implementation complete - ready for review or finish"
+	}
+
+	return GetStateDescription(state)
+}
+
 // FormatSpecificationStatus returns the user-friendly display name for a specification status.
 // Falls back to the raw status string if not found in the mapping.
 func FormatSpecificationStatus(status string) string {

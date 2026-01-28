@@ -163,6 +163,7 @@ Everything you need to manage AI-powered development tasks from your browser:
 | 📜 **Live Output** | Watch the AI think and work as it happens |
 | 🔙 **Undo/Redo** | Easy checkpoint navigation - go back if something goes wrong |
 | 💬 **Notes** | Add context for the AI at any point |
+| ❓ **Quick Question** | Ask the agent questions during planning/implementing/reviewing without changing state |
 | 💰 **Budgets** | Set cost/token limits with warnings and auto-pause |
 | ⚙️ **Settings** | Configure agents, providers, and workflow options |
 | 🔍 **History** | Browse and search past tasks |
@@ -258,7 +259,9 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr review` | Run automated code review |
 | `mehr status` | Show full task details with workflow state diagram |
 | `mehr guide` | What should I do next? (quick suggestion) |
+| `mehr find <query>` | AI-powered code search with focused results |
 | `mehr continue` | Resume work on task |
+| `mehr question <msg>` | Ask the agent a question during planning/implementing/reviewing |
 | `mehr budget` | Manage cost and token budgets |
 | `mehr finish` | Complete task and merge changes |
 | `mehr list` | List all tasks with search, filter, and sort (`--search`, `--filter`, `--sort`, `--format`) |

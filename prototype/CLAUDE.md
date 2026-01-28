@@ -431,6 +431,116 @@ Before submitting documentation changes:
 
 ---
 
+## ⚠️ CRITICAL: Zero Tolerance for Broken Code
+
+**ALL tests must pass and `make quality` must succeed before ANY commit or PR.**
+
+There is no such thing as "not my code" or "not my problem." If tests fail or quality checks fail, they MUST be fixed before proceeding—regardless of:
+- Who wrote the broken code
+- When the code was written (yesterday, last week, last year)
+- Whether you touched the related files
+- Whether you think it's "not your job"
+
+### The Rule
+
+**Broken code blocks everything.** You cannot:
+- Commit code while tests are failing
+- Submit a PR with quality check failures
+- Say "I didn't break it" and move on
+- Assume someone else will fix it
+
+### What MUST Pass
+
+| Check | Command | Exit Code |
+|-------|---------|-----------|
+| All tests | `make test` | MUST be 0 |
+| Code quality | `make quality` | MUST be 0 |
+| Linting | `golangci-lint run` | MUST be 0 |
+| Formatting | `make fmt` | MUST produce no changes |
+| Alias check | `make check-alias` | MUST be 0 |
+| Vulnerabilities | `govulncheck ./...` | MUST find none |
+
+### Workflow
+
+1. **Before starting work**: Run `make quality && make test`
+   - If anything fails, FIX IT FIRST
+   - Do not add new code on top of broken code
+
+2. **Before committing**: Run `make quality && make test`
+   - Commit gatekeeper: nothing gets committed if these fail
+
+3. **Before PR**: Run `make quality && make test`
+   - PR gatekeeper: nothing gets submitted if these fail
+
+### Examples
+
+#### ✅ GOOD: Fix Broken Tests First
+
+```bash
+$ make test
+--- FAIL: TestFoo (0.00s)
+    foo_test.go:42: expected "bar", got "baz"
+FAIL
+
+# Don't add new code. Fix this first.
+$ vim foo_test.go  # or foo.go
+$ make test
+PASS
+# NOW you can proceed with your work
+```
+
+#### ❌ BAD: Ignore Broken Tests
+
+```bash
+$ make test
+--- FAIL: TestFoo (0.00s)
+FAIL
+
+# WRONG: "I didn't write this, not my problem"
+$ git commit -m "add new feature"
+```
+
+#### ❌ BAD: Leave Someone Else to Fix It
+
+```bash
+$ make quality
+internal/foo/bar.go:123:1: goimports: missing import
+exit status 1
+
+# WRONG: "Someone else's mess, let them fix it"
+$ git commit -m "fix typo"
+```
+
+### Philosophy
+
+**You are responsible for the health of the codebase.**
+
+- Professionalism means fixing problems, not ignoring them
+- A 5-minute fix today saves hours of debugging tomorrow
+- CI will catch it anyway—fix it locally first
+- "Not mine" is not an acceptable answer
+
+### Escalation
+
+If you encounter a test failure or quality issue you truly cannot fix:
+
+1. **Document it**: Open an issue with reproduction steps
+2. **Block the codebase**: Do not merge anything until it's resolved
+3. **Communicate**: Alert the team immediately
+4. **DO NOT work around it**: Broken code blocks everything
+
+### Verification
+
+Before ANY commit or PR:
+
+```bash
+make quality && make test
+```
+
+If this command does not exit with code 0, you are NOT ready to commit.
+
+---
+
 ## ⚠️ CRITICAL: Use Make Commands for Build Operations
 
 **ALWAYS use `make` commands instead of direct `go` commands.**
@@ -498,7 +608,13 @@ See [README.md](README.md) for full documentation.
 mehr start <ref> | plan | implement | review | finish | continue | auto <ref>
 ```
 
-Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
+Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `question <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
+
+**Question Command**: `mehr question <query>` (aliases: `ask`, `q`)
+- Ask the agent a question during planning, implementing, or reviewing
+- Does NOT change the workflow state - agent responds and work continues
+- Useful for: understanding decisions, discussing alternatives, getting clarification
+- Web UI: Quick Question input form + SSE streaming response
 
 **Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Dual Interface Implementation" section above for parity status.
 
