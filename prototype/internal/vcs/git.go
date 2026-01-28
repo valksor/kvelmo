@@ -482,3 +482,151 @@ func (g *Git) GetMainWorktreePath(ctx context.Context) (string, error) {
 
 	return mainRepoRoot, nil
 }
+
+// DiffUncommitted returns the diff of all uncommitted changes (both staged and unstaged).
+// context is the number of context lines (default 3 if 0).
+func (g *Git) DiffUncommitted(ctx context.Context, contextLines int) (string, error) {
+	if contextLines == 0 {
+		contextLines = 3
+	}
+
+	// Get staged changes
+	staged, err := g.run(ctx, "diff", "--cached", fmt.Sprintf("-U%d", contextLines))
+	if err != nil {
+		return "", fmt.Errorf("diff staged: %w", err)
+	}
+
+	// Get unstaged changes
+	unstaged, err := g.run(ctx, "diff", fmt.Sprintf("-U%d", contextLines))
+	if err != nil {
+		return "", fmt.Errorf("diff unstaged: %w", err)
+	}
+
+	// Combine both diffs
+	var result strings.Builder
+	if staged != "" {
+		result.WriteString("# Staged changes\n")
+		result.WriteString(staged)
+	}
+	if unstaged != "" {
+		if result.Len() > 0 {
+			result.WriteString("\n")
+		}
+		result.WriteString("# Unstaged changes\n")
+		result.WriteString(unstaged)
+	}
+
+	return result.String(), nil
+}
+
+// DiffBranch returns the diff between the current branch and a base branch.
+// If baseBranch is empty, it uses the detected default branch.
+// context is the number of context lines (default 3 if 0).
+func (g *Git) DiffBranch(ctx context.Context, baseBranch string, contextLines int) (string, error) {
+	if contextLines == 0 {
+		contextLines = 3
+	}
+
+	// Detect base branch if not provided
+	if baseBranch == "" {
+		var err error
+		baseBranch, err = g.DetectDefaultBranch(ctx)
+		if err != nil {
+			return "", fmt.Errorf("detect default branch: %w", err)
+		}
+	}
+
+	// Get current branch
+	currentBranch, err := g.CurrentBranch(ctx)
+	if err != nil {
+		return "", fmt.Errorf("get current branch: %w", err)
+	}
+
+	// Use three-dot diff to show only changes in current branch since divergence
+	out, err := g.run(ctx, "diff", fmt.Sprintf("-U%d", contextLines), baseBranch+"..."+currentBranch)
+	if err != nil {
+		return "", fmt.Errorf("diff branch %s...%s: %w", baseBranch, currentBranch, err)
+	}
+
+	return out, nil
+}
+
+// DiffRange returns the diff for a commit range (e.g., "HEAD~3..HEAD").
+// context is the number of context lines (default 3 if 0).
+func (g *Git) DiffRange(ctx context.Context, rangeSpec string, contextLines int) (string, error) {
+	if contextLines == 0 {
+		contextLines = 3
+	}
+
+	out, err := g.run(ctx, "diff", fmt.Sprintf("-U%d", contextLines), rangeSpec)
+	if err != nil {
+		return "", fmt.Errorf("diff range %s: %w", rangeSpec, err)
+	}
+
+	return out, nil
+}
+
+// DiffFiles returns the diff for specific files.
+// context is the number of context lines (default 3 if 0).
+func (g *Git) DiffFiles(ctx context.Context, files []string, contextLines int) (string, error) {
+	if contextLines == 0 {
+		contextLines = 3
+	}
+
+	args := []string{"diff", fmt.Sprintf("-U%d", contextLines), "--"}
+	args = append(args, files...)
+
+	out, err := g.run(ctx, args...)
+	if err != nil {
+		return "", fmt.Errorf("diff files: %w", err)
+	}
+
+	return out, nil
+}
+
+// DetectDefaultBranch detects the repository's default branch.
+// Detection order:
+//  1. Try to get from remote HEAD symbolic ref (origin/HEAD)
+//  2. Check if common branch names exist (main, master, develop)
+//  3. Fall back to first branch
+func (g *Git) DetectDefaultBranch(ctx context.Context) (string, error) {
+	// Try to get from origin/HEAD
+	out, err := g.run(ctx, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+	if err == nil {
+		branch := strings.TrimSpace(out)
+		// Remove "origin/" prefix if present
+		branch = strings.TrimPrefix(branch, "origin/")
+		if branch != "" {
+			return branch, nil
+		}
+	}
+
+	// Fall back to checking common branch names
+	candidates := []string{"main", "master", "develop"}
+	for _, name := range candidates {
+		if g.BranchExists(ctx, name) {
+			return name, nil
+		}
+	}
+
+	// Try remote branches
+	remote, _ := g.GetDefaultRemote(ctx)
+	if remote != "" {
+		for _, name := range candidates {
+			if g.RemoteBranchExists(ctx, remote, name) {
+				return name, nil
+			}
+		}
+	}
+
+	// Fall back to first branch
+	branches, err := g.ListBranches(ctx)
+	if err != nil {
+		return "", fmt.Errorf("list branches: %w", err)
+	}
+	if len(branches) > 0 {
+		return branches[0].Name, nil
+	}
+
+	return "", errors.New("no default branch found")
+}
