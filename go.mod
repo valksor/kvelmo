@@ -1,6 +1,6 @@
 module github.com/valksor/go-mehrhof
 
-go 1.25.5
+go 1.25.6
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -14,7 +14,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/valksor/go-toolkit v0.0.0-20260126201019-a5e9944c6b65
-	gitlab.com/gitlab-org/api/client-go v1.21.0
+	gitlab.com/gitlab-org/api/client-go v1.22.1
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0

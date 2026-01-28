@@ -232,14 +232,18 @@ Output:
 
 ## States
 
-| State        | Meaning                 |
-| ------------ | ----------------------- |
-| idle         | Ready for action        |
-| planning     | Creating specifications |
-| implementing | Generating code         |
-| reviewing    | Running review          |
-| done         | Completed               |
-| failed       | Error occurred          |
+| State        | Meaning                                        |
+| ------------ | ---------------------------------------------- |
+| idle         | Ready for action (or: "Implementation complete - ready for review or finish" after specs are implemented) |
+| planning     | Creating specifications                        |
+| implementing | Generating code                                |
+| reviewing    | Running review                                 |
+| done         | Completed                                      |
+| failed       | Error occurred                                 |
+
+**Context-aware descriptions:** The `idle` state shows different messages depending on context:
+- "Ready to start" - Before any specifications are implemented
+- "Implementation complete - ready for review or finish" - After specifications have been implemented
 
 ## No Active Task
 
@@ -332,7 +336,7 @@ Output:
 
 ```
 Task: a1b2c3d4
-State: idle
+State: idle - Implementation complete - ready for review or finish
 Changes: 5 files modified
 
 Code has been generated.

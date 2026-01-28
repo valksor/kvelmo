@@ -86,6 +86,29 @@ func TestGetStateDescription(t *testing.T) {
 	}
 }
 
+func TestGetStateDescriptionWithContext(t *testing.T) {
+	tests := []struct {
+		name                string
+		state               workflow.State
+		hasImplementedFiles bool
+		want                string
+	}{
+		{"idle without implemented files", workflow.StateIdle, false, "Ready to start"},
+		{"idle with implemented files", workflow.StateIdle, true, "Implementation complete - ready for review or finish"},
+		{"planning ignores context", workflow.StatePlanning, true, "AI is creating specifications"},
+		{"implementing ignores context", workflow.StateImplementing, false, "AI is generating code"},
+		{"done ignores context", workflow.StateDone, true, "Task completed successfully"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetStateDescriptionWithContext(tt.state, tt.hasImplementedFiles); got != tt.want {
+				t.Errorf("GetStateDescriptionWithContext() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFormatSpecificationStatus(t *testing.T) {
 	tests := []struct {
 		name   string
