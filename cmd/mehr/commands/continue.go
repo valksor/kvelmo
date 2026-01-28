@@ -139,14 +139,17 @@ func runContinue(cmd *cobra.Command, args []string) error {
 		}
 	case workflow.StatePlanning:
 		fmt.Println("  mehr implement  # Start implementation")
+		fmt.Println("  mehr question   # Ask the agent a question")
 		fmt.Println("  mehr note       # Add notes")
 	case workflow.StateImplementing:
 		fmt.Println("  mehr implement  # Continue implementation")
+		fmt.Println("  mehr question   # Ask the agent a question")
 		fmt.Println("  mehr note       # Add notes")
 		fmt.Println("  mehr undo       # Revert last change")
 		fmt.Println("  mehr finish     # Complete and merge")
 	case workflow.StateReviewing:
 		fmt.Println("  mehr finish     # Complete and merge")
+		fmt.Println(" mehr question   # Ask the agent a question")
 		fmt.Println("  mehr implement  # Make more changes")
 	case workflow.StateFailed:
 		fmt.Println("  mehr status     # View error details")

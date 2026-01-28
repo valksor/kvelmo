@@ -1,0 +1,403 @@
+# Quick Question
+
+Ask the AI agent questions during planning, implementation, or review without changing the workflow state.
+
+## What Questions Do
+
+The **Quick Question** feature lets you have an interactive conversation with the AI agent while work is in progress. Unlike **Notes** (which only save text), **Quick Question** runs the AI agent to get intelligent responses based on:
+
+- Current task context
+- Latest specifications
+- Recent session history
+- Recent file changes
+
+**Key difference:** The agent responds to your question while preserving the current workflow state.
+
+## When to Use
+
+### During Planning
+
+Ask why the agent chose a particular approach:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Active Task: Add User OAuth Authentication                   │
+├──────────────────────────────────────────────────────────────┤
+│  State: ● Planning                                           │
+│                                                              │
+│  Quick Question                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Why did you choose GraphQL over REST?              │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                         [Ask Question]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### During Implementation
+
+Get clarification on implementation choices:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Agent Output (Live)                                          │
+├──────────────────────────────────────────────────────────────┤
+│  → Creating internal/auth/middleware.go                     │
+│    • Added AuthMiddleware function                           │
+│  ✓ Created successfully                                       │
+│                                                              │
+│  [Pause]                                                     │
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ What's the reason for using channels here?          │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                         [Ask Question]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### During Review
+
+Understand review findings:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Review Results                                              │
+├──────────────────────────────────────────────────────────────┤
+│  ⚠️ Medium: Missing error handling in auth flow              │
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Can you explain this issue in more detail?          │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                         [Ask Question]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## Quick Question Location
+
+The Quick Question input appears in the **Active Task** card when the state is:
+- **Planning** - While creating specifications
+- **Implementing** - While writing code
+- **Reviewing** - While reviewing code
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Active Task: Add User OAuth Authentication                   │
+├──────────────────────────────────────────────────────────────┤
+│  State: ● Implementing                                       │
+│                                                              │
+│  Quick Question                              [↓ Show Notes]  │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Ask a question about the current work...           │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                         [Ask Question]       │
+│                                                              │
+│  Agent Output                                                │
+│  → Creating internal/auth/oauth.go                           │
+│    • Defined OAuthConfig struct                              │
+│  ...                                                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## How It Works
+
+### Step 1: Ask Your Question
+
+Type your question in the Quick Question input and click **"Ask Question"**:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Quick Question                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Why use PostgreSQL instead of MySQL?               │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                         [Ask Question]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Step 2: Agent Responds (Streaming)
+
+The agent's response streams in real-time:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Agent Response                                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  I chose PostgreSQL for several reasons:                     │
+│                                                              │
+│  1. **Advanced Features**                                    │
+│     - JSONB for flexible document storage                    │
+│     - Full-text search built-in                              │
+│     - Advanced indexing (GIN, GiST)                          │
+│                                                              │
+│  2. **Consistency**                                          │
+│     Your codebase already uses PostgreSQL for:               │
+│     - internal/users/postgres.go                             │
+│     - internal/session/postgres.go                           │
+│                                                              │
+│  3. **Transactional DDL**                                    │
+│     Schema migrations are safer with transactional DDL        │
+│                                                              │
+│  Would you like me to reconsider this choice?                │
+│                                                              │
+│                                         [Close]              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Step 3: State Preserved
+
+After getting your answer, the workflow state remains unchanged:
+
+| Before Question | After Question |
+|----------------|----------------|
+| Planning | Planning |
+| Implementing | Implementing |
+| Reviewing | Reviewing |
+
+You can continue where you left off:
+- **Planning** - Click **"Plan"** to continue
+- **Implementing** - Click **"Implement"** to continue
+- **Reviewing** - Click **"Review"** to continue
+
+## Question Examples
+
+### Clarify Design Choice
+
+```
+Q: Why did you use a channel for the event bus?
+
+A: Channels provide:
+1. Built-in concurrency safety
+2. Goroutine-safe communication
+3. Buffered async messaging
+4. Idiomatic Go patterns
+
+An alternative would be a library like watermill,
+but channels keep dependencies minimal.
+```
+
+### Understand Implementation
+
+```
+Q: How does the authentication middleware work?
+
+A: The middleware follows this flow:
+
+1. Extract JWT from Authorization header
+2. Verify signature using JWT secret
+3. Extract user ID and role claims
+4. Inject user info into request context
+
+See internal/server/middleware/auth.go:45-82
+```
+
+### Ask About Testing
+
+```
+Q: What's the testing strategy?
+
+A: The approach includes:
+
+1. **Unit Tests** - Table-driven tests in *_test.go
+2. **Integration Tests** - Real database in test/integration/
+3. **Property Tests** - Using go-testlimits for invariants
+```
+
+## Questions vs Notes
+
+| Feature | Quick Question | Notes |
+|---------|---------------|--------|
+| **AI Response** | ✅ Yes | ❌ No |
+| **Context Aware** | ✅ Full context | ❌ None |
+| **Tokens Consumed** | ✅ Yes | ❌ No |
+| **State Change** | ❌ No | ❌ No |
+| **Use When** | Need an answer | Want to add info |
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Quick Question                            [+ Add Note]       │
+├──────────────────────────────────────────────────────────────┤
+│  Use this to:                          Use this to:          │
+│  • Ask why a choice was made             • Add requirements  │
+│  • Get clarification                     • Provide context   │
+│  • Understand reasoning                  • Save decisions    │
+│  • Explore alternatives                  • Record feedback   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## Session History
+
+Your questions and the agent's responses are saved to the session file:
+
+```
+~/.valksor/mehrhof/workspaces/<project-id>/sessions/<id>/<timestamp>.jsonl
+```
+
+This provides:
+- Full conversation history
+- Context for future questions
+- Audit trail of decisions
+- Recovery if interrupted
+
+## Back-Questions
+
+If the agent needs clarification, it may ask a back-question:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Agent Response                                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  That depends on a few factors:                              │
+│                                                              │
+│  1. What's the expected read/write ratio?                    │
+│  2. What's the data volatility?                              │
+│  3. What's your latency budget?                              │
+│                                                              │
+│  Can you provide more context about your use case?           │
+│                                                              │
+│                                         [Answer]             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+When the agent asks a back-question:
+1. The workflow transitions to **"Waiting"** state
+2. Use **"Add Note"** to respond
+3. Click **"Continue"** to resume
+
+## When Questions Are Not Available
+
+Quick Question is only available during active AI work:
+
+| State | Quick Question Available |
+|-------|-------------------------|
+| **Planning** | ✅ Yes |
+| **Implementing** | ✅ Yes |
+| **Reviewing** | ✅ Yes |
+| **Idle** | ❌ No (use notes instead) |
+| **Waiting** | ❌ No (answer agent question first) |
+| **Done** | ❌ No (task complete) |
+
+## Error Cases
+
+### No Active Task
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ⚠️ No Active Task                                           │
+│                                                              │
+│  Start a task to ask questions:                              │
+│  • [Quick Task] - Create a new quick task                    │
+│  • [From Provider] - Load from GitHub/GitLab/etc             │
+│                                                              │
+│                                         [Close]              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Invalid State
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ⚠️ Questions Not Available                                  │
+│                                                              │
+│  Questions are only available during:                        │
+│  • Planning - While creating specifications                  │
+│  • Implementing - While writing code                         │
+│  • Reviewing - While reviewing code                          │
+│                                                              │
+│  Current state: Idle                                         │
+│  Use [Add Note] to provide context instead.                  │
+│                                                              │
+│                                         [Close]              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## Best Practices
+
+1. **Be specific** - Clear questions get better answers
+2. **Ask about reasoning** - Understand "why", not just "what"
+3. **Clarify trade-offs** - Agent can explain alternatives
+4. **Check understanding** - Verify assumptions before continuing
+5. **Use for learning** - Explore unfamiliar code patterns
+
+## Workflow Examples
+
+### Planning Workflow with Questions
+
+```
+1. Create task
+2. Click [Plan]
+3. Agent starts planning
+4. Ask: "Why this approach?"
+5. Get explanation
+6. Click [Plan] to continue
+```
+
+### Implementation Workflow with Questions
+
+```
+1. Click [Implement]
+2. Agent starts implementing
+3. See something unclear
+4. Ask: "What pattern is this?"
+5. Get clarification
+6. Click [Implement] to continue
+```
+
+### Review Workflow with Questions
+
+```
+1. Click [Review]
+2. Agent finds an issue
+3. Ask: "Is this critical?"
+4. Get severity assessment
+5. Decide: fix or accept
+6. Click [Finish] or [Implement]
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+Enter` | Submit question (when input focused) |
+| `Esc` | Close response dialog |
+
+## API Endpoint
+
+The Quick Question feature uses the following API:
+
+```
+POST /api/v1/workflow/question
+```
+
+**Request:**
+```json
+{
+  "question": "Why did you choose this approach?"
+}
+```
+
+**Response:** SSE stream with agent response
+
+## CLI Equivalent
+
+```bash
+# Ask a question
+mehr question "Why this approach?"
+mehr ask "Why this approach?"
+mehr q "Why this approach?"
+
+# Interactive mode
+mehr question
+
+# Add a note instead (no AI response)
+mehr note "Use PostgreSQL for sessions"
+```
+
+See [CLI: question](../cli/question.md) for details.
+
+## Next Steps
+
+- [**Planning**](planning.md) - Ask questions during specification creation
+- [**Implementing**](implementing.md) - Ask questions during code generation
+- [**Reviewing**](reviewing.md) - Ask questions during code review
+- [**Notes**](notes.md) - Add context without AI response

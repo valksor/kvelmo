@@ -34,6 +34,84 @@
 </div>
 {{end}}
 
+<!-- Quick Question Input -->
+{{if .State}}
+<div id="quick-question" class="card">
+    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Quick Question</h3>
+        <p class="text-sm text-surface-500 dark:text-surface-400">Ask the agent a question without changing workflow state</p>
+    </div>
+    <div class="p-4">
+        <form hx-post="/api/v1/workflow/question" hx-swap="none" hx-indicator="#question-spinner">
+            <div class="flex gap-2">
+                <input type="text"
+                       name="question"
+                       placeholder="Ask a question..."
+                       class="input flex-1"
+                       hx-on="htmx:xhr:after-request: this.value = ''">
+                <button type="submit" class="btn btn-primary">
+                    <span id="question-spinner" class="htmx-indicator hidden">⏳</span>
+                    <span class="htmx-indicator-hidden">Ask</span>
+                </button>
+            </div>
+            <div id="question-response" class="mt-3 text-sm hidden"></div>
+        </form>
+    </div>
+</div>
+<script>
+(function() {
+    const questionForm = document.querySelector('#quick-question form');
+    const questionResponse = document.getElementById('question-response');
+    const questionInput = questionForm?.querySelector('input[name="question"]');
+
+    if (questionForm && questionResponse) {
+        questionForm.addEventListener('htmx:beforeRequest', function() {
+            questionResponse.classList.add('hidden');
+        });
+
+        questionForm.addEventListener('htmx:afterRequest', function(evt) {
+            const xhr = evt.detail.xhr;
+            if (xhr.status === 200) {
+                // SSE streaming - the response comes through events
+                const eventSource = new EventSource('/api/v1/events');
+                let responseText = '';
+
+                eventSource.addEventListener('event', function(e) {
+                    try {
+                        const data = JSON.parse(e.data);
+                        if (data.event === 'content' && data.text) {
+                            responseText += data.text;
+                            questionResponse.textContent = responseText;
+                            questionResponse.classList.remove('hidden');
+                            questionResponse.classList.add('text-surface-700', 'dark:text-surface-300', 'whitespace-pre-wrap');
+                        } else if (data.event === 'back_question') {
+                            questionResponse.textContent = 'Agent has a follow-up question. Use the Actions panel to respond.';
+                            questionResponse.classList.remove('hidden');
+                            questionResponse.classList.add('text-warning-600', 'dark:text-warning-400');
+                            eventSource.close();
+                        } else if (data.event === 'done') {
+                            eventSource.close();
+                        }
+                    } catch (err) {
+                        console.error('Failed to parse event:', err);
+                    }
+                });
+
+                eventSource.onerror = function() {
+                    eventSource.close();
+                };
+
+                // Timeout after 30 seconds
+                setTimeout(() => {
+                    eventSource.close();
+                }, 30000);
+            }
+        });
+    }
+})();
+</script>
+{{end}}
+
 <!-- Specifications -->
 {{if .Specifications}}
 <div id="specs" hx-get="/ui/partials/specification" hx-trigger="sse:{{eventSpecUpdated}}, every 30s" hx-swap="outerHTML">

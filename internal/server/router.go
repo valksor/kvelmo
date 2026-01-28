@@ -59,6 +59,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleWorkflowAbandon)
 		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleWorkflowContinue)
 		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleWorkflowAuto)
+		mux.HandleFunc("POST /api/v1/workflow/question", s.handleWorkflowQuestion)
 		mux.HandleFunc("GET /api/v1/workflow/diagram", s.handleWorkflowDiagram)
 
 		// Notes endpoints
@@ -106,6 +107,11 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/memory/search", s.handleMemorySearch)
 		mux.HandleFunc("POST /api/v1/memory/index", s.handleMemoryIndex)
 		mux.HandleFunc("GET /api/v1/memory/stats", s.handleMemoryStats)
+
+		// Find search endpoints (available in both project and global mode)
+		mux.HandleFunc("GET /api/v1/find", s.handleFindSearch)
+		mux.HandleFunc("POST /api/v1/find", s.handleFindSearch)
+		mux.HandleFunc("GET /find", s.handleFindUI)
 
 		// Budget endpoints
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)

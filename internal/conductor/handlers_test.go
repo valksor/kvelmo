@@ -1656,7 +1656,7 @@ func TestImplementationPromptHasOutputFormat(t *testing.T) {
 	required := []string{
 		"## Required Output Format",
 		"yaml:file blocks",
-		"Updated specification status",
+		"yaml:file block to update the specification",
 	}
 
 	for _, section := range required {
@@ -1723,6 +1723,55 @@ func TestFinishPromptHasExample(t *testing.T) {
 	for _, section := range required {
 		if !strings.Contains(got, section) {
 			t.Errorf("buildFinishPrompt() should contain %q", section)
+		}
+	}
+}
+
+func TestBuildImplementationPromptHasExplicitStatusInstructions(t *testing.T) {
+	got := buildImplementationPrompt(nil, "/work", "Test Task", "Source", "Specs", "Notes", "Custom", "StatusSum", "TrackingSum")
+
+	// Verify prompt instructs agent to update YAML frontmatter status field
+	required := []string{
+		"MUST update specification YAML frontmatter status to \"done\"",
+		"Update specification status",
+		"Edit the specification file and change the YAML frontmatter status field",
+		"yaml:file block to update the specification",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildImplementationPrompt() should contain %q", section)
+		}
+	}
+
+	// Verify old ambiguous wording is NOT present
+	forbidden := []string{
+		"Status to \"completed",
+		"Change Status to \"completed",
+	}
+
+	for _, text := range forbidden {
+		if strings.Contains(got, text) {
+			t.Errorf("buildImplementationPrompt() should NOT contain ambiguous %q", text)
+		}
+	}
+}
+
+func TestBuildImplementationPromptHasYamlExample(t *testing.T) {
+	got := buildImplementationPrompt(nil, "/work", "Test Task", "Source", "Specs", "Notes", "Custom", "StatusSum", "TrackingSum")
+
+	// Verify prompt includes example of updating spec YAML frontmatter
+	required := []string{
+		"```yaml:file",
+		"path: .mehrhof/work/",
+		"operation: update",
+		"status: done",
+		"implemented_files:",
+	}
+
+	for _, section := range required {
+		if !strings.Contains(got, section) {
+			t.Errorf("buildImplementationPrompt() should contain %q", section)
 		}
 	}
 }

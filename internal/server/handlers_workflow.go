@@ -3,9 +3,13 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
@@ -150,12 +154,14 @@ func getNextActionsForState(state workflow.State, specifications int) []string {
 	case workflow.StatePlanning:
 		return []string{
 			"POST /api/v1/workflow/implement",
+			"POST /api/v1/workflow/question",
 			"POST /api/v1/tasks/{id}/notes",
 		}
 
 	case workflow.StateImplementing:
 		return []string{
 			"POST /api/v1/workflow/implement",
+			"POST /api/v1/workflow/question",
 			"POST /api/v1/workflow/undo",
 			"POST /api/v1/workflow/finish",
 			"POST /api/v1/tasks/{id}/notes",
@@ -165,6 +171,7 @@ func getNextActionsForState(state workflow.State, specifications int) []string {
 		return []string{
 			"POST /api/v1/workflow/finish",
 			"POST /api/v1/workflow/implement",
+			"POST /api/v1/workflow/question",
 		}
 
 	case workflow.StateFailed:
@@ -306,4 +313,120 @@ func (s *Server) handleWorkflowDiagram(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(svg))
+}
+
+// handleWorkflowQuestion asks the agent a question during planning/implementing/reviewing.
+// Streams the agent's response via SSE.
+func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	// Parse request
+	var req questionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+		return
+	}
+
+	if req.Question == "" {
+		s.writeError(w, http.StatusBadRequest, "question is required")
+
+		return
+	}
+
+	// Set SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// Subscribe to agent message events for streaming
+	eventBus := s.config.Conductor.GetEventBus()
+	if eventBus == nil {
+		s.writeErrorSSE(w, "event bus not available")
+
+		return
+	}
+
+	// Set up event subscription for this request
+	eventCh := make(chan events.Event, 100)
+	unsubscribeID := eventBus.SubscribeAll(func(e events.Event) {
+		if e.Type == events.TypeAgentMessage {
+			select {
+			case eventCh <- e:
+			default:
+				// Channel full, drop event
+			}
+		}
+	})
+	defer eventBus.Unsubscribe(unsubscribeID)
+	defer close(eventCh)
+
+	// Start streaming in background
+	ctx := r.Context()
+	go func() {
+		if err := s.config.Conductor.AskQuestion(ctx, req.Question); err != nil {
+			// Check if agent asked a back-question
+			if errors.Is(err, conductor.ErrPendingQuestion) {
+				sendSSE(w, "", "{\"event\":\"back_question\",\"question\":\"Agent has a follow-up question\"}")
+			} else {
+				sendSSE(w, "", "{\"event\":\"error\",\"error\":\""+escapeJSON(err.Error())+"\"}")
+			}
+		}
+		sendSSE(w, "", "{\"event\":\"done\"}")
+	}()
+
+	// Stream events to client
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case e, ok := <-eventCh:
+			if !ok {
+				return
+			}
+			if eventData, ok := e.Data["event"].(map[string]any); ok {
+				if eventType, ok := eventData["type"].(string); ok {
+					switch eventType {
+					case "content":
+						if text, ok := eventData["text"].(string); ok {
+							sendSSE(w, "", "{\"event\":\"content\",\"text\":\""+escapeJSON(text)+"\"}")
+						}
+					case "question":
+						if text, ok := eventData["text"].(string); ok {
+							sendSSE(w, "", "{\"event\":\"question\",\"text\":\""+escapeJSON(text)+"\"}")
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// sendSSE sends a Server-Sent Event to the client.
+func sendSSE(w http.ResponseWriter, _ string, data string) {
+	_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", data)
+	flusher, _ := w.(http.Flusher)
+	if flusher != nil {
+		flusher.Flush()
+	}
+}
+
+// escapeJSON escapes a string for safe inclusion in JSON.
+func escapeJSON(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "\"", "\\\"")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	s = strings.ReplaceAll(s, "\r", "\\r")
+	s = strings.ReplaceAll(s, "\t", "\\t")
+
+	return s
+}
+
+// writeErrorSSE writes an error via SSE and closes the connection.
+func (s *Server) writeErrorSSE(w http.ResponseWriter, message string) {
+	sendSSE(w, "", "{\"event\":\"error\",\"error\":\""+escapeJSON(message)+"\"}")
 }

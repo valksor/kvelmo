@@ -226,7 +226,7 @@ Working directory: %s
 - Follow existing code patterns in the codebase
 - No unit tests unless explicitly requested in the specification
 - Focus on non-completed specifications first
-- MUST update spec Status to "completed YYYY-MM-DD HH:MM" when done
+- MUST update specification YAML frontmatter status to "done" when implementing a spec
 `
 
 	// Phase 4: What to do (Instructions)
@@ -256,7 +256,7 @@ Output each file change in a yaml:file block.
 ## Specification Tracking
 %s
 
-Focus on specifications not yet marked as "completed". Work on specifications in priority order.
+Focus on specifications with status "draft" (not yet "done"). Work on specifications in priority order.
 `, specTrackingSummary)
 	}
 
@@ -267,10 +267,27 @@ Focus on specifications not yet marked as "completed". Work on specifications in
 ## Testing and Verification
 
 After implementing your changes:
-1. **Update spec status** - Change Status to "completed YYYY-MM-DD HH:MM"
+1. **Update specification status** - Edit the specification file and change the YAML frontmatter status field from "draft" to "done"
 2. **Verify complete condition** - Run all validation steps from spec
 3. **Review your implementation** - Check that it meets the specifications
 4. **Self-correction** - If you find any issues, provide additional yaml:file blocks to fix them
+
+IMPORTANT: When updating a specification to "done", use yaml:file to edit the spec file:
+` + "```yaml:file\n" + `path: .mehrhof/work/{task-id}/specifications/specification-1.md
+operation: update
+content: |
+  ---
+  title: Specification 1
+  status: done
+  created_at: 2026-01-28T14:36:22Z
+  updated_at: 2026-01-28T14:40:00Z
+  implemented_files:
+      - hello.md
+  ---
+
+  # Specification 1
+  ... (rest of content unchanged)
+` + "```" + `
 
 ` + buildQualityGateInstructions()
 
@@ -310,7 +327,7 @@ content: |
 ## Required Output Format
 Your response MUST include:
 1. yaml:file blocks for each file created or modified
-2. Updated specification status to "completed YYYY-MM-DD HH:MM"`
+2. yaml:file block to update the specification's YAML frontmatter status to "done" (see example above)`
 
 	return prompt
 }
@@ -1419,4 +1436,164 @@ func formatDiffForReview(diff *provider.PullRequestDiff, scope string) string {
 	}
 
 	return sb.String()
+}
+
+// buildQuestionPrompt creates a prompt for asking the agent a question during implementation.
+// Includes task context, specifications, and recent conversation history.
+func buildQuestionPrompt(title, question, specificationContent, sessionHistory string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are in the middle of implementing a task.
+
+Current timestamp: %s
+
+## Task
+%s
+
+`, currentTime, title)
+
+	if specificationContent != "" {
+		prompt += fmt.Sprintf(`## Current Specification
+%s
+
+`, specificationContent)
+	}
+
+	if sessionHistory != "" {
+		prompt += fmt.Sprintf(`## Recent Conversation
+%s
+
+`, sessionHistory)
+	}
+
+	prompt += fmt.Sprintf(`## User Question
+%s
+
+Please answer the user's question based on the current implementation context.
+Be concise and helpful. If you need more information to provide a good answer, ask a follow-up question.
+`, question)
+
+	return prompt
+}
+
+// buildFindPrompt creates a focused prompt for AI-powered code search.
+// The prompt is designed to minimize fluff and get precise results.
+// The workspace parameter is reserved for future custom instructions support.
+func buildFindPrompt(query, workingDir string, workspace *storage.Workspace, opts FindOptions) string {
+	_ = workspace // Reserved for future custom instructions
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are a PRECISE code search tool. Your job is to find code matching: %s
+
+Current timestamp: %s
+Working directory: %s
+`, query, currentTime, workingDir)
+
+	// Add path constraint if specified
+	if opts.Path != "" {
+		prompt += fmt.Sprintf(`Search path: %s
+`, opts.Path)
+	}
+
+	// Add file pattern constraint if specified
+	if opts.Pattern != "" {
+		prompt += fmt.Sprintf(`File pattern: %s
+`, opts.Pattern)
+	}
+
+	prompt += `
+## CRITICAL CONSTRAINTS - READ THESE FIRST
+1. Use Grep tool for code searches - it is FAST and PRECISE
+2. Use Glob tool to find files by pattern
+3. Use Read tool ONLY for confirmed matches
+4. DO NOT explain your search process
+5. DO NOT explore "related" code
+6. DO NOT add "helpful" context between results
+7. DO NOT say "let me search" or "I'll look for"
+8. DO NOT summarize what you found
+
+## SEARCH STRATEGY
+1. Extract key search terms from the query:
+   - Function names (e.g., "archive_blade" → "archive_blade", "ArchiveBlade")
+   - Variables, types, constants
+   - Common variants (camelCase, PascalCase, snake_case)
+
+2. Use Grep with regex patterns:
+   - Search for each term variant
+   - Use case-insensitive flag when appropriate
+   - Include word boundaries when searching for identifiers
+
+3. Use Glob to narrow scope if helpful:
+   - "**/*.go" for Go files
+   - "**/*test*.go" for test files
+   - Custom patterns based on query
+
+4. Read confirmed matches to extract relevant snippets
+
+## OUTPUT FORMAT
+For EACH match you find, output EXACTLY this format:
+
+--- FIND ---
+file: <relative/path/to/file>
+line: <line_number>
+snippet: <the matching line>
+context: <2 lines before + matching line + 2 lines after, each on separate "context:" lines>
+reason: <brief explanation of why this matches>
+--- END ---
+
+## EXAMPLE
+
+Query: "where is archive_blade database table used"
+
+Good approach:
+1. Grep for "archive_blade" (case-insensitive)
+2. Grep for "ArchiveBlade" (PascalCase)
+3. Read each match to verify it's the database table
+4. Output results in the exact format above
+
+Example output:
+--- FIND ---
+file: internal/models/archive.go
+line: 42
+snippet: type ArchiveBlade struct {
+context: // Archive represents a blade in the system
+context: type ArchiveBlade struct {
+context: 	ID      uint
+context: 	Name    string
+context: }
+reason: Model definition for ArchiveBlade
+--- END ---
+
+--- FIND ---
+file: internal/db/query.go
+line: 128
+snippet: db.Find(&ArchiveBlade{}).Where(...)
+context: 	}
+context: 	var blades []ArchiveBlade
+context: 	db.Find(&ArchiveBlade{}).Where("active = ?", true).Scan(&blades)
+context: 	return blades, nil
+context: }
+reason: Database query using ArchiveBlade
+--- END ---
+
+## WHAT NOT TO DO (VIOLATIONS)
+❌ "Let me search for the archive_blade table..."
+❌ "I'll start by looking at the models directory..."
+❌ "I found several uses of archive_blade:"
+❌ "Here's what I discovered:"
+❌ Exploring related database code without being asked
+❌ Adding "helpful" context about the codebase
+
+## WHAT TO DO (CORRECT BEHAVIOR)
+✅ Use Grep immediately with relevant patterns
+✅ Output results in the exact format specified
+✅ Include context lines for each match
+✅ Report only what the query asks for
+
+## REMINDER
+Your user wants RESULTS, not a tutorial. They know how to read code.
+Just find the matching code and report it in the specified format.
+`
+
+	return prompt
 }

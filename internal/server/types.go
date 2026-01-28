@@ -436,3 +436,8 @@ type submitRequest struct {
 	Labels   []string `json:"labels,omitempty"`  // Additional labels to apply
 	DryRun   bool     `json:"dry_run,omitempty"` // Preview without submitting
 }
+
+// questionRequest is the request body for POST /api/v1/workflow/question.
+type questionRequest struct {
+	Question string `json:"question"` // The question to ask the agent
+}

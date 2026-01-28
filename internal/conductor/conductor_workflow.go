@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
@@ -300,6 +303,141 @@ func (c *Conductor) Simplify(ctx context.Context, targetStep string, createCheck
 	}
 
 	return errors.New("unable to determine what to simplify")
+}
+
+// AskQuestion sends a user question to the agent during planning, implementation, or review.
+// Does NOT change the workflow state - the agent responds and the current state continues.
+// Returns a callback function that the caller should use to stream events.
+func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
+	c.mu.Lock()
+
+	if c.activeTask == nil {
+		c.mu.Unlock()
+
+		return errors.New("no active task")
+	}
+
+	taskID := c.activeTask.ID
+	currentState := workflow.State(c.activeTask.State)
+
+	// Get title for prompt (with nil check)
+	title := ""
+	if c.taskWork != nil {
+		title = c.taskWork.Metadata.Title
+	}
+
+	// Determine which step's agent to use
+	var step workflow.Step
+	switch currentState {
+	case workflow.StatePlanning:
+		step = workflow.StepPlanning
+	case workflow.StateImplementing:
+		step = workflow.StepImplementing
+	case workflow.StateReviewing:
+		step = workflow.StepReviewing
+	case workflow.StateIdle, workflow.StateDone, workflow.StateFailed, workflow.StateWaiting, workflow.StatePaused, workflow.StateCheckpointing, workflow.StateReverting, workflow.StateRestoring:
+		c.mu.Unlock()
+
+		return fmt.Errorf("cannot ask questions in state '%s'; use during planning, implementing, or reviewing", currentState)
+	}
+
+	// Get session history before releasing lock
+	var sessionHistory string
+	if c.currentSession != nil && len(c.currentSession.Exchanges) > 0 {
+		// Get last 10 exchanges for context (most recent first, limit to avoid token bloat)
+		historyStart := len(c.currentSession.Exchanges) - 10
+		if historyStart < 0 {
+			historyStart = 0
+		}
+		recentExchanges := c.currentSession.Exchanges[historyStart:]
+
+		var historyBuilder strings.Builder
+		for _, ex := range recentExchanges {
+			historyBuilder.WriteString(fmt.Sprintf("**%s:** %s\n", ex.Role, ex.Content))
+		}
+		sessionHistory = historyBuilder.String()
+	}
+
+	// Release lock before calling GetAgentForStep (which also acquires the lock)
+	c.mu.Unlock()
+
+	// Get agent for this step (this will acquire its own lock)
+	questionAgent, err := c.GetAgentForStep(ctx, step)
+	if err != nil {
+		return fmt.Errorf("get agent for question: %w", err)
+	}
+
+	// Get latest specification content for context
+	specificationContent, _, _ := c.workspace.GetLatestSpecificationContent(taskID)
+
+	// Build prompt
+	prompt := buildQuestionPrompt(title, question, specificationContent, sessionHistory)
+
+	// Record user question in session (re-acquire lock)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.currentSession != nil {
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   "QUESTION: " + question,
+			Timestamp: time.Now(),
+		})
+	}
+
+	// Run agent with streaming callback
+	c.logVerbosef("Asking agent question...")
+	response, err := questionAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
+		// Publish to event bus for Web UI consumption
+		c.eventBus.PublishRaw(events.Event{
+			Type: events.TypeAgentMessage,
+			Data: map[string]any{"event": event},
+		})
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("agent question: %w", err)
+	}
+
+	// Record agent response in session
+	if c.currentSession != nil && response != nil {
+		responseContent := response.Summary
+		if responseContent == "" && len(response.Messages) > 0 {
+			responseContent = strings.Join(response.Messages, "\n\n")
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "assistant",
+			Content:   responseContent,
+			Timestamp: time.Now(),
+		})
+	}
+
+	// Handle if agent asked a back-question
+	if response != nil && response.Question != nil {
+		// Convert agent.QuestionOption to storage.QuestionOption
+		var options []storage.QuestionOption
+		for _, opt := range response.Question.Options {
+			options = append(options, storage.QuestionOption{
+				Label:       opt.Label,
+				Description: opt.Description,
+			})
+		}
+		pendingQuestion := &storage.PendingQuestion{
+			Question:    response.Question.Text,
+			Options:     options,
+			FullContext: prompt,
+		}
+		if err := c.workspace.SavePendingQuestion(taskID, pendingQuestion); err != nil {
+			c.logError(fmt.Errorf("save pending question: %w", err))
+		}
+		// Transition to waiting state
+		_ = c.machine.Dispatch(ctx, workflow.EventWait)
+
+		return ErrPendingQuestion
+	}
+
+	return nil
 }
 
 // Finish completes the task.

@@ -554,6 +554,24 @@ Please retry the implementation, taking into account this error.
 		}
 	}
 
+	// Sync specification statuses - mark specs with implemented files as done
+	// This provides a fallback in case the agent forgets to update the status
+	c.publishProgress("Syncing specification statuses...", 65)
+	specifications, specErr := c.workspace.ListSpecificationsWithStatus(taskID)
+	if specErr != nil {
+		c.logError(fmt.Errorf("failed to list specifications for status sync: %w", specErr))
+	} else {
+		for _, spec := range specifications {
+			if spec.Status == storage.SpecificationStatusDraft && len(spec.ImplementedFiles) > 0 {
+				if updateErr := c.workspace.UpdateSpecificationStatus(taskID, spec.Number, storage.SpecificationStatusDone); updateErr != nil {
+					c.logError(fmt.Errorf("failed to update specification-%d status to done: %w", spec.Number, updateErr))
+				} else {
+					c.logVerbosef("Auto-marked specification-%d as done (has %d implemented files)", spec.Number, len(spec.ImplementedFiles))
+				}
+			}
+		}
+	}
+
 	// Create checkpoint if git is available
 	commitMsg := c.generateCommitMessage(ctx, "implementation")
 	if event := c.createCheckpointIfNeeded(ctx, taskID, commitMsg); event != nil {

@@ -135,7 +135,8 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:      %s\n", work.Metadata.ExternalKey)
 	}
-	fmt.Printf("  State:    %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescription(workflow.State(active.State))))
+	hasImpl := hasImplementedSpecifications(ws, active.ID)
+	fmt.Printf("  State:    %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescriptionWithContext(workflow.State(active.State), hasImpl)))
 	fmt.Printf("  Source:   %s\n", active.Ref)
 	fmt.Printf("  Worktree: %s\n", git.Root())
 	fmt.Printf("  Started:  %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -244,7 +245,8 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:     %s\n", work.Metadata.ExternalKey)
 	}
-	fmt.Printf("  State:   %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescription(workflow.State(active.State))))
+	hasImpl := hasImplementedSpecifications(ws, active.ID)
+	fmt.Printf("  State:   %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescriptionWithContext(workflow.State(active.State), hasImpl)))
 	fmt.Printf("  Source:  %s\n", active.Ref)
 	fmt.Printf("  WorkDir: %s\n", active.WorkDir)
 	fmt.Printf("  Started: %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -477,6 +479,21 @@ func printSpecLegend() {
 	fmt.Println(tkdisplay.Muted("  ◐ = Ready (queued for implementation)"))
 	fmt.Println(tkdisplay.Muted("  ◑ = Implementing (in progress)"))
 	fmt.Println(tkdisplay.Muted("  ● = Completed"))
+}
+
+// hasImplementedSpecifications checks if any specifications have implemented files.
+func hasImplementedSpecifications(ws *storage.Workspace, taskID string) bool {
+	specs, err := ws.ListSpecificationsWithStatus(taskID)
+	if err != nil {
+		return false
+	}
+	for _, spec := range specs {
+		if len(spec.ImplementedFiles) > 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // JSON output structures for status command.
