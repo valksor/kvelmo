@@ -22,12 +22,17 @@ const (
 
 	// sessionDuration is how long sessions last.
 	sessionDuration = 7 * 24 * time.Hour
+
+	// sessionCleanupInterval is how often expired sessions are cleaned up.
+	sessionCleanupInterval = 1 * time.Hour
 )
 
-// sessionStore manages active sessions in memory.
+// sessionStore manages active sessions in memory with automatic cleanup.
 type sessionStore struct {
 	mu       sync.RWMutex
 	sessions map[string]*session
+	stopCh   chan struct{}
+	stopped  bool
 }
 
 // session represents an active user session.
@@ -38,10 +43,67 @@ type session struct {
 	ExpiresAt time.Time
 }
 
-// newSessionStore creates a new session store.
+// newSessionStore creates a new session store and starts the cleanup goroutine.
 func newSessionStore() *sessionStore {
-	return &sessionStore{
+	s := &sessionStore{
 		sessions: make(map[string]*session),
+		stopCh:   make(chan struct{}),
+	}
+	go s.cleanupLoop()
+
+	return s
+}
+
+// stop stops the cleanup goroutine. Call this when shutting down the server.
+func (s *sessionStore) stop() {
+	s.mu.Lock()
+	if s.stopped {
+		s.mu.Unlock()
+
+		return
+	}
+	s.stopped = true
+	s.mu.Unlock()
+	close(s.stopCh)
+}
+
+// cleanupLoop periodically removes expired sessions to prevent memory leaks.
+func (s *sessionStore) cleanupLoop() {
+	ticker := time.NewTicker(sessionCleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.cleanup()
+		case <-s.stopCh:
+			return
+		}
+	}
+}
+
+// cleanup removes all expired sessions using a two-pass approach
+// to minimize lock contention.
+func (s *sessionStore) cleanup() {
+	now := time.Now()
+	expired := make([]string, 0)
+
+	// First pass: identify expired sessions (read lock)
+	s.mu.RLock()
+	for token, sess := range s.sessions {
+		if now.After(sess.ExpiresAt) {
+			expired = append(expired, token)
+		}
+	}
+	s.mu.RUnlock()
+
+	// Second pass: delete expired sessions (write lock)
+	if len(expired) > 0 {
+		s.mu.Lock()
+		for _, token := range expired {
+			delete(s.sessions, token)
+		}
+		s.mu.Unlock()
 	}
 }
 

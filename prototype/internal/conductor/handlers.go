@@ -96,10 +96,16 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Load historical Q&A context from sessions (for when pending question was already answered)
 	historicalContext := c.buildHistoricalContext(taskID, c.opts.IncludeFullContext)
 
+	// Determine the working directory for path context in prompts
+	workingDir := c.opts.WorkDir
+	if c.git != nil {
+		workingDir = c.git.Root()
+	}
+
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
-	prompt := buildPlanningPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults)
+	prompt := buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults)
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
@@ -331,12 +337,18 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	// Get notes (missing notes is acceptable, returns empty string)
 	notes, _ := c.workspace.ReadNotes(taskID)
 
+	// Determine the working directory for path context in prompts
+	workingDir := c.opts.WorkDir
+	if c.git != nil {
+		workingDir = c.git.Root()
+	}
+
 	// Build implementation prompt with latest spec and custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
 	specStatusSummary := buildSpecStatusSummary(c.workspace, taskID)
 	specTrackingSummary := buildSpecificationTrackingSummary(c.workspace, taskID)
-	prompt := buildImplementationPrompt(c.workspace, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary)
+	prompt := buildImplementationPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary)
 
 	// Optimize prompt if enabled (CLI flag or workspace config)
 	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "implementing")
