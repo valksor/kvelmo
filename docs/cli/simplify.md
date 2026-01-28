@@ -5,7 +5,7 @@ Simplify content based on the current workflow state.
 ## Synopsis
 
 ```bash
-mehr simplify [--agent <name>] [--no-checkpoint] [--verbose]
+mehr simplify [flags] [files...]
 ```
 
 ## Description
@@ -20,11 +20,15 @@ The command uses the configured AI agent to analyze and refine your content, mak
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `--agent <name>` | Use a specific agent for simplification |
-| `--no-checkpoint` | Skip creating a checkpoint before simplifying (not recommended) |
-| `--verbose` | Show detailed simplification process |
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--agent` | string | "" | Use a specific agent for simplification |
+| `--no-checkpoint` | bool | false | Skip creating a checkpoint before simplifying (not recommended) |
+| `--verbose` | bool | false | Show detailed simplification process |
+| `--standalone` | bool | false | Simplify without active task (see Standalone Mode) |
+| `--branch` | string | "" | Compare current branch vs base (standalone only) |
+| `--range` | string | "" | Compare commit range (standalone only) |
+| `--context` | int | 3 | Lines of context in diff (standalone only) |
 
 ## Examples
 
@@ -308,6 +312,91 @@ mehr simplify           # Oops, made it worse
 mehr undo              # Revert the simplification
 mehr note "Keep it simple"
 mehr simplify           # Try again with better instructions
+```
+
+## Standalone Mode
+
+Simplify code changes **without an active task**. Useful for quick refactoring, cleaning up uncommitted changes, or simplifying feature branches.
+
+### Synopsis
+
+```bash
+mehr simplify --standalone [flags] [files...]
+```
+
+### Standalone Examples
+
+**Simplify uncommitted changes (default):**
+```bash
+mehr simplify --standalone
+```
+
+**Simplify current branch vs main:**
+```bash
+mehr simplify --standalone --branch
+```
+
+**Simplify current branch vs specific base:**
+```bash
+mehr simplify --standalone --branch develop
+```
+
+**Simplify specific commit range:**
+```bash
+mehr simplify --standalone --range HEAD~3..HEAD
+```
+
+**Simplify specific files:**
+```bash
+mehr simplify --standalone src/foo.go src/bar.go
+```
+
+**Use specific agent:**
+```bash
+mehr simplify --standalone --agent opus
+```
+
+**Skip checkpoint (not recommended):**
+```bash
+mehr simplify --standalone --no-checkpoint
+```
+
+### Standalone Output
+
+```bash
+$ mehr simplify --standalone
+
+ℹ Simplifying uncommitted changes (staged + unstaged)...
+Creating checkpoint...
+Agent simplifying code...
+
+✓ Simplification complete
+
+Summary:
+Refactored handler functions to reduce complexity and improve readability.
+Extracted common validation logic into a shared helper function.
+
+Suggested Changes:
+  [MODIFY] internal/handler.go
+  [MODIFY] internal/validation.go
+
+Tokens: 2345 input, 890 output ($0.0067)
+```
+
+### When to Use Standalone Mode
+
+- **Quick refactoring**: Simplify code without starting a full task
+- **Pre-commit cleanup**: Clean up changes before committing
+- **Branch preparation**: Simplify feature branches before PR
+- **Code maintenance**: Improve code quality in existing files
+
+### Configuration
+
+Set a default branch for standalone simplify in `.mehrhof/config.yaml`:
+
+```yaml
+git:
+  default_branch: develop  # Used when --branch is specified without a value
 ```
 
 ## See Also

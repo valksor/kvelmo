@@ -8,8 +8,8 @@ import (
 )
 
 func TestSimplifyCommand_Properties(t *testing.T) {
-	if simplifyCmd.Use != "simplify" {
-		t.Errorf("Use = %q, want %q", simplifyCmd.Use, "simplify")
+	if simplifyCmd.Use != "simplify [files...]" {
+		t.Errorf("Use = %q, want %q", simplifyCmd.Use, "simplify [files...]")
 	}
 
 	if simplifyCmd.Short == "" {
