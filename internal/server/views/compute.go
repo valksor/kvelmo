@@ -99,6 +99,9 @@ func ComputeActiveWork(c *conductor.Conductor, ws *storage.Workspace) *ActiveWor
 		}
 	}
 
+	// Compute hierarchical context
+	active.Hierarchy = ComputeHierarchyContext(c, ws, activeTask.ID)
+
 	return active
 }
 
@@ -739,4 +742,40 @@ func ComputeProjectInfo(dir string) *ProjectInfoData {
 		HasCargoTOML:       info.HasCargoTOML,
 		ApplicableScanners: scanners,
 	}
+}
+
+// ComputeHierarchyContext computes hierarchical task context for display.
+func ComputeHierarchyContext(c *conductor.Conductor, ws *storage.Workspace, taskID string) *HierarchyData {
+	if c == nil || ws == nil {
+		return nil
+	}
+
+	// Load task work to check for stored hierarchy info
+	work, err := ws.LoadWork(taskID)
+	if err != nil || work.Hierarchy == nil {
+		return nil
+	}
+
+	hierarchy := &HierarchyData{}
+
+	// If we have stored hierarchy info, use it (for now we'll return empty data
+	// since we'd need to make API calls to get full parent/sibling details)
+	// This could be enhanced in the future to make provider calls
+	if work.Hierarchy.ParentID != "" {
+		hierarchy.Parent = &ParentTaskData{
+			ID:    work.Hierarchy.ParentID,
+			Title: work.Hierarchy.ParentTitle,
+		}
+	}
+
+	if len(work.Hierarchy.SiblingIDs) > 0 {
+		hierarchy.Siblings = make([]*SiblingTaskData, 0, len(work.Hierarchy.SiblingIDs))
+		for _, siblingID := range work.Hierarchy.SiblingIDs {
+			hierarchy.Siblings = append(hierarchy.Siblings, &SiblingTaskData{
+				ID: siblingID,
+			})
+		}
+	}
+
+	return hierarchy
 }

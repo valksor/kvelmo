@@ -82,12 +82,12 @@ mehr project tasks [flags]
 **Output:**
 
 ```
-ID       Title                         Status   Priority  Depends On
-task-1   Set up JWT authentication     ready    1         -
-task-2   Create login endpoint         ready    2         -
-task-3   Create user profile page      blocked  3         task-1
-task-4   Add rate limiting             ready    4         -
-task-5   Write integration tests       blocked  5         task-1,task-3
+ID       Title                         Status   Priority  Parent   Depends On
+task-1   Set up JWT authentication     ready    1         -        -
+task-2   Create login endpoint         ready    2         task-1   -
+task-3   Create user profile page      blocked  3         task-1   task-2
+task-4   Add rate limiting             ready    4         -        -
+task-5   Write integration tests       blocked  5         -        task-3,task-4
 ```
 
 ### edit {#edit}
@@ -99,15 +99,17 @@ mehr project edit <task-id> [flags]
 ```
 
 **Flags:**
-| Flag           | Description                                    |
-| -------------- | ---------------------------------------------- |
-| `--title`      | Update task title                              |
-| `--description`| Update task description                        |
-| `--priority`   | Set priority (1-5, 1=highest)                  |
-| `--status`     | Set status (pending, ready, blocked, submitted)|
-| `--depends-on` | Set dependencies (comma-separated task IDs)    |
-| `--labels`     | Set labels (comma-separated)                   |
-| `--assignee`   | Set assignee                                   |
+| Flag            | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `--title`       | Update task title                              |
+| `--description` | Update task description                        |
+| `--priority`    | Set priority (1-5, 1=highest)                  |
+| `--status`      | Set status (pending, ready, blocked, submitted)|
+| `--depends-on`  | Set dependencies (comma-separated task IDs)    |
+| `--parent`      | Set parent task ID (makes this a subtask)      |
+| `--clear-parent`| Remove parent relationship                     |
+| `--labels`      | Set labels (comma-separated)                   |
+| `--assignee`    | Set assignee                                   |
 
 **Examples:**
 
@@ -115,11 +117,26 @@ mehr project edit <task-id> [flags]
 # Update dependencies
 mehr project edit task-3 --depends-on task-1,task-2
 
+# Make task-2 a subtask of task-1
+mehr project edit task-2 --parent task-1
+
+# Remove subtask relationship
+mehr project edit task-2 --clear-parent
+
 # Change priority
 mehr project edit task-2 --priority 1
 
 # Mark as ready
 mehr project edit task-3 --status ready
+```
+
+**Parent vs Dependencies:**
+
+The `--parent` flag creates a **hierarchical relationship** (organizational grouping), while `--depends-on` creates an **execution ordering** (task B cannot start until task A completes). These are orthogonal concepts - a task can have both a parent AND dependencies:
+
+```bash
+# task-3 is a subtask of task-1, but depends on task-2 for execution order
+mehr project edit task-3 --parent task-1 --depends-on task-2
 ```
 
 ### reorder {#reorder}
@@ -237,21 +254,23 @@ If some tasks were already submitted, you can add a comment using `--comment`:
 mehr project submit --provider github --task task-3,task-5 --comment "Updated per feedback"
 ```
 
-**Dependency Support:**
+**Dependency and Subtask Support:**
 
-| Provider   | Dependencies                        |
-| ---------- | ----------------------------------- |
-| Wrike      | Native (FinishToStart relationships)|
-| GitHub     | Task lists in epic body             |
-| GitLab     | Task lists in epic description      |
-| Jira       | Issue links (blocks/is-blocked-by)  |
-| Linear     | Description-based                   |
-| Asana      | Native task dependencies            |
-| ClickUp    | Native task dependencies            |
-| Azure DevOps | Work item links                   |
-| Trello     | Description-based                   |
-| YouTrack   | Description-based                   |
-| Bitbucket  | Description-based                   |
+| Provider   | Dependencies                        | Subtasks                    |
+| ---------- | ----------------------------------- | --------------------------- |
+| Wrike      | Native (FinishToStart relationships)| Native (ParentID on create) |
+| GitHub     | Task lists in epic body             | Issues with milestone       |
+| GitLab     | Task lists in epic description      | Task notes                  |
+| Jira       | Issue links (blocks/is-blocked-by)  | Native subtasks             |
+| Linear     | Description-based                   | Sub-issues                  |
+| Asana      | Native task dependencies            | Native subtasks             |
+| ClickUp    | Native task dependencies            | Native subtasks             |
+| Azure DevOps | Work item links                   | Child work items            |
+| Trello     | Description-based                   | Checklists                  |
+| YouTrack   | Description-based                   | Sub-issues                  |
+| Bitbucket  | Description-based                   | Task lists                  |
+
+When submitting tasks with `--parent` relationships, the parent tasks are automatically created first, and the subtasks include the provider's parent ID reference.
 
 ### start {#start}
 

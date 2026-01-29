@@ -114,8 +114,9 @@ func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts P
 	queue.Questions = parsed.Questions
 	queue.Blockers = parsed.Blockers
 
-	// Compute dependency relationships
+	// Compute relationships
 	queue.ComputeBlocksRelations()
+	queue.ComputeSubtaskRelations()
 	queue.ComputeTaskStatuses()
 
 	c.publishProgress("Saving queue...", 80)
@@ -348,6 +349,12 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 		return nil, fmt.Errorf("provider %s does not support task creation", opts.Provider)
 	}
 
+	// Sort tasks topologically so parents are submitted before subtasks
+	sortedTasks, err := topologicalSortWithParents(newTasks)
+	if err != nil {
+		return nil, fmt.Errorf("sort tasks: %w", err)
+	}
+
 	result := &SubmitResult{
 		Tasks:  make([]*SubmittedTask, 0, len(tasksToSubmit)),
 		DryRun: false,
@@ -355,7 +362,7 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 
 	c.publishProgress("Submitting tasks to "+opts.Provider+"...", 0)
 
-	// Track mapping from local task IDs to external IDs for dependency resolution
+	// Track mapping from local task IDs to external IDs for dependency and parent resolution
 	localToExternal := make(map[string]string)
 	for _, task := range queue.Tasks {
 		if task.Status == storage.TaskStatusSubmitted && task.ExternalID != "" {
@@ -363,13 +370,21 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 		}
 	}
 
-	// First pass: submit all tasks (without dependencies)
-	for i, task := range newTasks {
-		progress := int((float64(i+1) / float64(len(tasksToSubmit))) * 50) // First pass is 50%
-		c.publishProgress(fmt.Sprintf("Creating task %d/%d...", i+1, len(tasksToSubmit)), progress)
+	// First pass: submit all tasks with parent IDs (topologically sorted)
+	for i, task := range sortedTasks {
+		progress := int((float64(i+1) / float64(len(sortedTasks))) * 50) // First pass is 50%
+		c.publishProgress(fmt.Sprintf("Creating task %d/%d...", i+1, len(sortedTasks)), progress)
 
-		// Create work unit in provider (without dependencies for now)
-		workUnit, err := c.submitTaskToProvider(ctx, creator, task, opts)
+		// Resolve parent external ID if this is a subtask
+		var parentExternalID string
+		if task.ParentID != "" {
+			if extID, ok := localToExternal[task.ParentID]; ok {
+				parentExternalID = extID
+			}
+		}
+
+		// Create work unit in provider with parent ID
+		workUnit, err := c.submitTaskToProvider(ctx, creator, task, opts, parentExternalID)
 		if err != nil {
 			return result, fmt.Errorf("submit task %s: %w", task.ID, err)
 		}
@@ -396,13 +411,13 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 
 	// Second pass: create dependencies using the external IDs
 	c.publishProgress("Creating dependencies...", 55)
-	for i, task := range newTasks {
+	for i, task := range sortedTasks {
 		if len(task.DependsOn) == 0 {
 			continue
 		}
 
-		progress := 55 + int((float64(i+1)/float64(len(tasksToSubmit)))*40)
-		c.publishProgress(fmt.Sprintf("Creating dependencies for task %d/%d...", i+1, len(tasksToSubmit)), progress)
+		progress := 55 + int((float64(i+1)/float64(len(sortedTasks)))*40)
+		c.publishProgress(fmt.Sprintf("Creating dependencies for task %d/%d...", i+1, len(sortedTasks)), progress)
 
 		// Convert local dependency IDs to external IDs
 		externalDeps := make([]string, 0, len(task.DependsOn))
@@ -555,7 +570,99 @@ func validateSubmitSelection(queue *storage.TaskQueue, selected []*storage.Queue
 		return fmt.Errorf("missing dependencies (submit them first or include with --task): %s", strings.Join(missingDeps, ", "))
 	}
 
+	// Validate parent references - parents must be in selection or already submitted
+	var missingParents []string
+	for _, task := range selected {
+		if task.ParentID == "" {
+			continue
+		}
+		if selectedSet[task.ParentID] || submitted[task.ParentID] {
+			continue
+		}
+		missingParents = append(missingParents, fmt.Sprintf("%s -> parent:%s", task.ID, task.ParentID))
+	}
+	if len(missingParents) > 0 {
+		return fmt.Errorf("missing parents (submit them first or include with --task): %s", strings.Join(missingParents, ", "))
+	}
+
 	return nil
+}
+
+// topologicalSortWithParents sorts tasks so that parents come before subtasks and
+// dependencies come before dependents. Returns error if a cycle is detected.
+func topologicalSortWithParents(tasks []*storage.QueuedTask) ([]*storage.QueuedTask, error) {
+	// Build adjacency list: task -> tasks that depend on it (must come after)
+	// An edge from A to B means A must be submitted before B
+	taskMap := make(map[string]*storage.QueuedTask)
+	inDegree := make(map[string]int)
+	edges := make(map[string][]string)
+
+	for _, task := range tasks {
+		taskMap[task.ID] = task
+		inDegree[task.ID] = 0
+		edges[task.ID] = nil
+	}
+
+	// Add edges for ParentID (parent must come before subtask)
+	for _, task := range tasks {
+		if task.ParentID != "" {
+			if _, exists := taskMap[task.ParentID]; exists {
+				edges[task.ParentID] = append(edges[task.ParentID], task.ID)
+				inDegree[task.ID]++
+			}
+		}
+	}
+
+	// Add edges for DependsOn (dependency must come before dependent)
+	for _, task := range tasks {
+		for _, depID := range task.DependsOn {
+			if _, exists := taskMap[depID]; exists {
+				edges[depID] = append(edges[depID], task.ID)
+				inDegree[task.ID]++
+			}
+		}
+	}
+
+	// Kahn's algorithm for topological sort
+	var queue []string
+	for id, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, id)
+		}
+	}
+
+	// Sort initial queue by priority for consistent ordering (lower priority = first)
+	sort.Slice(queue, func(i, j int) bool {
+		return taskMap[queue[i]].Priority < taskMap[queue[j]].Priority
+	})
+
+	var result []*storage.QueuedTask
+	for len(queue) > 0 {
+		// Pop first task
+		taskID := queue[0]
+		queue = queue[1:]
+		result = append(result, taskMap[taskID])
+
+		// Reduce in-degree for all dependent tasks
+		for _, nextID := range edges[taskID] {
+			inDegree[nextID]--
+			if inDegree[nextID] == 0 {
+				queue = append(queue, nextID)
+			}
+		}
+
+		// Re-sort queue by priority for consistent ordering
+		sort.Slice(queue, func(i, j int) bool {
+			return taskMap[queue[i]].Priority < taskMap[queue[j]].Priority
+		})
+	}
+
+	// Check for cycles
+	if len(result) != len(tasks) {
+		return nil, errors.New("circular dependency detected in task graph")
+	}
+
+	return result, nil
 }
 
 func mergeLabels(taskLabels, submitLabels []string) []string {
@@ -611,7 +718,8 @@ func extractWorkUnitURL(workUnit *provider.WorkUnit) string {
 }
 
 // submitTaskToProvider creates a work unit in the provider for the given task.
-func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.WorkUnitCreator, task *storage.QueuedTask, opts SubmitOptions) (*submittedWorkUnit, error) {
+// parentExternalID is the provider's ID for the parent task (if this is a subtask).
+func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.WorkUnitCreator, task *storage.QueuedTask, opts SubmitOptions, parentExternalID string) (*submittedWorkUnit, error) {
 	// Validate required fields
 	if task == nil || task.ID == "" {
 		return nil, errors.New("task is required")
@@ -635,6 +743,7 @@ func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.W
 		Labels:      labels,
 		Assignees:   assignees,
 		Priority:    mapQueuedPriority(task.Priority),
+		ParentID:    parentExternalID, // Pass parent ID to create subtask
 	}
 
 	workUnit, err := creator.CreateWorkUnit(ctx, createOpts)
@@ -1250,6 +1359,7 @@ For each task, use this format:
 ### task-N: Task Title
 - **Priority**: N (1 = highest)
 - **Status**: ready OR blocked
+- **Parent**: task-X (if this is a subtask)
 - **Labels**: comma, separated, labels
 - **Depends on**: task-X, task-Y (if blocked)
 - **Description**: Detailed description of what needs to be done
@@ -1267,12 +1377,16 @@ List any blockers that prevent progress:
 
 1. Break down the work into atomic, implementable tasks
 2. Each task should be completable in 1-4 hours of work
-3. Identify dependencies clearly - if task B needs task A, mark B as blocked
-4. Tasks without dependencies should be marked as "ready"
-5. Prioritize tasks: core functionality first, then enhancements
-6. Include labels for categorization (e.g., backend, frontend, testing, docs)
-7. If requirements are unclear, add specific questions
-8. If there are external blockers, list them
+3. Use **Parent** vs **Depends on** appropriately:
+   - **Parent**: Hierarchical grouping (organizational structure). Use when a task is logically part of a larger task.
+   - **Depends on**: Execution ordering. Use when a task cannot start until another task completes.
+   - A task can have BOTH a parent AND dependencies (different concepts)
+4. Identify dependencies clearly - if task B needs task A, mark B as blocked
+5. Tasks without dependencies should be marked as "ready"
+6. Prioritize tasks: core functionality first, then enhancements
+7. Include labels for categorization (e.g., backend, frontend, testing, docs)
+8. If requirements are unclear, add specific questions
+9. If there are external blockers, list them
 
 Do not include any other text or explanation. Only output the structured task breakdown.
 `

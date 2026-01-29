@@ -302,3 +302,75 @@ Nothing to reorder.
 		t.Error("expected error for no tasks found")
 	}
 }
+
+func TestParseTaskContentWithParent(t *testing.T) {
+	content := `
+- **Priority**: 2
+- **Status**: ready
+- **Parent**: task-1
+- **Labels**: backend, subtask
+- **Description**: This is a subtask of task-1
+`
+
+	task := parseTaskContent("task-2", "Subtask", content)
+
+	if task.ParentID != "task-1" {
+		t.Errorf("expected ParentID task-1, got %s", task.ParentID)
+	}
+	if task.Priority != 2 {
+		t.Errorf("expected priority 2, got %d", task.Priority)
+	}
+	if len(task.Labels) != 2 {
+		t.Errorf("expected 2 labels, got %d", len(task.Labels))
+	}
+}
+
+func TestParseProjectPlanWithSubtasks(t *testing.T) {
+	content := `## Tasks
+
+### task-1: Setup infrastructure
+- **Priority**: 1
+- **Status**: ready
+- **Labels**: infrastructure
+- **Description**: Set up the base infrastructure
+
+### task-2: Create database schema
+- **Priority**: 2
+- **Status**: ready
+- **Parent**: task-1
+- **Labels**: database
+- **Description**: Design and create the database schema
+
+### task-3: Implement API endpoints
+- **Priority**: 2
+- **Status**: blocked
+- **Parent**: task-1
+- **Depends on**: task-2
+- **Labels**: api, backend
+- **Description**: Implement REST API endpoints
+`
+
+	plan := ParseProjectPlan(content)
+
+	if len(plan.Tasks) != 3 {
+		t.Errorf("expected 3 tasks, got %d", len(plan.Tasks))
+	}
+
+	// Verify task-1 has no parent
+	if plan.Tasks[0].ParentID != "" {
+		t.Errorf("task-1 should have no parent, got %s", plan.Tasks[0].ParentID)
+	}
+
+	// Verify task-2 has task-1 as parent
+	if plan.Tasks[1].ParentID != "task-1" {
+		t.Errorf("task-2 ParentID should be task-1, got %s", plan.Tasks[1].ParentID)
+	}
+
+	// Verify task-3 has BOTH parent AND depends_on (orthogonal concepts)
+	if plan.Tasks[2].ParentID != "task-1" {
+		t.Errorf("task-3 ParentID should be task-1, got %s", plan.Tasks[2].ParentID)
+	}
+	if len(plan.Tasks[2].DependsOn) != 1 || plan.Tasks[2].DependsOn[0] != "task-2" {
+		t.Errorf("task-3 should depend on task-2, got %v", plan.Tasks[2].DependsOn)
+	}
+}

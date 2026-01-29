@@ -151,6 +151,12 @@ func parseTaskContent(id, title, content string) *storage.QueuedTask {
 		}
 	}
 
+	// Extract parent (for subtask hierarchy)
+	parentPattern := regexp.MustCompile(`(?i)\*\*Parent\*\*:\s*(task-\d+)`)
+	if match := parentPattern.FindStringSubmatch(content); len(match) > 1 {
+		task.ParentID = strings.TrimSpace(match[1])
+	}
+
 	// Extract assignee
 	assigneePattern := regexp.MustCompile(`(?i)\*\*Assignee\*\*:\s*(.+)`)
 	if match := assigneePattern.FindStringSubmatch(content); len(match) > 1 {

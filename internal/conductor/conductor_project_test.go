@@ -628,3 +628,257 @@ func TestBuildResearchPlanningPrompt_NoCustomInstructions(t *testing.T) {
 		t.Error("buildResearchPlanningPrompt() should not include Custom Instructions section when empty")
 	}
 }
+
+func TestTopologicalSortWithParents(t *testing.T) {
+	tests := []struct {
+		name    string
+		tasks   []*storage.QueuedTask
+		wantErr bool
+		check   func(t *testing.T, sorted []*storage.QueuedTask)
+	}{
+		{
+			name: "no dependencies or parents",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-3", Priority: 3},
+				{ID: "task-1", Priority: 1},
+				{ID: "task-2", Priority: 2},
+			},
+			wantErr: false,
+			check: func(t *testing.T, sorted []*storage.QueuedTask) {
+				t.Helper()
+				// Should sort by priority when no deps
+				if sorted[0].ID != "task-1" {
+					t.Errorf("expected task-1 first (priority 1), got %s", sorted[0].ID)
+				}
+			},
+		},
+		{
+			name: "parent-child relationships",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-2", Priority: 2, ParentID: "task-1"},
+				{ID: "task-1", Priority: 1},
+				{ID: "task-3", Priority: 3, ParentID: "task-1"},
+			},
+			wantErr: false,
+			check: func(t *testing.T, sorted []*storage.QueuedTask) {
+				t.Helper()
+				// task-1 must come before its children
+				task1Idx := -1
+				task2Idx := -1
+				task3Idx := -1
+				for i, task := range sorted {
+					switch task.ID {
+					case "task-1":
+						task1Idx = i
+					case "task-2":
+						task2Idx = i
+					case "task-3":
+						task3Idx = i
+					}
+				}
+				if task1Idx >= task2Idx {
+					t.Errorf("task-1 should come before task-2 (parent before child)")
+				}
+				if task1Idx >= task3Idx {
+					t.Errorf("task-1 should come before task-3 (parent before child)")
+				}
+			},
+		},
+		{
+			name: "depends-on relationships",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-3", Priority: 3, DependsOn: []string{"task-2"}},
+				{ID: "task-1", Priority: 1},
+				{ID: "task-2", Priority: 2, DependsOn: []string{"task-1"}},
+			},
+			wantErr: false,
+			check: func(t *testing.T, sorted []*storage.QueuedTask) {
+				t.Helper()
+				// Order should be: task-1 -> task-2 -> task-3
+				if sorted[0].ID != "task-1" {
+					t.Errorf("expected task-1 first, got %s", sorted[0].ID)
+				}
+				if sorted[1].ID != "task-2" {
+					t.Errorf("expected task-2 second, got %s", sorted[1].ID)
+				}
+				if sorted[2].ID != "task-3" {
+					t.Errorf("expected task-3 third, got %s", sorted[2].ID)
+				}
+			},
+		},
+		{
+			name: "mixed parent and depends-on",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-1", Priority: 1},
+				{ID: "task-2", Priority: 2, ParentID: "task-1"},
+				{ID: "task-3", Priority: 3, ParentID: "task-1", DependsOn: []string{"task-2"}},
+			},
+			wantErr: false,
+			check: func(t *testing.T, sorted []*storage.QueuedTask) {
+				t.Helper()
+				// task-1 must come first (parent of both)
+				// task-2 must come before task-3 (dependency)
+				task1Idx := -1
+				task2Idx := -1
+				task3Idx := -1
+				for i, task := range sorted {
+					switch task.ID {
+					case "task-1":
+						task1Idx = i
+					case "task-2":
+						task2Idx = i
+					case "task-3":
+						task3Idx = i
+					}
+				}
+				if task1Idx >= task2Idx || task1Idx >= task3Idx {
+					t.Errorf("task-1 should come before both children")
+				}
+				if task2Idx >= task3Idx {
+					t.Errorf("task-2 should come before task-3 (dependency)")
+				}
+			},
+		},
+		{
+			name: "circular dependency",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-1", DependsOn: []string{"task-2"}},
+				{ID: "task-2", DependsOn: []string{"task-1"}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "circular parent-child",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-1", ParentID: "task-2"},
+				{ID: "task-2", ParentID: "task-1"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "nested subtasks",
+			tasks: []*storage.QueuedTask{
+				{ID: "task-1", Priority: 1},
+				{ID: "task-2", Priority: 2, ParentID: "task-1"},
+				{ID: "task-3", Priority: 3, ParentID: "task-2"}, // Nested (grandchild of task-1)
+			},
+			wantErr: false,
+			check: func(t *testing.T, sorted []*storage.QueuedTask) {
+				t.Helper()
+				// Order should be: task-1 -> task-2 -> task-3
+				if sorted[0].ID != "task-1" {
+					t.Errorf("expected task-1 first, got %s", sorted[0].ID)
+				}
+				if sorted[1].ID != "task-2" {
+					t.Errorf("expected task-2 second, got %s", sorted[1].ID)
+				}
+				if sorted[2].ID != "task-3" {
+					t.Errorf("expected task-3 third, got %s", sorted[2].ID)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sorted, err := topologicalSortWithParents(tt.tasks)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(sorted) != len(tt.tasks) {
+				t.Errorf("sorted length = %d, want %d", len(sorted), len(tt.tasks))
+			}
+
+			if tt.check != nil {
+				tt.check(t, sorted)
+			}
+		})
+	}
+}
+
+func TestValidateSubmitSelection_MissingParents(t *testing.T) {
+	queue := &storage.TaskQueue{
+		ID: "test-queue",
+		Tasks: []*storage.QueuedTask{
+			{ID: "task-1", Status: storage.TaskStatusReady},
+			{ID: "task-2", Status: storage.TaskStatusReady, ParentID: "task-1"},
+			{ID: "task-3", Status: storage.TaskStatusReady, ParentID: "task-nonexistent"},
+		},
+	}
+
+	// Select only task-3 which has a non-existent parent
+	selected := []*storage.QueuedTask{queue.Tasks[2]}
+	opts := SubmitOptions{TaskIDs: []string{"task-3"}}
+
+	err := validateSubmitSelection(queue, selected, opts)
+	if err == nil {
+		t.Error("expected error for missing parent")
+	}
+	if !strings.Contains(err.Error(), "missing parents") {
+		t.Errorf("error should mention missing parents, got: %v", err)
+	}
+}
+
+func TestValidateSubmitSelection_ParentInSelection(t *testing.T) {
+	queue := &storage.TaskQueue{
+		ID: "test-queue",
+		Tasks: []*storage.QueuedTask{
+			{ID: "task-1", Status: storage.TaskStatusReady},
+			{ID: "task-2", Status: storage.TaskStatusReady, ParentID: "task-1"},
+		},
+	}
+
+	// Select both parent and child - should be valid
+	selected := queue.Tasks
+	opts := SubmitOptions{TaskIDs: []string{"task-1", "task-2"}}
+
+	err := validateSubmitSelection(queue, selected, opts)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateSubmitSelection_ParentAlreadySubmitted(t *testing.T) {
+	queue := &storage.TaskQueue{
+		ID: "test-queue",
+		Tasks: []*storage.QueuedTask{
+			{ID: "task-1", Status: storage.TaskStatusSubmitted, ExternalID: "EXT-1"},
+			{ID: "task-2", Status: storage.TaskStatusReady, ParentID: "task-1"},
+		},
+	}
+
+	// Select only child - parent already submitted, should be valid
+	selected := []*storage.QueuedTask{queue.Tasks[1]}
+	opts := SubmitOptions{TaskIDs: []string{"task-2"}}
+
+	err := validateSubmitSelection(queue, selected, opts)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestBuildProjectPlanningPrompt_IncludesParentField(t *testing.T) {
+	result := buildProjectPlanningPrompt("Test", "content", "")
+
+	expectedContents := []string{
+		"**Parent**: task-X (if this is a subtask)",
+		"**Parent**: Hierarchical grouping",
+		"**Depends on**: Execution ordering",
+	}
+
+	for _, expected := range expectedContents {
+		if !strings.Contains(result, expected) {
+			t.Errorf("buildProjectPlanningPrompt() missing %q in result", expected)
+		}
+	}
+}

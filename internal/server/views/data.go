@@ -34,6 +34,7 @@ type EventNames struct {
 	TaskCompleted        string
 	BudgetWarning        string
 	BudgetLimit          string
+	HierarchyUpdated     string
 }
 
 // DefaultEventNames returns the standard event names.
@@ -47,6 +48,7 @@ func DefaultEventNames() EventNames {
 		TaskCompleted:        EventTaskCompleted,
 		BudgetWarning:        EventBudgetWarning,
 		BudgetLimit:          EventBudgetLimit,
+		HierarchyUpdated:     EventHierarchyUpdated,
 	}
 }
 
@@ -95,6 +97,9 @@ type ActiveWorkData struct {
 	SandboxActive bool // Only for tasks
 	HasQuestion   bool
 	HasSpecs      bool
+
+	// Hierarchical context
+	Hierarchy *HierarchyData `json:"hierarchy,omitempty"`
 }
 
 // StatsData contains workspace statistics.
@@ -577,4 +582,75 @@ type GuideActionData struct {
 	Description string
 	Endpoint    string
 	Primary     bool
+}
+
+// LinksData contains all data for the links page.
+type LinksData struct {
+	PageData
+
+	// Search results (populated via HTMX)
+	Entities []LinkedEntityData
+	Query    string
+
+	// Stats (populated via HTMX)
+	Stats *LinksStatsData
+
+	// Whether links system is available
+	Enabled bool
+}
+
+// LinkedEntityData represents an entity with links.
+type LinkedEntityData struct {
+	EntityID   string
+	Type       string // spec, session, decision, note
+	Title      string // Human-readable name
+	TaskID     string // Task ID (if applicable)
+	ID         string // Entity-specific ID
+	Outgoing   int    // Number of outgoing links
+	Incoming   int    // Number of incoming links
+	LastLinked string // Time ago (human-readable)
+}
+
+// LinksStatsData represents link graph statistics.
+type LinksStatsData struct {
+	TotalLinks     int
+	TotalSources   int
+	TotalTargets   int
+	OrphanEntities int
+	MostLinked     []LinkedEntityData
+	Enabled        bool
+}
+
+// LinkData represents a single link.
+type LinkData struct {
+	Source    string
+	Target    string
+	Context   string
+	CreatedAt string
+}
+
+// HierarchyData represents hierarchical task context for display.
+type HierarchyData struct {
+	Parent   *ParentTaskData    `json:"parent,omitempty"`
+	Siblings []*SiblingTaskData `json:"siblings,omitempty"`
+}
+
+// ParentTaskData represents the parent task.
+type ParentTaskData struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	State       string `json:"state"`
+	StateIcon   string `json:"state_icon"`
+	StateColor  string `json:"state_color"`
+	URL         string `json:"url,omitempty"`
+}
+
+// SiblingTaskData represents a sibling subtask.
+type SiblingTaskData struct {
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	State      string `json:"state"`
+	StateIcon  string `json:"state_icon"`
+	StateColor string `json:"state_color"`
 }

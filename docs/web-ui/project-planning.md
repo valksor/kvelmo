@@ -55,15 +55,17 @@ After creating a breakdown, you'll see a table of all tasks:
 
 | Column | Description |
 |--------|-------------|
-| ID | Task identifier |
+| ID | Task identifier (indented for subtasks) |
 | Title | Task name |
 | Status | `ready`, `blocked`, `submitted` |
 | Priority | 1 (high) to 5 (low) |
+| Parent | Parent task ID (if this is a subtask) |
 | Depends On | List of task IDs this task requires |
 
 **Dependency Visualization:**
 - Enable **"Show Dependencies"** to see the task relationship graph
 - Blocked tasks are visually distinct
+- Subtasks show with a tree indicator (└) next to their ID
 - Click a task ID to jump to its dependencies
 
 ### Editing Tasks
@@ -77,10 +79,18 @@ Modify any task property:
    - **Description** - Full task details
    - **Priority** - 1-5 scale
    - **Status** - `ready`, `blocked`, `submitted`
+   - **Parent** - Parent task ID (makes this a subtask; leave empty for top-level)
    - **Dependencies** - Comma-separated task IDs
    - **Labels** - Task tags
    - **Assignee** - Task owner (for providers)
 4. Click **"Save"**
+
+**Parent vs Dependencies:**
+
+- **Parent** (hierarchical): Organizational grouping in providers (e.g., Wrike subtasks, Jira sub-issues)
+- **Dependencies** (execution order): Task B cannot start until task A completes
+
+A task can have BOTH a parent AND dependencies. For example, a subtask under "Authentication" might depend on "Database Schema" being completed first.
 
 ### Reordering Tasks
 
@@ -117,14 +127,34 @@ Submit tasks to external project management systems:
    - **Create Epic** - Group tasks under a parent
    - **Additional Labels** - Add tags to all tasks
    - **Dry Run** - Preview without creating
+   - **Select Tasks** - Choose specific tasks for selective submit (optional)
 4. Click **"Submit"**
 
-**Dependency Support by Provider:**
-- **Wrike**: Native Finish-ToStart relationships
-- **GitHub**: Task lists in epic body
-- **GitLab**: Task lists in description
-- **Jira**: Issue links (blocks/is-blocked-by)
-- **Asana/ClickUp**: Native task dependencies
+**Selective Submit:**
+
+You can submit specific tasks instead of the entire queue:
+- Select individual tasks using checkboxes
+- Or specify task IDs in the **"Task IDs"** field (comma-separated)
+- Leave empty to submit all tasks
+
+This is useful when:
+- You want to review tasks before submitting in batches
+- Some tasks need more work before being ready
+- You're working with a provider that has rate limits
+
+**Dependency and Subtask Support by Provider:**
+
+| Provider | Dependencies | Subtasks |
+|----------|--------------|----------|
+| **Wrike** | Native FinishToStart | Native subtasks |
+| **GitHub** | Task lists in epic body | Issues with milestone |
+| **GitLab** | Task lists in description | Task notes |
+| **Jira** | Issue links (blocks/is-blocked-by) | Native sub-issues |
+| **Asana** | Native dependencies | Native subtasks |
+| **ClickUp** | Native dependencies | Native subtasks |
+| **Linear** | Description-based | Sub-issues |
+
+When submitting tasks with parent relationships, parents are automatically created first and subtasks include the provider's parent ID.
 
 ### Starting Implementation
 
@@ -203,7 +233,8 @@ See [`mehr project`](../cli/project.md) for CLI usage.
 | `mehr project tasks` | View queue |
 | `mehr project edit task-1` | Edit task |
 | `mehr project reorder --auto` | AI reorder |
-| `mehr project submit --provider wrike` | Submit to provider |
+| `mehr project submit --provider wrike` | Submit all to provider |
+| `mehr project submit --provider wrike --task task-1,task-2` | Selective submit |
 | `mehr project start` | Start task |
 
 ## Project Queue Storage
