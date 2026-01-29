@@ -16,9 +16,31 @@ func (c *Conductor) runLinters(ctx context.Context) string {
 		workDir = c.git.Root()
 	}
 
-	// Create linter registry and detect applicable linters
-	registry := quality.NewRegistry()
+	// Load workspace config for quality settings
+	workspaceCfg, _ := c.workspace.LoadConfig()
+
+	// Check if quality checks are disabled
+	if workspaceCfg.Quality != nil && !workspaceCfg.Quality.Enabled {
+		c.logVerbosef("Quality checks disabled in config")
+
+		return ""
+	}
+
+	// Create linter registry with config and detect applicable linters
+	registry := quality.NewRegistry(workspaceCfg.Quality)
 	linters := registry.DetectForProject(workDir)
+
+	// Warning: quality enabled but no linters configured
+	if len(linters) == 0 && workspaceCfg.Quality != nil && workspaceCfg.Quality.Enabled {
+		if !workspaceCfg.Quality.UseDefaults {
+			c.logVerbosef("Warning: Quality checks enabled but no linters configured. " +
+				"Set use_defaults: true or explicitly configure linters in .mehrhof/config.yaml")
+		} else {
+			c.logVerbosef("No linters detected for this project")
+		}
+
+		return ""
+	}
 
 	if len(linters) == 0 {
 		c.logVerbosef("No linters detected for this project")

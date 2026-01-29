@@ -164,6 +164,10 @@ func registerSafeCommands(registry *mcp.ToolRegistry) {
 	commandsToRegister = append(commandsToRegister, agentsCmd)
 	commandsToRegister = append(commandsToRegister, costCmd)
 
+	// Agent utility commands
+	commandsToRegister = append(commandsToRegister, scanCmd)
+	commandsToRegister = append(commandsToRegister, findCmd)
+
 	// Register all commands with default arg mapper
 	registry.RegisterCommands(commandsToRegister, mcp.DefaultArgMapper)
 }

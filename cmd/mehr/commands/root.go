@@ -40,20 +40,21 @@ var rootCmd = &cobra.Command{
 	CompletionOptions: cobra.CompletionOptions{
 		DisableDefaultCmd: true,
 	},
-	Long: `Mehrhof is a CLI tool for AI-assisted task automation by Valksor.
+	Long: `Mehrhof is an AI-powered development assistant by Valksor.
 
-It orchestrates AI agents to perform planning, implementation, and code review
-workflows. Tasks can be sourced from files, directories, or external providers.
+It provides both a command-line interface and a Web UI for planning,
+implementing, and reviewing code changes with AI agents.
 
-Quick Start:
+Quick Start (CLI):
   mehr start task.md     Start a task from a markdown file
   mehr plan              AI creates specifications
   mehr implement         AI implements the code
   mehr finish            Complete and merge/PR
 
-For guidance:  mehr guide
-For status:    mehr status
-For full auto: mehr auto task.md`,
+For guidance:    mehr guide
+For status:      mehr status
+For full auto:   mehr auto task.md
+For Web UI:      mehr serve`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

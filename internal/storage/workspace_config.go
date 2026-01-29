@@ -42,6 +42,9 @@ type WorkspaceConfig struct {
 	ML            *MLSettings                 `yaml:"ml,omitempty"`
 	Sandbox       *SandboxSettings            `yaml:"sandbox,omitempty"`
 	Labels        *LabelSettings              `yaml:"labels,omitempty"`
+	Quality       *QualitySettings            `yaml:"quality,omitempty"`
+	Links         *LinksSettings              `yaml:"links,omitempty"`
+	Context       *ContextSettings            `yaml:"context,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -78,9 +81,11 @@ type GitHubCommentsSettings struct {
 
 // WrikeSettings holds Wrike provider configuration.
 type WrikeSettings struct {
-	Token  string `yaml:"token,omitempty"`  // Wrike API token (env vars take priority)
-	Host   string `yaml:"host,omitempty"`   // API base URL override (default: https://www.wrike.com/api/v4)
-	Folder string `yaml:"folder,omitempty"` // Default folder ID for task lookup
+	Token   string `yaml:"token,omitempty"`   // Wrike API token (env vars take priority)
+	Host    string `yaml:"host,omitempty"`    // API base URL override (default: https://www.wrike.com/api/v4)
+	Space   string `yaml:"space,omitempty"`   // Space ID (for listing tasks across space)
+	Folder  string `yaml:"folder,omitempty"`  // Folder ID (for task lookup/creation if no project)
+	Project string `yaml:"project,omitempty"` // Project ID (primary target for task creation)
 }
 
 // GitLabSettings holds GitLab provider configuration.
@@ -498,6 +503,21 @@ type LabelSettings struct {
 	Suggestions []string          `yaml:"suggestions,omitempty"` // Suggested labels for autocomplete
 }
 
+// QualitySettings holds code quality and linter configuration.
+type QualitySettings struct {
+	Enabled     bool                    `yaml:"enabled,omitempty"`      // Enable quality checks (default: true)
+	UseDefaults bool                    `yaml:"use_defaults,omitempty"` // Auto-enable default linters (default: false - safer)
+	Linters     map[string]LinterConfig `yaml:"linters,omitempty"`      // Linter-specific config by name
+}
+
+// LinterConfig defines configuration for a single linter.
+type LinterConfig struct {
+	Enabled    bool     `yaml:"enabled,omitempty"`    // Enable/disable this linter (default: true for built-ins)
+	Command    []string `yaml:"command,omitempty"`    // Custom command (e.g., ["vendor/bin/phpstan", "analyse"])
+	Args       []string `yaml:"args,omitempty"`       // Additional arguments
+	Extensions []string `yaml:"extensions,omitempty"` // File extensions to lint (default: auto-detected)
+}
+
 // NewDefaultWorkspaceConfig creates a WorkspaceConfig with default values.
 func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 	return &WorkspaceConfig{
@@ -571,6 +591,22 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 				"team:frontend", "team:backend", "team:devops",
 				"status:blocked", "status:in-review",
 			},
+		},
+		Quality: &QualitySettings{
+			Enabled:     true,
+			UseDefaults: false, // Safer default: requires explicit linter configuration
+		},
+		Links: &LinksSettings{
+			Enabled:          true,
+			AutoIndex:        true,
+			CaseSensitive:    false,
+			MaxContextLength: 200,
+		},
+		Context: &ContextSettings{
+			IncludeParent:    true,
+			IncludeSiblings:  true,
+			MaxSiblings:      5,
+			DescriptionLimit: 500,
 		},
 		Env: make(map[string]string),
 	}
@@ -925,6 +961,44 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #         - team:devops
 #         - status:blocked
 #         - status:in-review
+`
+	}
+
+	// Add quality section comment if quality is nil or default
+	if cfg.Quality == nil || !cfg.Quality.Enabled || len(cfg.Quality.Linters) == 0 {
+		content += `
+# Quality and linter settings
+# Configure which linters run during review phase
+# Example:
+# quality:
+#     enabled: true                  # Enable quality checks (default: true)
+#     linters:
+#         golangci-lint:
+#             enabled: true          # Run Go linter
+#         eslint:
+#             enabled: true          # Run JS/TS linter
+#         ruff:
+#             enabled: true          # Run Python linter
+#         php-cs-fixer:
+#             enabled: false         # Disable built-in PHP linter
+#         phpstan:                   # Use custom linter instead
+#             enabled: true
+#             command: ["vendor/bin/phpstan", "analyse", "--error-format=json"]
+#             extensions: [".php"]
+`
+	}
+
+	// Add links section comment if links is nil or default
+	if cfg.Links == nil || !cfg.Links.Enabled {
+		content += `
+# Links settings
+# Enable Logseq-style bidirectional linking between specs, notes, and sessions
+# Example:
+# links:
+#     enabled: true                  # Enable link system (default: true)
+#     auto_index: true               # Automatically index on save (default: true)
+#     case_sensitive: false          # Case-sensitive name matching (default: false)
+#     max_context_length: 200        # Context characters for links (default: 200)
 `
 	}
 

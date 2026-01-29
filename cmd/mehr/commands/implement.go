@@ -20,6 +20,13 @@ var (
 	implementOptimize          bool
 	implementOnly              string
 	implementParallel          string
+
+	// Hierarchical context flags (override workspace config).
+	implementWithParent      bool // Include parent task context
+	implementWithoutParent   bool // Exclude parent task context
+	implementWithSiblings    bool // Include sibling subtask context
+	implementWithoutSiblings bool // Exclude sibling subtask context
+	implementMaxSiblings     int  // Maximum sibling tasks to include
 )
 
 var implementCmd = &cobra.Command{
@@ -47,6 +54,13 @@ func init() {
 	implementCmd.Flags().BoolVar(&implementOptimize, "optimize", false, "Optimize prompt before sending to agent")
 	implementCmd.Flags().StringVar(&implementOnly, "only", "", "Only implement this component (e.g., backend, frontend, tests)")
 	implementCmd.Flags().StringVar(&implementParallel, "parallel", "", "Run N agents in parallel, or comma-separated agent list")
+
+	// Hierarchical context flags (override workspace config)
+	implementCmd.Flags().BoolVar(&implementWithParent, "with-parent", false, "Include parent task context (overrides config)")
+	implementCmd.Flags().BoolVar(&implementWithoutParent, "without-parent", false, "Exclude parent task context (overrides config)")
+	implementCmd.Flags().BoolVar(&implementWithSiblings, "with-siblings", false, "Include sibling subtask context (overrides config)")
+	implementCmd.Flags().BoolVar(&implementWithoutSiblings, "without-siblings", false, "Exclude sibling subtask context (overrides config)")
+	implementCmd.Flags().IntVar(&implementMaxSiblings, "max-siblings", 0, "Maximum sibling tasks to include (overrides config, 0 = use config)")
 }
 
 func runImplement(cmd *cobra.Command, args []string) error {

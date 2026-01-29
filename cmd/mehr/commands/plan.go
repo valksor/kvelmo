@@ -24,6 +24,13 @@ var (
 	planAgentPlanning string // Per-step agent override
 	planAutoApprove   bool   // Auto-approve defaults without asking user
 	planOptimize      bool   // Optimize prompt before sending to agent
+
+	// Hierarchical context flags (override workspace config).
+	planWithParent      bool // Include parent task context
+	planWithoutParent   bool // Exclude parent task context
+	planWithSiblings    bool // Include sibling subtask context
+	planWithoutSiblings bool // Exclude sibling subtask context
+	planMaxSiblings     int  // Maximum sibling tasks to include
 )
 
 var planCmd = &cobra.Command{
@@ -70,6 +77,13 @@ func init() {
 	planCmd.Flags().StringVar(&planAgentPlanning, "agent-plan", "", "Agent for planning step")
 	planCmd.Flags().BoolVar(&planAutoApprove, "auto-approve", false, "Auto-approve defaults without asking user")
 	planCmd.Flags().BoolVar(&planOptimize, "optimize", false, "Optimize prompt before sending to agent")
+
+	// Hierarchical context flags (override workspace config)
+	planCmd.Flags().BoolVar(&planWithParent, "with-parent", false, "Include parent task context (overrides config)")
+	planCmd.Flags().BoolVar(&planWithoutParent, "without-parent", false, "Exclude parent task context (overrides config)")
+	planCmd.Flags().BoolVar(&planWithSiblings, "with-siblings", false, "Include sibling subtask context (overrides config)")
+	planCmd.Flags().BoolVar(&planWithoutSiblings, "without-siblings", false, "Exclude sibling subtask context (overrides config)")
+	planCmd.Flags().IntVar(&planMaxSiblings, "max-siblings", 0, "Maximum sibling tasks to include (overrides config, 0 = use config)")
 }
 
 func runPlan(cmd *cobra.Command, args []string) error {
