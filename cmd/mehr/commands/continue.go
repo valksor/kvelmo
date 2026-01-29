@@ -96,7 +96,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get full status
-	status, err := cond.Status()
+	status, err := cond.Status(ctx)
 	if err != nil {
 		return fmt.Errorf("get status: %w", err)
 	}

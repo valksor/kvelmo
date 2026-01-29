@@ -701,7 +701,7 @@ func (c *Conductor) Delete(ctx context.Context, opts DeleteOptions) error {
 }
 
 // Status returns the current task status.
-func (c *Conductor) Status() (*TaskStatus, error) {
+func (c *Conductor) Status(ctx context.Context) (*TaskStatus, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -721,7 +721,7 @@ func (c *Conductor) Status() (*TaskStatus, error) {
 		Branch:         c.activeTask.Branch,
 		WorktreePath:   c.activeTask.WorktreePath,
 		Specifications: len(specifications),
-		Checkpoints:    c.countCheckpoints(),
+		Checkpoints:    c.countCheckpoints(ctx),
 		Started:        c.activeTask.Started,
 	}
 

@@ -4,6 +4,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -78,7 +79,7 @@ func TestSimplifyCommand_LongDescriptionContains(t *testing.T) {
 	}
 
 	for _, substr := range expectedSubstrings {
-		if !contains(simplifyCmd.Long, substr) {
+		if !strings.Contains(simplifyCmd.Long, substr) {
 			t.Errorf("Long description should contain %q", substr)
 		}
 	}
@@ -98,7 +99,7 @@ func TestSimplifyCommand_ExamplesExist(t *testing.T) {
 	}
 
 	for _, example := range expectedExamples {
-		if !contains(simplifyCmd.Example, example) && !contains(simplifyCmd.Long, example) {
+		if !strings.Contains(simplifyCmd.Example, example) && !strings.Contains(simplifyCmd.Long, example) {
 			t.Errorf("Should mention %s in examples", example)
 		}
 	}

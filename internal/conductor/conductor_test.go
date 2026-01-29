@@ -474,7 +474,7 @@ func TestCountCheckpoints_NoActiveTask(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	count := c.countCheckpoints()
+	count := c.countCheckpoints(context.Background())
 	if count != 0 {
 		t.Errorf("countCheckpoints = %d, want 0 when no active task", count)
 	}
@@ -491,7 +491,7 @@ func TestCountCheckpoints_NoGit(t *testing.T) {
 		State: "planning",
 	}
 
-	count := c.countCheckpoints()
+	count := c.countCheckpoints(context.Background())
 	if count != 0 {
 		t.Errorf("countCheckpoints = %d, want 0 when git is nil", count)
 	}
@@ -577,7 +577,7 @@ func TestStatus_WithActiveTask(t *testing.T) {
 		t.Fatalf("SaveSpec: %v", err)
 	}
 
-	status, err := c.Status()
+	status, err := c.Status(context.Background())
 	if err != nil {
 		t.Fatalf("Status: %v", err)
 	}

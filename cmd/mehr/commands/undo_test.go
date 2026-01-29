@@ -107,10 +107,10 @@ func TestUndoCommand_RegisteredInRoot(t *testing.T) {
 
 // containsString checks if s contains substr.
 func containsString(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && contains(s, substr)
+	return len(s) > 0 && len(substr) > 0 && containsSubstring(s, substr)
 }
 
-func contains(s, substr string) bool {
+func containsSubstring(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
 			return true

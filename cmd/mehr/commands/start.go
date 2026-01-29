@@ -312,7 +312,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 			}
 
 			// Get status and display
-			status, err := cond.Status()
+			status, err := cond.Status(ctx)
 			if err != nil {
 				return err
 			}
@@ -355,7 +355,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get status
-	status, err := cond.Status()
+	status, err := cond.Status(ctx)
 	if err != nil {
 		return err
 	}

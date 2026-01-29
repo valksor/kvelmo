@@ -67,7 +67,7 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get status for display
-	status, err := cond.Status()
+	status, err := cond.Status(ctx)
 	if err != nil {
 		return fmt.Errorf("get status: %w", err)
 	}

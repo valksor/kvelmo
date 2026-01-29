@@ -570,12 +570,11 @@ func (c *Conductor) onStateChanged(e events.Event) {
 }
 
 // countCheckpoints returns the number of checkpoints for current task.
-func (c *Conductor) countCheckpoints() int {
+func (c *Conductor) countCheckpoints(ctx context.Context) int {
 	if c.activeTask == nil || c.git == nil {
 		return 0
 	}
-	// Use background context since this is called from Status() which doesn't take context
-	checkpoints, err := c.git.ListCheckpoints(context.Background(), c.activeTask.ID)
+	checkpoints, err := c.git.ListCheckpoints(ctx, c.activeTask.ID)
 	if err != nil {
 		return 0
 	}

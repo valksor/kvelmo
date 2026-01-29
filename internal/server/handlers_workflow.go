@@ -40,8 +40,8 @@ func (s *Server) handleWorkflowContinue(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Get status
-	//nolint:contextcheck // Status() doesn't accept context; internal implementation issue
-	status, err := s.config.Conductor.Status()
+
+	status, err := s.config.Conductor.Status(r.Context())
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to get status: "+err.Error())
 
@@ -66,8 +66,8 @@ func (s *Server) handleWorkflowContinue(w http.ResponseWriter, r *http.Request) 
 		}
 
 		// Get updated status after action
-		//nolint:contextcheck // Status() doesn't accept context; internal implementation issue
-		updatedStatus, _ := s.config.Conductor.Status()
+
+		updatedStatus, _ := s.config.Conductor.Status(r.Context())
 		if updatedStatus != nil {
 			state = workflow.State(updatedStatus.State)
 			nextActions = getNextActionsForState(state, updatedStatus.Specifications)
