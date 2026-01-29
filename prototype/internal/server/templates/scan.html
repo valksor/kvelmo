@@ -1,0 +1,117 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Security Scan</h1>
+
+  {{ if not .Enabled }}
+  <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+    <p class="text-yellow-800 dark:text-yellow-200">Scanning is not available. Please ensure the workspace is initialized.</p>
+  </div>
+  {{ else }}
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Configure Scan</h2>
+
+    <form id="scanForm" class="space-y-6">
+      <!-- Scanner selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Scanners</label>
+        <div class="flex flex-wrap gap-4">
+          {{ if or (and .ProjectInfo .ProjectInfo.HasGoMod) (not .ProjectInfo) }}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="scanners" value="sast" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-sm text-gray-700 dark:text-gray-300">SAST (gosec)</span>
+          </label>
+          {{ end }}
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="scanners" value="secrets" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-sm text-gray-700 dark:text-gray-300">Secrets (gitleaks)</span>
+          </label>
+
+          {{ if or (and .ProjectInfo .ProjectInfo.HasGoMod) (not .ProjectInfo) }}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="scanners" value="vulns" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-sm text-gray-700 dark:text-gray-300">Vulnerabilities (govulncheck)</span>
+          </label>
+          {{ end }}
+
+          {{ if or (and .ProjectInfo .ProjectInfo.HasPackageJSON) (not .ProjectInfo) }}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="scanners" value="npm-audit" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-sm text-gray-700 dark:text-gray-300">npm audit</span>
+          </label>
+          {{ end }}
+        </div>
+      </div>
+
+      <!-- Fail level -->
+      <div>
+        <label for="failLevel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fail Level</label>
+        <select name="failLevel" id="failLevel" class="w-48 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+          <option value="critical">Critical only</option>
+          <option value="high">High and above</option>
+          <option value="medium">Medium and above</option>
+          <option value="low">Low and above</option>
+          <option value="any">Any finding</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Findings at or above this level will be considered blocking.</p>
+      </div>
+
+      <!-- Submit -->
+      <div class="flex items-center gap-4">
+        <button type="submit" id="scanBtn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+          Run Scan
+        </button>
+        <span id="scanStatus" class="text-sm text-gray-500 dark:text-gray-400"></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Results area (populated by server-generated HTML from writeScanResultsHTML) -->
+  <div id="scanResults"></div>
+
+  {{ end }}
+</div>
+
+<script>
+// Note: resultsDiv receives trusted server-generated HTML from writeScanResultsHTML,
+// not user input. This is the same pattern used in commit.html and other templates.
+document.getElementById('scanForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const btn = document.getElementById('scanBtn');
+  const status = document.getElementById('scanStatus');
+  const resultsDiv = document.getElementById('scanResults');
+
+  btn.disabled = true;
+  btn.textContent = 'Scanning...';
+  status.textContent = 'This may take a moment...';
+  resultsDiv.textContent = '';
+
+  try {
+    const formData = new FormData(this);
+    const response = await fetch('/api/v1/scan', {
+      method: 'POST',
+      body: formData,
+      headers: { 'Hx-Request': 'true' }
+    });
+
+    if (!response.ok) {
+      throw new Error('Scan failed: ' + response.statusText);
+    }
+
+    // Server returns trusted HTML partial from writeScanResultsHTML
+    resultsDiv.innerHTML = await response.text();
+    status.textContent = '';
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.className = 'text-sm text-red-600 dark:text-red-400';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run Scan';
+  }
+});
+</script>
+{{ end }}

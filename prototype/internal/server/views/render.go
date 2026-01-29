@@ -107,6 +107,7 @@ func (r *Renderer) loadTemplates() error {
 		"find",
 		"links",
 		"stack",
+		"scan",
 	}
 
 	for _, page := range pages {
@@ -268,6 +269,11 @@ func (r *Renderer) RenderLinks(w io.Writer, data LinksData) error {
 // RenderCommit renders the commit page.
 func (r *Renderer) RenderCommit(w io.Writer, data CommitData) error {
 	return r.Render(w, "commit", data)
+}
+
+// RenderScan renders the security scan page.
+func (r *Renderer) RenderScan(w io.Writer, data ScanData) error {
+	return r.Render(w, "scan", data)
 }
 
 // RenderFind renders the find page.

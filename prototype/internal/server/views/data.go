@@ -637,6 +637,17 @@ type CommitData struct {
 	Enabled bool
 }
 
+// ScanData contains all data for the security scan page.
+type ScanData struct {
+	PageData
+
+	// Whether scanning is available
+	Enabled bool
+
+	// Detected project info for scanner recommendations
+	ProjectInfo *ProjectInfoData
+}
+
 // LinkedEntityData represents an entity with links.
 type LinkedEntityData struct {
 	EntityID   string

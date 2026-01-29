@@ -180,6 +180,9 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/commit/plan", s.handleCommitPlan)
 		mux.HandleFunc("POST /api/v1/commit/execute", s.handleCommitExecute)
 
+		// Security scan UI
+		mux.HandleFunc("GET /scan", s.handleScanPage)
+
 		// Stack management UI and API
 		mux.HandleFunc("GET /stack", s.handleStacksUI)
 		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)
