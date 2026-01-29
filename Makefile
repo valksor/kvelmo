@@ -23,7 +23,7 @@ build: generate-licenses ## Compile the binary
 
 generate-licenses: ## Generate licenses.json from go.mod dependencies
 	@echo "Generating dependency licenses..."
-	@go run scripts/gen_licenses.go
+	@go run .github/gen_licenses.go
 
 test: ## Run tests with coverage
 	${MAKE} quality
@@ -72,7 +72,7 @@ version: build ## Show version info
 	$(BUILD_DIR)/$(BINARY_NAME) version
 
 hooks: ## Configure git to use versioned hooks
-	git config core.hooksPath .githooks
+	git config core.hooksPath .github/.githooks
 	@echo "Git hooks configured to use .githooks/"
 
 lefthook: ## Install and configure Lefthook pre-commit hooks
