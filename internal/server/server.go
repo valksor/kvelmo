@@ -28,6 +28,13 @@ const (
 	ModeGlobal
 )
 
+// activeOperation tracks a cancellable operation for a session.
+type activeOperation struct {
+	cancel    context.CancelFunc
+	operation string // Command name being executed
+	startedAt time.Time
+}
+
 // Config holds server configuration.
 type Config struct {
 	// Port specifies the port to listen on (0 = random available port).
@@ -59,6 +66,10 @@ type Server struct {
 	running             bool
 	actualPort          int
 	startedInGlobalMode bool // Tracks if server originally started in global mode
+
+	// Operation tracking for interactive mode cancellation
+	opMu      sync.RWMutex
+	activeOps map[string]*activeOperation // sessionID -> active operation
 }
 
 // New creates a new server with the given configuration.
@@ -74,6 +85,7 @@ func New(cfg Config) (*Server, error) {
 		config:              cfg,
 		sessions:            newSessionStore(),
 		startedInGlobalMode: cfg.Mode == ModeGlobal,
+		activeOps:           make(map[string]*activeOperation),
 	}
 
 	// Load template renderer
@@ -326,4 +338,58 @@ func (s *Server) getCurrentUser(r *http.Request) string {
 	}
 
 	return sess.Username
+}
+
+// Operation tracking helpers for interactive mode cancellation.
+
+// getSessionID extracts a session identifier from the request.
+// Returns session cookie value if present, falls back to X-Request-ID header.
+func (s *Server) getSessionID(r *http.Request) string {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		return cookie.Value
+	}
+	// Fall back to X-Request-ID header for API clients
+	if reqID := r.Header.Get("X-Request-ID"); reqID != "" {
+		return reqID
+	}
+
+	return ""
+}
+
+// registerOperation tracks an active operation for a session, enabling cancellation.
+func (s *Server) registerOperation(sessionID string, cancel context.CancelFunc, op string) {
+	if sessionID == "" {
+		return
+	}
+	s.opMu.Lock()
+	defer s.opMu.Unlock()
+	s.activeOps[sessionID] = &activeOperation{
+		cancel:    cancel,
+		operation: op,
+		startedAt: time.Now(),
+	}
+}
+
+// unregisterOperation removes operation tracking for a session.
+func (s *Server) unregisterOperation(sessionID string) {
+	if sessionID == "" {
+		return
+	}
+	s.opMu.Lock()
+	defer s.opMu.Unlock()
+	delete(s.activeOps, sessionID)
+}
+
+// cancelOperation cancels the active operation for a session if one exists.
+// Returns the operation name and true if an operation was cancelled.
+func (s *Server) cancelOperation(sessionID string) (string, bool) {
+	s.opMu.Lock()
+	defer s.opMu.Unlock()
+	op, exists := s.activeOps[sessionID]
+	if !exists {
+		return "", false
+	}
+	op.cancel()
+
+	return op.operation, true
 }
