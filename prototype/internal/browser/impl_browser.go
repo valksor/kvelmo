@@ -422,8 +422,8 @@ func (c *controller) OpenTab(ctx context.Context, url string) (*Tab, error) {
 		return nil, errOpenTab(err)
 	}
 
-	// Wait for page to load
-	if err := page.Timeout(c.config.Timeout).WaitLoad(); err != nil {
+	// Wait for page to load using caller's context for timeout/cancellation
+	if err := page.Context(ctx).WaitLoad(); err != nil {
 		return nil, errOpenTab(fmt.Errorf("wait for load: %w", err))
 	}
 
@@ -545,12 +545,12 @@ func (c *controller) Navigate(ctx context.Context, tabID, url string) error {
 		return err
 	}
 
-	if err := page.Navigate(url); err != nil {
+	if err := page.Context(ctx).Navigate(url); err != nil {
 		return errNavigate(err)
 	}
 
-	// Wait for navigation to complete
-	if err := page.Timeout(c.config.Timeout).WaitLoad(); err != nil {
+	// Wait for navigation to complete using caller's context
+	if err := page.Context(ctx).WaitLoad(); err != nil {
 		return errNavigate(fmt.Errorf("wait for load: %w", err))
 	}
 
