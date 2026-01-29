@@ -85,18 +85,22 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `status` | ✅ | Dashboard display |
 | `note <msg>` | ✅ | Quick note form |
 | `question <msg>` | ✅ | Quick question + SSE |
-| `cost` | ⚠️ | Basic only, detailed missing |
+| `cost` | ✅ | Detailed breakdown by step |
 | `list` | ✅ | Recent tasks sidebar |
 | `undo/redo` | ✅ | Checkpoint navigation |
 | `links` | ✅ | `/links` page |
 | `find` | ✅ | `/find` page |
 | `browser` | ✅ | `/browser` page |
 | `mcp` | ✅ | MCP server toggle |
-| `scan` | ⚠️ | API exists, no UI |
-| `memory` | ⚠️ | API exists, no UI |
+| `scan` | ✅ | `/scan` page with scanner selection |
+| `memory` | ✅ | `/memory` page |
+| `commit` | ✅ | `/commit` page with analyze/preview |
 | `project sync` | ✅ | API + SSE streaming |
 | `stack` | ✅ | `/stack` page |
 | `interactive` | ✅ | `/interactive` page |
+| `budget` | ✅ | API + monthly status/reset |
+| `optimize` | ✅ | Quick task optimization |
+| `export` | ✅ | Quick task export |
 | `serve` | N/A | Self-referential |
 | `config validate` | ✅ | Settings validation |
 | `agents` | ✅ | Settings page |
@@ -106,9 +110,6 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `update` | ❌ | CLI-only utility |
 | `hooks/lefthook` | ❌ | CLI-only dev tool |
 | `workflow` | ❌ | CLI-only diagnostic |
-| `budget` | ❌ | Missing |
-| `optimize` | ❌ | Missing |
-| `export` | ❌ | Missing |
 
 **Legend**: ✅ Full | ⚠️ Partial | ❌ Missing | N/A Not applicable
 
