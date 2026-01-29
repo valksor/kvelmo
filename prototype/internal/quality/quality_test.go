@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry()
+	r := NewRegistry(nil)
 
 	// Should have 4 standard linters registered
 	if len(r.linters) != 4 {
@@ -56,7 +58,7 @@ func TestDetectForProject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := NewRegistry()
+	r := NewRegistry(nil)
 	detected := r.DetectForProject(tmpDir)
 
 	// Should detect golangci-lint if available
@@ -82,7 +84,7 @@ func TestDetectForProjectJS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := NewRegistry()
+	r := NewRegistry(nil)
 	detected := r.DetectForProject(tmpDir)
 
 	// Should detect eslint if available
@@ -108,7 +110,7 @@ func TestDetectForProjectPython(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := NewRegistry()
+	r := NewRegistry(nil)
 	detected := r.DetectForProject(tmpDir)
 
 	// Should detect ruff if available
@@ -876,4 +878,342 @@ func TestPHPCSFixerAvailable(t *testing.T) {
 	p := NewPHPCSFixer()
 	avail := p.Available()
 	_ = avail
+}
+
+// TestDetectForProjectWithConfig tests config-based linter filtering.
+func TestDetectForProjectWithConfig(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with config that disables golangci-lint
+	config := &storage.QualitySettings{
+		Enabled: true,
+		Linters: map[string]storage.LinterConfig{
+			"golangci-lint": {Enabled: false},
+		},
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should NOT be detected even though go.mod exists
+	for _, l := range detected {
+		if l.Name() == "golangci-lint" {
+			t.Error("expected golangci-lint to be filtered out when disabled in config")
+		}
+	}
+}
+
+// TestDetectForProjectWithEnabledConfig tests that explicitly enabled linters work.
+func TestDetectForProjectWithEnabledConfig(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with config that explicitly enables golangci-lint (default behavior)
+	config := &storage.QualitySettings{
+		Enabled: true,
+		Linters: map[string]storage.LinterConfig{
+			"golangci-lint": {Enabled: true},
+		},
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should be detected if available on system
+	g := NewGolangCI()
+	if g.Available() {
+		var found bool
+		for _, l := range detected {
+			if l.Name() == "golangci-lint" {
+				found = true
+
+				break
+			}
+		}
+		if !found {
+			t.Error("expected golangci-lint to be detected when explicitly enabled")
+		}
+	}
+}
+
+// TestDetectForProjectDisabledGlobally tests that when quality is disabled, no linters run.
+func TestDetectForProjectDisabledGlobally(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with config that has quality disabled
+	config := &storage.QualitySettings{
+		Enabled: false,
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// No linters should be detected when quality is globally disabled
+	if len(detected) != 0 {
+		t.Errorf("expected no linters when quality disabled globally, got %d", len(detected))
+	}
+}
+
+// TestCustomLinterRegistration tests that custom linters are registered from config.
+func TestCustomLinterRegistration(t *testing.T) {
+	config := &storage.QualitySettings{
+		Enabled: true,
+		Linters: map[string]storage.LinterConfig{
+			"my-custom-linter": {
+				Enabled: true,
+				Command: []string{"/nonexistent/binary"},
+			},
+		},
+	}
+
+	r := NewRegistry(config)
+
+	// Should have 4 standard + 1 custom linter
+	expectedCount := 5
+	if len(r.linters) != expectedCount {
+		t.Errorf("expected %d linters (4 standard + 1 custom), got %d", expectedCount, len(r.linters))
+	}
+
+	// Find the custom linter
+	var found bool
+	for _, l := range r.linters {
+		if l.Name() == "my-custom-linter" {
+			found = true
+
+			break
+		}
+	}
+	if !found {
+		t.Error("custom linter was not registered")
+	}
+}
+
+// TestCustomLinterDetection tests that custom linters are detected without project file check.
+func TestCustomLinterDetection(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create config with a custom linter (using a command that doesn't exist,
+	// so Available() will return false, but we can still test the logic)
+	config := &storage.QualitySettings{
+		Enabled: true,
+		Linters: map[string]storage.LinterConfig{
+			"phpstan": {
+				Enabled: true,
+				Command: []string{"/nonexistent/phpstan"},
+			},
+		},
+	}
+
+	r := NewRegistry(config)
+	_ = r.DetectForProject(tmpDir)
+
+	// Custom linter won't be detected because the binary doesn't exist
+	// But we verify the registry has it registered
+	var found bool
+	for _, l := range r.linters {
+		if l.Name() == "phpstan" {
+			found = true
+
+			break
+		}
+	}
+	if !found {
+		t.Error("custom linter was not registered")
+	}
+}
+
+// TestDetectForProjectWithUseDefaultsFalse tests that built-in linters are NOT
+// auto-detected when UseDefaults is false and linter is not explicitly configured.
+func TestDetectForProjectWithUseDefaultsFalse(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with UseDefaults=false (safer default)
+	config := &storage.QualitySettings{
+		Enabled:     true,
+		UseDefaults: false, // Don't auto-enable built-in linters
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should NOT be detected even though go.mod exists
+	// because UseDefaults is false and it's not explicitly configured
+	for _, l := range detected {
+		if l.Name() == "golangci-lint" {
+			t.Error("expected golangci-lint to NOT be detected when UseDefaults=false and not explicitly configured")
+		}
+	}
+}
+
+// TestDetectForProjectWithUseDefaultsTrue tests that built-in linters ARE
+// auto-detected when UseDefaults is true (old behavior).
+func TestDetectForProjectWithUseDefaultsTrue(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with UseDefaults=true (opt-in to auto-detection)
+	config := &storage.QualitySettings{
+		Enabled:     true,
+		UseDefaults: true, // Auto-enable built-in linters
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should be detected if available on system
+	g := NewGolangCI()
+	if g.Available() {
+		var found bool
+		for _, l := range detected {
+			if l.Name() == "golangci-lint" {
+				found = true
+
+				break
+			}
+		}
+		if !found {
+			t.Error("expected golangci-lint to be detected when UseDefaults=true")
+		}
+	}
+}
+
+// TestDetectForProjectWithExplicitConfig tests that explicitly configured
+// linters are detected even when UseDefaults is false.
+func TestDetectForProjectWithExplicitConfig(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with UseDefaults=false but golangci-lint explicitly enabled
+	config := &storage.QualitySettings{
+		Enabled:     true,
+		UseDefaults: false,
+		Linters: map[string]storage.LinterConfig{
+			"golangci-lint": {Enabled: true}, // Explicitly enabled
+		},
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should be detected because it's explicitly configured
+	g := NewGolangCI()
+	if g.Available() {
+		var found bool
+		for _, l := range detected {
+			if l.Name() == "golangci-lint" {
+				found = true
+
+				break
+			}
+		}
+		if !found {
+			t.Error("expected golangci-lint to be detected when explicitly configured, even with UseDefaults=false")
+		}
+	}
+}
+
+// TestDetectForProjectWithExplicitDisable tests that explicitly disabled
+// linters are not detected even when UseDefaults is true.
+func TestDetectForProjectWithExplicitDisable(t *testing.T) {
+	// Create temp directory with go.mod
+	tmpDir := t.TempDir()
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with UseDefaults=true but golangci-lint explicitly disabled
+	config := &storage.QualitySettings{
+		Enabled:     true,
+		UseDefaults: true,
+		Linters: map[string]storage.LinterConfig{
+			"golangci-lint": {Enabled: false}, // Explicitly disabled
+		},
+	}
+
+	r := NewRegistry(config)
+	detected := r.DetectForProject(tmpDir)
+
+	// golangci-lint should NOT be detected because it's explicitly disabled
+	for _, l := range detected {
+		if l.Name() == "golangci-lint" {
+			t.Error("expected golangci-lint to NOT be detected when explicitly disabled, even with UseDefaults=true")
+		}
+	}
+}
+
+// TestIsBuiltinLinter tests the isBuiltinLinter helper function.
+func TestIsBuiltinLinter(t *testing.T) {
+	tests := []struct {
+		name   string
+		linter string
+		want   bool
+	}{
+		{
+			name:   "golangci-lint is built-in",
+			linter: "golangci-lint",
+			want:   true,
+		},
+		{
+			name:   "eslint is built-in",
+			linter: "eslint",
+			want:   true,
+		},
+		{
+			name:   "ruff is built-in",
+			linter: "ruff",
+			want:   true,
+		},
+		{
+			name:   "php-cs-fixer is built-in",
+			linter: "php-cs-fixer",
+			want:   true,
+		},
+		{
+			name:   "phpstan is not built-in",
+			linter: "phpstan",
+			want:   false,
+		},
+		{
+			name:   "custom-linter is not built-in",
+			linter: "custom-linter",
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isBuiltinLinter(tt.linter)
+			if got != tt.want {
+				t.Errorf("isBuiltinLinter(%q) = %v, want %v", tt.linter, got, tt.want)
+			}
+		})
+	}
 }

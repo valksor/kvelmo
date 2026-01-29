@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // Severity indicates the importance of a lint issue.
@@ -54,16 +56,30 @@ type Linter interface {
 // Registry manages available linters and auto-detection.
 type Registry struct {
 	linters []Linter
+	config  *storage.QualitySettings // Quality configuration for filtering
 }
 
 // NewRegistry creates a new linter registry with standard linters registered.
-func NewRegistry() *Registry {
-	r := &Registry{}
-	// Register standard linters
+// If config is provided, it filters and configures linters accordingly.
+func NewRegistry(config *storage.QualitySettings) *Registry {
+	r := &Registry{
+		config: config,
+	}
+	// Register standard linters (filtering happens in DetectForProject)
 	r.Register(NewGolangCI())
 	r.Register(NewESLint())
 	r.Register(NewRuff())
 	r.Register(NewPHPCSFixer())
+
+	// Register custom linters from config
+	if config != nil {
+		for name, linterCfg := range config.Linters {
+			// Only register as custom if it has a command (not just a built-in override)
+			if len(linterCfg.Command) > 0 {
+				r.Register(NewCustomLinter(name, linterCfg))
+			}
+		}
+	}
 
 	return r
 }
@@ -85,16 +101,82 @@ func (r *Registry) Available() []Linter {
 	return available
 }
 
+// isBuiltinLinter returns true if the linter is a built-in (not custom).
+// Built-in linters are auto-detected based on project files.
+func isBuiltinLinter(name string) bool {
+	switch name {
+	case "golangci-lint", "eslint", "ruff", "php-cs-fixer":
+		return true
+	}
+
+	return false
+}
+
 // DetectForProject returns linters appropriate for the given project.
 // Detection is based on project files like go.mod, package.json, pyproject.toml.
+// Respects enabled/disabled state from workspace config.
 func (r *Registry) DetectForProject(workDir string) []Linter {
 	var detected []Linter
 
+	// Check if quality is globally disabled
+	if r.config != nil && !r.config.Enabled {
+		return detected
+	}
+
 	for _, l := range r.linters {
+		// Check if linter is available (binary exists)
 		if !l.Available() {
 			continue
 		}
 
+		// Check config for enabled/disabled state
+		isCustomLinter := false
+		if r.config != nil {
+			if linterCfg, ok := r.config.Linters[l.Name()]; ok {
+				// Custom linter (has command) - enabled by default if configured
+				if len(linterCfg.Command) > 0 {
+					isCustomLinter = true
+					if !linterCfg.Enabled {
+						continue // Explicitly disabled
+					}
+				} else {
+					// Built-in linter override
+					if !linterCfg.Enabled {
+						continue // Explicitly disabled
+					}
+				}
+			}
+		}
+
+		// Custom linters are included if available and enabled (no file detection needed)
+		if isCustomLinter {
+			detected = append(detected, l)
+
+			continue
+		}
+
+		// Built-in linters: check UseDefaults setting
+		if isBuiltinLinter(l.Name()) {
+			// Determine if we should use defaults for built-in linters
+			useDefaults := r.config == nil || r.config.UseDefaults
+
+			if !useDefaults {
+				// Check if this linter is explicitly configured and enabled
+				explicitlyConfigured := false
+				if r.config != nil {
+					if linterCfg, ok := r.config.Linters[l.Name()]; ok && linterCfg.Enabled {
+						explicitlyConfigured = true
+					}
+				}
+
+				// Skip built-in linter if not explicitly configured
+				if !explicitlyConfigured {
+					continue
+				}
+			}
+		}
+
+		// Built-in linters: check project files for detection
 		switch l.Name() {
 		case "golangci-lint":
 			if fileExists(filepath.Join(workDir, "go.mod")) {
@@ -107,7 +189,8 @@ func (r *Registry) DetectForProject(workDir string) []Linter {
 		case "ruff":
 			if fileExists(filepath.Join(workDir, "pyproject.toml")) ||
 				fileExists(filepath.Join(workDir, "setup.py")) ||
-				fileExists(filepath.Join(workDir, "requirements.txt")) {
+				fileExists(filepath.Join(workDir, "requirements.txt")) ||
+				fileExists(filepath.Join(workDir, "Pipfile")) {
 				detected = append(detected, l)
 			}
 		case "php-cs-fixer":
