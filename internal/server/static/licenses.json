@@ -66,6 +66,21 @@
       "unknown": false
     },
     {
+      "path": "github.com/chzyer/logex",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
+      "path": "github.com/chzyer/readline",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
+      "path": "github.com/chzyer/test",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
       "path": "github.com/cpuguy83/go-md2man/v2",
       "license": "MIT",
       "unknown": false
@@ -486,5 +501,5 @@
       "unknown": false
     }
   ],
-  "count": 97
+  "count": 100
 }
