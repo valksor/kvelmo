@@ -446,3 +446,63 @@ func TestWorkspace_QueuePath(t *testing.T) {
 		t.Errorf("QueuePath = %q, want %q", path, expected)
 	}
 }
+
+func TestTaskQueue_ComputeSubtaskRelations(t *testing.T) {
+	queue := NewTaskQueue("test-queue", "Test Queue", "")
+	queue.AddTask(&QueuedTask{ID: "task-1"})
+	queue.AddTask(&QueuedTask{ID: "task-2", ParentID: "task-1"})
+	queue.AddTask(&QueuedTask{ID: "task-3", ParentID: "task-1"})
+	queue.AddTask(&QueuedTask{ID: "task-4", ParentID: "task-2"}) // Nested subtask
+
+	queue.ComputeSubtaskRelations()
+
+	// task-1 should have task-2 and task-3 as subtasks
+	task1 := queue.GetTask("task-1")
+	if len(task1.Subtasks) != 2 {
+		t.Errorf("task-1 subtasks count = %d, want 2", len(task1.Subtasks))
+	}
+
+	// task-2 should have task-4 as subtask
+	task2 := queue.GetTask("task-2")
+	if len(task2.Subtasks) != 1 || task2.Subtasks[0] != "task-4" {
+		t.Errorf("task-2 subtasks = %v, want [task-4]", task2.Subtasks)
+	}
+
+	// task-3 and task-4 should have no subtasks
+	task3 := queue.GetTask("task-3")
+	if len(task3.Subtasks) != 0 {
+		t.Errorf("task-3 subtasks count = %d, want 0", len(task3.Subtasks))
+	}
+
+	task4 := queue.GetTask("task-4")
+	if len(task4.Subtasks) != 0 {
+		t.Errorf("task-4 subtasks count = %d, want 0", len(task4.Subtasks))
+	}
+}
+
+func TestTaskQueue_ParentIDPersistence(t *testing.T) {
+	// Create temp directory
+	tmpDir := t.TempDir()
+	ws := &Workspace{workspaceRoot: tmpDir}
+
+	// Create and save queue with parent relationships
+	queue := NewTaskQueue("test-queue", "Test Queue", "")
+	queue.path = ws.QueuePath("test-queue")
+	queue.AddTask(&QueuedTask{ID: "task-1", Title: "Parent task"})
+	queue.AddTask(&QueuedTask{ID: "task-2", Title: "Subtask", ParentID: "task-1"})
+
+	if err := queue.Save(); err != nil {
+		t.Fatalf("Save error: %v", err)
+	}
+
+	// Load the queue and verify ParentID is preserved
+	loaded, err := LoadTaskQueue(ws, "test-queue")
+	if err != nil {
+		t.Fatalf("LoadTaskQueue error: %v", err)
+	}
+
+	task2 := loaded.GetTask("task-2")
+	if task2.ParentID != "task-1" {
+		t.Errorf("ParentID = %q, want %q", task2.ParentID, "task-1")
+	}
+}

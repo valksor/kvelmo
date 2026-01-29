@@ -16,14 +16,15 @@ type ActiveTask struct {
 
 // TaskWork represents the work directory structure (.mehrhof/work/<id>/).
 type TaskWork struct {
-	Version      string        `yaml:"version"`
-	Metadata     WorkMetadata  `yaml:"metadata"`
-	Source       SourceInfo    `yaml:"source"`
-	Git          GitInfo       `yaml:"git,omitempty"`
-	Agent        AgentInfo     `yaml:"agent,omitempty"`
-	Costs        CostStats     `yaml:"costs,omitempty"`
-	Budget       *BudgetConfig `yaml:"budget,omitempty"`
-	BudgetStatus *BudgetStatus `yaml:"budget_status,omitempty"`
+	Version      string         `yaml:"version"`
+	Metadata     WorkMetadata   `yaml:"metadata"`
+	Source       SourceInfo     `yaml:"source"`
+	Git          GitInfo        `yaml:"git,omitempty"`
+	Agent        AgentInfo      `yaml:"agent,omitempty"`
+	Costs        CostStats      `yaml:"costs,omitempty"`
+	Budget       *BudgetConfig  `yaml:"budget,omitempty"`
+	BudgetStatus *BudgetStatus  `yaml:"budget_status,omitempty"`
+	Hierarchy    *HierarchyInfo `yaml:"hierarchy,omitempty"` // Hierarchical context (parent/siblings)
 }
 
 // WorkMetadata holds task identification.
@@ -116,6 +117,23 @@ type NotesFile struct {
 	Notes []Note `yaml:"notes"`
 }
 
+// LinksSettings holds bidirectional linking configuration.
+type LinksSettings struct {
+	Enabled          bool `yaml:"enabled"`                      // Enable link system (default: true)
+	AutoIndex        bool `yaml:"auto_index"`                   // Auto-index on save (default: true when Enabled=true)
+	CaseSensitive    bool `yaml:"case_sensitive,omitempty"`     // Name matching (default: false)
+	MaxContextLength int  `yaml:"max_context_length,omitempty"` // Context chars for links (default: 200)
+}
+
+// ContextSettings holds hierarchical task context configuration.
+// Controls whether parent and sibling task context is included when working on subtasks.
+type ContextSettings struct {
+	IncludeParent    bool `yaml:"include_parent"`              // Include parent task context (default: true)
+	IncludeSiblings  bool `yaml:"include_siblings"`            // Include sibling subtask context (default: true)
+	MaxSiblings      int  `yaml:"max_siblings,omitempty"`      // Maximum sibling tasks to include (default: 5)
+	DescriptionLimit int  `yaml:"description_limit,omitempty"` // Truncate descriptions to this length (default: 500)
+}
+
 // Session records an interaction session.
 type Session struct {
 	Version   string          `yaml:"version"`
@@ -198,6 +216,14 @@ type Checkpoint struct {
 	Message   string    `yaml:"message"`
 	State     string    `yaml:"state"` // task state at checkpoint
 	CreatedAt time.Time `yaml:"created_at"`
+}
+
+// HierarchyInfo stores hierarchical task context (parent and siblings).
+// This provides broader context when working on subtasks.
+type HierarchyInfo struct {
+	ParentID    string   `yaml:"parent_id,omitempty"`    // Parent task ID
+	ParentTitle string   `yaml:"parent_title,omitempty"` // Parent task title
+	SiblingIDs  []string `yaml:"sibling_ids,omitempty"`  // Sibling task IDs
 }
 
 // NewActiveTask creates a new active task.

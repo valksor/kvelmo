@@ -195,6 +195,7 @@ func TestProjectSubmitRequest(t *testing.T) {
 		Labels:     []string{"q1", "feature"},
 		DryRun:     true,
 		Mention:    "@manager please review",
+		TaskIDs:    []string{"task-1", "task-3"},
 	}
 
 	data, err := json.Marshal(req)
@@ -221,6 +222,62 @@ func TestProjectSubmitRequest(t *testing.T) {
 	}
 	if decoded.Mention != req.Mention {
 		t.Errorf("Mention = %q, want %q", decoded.Mention, req.Mention)
+	}
+	if len(decoded.TaskIDs) != 2 {
+		t.Errorf("TaskIDs length = %d, want 2", len(decoded.TaskIDs))
+	}
+	if len(decoded.TaskIDs) > 0 && decoded.TaskIDs[0] != "task-1" {
+		t.Errorf("TaskIDs[0] = %q, want %q", decoded.TaskIDs[0], "task-1")
+	}
+}
+
+func TestProjectSubmitRequest_TaskIDs(t *testing.T) {
+	tests := []struct {
+		name        string
+		json        string
+		wantTaskIDs []string
+	}{
+		{
+			name:        "with task_ids",
+			json:        `{"provider":"wrike","task_ids":["task-1","task-3","task-5"]}`,
+			wantTaskIDs: []string{"task-1", "task-3", "task-5"},
+		},
+		{
+			name:        "empty task_ids",
+			json:        `{"provider":"wrike","task_ids":[]}`,
+			wantTaskIDs: []string{},
+		},
+		{
+			name:        "omitted task_ids",
+			json:        `{"provider":"wrike"}`,
+			wantTaskIDs: nil,
+		},
+		{
+			name:        "single task",
+			json:        `{"provider":"wrike","task_ids":["task-2"]}`,
+			wantTaskIDs: []string{"task-2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var req projectSubmitRequest
+			if err := json.Unmarshal([]byte(tt.json), &req); err != nil {
+				t.Fatalf("Unmarshal error: %v", err)
+			}
+
+			if len(req.TaskIDs) != len(tt.wantTaskIDs) {
+				t.Errorf("TaskIDs length = %d, want %d", len(req.TaskIDs), len(tt.wantTaskIDs))
+
+				return
+			}
+
+			for i, id := range req.TaskIDs {
+				if id != tt.wantTaskIDs[i] {
+					t.Errorf("TaskIDs[%d] = %q, want %q", i, id, tt.wantTaskIDs[i])
+				}
+			}
+		})
 	}
 }
 

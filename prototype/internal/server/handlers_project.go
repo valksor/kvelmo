@@ -35,6 +35,8 @@ type projectTaskResponse struct {
 	Description string   `json:"description,omitempty"`
 	Status      string   `json:"status"`
 	Priority    int      `json:"priority"`
+	ParentID    string   `json:"parent_id,omitempty"`
+	Subtasks    []string `json:"subtasks,omitempty"`
 	DependsOn   []string `json:"depends_on,omitempty"`
 	Blocks      []string `json:"blocks,omitempty"`
 	Labels      []string `json:"labels,omitempty"`
@@ -48,6 +50,7 @@ type projectTaskEditRequest struct {
 	Description *string  `json:"description,omitempty"`
 	Priority    *int     `json:"priority,omitempty"`
 	Status      *string  `json:"status,omitempty"`
+	ParentID    *string  `json:"parent_id,omitempty"`
 	DependsOn   []string `json:"depends_on,omitempty"`
 	Labels      []string `json:"labels,omitempty"`
 	Assignee    *string  `json:"assignee,omitempty"`
@@ -66,7 +69,8 @@ type projectSubmitRequest struct {
 	CreateEpic bool     `json:"create_epic,omitempty"`
 	Labels     []string `json:"labels,omitempty"`
 	DryRun     bool     `json:"dry_run,omitempty"`
-	Mention    string   `json:"mention,omitempty"` // Mention/notification to add to all submitted tasks
+	Mention    string   `json:"mention,omitempty"`  // Mention/notification to add to all submitted tasks
+	TaskIDs    []string `json:"task_ids,omitempty"` // Submit only these task IDs (selective submit)
 }
 
 type projectSubmitResponse struct {
@@ -367,6 +371,9 @@ func (s *Server) handleProjectTaskEdit(w http.ResponseWriter, r *http.Request, t
 		if req.Status != nil {
 			task.Status = storage.TaskStatus(*req.Status)
 		}
+		if req.ParentID != nil {
+			task.ParentID = *req.ParentID // Empty string clears the parent
+		}
 		if req.DependsOn != nil {
 			task.DependsOn = req.DependsOn
 		}
@@ -385,6 +392,7 @@ func (s *Server) handleProjectTaskEdit(w http.ResponseWriter, r *http.Request, t
 
 	// Recompute relationships
 	queue.ComputeBlocksRelations()
+	queue.ComputeSubtaskRelations()
 	queue.ComputeTaskStatuses()
 
 	// Save queue
@@ -544,6 +552,7 @@ func (s *Server) handleProjectSubmit(w http.ResponseWriter, r *http.Request) {
 		Labels:     req.Labels,
 		DryRun:     req.DryRun,
 		Mention:    req.Mention,
+		TaskIDs:    req.TaskIDs,
 	}
 
 	// Use default mention from config if not provided in request
@@ -790,6 +799,8 @@ func convertQueuedTask(task *storage.QueuedTask) *projectTaskResponse {
 		Description: task.Description,
 		Status:      string(task.Status),
 		Priority:    task.Priority,
+		ParentID:    task.ParentID,
+		Subtasks:    task.Subtasks,
 		DependsOn:   task.DependsOn,
 		Blocks:      task.Blocks,
 		Labels:      task.Labels,

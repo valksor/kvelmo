@@ -53,7 +53,9 @@ type QueuedTask struct {
 	Description string     `yaml:"description,omitempty"`  // Detailed description
 	Status      TaskStatus `yaml:"status"`                 // pending, ready, blocked, submitted
 	Priority    int        `yaml:"priority"`               // 1 = highest priority
-	DependsOn   []string   `yaml:"depends_on,omitempty"`   // Task IDs this depends on
+	ParentID    string     `yaml:"parent_id,omitempty"`    // Local parent task ID (makes this a subtask)
+	Subtasks    []string   `yaml:"subtasks,omitempty"`     // Child task IDs (computed from ParentID)
+	DependsOn   []string   `yaml:"depends_on,omitempty"`   // Task IDs this depends on (execution order)
 	Blocks      []string   `yaml:"blocks,omitempty"`       // Task IDs this blocks (computed)
 	Labels      []string   `yaml:"labels,omitempty"`       // Labels/tags
 	Assignee    string     `yaml:"assignee,omitempty"`     // Assignee identifier
@@ -270,6 +272,32 @@ func (q *TaskQueue) ComputeBlocksRelations() {
 
 					break
 				}
+			}
+		}
+	}
+}
+
+// ComputeSubtaskRelations updates the Subtasks field for all tasks based on ParentID.
+// This mirrors ComputeBlocksRelations but for parent-child hierarchy.
+func (q *TaskQueue) ComputeSubtaskRelations() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Clear existing Subtasks
+	for _, task := range q.Tasks {
+		task.Subtasks = nil
+	}
+
+	// Build reverse mapping from ParentID to Subtasks
+	for _, task := range q.Tasks {
+		if task.ParentID == "" {
+			continue
+		}
+		for _, parentTask := range q.Tasks {
+			if parentTask.ID == task.ParentID {
+				parentTask.Subtasks = append(parentTask.Subtasks, task.ID)
+
+				break
 			}
 		}
 	}
