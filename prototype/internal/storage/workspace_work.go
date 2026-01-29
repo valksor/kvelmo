@@ -100,7 +100,8 @@ func (w *Workspace) SaveWork(work *TaskWork) error {
 	}
 
 	// Use atomic write pattern: write to temp file, then rename
-	tmpFile := workFile + ".tmp"
+	// Use unique temp filename to prevent race conditions with concurrent saves
+	tmpFile := fmt.Sprintf("%s.tmp.%d", workFile, time.Now().UnixNano())
 	if err := os.WriteFile(tmpFile, data, 0o644); err != nil {
 		return fmt.Errorf("write work file: %w", err)
 	}
