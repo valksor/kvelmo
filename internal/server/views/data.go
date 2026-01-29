@@ -629,6 +629,14 @@ type LinksData struct {
 	Enabled bool
 }
 
+// CommitData contains all data for the commit page.
+type CommitData struct {
+	PageData
+
+	// Whether git is available
+	Enabled bool
+}
+
 // LinkedEntityData represents an entity with links.
 type LinkedEntityData struct {
 	EntityID   string
