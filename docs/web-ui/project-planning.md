@@ -213,6 +213,42 @@ Begin working on a task from your queue:
 5. Track progress in both systems
 ```
 
+### Syncing from External Providers
+
+Pull entire project/epic structures from external providers (Wrike, Jira, GitHub):
+
+1. Go to the project planning page (`/project`)
+2. Click **"Sync from Provider"**
+3. Enter provider reference:
+   - **Wrike**: `wrike:https://www.wrike.com/open.htm?id=123456` or `wrike:folder-789`
+   - **Jira**: `jira:PROJ-123` (epic key)
+   - **GitHub**: `github:owner/repo#456` (issue with task list)
+4. Configure options:
+   - **Status Filter** - Include tasks by status (empty = smart default)
+   - **Max Depth** - Hierarchy depth limit (0 = unlimited)
+   - **Preserve External IDs** - Keep provider IDs/URLs
+5. Click **"Sync Project"**
+
+**Progress Tracking:**
+
+The sync process shows real-time progress via SSE streaming:
+- `Connecting to provider...`
+- `Fetching project structure...`
+- `Found N tasks (including subtasks)`
+- `Processing task hierarchy...`
+- `Queue created: project-name-YYYYMMDD-HHMMSS`
+
+**Smart Status Filter (Default):**
+
+When no status filter is specified, includes:
+- All open tasks
+- All in-progress tasks
+- Tasks completed in the last 30 days
+
+Use `--status` to override:
+- `open,in_progress` - Only active tasks
+- `open,in_progress,done` - Include all completed tasks
+
 ### Iterative Refinement
 
 ```
@@ -230,6 +266,7 @@ See [`mehr project`](../cli/project.md) for CLI usage.
 | CLI Command | Web UI Action |
 |-------------|---------------|
 | `mehr project plan dir:./specs` | Create breakdown |
+| `mehr project sync wrike:123456` | Sync from provider |
 | `mehr project tasks` | View queue |
 | `mehr project edit task-1` | Edit task |
 | `mehr project reorder --auto` | AI reorder |

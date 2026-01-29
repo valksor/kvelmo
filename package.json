@@ -10,7 +10,7 @@
         "prismjs": "^1.30.0",
         "tailwindcss": "^4.1.18",
         "@tailwindcss/cli": "^4.1.18",
-        "wrangler": "^4.60.0"
+        "wrangler": "^4.61.1"
     },
     "scripts": {
         "bump": "npx npm-check-updates -u && bun i",

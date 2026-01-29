@@ -761,6 +761,13 @@
                                            value="{{if .Config.GitHub}}{{.Config.GitHub.Token}}{{end}}"
                                            placeholder="ghp_..."
                                            class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://github.com/settings/tokens" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Settings → Developer settings → Personal access tokens
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">repo</code>, <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">read:user</code>
+                                    </p>
                                 </div>
                                 {{end}}
                                 <div>
@@ -813,6 +820,13 @@
                                            value="{{if .Config.GitLab}}{{.Config.GitLab.Token}}{{end}}"
                                            placeholder="glpat-..."
                                            class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Preferences → Access Tokens → Add new token
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">api</code>, <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">read_repository</code>
+                                    </p>
                                 </div>
                                 {{end}}
                                 <div>
@@ -851,6 +865,11 @@
                                     <input type="password" name="jira.token" id="jira-token"
                                            value="{{if .Config.Jira}}{{.Config.Jira.Token}}{{end}}"
                                            class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Profile → Security → API tokens
+                                    </p>
                                 </div>
                                 <div>
                                     <label for="jira-email" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Email</label>
@@ -895,6 +914,11 @@
                                     <input type="password" name="linear.token" id="linear-token"
                                            value="{{if .Config.Linear}}{{.Config.Linear.Token}}{{end}}"
                                            class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://linear.app/settings/api" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Settings → API → Personal API keys
+                                    </p>
                                 </div>
                                 {{end}}
                                 <div>
@@ -902,6 +926,327 @@
                                     <input type="text" name="linear.team" id="linear-team"
                                            value="{{if .Config.Linear}}{{.Config.Linear.Team}}{{end}}"
                                            placeholder="TEAM"
+                                           class="input text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Notion -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.934-.56.934-1.166V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.62c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933zM2.873 1.056l13.914-.933c1.727-.14 2.148.047 2.868.607l3.956 2.8c.514.374.7.467.7 1.026v15.271c0 .98-.374 1.54-1.681 1.633l-15.458.933c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.84.374-1.54 1.587-1.611z"/></svg>
+                                Notion
+                            </span>
+                            {{if and .Config.Notion .Config.Notion.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="notion-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Integration Token</label>
+                                    <input type="password" name="notion.token" id="notion-token"
+                                           value="{{if .Config.Notion}}{{.Config.Notion.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Settings → My connections → Develop integrations
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Database access</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="notion-database" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Database ID</label>
+                                    <input type="text" name="notion.database_id" id="notion-database"
+                                           value="{{if .Config.Notion}}{{.Config.Notion.DatabaseID}}{{end}}"
+                                           placeholder="abc123..."
+                                           class="input text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Wrike -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                Wrike
+                            </span>
+                            {{if and .Config.Wrike .Config.Wrike.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="wrike-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Permanent Token</label>
+                                    <input type="password" name="wrike.token" id="wrike-token"
+                                           value="{{if .Config.Wrike}}{{.Config.Wrike.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://www.wrike.com/frontend/apps/index.html#/api" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Profile → Apps & Integrations → API
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Full access</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="wrike-folder" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Default Folder ID</label>
+                                    <input type="text" name="wrike.folder_id" id="wrike-folder"
+                                           value="{{if .Config.Wrike}}{{.Config.Wrike.FolderID}}{{end}}"
+                                           placeholder="IEABC123..."
+                                           class="input text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- YouTrack -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M2 2h20v20H2V2zm2 2v16h16V4H4zm2 2h12v2H6V6zm0 4h12v2H6v-2zm0 4h8v2H6v-2z"/></svg>
+                                YouTrack
+                            </span>
+                            {{if and .Config.YouTrack .Config.YouTrack.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="youtrack-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Permanent Token</label>
+                                    <input type="password" name="youtrack.token" id="youtrack-token"
+                                           value="{{if .Config.YouTrack}}{{.Config.YouTrack.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://www.jetbrains.com/help/youtrack/standalone/Manage-Permanent-Token.html" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Profile → Account Security → Tokens
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Hub scope</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="youtrack-url" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Instance URL</label>
+                                    <input type="text" name="youtrack.base_url" id="youtrack-url"
+                                           value="{{if .Config.YouTrack}}{{.Config.YouTrack.BaseURL}}{{end}}"
+                                           placeholder="https://company.youtrack.cloud"
+                                           class="input text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Bitbucket -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M.778 1.213a.768.768 0 00-.768.892l3.263 19.81c.084.5.515.868 1.022.873H19.95a.772.772 0 00.77-.646l3.27-20.03a.768.768 0 00-.768-.891zM14.52 15.53H9.522L8.17 8.466h7.561z"/></svg>
+                                Bitbucket
+                            </span>
+                            {{if and .Config.Bitbucket .Config.Bitbucket.AppPassword}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="bitbucket-password" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">App Password</label>
+                                    <input type="password" name="bitbucket.app_password" id="bitbucket-password"
+                                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.AppPassword}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://bitbucket.org/account/settings/app-passwords" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get app password →</a>
+                                        <span class="mx-1">•</span>
+                                        Settings → App passwords → Create
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Repositories: read, write</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="bitbucket-username" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Username</label>
+                                    <input type="text" name="bitbucket.username" id="bitbucket-username"
+                                           value="{{if .Config.Bitbucket}}{{.Config.Bitbucket.Username}}{{end}}"
+                                           placeholder="your-username"
+                                           class="input text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Asana -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="3"/><circle cx="4.5" cy="17" r="3"/><circle cx="19.5" cy="17" r="3"/></svg>
+                                Asana
+                            </span>
+                            {{if and .Config.Asana .Config.Asana.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="asana-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Personal Access Token</label>
+                                    <input type="password" name="asana.token" id="asana-token"
+                                           value="{{if .Config.Asana}}{{.Config.Asana.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://app.asana.com/0/developer-console" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Profile → Apps → Developer Console → Personal access token
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Full access</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="asana-workspace" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Workspace GID</label>
+                                    <input type="text" name="asana.workspace_gid" id="asana-workspace"
+                                           value="{{if .Config.Asana}}{{.Config.Asana.WorkspaceGID}}{{end}}"
+                                           placeholder="1234567890"
+                                           class="input text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- ClickUp -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4.21 14.65l2.52-1.94c1.48 1.92 2.96 2.86 5.27 2.86 2.31 0 3.79-.94 5.27-2.86l2.52 1.94c-2.03 2.63-4.43 4.14-7.79 4.14s-5.76-1.51-7.79-4.14zM12 3.21L3.46 10.6l2.09 2.39L12 7.57l6.45 5.42 2.09-2.39z"/></svg>
+                                ClickUp
+                            </span>
+                            {{if and .Config.ClickUp .Config.ClickUp.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="clickup-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">API Token</label>
+                                    <input type="password" name="clickup.token" id="clickup-token"
+                                           value="{{if .Config.ClickUp}}{{.Config.ClickUp.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        Settings → Apps → Generate API Token
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Full access</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="clickup-team" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Team ID</label>
+                                    <input type="text" name="clickup.team_id" id="clickup-team"
+                                           value="{{if .Config.ClickUp}}{{.Config.ClickUp.TeamID}}{{end}}"
+                                           placeholder="1234567"
+                                           class="input text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Trello -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 0H3C1.34 0 0 1.34 0 3v18c0 1.66 1.34 3 3 3h18c1.66 0 3-1.34 3-3V3c0-1.66-1.34-3-3-3zM10.44 18.18c0 .9-.72 1.62-1.62 1.62H5.07c-.9 0-1.62-.72-1.62-1.62V5.07c0-.9.72-1.62 1.62-1.62h3.75c.9 0 1.62.72 1.62 1.62v13.11zm10.11-6.54c0 .9-.72 1.62-1.62 1.62h-3.75c-.9 0-1.62-.72-1.62-1.62V5.07c0-.9.72-1.62 1.62-1.62h3.75c.9 0 1.62.72 1.62 1.62v6.57z"/></svg>
+                                Trello
+                            </span>
+                            {{if and .Config.Trello .Config.Trello.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="trello-key" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">API Key</label>
+                                    <input type="password" name="trello.key" id="trello-key"
+                                           value="{{if .Config.Trello}}{{.Config.Trello.Key}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://trello.com/power-ups/admin" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get API key →</a>
+                                        <span class="mx-1">•</span>
+                                        Power-Ups Admin → Developer API Keys
+                                    </p>
+                                </div>
+                                <div>
+                                    <label for="trello-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Token</label>
+                                    <input type="password" name="trello.token" id="trello-token"
+                                           value="{{if .Config.Trello}}{{.Config.Trello.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        Generate token after getting API key
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Read/write boards</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Azure DevOps -->
+                    <details class="card overflow-hidden group">
+                        <summary class="px-6 py-4 cursor-pointer flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth">
+                            <span class="flex items-center gap-3 font-bold text-surface-900 dark:text-surface-100">
+                                <svg class="w-5 h-5 text-surface-400" fill="currentColor" viewBox="0 0 24 24"><path d="M0 8.877L2.247 5.91l8.405-3.416V.022l7.37 5.393L2.966 8.338v8.225L0 15.707zm24-4.45v14.651l-5.753 4.9-9.303-3.057v3.056l-5.978-7.416 15.057 1.798V5.415z"/></svg>
+                                Azure DevOps
+                            </span>
+                            {{if and .Config.AzureDevOps .Config.AzureDevOps.Token}}
+                            <span class="px-3 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 text-xs font-semibold rounded-full">Configured</span>
+                            {{end}}
+                        </summary>
+                        <div class="p-6 border-t border-surface-200 dark:border-surface-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {{if .ShowSensitive}}
+                                <div>
+                                    <label for="azuredevops-token" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Personal Access Token</label>
+                                    <input type="password" name="azuredevops.token" id="azuredevops-token"
+                                           value="{{if .Config.AzureDevOps}}{{.Config.AzureDevOps.Token}}{{end}}"
+                                           class="input font-mono text-sm">
+                                    <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                                        <a href="https://dev.azure.com/_usersSettings/tokens" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700 dark:text-brand-400">Get token →</a>
+                                        <span class="mx-1">•</span>
+                                        User Settings → Personal access tokens → New Token
+                                        <span class="mx-1">•</span>
+                                        Required: <code class="text-xs bg-surface-100 dark:bg-surface-800 px-1 rounded">Work Items, Code: read/write</code>
+                                    </p>
+                                </div>
+                                {{end}}
+                                <div>
+                                    <label for="azuredevops-org" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Organization</label>
+                                    <input type="text" name="azuredevops.organization" id="azuredevops-org"
+                                           value="{{if .Config.AzureDevOps}}{{.Config.AzureDevOps.Organization}}{{end}}"
+                                           placeholder="my-organization"
+                                           class="input text-sm">
+                                </div>
+                                <div>
+                                    <label for="azuredevops-project" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Project</label>
+                                    <input type="text" name="azuredevops.project" id="azuredevops-project"
+                                           value="{{if .Config.AzureDevOps}}{{.Config.AzureDevOps.Project}}{{end}}"
+                                           placeholder="my-project"
                                            class="input text-sm">
                                 </div>
                             </div>
