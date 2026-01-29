@@ -1024,11 +1024,17 @@ func TestHandler_TaskLabels_ConcurrentRequests(t *testing.T) {
 
 	// Verify workspace is still valid
 	ws := cond.GetWorkspace()
-	activeTask, _ := ws.LoadActiveTask()
-	work, _ := ws.LoadWork(activeTask.ID)
+	activeTask, err := ws.LoadActiveTask()
+	require.NoError(t, err, "failed to load active task after concurrent requests")
+	require.NotNil(t, activeTask, "active task should exist")
 
-	// Should have 2 original + 10 concurrent labels
-	assert.LessOrEqual(t, len(work.Metadata.Labels), 12)
+	work, err := ws.LoadWork(activeTask.ID)
+	require.NoError(t, err, "failed to load work after concurrent requests")
+	require.NotNil(t, work, "work should exist")
+
+	// Should have 2 original + some concurrent labels (race condition may lose some)
+	assert.GreaterOrEqual(t, len(work.Metadata.Labels), 2, "should have at least original labels")
+	assert.LessOrEqual(t, len(work.Metadata.Labels), 12, "should not exceed max expected labels")
 }
 
 // --- Response Format Tests ---
