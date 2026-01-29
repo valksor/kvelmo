@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -17,7 +19,8 @@ type Tracker struct {
 	storage      *Storage
 	pollInterval time.Duration
 	stopChan     chan struct{}
-	running      bool
+	stopMu       sync.Mutex
+	running      atomic.Bool
 }
 
 // NewTracker creates a new PR status tracker.
@@ -170,28 +173,42 @@ func prStateToStackState(prState string) StackState {
 // StartPolling starts background polling for PR status updates.
 // This is used in auto mode.
 func (t *Tracker) StartPolling(ctx context.Context, prFetcher provider.PRFetcher, onUpdate func(*SyncResult)) {
-	if t.running {
+	if !t.running.CompareAndSwap(false, true) {
 		return
 	}
 
-	t.running = true
+	t.stopMu.Lock()
+	select {
+	case <-t.stopChan:
+		// Channel was closed, create a new one for restart
+		t.stopChan = make(chan struct{})
+	default:
+		// Channel is open, ready to use
+	}
+	t.stopMu.Unlock()
+
 	go t.pollLoop(ctx, prFetcher, onUpdate)
 }
 
 // StopPolling stops background polling.
 func (t *Tracker) StopPolling() {
-	if !t.running {
+	if !t.running.CompareAndSwap(true, false) {
 		return
 	}
 
-	close(t.stopChan)
-	t.running = false
-	t.stopChan = make(chan struct{}) // Reset for potential restart
+	t.stopMu.Lock()
+	defer t.stopMu.Unlock()
+	select {
+	case <-t.stopChan:
+		// Already closed
+	default:
+		close(t.stopChan)
+	}
 }
 
 // IsRunning returns true if the tracker is actively polling.
 func (t *Tracker) IsRunning() bool {
-	return t.running
+	return t.running.Load()
 }
 
 func (t *Tracker) pollLoop(ctx context.Context, prFetcher provider.PRFetcher, onUpdate func(*SyncResult)) {
@@ -201,7 +218,7 @@ func (t *Tracker) pollLoop(ctx context.Context, prFetcher provider.PRFetcher, on
 	for {
 		select {
 		case <-ctx.Done():
-			t.running = false
+			t.running.Store(false)
 
 			return
 		case <-t.stopChan:
