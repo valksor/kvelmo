@@ -26,7 +26,53 @@ mehr start wk:1234567890
 wrike:
   token: "${WRIKE_TOKEN}"
   host: "https://www.wrike.com/api/v4"  # Optional: override API base URL
+  space: "824404493"                     # Optional: space ID for listing
+  folder: "1635167041"                   # Optional: folder ID for task creation
+  project: "4352950154"                  # Optional: project ID (takes priority over folder)
 ```
+
+### Configuration Fields
+
+| Field | Description |
+|-------|-------------|
+| `token` | Wrike API token (can use env var syntax) |
+| `host` | API base URL override (default: `https://www.wrike.com/api/v4`) |
+| `space` | Space ID for listing tasks across an entire space |
+| `folder` | Folder ID for task lookup and creation (if no project) |
+| `project` | Project ID for task creation (takes priority over folder) |
+
+### Task Creation Priority
+
+1. If `project` is configured → tasks are created in the project
+2. Else if `folder` is configured → tasks are created in the folder
+3. Else → error (no target configured)
+
+### ID Formats
+
+All ID fields (`space`, `folder`, `project`) accept:
+
+- **Numeric ID** (from URL): e.g., `4352950154` — auto-resolved to API ID
+- **API ID**: e.g., `IEAAJXXXX` — used directly
+
+When you configure a numeric ID, it's automatically resolved on first use via the Wrike API and logged:
+
+```
+INFO Resolved Wrike project numeric_id=4352950154 api_id=IEAAJXXXX title="My Project" type=project
+```
+
+### Finding IDs from Wrike URLs
+
+Extract numeric IDs from Wrike workspace URLs:
+
+| URL Pattern | ID Location |
+|-------------|-------------|
+| `/folder/1635167041/` | Folder or project ID |
+| `/task-view?id=123&pid=456` | Task ID (`id`), Parent folder (`pid`) |
+| `?spaceId=824404493` | Space ID |
+
+Example: From `https://www.wrike.com/workspace.htm#/folder/4352950154/tableV2?spaceId=824404493`
+- Project ID: `4352950154`
+- Space ID: `824404493`
 
 ## Token Resolution
 

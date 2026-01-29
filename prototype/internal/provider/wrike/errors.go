@@ -10,6 +10,7 @@ import (
 // Wrike-specific error types.
 var (
 	ErrTaskNotFound     = errors.New("task not found")
+	ErrFolderNotFound   = errors.New("folder not found")
 	ErrInvalidReference = errors.New("invalid wrike reference")
 )
 

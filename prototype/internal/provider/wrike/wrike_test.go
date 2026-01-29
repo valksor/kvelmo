@@ -565,3 +565,95 @@ func TestProviderName(t *testing.T) {
 		t.Errorf("ProviderName = %q, want %q", ProviderName, "wrike")
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// isNumericID tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestIsNumericID(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+		want bool
+	}{
+		{
+			name: "10-digit numeric ID",
+			id:   "1234567890",
+			want: true,
+		},
+		{
+			name: "13-digit numeric ID",
+			id:   "4352950154123",
+			want: true,
+		},
+		{
+			name: "real Wrike folder ID from URL",
+			id:   "1635167041",
+			want: true,
+		},
+		{
+			name: "real Wrike project ID from URL",
+			id:   "4352950154",
+			want: true,
+		},
+		{
+			name: "real Wrike space ID from URL",
+			id:   "824404493",
+			want: false, // 9 digits, below minimum
+		},
+		{
+			name: "API ID format (starts with letters)",
+			id:   "IEAAJXXXXXXXX",
+			want: false,
+		},
+		{
+			name: "API ID format - short",
+			id:   "IEAAJXXX",
+			want: false,
+		},
+		{
+			name: "mixed alphanumeric",
+			id:   "123abc456",
+			want: false,
+		},
+		{
+			name: "9-digit number (below minimum)",
+			id:   "123456789",
+			want: false,
+		},
+		{
+			name: "empty string",
+			id:   "",
+			want: false,
+		},
+		{
+			name: "single digit",
+			id:   "1",
+			want: false,
+		},
+		{
+			name: "special characters",
+			id:   "123-456-789",
+			want: false,
+		},
+		{
+			name: "leading zeros 10 digits",
+			id:   "0000000001",
+			want: true,
+		},
+		{
+			name: "URL-like string",
+			id:   "https://wrike.com",
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNumericID(tt.id)
+			if got != tt.want {
+				t.Errorf("isNumericID(%q) = %v, want %v", tt.id, got, tt.want)
+			}
+		})
+	}
+}

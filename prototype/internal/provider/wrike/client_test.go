@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -701,6 +702,163 @@ func TestGetTasksInSpace(t *testing.T) {
 
 		if tasks[0].Title != "Space Task 1" {
 			t.Errorf("tasks[0].Title = %q, want %q", tasks[0].Title, "Space Task 1")
+		}
+	})
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GetComments with pagination tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GetFolderByPermalink tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestGetFolderByPermalink(t *testing.T) {
+	t.Run("success - folder", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Check request
+			if r.Method != http.MethodGet {
+				t.Errorf("expected GET, got %s", r.Method)
+			}
+			// Verify permalink query parameter is URL-encoded
+			if !strings.Contains(r.URL.RawQuery, "permalink=") {
+				t.Errorf("missing permalink query parameter: %s", r.URL.RawQuery)
+			}
+			if r.Header.Get("Authorization") != "Bearer test-token" {
+				t.Errorf("missing or incorrect Authorization header")
+			}
+
+			// Send folder response (without project)
+			response := folderResponse{
+				Data: []Folder{
+					{
+						ID:        "IEAAJFOLDERID",
+						Title:     "Test Folder",
+						ChildIDs:  []string{"IEAAJCHILD1", "IEAAJCHILD2"},
+						Scope:     "WsFolder",
+						Permalink: "https://www.wrike.com/open.htm?id=1635167041",
+						Project:   nil, // Not a project
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		folder, err := client.GetFolderByPermalink(context.Background(), "1635167041")
+		if err != nil {
+			t.Fatalf("GetFolderByPermalink error = %v", err)
+		}
+		if folder.ID != "IEAAJFOLDERID" {
+			t.Errorf("folder.ID = %q, want %q", folder.ID, "IEAAJFOLDERID")
+		}
+		if folder.Title != "Test Folder" {
+			t.Errorf("folder.Title = %q, want %q", folder.Title, "Test Folder")
+		}
+		if folder.Scope != "WsFolder" {
+			t.Errorf("folder.Scope = %q, want %q", folder.Scope, "WsFolder")
+		}
+		if folder.Project != nil {
+			t.Error("folder.Project should be nil for a folder")
+		}
+	})
+
+	t.Run("success - project (folder with project properties)", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Send project response (folder with project field)
+			response := folderResponse{
+				Data: []Folder{
+					{
+						ID:        "IEAAJPROJECTID",
+						Title:     "Test Project",
+						ChildIDs:  []string{},
+						Scope:     "WsProject",
+						Permalink: "https://www.wrike.com/open.htm?id=4352950154",
+						Project: &FolderProject{
+							AuthorID:    "IEAAJAUTHOR",
+							OwnerIDs:    []string{"IEAAJOWNER1", "IEAAJOWNER2"},
+							Status:      "Green",
+							CreatedDate: time.Now(),
+						},
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		folder, err := client.GetFolderByPermalink(context.Background(), "4352950154")
+		if err != nil {
+			t.Fatalf("GetFolderByPermalink error = %v", err)
+		}
+		if folder.ID != "IEAAJPROJECTID" {
+			t.Errorf("folder.ID = %q, want %q", folder.ID, "IEAAJPROJECTID")
+		}
+		if folder.Title != "Test Project" {
+			t.Errorf("folder.Title = %q, want %q", folder.Title, "Test Project")
+		}
+		if folder.Scope != "WsProject" {
+			t.Errorf("folder.Scope = %q, want %q", folder.Scope, "WsProject")
+		}
+		if folder.Project == nil {
+			t.Fatal("folder.Project should not be nil for a project")
+		}
+		if folder.Project.Status != "Green" {
+			t.Errorf("folder.Project.Status = %q, want %q", folder.Project.Status, "Green")
+		}
+		if len(folder.Project.OwnerIDs) != 2 {
+			t.Errorf("folder.Project.OwnerIDs length = %d, want 2", len(folder.Project.OwnerIDs))
+		}
+	})
+
+	t.Run("not found - empty response data", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := folderResponse{
+				Data: []Folder{},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		_, err := client.GetFolderByPermalink(context.Background(), "9999999999")
+		if !errors.Is(err, ErrFolderNotFound) {
+			t.Errorf("error = %v, want %v", err, ErrFolderNotFound)
+		}
+	})
+
+	t.Run("unauthorized", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		_, err := client.GetFolderByPermalink(context.Background(), "1234567890")
+		if err == nil {
+			t.Error("expected error for unauthorized")
+		}
+	})
+
+	t.Run("API error - server error", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		_, err := client.GetFolderByPermalink(context.Background(), "1234567890")
+		if err == nil {
+			t.Error("expected error for server error")
 		}
 	})
 }

@@ -553,6 +553,7 @@ type Issue struct {
 	State       *State                `json:"state"`
 	Assignee    *User                 `json:"assignee"`
 	Team        *Team                 `json:"team"`
+	Parent      *ParentIssue          `json:"parent"`
 	ID          string                `json:"id"`
 	Identifier  string                `json:"identifier"`
 	Title       string                `json:"title"`
@@ -561,6 +562,11 @@ type Issue struct {
 	Labels      *LabelConnection      `json:"labels"`
 	Attachments *AttachmentConnection `json:"attachments"`
 	Priority    int                   `json:"priority"`
+}
+
+// ParentIssue represents a parent issue reference.
+type ParentIssue struct {
+	ID string `json:"id"`
 }
 
 // LabelConnection wraps the GraphQL connection type for labels.
