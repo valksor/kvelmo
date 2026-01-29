@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/chzyer/readline v1.5.1
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.18.0
 	github.com/go-rod/rod v0.116.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v67 v67.0.0
@@ -16,7 +16,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/valksor/go-toolkit v0.0.0-20260126201019-a5e9944c6b65
-	gitlab.com/gitlab-org/api/client-go v1.23.0
+	gitlab.com/gitlab-org/api/client-go v1.24.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
