@@ -106,6 +106,7 @@ func (r *Renderer) loadTemplates() error {
 		"memory",
 		"find",
 		"links",
+		"stack",
 	}
 
 	for _, page := range pages {
@@ -267,6 +268,11 @@ func (r *Renderer) RenderLinks(w io.Writer, data LinksData) error {
 // RenderFind renders the find page.
 func (r *Renderer) RenderFind(w io.Writer, data interface{}) error {
 	return r.Render(w, "find", data)
+}
+
+// RenderStack renders the stack management page.
+func (r *Renderer) RenderStack(w io.Writer, data StackData) error {
+	return r.Render(w, "stack", data)
 }
 
 // TemplateNotFoundError is returned when a template is not found.
