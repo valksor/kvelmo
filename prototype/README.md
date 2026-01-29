@@ -261,17 +261,20 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr status` | Show full task details with workflow state diagram |
 | `mehr guide` | What should I do next? (quick suggestion) |
 | `mehr find <query>` | AI-powered code search with focused results |
-| `mehr interactive` | REPL mode for continuous agent chat and workflow control |
+| `mehr interactive` | REPL mode with chat, workflow control, Ctrl+C cancellation | ✅ Full REPL at `/interactive` |
 | `mehr continue` | Resume work on task |
 | `mehr question <msg>` | Ask the agent a question during planning/implementing/reviewing |
+| `mehr simplify [files]` | Simplify code based on current workflow state |
 | `mehr budget` | Manage cost and token budgets |
 | `mehr finish` | Complete task and merge changes |
 | `mehr list` | List all tasks with search, filter, and sort (`--search`, `--filter`, `--sort`, `--format`) |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
+| `mehr memory <query>` | Search semantic memory for similar past tasks |
 | `mehr label` | Manage task labels (add, remove, set, list) |
 | `mehr links [subcommand]` | Manage bidirectional links between specs, notes, sessions (`list`, `backlinks`, `search`, `stats`, `rebuild`) |
+| `mehr stack [subcommand]` | Manage stacked features (`sync`, `rebase`); work on dependent features while waiting on code review |
 | `mehr specification view <number>` | View specification content (use `--all` for all, `-o` to save to file) |
 | `mehr license` | Display project license (BSD 3-Clause) |
 | `mehr license info` | List all dependency licenses with SPDX IDs (`--json`, `--unknown-only`) |

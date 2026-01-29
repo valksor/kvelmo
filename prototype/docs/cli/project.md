@@ -32,10 +32,12 @@ mehr project plan <source> [flags]
   - URL - Fetch requirements from a URL (via web API only)
 
 **Flags:**
-| Flag        | Short | Description                      |
-| ----------- | ----- | -------------------------------- |
-| `--title`   | `-t`  | Project/epic title               |
-| `--queue-id`|       | Specific queue ID (default: auto)|
+| Flag         | Short | Description                                    |
+| ------------ | ----- | ---------------------------------------------- |
+| `--title`     | `-t`  | Project/epic title                             |
+| `--queue-id`   |       | Specific queue ID (default: auto)            |
+| `--use-schema` |       | Use schema-driven extraction (default: true)    |
+| `--instructions`|       | Custom instructions for AI                     |
 
 **Examples:**
 
@@ -51,6 +53,12 @@ mehr project plan file:requirements.md --title "Q1 Features"
 
 # Plan from a provider reference
 mehr project plan github:123
+
+# Plan with custom instructions
+mehr project plan dir:/workspace/specs/ --instructions "Focus on API design first, implementation second"
+
+# Use regex-only parsing (faster, less flexible)
+mehr project plan dir:/workspace/specs/ --use-schema=false
 ```
 
 **Source Type Differences:**
@@ -63,6 +71,24 @@ mehr project plan github:123
 | `provider:`| Fetches from external task provider    | GitHub/Jira/Wrike issues      |
 
 The AI will analyze the source and produce a structured task breakdown with dependencies.
+
+**Schema-Driven Extraction:**
+
+By default, `project plan` uses **schema-driven extraction** to parse AI responses. This provides:
+- **Flexible parsing**: Handles varied AI output formats without breaking
+- **JSON validation**: Ensures extracted data matches expected structure
+- **Automatic fallback**: Falls back to regex parsing if schema extraction fails
+
+To use regex-only parsing (faster but less flexible):
+
+```bash
+mehr project plan dir:/workspace/specs/ --use-schema=false
+```
+
+Use `--use-schema=false` if:
+- You need faster parsing (schema extraction requires an additional LLM call)
+- You're working with very standardized AI output formats
+- You're debugging parsing issues
 
 ### tasks {#tasks}
 

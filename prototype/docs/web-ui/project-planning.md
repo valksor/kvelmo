@@ -36,6 +36,7 @@ Or click **"Project Planning"** from the main dashboard.
 4. Configure options:
    - **Project Title** - Name for your epic/project
    - **Queue ID** - Specific queue (auto-generated if empty)
+   - **Use schema-driven extraction** - Enables structured parsing of AI responses (enabled by default)
 5. Click **"Create Breakdown"**
 
 The AI will analyze your source and create a structured task list with dependencies.
@@ -48,6 +49,23 @@ The AI will analyze your source and create a structured task list with dependenc
 | **Research** | AI explores with tools | Large docs, existing tasks |
 | **File** | Single file analysis | Individual requirements |
 | **Provider** | Fetches from GitHub/Jira/etc. | External issue references |
+
+### Schema-Driven Extraction
+
+By default, the project planning interface uses **schema-driven extraction** to parse AI-generated task lists. This provides:
+
+- **Flexible parsing**: Handles varied AI output formats without breaking
+- **JSON validation**: Ensures extracted data matches expected structure
+- **Automatic fallback**: Falls back to regex parsing if schema extraction fails
+
+**When to disable:**
+- You need faster parsing (schema extraction requires an additional LLM call)
+- You're working with very standardized AI output formats
+- You're debugging parsing issues
+
+To disable schema-driven extraction, uncheck the **"Use schema-driven extraction"** checkbox before creating your breakdown.
+
+**Note:** Schema extraction is enabled by default and recommended for most use cases. Only disable it if you encounter specific issues or need faster processing.
 
 ### Viewing the Task Queue
 
@@ -266,6 +284,7 @@ See [`mehr project`](../cli/project.md) for CLI usage.
 | CLI Command | Web UI Action |
 |-------------|---------------|
 | `mehr project plan dir:./specs` | Create breakdown |
+| `mehr project plan dir:./specs --use-schema=false` | Create breakdown (regex-only) |
 | `mehr project sync wrike:123456` | Sync from provider |
 | `mehr project tasks` | View queue |
 | `mehr project edit task-1` | Edit task |
