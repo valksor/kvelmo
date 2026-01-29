@@ -103,6 +103,21 @@ type projectStartResponse struct {
 	Title  string `json:"title"`
 }
 
+type projectSyncRequest struct {
+	Reference     string   `json:"reference"`
+	IncludeStatus []string `json:"include_status,omitempty"`
+	MaxDepth      int      `json:"max_depth,omitempty"`
+	PreserveExt   bool     `json:"preserve_ext,omitempty"`
+}
+
+type projectSyncResponse struct {
+	QueueID   string `json:"queue_id"`
+	Title     string `json:"title"`
+	TasksSync int    `json:"tasks_sync"`
+	Source    string `json:"source"`
+	URL       string `json:"url,omitempty"`
+}
+
 type projectQueueListResponse struct {
 	Queues []*projectQueueSummary `json:"queues"`
 }
@@ -664,6 +679,75 @@ func (s *Server) handleProjectStart(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleProjectSync syncs a project structure from a provider.
+// POST /api/v1/project/sync.
+func (s *Server) handleProjectSync(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	// Check for SSE support
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		s.writeError(w, http.StatusBadRequest, "streaming not supported")
+
+		return
+	}
+
+	// Set SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// Parse request body
+	var req projectSyncRequest
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		s.writeSSEError(w, flusher, "read request failed: "+err.Error())
+
+		return
+	}
+
+	if err := json.Unmarshal(body, &req); err != nil {
+		s.writeSSEError(w, flusher, "invalid request body: "+err.Error())
+
+		return
+	}
+
+	if req.Reference == "" {
+		s.writeSSEError(w, flusher, "reference is required")
+
+		return
+	}
+
+	s.writeSSEEvent(w, flusher, "start", map[string]string{"reference": req.Reference})
+
+	// Build options
+	opts := conductor.SyncProjectOptions{
+		IncludeStatus:    req.IncludeStatus,
+		MaxDepth:         req.MaxDepth,
+		PreserveExternal: req.PreserveExt,
+	}
+
+	// Execute sync
+	result, err := s.config.Conductor.SyncProject(r.Context(), req.Reference, opts)
+	if err != nil {
+		s.writeSSEEvent(w, flusher, "error", map[string]string{"error": err.Error()})
+
+		return
+	}
+
+	s.writeSSEEvent(w, flusher, "complete", projectSyncResponse{
+		QueueID:   result.Queue.ID,
+		Title:     result.Queue.Title,
+		TasksSync: result.TasksSync,
+		Source:    result.Source,
+		URL:       result.URL,
+	})
+}
+
 // handleProjectUpload handles file/archive upload for project sources.
 // POST /api/v1/project/upload.
 func (s *Server) handleProjectUpload(w http.ResponseWriter, r *http.Request) {
@@ -808,6 +892,11 @@ func convertQueuedTask(task *storage.QueuedTask) *projectTaskResponse {
 		ExternalID:  task.ExternalID,
 		ExternalURL: task.ExternalURL,
 	}
+}
+
+// writeSSEError writes an SSE error event.
+func (s *Server) writeSSEError(w http.ResponseWriter, flusher http.Flusher, message string) {
+	s.writeSSEEvent(w, flusher, "error", map[string]string{"error": message})
 }
 
 // parseQueueID extracts queue ID from URL path.

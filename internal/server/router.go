@@ -187,6 +187,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/project/reorder", s.handleProjectReorder)
 		mux.HandleFunc("POST /api/v1/project/submit", s.handleProjectSubmit)
 		mux.HandleFunc("POST /api/v1/project/start", s.handleProjectStart)
+		mux.HandleFunc("POST /api/v1/project/sync", s.handleProjectSync)
 
 		// Quick tasks endpoints
 		mux.HandleFunc("GET /quick", s.handleQuickTasksUI)

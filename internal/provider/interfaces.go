@@ -194,6 +194,36 @@ type ParentFetcher interface {
 	FetchParent(ctx context.Context, workUnitID string) (*WorkUnit, error)
 }
 
+// ProjectFetcher retrieves entire project/epic structures with all tasks.
+// Different providers implement this differently:
+// - Wrike: Fetch folder/project with all descendants
+// - Jira: Fetch epic with all child stories
+// - GitHub: Fetch project board with all cards (if API available)
+// - Asana: Fetch portfolio/project with tasks.
+type ProjectFetcher interface {
+	FetchProject(ctx context.Context, reference string) (*ProjectStructure, error)
+}
+
+// ProjectStructure represents a complete project/epic with hierarchical tasks.
+type ProjectStructure struct {
+	ID          string         // Provider project ID
+	Title       string         // Project/epic title
+	Description string         // Optional description
+	Source      string         // Provider name
+	URL         string         // Provider URL
+	Tasks       []*ProjectTask // All tasks in the project (flat list)
+	Metadata    map[string]any // Provider-specific metadata
+}
+
+// ProjectTask represents a task within a project structure.
+type ProjectTask struct {
+	*WorkUnit
+
+	ParentID string // Parent task ID (if nested)
+	Depth    int    // Hierarchy depth (0 = top level)
+	Position int    // Position within parent
+}
+
 // CreateWorkUnitOptions for creating a work unit.
 type CreateWorkUnitOptions struct {
 	CustomFields  map[string]any
