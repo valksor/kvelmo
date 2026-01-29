@@ -71,6 +71,9 @@ type Options struct {
 	CommitPrefixTemplate  string // Override commit prefix template (e.g., "[{key}]")
 	BranchPatternTemplate string // Override branch pattern template (e.g., "{type}/{key}--{slug}")
 
+	// Stacked features
+	DependsOn string // Parent task ID for stacked features (branch from parent's branch)
+
 	// Callbacks
 	OnStateChange func(from, to string)
 	OnProgress    func(message string, percent int)
@@ -277,6 +280,14 @@ func WithTitleOverride(title string) Option {
 func WithSlugOverride(slug string) Option {
 	return func(o *Options) {
 		o.SlugOverride = slug
+	}
+}
+
+// WithDependsOn sets the parent task ID for stacked features.
+// The new task will branch from the parent's branch instead of the target branch.
+func WithDependsOn(taskID string) Option {
+	return func(o *Options) {
+		o.DependsOn = taskID
 	}
 }
 

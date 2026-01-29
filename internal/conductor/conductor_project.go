@@ -19,6 +19,7 @@ import (
 type ProjectPlanOptions struct {
 	Title              string // Project/queue title
 	CustomInstructions string // Additional instructions for AI
+	UseSchema          bool   // Use schema-driven extraction for parsing (fallback to regex if fails)
 }
 
 // ProjectPlanResult holds the result of creating a project plan.
@@ -104,7 +105,14 @@ func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts P
 	c.publishProgress("Parsing task breakdown...", 60)
 
 	// Parse the AI response into tasks
-	parsed := export.ParseProjectPlan(response)
+	var parsed *export.ParsedPlan
+	if opts.UseSchema {
+		// Use schema-driven extraction with agent fallback to regex
+		parsed = export.ParseProjectPlanWithSchema(ctx, response, ag)
+	} else {
+		// Use regex-based parsing only
+		parsed = export.ParseProjectPlanWithSchema(ctx, response, nil)
+	}
 
 	// Create the task queue
 	queue := storage.NewTaskQueue(queueID, opts.Title, source)

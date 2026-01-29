@@ -111,6 +111,12 @@ func (w *Workspace) WorkRoot() string {
 	return w.workRoot
 }
 
+// DataRoot returns the workspace data directory path (~/.valksor/mehrhof/workspaces/<project-id>/).
+// This is where work/, sessions/, stacks/, queues/ etc. are stored.
+func (w *Workspace) DataRoot() string {
+	return w.workspaceRoot
+}
+
 // ConfigPath returns the path to the config file.
 func (w *Workspace) ConfigPath() string {
 	return filepath.Join(w.taskRoot, configFileName)

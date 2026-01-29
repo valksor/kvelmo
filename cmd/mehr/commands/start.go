@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	"github.com/valksor/go-mehrhof/internal/stack"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/template"
 )
@@ -29,6 +30,7 @@ var (
 	startCommitPrefix  string // Commit prefix template override
 	startBranchPattern string // Branch pattern template override
 	startTemplate      string // Template to apply
+	startDependsOn     string // Parent task for stacked features
 
 	// Per-step agent overrides.
 	startAgentPlanning     string
@@ -113,6 +115,7 @@ func init() {
 	startCmd.Flags().StringVar(&startCommitPrefix, "commit-prefix", "", "Commit prefix template (e.g., [{key}])")
 	startCmd.Flags().StringVar(&startBranchPattern, "branch-pattern", "", "Branch pattern template (e.g., {type}/{key}--{slug})")
 	startCmd.Flags().StringVar(&startTemplate, "template", "", "Template to apply (bug-fix, feature, refactor, docs, test, chore)")
+	startCmd.Flags().StringVar(&startDependsOn, "depends-on", "", "Parent task ID for stacked features (branches from parent)")
 
 	// Per-step agent overrides
 	startCmd.Flags().StringVar(&startAgentPlanning, "agent-plan", "", "Agent for planning step")
@@ -255,6 +258,9 @@ func runStart(cmd *cobra.Command, args []string) error {
 	if startBranchPattern != "" {
 		opts = append(opts, conductor.WithBranchPatternTemplate(startBranchPattern))
 	}
+	if startDependsOn != "" {
+		opts = append(opts, conductor.WithDependsOn(startDependsOn))
+	}
 
 	// Initialize conductor with standard providers and agents
 	cond, err := initializeConductor(ctx, opts...)
@@ -360,6 +366,14 @@ func runStart(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Track stacked feature if --depends-on was specified
+	if startDependsOn != "" {
+		if err := trackStackedFeature(cond, status, startDependsOn); err != nil {
+			// Don't fail the start, just warn
+			fmt.Printf("Warning: failed to track stacked feature: %v\n", err)
+		}
+	}
+
 	// Display task info
 	info := display.TaskInfo{
 		TaskID:      status.TaskID,
@@ -387,6 +401,58 @@ func runStart(cmd *cobra.Command, args []string) error {
 		}, steps...)
 	}
 	fmt.Print(display.FormatNextSteps(steps))
+
+	return nil
+}
+
+// trackStackedFeature adds the new task to the stack tracking system.
+func trackStackedFeature(cond *conductor.Conductor, status *conductor.TaskStatus, parentTaskID string) error {
+	ws := cond.GetWorkspace()
+	stackStorage := stack.NewStorage(ws.DataRoot())
+
+	if err := stackStorage.Load(); err != nil {
+		return fmt.Errorf("load stacks: %w", err)
+	}
+
+	// Find or create the stack
+	parentStack := stackStorage.GetStackByTask(parentTaskID)
+	if parentStack == nil {
+		// Parent task not in any stack - create a new stack with parent as root
+		// Get parent's branch info
+		parentWork, err := ws.LoadWork(parentTaskID)
+		if err != nil {
+			return fmt.Errorf("load parent work: %w", err)
+		}
+
+		parentBranch := parentWork.Git.Branch
+		baseBranch := parentWork.Git.BaseBranch
+		if baseBranch == "" {
+			baseBranch = "main" // Default base branch
+		}
+
+		// Create new stack with parent as root
+		newStack := stack.NewStack(
+			"stack-"+parentTaskID,
+			parentTaskID,
+			parentBranch,
+			baseBranch,
+		)
+
+		if err := stackStorage.AddStack(newStack); err != nil {
+			return fmt.Errorf("add stack: %w", err)
+		}
+		parentStack = newStack
+	}
+
+	// Add the new task to the stack
+	parentStack.AddTask(status.TaskID, status.Branch, parentTaskID)
+
+	// Save the updated stack
+	if err := stackStorage.Save(); err != nil {
+		return fmt.Errorf("save stacks: %w", err)
+	}
+
+	fmt.Printf("Added to stack: %s (depends on %s)\n", parentStack.ID, parentTaskID)
 
 	return nil
 }
