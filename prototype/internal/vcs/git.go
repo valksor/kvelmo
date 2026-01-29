@@ -22,11 +22,14 @@ package vcs
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -629,4 +632,98 @@ func (g *Git) DetectDefaultBranch(ctx context.Context) (string, error) {
 	}
 
 	return "", errors.New("no default branch found")
+}
+
+// RepoInfo contains detected information about the repository.
+// Used to provide context to AI for commit grouping (GENERIC - works in any repo).
+type RepoInfo struct {
+	Language   string   // "go", "python", "javascript", etc.
+	Frameworks []string // ["react", "nextjs"], ["django"], etc.
+	RootDirs   []string // Top-level directories present
+	BuildFiles []string // "package.json", "go.mod", "requirements.txt", etc.
+}
+
+// GetRepoInfo detects repository information by examining files.
+// This is GENERIC - works in ANY repository type.
+func (g *Git) GetRepoInfo(ctx context.Context) (RepoInfo, error) {
+	var info RepoInfo
+
+	// Check for build/config files to detect language/framework
+	buildFiles := []string{
+		"go.mod", "go.sum",
+		"package.json", "yarn.lock", "pnpm-lock.yaml", "package-lock.json",
+		"requirements.txt", "pyproject.toml", "setup.py", "Pipfile",
+		"Cargo.toml", "Cargo.lock",
+		"pom.xml", "build.gradle", "build.gradle.kts",
+		"Gemfile", "Gemfile.lock",
+		"composer.json",
+		"mix.exs",
+	}
+
+	for _, file := range buildFiles {
+		fullPath := filepath.Join(g.repoRoot, file)
+		if _, err := os.Stat(fullPath); err == nil {
+			info.BuildFiles = append(info.BuildFiles, file)
+
+			// Detect language from build files
+			switch file {
+			case "go.mod", "go.sum":
+				info.Language = "go"
+			case "package.json", "yarn.lock", "pnpm-lock.yaml", "package-lock.json":
+				info.Language = "javascript"
+				// Could detect frameworks by reading package.json
+			case "requirements.txt", "pyproject.toml", "setup.py", "Pipfile":
+				info.Language = "python"
+			case "Cargo.toml", "Cargo.lock":
+				info.Language = "rust"
+			case "pom.xml", "build.gradle", "build.gradle.kts":
+				info.Language = "java"
+			case "Gemfile", "Gemfile.lock":
+				info.Language = "ruby"
+			case "composer.json":
+				info.Language = "php"
+			case "mix.exs":
+				info.Language = "elixir"
+			}
+		}
+	}
+
+	// Get root directories (non-hidden, top-level)
+	entries, err := os.ReadDir(g.repoRoot)
+	if err == nil {
+		for _, e := range entries {
+			if e.IsDir() && !strings.HasPrefix(e.Name(), ".") && e.Name() != "node_modules" {
+				info.RootDirs = append(info.RootDirs, e.Name())
+			}
+		}
+	}
+
+	return info, nil
+}
+
+// HashChangedFiles creates a hash of the current changed files.
+// Used for detecting if files changed between dry-run and commit.
+func (g *Git) HashChangedFiles(ctx context.Context, includeUnstaged bool) (string, error) {
+	status, err := g.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var files []string
+	for _, f := range status {
+		if includeUnstaged {
+			if f.Index != ' ' || f.WorkDir != ' ' {
+				files = append(files, f.Path)
+			}
+		} else {
+			if f.Index != ' ' && f.Index != '?' {
+				files = append(files, f.Path)
+			}
+		}
+	}
+
+	slices.Sort(files)
+	h := sha256.Sum256([]byte(strings.Join(files, "|")))
+
+	return hex.EncodeToString(h[:]), nil
 }
