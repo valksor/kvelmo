@@ -150,9 +150,75 @@ Configure browser automation:
 | **Timeout** | Seconds before timeout | `30` |
 | **Screenshot directory** | Where to save screenshots | `./screenshots` |
 
+### Integrations
+
+Configure authentication tokens for external task providers. Each provider section is collapsible and includes helpful guidance on obtaining tokens.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Integrations                                                │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ▶ GitHub                              [Configured]          │
+│  ▶ GitLab                                                    │
+│  ▶ Jira                                [Configured]          │
+│  ▶ Linear                                                    │
+│  ▶ Notion                                                    │
+│  ▶ Wrike                                                     │
+│  ▶ YouTrack                                                  │
+│  ▶ Bitbucket                                                 │
+│  ▶ Asana                                                     │
+│  ▶ ClickUp                                                   │
+│  ▶ Trello                                                    │
+│  ▶ Azure DevOps                                              │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Click any provider to expand its configuration:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ▼ GitHub                              [Configured]          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Personal Access Token                                       │
+│  [••••••••••••••••••••••••]                                 │
+│                                                              │
+│  Get token → • Settings → Developer settings →              │
+│  Personal access tokens • Required: repo, read:user          │
+│                                                              │
+│  Organization (optional)                                     │
+│  [my-org                 ]                                   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Token Help**: Each provider shows:
+- **Get token →** - Link to the token generation page
+- **Navigation steps** - How to find the token settings
+- **Required scopes** - Permissions needed for the token
+
+**Supported Providers:**
+
+| Provider | Token Type | Additional Config |
+|----------|------------|-------------------|
+| GitHub | Personal Access Token | Organization |
+| GitLab | Personal Access Token | Instance URL |
+| Jira | API Token | Base URL, Email |
+| Linear | API Key | Team |
+| Notion | Integration Token | Database ID |
+| Wrike | Permanent Token | Folder ID |
+| YouTrack | Permanent Token | Instance URL |
+| Bitbucket | App Password | Username |
+| Asana | Personal Access Token | Workspace GID |
+| ClickUp | API Token | Team ID |
+| Trello | API Key + Token | (both required) |
+| Azure DevOps | Personal Access Token | Organization, Project |
+
 ### Provider Settings
 
-Configure external task provider connections:
+Configure default provider behavior:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -161,17 +227,8 @@ Configure external task provider connections:
 │                                                              │
 │  Default provider         [file             ]                │
 │                                                              │
-│  Configured Providers:                                      │
-│    • GitHub        ✓ Connected     [Configure]  [Test]     │
-│    • GitLab        ✗ Not setup    [Configure]              │
-│    • Jira          ✓ Connected     [Configure]  [Test]     │
-│    • Linear        ✗ Not setup    [Configure]              │
-│                                                              │
-│  [Add Provider Configuration]                                │
 └──────────────────────────────────────────────────────────────┘
 ```
-
-Click **"Configure"** to set up provider credentials.
 
 ### License Information
 

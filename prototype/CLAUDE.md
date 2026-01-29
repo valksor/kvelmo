@@ -155,6 +155,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 |-------------|---------------|
 | `interactive` | ✅ Full REPL at `/interactive` |
 | `links` | ✅ Full parity - API + UI at `/links` |
+| `project sync` | ✅ Full parity - API + SSE streaming |
 | `budget` | ❌ Missing - only basic stats in dashboard |
 | `memory` | ⚠️ Partial - API exists, no UI |
 | `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
