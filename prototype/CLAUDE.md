@@ -70,10 +70,10 @@ Documentation is organized by interface:
 
 ```bash
 # Before starting work - verify baseline
-make quality && make test
+make quality && make test && make race
 
 # Before committing code changes
-make quality && make test
+make quality && make test && make race
 ```
 
 If tests fail, fix them first. No exceptions for "not my code."
@@ -84,14 +84,15 @@ If tests fail, fix them first. No exceptions for "not my code."
 
 Always use `make` commands, not direct `go` commands:
 
-| Operation | Command |
-|-----------|---------|
-| Build | `make build` |
-| Test | `make test` |
-| Quality | `make quality` |
-| Format | `make fmt` |
-| Coverage | `make coverage-html` |
-| Install | `make install` |
+| Operation | Command              |
+|-----------|----------------------|
+| Build     | `make build`         |
+| Test      | `make test`          |
+| Race      | `make race`          |
+| Quality   | `make quality`       |
+| Format    | `make fmt`           |
+| Coverage  | `make coverage-html` |
+| Install   | `make install`       |
 
 `make quality` runs: golangci-lint, gofmt, goimports, gofumpt, govulncheck, check-alias.
 
@@ -131,10 +132,10 @@ handlers_review.go    // Review handlers
 ### Build & Development
 
 ```bash
-make build | install | test | coverage | quality | fmt | tidy | hooks
+make build | install | test | coverage | quality | fmt | tidy | hooks | race
 ```
 
-All targets: `all`, `build`, `test`, `coverage`, `coverage-html`, `quality`, `fmt`, `install`, `clean`, `run`, `tidy`, `deps`, `version`, `hooks`, `lefthook`, `check-alias`, `help`
+All targets: `all`, `build`, `test`, `coverage`, `coverage-html`, `quality`, `fmt`, `install`, `clean`, `run`, `tidy`, `deps`, `version`, `hooks`, `lefthook`, `check-alias`, `help`, `race`.
 
 ### Workers Site
 
@@ -272,6 +273,7 @@ agents:
 - Style: Table-driven with `tests := []struct{...}{...}`
 - Utilities: `internal/helper_test/` (mocks, fixtures)
 - Target: 80%+ coverage
+- Race detector: `make race`
 
 ---
 
