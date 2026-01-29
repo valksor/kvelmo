@@ -186,10 +186,11 @@ These CLI commands **lack Web UI equivalents** (candidates for future implementa
 
 | CLI Command | Web UI Status |
 |-------------|---------------|
+| `interactive` | ✅ Full REPL at `/interactive` |
 | `budget status/set/task set/resume/reset` | ❌ Missing - only basic stats in dashboard |
 | `memory search/index/stats` | ⚠️ Partial - API exists, no UI |
 | `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
-| `continue` | ❌ Missing |
+| `continue` | ✅ Available in interactive mode |
 | `optimize` | ❌ Missing |
 | `export` | ❌ Missing |
 | `scan` | ⚠️ Partial - API endpoint exists, no UI |
@@ -590,6 +591,145 @@ make quality
 
 ---
 
+## ⚠️ CRITICAL: golangci-lint Configuration and nolint Usage
+
+**NEVER disable golangci-lint linters in configuration. Use `//nolint` as a LAST RESORT, not a first resort.**
+
+The `.golangci.yml` configuration enables 39 linters that catch bugs, security issues, and code quality problems. Disabling linters or overusing `//nolint` erodes code quality and allows issues to accumulate.
+
+### Never Disable Linters in Configuration
+
+**DO NOT modify `.golangci.yml` to disable linters.**
+
+If a linter is flagging legitimate issues, the solution is to:
+1. Fix the code (preferred)
+2. Use targeted `//nolint` comments for specific, justified exceptions (as last resort)
+
+```yaml
+# ❌ BAD - Disabling linters to avoid fixing issues
+linters:
+    disable:
+        - errcheck     # "too many false positives"
+        - gosec        # "security rules too strict"
+        - nilerr       # "don't want to fix these"
+```
+
+```yaml
+# ✅ GOOD - Keep all linters enabled
+linters:
+    enable:
+        - errcheck
+        - gosec
+        - nilerr
+        # ... all other linters remain enabled
+```
+
+### nolint Comment Guidelines
+
+**`//nolint` is a LAST RESORT, not a first resort.**
+
+Before using `//nolint`, you MUST:
+1. **Understand the warning**: Research why the linter is flagging this code
+2. **Fix the issue**: Refactor code to address the linter's concern
+3. **Document justification**: Only use `//nolint` if the warning is truly a false positive
+
+#### Acceptable nolint Use Cases
+
+| Scenario | Example | Justification |
+|----------|---------|---------------|
+| **API compliance** | Unused parameter required by interface | `//nolint:unparam // Required by interface SomeInterface` |
+| **Intentional nil-nil returns** | Function returns nil,nil for "not found" | `//nolint:nilnil // No task found is not an error` |
+| **Benchmark code** | No context needed in benchmarks | `//nolint:noctx // Benchmark: no cancellation needed` |
+| **String builders** | Error check won't fail | `//nolint:errcheck // String builder WriteString won't fail` |
+
+#### Unacceptable nolint Use Cases
+
+| Scenario | ❌ Wrong Approach | ✅ Correct Approach |
+|----------|------------------|---------------------|
+| **Unchecked error** | `//nolint:errcheck` | Handle the error properly |
+| **Security issue** | `//nolint:gosec` | Fix the security vulnerability |
+| **Complex function** | `//nolint:gocyclo` | Refactor into smaller functions |
+| **Unused code** | `//nolint:deadcode` | Remove the dead code |
+| **Lazy fix** | `//nolint:all` | Fix each issue individually |
+
+### nolint Best Practices
+
+1. **Always specify the linter name**: Never use `//nolint:all`
+   ```go
+   // ❌ BAD - Suppresses all linters
+   //nolint:all
+
+   // ✅ GOOD - Specific linter
+   //nolint:unparam // Error return reserved for future validation needs
+   ```
+
+2. **Always include a justification**: Explain WHY the suppression is necessary
+   ```go
+   // ❌ BAD - No explanation
+   //nolint:errcheck
+
+   // ✅ GOOD - Explains the reasoning
+   //nolint:errcheck // Writing to string builder cannot fail
+   ```
+
+3. **Keep scope minimal**: Place `//nolint` on the specific line, not the entire function
+   ```go
+   // ❌ BAD - Suppresses for entire function
+   //nolint:errcheck
+   func foo() {
+       bar()
+       baz()
+   }
+
+   // ✅ GOOD - Suppresses only the specific line
+   func foo() {
+       bar()
+       _ = strings.Builder.WriteString(buf, "text") //nolint:errcheck // Safe
+       baz()
+   }
+   ```
+
+4. **Prefer code fixes over nolint**: Refactor to avoid the warning
+   ```go
+   // ❌ BAD - Using nolint for nil check pattern
+   //nolint:nilnil
+   func getTask(id string) (*Task, error) {
+       return nil, nil // "not found" is not an error
+   }
+
+   // ✅ GOOD - Use a sentinel value or custom error type
+   var ErrNotFound = errors.New("task not found")
+
+   func getTask(id string) (*Task, error) {
+       return nil, ErrNotFound
+   }
+   ```
+
+### Enforcement
+
+The `nolintlint` linter is enabled to catch:
+- `//nolint` without specifying which linter
+- `//nolint` without an explanation
+- Machine-generated `//nolint` comments
+
+CI will fail if:
+- New `//nolint` comments don't specify the linter
+- New `//nolint` comments lack justification
+- Linters are disabled in `.golangci.yml`
+
+### Verification
+
+Before committing code with `//nolint`:
+
+1. **Is the linter correct?** Verify the warning is a false positive
+2. **Can you fix the code?** Prefer refactoring over suppression
+3. **Is the nolint specific?** Specify the exact linter name
+4. **Is there a justification?** Document WHY the suppression exists
+
+If you cannot justify the `//nolint`, **fix the code instead.**
+
+---
+
 ## Commands
 
 ### Build & Development
@@ -605,7 +745,7 @@ See [README.md](README.md) for full documentation.
 ### Workflow
 
 ```bash
-mehr start <ref> | plan | implement | review | finish | continue | auto <ref>
+mehr start <ref> | plan | implement | review | finish | continue | auto <ref> | interactive
 ```
 
 Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `question <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
@@ -617,6 +757,8 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 - Web UI: Quick Question input form + SSE streaming response
 
 **Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Dual Interface Implementation" section above for parity status.
+
+**Interactive Mode**: Use `mehr interactive` for CLI REPL mode or navigate to `/interactive` in the Web UI for real-time agent chat with workflow control.
 
 ## Architecture
 

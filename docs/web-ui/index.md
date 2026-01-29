@@ -63,6 +63,7 @@ See individual workflow pages for details:
 
 ### Additional Features
 
+- **Interactive Mode** - Chat-based interface for real-time agent communication
 - **Settings** - Configure agents, providers, git, and workflow options
 - **Browser Control** - Automate Chrome for testing and authentication
 - **Task History** - Search, filter, and resume past tasks

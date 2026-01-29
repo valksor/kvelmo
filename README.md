@@ -260,6 +260,7 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr status` | Show full task details with workflow state diagram |
 | `mehr guide` | What should I do next? (quick suggestion) |
 | `mehr find <query>` | AI-powered code search with focused results |
+| `mehr interactive` | REPL mode for continuous agent chat and workflow control |
 | `mehr continue` | Resume work on task |
 | `mehr question <msg>` | Ask the agent a question during planning/implementing/reviewing |
 | `mehr budget` | Manage cost and token budgets |
