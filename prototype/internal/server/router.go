@@ -148,6 +148,14 @@ func (s *Server) setupRouter() http.Handler {
 		// Browser control panel UI
 		mux.HandleFunc("GET /browser", s.handleBrowserUI)
 
+		// Interactive chat UI
+		mux.HandleFunc("GET /interactive", s.handleInteractivePage)
+		mux.HandleFunc("POST /api/v1/interactive/chat", s.handleInteractiveChat)
+		mux.HandleFunc("POST /api/v1/interactive/command", s.handleInteractiveCommand)
+		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleInteractiveAnswer)
+		mux.HandleFunc("GET /api/v1/interactive/state", s.handleInteractiveState)
+		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
+
 		// Task history UI
 		mux.HandleFunc("GET /history", s.handleHistoryUI)
 

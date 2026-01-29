@@ -94,6 +94,7 @@ func (r *Renderer) loadTemplates() error {
 	// Page templates that extend base
 	pages := []string{
 		"dashboard",
+		"interactive",
 		"login",
 		"settings",
 		"project",
