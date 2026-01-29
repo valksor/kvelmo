@@ -171,6 +171,25 @@ func (c *Client) GetTaskByPermalinkParam(ctx context.Context, permalink string) 
 	return &response.Data[0], nil
 }
 
+// GetFolderByPermalink resolves a numeric folder/project ID to its API ID.
+// Uses GET /folders?permalink=https://www.wrike.com/open.htm?id={numericID}
+// Works for folders, projects, and subfolders.
+func (c *Client) GetFolderByPermalink(ctx context.Context, numericID string) (*Folder, error) {
+	permalink := BuildPermalinkURL(numericID)
+	path := "/folders?permalink=" + url.QueryEscape(permalink)
+
+	var response folderResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
+		return nil, err
+	}
+
+	if len(response.Data) == 0 {
+		return nil, ErrFolderNotFound
+	}
+
+	return &response.Data[0], nil
+}
+
 // GetTasks fetches multiple tasks by IDs.
 func (c *Client) GetTasks(ctx context.Context, taskIDs []string) ([]Task, error) {
 	var response taskResponse
@@ -483,4 +502,30 @@ type commentResponse struct {
 
 type attachmentsResponse struct {
 	Data []Attachment `json:"data"`
+}
+
+// Folder represents a Wrike folder or project.
+// Projects are folders with additional properties (Project field is non-nil).
+type Folder struct {
+	ID        string         `json:"id"`
+	Title     string         `json:"title"`
+	ChildIDs  []string       `json:"childIds"`
+	Scope     string         `json:"scope"` // "WsFolder", "WsProject", "RbFolder"
+	Permalink string         `json:"permalink"`
+	Project   *FolderProject `json:"project,omitempty"` // Non-nil if this is a project
+}
+
+// FolderProject contains project-specific properties (owners, dates, status).
+// This is embedded in Folder when the folder is a project.
+type FolderProject struct {
+	AuthorID    string    `json:"authorId"`
+	OwnerIDs    []string  `json:"ownerIds"`
+	Status      string    `json:"status"` // "Green", "Yellow", "Red", "Completed", "OnHold", "Cancelled"
+	CreatedDate time.Time `json:"createdDate"`
+	StartDate   string    `json:"startDate,omitempty"`
+	EndDate     string    `json:"endDate,omitempty"`
+}
+
+type folderResponse struct {
+	Data []Folder `json:"data"`
 }

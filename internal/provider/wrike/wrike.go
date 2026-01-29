@@ -3,6 +3,7 @@ package wrike
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -21,11 +22,12 @@ type Provider struct {
 }
 
 // New creates a new Wrike provider instance.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg provider.Config) (any, error) {
 	token := cfg.GetString("token")
 	host := cfg.GetString("host")
-	folderID := cfg.GetString("folder_id")
 	spaceID := cfg.GetString("space_id")
+	folderID := cfg.GetString("folder_id")
+	projectID := cfg.GetString("project_id")
 
 	// Try to resolve token from env if not provided
 	if token == "" {
@@ -36,14 +38,69 @@ func New(_ context.Context, cfg provider.Config) (any, error) {
 		token = resolvedToken
 	}
 
+	// Create a temporary client for ID resolution
+	tempClient := NewClientWithConfig(ClientConfig{
+		Token: token,
+		Host:  host,
+	})
+
+	// Resolve numeric project ID to API ID (primary target for task creation)
+	if projectID != "" && isNumericID(projectID) {
+		resolved, err := tempClient.GetFolderByPermalink(ctx, projectID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve project ID %s: %w", projectID, err)
+		}
+		entityType := "folder"
+		if resolved.Project != nil {
+			entityType = "project"
+		}
+		slog.Info("Resolved Wrike project",
+			"numeric_id", projectID,
+			"api_id", resolved.ID,
+			"title", resolved.Title,
+			"type", entityType,
+		)
+		projectID = resolved.ID
+	}
+
+	// Resolve numeric folder ID to API ID
+	if folderID != "" && isNumericID(folderID) {
+		resolved, err := tempClient.GetFolderByPermalink(ctx, folderID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve folder ID %s: %w", folderID, err)
+		}
+		entityType := "folder"
+		if resolved.Project != nil {
+			entityType = "project"
+		}
+		slog.Info("Resolved Wrike folder",
+			"numeric_id", folderID,
+			"api_id", resolved.ID,
+			"title", resolved.Title,
+			"type", entityType,
+		)
+		folderID = resolved.ID
+	}
+
+	// Determine target for task creation: project > folder
+	targetID := projectID
+	if targetID == "" {
+		targetID = folderID
+	}
+
 	return &Provider{
 		client: NewClientWithConfig(ClientConfig{
 			Token:    token,
 			Host:     host,
-			FolderID: folderID,
+			FolderID: targetID,
 			SpaceID:  spaceID,
 		}),
 	}, nil
+}
+
+// isNumericID returns true if the ID contains only digits (URL-style numeric ID).
+func isNumericID(id string) bool {
+	return numericIDPattern.MatchString(id)
 }
 
 // Match checks if the input matches a Wrike reference.
