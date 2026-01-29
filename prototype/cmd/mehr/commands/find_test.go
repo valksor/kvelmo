@@ -4,6 +4,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -123,7 +124,7 @@ func TestFindCommand_LongDescriptionContains(t *testing.T) {
 	}
 
 	for _, substr := range expectedSubstrings {
-		if !contains(findCmd.Long, substr) {
+		if !strings.Contains(findCmd.Long, substr) {
 			t.Errorf("Long description should contain %q", substr)
 		}
 	}
@@ -142,7 +143,7 @@ func TestFindCommand_ExamplesExist(t *testing.T) {
 	}
 
 	for _, example := range expectedExamples {
-		if !contains(findCmd.Long, example) && !contains(findCmd.Example, example) {
+		if !strings.Contains(findCmd.Long, example) && !strings.Contains(findCmd.Example, example) {
 			t.Errorf("Should mention %s in examples", example)
 		}
 	}

@@ -83,7 +83,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 	taskID := cond.GetActiveTask().ID
 
 	// Get current status
-	status, _ := cond.Status()
+	status, _ := cond.Status(ctx)
 	currentState := status.State
 
 	// Check if questions are allowed in current state

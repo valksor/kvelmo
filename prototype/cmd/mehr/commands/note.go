@@ -161,7 +161,7 @@ func runNote(cmd *cobra.Command, args []string) error {
 	// Interactive mode
 	scanner := bufio.NewScanner(os.Stdin)
 
-	status, _ := cond.Status()
+	status, _ := cond.Status(ctx)
 	fmt.Printf("Task: %s (state: %s)\n", status.TaskID, status.State)
 
 	// Show pending question if any

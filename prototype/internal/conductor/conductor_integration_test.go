@@ -493,7 +493,7 @@ func TestStatus_NoActiveTask(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	_, err = c.Status()
+	_, err = c.Status(context.Background())
 	if err == nil {
 		t.Error("Status should fail when no active task")
 	}
@@ -1110,7 +1110,7 @@ This is a test task for status checking.
 	}
 
 	// Get status
-	status, err := c.Status()
+	status, err := c.Status(context.Background())
 	if err != nil {
 		t.Fatalf("Status: %v", err)
 	}
