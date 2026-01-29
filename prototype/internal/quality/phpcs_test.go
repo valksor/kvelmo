@@ -138,7 +138,7 @@ func TestDetectForProjectPHP(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := NewRegistry()
+			r := NewRegistry(nil)
 			detected := r.DetectForProject(tmpDir)
 
 			// Should detect php-cs-fixer if available

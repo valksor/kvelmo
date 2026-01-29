@@ -158,6 +158,35 @@ func (s *Server) handleCostsPartial(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleHierarchyPartial renders the hierarchy partial.
+func (s *Server) handleHierarchyPartial(w http.ResponseWriter, r *http.Request) {
+	if s.renderer == nil || s.config.Conductor == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	activeTask := s.config.Conductor.GetActiveTask()
+	if activeTask == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	ws := s.getWorkspace()
+	data := views.ComputeHierarchyContext(s.config.Conductor, ws, activeTask.ID)
+	if data == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderer.RenderPartial(w, "hierarchy", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // handleLoginPageUI renders the login page.
 func (s *Server) handleLoginPageUI(w http.ResponseWriter, r *http.Request, errorMsg string) {
 	if s.renderer == nil {

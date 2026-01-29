@@ -25,6 +25,7 @@ const (
 	EventBudgetWarning        = "budget_warning"
 	EventBudgetLimit          = "budget_limit"
 	EventQuickTasksUpdated    = "quick_tasks_updated"
+	EventHierarchyUpdated     = "hierarchy_updated"
 )
 
 // Work types - different types of active work items.

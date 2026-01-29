@@ -86,6 +86,7 @@ func defaultFuncMap() template.FuncMap {
 		"eventQuestionAsked":        func() string { return EventQuestionAsked },
 		"eventCostsUpdated":         func() string { return EventCostsUpdated },
 		"eventQuickTasksUpdated":    func() string { return EventQuickTasksUpdated },
+		"eventHierarchyUpdated":     func() string { return EventHierarchyUpdated },
 	}
 }
 
@@ -104,6 +105,7 @@ func (r *Renderer) loadTemplates() error {
 		"quick",
 		"memory",
 		"find",
+		"links",
 	}
 
 	for _, page := range pages {
@@ -255,6 +257,11 @@ func (r *Renderer) RenderQuick(w io.Writer, data QuickTasksData) error {
 // RenderMemory renders the memory page.
 func (r *Renderer) RenderMemory(w io.Writer, data MemoryData) error {
 	return r.Render(w, "memory", data)
+}
+
+// RenderLinks renders the links page.
+func (r *Renderer) RenderLinks(w io.Writer, data LinksData) error {
+	return r.Render(w, "links", data)
 }
 
 // RenderFind renders the find page.
