@@ -1,0 +1,204 @@
+{{define "content"}}
+<div class="space-y-8">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Stacked Features</h1>
+            <p class="text-surface-600 dark:text-surface-400 mt-1">Manage dependent features and their git branches</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button hx-post="/api/v1/stack/sync" hx-target="#stack-list" hx-indicator="#sync-indicator" class="btn btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Sync PR Status
+            </button>
+            <div id="sync-indicator" class="htmx-indicator">
+                <div class="animate-spin text-brand-600">&#9696;</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stacks List -->
+    <div id="stack-list" class="space-y-6">
+        {{if .Stacks}}
+        {{range .Stacks}}
+        <div class="card" id="stack-{{.ID}}">
+            <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">{{.ID}}</h2>
+                        <p class="text-sm text-surface-500 dark:text-surface-400">{{.TaskCount}} tasks · Root: {{.RootTask}}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {{if .HasRebase}}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Needs Rebase
+                    </span>
+                    {{end}}
+                    {{if .HasConflict}}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        Conflict
+                    </span>
+                    {{end}}
+                    {{if .HasRebase}}
+                    <button hx-post="/api/v1/stack/rebase"
+                            hx-vals='{"stack_id": "{{.ID}}"}'
+                            hx-target="#stack-{{.ID}}"
+                            hx-swap="outerHTML"
+                            hx-indicator="#rebase-indicator-{{.ID}}"
+                            class="btn btn-sm btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Rebase All
+                    </button>
+                    <div id="rebase-indicator-{{.ID}}" class="htmx-indicator">
+                        <div class="animate-spin text-brand-600 text-sm">&#9696;</div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+
+            <!-- Tasks in stack -->
+            <div class="p-4">
+                <div class="space-y-3">
+                    {{range .Tasks}}
+                    <div class="flex items-center gap-4 p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
+                        <!-- State Icon -->
+                        <div class="flex-shrink-0">
+                            {{if eq .State "merged"}}
+                            <div class="w-8 h-8 rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            {{else if eq .State "needs-rebase"}}
+                            <div class="w-8 h-8 rounded-full bg-warning-100 dark:bg-warning-900/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </div>
+                            {{else if eq .State "conflict"}}
+                            <div class="w-8 h-8 rounded-full bg-error-100 dark:bg-error-900/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-error-600 dark:text-error-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                            </div>
+                            {{else if eq .State "pending-review"}}
+                            <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            {{else if eq .State "approved"}}
+                            <div class="w-8 h-8 rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            {{else}}
+                            <div class="w-8 h-8 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-surface-600 dark:text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            {{end}}
+                        </div>
+
+                        <!-- Task Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-surface-900 dark:text-surface-100 truncate">{{.ID}}</span>
+                                {{if .DependsOn}}
+                                <span class="text-xs text-surface-400">&rarr;</span>
+                                <span class="text-xs text-surface-500 dark:text-surface-400">depends on {{.DependsOn}}</span>
+                                {{end}}
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <code class="text-xs px-2 py-0.5 rounded bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 font-mono truncate">{{.Branch}}</code>
+                                {{if .PRNumber}}
+                                {{if .PRURL}}
+                                <a href="{{.PRURL}}" target="_blank" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">
+                                    PR #{{.PRNumber}}
+                                </a>
+                                {{else}}
+                                <span class="text-xs text-surface-500">PR #{{.PRNumber}}</span>
+                                {{end}}
+                                {{end}}
+                            </div>
+                        </div>
+
+                        <!-- State Badge -->
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{if eq .State "merged"}}bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200
+                                {{else if eq .State "needs-rebase"}}bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200
+                                {{else if eq .State "conflict"}}bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200
+                                {{else if eq .State "pending-review"}}bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200
+                                {{else if eq .State "approved"}}bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200
+                                {{else if eq .State "abandoned"}}bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400
+                                {{else}}bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400{{end}}">
+                                {{.State}}
+                            </span>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+
+            <!-- Stack Meta -->
+            <div class="px-6 py-3 border-t border-surface-200 dark:border-surface-700 text-xs text-surface-500 dark:text-surface-400 flex items-center justify-between">
+                <span>Created {{.CreatedAt}}</span>
+                <span>Updated {{.UpdatedAt}}</span>
+            </div>
+        </div>
+        {{end}}
+        {{else}}
+        <!-- Empty State -->
+        <div class="card">
+            <div class="text-center py-16">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100">No Stacked Features</h3>
+                <p class="text-surface-600 dark:text-surface-400 mt-2 max-w-md mx-auto">
+                    Create dependent features by using <code class="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-700 text-sm font-mono">mehr start &lt;task&gt; --depends-on &lt;parent&gt;</code>
+                </p>
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Help Section -->
+    <div class="card">
+        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+            <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">About Stacked Features</h2>
+        </div>
+        <div class="p-6 prose dark:prose-invert max-w-none text-sm">
+            <p>Stacked features allow you to work on Feature B while Feature A is waiting on code review.</p>
+            <ul class="space-y-2">
+                <li><strong>Create a dependent feature:</strong> <code>mehr start feature-b --depends-on feature-a</code></li>
+                <li><strong>Sync PR status:</strong> Click "Sync PR Status" to fetch the latest PR states</li>
+                <li><strong>Rebase after parent merges:</strong> When a parent PR merges, children are marked "needs-rebase". Click "Rebase All" to rebase them</li>
+            </ul>
+            <p class="text-surface-500">Use <code>mehr stack</code> in the CLI for more options including <code>--graph</code> and <code>--mermaid</code> visualization.</p>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -565,6 +565,36 @@ type LicenseItemData struct {
 	Unknown bool
 }
 
+// StackData contains data for the stacks management page.
+type StackData struct {
+	PageData
+
+	Stacks []StackViewData
+}
+
+// StackViewData represents a stack of dependent features.
+type StackViewData struct {
+	ID          string
+	RootTask    string
+	TaskCount   int
+	Tasks       []StackTaskView
+	CreatedAt   string
+	UpdatedAt   string
+	HasRebase   bool // True if any task needs rebase
+	HasConflict bool // True if any task has conflict
+}
+
+// StackTaskView represents a task within a stack.
+type StackTaskView struct {
+	ID        string
+	Branch    string
+	State     string
+	StateIcon string
+	DependsOn string
+	PRNumber  int
+	PRURL     string
+}
+
 // GuideData contains data for guide/help content.
 type GuideData struct {
 	HasTask         bool

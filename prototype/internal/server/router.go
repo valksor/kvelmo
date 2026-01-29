@@ -175,6 +175,12 @@ func (s *Server) setupRouter() http.Handler {
 		// Links UI
 		mux.HandleFunc("GET /links", s.handleLinksUI)
 
+		// Stack management UI and API
+		mux.HandleFunc("GET /stack", s.handleStacksUI)
+		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)
+		mux.HandleFunc("POST /api/v1/stack/sync", s.handleStackSync)
+		mux.HandleFunc("POST /api/v1/stack/rebase", s.handleStackRebase)
+
 		// Project workflow endpoints
 		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
 		mux.HandleFunc("POST /api/v1/project/source", s.handleProjectSource)
