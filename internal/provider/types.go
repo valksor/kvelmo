@@ -147,6 +147,7 @@ const (
 	CapLinkBranch         Capability = "link_branch"
 	CapCreateWorkUnit     Capability = "create_work_unit"
 	CapFetchSubtasks      Capability = "fetch_subtasks"
+	CapFetchParent        Capability = "fetch_parent"
 	CapFetchPR            Capability = "fetch_pr"
 	CapPRComment          Capability = "pr_comment"
 	CapFetchPRComments    Capability = "fetch_pr_comments"
@@ -202,6 +203,9 @@ func InferCapabilities(p any) CapabilitySet {
 	}
 	if _, ok := p.(SubtaskFetcher); ok {
 		caps[CapFetchSubtasks] = true
+	}
+	if _, ok := p.(ParentFetcher); ok {
+		caps[CapFetchParent] = true
 	}
 	if _, ok := p.(PRFetcher); ok {
 		caps[CapFetchPR] = true

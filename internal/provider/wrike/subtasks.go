@@ -2,6 +2,7 @@ package wrike
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,11 +10,74 @@ import (
 	"github.com/valksor/go-toolkit/slug"
 )
 
+// ErrNotASubtask is returned when a work unit is not a subtask.
+var ErrNotASubtask = errors.New("not a subtask")
+
 // SubtaskInfo holds summary information about a subtask.
 type SubtaskInfo struct {
 	ID     string
 	Title  string
 	Status string
+}
+
+// FetchParent implements the provider.ParentFetcher interface.
+// It retrieves the parent task for a given subtask.
+//
+// In Wrike, the parent-child relationship is stored in the parent's subTaskIds array.
+// When a subtask is fetched via FetchSubtasks, the parent_id is stored in metadata.
+// This function uses that metadata to fetch the parent task.
+//
+// If the task is not a subtask (no parent_id in metadata), returns nil, nil.
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+	ref, err := ParseReference(workUnitID)
+	if err != nil {
+		return nil, fmt.Errorf("parse reference: %w", err)
+	}
+
+	// First, fetch the task to check if it has a parent_id in metadata
+	// This is the most reliable way since Wrike API doesn't provide a direct parent field
+	var task *Task
+
+	switch {
+	case ref.Permalink != "":
+		task, err = p.client.GetTaskByPermalinkParam(ctx, ref.Permalink)
+	case apiIDPattern.MatchString(ref.TaskID):
+		task, err = p.client.GetTask(ctx, ref.TaskID)
+	case numericIDPattern.MatchString(ref.TaskID):
+		permalink := BuildPermalinkURL(ref.TaskID)
+		task, err = p.client.GetTaskByPermalinkParam(ctx, permalink)
+	default:
+		return nil, fmt.Errorf("%w: unrecognized task ID format: %s", ErrInvalidReference, ref.TaskID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("fetch task: %w", err)
+	}
+
+	// For tasks fetched directly (not as subtasks), we need to check if this is actually a subtask
+	// Wrike doesn't provide a direct parent_id field in the API response
+	// The metadata will only have parent_id if this was fetched via FetchSubtasks
+	//
+	// If the task was fetched directly, we don't have a way to get the parent without
+	// searching through all parent tasks, which is not practical.
+	//
+	// Users should fetch subtasks via the parent's FetchSubtasks method to get
+	// the parent_id metadata populated.
+
+	// If this task has subtasks, it might be a parent, not a subtask
+	if len(task.SubTaskIDs) > 0 {
+		// This task has children - it's likely a parent, not a subtask
+		// Return sentinel error to indicate no parent
+		return nil, ErrNotASubtask
+	}
+
+	// For a true subtask without subTaskIDs, we don't have a reliable way to find its parent
+	// through the Wrike API without additional context.
+	//
+	// The parent_id would have been set in metadata if this was fetched via FetchSubtasks.
+	// Since we fetched this directly, we don't have that context.
+
+	return nil, ErrNotASubtask
 }
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.

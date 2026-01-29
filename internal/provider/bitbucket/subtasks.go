@@ -2,8 +2,10 @@ package bitbucket
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +16,88 @@ import (
 // taskListPattern matches GitHub/GitLab-style task list items
 // Matches: - [ ] Task item or - [x] Completed task.
 var taskListPattern = regexp.MustCompile(`(?m)^[\s]*[-*]\s*\[([ xX])\]\s*(.+)$`)
+
+// ErrNotASubtask is returned when a work unit is not a subtask.
+var ErrNotASubtask = errors.New("not a subtask")
+
+// FetchParent implements the provider.ParentFetcher interface.
+// It retrieves the parent issue for a Bitbucket task list item.
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+	// Check if this is a subtask (has ":task-" in the ID)
+	if !strings.Contains(workUnitID, ":task-") {
+		// Regular issue, not a subtask
+		return nil, ErrNotASubtask
+	}
+
+	// Parse the subtask ID to extract parent issue
+	// Format: {parentID}:task-{n}
+	taskSplit := strings.Split(workUnitID, ":task-")
+	if len(taskSplit) < 2 {
+		return nil, fmt.Errorf("%w: invalid subtask ID format: %s", ErrInvalidReference, workUnitID)
+	}
+
+	parentID := taskSplit[0]
+
+	// Parse the parent reference
+	ref, err := ParseReference(parentID)
+	if err != nil {
+		return nil, fmt.Errorf("parse parent reference: %w", err)
+	}
+
+	workspace := ref.Workspace
+	repoSlug := ref.RepoSlug
+	if workspace == "" {
+		workspace = p.config.Workspace
+	}
+	if repoSlug == "" {
+		repoSlug = p.config.RepoSlug
+	}
+
+	if workspace == "" || repoSlug == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetWorkspaceRepo(workspace, repoSlug)
+
+	// Fetch the parent issue
+	issue, err := p.client.GetIssue(ctx, ref.IssueID)
+	if err != nil {
+		return nil, fmt.Errorf("get parent issue: %w", err)
+	}
+
+	// Build parent WorkUnit
+	displayID := fmt.Sprintf("%s/%s#%d", workspace, repoSlug, ref.IssueID)
+
+	// Get description
+	description := ""
+	if issue.Content != nil {
+		description = issue.Content.Raw
+	}
+
+	return &provider.WorkUnit{
+		ID:          displayID,
+		ExternalID:  displayID,
+		ExternalKey: strconv.Itoa(ref.IssueID),
+		Provider:    ProviderName,
+		Title:       issue.Title,
+		Description: description,
+		Status:      mapBitbucketState(issue.State),
+		Priority:    provider.PriorityNormal,
+		Labels:      []string{}, // Bitbucket uses components, not labels
+		CreatedAt:   issue.CreatedOn,
+		UpdatedAt:   issue.UpdatedOn,
+		Source: provider.SourceInfo{
+			Type:      ProviderName,
+			Reference: displayID,
+			SyncedAt:  time.Now(),
+		},
+		Metadata: map[string]any{
+			"workspace": workspace,
+			"repo_slug": repoSlug,
+			"state":     issue.State,
+		},
+	}, nil
+}
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
 // For Bitbucket, this parses task list items (- [ ] item) from the issue body.

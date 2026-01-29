@@ -15,6 +15,7 @@ var (
 	_ provider.Snapshotter     = (*Provider)(nil)
 	_ provider.WorkUnitCreator = (*Provider)(nil)
 	_ provider.SubtaskFetcher  = (*Provider)(nil)
+	_ provider.ParentFetcher   = (*Provider)(nil)
 	_ provider.CommentFetcher  = (*Provider)(nil)
 
 	// Note: AttachmentDownloader signature doesn't match (returns any instead of io.ReadCloser).

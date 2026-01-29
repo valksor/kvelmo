@@ -53,6 +53,7 @@ func Info() provider.ProviderInfo {
 			provider.CapLinkBranch:         true,
 			provider.CapCreateWorkUnit:     true,
 			provider.CapFetchSubtasks:      true,
+			provider.CapFetchParent:        true,
 			provider.CapFetchPR:            true,
 			provider.CapPRComment:          true,
 			provider.CapFetchPRComments:    true,
