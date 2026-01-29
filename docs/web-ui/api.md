@@ -872,6 +872,7 @@ curl "http://localhost:PORT/api/v1/project/tasks?queue_id=auth-system-abc123"
 Submit tasks to an external provider (GitHub, Jira, Wrike, etc.).
 
 ```bash
+# Submit all tasks
 curl -X POST http://localhost:PORT/api/v1/project/submit \
   -H "Content-Type: application/json" \
   -d '{
@@ -881,6 +882,15 @@ curl -X POST http://localhost:PORT/api/v1/project/submit \
     "labels": ["q1", "feature"],
     "dry_run": false,
     "mention": "@manager please review"
+  }'
+
+# Submit specific tasks only (selective submit)
+curl -X POST http://localhost:PORT/api/v1/project/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "wrike",
+    "task_ids": ["task-1", "task-3", "task-5"],
+    "labels": ["sprint-1"]
   }'
 ```
 
@@ -892,8 +902,7 @@ curl -X POST http://localhost:PORT/api/v1/project/submit \
 | `create_epic` | boolean | Create parent epic/project |
 | `labels` | array | Labels to apply to all tasks |
 | `dry_run` | boolean | Preview without creating |
-| `task` | array | Submit only specific task IDs (e.g., ["task-3", "task-5"]) |
-| `comment` | string | Comment to add when tasks already submitted |
+| `task_ids` | array | Submit only specific task IDs (e.g., `["task-1", "task-3"]`). Omit to submit all. |
 | `mention` | string | Mention/notification to add to all submitted tasks |
 
 **Response:**

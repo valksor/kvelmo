@@ -157,6 +157,48 @@ Colors are hash-based (consistent per label name):
 | Team | `team:frontend`, `team:backend`, `team:devops` |
 | Status | `status:blocked`, `status:in-review` |
 
+### Hierarchical Context
+
+When working on a subtask (e.g., a GitHub issue that's a child of another issue), the active task card shows hierarchical context:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  👤 Parent Task                                             │
+├──────────────────────────────────────────────────────────────┤
+│  Implement User Authentication System                       │
+│                                                             │
+│  Add OAuth2 authentication with support for Google and...   │
+│                                                             │
+│  [View in provider →]                                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+And sibling subtasks:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🔗 Related Subtasks                                        │
+├──────────────────────────────────────────────────────────────┤
+│  ● Implement OAuth2 Provider Interface                      │
+│  ○ Add Token Refresh Logic                                  │
+│  ○ Create Login/Logout Endpoints                            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Legend:**
+- `●` (green) - Completed
+- `◐` (blue) - In progress
+- `○` (gray) - Todo
+- `✗` (red) - Failed
+- `⏸` (yellow) - Paused
+
+This context helps you understand:
+- The broader goal (parent task)
+- What related work is being done by others (siblings)
+- How your subtask fits into the overall plan
+
+See [Context Configuration](../configuration/context.md) to customize hierarchical context inclusion.
+
 ## Quick Actions
 
 Context-aware buttons for common tasks:
@@ -368,4 +410,5 @@ Stay informed with:
 - [**Getting Started**](getting-started.md) - First time walkthrough
 - [**Creating Tasks**](creating-tasks.md) - Create your first task
 - [**Settings**](settings.md) - Configure workspace
+- [**Context Configuration**](../configuration/context.md) - Hierarchical task context settings
 - [**CLI: serve**](../cli/serve.md) - Server command options

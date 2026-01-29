@@ -67,6 +67,30 @@ providers:
 | `--branch-pattern`     |       | string | `{type}/{key}--{slug}` | Branch pattern template                               |
 | `--template`           |       | string |                        | Template to apply (bug-fix, feature, refactor, etc.)  |
 
+### Context Flags (Hierarchical Tasks)
+
+When working on a subtask (e.g., a GitHub issue that's a child of another issue), these flags control whether to include parent and sibling context in prompts:
+
+| Flag                 | Type | Default | Description                                      |
+| -------------------- | ---- | ------- | ------------------------------------------------ |
+| `--with-parent`      | bool | config  | Include parent task context in prompts           |
+| `--without-parent`   | bool | config  | Exclude parent task context from prompts         |
+| `--with-siblings`    | bool | config  | Include sibling subtask context in prompts       |
+| `--without-siblings` | bool | config  | Exclude sibling subtask context from prompts     |
+| `--max-siblings`     | int  | config  | Maximum number of sibling tasks to include       |
+
+**Note:** These flags override the `context` section in `.mehrhof/config.yaml`. See [Context Configuration](../configuration/context.md) for details.
+
+#### Example: Working on Subtasks
+
+```bash
+# Include parent context but limit siblings
+mehr start github:456 --with-parent --max-siblings 3
+
+# Exclude all hierarchical context
+mehr start github:456 --without-parent --without-siblings
+```
+
 ### Naming Template Variables
 
 | Variable    | Description                                | Example                  |

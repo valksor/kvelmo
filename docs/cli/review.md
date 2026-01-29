@@ -25,6 +25,48 @@ Before the AI review, Mehrhof automatically detects and runs appropriate linters
 
 Lint results are included in the AI agent's review context, allowing it to address both lint issues and higher-level code quality concerns.
 
+### Configuring Linters
+
+You can control which linters run during review via `.mehrhof/config.yaml`:
+
+**Default (safer) behavior - no auto-detection:**
+
+```yaml
+# .mehrhof/config.yaml
+quality:
+  enabled: true                    # Master switch for quality checks
+  use_defaults: false              # Don't auto-enable built-in linters (default)
+  linters:
+    golangci-lint:
+      enabled: true                # Explicitly enable Go linter
+    # Add custom linters
+    phpstan:
+      enabled: true
+      command: ["vendor/bin/phpstan", "analyse", "--error-format=json"]
+      extensions: [".php"]
+```
+
+**Opt-in to auto-detection:**
+
+```yaml
+quality:
+  enabled: true
+  use_defaults: true              # Auto-enable built-in linters based on project files
+```
+
+**Built-in linters:**
+
+| Linter | Language | Auto-Detection |
+|--------|----------|----------------|
+| `golangci-lint` | Go | `go.mod` exists |
+| `eslint` | JavaScript/TypeScript | `package.json` exists |
+| `ruff` | Python | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
+| `php-cs-fixer` | PHP | `composer.json` exists |
+
+> **Note:** With `use_defaults: false` (default), built-in linters will NOT run unless explicitly enabled. This prevents unintended code modifications (e.g., php-cs-fixer on Symfony projects with custom config paths).
+
+See [Configuration Guide](../configuration/index.md#quality) for full details.
+
 ### AI Code Review
 
 After linting, the AI agent analyzes:
