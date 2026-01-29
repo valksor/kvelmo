@@ -340,6 +340,11 @@
                 </div>
             </div>
             <div>
+                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Parent Task (makes this a subtask)</label>
+                <input type="text" name="parent_id" id="edit-parent-id" placeholder="task-1 (or leave empty for top-level)" class="input font-mono text-sm">
+                <p class="text-xs text-surface-400 mt-1">Set a parent to create a subtask hierarchy. Clear to make top-level.</p>
+            </div>
+            <div>
                 <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Depends On (comma-separated task IDs)</label>
                 <input type="text" name="depends_on" id="edit-depends-on" placeholder="task-1, task-2" class="input font-mono text-sm">
             </div>
@@ -660,17 +665,19 @@ async function loadTasks() {
                         <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Title</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Priority</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Parent</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Depends On</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
                     ${data.tasks.map(t => `
-                        <tr class="hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-smooth">
-                            <td class="px-4 py-3 text-sm font-mono text-surface-900 dark:text-surface-100">${escapeHtml(t.id)}</td>
+                        <tr class="hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-smooth ${t.parent_id ? 'pl-4' : ''}">
+                            <td class="px-4 py-3 text-sm font-mono text-surface-900 dark:text-surface-100">${t.parent_id ? '<span class="text-surface-400 mr-1">└</span>' : ''}${escapeHtml(t.id)}</td>
                             <td class="px-4 py-3 text-sm text-surface-700 dark:text-surface-300">${escapeHtml(truncate(t.title, 40))}</td>
                             <td class="px-4 py-3 text-sm"><span class="status-badge ${statusClass(t.status)}">${escapeHtml(t.status)}</span></td>
                             <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.priority}</td>
+                            <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.parent_id ? '<span class="text-brand-600 dark:text-brand-400 font-mono">' + escapeHtml(t.parent_id) + '</span>' : '-'}</td>
                             <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.depends_on ? t.depends_on.join(', ') : '-'}</td>
                             <td class="px-4 py-3 text-sm">
                                 <button type="button" data-action="edit-task" data-task="${t.id}" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">Edit</button>
@@ -879,6 +886,7 @@ async function editTask(taskId) {
         document.getElementById('edit-description').value = currentTask.description || '';
         document.getElementById('edit-priority').value = currentTask.priority || 3;
         document.getElementById('edit-status').value = currentTask.status || 'pending';
+        document.getElementById('edit-parent-id').value = currentTask.parent_id || '';
         document.getElementById('edit-depends-on').value = currentTask.depends_on ? currentTask.depends_on.join(', ') : '';
         document.getElementById('edit-labels').value = currentTask.labels ? currentTask.labels.join(', ') : '';
         document.getElementById('edit-modal').classList.remove('hidden');
@@ -897,6 +905,7 @@ document.getElementById('edit-form').addEventListener('submit', async function(e
     const errorEl = document.getElementById('edit-error');
     errorEl.classList.add('hidden');
     const taskId = document.getElementById('edit-task-id').value;
+    const parentId = document.getElementById('edit-parent-id').value.trim();
     const dependsOn = document.getElementById('edit-depends-on').value;
     const labels = document.getElementById('edit-labels').value;
     const body = {
@@ -904,6 +913,7 @@ document.getElementById('edit-form').addEventListener('submit', async function(e
         description: document.getElementById('edit-description').value,
         priority: parseInt(document.getElementById('edit-priority').value),
         status: document.getElementById('edit-status').value,
+        parent_id: parentId, // Empty string clears the parent
         depends_on: dependsOn ? dependsOn.split(',').map(s => s.trim()).filter(s => s) : [],
         labels: labels ? labels.split(',').map(s => s.trim()).filter(s => s) : []
     };

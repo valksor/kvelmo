@@ -58,7 +58,9 @@ func buildProviderConfig(workspaceCfg *storage.WorkspaceConfig, providerName str
 		if workspaceCfg.Wrike != nil {
 			cfg.Set("token", workspaceCfg.Wrike.Token)
 			cfg.Set("host", workspaceCfg.Wrike.Host)
+			cfg.Set("space_id", workspaceCfg.Wrike.Space)
 			cfg.Set("folder_id", workspaceCfg.Wrike.Folder)
+			cfg.Set("project_id", workspaceCfg.Wrike.Project)
 		}
 
 	case "notion", "nt":

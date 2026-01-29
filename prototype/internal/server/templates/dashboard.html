@@ -9,6 +9,13 @@
     {{template "active_work_content" .ActiveWork}}
 </div>
 
+<!-- Hierarchy (Parent & Sibling Context) -->
+<div id="hierarchy" hx-get="/ui/partials/hierarchy" hx-trigger="sse:{{eventHierarchyUpdated}}" hx-swap="outerHTML">
+    {{if .ActiveWork.Hierarchy}}
+        {{template "hierarchy" .ActiveWork.Hierarchy}}
+    {{end}}
+</div>
+
 <!-- Workflow State Diagram -->
 <div id="workflow-diagram" class="card">
     <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">

@@ -59,6 +59,11 @@ type Options struct {
 	// Sandbox configuration
 	SandboxEnabled bool // Enable sandbox for agent execution
 
+	// Hierarchical context (overrides workspace config)
+	WithParent   *bool // Include parent task context (nil = use config)
+	WithSiblings *bool // Include sibling subtask context (nil = use config)
+	MaxSiblings  *int  // Maximum sibling tasks to include (nil = use config)
+
 	// Naming overrides (CLI flags)
 	ExternalKey           string // Override external key (e.g., "FEATURE-123")
 	TitleOverride         string // Override task title
@@ -328,6 +333,43 @@ func WithOnlyComponent(component string) Option {
 func WithParallel(parallel string) Option {
 	return func(o *Options) {
 		o.ParallelCount = parallel
+	}
+}
+
+// WithParent sets whether to include parent task context (overrides workspace config).
+func WithParent(enabled bool) Option {
+	return func(o *Options) {
+		o.WithParent = &enabled
+	}
+}
+
+// WithoutParent disables parent task context (overrides workspace config).
+func WithoutParent() Option {
+	return func(o *Options) {
+		disabled := false
+		o.WithParent = &disabled
+	}
+}
+
+// WithSiblings sets whether to include sibling subtask context (overrides workspace config).
+func WithSiblings(enabled bool) Option {
+	return func(o *Options) {
+		o.WithSiblings = &enabled
+	}
+}
+
+// WithoutSiblings disables sibling subtask context (overrides workspace config).
+func WithoutSiblings() Option {
+	return func(o *Options) {
+		disabled := false
+		o.WithSiblings = &disabled
+	}
+}
+
+// WithMaxSiblings sets the maximum number of sibling tasks to include (overrides workspace config).
+func WithMaxSiblings(maxSiblings int) Option {
+	return func(o *Options) {
+		o.MaxSiblings = &maxSiblings
 	}
 }
 
