@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/chzyer/readline v1.5.1
+	github.com/fatih/color v1.16.0
 	github.com/go-rod/rod v0.116.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v67 v67.0.0

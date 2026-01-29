@@ -15,6 +15,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/progress"
+	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
@@ -105,7 +106,35 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
 	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
-	prompt := buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults)
+
+	// Fetch hierarchical context (parent and sibling tasks) if configured
+	// Check CLI options first, then workspace config
+	var hierarchy *HierarchicalContext
+	shouldIncludeParent := false
+	if c.opts.WithParent != nil {
+		shouldIncludeParent = *c.opts.WithParent
+	} else if workspaceCfg.Context != nil {
+		shouldIncludeParent = workspaceCfg.Context.IncludeParent
+	}
+
+	if shouldIncludeParent {
+		// Resolve provider and fetch hierarchical context
+		resolveOpts := provider.ResolveOptions{
+			DefaultProvider: c.opts.DefaultProvider,
+		}
+		ref := c.activeTask.Ref
+		providerCfg := buildProviderConfig(workspaceCfg, parseScheme(ref))
+		if p, id, err := c.providers.Resolve(ctx, ref, providerCfg, resolveOpts); err == nil {
+			// Get the current work unit for hierarchy detection
+			if reader, ok := p.(provider.Reader); ok {
+				if workUnit, err := reader.Fetch(ctx, id); err == nil {
+					hierarchy, _ = c.FetchHierarchicalContextFromConfig(ctx, p, workUnit)
+				}
+			}
+		}
+	}
+
+	prompt := buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults, hierarchy)
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
@@ -348,7 +377,35 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
 	specStatusSummary := buildSpecStatusSummary(c.workspace, taskID)
 	specTrackingSummary := buildSpecificationTrackingSummary(c.workspace, taskID)
-	prompt := buildImplementationPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary)
+
+	// Fetch hierarchical context (parent and sibling tasks) if configured
+	// Check CLI options first, then workspace config
+	var hierarchy *HierarchicalContext
+	shouldIncludeParent := false
+	if c.opts.WithParent != nil {
+		shouldIncludeParent = *c.opts.WithParent
+	} else if workspaceCfg.Context != nil {
+		shouldIncludeParent = workspaceCfg.Context.IncludeParent
+	}
+
+	if shouldIncludeParent {
+		// Resolve provider and fetch hierarchical context
+		resolveOpts := provider.ResolveOptions{
+			DefaultProvider: c.opts.DefaultProvider,
+		}
+		ref := c.activeTask.Ref
+		providerCfg := buildProviderConfig(workspaceCfg, parseScheme(ref))
+		if p, id, err := c.providers.Resolve(ctx, ref, providerCfg, resolveOpts); err == nil {
+			// Get the current work unit for hierarchy detection
+			if reader, ok := p.(provider.Reader); ok {
+				if workUnit, err := reader.Fetch(ctx, id); err == nil {
+					hierarchy, _ = c.FetchHierarchicalContextFromConfig(ctx, p, workUnit)
+				}
+			}
+		}
+	}
+
+	prompt := buildImplementationPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, specContent, notes, customInstructions, specStatusSummary, specTrackingSummary, hierarchy)
 
 	// Optimize prompt if enabled (CLI flag or workspace config)
 	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "implementing")

@@ -30,6 +30,8 @@ var (
 	projectEditPriority    int
 	projectEditStatus      string
 	projectEditDependsOn   string
+	projectEditParent      string
+	projectEditClearParent bool
 	projectEditLabels      string
 	projectEditAssignee    string
 
@@ -139,12 +141,16 @@ FLAGS:
   --priority      Priority (1 = highest)
   --status        Status (pending, ready, blocked)
   --depends-on    Dependencies (comma-separated task IDs)
+  --parent        Parent task ID (makes this a subtask)
+  --clear-parent  Remove parent relationship (makes this a top-level task)
   --labels        Labels (comma-separated)
   --assignee      Assignee identifier
 
 EXAMPLES:
   mehr project edit task-2 --priority 1
   mehr project edit task-2 --depends-on task-1,task-3
+  mehr project edit task-2 --parent task-1
+  mehr project edit task-2 --clear-parent
   mehr project edit task-2 --status ready`,
 	Args: cobra.ExactArgs(1),
 	RunE: runProjectEdit,
@@ -218,6 +224,8 @@ func init() {
 	projectEditCmd.Flags().IntVar(&projectEditPriority, "priority", 0, "Priority (1 = highest)")
 	projectEditCmd.Flags().StringVar(&projectEditStatus, "status", "", "Status (pending, ready, blocked)")
 	projectEditCmd.Flags().StringVar(&projectEditDependsOn, "depends-on", "", "Dependencies (comma-separated)")
+	projectEditCmd.Flags().StringVar(&projectEditParent, "parent", "", "Parent task ID (makes this a subtask)")
+	projectEditCmd.Flags().BoolVar(&projectEditClearParent, "clear-parent", false, "Remove parent relationship")
 	projectEditCmd.Flags().StringVar(&projectEditLabels, "labels", "", "Labels (comma-separated)")
 	projectEditCmd.Flags().StringVar(&projectEditAssignee, "assignee", "", "Assignee")
 
@@ -326,14 +334,18 @@ func runProjectTasks(cmd *cobra.Command, args []string) error {
 
 	// Display tasks
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintf(w, "ID\tTitle\tStatus\tPriority\tDepends On\n")
+	_, _ = fmt.Fprintf(w, "ID\tTitle\tStatus\tPriority\tParent\tDepends On\n")
 	for _, task := range tasks {
+		parent := "-"
+		if task.ParentID != "" {
+			parent = task.ParentID
+		}
 		deps := "-"
 		if len(task.DependsOn) > 0 {
 			deps = strings.Join(task.DependsOn, ", ")
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
-			task.ID, truncate(task.Title, 40), task.Status, task.Priority, deps)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\n",
+			task.ID, truncate(task.Title, 40), task.Status, task.Priority, parent, deps)
 	}
 	_ = w.Flush()
 
@@ -404,6 +416,11 @@ func runProjectEdit(cmd *cobra.Command, args []string) error {
 				task.DependsOn[i] = strings.TrimSpace(dep)
 			}
 		}
+		if projectEditClearParent {
+			task.ParentID = ""
+		} else if projectEditParent != "" {
+			task.ParentID = strings.TrimSpace(projectEditParent)
+		}
 		if projectEditLabels != "" {
 			task.Labels = strings.Split(projectEditLabels, ",")
 			for i, label := range task.Labels {
@@ -420,6 +437,7 @@ func runProjectEdit(cmd *cobra.Command, args []string) error {
 
 	// Recompute relationships
 	queue.ComputeBlocksRelations()
+	queue.ComputeSubtaskRelations()
 	queue.ComputeTaskStatuses()
 
 	// Save queue

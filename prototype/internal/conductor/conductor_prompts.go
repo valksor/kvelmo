@@ -18,6 +18,55 @@ const (
 	maxContextLength = 2000
 )
 
+// buildHierarchySection formats hierarchical task context (parent and siblings) for prompts.
+func buildHierarchySection(hierarchy *HierarchicalContext) string {
+	if hierarchy == nil {
+		return ""
+	}
+
+	var sections []string
+
+	// Add parent context
+	if hierarchy.Parent != nil {
+		parentDesc := hierarchy.Parent.Description
+		if len(parentDesc) > 500 {
+			parentDesc = parentDesc[:500] + "..."
+		}
+
+		sections = append(sections, fmt.Sprintf(`### Parent Task Context
+**Title:** %s
+**Status:** %s
+**Description:**
+%s
+
+This is a subtask of the parent task above. Consider how your work fits into the broader context.
+`, hierarchy.Parent.Title, hierarchy.Parent.Status, parentDesc))
+	}
+
+	// Add siblings context
+	if len(hierarchy.Siblings) > 0 {
+		var siblingList []string
+		for _, s := range hierarchy.Siblings {
+			siblingList = append(siblingList, fmt.Sprintf("- **%s** (Status: %s)", s.Title, s.Status))
+		}
+
+		sections = append(sections, fmt.Sprintf(`### Related Subtasks
+%s
+
+Consider how your implementation relates to these sibling tasks. Avoid duplicating work and ensure consistency.
+`, strings.Join(siblingList, "\n")))
+	}
+
+	if len(sections) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+## Hierarchical Context
+%s
+`, strings.Join(sections, "\n"))
+}
+
 // buildPlanningPrompt creates the prompt for specification generation.
 //
 // The workspace parameter is used to:
@@ -28,7 +77,7 @@ const (
 //
 // If useDefaults is true, the agent will provide best-guess default answers for unknowns
 // without asking the user. If false (default), the agent will ask the user for clarification.
-func buildPlanningPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, notes, existingSpecs, customInstructions string, useDefaults bool) string {
+func buildPlanningPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, notes, existingSpecs, customInstructions string, useDefaults bool, hierarchy *HierarchicalContext) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 	prompt := fmt.Sprintf(`You are an expert software engineer specializing in architecture and system design. Analyze this task and create a detailed implementation specification.
 
@@ -41,6 +90,11 @@ Working directory: %s
 ## Source Content
 %s
 `, currentTime, workingDir, title, sourceContent)
+
+	// Add hierarchical context if available
+	if hierarchySection := buildHierarchySection(hierarchy); hierarchySection != "" {
+		prompt += hierarchySection
+	}
 
 	if existingSpecs != "" {
 		prompt += fmt.Sprintf(`
@@ -184,7 +238,7 @@ Your response MUST include:
 //   - Build specification status and tracking summaries
 //
 // If workspace is nil, these features are disabled.
-func buildImplementationPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, specsContent, notes, customInstructions, specStatusSummary, specTrackingSummary string) string {
+func buildImplementationPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, specsContent, notes, customInstructions, specStatusSummary, specTrackingSummary string, hierarchy *HierarchicalContext) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 
 	// Phase 1: Context (Task, Requirements, Specifications)
@@ -202,6 +256,11 @@ Working directory: %s
 ## Specifications
 %s
 `, currentTime, workingDir, title, sourceContent, specsContent)
+
+	// Add hierarchical context if available
+	if hierarchySection := buildHierarchySection(hierarchy); hierarchySection != "" {
+		prompt += hierarchySection
+	}
 
 	if notes != "" {
 		prompt += fmt.Sprintf(`
