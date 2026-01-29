@@ -71,6 +71,9 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/task/labels", s.handleTaskLabels)
 		mux.HandleFunc("GET /api/v1/labels", s.handleListLabels)
 
+		// Hierarchy endpoint
+		mux.HandleFunc("GET /api/v1/task/hierarchy", s.handleGetHierarchy)
+
 		// Cost tracking endpoints
 		mux.HandleFunc("GET /api/v1/tasks/{id}/costs", s.handleGetTaskCosts)
 		mux.HandleFunc("GET /api/v1/costs", s.handleGetAllCosts)
@@ -107,6 +110,13 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/memory/search", s.handleMemorySearch)
 		mux.HandleFunc("POST /api/v1/memory/index", s.handleMemoryIndex)
 		mux.HandleFunc("GET /api/v1/memory/stats", s.handleMemoryStats)
+
+		// Links endpoints
+		mux.HandleFunc("GET /api/v1/links", s.handleListLinks)
+		mux.HandleFunc("GET /api/v1/links/", s.handleGetEntityLinks)
+		mux.HandleFunc("GET /api/v1/links/search", s.handleSearchLinks)
+		mux.HandleFunc("GET /api/v1/links/stats", s.handleLinksStats)
+		mux.HandleFunc("POST /api/v1/links/rebuild", s.handleRebuildLinks)
 
 		// Find search endpoints (available in both project and global mode)
 		mux.HandleFunc("GET /api/v1/find", s.handleFindSearch)
@@ -161,6 +171,9 @@ func (s *Server) setupRouter() http.Handler {
 
 		// Memory UI
 		mux.HandleFunc("GET /memory", s.handleMemoryUI)
+
+		// Links UI
+		mux.HandleFunc("GET /links", s.handleLinksUI)
 
 		// Project workflow endpoints
 		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
@@ -229,6 +242,7 @@ func (s *Server) setupRouter() http.Handler {
 	mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
 	mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
 	mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
+	mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)
 	mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
 	mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
 
