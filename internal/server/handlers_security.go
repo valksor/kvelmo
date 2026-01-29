@@ -298,3 +298,43 @@ func (s *Server) writeScanResultsHTML(w http.ResponseWriter, resp scanResponse) 
 
 	_, _ = w.Write([]byte(html))
 }
+
+// handleScanPage renders the security scan page.
+func (s *Server) handleScanPage(w http.ResponseWriter, r *http.Request) {
+	if s.renderer == nil {
+		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
+
+		return
+	}
+
+	pageData := views.ComputePageData(
+		s.modeString(),
+		s.config.Mode == ModeGlobal,
+		s.config.AuthStore != nil,
+		s.canSwitchProject(),
+		s.getCurrentUser(r),
+	)
+
+	// Detect project for scanner recommendations
+	var projectInfo *views.ProjectInfoData
+	if s.config.Conductor != nil {
+		if ws := s.config.Conductor.GetWorkspace(); ws != nil {
+			info := security.DetectProject(ws.Root())
+			projectInfo = &views.ProjectInfoData{
+				HasGoMod:       info.HasGoMod,
+				HasPackageJSON: info.HasPackageJSON,
+			}
+		}
+	}
+
+	data := views.ScanData{
+		PageData:    pageData,
+		Enabled:     s.config.Conductor != nil,
+		ProjectInfo: projectInfo,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderer.RenderScan(w, data); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
+	}
+}
