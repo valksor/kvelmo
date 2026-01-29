@@ -51,6 +51,11 @@ var (
 
 	// start flags.
 	projectStartAuto bool
+
+	// sync flags.
+	projectSyncStatus      string
+	projectSyncMaxDepth    int
+	projectSyncPreserveExt bool
 )
 
 var projectCmd = &cobra.Command{
@@ -66,6 +71,7 @@ The project workflow:
 
 COMMANDS:
   plan      Create a project plan from a source
+  sync      Sync project structure from provider
   tasks     View and filter local task queue
   edit      Edit a task in the queue
   reorder   Reorder tasks in the queue
@@ -209,6 +215,32 @@ EXAMPLES:
 	RunE: runProjectStart,
 }
 
+var projectSyncCmd = &cobra.Command{
+	Use:   "sync <provider:reference>",
+	Short: "Sync project structure from provider",
+	Long: `Sync entire project/epic structures from providers into local queues.
+
+Pulls all tasks and subtasks from a provider's project or epic.
+
+PROVIDER REFERENCES:
+  wrike:<permalink>      Wrike folder/project by permalink URL
+  wrike:<folder-id>      Wrike folder by ID
+  jira:<epic-key>        Jira epic (e.g., PROJ-123)
+  github:<issue-number>  GitHub issue with task list (fallback)
+
+FLAGS:
+  --status       Filter by status (empty = smart default: open + 30d completed)
+  --max-depth    Max depth for recursive fetch (0 = unlimited)
+  --preserve-ext Keep external IDs/URLs (default: true)
+
+EXAMPLES:
+  mehr project sync wrike:https://www.wrike.com/open.htm?id=123456
+  mehr project sync jira:PROJ-123 --status open
+  mehr project sync wrike:folder-789`,
+	Args: cobra.ExactArgs(1),
+	RunE: runProjectSync,
+}
+
 func init() {
 	// plan flags
 	projectPlanCmd.Flags().StringVar(&projectPlanTitle, "title", "", "Project title")
@@ -246,6 +278,11 @@ func init() {
 	// start flags
 	projectStartCmd.Flags().BoolVar(&projectStartAuto, "auto", false, "Auto-chain through all tasks")
 
+	// sync flags
+	projectSyncCmd.Flags().StringVar(&projectSyncStatus, "status", "", "Filter by status (empty = smart default)")
+	projectSyncCmd.Flags().IntVar(&projectSyncMaxDepth, "max-depth", 0, "Max depth for recursive fetch")
+	projectSyncCmd.Flags().BoolVar(&projectSyncPreserveExt, "preserve-ext", true, "Keep external IDs/URLs")
+
 	// Add subcommands
 	projectCmd.AddCommand(projectPlanCmd)
 	projectCmd.AddCommand(projectTasksCmd)
@@ -253,6 +290,7 @@ func init() {
 	projectCmd.AddCommand(projectReorderCmd)
 	projectCmd.AddCommand(projectSubmitCmd)
 	projectCmd.AddCommand(projectStartCmd)
+	projectCmd.AddCommand(projectSyncCmd)
 
 	// Add project command to root
 	rootCmd.AddCommand(projectCmd)
@@ -661,6 +699,46 @@ func runProjectStart(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Started task: %s - %s\n", task.ID, task.Title)
+
+	return nil
+}
+
+func runProjectSync(cmd *cobra.Command, args []string) error {
+	reference := args[0]
+	ctx := context.Background()
+
+	// Initialize conductor
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return fmt.Errorf("initialize: %w", err)
+	}
+
+	// Build options with smart defaults
+	opts := conductor.SyncProjectOptions{
+		MaxDepth:         projectSyncMaxDepth,
+		PreserveExternal: projectSyncPreserveExt,
+	}
+
+	if projectSyncStatus != "" {
+		opts.IncludeStatus = strings.Split(projectSyncStatus, ",")
+		for i, s := range opts.IncludeStatus {
+			opts.IncludeStatus[i] = strings.TrimSpace(s)
+		}
+	}
+
+	// Execute sync
+	result, err := cond.SyncProject(ctx, reference, opts)
+	if err != nil {
+		return fmt.Errorf("sync project: %w", err)
+	}
+
+	// Display results
+	fmt.Printf("Synced project: %s\n", result.Queue.Title)
+	fmt.Printf("  Queue: %s\n", result.Queue.ID)
+	fmt.Printf("  Tasks: %d synced\n", result.TasksSync)
+	if result.URL != "" {
+		fmt.Printf("  Source: %s\n", result.URL)
+	}
 
 	return nil
 }

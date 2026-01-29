@@ -25,6 +25,7 @@ func Info() provider.ProviderInfo {
 			provider.CapFetchParent:        true,
 			provider.CapCreateDependency:   true,
 			provider.CapFetchDependencies:  true,
+			provider.CapFetchProject:       true,
 		},
 	}
 }
