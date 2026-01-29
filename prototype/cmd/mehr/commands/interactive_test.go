@@ -4,6 +4,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -124,4 +125,22 @@ func stringSliceContains(slice []string, s string) bool {
 	}
 
 	return false
+}
+
+// TestInteractiveCommand_Phase2CommandsIncluded verifies Phase 2 commands are documented.
+func TestInteractiveCommand_Phase2CommandsIncluded(t *testing.T) {
+	// Verify new commands are mentioned in the Long description
+	longDesc := interactiveCmd.Long
+
+	phase2Commands := []string{"find", "simplify", "label", "memory", "budget"}
+	for _, cmd := range phase2Commands {
+		if !contains(longDesc, cmd) {
+			t.Errorf("Phase 2 command %q not found in Long description", cmd)
+		}
+	}
+}
+
+// contains is a helper to check if a string contains a substring.
+func contains(s, substr string) bool {
+	return len(s) > 0 && strings.Contains(s, substr)
 }
