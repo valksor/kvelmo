@@ -18,6 +18,7 @@ type projectPlanRequest struct {
 	Source       string `json:"source"`
 	Title        string `json:"title,omitempty"`
 	Instructions string `json:"instructions,omitempty"`
+	UseSchema    bool   `json:"use_schema,omitempty"`
 }
 
 type projectPlanResponse struct {
@@ -155,6 +156,7 @@ func (s *Server) handleProjectPlan(w http.ResponseWriter, r *http.Request) {
 	opts := conductor.ProjectPlanOptions{
 		Title:              req.Title,
 		CustomInstructions: req.Instructions,
+		UseSchema:          req.UseSchema,
 	}
 
 	result, err := s.config.Conductor.CreateProjectPlan(r.Context(), req.Source, opts)
