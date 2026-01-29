@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mehrhof is a **Go CLI tool + Web UI** for AI-powered task automation. It orchestrates AI agents (primarily Claude) to perform planning, implementation, and code review workflows with checkpointing, parallel task support, and multi-provider integrations.
 
-**⚠️ ALL features must be implemented for BOTH CLI and Web UI interfaces.** See the "Dual Interface Implementation" section below.
+**⚠️ ALL features must be implemented for BOTH CLI and Web UI interfaces. Interactive modes (CLI REPL + Web `/interactive`) support workflow commands based on usability considerations.** See the "Multi-Interface Implementation" section below.
 
 ---
 
@@ -59,20 +59,24 @@ func ColorState(state, displayName string) string {
 
 ---
 
-## ⚠️ CRITICAL: Dual Interface Implementation - CLI + Web UI
+## ⚠️ CRITICAL: Multi-Interface Implementation
 
-**ALL features must be implemented for BOTH CLI and Web UI unless explicitly CLI-only.**
+**ALL features must be implemented for BOTH CLI and Web UI unless explicitly CLI-only. Interactive modes (CLI REPL + Web `/interactive`) support workflow commands based on usability considerations.**
 
-Mehrhof has two user interfaces that must maintain feature parity:
-1. **CLI** - Command-line interface via `cmd/mehr/commands/`
-2. **Web UI** - Web interface via `internal/server/`
+Mehrhof has four user interfaces:
+1. **CLI** - Full command-line interface via `cmd/mehr/commands/`
+2. **Interactive CLI** - REPL mode via `mehr interactive` (workflow command subset)
+3. **Web UI** - Web interface pages via `internal/server/`
+4. **Interactive Web** - Browser-based REPL at `/interactive` (workflow command subset)
 
 ### Implementation Checklist
 
 When adding a new feature, complete ALL applicable items:
 
 - [ ] **CLI Command**: Add command in `cmd/mehr/commands/*.go` using Cobra
+- [ ] **Interactive CLI**: Add command to `interactive` allowed commands if workflow-relevant (see "When to Add to Interactive Modes" below)
 - [ ] **Web UI Handler**: Add handler in `internal/server/handlers*.go` or `internal/server/api/`
+- [ ] **Interactive Web**: Add to `/interactive` command parser if workflow-relevant (see "When to Add to Interactive Modes" below)
 - [ ] **Router Registration**: Update `internal/server/router.go` to register new routes
 - [ ] **Template/View**: Add template in `internal/server/templates/` or `internal/server/views/`
 - [ ] **Navigation**: Update menus/navigation if feature is user-facing
@@ -149,19 +153,88 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-### Current Feature Parity Gaps
+### Feature Parity: CLI vs Web UI
 
-| CLI Command | Web UI Status |
-|-------------|---------------|
-| `interactive` | ✅ Full REPL at `/interactive` |
-| `links` | ✅ Full parity - API + UI at `/links` |
-| `project sync` | ✅ Full parity - API + SSE streaming |
-| `budget` | ❌ Missing - only basic stats in dashboard |
-| `memory` | ⚠️ Partial - API exists, no UI |
-| `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
-| `continue` | ✅ Available in interactive mode |
-| `optimize`, `export` | ❌ Missing |
-| `scan` | ⚠️ Partial - API endpoint exists, no UI |
+| CLI Command | Web UI Status | Notes |
+|-------------|---------------|-------|
+| `start <ref>` | ✅ | Dashboard + project pages |
+| `plan` | ✅ | SSE streaming |
+| `implement` | ✅ | SSE streaming |
+| `review` | ✅ | SSE streaming |
+| `finish` | ✅ | PR creation/merge |
+| `continue` | ✅ | Resume from waiting |
+| `abandon` | ✅ | Discard task |
+| `status` | ✅ | Dashboard display |
+| `note <msg>` | ✅ | Quick note form |
+| `question <msg>` | ✅ | Quick question + SSE |
+| `cost` | ⚠️ | Basic only, detailed reporting missing |
+| `list` | ✅ | Recent tasks sidebar |
+| `undo/redo` | ✅ | Checkpoint navigation |
+| `links` | ✅ | Full parity - `/links` page |
+| `find` | ✅ | `/find` page |
+| `browser` | ✅ | `/browser` page |
+| `mcp` | ✅ | MCP server toggle |
+| `scan` | ⚠️ | API endpoint exists, no UI |
+| `memory` | ⚠️ | API endpoint exists, no UI |
+| `project sync` | ✅ | API + SSE streaming |
+| `stack` | ✅ | `/stack` page |
+| `interactive` | ✅ | `/interactive` page |
+| `serve` | N/A | Self-referential |
+| `config validate` | ✅ | Settings page validation |
+| `agents` | ✅ | Settings page |
+| `providers` | ✅ | Settings page (login) |
+| `templates` | ✅ | Settings page |
+| `generate-secret` | ❌ | CLI-only utility |
+| `update check/install` | ❌ | CLI-only utility |
+| `hooks/lefthook` | ❌ | CLI-only development tool |
+| `workflow` | ❌ | CLI-only diagnostic |
+| `budget` | ❌ | Missing - only basic stats |
+| `optimize` | ❌ | Missing |
+| `export` | ❌ | Missing |
+
+**Legend**: ✅ = Full support | ⚠️ = Partial support | ❌ = Not available | N/A = Not applicable
+
+### Feature Parity: Interactive Modes (CLI REPL vs Web `/interactive`)
+
+| Feature | Interactive CLI | Interactive Web | Notes |
+|---------|-----------------|-----------------|-------|
+| **Workflow Commands** |
+| `start` | ✅ | ✅ | |
+| `plan` | ✅ | ✅ | |
+| `implement` | ✅ (alias: `impl`) | ✅ | |
+| `review` | ✅ | ✅ | |
+| `finish` | ✅ | ✅ | |
+| `continue` | ✅ (alias: `cont`) | ✅ | |
+| `abandon` | ✅ | ✅ | |
+| **Session Commands** |
+| `status` | ✅ (alias: `st`) | ✅ | |
+| `note` | ✅ | ✅ | |
+| `question` / `ask` | ✅ (via chat) | ✅ | |
+| `answer` | ✅ (alias: `a`) | ✅ | |
+| `specification` | ✅ (alias: `spec`) | ✅ | |
+| `cost` | ✅ | ✅ | |
+| `list` | ✅ | ✅ | |
+| `quick` | ✅ | ✅ | |
+| **Navigation** |
+| `undo` | ✅ | ✅ | |
+| `redo` | ✅ | ✅ | |
+| `clear` | ✅ | N/A | Web has UI refresh instead |
+| `help` / `?` | ✅ | ✅ | |
+| `exit` / `quit` | ✅ | ✅ | Close tab/window |
+| **Chat Interface** |
+| `chat <msg>` | ✅ | ✅ (main input) | |
+| **CLI-Only** (not suitable for REPL): |
+| `project sync` | ❌ | ❌ | Flag-heavy operation |
+| `browser` | ❌ | ❌ | Separate page for control |
+| `mcp` | ❌ | ❌ | System operation |
+| `config validate` | ❌ | ❌ | Setup task |
+| `generate-secret` | ❌ | ❌ | Setup task |
+| `update` | ❌ | ❌ | System operation |
+| `hooks/lefthook` | ❌ | ❌ | Dev tool |
+| `serve` | ❌ | ❌ | Server start |
+| `workflow` | ❌ | ❌ | Diagnostic |
+
+**Legend**: ✅ = Full support | ❌ = Not available | N/A = Not applicable
 
 ### When CLI-Only Is Appropriate
 
@@ -169,7 +242,26 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 - **Developer utilities**: `hooks`, `lefthook`, `config validate`
 - **Debugging/diagnostic**: `status --diagram`, `cost --breakdown`
 
-### Verification: Test both CLI and Web UI implementations, verify error handling, check CLI flags map to Web UI inputs, ensure SSE streaming works for long-running operations, update feature parity table.
+### When to Add Commands to Interactive Modes
+
+**Interactive modes (CLI REPL + Web `/interactive`)** are designed for **conversational workflow sessions**. The key consideration is **usability in interactivity** - does this command make sense when the user is in a REPL/chat session?
+
+**Add to interactive modes when:**
+- Workflow control: `start`, `plan`, `implement`, `review`, `finish`, `continue`, `abandon`
+- Session context: `status`, `note`, `question`, `specification`, `cost`, `list`
+- Session navigation: `undo`, `redo`, `clear`, `help`, `exit`
+- Quick actions: `quick`, `answer` (respond to agent questions)
+
+**Keep CLI-only when:**
+- **Configuration workflows**: `config validate`, `generate-secret` - setup tasks, not session tasks
+- **Developer utilities**: `hooks`, `lefthook` - development setup, not workflow-related
+- **System operations**: `update check/install`, `serve`, `workflow` - system-level, not session-level
+- **Flag-heavy operations**: Commands with many CLI flags don't translate well to REPL
+- **One-shot diagnostics**: Operations you run once, not during a workflow session
+
+**The key question**: "Would a user want to run this while in the middle of a conversational session with the agent?"
+
+### Verification: Test both CLI and Web UI implementations, verify error handling, check CLI flags map to Web UI inputs, ensure SSE streaming works for long-running operations, update feature parity tables.
 
 ---
 
@@ -728,7 +820,7 @@ This runs esbuild with minification to produce the production-ready bundle.
 mehr start <ref> | plan | implement | review | finish | continue | auto <ref> | interactive
 ```
 
-Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `question <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `review_pr`, `migrate_tokens`
+Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `guide`, `status`, `list`, `note <msg>`, `question <msg>`, `browser`, `mcp`, `scan`, `serve`, `project plan|submit|start|sync`, `stack`, `config validate`, `agents`, `providers`, `templates`, `update check|install`, `generate-secret`, `cost`, `memory`, `links`, `find`, `review_pr`, `migrate_tokens`
 
 **Question Command**: `mehr question <query>` (aliases: `ask`, `q`)
 - Ask the agent a question during planning, implementing, or reviewing
@@ -736,16 +828,25 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 - Useful for: understanding decisions, discussing alternatives, getting clarification
 - Web UI: Quick Question input form + SSE streaming response
 
-**Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Dual Interface Implementation" section above for parity status.
+**Web UI Access**: Run `mehr serve` or navigate to the web interface at the configured port. Most workflow commands have Web UI equivalents. See "Multi-Interface Implementation" section above for parity status.
 
 **Interactive Mode**: Use `mehr interactive` for CLI REPL mode or navigate to `/interactive` in the Web UI for real-time agent chat with workflow control.
+
+**Interactive Mode Commands** (subset):
+- Workflow: `start`, `plan`, `implement` (alias: `impl`), `review`, `finish`, `continue` (alias: `cont`), `abandon`
+- Info: `status` (alias: `st`), `note`, `cost`, `list`, `specification` (alias: `spec`), `answer` (alias: `a`)
+- Nav: `undo`, `redo`, `clear`, `help` (alias: `?`), `exit` (alias: `quit`, `q`)
+- Chat: `chat <msg>`, `ask <msg>`
+- Quick: `quick <desc>`
 
 ## Architecture
 
 ### Entry Point Flow
 
 **CLI Path**: `cmd/mehr/main.go` → `commands.Execute()` → Cobra command handlers
-**Web UI Path**: `cmd/mehr/main.go` → `serve` command → `internal/server/server.go` → HTTP handlers
+**Interactive CLI Path**: `cmd/mehr/main.go` → `interactive` command → `REPL` → command dispatcher
+**Web UI Path**: `cmd/mehr/main.go` → `serve` command → `internal/server/server.go` → HTTP handlers → templates
+**Interactive Web Path**: `cmd/mehr/main.go` → `serve` → `/interactive` handler → SSE + HTMX
 
 ### Core Packages
 
@@ -922,7 +1023,7 @@ agents:
 
 ## Code Style
 
-- **Dual Interface**: ALL features must have both CLI and Web UI implementations (see "Dual Interface Implementation" section)
+- **Multi-Interface**: ALL features must have both CLI and Web UI implementations (see "Multi-Interface Implementation" section)
 - **Imports**: standard library → third-party → local (each group sorted alphabetically)
 - **Naming**: PascalCase for exported, camelCase for unexported
 - **Errors**: `fmt.Errorf("prefix: %w", err)` for wrapping; `errors.Join(errs...)` for multiple

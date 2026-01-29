@@ -18,18 +18,66 @@ mehr interactive
 
 ## Commands
 
+### Chat
+
 | Command | Aliases | Description |
 |---------|----------|-------------|
 | `chat <msg>` | `ask`, `c` | Chat with the agent |
+| `answer <resp>` | `a` | Answer agent's question |
+| `note <msg>` | - | Add a note to the current task |
+
+### Workflow
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
 | `start <ref>` | - | Start a new task from reference |
 | `plan [prompt]` | - | Enter planning phase |
 | `implement` | `impl` | Execute specifications |
 | `review` | - | Review code |
 | `continue` | `cont` | Resume from waiting/paused |
+| `finish` | - | Complete the task |
+| `abandon` | - | Discard the task |
+
+### Info
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
 | `status` | `st` | Show task status |
-| `answer <resp>` | `a` | Answer agent's question |
+| `cost` | - | Show token usage and costs |
+| `budget` | - | Show token budget status |
+| `list` | - | List all tasks |
+| `specification <n>` | `spec` | View specification |
+
+### Search
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
+| `find <query>` | - | AI-powered code search |
+| `memory <query>` | - | Search semantic memory |
+
+### Task Management
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
+| `simplify [files]` | - | Simplify code based on workflow state |
+| `label add <lbl...>` | - | Add labels to active task |
+| `label remove <lbl...>` | `label rm` | Remove labels from active task |
+| `label set <lbl...>` | - | Set all labels (replace) |
+| `label clear` | - | Clear all labels |
+| `label list` | `label ls` | List all labels |
+
+### Control
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
+| `quick <desc>` | - | Create a quick task |
 | `undo` | - | Undo to previous checkpoint |
 | `redo` | - | Redo to next checkpoint |
+
+### Session
+
+| Command | Aliases | Description |
+|---------|----------|-------------|
 | `clear` | - | Clear screen |
 | `help` | `?` | Show available commands |
 | `exit` | `quit`, `q` | Exit interactive mode |
@@ -66,9 +114,31 @@ Saving chat history...
 Goodbye!
 ```
 
+## Cancellation
+
+Press **Ctrl+C** at any time to immediately cancel the current operation:
+
+- **Agent operations** (chat, plan, implement, review, find, simplify) are terminated immediately
+- **The agent process is killed** - no further output is generated
+- **You stay in the REPL** - type another command or `exit` to leave
+- **Workflow state is preserved** - you can retry the cancelled operation
+
+This is useful when:
+- An agent is taking too long
+- You realize you want to change your approach
+- The agent is going in the wrong direction
+
+```bash
+mehrhof (idle) > plan
+Entering planning phase...
+^C
+Operation stopped. Type 'exit' to quit.
+mehrhof (idle) > plan   # Retry is safe
+```
+
 ## Keyboard Shortcuts
 
-- **Ctrl+C**: Stop the current operation (keeps you in interactive mode)
+- **Ctrl+C**: Cancel current operation (stays in interactive mode)
 - **Up/Down Arrows**: Navigate command history
 - **Tab**: Auto-complete commands
 - **Ctrl+D** or type `exit`: Exit interactive mode
