@@ -1,10 +1,13 @@
 package export
 
 import (
+	"context"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/export/schema"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -35,6 +38,36 @@ type ParsedPlan struct {
 //	- Blocker one
 //	- Blocker two
 func ParseProjectPlan(content string) *ParsedPlan {
+	return ParseProjectPlanWithSchema(context.Background(), content, nil)
+}
+
+// ParseProjectPlanWithSchema parses AI output into a structured plan with tasks.
+// It attempts schema-driven extraction first (if an agent is provided), then falls back
+// to regex-based parsing if schema extraction fails or no agent is provided.
+func ParseProjectPlanWithSchema(ctx context.Context, content string, ag agent.Agent) *ParsedPlan {
+	// Try schema-driven extraction if agent is available
+	if ag != nil {
+		extractor := schema.NewExtractor(ag)
+		plan, err := extractor.ExtractPlan(ctx, content)
+		if err == nil && plan != nil && len(plan.Tasks) > 0 {
+			tasks, questions, blockers := schema.ToStorageTasks(plan)
+
+			return &ParsedPlan{
+				Tasks:     tasks,
+				Questions: questions,
+				Blockers:  blockers,
+			}
+		}
+		// Schema extraction failed or returned empty, fall through to regex parsing
+	}
+
+	// Fallback to regex-based parsing
+	return parseProjectPlanRegex(content)
+}
+
+// parseProjectPlanRegex parses AI output using regex patterns.
+// This is the original parsing logic, maintained as a fallback.
+func parseProjectPlanRegex(content string) *ParsedPlan {
 	plan := &ParsedPlan{
 		Tasks:     make([]*storage.QueuedTask, 0),
 		Questions: make([]string, 0),
