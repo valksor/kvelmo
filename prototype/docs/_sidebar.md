@@ -138,6 +138,7 @@
     - [register](cli/register.md)
 
 - **Reference**
+  - [Feature Parity](reference/feature-parity.md)
   - [Storage Structure](reference/storage.md)
   - [Task File Format](reference/task-format.md)
   - [Specification File Format](reference/specification-format.md)
