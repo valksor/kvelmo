@@ -19,6 +19,7 @@ var (
 	// plan flags.
 	projectPlanTitle        string
 	projectPlanInstructions string
+	projectPlanUseSchema    bool
 
 	// tasks flags.
 	projectTasksStatus   string
@@ -245,6 +246,7 @@ func init() {
 	// plan flags
 	projectPlanCmd.Flags().StringVar(&projectPlanTitle, "title", "", "Project title")
 	projectPlanCmd.Flags().StringVar(&projectPlanInstructions, "instructions", "", "Custom instructions for AI")
+	projectPlanCmd.Flags().BoolVar(&projectPlanUseSchema, "use-schema", true, "Use schema-driven extraction for parsing AI responses (fallback to regex if fails)")
 
 	// tasks flags
 	projectTasksCmd.Flags().StringVar(&projectTasksStatus, "status", "", "Filter by status")
@@ -310,6 +312,7 @@ func runProjectPlan(cmd *cobra.Command, args []string) error {
 	opts := conductor.ProjectPlanOptions{
 		Title:              projectPlanTitle,
 		CustomInstructions: projectPlanInstructions,
+		UseSchema:          projectPlanUseSchema,
 	}
 
 	result, err := cond.CreateProjectPlan(ctx, source, opts)

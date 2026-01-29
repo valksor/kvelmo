@@ -212,6 +212,21 @@
                     </div>
                 </div>
 
+                <div class="mt-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="use_schema" id="plan-use-schema" checked
+                               class="mr-2 rounded border-gray-300 dark:border-gray-600
+                                      text-brand-600 dark:text-brand-500
+                                      focus:ring-brand-500 dark:focus:ring-brand-400">
+                        <span class="text-sm font-medium text-surface-700 dark:text-surface-300">
+                            Use schema-driven extraction
+                        </span>
+                    </label>
+                    <p class="text-xs text-surface-500 dark:text-surface-400 mt-1 ml-6">
+                        Enables structured parsing of AI responses (falls back to regex if needed)
+                    </p>
+                </div>
+
                 <div id="plan-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
                 <div id="plan-success" class="hidden p-4 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-xl text-success-700 dark:text-success-300 text-sm"></div>
 
@@ -541,7 +556,12 @@ document.getElementById('plan-form').addEventListener('submit', async function(e
         const planResp = await fetch('/api/v1/project/plan', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({source: source, title: title})
+            body: JSON.stringify({
+                source: source,
+                title: title,
+                instructions: document.getElementById('plan-instructions').value,
+                use_schema: document.getElementById('plan-use-schema').checked
+            })
         });
         if (!planResp.ok) {
             const err = await planResp.json();
