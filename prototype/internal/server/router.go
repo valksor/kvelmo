@@ -175,6 +175,11 @@ func (s *Server) setupRouter() http.Handler {
 		// Links UI
 		mux.HandleFunc("GET /links", s.handleLinksUI)
 
+		// Commit UI and API
+		mux.HandleFunc("GET /commit", s.handleCommitPage)
+		mux.HandleFunc("GET /api/v1/commit/plan", s.handleCommitPlan)
+		mux.HandleFunc("POST /api/v1/commit/execute", s.handleCommitExecute)
+
 		// Stack management UI and API
 		mux.HandleFunc("GET /stack", s.handleStacksUI)
 		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)

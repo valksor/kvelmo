@@ -265,6 +265,11 @@ func (r *Renderer) RenderLinks(w io.Writer, data LinksData) error {
 	return r.Render(w, "links", data)
 }
 
+// RenderCommit renders the commit page.
+func (r *Renderer) RenderCommit(w io.Writer, data CommitData) error {
+	return r.Render(w, "commit", data)
+}
+
 // RenderFind renders the find page.
 func (r *Renderer) RenderFind(w io.Writer, data interface{}) error {
 	return r.Render(w, "find", data)

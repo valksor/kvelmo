@@ -8,6 +8,8 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/slug"
 )
@@ -387,4 +389,118 @@ func (c *Conductor) popStashIfExists(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// GenerateCommitMessageForGroup generates a commit message for a specific change group.
+// This is GENERIC - works in ANY repo, using AI to analyze the actual changes.
+// Used by the `mehr commit` command to create logical commits.
+func (c *Conductor) GenerateCommitMessageForGroup(ctx context.Context, group vcs.FileGroup, note string, previousAttempts []storage.CommitAttempt) string {
+	if c.git == nil {
+		return "Changes"
+	}
+
+	// Get diffs for context - AI sees actual changes
+	diffs, _ := c.git.DiffFiles(ctx, group.Files, 3)
+
+	// Build prompt with REAL changes from ANY repo
+	var prompt strings.Builder
+	prompt.WriteString("Generate a git commit message for these changes.\n\n")
+
+	// Previous attempts for context
+	if len(previousAttempts) > 0 {
+		prompt.WriteString(fmt.Sprintf("Context: This is attempt #%d of refining commit grouping.\n", len(previousAttempts)+1))
+		if note != "" {
+			prompt.WriteString(fmt.Sprintf("User feedback: %s\n\n", note))
+		}
+	}
+
+	// The actual file changes - AI figures out what happened
+	prompt.WriteString("Files changed:\n")
+	for _, f := range group.Files {
+		prompt.WriteString(fmt.Sprintf("  %s\n", f))
+	}
+
+	// Include actual diffs if available (for better messages)
+	if diffs != "" {
+		// Limit diff size to avoid overwhelming the AI
+		maxDiffLen := 2000
+		if len(diffs) > maxDiffLen {
+			diffs = diffs[:maxDiffLen] + "\n... (truncated)"
+		}
+		prompt.WriteString("\nDiff preview:\n")
+		prompt.WriteString(diffs)
+		prompt.WriteString("\n")
+	}
+
+	// CRITICAL: Get existing commits from THIS repo to match the style
+	existingCommits, _ := c.git.Log(ctx, "-20", "--format=%B")
+
+	prompt.WriteString(`
+Generate a git commit message.
+
+Existing commit messages from this repository (for style matching):
+`)
+	prompt.WriteString(existingCommits)
+	prompt.WriteString(`
+
+---
+
+Files changed:
+`)
+	for _, f := range group.Files {
+		prompt.WriteString(fmt.Sprintf("  %s\n", f))
+	}
+
+	// Include actual diffs if available (for better messages)
+	if diffs != "" {
+		// Limit diff size to avoid overwhelming the AI
+		maxDiffLen := 2000
+		if len(diffs) > maxDiffLen {
+			diffs = diffs[:maxDiffLen] + "\n... (truncated)"
+		}
+		prompt.WriteString("\nDiff preview:\n")
+		prompt.WriteString(diffs)
+		prompt.WriteString("\n")
+	}
+
+	prompt.WriteString(`
+---
+
+Generate a commit message that MATCHES THE STYLE of existing commits above.
+
+Analyze the existing commits and:
+- Match their format (emoji prefixes? conventional commits? Co-Authored-By?)
+- Match their length (short one-liners vs detailed multi-line?)
+- Match their tone (casual vs formal?)
+
+Then write a commit message for the new changes following that SAME style.
+`)
+
+	// Get agent and generate
+	commitAgent, err := c.GetAgentForStep(ctx, workflow.StepCheckpointing)
+	if err != nil {
+		c.logError(fmt.Errorf("get agent for commit message: %w", err))
+
+		return "Changes"
+	}
+
+	response, err := commitAgent.Run(ctx, prompt.String())
+	if err != nil {
+		c.logError(fmt.Errorf("generate commit message: %w", err))
+
+		return "Changes"
+	}
+
+	if len(response.Messages) > 0 {
+		return strings.TrimSpace(response.Messages[0])
+	}
+
+	return "Changes"
+}
+
+// SetCommitGroupAgent sets the AI agent for commit grouping.
+// Used by the `mehr commit` command to enable AI-based file grouping.
+func (c *Conductor) SetCommitGroupAgent(agent vcs.Agent) {
+	// This would be stored on a ChangeAnalyzer instance
+	// For now, the CLI command will create the analyzer and set the agent directly
 }

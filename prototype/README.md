@@ -274,6 +274,7 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr memory <query>` | Search semantic memory for similar past tasks |
 | `mehr label` | Manage task labels (add, remove, set, list) |
 | `mehr links [subcommand]` | Manage bidirectional links between specs, notes, sessions (`list`, `backlinks`, `search`, `stats`, `rebuild`) |
+| `mehr commit` | Create logically grouped commits from uncommitted changes using AI (matches your repo's commit style) |
 | `mehr stack [subcommand]` | Manage stacked features (`sync`, `rebase`); work on dependent features while waiting on code review |
 | `mehr specification view <number>` | View specification content (use `--all` for all, `-o` to save to file) |
 | `mehr license` | Display project license (BSD 3-Clause) |
