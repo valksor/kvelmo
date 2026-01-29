@@ -29,6 +29,10 @@ test: ## Run tests with coverage
 	${MAKE} quality
 	go test -v -cover ./...
 
+race: ## Run race tests
+	${MAKE} quality
+	go test -v -race ./...
+
 coverage: ## Run tests with race detection and coverage profile
 	go test -race -covermode atomic -coverprofile=covprofile ./...
 
