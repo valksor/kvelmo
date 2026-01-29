@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md / CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -22,20 +22,11 @@ go-mehrhof shares code with `github.com/valksor/go-toolkit` for reuse across Val
 // ❌ BAD - Type alias re-export
 type Bus = eventbus.Bus
 type Result = validate.Result
-type Request = jsonrpc.Request
 
 // ❌ BAD - Wrapper function
 func Slugify(title string, maxLen int) string {
     return slug.Slugify(title, maxLen)
 }
-
-// ❌ BAD - Constructor wrapper
-func NewBus() *Bus {
-    return eventbus.NewBus()
-}
-
-// ❌ BAD - Variable re-export
-var NewResult = validate.NewResult
 ```
 
 ### What to Do Instead:
@@ -48,40 +39,23 @@ bus := eventbus.NewBus()
 
 // ✅ GOOD - Domain-specific types that add value
 type AgentConfig struct {
-    Name        string
-    Description string
+    Name string
     // ... mehrhof-specific agent configuration
 }
 
 // ✅ GOOD - Domain-specific functions with business logic
 func ColorState(state, displayName string) string {
     // Maps mehrhof's workflow states to colors
-    // This is domain-specific, not a simple wrapper
 }
 ```
 
 ### When to Add Code to go-toolkit vs. go-mehrhof:
+- **go-toolkit**: Generic, reusable utilities with no mehrhof dependencies that could be used by other Valksor projects
+- **go-mehrhof**: Domain-specific business logic with mehrhof dependencies
 
-| Criteria | go-toolkit | go-mehrhof |
-|----------|-----------|------------|
-| Generic, reusable utilities? | ✅ Yes | ❌ No |
-| Domain-specific business logic? | ❌ No | ✅ Yes |
-| No dependencies on mehrhof internals? | ✅ Yes | ❌ No |
-| Could be used by other Valksor projects? | ✅ Yes | ❌ No |
+### Examples: Use `eventbus.Bus`, `validate.Result`, `jsonrpc.Request`, `slug.Slugify()` directly from go-toolkit. Keep domain-specific functions like `ColorState()` in mehrhof.
 
-### Examples of Correct Usage:
-
-- ✅ **eventbus**: Use `eventbus.Bus`, `eventbus.NewBus()` directly
-- ✅ **validate**: Use `validate.Result`, `validate.NewResult()`, `validate.SeverityError` directly
-- ✅ **jsonrpc**: Use `jsonrpc.Request`, `jsonrpc.Response`, `jsonrpc.NewRequest()` directly
-- ✅ **slug**: Use `slug.Slugify()` directly
-- ✅ **display colors**: Keep `ColorState()`, `ColorSpecStatus()` (domain-specific business logic)
-
-### Enforcement:
-
-- CI runs `make check-alias` to detect unnecessary import aliases
-- Code review should flag any new type aliases or wrapper functions
-- When in doubt, use go-toolkit directly
+### Enforcement: CI runs `make check-alias` to detect unnecessary import aliases.
 
 ---
 
@@ -164,17 +138,12 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
         s.writeError(w, http.StatusBadRequest, "streaming not supported")
         return
     }
-
     w.Header().Set("Content-Type", "text/event-stream")
     w.Header().Set("Cache-Control", "no-cache")
     w.Header().Set("Connection", "keep-alive")
-
-    // Stream events as operation progresses
     fmt.Fprintf(w, "event: status\ndata: {\"message\": \"Starting planning...\"}\n\n")
     flusher.Flush()
-
     // ... execute operation ...
-
     fmt.Fprintf(w, "event: complete\ndata: {\"success\": true}\n\n")
     flusher.Flush()
 }
@@ -182,38 +151,24 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 ### Current Feature Parity Gaps
 
-These CLI commands **lack Web UI equivalents** (candidates for future implementation):
-
 | CLI Command | Web UI Status |
 |-------------|---------------|
 | `interactive` | ✅ Full REPL at `/interactive` |
-| `budget status/set/task set/resume/reset` | ❌ Missing - only basic stats in dashboard |
-| `memory search/index/stats` | ⚠️ Partial - API exists, no UI |
+| `links` | ✅ Full parity - API + UI at `/links` |
+| `budget` | ❌ Missing - only basic stats in dashboard |
+| `memory` | ⚠️ Partial - API exists, no UI |
 | `cost` (detailed reporting) | ⚠️ Partial - basic cost tracking only |
 | `continue` | ✅ Available in interactive mode |
-| `optimize` | ❌ Missing |
-| `export` | ❌ Missing |
+| `optimize`, `export` | ❌ Missing |
 | `scan` | ⚠️ Partial - API endpoint exists, no UI |
 
 ### When CLI-Only Is Appropriate
-
-Some commands are intentionally CLI-only:
 
 - **One-shot operations**: `generate-secret`, `update check/install`
 - **Developer utilities**: `hooks`, `lefthook`, `config validate`
 - **Debugging/diagnostic**: `status --diagram`, `cost --breakdown`
 
-If a feature is CLI-only, document the rationale in code comments.
-
-### Verification
-
-Before considering a feature "done":
-
-1. Test both CLI and Web UI implementations
-2. Verify error handling works for both interfaces
-3. Check that CLI flags map to Web UI form inputs appropriately
-4. Ensure SSE streaming works for long-running operations
-5. Update feature parity table above if adding new dual-interface features
+### Verification: Test both CLI and Web UI implementations, verify error handling, check CLI flags map to Web UI inputs, ensure SSE streaming works for long-running operations, update feature parity table.
 
 ---
 
@@ -235,25 +190,9 @@ Every new feature MUST have corresponding tests:
 ### Testing Guidelines
 
 1. **Write tests FIRST** (TDD) when implementing features
-2. **Use table-driven tests** for functions with multiple input scenarios:
-   ```go
-   tests := []struct {
-       name    string
-       input   string
-       want    string
-       wantErr bool
-   }{
-       {"valid input", "foo", "bar", false},
-       {"empty input", "", "", true},
-   }
-   for _, tt := range tests {
-       t.Run(tt.name, func(t *testing.T) {
-           // test logic
-       })
-   }
-   ```
-3. **Test utilities** are available in `internal/helper_test/` (mocks, fixtures, conductor helpers)
-4. **Run `make test`** before committing - all tests must pass
+2. **Use table-driven tests** for functions with multiple input scenarios (see pattern in `internal/helper_test/`)
+3. **Test utilities** available in `internal/helper_test/` (mocks, fixtures, conductor helpers)
+4. **Run `make test`** before committing code changes - all tests must pass (skip for docs-only changes)
 5. **Run `make coverage-html`** to verify coverage - new code should be 80%+ covered
 
 ### Documentation Requirements
@@ -310,44 +249,41 @@ Update `CLAUDE.md` when:
 - **Feature parity** changes (update the parity table)
 - **New package** is added (update Core Packages table)
 - **Code style** conventions change (update Code Style section)
+- **Code organization guidelines** change (update relevant sections)
 - **New workflow state** is added (update Workflow States table)
 
 ### Examples
 
 #### ✅ GOOD: Complete Feature Delivery
-
 ```
 Added budget feature:
-✅ cmd/mehr/commands/budget.go               # CLI command
-✅ cmd/mehr/commands/budget_test.go           # Unit tests (85% coverage)
-✅ internal/server/handlers_budget.go        # Web UI handler
-✅ internal/server/handlers_budget_test.go   # Handler tests
-✅ internal/server/templates/budget.html     # UI template
-✅ docs/cli/budget.md                         # CLI documentation
-✅ docs/web-ui/budget.md                      # Web UI documentation
-✅ README.md                                  # Updated feature list
+✅ cmd/mehr/commands/budget.go + tests (85% coverage)
+✅ internal/server/handlers_budget.go + tests
+✅ internal/server/templates/budget.html
+✅ docs/cli/budget.md, docs/web-ui/budget.md
+✅ README.md updated
 ```
 
 #### ❌ BAD: Incomplete Feature Delivery
-
 ```
 Added budget feature:
-✅ cmd/mehr/commands/budget.go               # CLI command
-❌ No tests
-❌ No Web UI implementation
-❌ No documentation
+✅ cmd/mehr/commands/budget.go
+❌ No tests, no Web UI implementation, no documentation
 ```
 
 ### Verification
 
 Before marking a feature as complete:
 
-1. **Tests**: `make test` passes, `make coverage-html` shows 80%+ for new code
-2. **CLI doc**: Documentation exists in `docs/cli/` with usage examples
-3. **Web UI doc**: Documentation exists in `docs/web-ui/` with UI instructions
-4. **README**: Updated if feature is user-facing
-5. **CLAUDE.md**: Updated if new patterns/rules introduced
-6. **Both interfaces tested**: CLI and Web UI both work
+1. **Code changes made?** → Run `make quality && make test` - must pass
+2. **Tests**: `make coverage-html` shows 80%+ for new code
+3. **CLI doc**: Documentation exists in `docs/cli/` with usage examples
+4. **Web UI doc**: Documentation exists in `docs/web-ui/` with UI instructions
+5. **README**: Updated if feature is user-facing
+6. **CLAUDE.md**: Updated if new patterns/rules introduced
+7. **Both interfaces tested**: CLI and Web UI both work
+
+**Note**: For documentation-only updates (steps 3-6 without code changes), skip `make quality` and `make test`.
 
 ---
 
@@ -362,8 +298,8 @@ Before marking a feature as complete:
 | `docs/cli/` | CLI-specific documentation only |
 | `docs/web-ui/` | Web UI-specific documentation only |
 | `docs/concepts/` | Interface-agnostic concepts (workflows, architecture) |
-| `docs/guides/` | Procedural guides (should be split by interface if interface-specific) |
-| `docs/configuration/` | Shared configuration concepts (interface-specific config should be in `docs/cli/` or `docs/web-ui/`) |
+| `docs/guides/` | Procedural guides (split by interface if interface-specific) |
+| `docs/configuration/` | Shared configuration (interface-specific config goes in `docs/cli/` or `docs/web-ui/`) |
 | `docs/providers/` | Provider documentation (interface-agnostic) |
 | `docs/agents/` | Agent documentation (interface-agnostic) |
 | `docs/advanced/` | Advanced topics (interface-agnostic) |
@@ -378,8 +314,6 @@ Before marking a feature as complete:
    - Web UI doc: "See [CLI equivalent](/docs/cli/feature.md) for the command-line interface."
 
 ### Exceptions (When Both Interfaces in One Doc Is OK)
-
-The ONLY situations where a single document may cover both CLI and Web UI:
 
 1. **Comparison Docs**: Files that explicitly compare the two interfaces (e.g., `docs/guides/web-ui-vs-cli.md`)
 2. **Feature Parity Tables**: Documents that track implementation status across interfaces
@@ -406,35 +340,21 @@ docs/guides/first-task.md     # If it covers both CLI and Web UI workflows
 docs/configuration/cli-flags.md       # CLI-specific flags
 docs/configuration/web-ui-settings.md # Web UI-specific settings
 docs/configuration/shared.md          # Settings common to both
-
-docs/cli/first-task.md        # CLI first task walkthrough
-docs/web-ui/getting-started.md # Web UI getting started
 ```
 
 ### When Creating New Documentation
 
-1. **Identify the interface**: Is this for CLI, Web UI, or both?
-2. **Choose the right directory**:
-   - CLI-only → `docs/cli/`
-   - Web UI-only → `docs/web-ui/`
-   - Interface-agnostic concept → `docs/concepts/`
-3. **Check for existing related docs** and add cross-references
-4. **Avoid duplication**: If a feature works identically in both interfaces, document in `docs/concepts/` and reference from both interface-specific docs
+1. **Identify the interface**: CLI-only → `docs/cli/`, Web UI-only → `docs/web-ui/`, Interface-agnostic → `docs/concepts/`
+2. **Check for existing related docs** and add cross-references
+3. **Avoid duplication**: If a feature works identically in both interfaces, document in `docs/concepts/` and reference from both interface-specific docs
 
-### Verification
-
-Before submitting documentation changes:
-
-1. Confirm the file is in the correct directory (`docs/cli/`, `docs/web-ui/`, or appropriate conceptual dir)
-2. Verify content covers only ONE interface (unless it's a comparison/parity doc)
-3. Check for cross-references to the equivalent interface's documentation
-4. Run `make docs` (if available) to verify documentation builds correctly
+### Verification: Confirm file is in correct directory, verify content covers only ONE interface (unless comparison/parity doc), check for cross-references, run `make docs` (if available).
 
 ---
 
 ## ⚠️ CRITICAL: Zero Tolerance for Broken Code
 
-**ALL tests must pass and `make quality` must succeed before ANY commit or PR.**
+**ALL tests must pass and `make quality` must succeed before committing code changes.**
 
 There is no such thing as "not my code" or "not my problem." If tests fail or quality checks fail, they MUST be fixed before proceeding—regardless of:
 - Who wrote the broken code
@@ -450,6 +370,8 @@ There is no such thing as "not my code" or "not my problem." If tests fail or qu
 - Say "I didn't break it" and move on
 - Assume someone else will fix it
 
+**Exception**: Documentation-only commits don't require running build/test/quality commands. See "When to Run Build, Test, and Quality Commands" section.
+
 ### What MUST Pass
 
 | Check | Command | Exit Code |
@@ -463,26 +385,18 @@ There is no such thing as "not my code" or "not my problem." If tests fail or qu
 
 ### Workflow
 
-1. **Before starting work**: Run `make quality && make test`
-   - If anything fails, FIX IT FIRST
-   - Do not add new code on top of broken code
-
-2. **Before committing**: Run `make quality && make test`
-   - Commit gatekeeper: nothing gets committed if these fail
-
-3. **Before PR**: Run `make quality && make test`
-   - PR gatekeeper: nothing gets submitted if these fail
+1. **Before starting work**: Run `make quality && make test` once to verify baseline. If anything fails, FIX IT FIRST. Do not add new code on top of broken code.
+2. **Before committing code changes**: Run `make quality && make test` - commit gatekeeper for code changes: nothing gets committed if these fail. For docs-only changes, skip this step.
+3. **Before PR**: Run `make quality && make test` - PR gatekeeper: nothing gets submitted if these fail. Only needed if PR includes code changes.
 
 ### Examples
 
 #### ✅ GOOD: Fix Broken Tests First
-
 ```bash
 $ make test
 --- FAIL: TestFoo (0.00s)
     foo_test.go:42: expected "bar", got "baz"
 FAIL
-
 # Don't add new code. Fix this first.
 $ vim foo_test.go  # or foo.go
 $ make test
@@ -491,54 +405,27 @@ PASS
 ```
 
 #### ❌ BAD: Ignore Broken Tests
-
 ```bash
 $ make test
 --- FAIL: TestFoo (0.00s)
 FAIL
-
 # WRONG: "I didn't write this, not my problem"
 $ git commit -m "add new feature"
 ```
 
-#### ❌ BAD: Leave Someone Else to Fix It
-
-```bash
-$ make quality
-internal/foo/bar.go:123:1: goimports: missing import
-exit status 1
-
-# WRONG: "Someone else's mess, let them fix it"
-$ git commit -m "fix typo"
-```
-
-### Philosophy
-
-**You are responsible for the health of the codebase.**
-
-- Professionalism means fixing problems, not ignoring them
-- A 5-minute fix today saves hours of debugging tomorrow
-- CI will catch it anyway—fix it locally first
-- "Not mine" is not an acceptable answer
-
-### Escalation
-
-If you encounter a test failure or quality issue you truly cannot fix:
-
-1. **Document it**: Open an issue with reproduction steps
-2. **Block the codebase**: Do not merge anything until it's resolved
-3. **Communicate**: Alert the team immediately
-4. **DO NOT work around it**: Broken code blocks everything
+### Escalation: If you encounter a test failure or quality issue you truly cannot fix: 1) Document it with reproduction steps, 2) Block the codebase - do not merge anything until resolved, 3) Alert the team immediately, 4) DO NOT work around it.
 
 ### Verification
 
-Before ANY commit or PR:
+Before committing code changes or creating a PR with code:
 
 ```bash
 make quality && make test
 ```
 
-If this command does not exit with code 0, you are NOT ready to commit.
+For documentation-only changes, no build/test/quality commands are needed.
+
+If the command does not exit with code 0 for code changes, you are NOT ready to commit.
 
 ---
 
@@ -562,19 +449,14 @@ The Makefile provides standardized, consistent commands that may run multiple op
 | Clean | `make clean` | Removes build artifacts |
 | Tidy | `make tidy` | Cleans and tidies dependencies |
 
-### What NOT to Do:
+### What NOT to Do / What to Do Instead
 
 ```bash
 # ❌ BAD - Direct go commands
 go build ./cmd/mehr
 go fmt ./...
 go test ./...
-golangci-lint run
-```
 
-### What to Do Instead:
-
-```bash
 # ✅ GOOD - Use make commands
 make build
 make fmt
@@ -582,12 +464,46 @@ make test
 make quality
 ```
 
-### Why Use Make?
+### When to Run Build, Test, and Quality Commands
 
-1. **Consistency**: All developers use the same commands
-2. **Multi-step operations**: `make quality` runs linter, formatter, vuln check, and alias check in one command
-3. **Embedded assets**: `make build` includes license generation and asset bundling
-4. **Version injection**: Build metadata (version, commit, build time) is automatically injected
+**ONLY run build, test, and quality commands when CODE changes are involved.**
+
+| Command | Run When... | Do NOT Run When... |
+|---------|-------------|-------------------|
+| `make build` | You've modified `.go` files | Documentation-only changes |
+| `make test` | You've modified `.go` or `*_test.go` files | Documentation-only changes |
+| `make quality` | You've modified `.go` files | Documentation-only changes |
+| `make fmt` | You've modified `.go` files | Documentation-only changes |
+| `make coverage-html` | You've added/modified tests | Documentation-only changes |
+
+### Code vs. Non-Code Changes
+
+**Code changes** (run build/test/quality): Modified `.go` source files, added/removed imports, changed package structure, modified test files.
+
+**Non-code changes** (DO NOT run build/test/quality): Documentation updates (`*.md`, `docs/`), git operations (commits, merges, rebases), configuration changes (`.yaml`, `.toml`, `.json`), asset changes (images, templates, scripts), comments-only changes to `.go` files.
+
+### Workflow Decision Tree
+
+```
+Did you change any .go files?
+├── YES → Run `make quality && make test`
+│       └── Did tests pass? → Proceed with commit/PR
+│       └── Did tests fail? → Fix before committing
+└── NO → Skip build/test/quality (docs, config, git ops only)
+```
+
+### Exception: Verify Health Before Starting Work
+
+**Always run `make quality && make test` once before starting new work**, regardless of what you're doing. This ensures you're not building on top of already-broken code.
+
+### Verification
+
+Before committing or creating a PR:
+
+1. **Did you change .go files?** → Run `make quality && make test`
+2. **Only documentation?** → Commit directly, no build/test needed
+3. **Only git operations?** → No build/test needed
+4. **Starting a new session?** → Run `make quality && make test` once to verify baseline
 
 ---
 
@@ -689,44 +605,93 @@ Before using `//nolint`, you MUST:
    }
    ```
 
-4. **Prefer code fixes over nolint**: Refactor to avoid the warning
-   ```go
-   // ❌ BAD - Using nolint for nil check pattern
-   //nolint:nilnil
-   func getTask(id string) (*Task, error) {
-       return nil, nil // "not found" is not an error
-   }
+4. **Prefer code fixes over nolint**: Refactor to avoid the warning (e.g., use sentinel values instead of nil,nil returns)
 
-   // ✅ GOOD - Use a sentinel value or custom error type
-   var ErrNotFound = errors.New("task not found")
+### Enforcement & Verification
 
-   func getTask(id string) (*Task, error) {
-       return nil, ErrNotFound
-   }
-   ```
+The `nolintlint` linter is enabled to catch `//nolint` without specifying which linter, without an explanation, or machine-generated comments. CI will fail if new `//nolint` comments don't specify the linter, lack justification, or if linters are disabled in `.golangci.yml`.
 
-### Enforcement
+Before committing code with `//nolint`: 1) Verify the warning is a false positive, 2) Prefer refactoring over suppression, 3) Specify the exact linter name, 4) Document WHY the suppression exists. If you cannot justify the `//nolint`, **fix the code instead.**
 
-The `nolintlint` linter is enabled to catch:
-- `//nolint` without specifying which linter
-- `//nolint` without an explanation
-- Machine-generated `//nolint` comments
+---
 
-CI will fail if:
-- New `//nolint` comments don't specify the linter
-- New `//nolint` comments lack justification
-- Linters are disabled in `.golangci.yml`
+## ⚠️ CRITICAL: File Size Limits - Keep Files Under 500 Lines
+
+**ALL Go files (source and test) should be kept under 500 lines.**
+
+Large files degrade AI agent performance, increase error rates, and reduce code maintainability. When a file grows beyond 500 lines, split it into smaller, more focused files.
+
+### The Rule
+
+**Keep files under 500 lines.** If a file exceeds this limit, split it into logical categories.
+
+### File Size Guidelines
+
+| File Size | Action |
+|-----------|--------|
+| **< 300 lines** | Ideal - fast, accurate |
+| **300-500 lines** | Acceptable - works well |
+| **500-700 lines** | Warning - consider splitting |
+| **700+ lines** | **MUST split** - too large |
+
+### How to Split Source Files
+
+Organize by **responsibility** or **feature**:
+
+```go
+// ❌ BAD - One 1000-line file
+internal/conductor/handlers.go (1000+ lines)
+
+// ✅ GOOD - Split by feature
+internal/conductor/handlers_plan.go      // Planning handlers
+internal/conductor/handlers_implement.go // Implementation handlers
+internal/conductor/handlers_review.go    // Review handlers
+```
+
+### How to Split Test Files
+
+Organize by **feature** or **test category**:
+
+```go
+// ❌ BAD - One 3000-line test file
+internal/storage/workspace_test.go (3000+ lines)
+
+// ✅ GOOD - Split by feature
+internal/storage/workspace_save_test.go      // Save operations
+internal/storage/workspace_load_test.go      // Load operations
+internal/storage/workspace_config_test.go    // Config operations
+internal/storage/workspace_integration_test.go // Integration tests
+```
+
+All test files in the same package share a namespace - tests will run normally when split.
+
+### When Larger Files Are Acceptable
+
+Some files may legitimately exceed 500 lines:
+
+- **Generated code** - Not meant for human editing
+- **Single-responsibility modules** - If truly cohesive (e.g., state machine with many states)
+- **Prompt/template files** - Large templates are acceptable
+
+These are exceptions, not the norm. Justify with a comment if exceeding 500 lines.
+
+### Splitting Guidelines
+
+When splitting files:
+
+1. **Identify boundaries** - Group related functions/types together
+2. **Use descriptive names** - `handlers_plan.go`, not `handlers_2.go`
+3. **Keep package namespace** - All files in same package share types
+4. **Move imports** - Each split file needs its own imports
+5. **Update tests** - Split test files alongside source
 
 ### Verification
 
-Before committing code with `//nolint`:
-
-1. **Is the linter correct?** Verify the warning is a false positive
-2. **Can you fix the code?** Prefer refactoring over suppression
-3. **Is the nolint specific?** Specify the exact linter name
-4. **Is there a justification?** Document WHY the suppression exists
-
-If you cannot justify the `//nolint`, **fix the code instead.**
+Before considering work complete:
+1. **Check file size**: `wc -l path/to/file.go`
+2. **Verify imports**: Each file has necessary imports
+3. **Run tests**: `make test` - all tests must pass
+4. **Run quality**: `make quality` - must pass
 
 ---
 
@@ -741,6 +706,20 @@ make build | install | test | coverage | quality | fmt | tidy | hooks | lefthook
 Available make targets: `all`, `build`, `test`, `coverage`, `coverage-html`, `quality`, `fmt`, `install`, `clean`, `run`, `run-args`, `tidy`, `deps`, `version`, `hooks`, `lefthook`, `check-alias`, `help`
 
 See [README.md](README.md) for full documentation.
+
+### Workers Site JavaScript
+
+The `workers-site/index.min.js` file is **auto-generated** from `workers-site/index.js`.
+
+**⚠️ DO NOT edit `index.min.js` directly.** Any changes will be overwritten.
+
+To rebuild after modifying `index.js`:
+
+```bash
+bun run workers:minify
+```
+
+This runs esbuild with minification to produce the production-ready bundle.
 
 ### Workflow
 
@@ -772,6 +751,7 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 | Package | Responsibility |
 |---------|----------------|
 | `internal/conductor/` | Main orchestrator (Facade) - combines workflow, storage, VCS, agents, browser, MCP |
+| `internal/links/` | Bidirectional linking between entities using `[[reference]]` syntax with Logseq-style backlink tracking and graph queries |
 | `internal/workflow/` | State machine engine - states, events, guards, effects, transitions |
 | `internal/agent/` | AI agent abstraction with streaming; claude implementation; orchestration modes (pipeline, consensus) |
 | `internal/agent/claude/` | Claude CLI wrapper agent implementation |
@@ -812,6 +792,14 @@ Additional commands: `sync <task-id>`, `simplify`, `abandon`, `undo`, `redo`, `g
 **Registry Pattern**: Providers and agents register themselves and are looked up by name/scheme at runtime.
 
 **Event-Driven**: Components communicate via `events.Bus`, enabling loose coupling.
+
+**Links System**: The `internal/links/` package provides Logseq-style bidirectional linking:
+- **Reference syntax**: `[[spec:1]]`, `[[decision:cache-strategy]]`, `[[Authentication Spec]]`
+- **Entity types**: `spec` (specifications), `note` (task notes), `session` (conversation logs), `decision` (recorded decisions)
+- **Query operations**: `FindLinks()`, `FindBacklinks()`, `FindPath()`, `FindOrphans()`, `FindConnectedEntities()`
+- **Storage**: JSON index at `~/.valksor/mehrhof/workspaces/<project>/links/` with atomic writes
+- **Integration**: Automatically indexed when specs, notes, or sessions are saved
+- **CLI/Web UI**: `mehr links` commands and `/links` page for browsing the knowledge graph
 
 **Plugin System**: External agents and providers can be added via plugins. Plugins use JSON-RPC over stdio and are configured via `plugin.yaml` manifests.
 

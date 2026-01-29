@@ -43,6 +43,8 @@ Safe Mehrhof commands exposed as MCP tools:
 | `mehr_templates` | List task templates |
 | `mehr_agents` | List available AI agents |
 | `mehr_cost` | Show token usage and costs |
+| `mehr_scan` | Run security scans on codebase |
+| `mehr_find` | Search tasks by pattern |
 
 ### Workspace Data
 

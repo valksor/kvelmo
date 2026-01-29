@@ -49,9 +49,6 @@ Watch the review in the **Agent Output** section:
 │  Agent Output (Live)                                          │
 ├──────────────────────────────────────────────────────────────┤
 │  $ Running quality checks...                                  │
-│  ✓ go fmt - checked                                          │
-│  ✓ go vet - passed                                           │
-│  ✓ staticcheck - no issues found                             │
 │  ✓ golangci-lint - passed                                    │
 │  ✓ go test - all tests passing                               │
 │                                                              │
@@ -59,6 +56,63 @@ Watch the review in the **Agent Output** section:
 │  ▶ Streaming...                                               │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+## Configuring Quality Checks
+
+Configure which linters run during review via **Settings** → **Quality**:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Quality Settings                                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Enable Quality Checks         [✓]                            │
+│  Use Defaults                   [✗]  (Safer: require config)  │
+│                                                              │
+│  Linters:                                                     │
+│    ┌─────────────────────────────────────────────────────┐    │
+│    │ golangci-lint        [Enabled: ✓]  [Run]           │    │
+│    │ eslint               [Enabled: ✗]  [Disabled]     │    │
+│    │ phpstan              [Enabled: ✓]  [Custom]        │    │
+│    │   Command: vendor/bin/phpstan analyse               │    │
+│    └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  [Add Custom Linter]                                           │
+│                                                              │
+│  [Save]                                                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Quality Settings:**
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Enable Quality Checks** | Master switch for all quality checks | `true` |
+| **Use Defaults** | Auto-enable built-in linters based on project files | `false` (safer) |
+
+> **Important:** With **Use Defaults** disabled (default), built-in linters will NOT run automatically. You must explicitly enable them. This prevents unintended code modifications—for example, `php-cs-fixer` running on Symfony projects with custom config paths.
+
+**Built-in linters:**
+
+| Linter | Language | Auto-Detected When |
+|--------|----------|-------------------|
+| `golangci-lint` | Go | `go.mod` exists |
+| `eslint` | JavaScript/TypeScript | `package.json` exists |
+| `ruff` | Python | `pyproject.toml` or `requirements.txt` exists |
+| `php-cs-fixer` | PHP | `composer.json` exists |
+
+**Custom linters:**
+
+Add any CLI tool that outputs JSON or text:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Name | Identifier | `phpstan` |
+| Command | Binary path | `vendor/bin/phpstan` |
+| Args | CLI arguments | `["analyse", "--error-format=json"]` |
+| Extensions | Files to check | `[".php"]` |
+
+See [Settings Guide](settings.md) for configuration details.
 
 ## The Reviewing State
 

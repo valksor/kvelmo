@@ -67,7 +67,9 @@ env:
 | `sandbox` | Agent execution sandboxing | [Sandbox Guide](../advanced/sandbox.md) |
 | `browser` | Browser automation | [Browser Configuration](browser.md) |
 | `storage` | Task data and caches | [Storage Configuration](storage.md) |
+| `context` | Hierarchical task context | [Context Configuration](context.md) |
 | `budget` | Cost and token budgets | (see below) |
+| `quality` | Code quality and linters | (see below) |
 
 ### providers
 
@@ -102,6 +104,80 @@ budget:
     currency: USD
     warning_at: 0.8
 ```
+
+### quality
+
+Code quality and linter configuration for the review phase.
+
+**Default behavior (safer):** Built-in linters are NOT auto-enabled. You must explicitly configure linters.
+
+```yaml
+quality:
+  enabled: true                     # Master switch for quality checks
+  use_defaults: false               # Don't auto-enable built-in linters (default)
+  linters:
+    golangci-lint:
+      enabled: true                 # Explicitly enable Go linter
+    phpstan:                         # Custom linter
+      enabled: true
+      command: ["vendor/bin/phpstan", "analyse", "--error-format=json"]
+      extensions: [".php"]
+```
+
+**Opt-in to auto-detection (old behavior):**
+
+```yaml
+quality:
+  enabled: true
+  use_defaults: true               # Auto-enable built-in linters based on project files
+```
+
+**Built-in linters:**
+
+| Linter | Language | Auto-Detection |
+|--------|----------|----------------|
+| `golangci-lint` | Go | `go.mod` exists |
+| `eslint` | JavaScript/TypeScript | `package.json` exists |
+| `ruff` | Python | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
+| `php-cs-fixer` | PHP | `composer.json` exists |
+
+> **Note:** Built-in linters are only auto-detected when `use_defaults: true`. With `use_defaults: false` (default), linters must be explicitly enabled.
+
+**Custom linters:**
+
+Define custom linters using the `command` field:
+
+```yaml
+quality:
+  enabled: true
+  use_defaults: false               # Safer: only run explicitly configured linters
+  linters:
+    phpstan:
+      enabled: true
+      command: ["vendor/bin/phpstan", "analyse", "--error-format=json"]
+      extensions: [".php"]
+
+    psalm:
+      enabled: true
+      command: ["vendor/bin/psalm", "--output-format=json"]
+      extensions: [".php"]
+
+    mypy:
+      enabled: true
+      command: ["python", "-m", "mypy", "--json"]
+      extensions: [".py"]
+```
+
+**Configuration options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | bool | `true` | Master switch for all quality checks |
+| `use_defaults` | bool | `false` | Auto-enable built-in linters based on project files |
+| `linters.<name>.enabled` | bool | - | Enable/disable specific linter |
+| `linters.<name>.command` | []string | - | Command to run (creates custom linter) |
+| `linters.<name>.extensions` | []string | - | File extensions to lint (optional) |
+| `linters.<name>.args` | []string | - | Additional arguments (optional) |
 
 ### env
 

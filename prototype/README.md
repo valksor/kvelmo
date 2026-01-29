@@ -33,6 +33,7 @@ Mehrhof is an AI-powered development assistant that helps you plan, implement, a
 - **Parallel tasks** - Run multiple AI tasks simultaneously using git worktrees for isolated development
 - **Workflow engine** - Reliable plan → implement → review → finish cycle with checkpointing and undo/redo
 - **Provider integrations** - Connect to 16+ task sources (Empty, Files, GitHub issues, Jira, Linear, Notion, etc.)
+- **Bidirectional linking** - Logseq-style `[[references]]` create a knowledge graph across specs, notes, sessions, and decisions
 - **Browser automation** - Chrome automation for web testing, scraping, and authentication flows
 - **MCP server** - Expose commands and workspace data to AI agents via Model Context Protocol
 - **Semantic memory** - Store and search past tasks using vector embeddings for context-aware AI
@@ -270,6 +271,7 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
 | `mehr label` | Manage task labels (add, remove, set, list) |
+| `mehr links [subcommand]` | Manage bidirectional links between specs, notes, sessions (`list`, `backlinks`, `search`, `stats`, `rebuild`) |
 | `mehr specification view <number>` | View specification content (use `--all` for all, `-o` to save to file) |
 | `mehr license` | Display project license (BSD 3-Clause) |
 | `mehr license info` | List all dependency licenses with SPDX IDs (`--json`, `--unknown-only`) |
@@ -317,9 +319,9 @@ providers:
   default: file  # "mehr start task.md" works without "file:" prefix
 ```
 
-## Project Planning with Dependencies
+## Project Planning with Dependencies and Subtasks
 
-Plan multi-task projects with dependency tracking:
+Plan multi-task projects with dependency tracking and subtask hierarchies:
 
 ```bash
 # Create task breakdown from specs (reads all files)
@@ -331,13 +333,16 @@ mehr project plan research:/workspace/.final/ --title "Reports System"
 # Plan from a provider task (fetches details from provider)
 mehr project plan github:123 --title "From Issue"
 
-# View tasks and dependencies
+# View tasks with dependencies and parent relationships
 mehr project tasks --show-deps
+
+# Edit task to make it a subtask of another
+mehr project edit task-2 --parent task-1
 
 # Let AI optimize task order based on dependencies
 mehr project reorder --auto
 
-# Submit to provider with dependencies
+# Submit to provider with dependencies and subtask hierarchy
 mehr project submit --provider wrike
 
 # Auto-implement all tasks in order
@@ -353,9 +358,9 @@ mehr project start --auto
 | `file:` | Single file analysis | Individual requirement files |
 | `provider:` | Fetches from external task provider | GitHub/Jira/Wrike issues |
 
-**Features:** Multiple source types (files, directories, research, providers), AI task ordering, and provider integration.
+**Features:** Multiple source types, AI task ordering, subtask hierarchies (`--parent`), and provider integration with native subtask support (Wrike, Jira, Asana, ClickUp).
 
-See [Project Planning documentation](https://valksor.com/docs/mehrhof/nightly/#/cli/project) for full workflow details and dependency support by provider.
+See [Project Planning documentation](https://valksor.com/docs/mehrhof/nightly/#/cli/project) for full workflow details and dependency/subtask support by provider.
 
 ## Parallel Tasks with Worktrees
 
