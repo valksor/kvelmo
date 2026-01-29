@@ -188,6 +188,12 @@ type SubtaskFetcher interface {
 	FetchSubtasks(ctx context.Context, workUnitID string) ([]*WorkUnit, error)
 }
 
+// ParentFetcher retrieves the parent task for a work unit.
+// This is useful when working on a subtask and needing parent context.
+type ParentFetcher interface {
+	FetchParent(ctx context.Context, workUnitID string) (*WorkUnit, error)
+}
+
 // CreateWorkUnitOptions for creating a work unit.
 type CreateWorkUnitOptions struct {
 	CustomFields  map[string]any
@@ -229,4 +235,5 @@ type FullProvider interface {
 	WorkUnitCreator
 	Snapshotter
 	SubtaskFetcher
+	ParentFetcher
 }

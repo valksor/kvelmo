@@ -2,10 +2,46 @@ package youtrack
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
+
+// ErrNotASubtask is returned when a work unit is not a subtask.
+var ErrNotASubtask = errors.New("not a subtask")
+
+// FetchParent implements the provider.ParentFetcher interface.
+// It retrieves the parent issue for a YouTrack subtask.
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+	// Get the issue to check if it has a parent
+	issue, err := p.client.GetIssue(ctx, workUnitID)
+	if err != nil {
+		return nil, fmt.Errorf("get issue: %w", err)
+	}
+
+	// Check if this issue has a parent (is a subtask)
+	// YouTrack stores parent info in the issue's parent field
+	if issue.Parent == nil || issue.Parent.ID == "" {
+		// Not a subtask
+		return nil, ErrNotASubtask
+	}
+
+	// Fetch the parent issue
+	parentIssue, err := p.client.GetIssue(ctx, issue.Parent.IDReadable)
+	if err != nil {
+		return nil, fmt.Errorf("get parent issue: %w", err)
+	}
+
+	// Fetch comments and attachments for the parent
+	comments, _ := p.client.GetComments(ctx, issue.Parent.IDReadable)
+	attachments, _ := p.client.GetAttachments(ctx, issue.Parent.IDReadable)
+
+	// Convert to WorkUnit
+	wu := p.issueToWorkUnit(parentIssue, comments, attachments)
+
+	return wu, nil
+}
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
 // It retrieves subtasks for a given YouTrack issue.

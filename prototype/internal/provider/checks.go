@@ -50,6 +50,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapDownloadAttachment, []any{(*AttachmentDownloader)(nil)}},
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"gitlab": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -63,6 +64,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreatePR, []any{(*PRCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"bitbucket": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -74,6 +76,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapCreatePR, []any{(*PRCreator)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"azuredevops": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -88,6 +91,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapLinkBranch, []any{(*BranchLinker)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"jira": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -100,6 +104,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"asana": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -110,6 +115,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapManageLabels, []any{(*LabelManager)(nil)}},
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"clickup": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -121,6 +127,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"linear": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -132,6 +139,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"notion": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -154,6 +162,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"youtrack": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -166,6 +175,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"trello": {
 		{CapRead, []any{(*Reader)(nil)}},
@@ -178,6 +188,7 @@ var CapabilityChecks = map[string][]CapabilityCheck{
 		{CapSnapshot, []any{(*Snapshotter)(nil)}},
 		{CapCreateWorkUnit, []any{(*WorkUnitCreator)(nil)}},
 		{CapFetchSubtasks, []any{(*SubtaskFetcher)(nil)}},
+		{CapFetchParent, []any{(*ParentFetcher)(nil)}},
 	},
 	"file": {
 		{CapRead, []any{(*Reader)(nil)}},

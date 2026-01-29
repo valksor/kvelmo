@@ -2,12 +2,73 @@ package azuredevops
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
+
+// ErrNotASubtask is returned when a work unit is not a subtask.
+var ErrNotASubtask = errors.New("not a subtask")
+
+// FetchParent implements the provider.ParentFetcher interface.
+// It retrieves the parent work item for an Azure DevOps child work item.
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+	ref, err := ParseReference(workUnitID)
+	if err != nil {
+		return nil, fmt.Errorf("parse reference: %w", err)
+	}
+
+	// Override org/project if specified in reference
+	if ref.Organization != "" && ref.Project != "" {
+		p.client.SetOrganization(ref.Organization)
+		p.client.SetProject(ref.Project)
+	}
+
+	// Get the work item to check if it has a parent
+	workItem, err := p.client.GetWorkItem(ctx, ref.WorkItemID)
+	if err != nil {
+		return nil, fmt.Errorf("get work item: %w", err)
+	}
+
+	// Check if this work item has a parent (is a child)
+	// Look for reverse hierarchy link
+	var parentID int
+	for _, rel := range workItem.Relations {
+		if rel.Rel == "System.LinkTypes.Hierarchy-Reverse" && rel.URL != "" {
+			// Extract parent ID from URL
+			// format: https://dev.azure.com/{org}/{project}/_workitems/{id}
+			parts := strings.Split(rel.URL, "/_workitems/")
+			if len(parts) > 1 {
+				idStr := strings.Split(parts[1], "/")[0]
+				parentID, err = strconv.Atoi(idStr)
+				if err != nil {
+					continue
+				}
+
+				break
+			}
+		}
+	}
+
+	if parentID == 0 {
+		// Not a child work item
+		return nil, ErrNotASubtask
+	}
+
+	// Fetch the parent work item
+	parentWorkItem, err := p.client.GetWorkItem(ctx, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("get parent work item: %w", err)
+	}
+
+	// Convert to WorkUnit
+	wu := p.workItemToWorkUnit(parentWorkItem)
+
+	return wu, nil
+}
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
 // It retrieves child work items for a given work item.

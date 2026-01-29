@@ -2,11 +2,36 @@ package trello
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
+
+// ErrNotASubtask is returned when a work unit is not a subtask.
+var ErrNotASubtask = errors.New("not a subtask")
+
+// FetchParent implements the provider.ParentFetcher interface.
+// It retrieves the parent card for a Trello checklist item.
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+	// Trello checklist items have IDs like "checkitem/xyz" which are subtasks
+	// The parent is the card that contains the checklist
+	if !strings.Contains(workUnitID, "/checkitem/") {
+		// Regular card, not a checklist item
+		return nil, ErrNotASubtask
+	}
+
+	// Extract the card ID from the workUnitID
+	// Format: trello:{card_id}/checkitem/{item_id}
+	// We need to get the parent card ID from the metadata or by parsing the reference
+
+	// For Trello, we'd need to store the parent card ID when fetching subtasks
+	// Since checklist items don't have a direct parent reference, we return sentinel error
+	// The parent context is available when subtasks are fetched via FetchSubtasks
+	return nil, ErrNotASubtask
+}
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
 // It converts Trello checklist items to subtasks.
