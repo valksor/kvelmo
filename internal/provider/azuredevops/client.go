@@ -624,7 +624,7 @@ func (c *Client) GetPullRequest(ctx context.Context, prID int) (*AzurePullReques
 
 // GetPullRequestThreads fetches all threads (comments) on a pull request.
 func (c *Client) GetPullRequestThreads(ctx context.Context, prID int) ([]PRThread, error) {
-	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads?api-version=%s",
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/pullrequests/%d/threads?api-version=%s",
 		c.organization, c.project, prID, apiVersion)
 
 	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
@@ -660,7 +660,7 @@ type PRThreadComment struct {
 // GetPullRequestDiff fetches the diff for a pull request.
 func (c *Client) GetPullRequestDiff(ctx context.Context, prID int) (string, []PRDiffFile, int, int, error) {
 	// Get the diff stats and file changes
-	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/diffs?api-version=%s",
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/pullrequests/%d/diffs?api-version=%s",
 		c.organization, c.project, prID, apiVersion)
 
 	body, err := c.doRequest(ctx, http.MethodGet, url, nil)
@@ -703,7 +703,7 @@ type PRDiffFile struct {
 
 // CreatePullRequestThread creates a new thread (comment) on a pull request.
 func (c *Client) CreatePullRequestThread(ctx context.Context, prID int, content string) (*PRThread, error) {
-	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads?api-version=%s",
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/pullrequests/%d/threads?api-version=%s",
 		c.organization, c.project, prID, apiVersion)
 
 	reqBody := map[string]any{
@@ -730,7 +730,7 @@ func (c *Client) CreatePullRequestThread(ctx context.Context, prID int, content 
 
 // UpdatePullRequestThread updates an existing thread comment.
 func (c *Client) UpdatePullRequestThread(ctx context.Context, prID int, threadID, commentID int, content string) (*PRThread, error) {
-	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/_apis/git/pullrequests/%d/threads/%d/comments/%d?api-version=%s",
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/pullrequests/%d/threads/%d/comments/%d?api-version=%s",
 		c.organization, c.project, prID, threadID, commentID, apiVersion)
 
 	reqBody := map[string]string{

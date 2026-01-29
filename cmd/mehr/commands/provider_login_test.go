@@ -30,6 +30,7 @@ func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
 func TestProviderRegistry(t *testing.T) {
 	expectedProviders := []string{
 		"github", "gitlab", "notion", "jira", "linear", "wrike", "youtrack",
+		"bitbucket", "asana", "clickup", "trello", "azuredevops",
 	}
 
 	for _, provider := range expectedProviders {
@@ -53,6 +54,12 @@ func TestProviderRegistry(t *testing.T) {
 		if cfg.HelpURL == "" {
 			t.Errorf("Provider %q: HelpURL is empty", provider)
 		}
+		if cfg.HelpSteps == "" {
+			t.Errorf("Provider %q: HelpSteps is empty", provider)
+		}
+		if cfg.Scopes == "" {
+			t.Errorf("Provider %q: Scopes is empty", provider)
+		}
 	}
 }
 
@@ -75,6 +82,15 @@ func TestNormalizeProviderName(t *testing.T) {
 		{"wrike", "wrike"},
 		{"youtrack", "youtrack"},
 		{"yt", "youtrack"},
+		{"bitbucket", "bitbucket"},
+		{"bb", "bitbucket"},
+		{"asana", "asana"},
+		{"clickup", "clickup"},
+		{"cu", "clickup"},
+		{"trello", "trello"},
+		{"azuredevops", "azuredevops"},
+		{"ado", "azuredevops"},
+		{"azure", "azuredevops"},
 	}
 
 	for _, tt := range tests {
@@ -280,6 +296,46 @@ func TestGetConfigToken(t *testing.T) {
 				cfg.YouTrack = &storage.YouTrackSettings{Token: "yt_test"}
 			},
 			want: "yt_test",
+		},
+		{
+			name:      "bitbucket app password",
+			fieldPath: "Bitbucket.AppPassword",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.Bitbucket = &storage.BitbucketSettings{AppPassword: "bb_test"}
+			},
+			want: "bb_test",
+		},
+		{
+			name:      "asana token",
+			fieldPath: "Asana.Token",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.Asana = &storage.AsanaSettings{Token: "asana_test"}
+			},
+			want: "asana_test",
+		},
+		{
+			name:      "clickup token",
+			fieldPath: "ClickUp.Token",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.ClickUp = &storage.ClickUpSettings{Token: "cu_test"}
+			},
+			want: "cu_test",
+		},
+		{
+			name:      "trello token",
+			fieldPath: "Trello.Token",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.Trello = &storage.TrelloSettings{Token: "trello_test"}
+			},
+			want: "trello_test",
+		},
+		{
+			name:      "azuredevops token",
+			fieldPath: "AzureDevOps.Token",
+			setup: func(cfg *storage.WorkspaceConfig) {
+				cfg.AzureDevOps = &storage.AzureDevOpsSettings{Token: "ado_test"}
+			},
+			want: "ado_test",
 		},
 		{
 			name:      "nil provider config",
@@ -494,6 +550,96 @@ func TestWriteTokenReferenceToConfig(t *testing.T) {
 				}
 				if cfg.YouTrack.Token != "test_yt_token" {
 					t.Errorf("YouTrack.Token = %q, want test_yt_token", cfg.YouTrack.Token)
+				}
+			},
+		},
+		{
+			name:       "bitbucket - creates provider section",
+			provider:   "bitbucket",
+			envVar:     "BITBUCKET_APP_PASSWORD",
+			tokenValue: "test_bb_password",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Bitbucket == nil {
+					t.Error("Bitbucket config should not be nil")
+
+					return
+				}
+				if cfg.Bitbucket.AppPassword != "test_bb_password" {
+					t.Errorf("Bitbucket.AppPassword = %q, want test_bb_password", cfg.Bitbucket.AppPassword)
+				}
+			},
+		},
+		{
+			name:       "asana - creates provider section",
+			provider:   "asana",
+			envVar:     "ASANA_TOKEN",
+			tokenValue: "test_asana_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Asana == nil {
+					t.Error("Asana config should not be nil")
+
+					return
+				}
+				if cfg.Asana.Token != "test_asana_token" {
+					t.Errorf("Asana.Token = %q, want test_asana_token", cfg.Asana.Token)
+				}
+			},
+		},
+		{
+			name:       "clickup - creates provider section",
+			provider:   "clickup",
+			envVar:     "CLICKUP_TOKEN",
+			tokenValue: "test_cu_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.ClickUp == nil {
+					t.Error("ClickUp config should not be nil")
+
+					return
+				}
+				if cfg.ClickUp.Token != "test_cu_token" {
+					t.Errorf("ClickUp.Token = %q, want test_cu_token", cfg.ClickUp.Token)
+				}
+			},
+		},
+		{
+			name:       "trello - creates provider section",
+			provider:   "trello",
+			envVar:     "TRELLO_TOKEN",
+			tokenValue: "test_trello_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.Trello == nil {
+					t.Error("Trello config should not be nil")
+
+					return
+				}
+				if cfg.Trello.Token != "test_trello_token" {
+					t.Errorf("Trello.Token = %q, want test_trello_token", cfg.Trello.Token)
+				}
+			},
+		},
+		{
+			name:       "azuredevops - creates provider section",
+			provider:   "azuredevops",
+			envVar:     "AZURE_DEVOPS_PAT",
+			tokenValue: "test_ado_token",
+			setup:      func(cfg *storage.WorkspaceConfig) {},
+			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
+				t.Helper()
+				if cfg.AzureDevOps == nil {
+					t.Error("AzureDevOps config should not be nil")
+
+					return
+				}
+				if cfg.AzureDevOps.Token != "test_ado_token" {
+					t.Errorf("AzureDevOps.Token = %q, want test_ado_token", cfg.AzureDevOps.Token)
 				}
 			},
 		},
