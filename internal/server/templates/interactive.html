@@ -60,7 +60,7 @@
                     </div>
                 </form>
                 <div class="px-4 pb-3 text-xs text-surface-400 dark:text-surface-600">
-                    Tip: You can type commands directly (start, plan, implement, review, status, help)
+                    Tip: Type commands directly (finish, abandon, plan, implement, review, note, find, simplify, label, cost, budget, list, spec, help)
                 </div>
             </div>
         </div>
@@ -73,6 +73,7 @@
                     <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Actions</h3>
                 </div>
                 <div class="p-4 space-y-2">
+                    <!-- Task Actions -->
                     <button class="btn btn-secondary w-full justify-start"
                             hx-post="/api/v1/interactive/command"
                             hx-vals='{"command": "status"}'
@@ -102,6 +103,20 @@
                             hx-vals='{"command": "continue"}'
                             hx-swap="none">
                         ▶️ Continue
+                    </button>
+                    <button class="btn btn-success w-full justify-start"
+                            hx-post="/api/v1/interactive/command"
+                            hx-vals='{"command": "finish"}'
+                            hx-swap="none"
+                            hx-confirm="Complete this task?">
+                        ✅ Finish
+                    </button>
+                    <button class="btn btn-danger w-full justify-start"
+                            hx-post="/api/v1/interactive/command"
+                            hx-vals='{"command": "abandon"}'
+                            hx-swap="none"
+                            hx-confirm="Discard this task? This will delete the branch and work directory!">
+                        🗑️ Abandon
                     </button>
                 </div>
             </div>
@@ -139,15 +154,59 @@
                 <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
                     <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Commands</h3>
                 </div>
-                <div class="p-4 text-sm space-y-2 text-surface-600 dark:text-surface-400">
-                    <div><code class="text-brand-600 dark:text-brand-400">chat &lt;msg&gt;</code> - Chat with agent</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">start &lt;ref&gt;</code> - Start task</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">plan</code> - Enter planning</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">implement</code> - Execute specs</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">review</code> - Review code</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">continue</code> - Resume</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">answer &lt;resp&gt;</code> - Answer question</div>
-                    <div><code class="text-brand-600 dark:text-brand-400">undo</code> / <code class="text-brand-600 dark:text-brand-400">redo</code> - Checkpoints</div>
+                <div class="p-4 text-sm space-y-3 text-surface-600 dark:text-surface-400">
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Chat:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">chat &lt;msg&gt;</code> - Chat with agent</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">answer &lt;resp&gt;</code> - Answer question</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">note &lt;msg&gt;</code> - Add note</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Workflow:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">start &lt;ref&gt;</code> - Start task</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">plan</code> - Enter planning</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">implement</code> - Execute specs</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">review</code> - Review code</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">continue</code> - Resume</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">finish</code> - Complete task</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">abandon</code> - Discard task</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Info:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">status</code> - Show task status</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">cost</code> - Show token usage</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">budget</code> - Show budget status</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">list</code> - List all tasks</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">spec &lt;n&gt;</code> - View specification</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Search:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">find &lt;query&gt;</code> - AI code search</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">memory &lt;query&gt;</code> - Search memory</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Task:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">simplify</code> - Simplify code</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">label add &lt;lbl&gt;</code> - Add label</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">label list</code> - List labels</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-surface-700 dark:text-surface-300">Other:</span>
+                        <div class="mt-1 ml-2">
+                            <div><code class="text-brand-600 dark:text-brand-400">quick &lt;desc&gt;</code> - Create quick task</div>
+                            <div><code class="text-brand-600 dark:text-brand-400">undo</code> / <code class="text-brand-600 dark:text-brand-400">redo</code> - Checkpoints</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

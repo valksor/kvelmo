@@ -1,15 +1,20 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-mehrhof/internal/memory"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
@@ -87,6 +92,15 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create cancellable context for this operation
+	opCtx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Register operation for cancellation
+	sessionID := s.getSessionID(r)
+	s.registerOperation(sessionID, cancel, "chat")
+	defer s.unregisterOperation(sessionID)
+
 	// Build prompt with context
 	prompt := s.buildChatPrompt(req.Message)
 
@@ -99,7 +113,7 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	})
 
-	response, err := activeAgent.RunWithCallback(r.Context(), prompt, func(event agent.Event) error {
+	response, err := activeAgent.RunWithCallback(opCtx, prompt, func(event agent.Event) error {
 		// Stream event via SSE to connected clients
 		s.config.EventBus.PublishRaw(events.Event{
 			Type: events.TypeAgentMessage,
@@ -109,6 +123,15 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 	if err != nil {
+		// Handle cancellation gracefully
+		if errors.Is(err, context.Canceled) {
+			s.writeJSON(w, http.StatusOK, chatResponse{
+				Success: true,
+				Message: "Chat cancelled",
+			})
+
+			return
+		}
 		slog.Error("agent chat error", "error", err)
 		s.writeJSON(w, http.StatusInternalServerError, chatResponse{
 			Success: false,
@@ -176,7 +199,15 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ctx := r.Context()
+	// Create cancellable context for ALL commands
+	opCtx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Register operation for cancellation
+	sessionID := s.getSessionID(r)
+	s.registerOperation(sessionID, cancel, req.Command)
+	defer s.unregisterOperation(sessionID)
+
 	cond := s.config.Conductor
 	var err error
 	var message string
@@ -189,35 +220,298 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 
 			return
 		}
-		err = cond.Start(ctx, req.Args[0])
+		err = cond.Start(opCtx, req.Args[0])
 		message = "Task started"
 
 	case "plan":
-		err = cond.Plan(ctx)
+		err = cond.Plan(opCtx)
 		message = "Planning started"
 
 	case "implement":
-		err = cond.Implement(ctx)
+		err = cond.Implement(opCtx)
 		message = "Implementation started"
 
 	case "review":
-		err = cond.Review(ctx)
+		err = cond.Review(opCtx)
 		message = "Review started"
 
 	case "continue":
-		err = cond.ResumePaused(ctx)
+		err = cond.ResumePaused(opCtx)
 		message = "Resumed"
 
 	case "undo":
-		err = cond.Undo(ctx)
+		err = cond.Undo(opCtx)
 		message = "Undo complete"
 
 	case "redo":
-		err = cond.Redo(ctx)
+		err = cond.Redo(opCtx)
 		message = "Redo complete"
+
+	case "finish":
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		opts := conductor.FinishOptions{}
+		err = cond.Finish(opCtx, opts)
+		message = "Task completed"
+
+	case "abandon":
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		opts := conductor.DeleteOptions{
+			Force:      true,
+			KeepBranch: false,
+			DeleteWork: conductor.BoolPtr(true),
+		}
+		err = cond.Delete(opCtx, opts)
+		message = "Task abandoned"
+
+	case "note":
+		if len(req.Args) == 0 {
+			s.writeError(w, http.StatusBadRequest, "note requires a message")
+
+			return
+		}
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		task := cond.GetActiveTask()
+		ws := cond.GetWorkspace()
+		noteMsg := strings.Join(req.Args, " ")
+		if err := ws.AppendNote(task.ID, noteMsg, task.State); err != nil {
+			s.writeError(w, http.StatusInternalServerError, "save note: "+err.Error())
+
+			return
+		}
+		message = "Note saved"
+
+	case "quick":
+		if len(req.Args) == 0 {
+			s.writeError(w, http.StatusBadRequest, "quick requires a description")
+
+			return
+		}
+		result, err := cond.CreateQuickTask(opCtx, conductor.QuickTaskOptions{
+			Description: strings.Join(req.Args, " "),
+			QueueID:     "quick-tasks",
+		})
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "create quick task: "+err.Error())
+
+			return
+		}
+		message = "Quick task created: " + result.TaskID
+
+	case "cost":
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		work := cond.GetTaskWork()
+		if work == nil {
+			s.writeError(w, http.StatusInternalServerError, "unable to load task work")
+
+			return
+		}
+		costs := work.Costs
+		message = fmt.Sprintf("Input: %d, Output: %d, Total: $%.4f",
+			costs.TotalInputTokens, costs.TotalOutputTokens, costs.TotalCostUSD)
+
+	case "list":
+		ws := cond.GetWorkspace()
+		taskIDs, err := ws.ListWorks()
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "list tasks: "+err.Error())
+
+			return
+		}
+		message = fmt.Sprintf("Found %d tasks", len(taskIDs))
+
+	case "specification":
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		ws := cond.GetWorkspace()
+		task := cond.GetActiveTask()
+		if len(req.Args) == 0 {
+			specs, err := ws.ListSpecificationsWithStatus(task.ID)
+			if err != nil {
+				s.writeError(w, http.StatusInternalServerError, "list specifications: "+err.Error())
+
+				return
+			}
+			message = fmt.Sprintf("Found %d specifications", len(specs))
+		} else {
+			num, err := strconv.Atoi(req.Args[0])
+			if err != nil {
+				s.writeError(w, http.StatusBadRequest, "specification number must be an integer")
+
+				return
+			}
+			_, err = ws.LoadSpecification(task.ID, num)
+			if err != nil {
+				s.writeError(w, http.StatusInternalServerError, "load specification: "+err.Error())
+
+				return
+			}
+			message = fmt.Sprintf("Specification %d loaded", num)
+		}
+
+	case "find":
+		if len(req.Args) == 0 {
+			s.writeError(w, http.StatusBadRequest, "find requires a query")
+
+			return
+		}
+		findOpts := conductor.FindOptions{
+			Query:     strings.Join(req.Args, " "),
+			Path:      "",
+			Pattern:   "",
+			Context:   3,
+			Workspace: cond.GetWorkspace(),
+		}
+		resultChan, err := cond.Find(r.Context(), findOpts)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "find: "+err.Error())
+
+			return
+		}
+		var results []conductor.FindResult
+		for result := range resultChan {
+			if result.File != "__error__" {
+				results = append(results, result)
+			}
+		}
+		message = fmt.Sprintf("Found %d match(es)", len(results))
+
+	case "simplify":
+		if cond.GetActiveTask() == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		err = cond.Simplify(opCtx, "", true)
+		message = "Simplification complete"
+
+	case "label":
+		task := cond.GetActiveTask()
+		if task == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		ws := cond.GetWorkspace()
+		if len(req.Args) == 0 {
+			labels, _ := ws.GetLabels(task.ID)
+			message = fmt.Sprintf("Labels: %v", labels)
+		} else {
+			subCmd := req.Args[0]
+			subArgs := req.Args[1:]
+			switch subCmd {
+			case "add":
+				for _, label := range subArgs {
+					_ = ws.AddLabel(task.ID, label)
+				}
+				message = fmt.Sprintf("Added %d label(s)", len(subArgs))
+			case "remove", "rm":
+				for _, label := range subArgs {
+					_ = ws.RemoveLabel(task.ID, label)
+				}
+				message = fmt.Sprintf("Removed %d label(s)", len(subArgs))
+			case "clear":
+				_ = ws.SetLabels(task.ID, []string{})
+				message = "Labels cleared"
+			case "list", "ls":
+				labels, _ := ws.GetLabels(task.ID)
+				message = fmt.Sprintf("Labels: %v", labels)
+			default:
+				for _, label := range req.Args {
+					_ = ws.AddLabel(task.ID, label)
+				}
+				message = fmt.Sprintf("Added %d label(s)", len(req.Args))
+			}
+		}
+
+	case "memory":
+		mem := cond.GetMemory()
+		if mem == nil {
+			s.writeError(w, http.StatusServiceUnavailable, "memory system is not enabled")
+
+			return
+		}
+		if len(req.Args) == 0 {
+			s.writeError(w, http.StatusBadRequest, "memory requires a query")
+
+			return
+		}
+		query := strings.Join(req.Args, " ")
+		results, err := mem.Search(r.Context(), query, memory.SearchOptions{
+			Limit:    5,
+			MinScore: 0.65,
+		})
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "memory search: "+err.Error())
+
+			return
+		}
+		message = fmt.Sprintf("Found %d similar task(s)", len(results))
+
+	case "budget":
+		task := cond.GetActiveTask()
+		if task == nil {
+			s.writeError(w, http.StatusBadRequest, "no active task")
+
+			return
+		}
+		ws := cond.GetWorkspace()
+		work, err := ws.LoadWork(task.ID)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "load task: "+err.Error())
+
+			return
+		}
+		cfg, err := ws.LoadConfig()
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "load config: "+err.Error())
+
+			return
+		}
+		taskBudget := cfg.Budget.PerTask
+		if work.Budget != nil {
+			taskBudget = *work.Budget
+		}
+		costs := work.Costs
+		totalTokens := costs.TotalInputTokens + costs.TotalOutputTokens
+		message = fmt.Sprintf("Tokens: %d, Cost: $%.4f / $%.2f",
+			totalTokens, costs.TotalCostUSD, taskBudget.MaxCost)
 
 	default:
 		s.writeError(w, http.StatusBadRequest, "unknown command: "+req.Command)
+
+		return
+	}
+
+	// Handle cancellation gracefully
+	if errors.Is(err, context.Canceled) {
+		state := ""
+		if task := cond.GetActiveTask(); task != nil {
+			state = task.State
+		}
+		s.writeJSON(w, http.StatusOK, commandResponse{
+			Success: true,
+			Message: req.Command + " cancelled",
+			State:   state,
+		})
 
 		return
 	}
@@ -392,12 +686,29 @@ func (s *Server) handleInteractiveStop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, this is a no-op since we can't directly cancel operations
-	// In the future, we could add a cancel context to the conductor
+	sessionID := s.getSessionID(r)
+	if sessionID == "" {
+		s.writeJSON(w, http.StatusOK, commandResponse{
+			Success: true,
+			Message: "No session to cancel",
+		})
+
+		return
+	}
+
+	opName, cancelled := s.cancelOperation(sessionID)
+	if !cancelled {
+		s.writeJSON(w, http.StatusOK, commandResponse{
+			Success: true,
+			Message: "No active operation to cancel",
+		})
+
+		return
+	}
 
 	s.writeJSON(w, http.StatusOK, commandResponse{
 		Success: true,
-		Message: "Operation pause requested",
+		Message: fmt.Sprintf("Cancelled %s operation", opName),
 	})
 }
 
