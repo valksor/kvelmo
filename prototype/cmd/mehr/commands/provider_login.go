@@ -21,6 +21,8 @@ type providerLoginConfig struct {
 	ConfigField string // Field path in WorkspaceConfig (e.g., "GitHub.Token")
 	HelpURL     string // URL for getting a token
 	TokenPrefix string // Optional token prefix for validation (e.g., "ghp_")
+	HelpSteps   string // Navigation steps to get token
+	Scopes      string // Required permissions/scopes
 }
 
 // providerLoginConfigs maps provider names to their login configuration.
@@ -31,6 +33,8 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "GitHub.Token",
 		HelpURL:     "https://github.com/settings/tokens",
 		TokenPrefix: "ghp_",
+		HelpSteps:   "Settings → Developer settings → Personal access tokens → Tokens (classic)",
+		Scopes:      "repo, read:user (or Fine-grained with repository access)",
 	},
 	"gitlab": {
 		Name:        "GitLab",
@@ -38,6 +42,8 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "GitLab.Token",
 		HelpURL:     "https://gitlab.com/-/user_settings/personal_access_tokens",
 		TokenPrefix: "glpat-",
+		HelpSteps:   "Preferences → Access Tokens → Add new token",
+		Scopes:      "api, read_user, read_repository",
 	},
 	"notion": {
 		Name:        "Notion",
@@ -45,6 +51,8 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "Notion.Token",
 		HelpURL:     "https://www.notion.so/my-integrations",
 		TokenPrefix: "secret_",
+		HelpSteps:   "Settings → My connections → Develop or manage integrations",
+		Scopes:      "Database access to your workspace",
 	},
 	"jira": {
 		Name:        "Jira",
@@ -52,6 +60,8 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "Jira.Token",
 		HelpURL:     "https://id.atlassian.com/manage-profile/security/api-tokens",
 		TokenPrefix: "",
+		HelpSteps:   "Profile → Security → Create and manage API tokens",
+		Scopes:      "Full account access (Jira Cloud)",
 	},
 	"linear": {
 		Name:        "Linear",
@@ -59,13 +69,17 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "Linear.Token",
 		HelpURL:     "https://linear.app/settings/api",
 		TokenPrefix: "lin_api_",
+		HelpSteps:   "Settings → API → Personal API keys → Create key",
+		Scopes:      "Workspace access",
 	},
 	"wrike": {
 		Name:        "Wrike",
 		EnvVar:      "WRIKE_TOKEN",
 		ConfigField: "Wrike.Token",
-		HelpURL:     "https://www.wrike.com/workspace.htm",
+		HelpURL:     "https://www.wrike.com/frontend/apps/index.html#/api",
 		TokenPrefix: "",
+		HelpSteps:   "Profile → Apps & Integrations → API",
+		Scopes:      "Full access (permanent token)",
 	},
 	"youtrack": {
 		Name:        "YouTrack",
@@ -73,6 +87,53 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		ConfigField: "YouTrack.Token",
 		HelpURL:     "https://www.jetbrains.com/help/youtrack/manage-user-token.html",
 		TokenPrefix: "",
+		HelpSteps:   "Profile → Account Security → Tokens → New token",
+		Scopes:      "Hub service scope for your project",
+	},
+	"bitbucket": {
+		Name:        "Bitbucket",
+		EnvVar:      "BITBUCKET_APP_PASSWORD",
+		ConfigField: "Bitbucket.AppPassword",
+		HelpURL:     "https://bitbucket.org/account/settings/app-passwords",
+		TokenPrefix: "",
+		HelpSteps:   "Settings → App passwords → Create app password",
+		Scopes:      "Repositories: read, write; Pull requests: read, write",
+	},
+	"asana": {
+		Name:        "Asana",
+		EnvVar:      "ASANA_TOKEN",
+		ConfigField: "Asana.Token",
+		HelpURL:     "https://app.asana.com/0/developer-console",
+		TokenPrefix: "",
+		HelpSteps:   "Profile → Apps → Developer Console → Personal access token",
+		Scopes:      "Full access to your Asana account",
+	},
+	"clickup": {
+		Name:        "ClickUp",
+		EnvVar:      "CLICKUP_TOKEN",
+		ConfigField: "ClickUp.Token",
+		HelpURL:     "https://app.clickup.com/settings/apps",
+		TokenPrefix: "",
+		HelpSteps:   "Settings → Apps → Generate API Token",
+		Scopes:      "Full access to your workspace",
+	},
+	"trello": {
+		Name:        "Trello",
+		EnvVar:      "TRELLO_TOKEN",
+		ConfigField: "Trello.Token",
+		HelpURL:     "https://trello.com/power-ups/admin",
+		TokenPrefix: "",
+		HelpSteps:   "Power-Ups Admin → Developer API Keys → Generate Token",
+		Scopes:      "Read/write boards (also set TRELLO_KEY for API key)",
+	},
+	"azuredevops": {
+		Name:        "Azure DevOps",
+		EnvVar:      "AZURE_DEVOPS_PAT",
+		ConfigField: "AzureDevOps.Token",
+		HelpURL:     "https://dev.azure.com/_usersSettings/tokens",
+		TokenPrefix: "",
+		HelpSteps:   "User Settings → Personal access tokens → New Token",
+		Scopes:      "Work Items: read/write; Code: read",
 	},
 }
 
@@ -98,6 +159,12 @@ func normalizeProviderName(name string) string {
 		return "notion"
 	case "yt":
 		return "youtrack"
+	case "bb":
+		return "bitbucket"
+	case "ado", "azure":
+		return "azuredevops"
+	case "cu":
+		return "clickup"
 	default:
 		return strings.ToLower(name)
 	}
@@ -173,6 +240,26 @@ func getConfigToken(cfg *storage.WorkspaceConfig, fieldPath string) string {
 		if cfg.YouTrack != nil && parts[1] == "Token" {
 			return cfg.YouTrack.Token
 		}
+	case "Bitbucket":
+		if cfg.Bitbucket != nil && parts[1] == "AppPassword" {
+			return cfg.Bitbucket.AppPassword
+		}
+	case "Asana":
+		if cfg.Asana != nil && parts[1] == "Token" {
+			return cfg.Asana.Token
+		}
+	case "ClickUp":
+		if cfg.ClickUp != nil && parts[1] == "Token" {
+			return cfg.ClickUp.Token
+		}
+	case "Trello":
+		if cfg.Trello != nil && parts[1] == "Token" {
+			return cfg.Trello.Token
+		}
+	case "AzureDevOps":
+		if cfg.AzureDevOps != nil && parts[1] == "Token" {
+			return cfg.AzureDevOps.Token
+		}
 	}
 
 	return ""
@@ -204,11 +291,30 @@ func confirmOverride(cmd *cobra.Command, source, maskedValue string) (bool, erro
 	return response == "y" || response == "yes", nil
 }
 
+// printTokenHelp displays formatted guidance for obtaining a token.
+func printTokenHelp(cmd *cobra.Command, cfg providerLoginConfig) {
+	out := cmd.OutOrStdout()
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintf(out, "%s Token Setup\n", cfg.Name)
+	_, _ = fmt.Fprintln(out, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	_, _ = fmt.Fprintf(out, "📍 Get token: %s\n", cfg.HelpURL)
+	if cfg.HelpSteps != "" {
+		_, _ = fmt.Fprintf(out, "📋 Steps:     %s\n", cfg.HelpSteps)
+	}
+	if cfg.Scopes != "" {
+		_, _ = fmt.Fprintf(out, "🔑 Required:  %s\n", cfg.Scopes)
+	}
+	if cfg.TokenPrefix != "" {
+		_, _ = fmt.Fprintf(out, "💡 Format:    Token starts with '%s'\n", cfg.TokenPrefix)
+	}
+	_, _ = fmt.Fprintln(out, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Token will be saved to .mehrhof/.env and referenced in config.yaml")
+}
+
 // promptForToken interactively prompts the user for a token.
 func promptForToken(cmd *cobra.Command, cfg providerLoginConfig) (string, error) {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout())
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Get a token at: %s\n", cfg.HelpURL)
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Token will be saved to .mehrhof/.env and referenced in config.yaml")
+	printTokenHelp(cmd, cfg)
 
 	var token string
 	prompt := &survey.Password{
@@ -331,6 +437,31 @@ func writeTokenReferenceToConfig(ws *storage.Workspace, providerName, envVar str
 			cfg.YouTrack = &storage.YouTrackSettings{}
 		}
 		cfg.YouTrack.Token = "${" + envVar + "}"
+	case "bitbucket":
+		if cfg.Bitbucket == nil {
+			cfg.Bitbucket = &storage.BitbucketSettings{}
+		}
+		cfg.Bitbucket.AppPassword = "${" + envVar + "}"
+	case "asana":
+		if cfg.Asana == nil {
+			cfg.Asana = &storage.AsanaSettings{}
+		}
+		cfg.Asana.Token = "${" + envVar + "}"
+	case "clickup":
+		if cfg.ClickUp == nil {
+			cfg.ClickUp = &storage.ClickUpSettings{}
+		}
+		cfg.ClickUp.Token = "${" + envVar + "}"
+	case "trello":
+		if cfg.Trello == nil {
+			cfg.Trello = &storage.TrelloSettings{}
+		}
+		cfg.Trello.Token = "${" + envVar + "}"
+	case "azuredevops":
+		if cfg.AzureDevOps == nil {
+			cfg.AzureDevOps = &storage.AzureDevOpsSettings{}
+		}
+		cfg.AzureDevOps.Token = "${" + envVar + "}"
 	}
 
 	// Save config

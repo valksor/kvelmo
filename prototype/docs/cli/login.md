@@ -23,6 +23,11 @@ The `mehr <provider> login` commands provide an interactive way to configure aut
 | Linear | `mehr linear login` | `LINEAR_API_KEY` |
 | Wrike | `mehr wrike login` | `WRIKE_TOKEN` |
 | YouTrack | `mehr youtrack login` | `YOUTRACK_TOKEN` |
+| Bitbucket | `mehr bitbucket login` | `BITBUCKET_APP_PASSWORD` |
+| Asana | `mehr asana login` | `ASANA_TOKEN` |
+| ClickUp | `mehr clickup login` | `CLICKUP_TOKEN` |
+| Trello | `mehr trello login` | `TRELLO_TOKEN` |
+| Azure DevOps | `mehr azuredevops login` | `AZURE_DEVOPS_PAT` |
 
 ## What Happens When You Run Login
 
@@ -40,16 +45,31 @@ The `mehr <provider> login` commands provide an interactive way to configure aut
 
 ## Example Session
 
+When you run a login command, you'll see helpful guidance on where to get your token:
+
 ```bash
 $ mehr github login
 
-Get a token at: https://github.com/settings/tokens
+GitHub Token Setup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 Get token: https://github.com/settings/tokens
+📋 Steps:     Settings → Developer settings → Personal access tokens
+🔑 Required:  repo, read:user
+💡 Format:    Token starts with 'ghp_'
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Token will be saved to .mehrhof/.env and referenced in config.yaml
 ? Enter your GitHub API token (leave empty to cancel): ********
 
 Token saved to /project/.mehrhof/.env
 Token reference added to config.yaml
 ```
+
+The guidance includes:
+- **📍 Get token**: Direct URL to the token generation page
+- **📋 Steps**: Navigation path to find the token settings
+- **🔑 Required**: Permissions or scopes needed for the token
+- **💡 Format**: Token prefix pattern for validation (when applicable)
 
 > **Note**: Your token input is masked with asterisks (`****`) for security. The token is not visible in the terminal while typing or pasting.
 
@@ -105,7 +125,7 @@ notion:
 
 ## Provider Aliases
 
-Some providers have short aliases:
+Many providers have short aliases for faster typing:
 
 | Alias | Resolves To |
 |-------|-------------|
@@ -113,10 +133,16 @@ Some providers have short aliases:
 | `gl` | gitlab |
 | `nt` | notion |
 | `yt` | youtrack |
+| `bb` | bitbucket |
+| `cu` | clickup |
+| `ado`, `azure` | azuredevops |
 
 ```bash
 mehr github login
-mehr gh login
+mehr gh login        # Same as above
+
+mehr azuredevops login
+mehr ado login       # Same as above
 ```
 
 ## Getting Tokens
@@ -152,5 +178,32 @@ Visit: https://www.wrike.com/workspace.htm
 
 ### YouTrack
 Visit: https://www.jetbrains.com/help/youtrack/manage-user-token.html
-- Create a permanent token in your profile
+- Profile → Account Security → Tokens
+- Required scopes: Hub scope
+
+### Bitbucket
+Visit: https://bitbucket.org/account/settings/app-passwords
+- Settings → App passwords → Create app password
+- Required permissions: Repositories read/write
+
+### Asana
+Visit: https://app.asana.com/0/developer-console
+- Profile → Apps → Developer Console → Personal access token
+- Grants full access to your Asana account
+
+### ClickUp
+Visit: https://app.clickup.com/settings/apps
+- Settings → Apps → Generate API Token
+- Grants full workspace access
+
+### Trello
+Visit: https://trello.com/power-ups/admin
+- Power-Ups Admin → Developer API Keys → Generate Token
+- Requires both API key (`TRELLO_KEY`) and token (`TRELLO_TOKEN`)
+- Required permissions: Read/write boards
+
+### Azure DevOps
+Visit: https://dev.azure.com/_usersSettings/tokens
+- User Settings → Personal access tokens → New Token
+- Required scopes: Work Items read/write, Code read
 

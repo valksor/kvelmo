@@ -64,6 +64,7 @@ These flags work with any command:
 | Command                               | Description                                    |
 | ------------------------------------- | ---------------------------------------------- |
 | [project plan](cli/project.md#plan)   | Create task breakdown from source              |
+| [project sync](cli/project-sync.md)   | Sync project/epic from external provider       |
 | [project tasks](cli/project.md#tasks) | List tasks in a project queue                  |
 | [project edit](cli/project.md#edit)   | Edit task properties (deps, priority, status)  |
 | [project reorder](cli/project.md#reorder) | Reorder tasks in queue                     |
