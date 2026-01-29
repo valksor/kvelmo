@@ -689,3 +689,344 @@ func findInString(haystack, needle string) bool {
 
 	return false
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// buildWIQLQuery tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestBuildWIQLQuery(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *Config
+		opts   provider.ListOptions
+		want   string
+	}{
+		{
+			name:   "no filters",
+			config: &Config{},
+			opts:   provider.ListOptions{},
+			want:   "SELECT [System.Id] FROM WorkItems ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name: "area path filter",
+			config: &Config{
+				AreaPath: "MyProject",
+			},
+			opts: provider.ListOptions{},
+			want: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name: "iteration path filter",
+			config: &Config{
+				IterationPath: "MyProject\\Sprint 1",
+			},
+			opts: provider.ListOptions{},
+			want: "SELECT [System.Id] FROM WorkItems WHERE [System.IterationPath] UNDER 'MyProject\\Sprint 1' ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name:   "status open filter",
+			config: &Config{},
+			opts:   provider.ListOptions{Status: provider.StatusOpen},
+			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('New', 'To Do', 'Proposed') ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name:   "status in progress filter",
+			config: &Config{},
+			opts:   provider.ListOptions{Status: provider.StatusInProgress},
+			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Active', 'In Progress', 'Committed') ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name:   "status review filter",
+			config: &Config{},
+			opts:   provider.ListOptions{Status: provider.StatusReview},
+			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Resolved', 'In Review') ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name:   "status closed filter",
+			config: &Config{},
+			opts:   provider.ListOptions{Status: provider.StatusClosed},
+			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Done', 'Closed', 'Removed') ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name:   "labels filter",
+			config: &Config{},
+			opts: provider.ListOptions{
+				Labels: []string{"bug", "urgent"},
+			},
+			want: "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'bug' AND [System.Tags] CONTAINS 'urgent' ORDER BY [System.ChangedDate] DESC",
+		},
+		{
+			name: "combined filters",
+			config: &Config{
+				AreaPath:      "MyProject",
+				IterationPath: "MyProject\\Sprint 1",
+			},
+			opts: provider.ListOptions{
+				Status: provider.StatusOpen,
+				Labels: []string{"bug"},
+			},
+			want: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.IterationPath] UNDER 'MyProject\\Sprint 1' AND [System.State] IN ('New', 'To Do', 'Proposed') AND [System.Tags] CONTAINS 'bug' ORDER BY [System.ChangedDate] DESC",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildWIQLQuery(tt.config, tt.opts)
+			if got != tt.want {
+				t.Errorf("buildWIQLQuery() =\n%q\nwant\n%q", got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// buildSnapshotContent tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestBuildSnapshotContent(t *testing.T) {
+	tests := []struct {
+		name string
+		wi   *WorkItem
+		want string
+	}{
+		{
+			name: "basic work item",
+			wi: &WorkItem{
+				ID: 123,
+				Fields: WorkItemFields{
+					Title: "Test Bug",
+				},
+			},
+			want: "# Test Bug\n\n**ID:** 123\n**Type:** \n**State:** \n\n",
+		},
+		{
+			name: "work item with all fields",
+			wi: &WorkItem{
+				ID: 456,
+				Fields: WorkItemFields{
+					Title:         "Feature Request",
+					WorkItemType:  "Task",
+					State:         "Active",
+					Priority:      2,
+					Tags:          "feature; urgent",
+					Description:   "Add new feature",
+					AreaPath:      "MyProject",
+					IterationPath: "Sprint 1",
+				},
+			},
+			want: "# Feature Request\n\n**ID:** 456\n**Type:** Task\n**State:** Active\n**Area:** MyProject\n**Iteration:** Sprint 1\n**Priority:** 2\n**Tags:** feature; urgent\n\n## Description\n\nAdd new feature\n",
+		},
+		{
+			name: "work item with assigned to",
+			wi: &WorkItem{
+				ID: 789,
+				Fields: WorkItemFields{
+					Title: "Assigned Task",
+					AssignedTo: &Identity{
+						DisplayName: "John Doe",
+					},
+				},
+			},
+			want: "# Assigned Task\n\n**ID:** 789\n**Type:** \n**State:** \n**Assigned To:** John Doe\n\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildSnapshotContent(tt.wi)
+			if got != tt.want {
+				t.Errorf("buildSnapshotContent() =\n%q\nwant\n%q", got, tt.want)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// extractAttachments tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestExtractAttachments(t *testing.T) {
+	tests := []struct {
+		name string
+		rels []WorkItemRelation
+		want []provider.Attachment
+	}{
+		{
+			name: "no attachments",
+			rels: []WorkItemRelation{},
+			want: nil,
+		},
+		{
+			name: "single attachment",
+			rels: []WorkItemRelation{
+				{
+					Rel: "AttachedFile",
+					URL: "https://example.com/file.txt",
+					Attributes: map[string]interface{}{
+						"name": "file.txt",
+					},
+				},
+			},
+			want: []provider.Attachment{
+				{
+					ID:   "https://example.com/file.txt",
+					URL:  "https://example.com/file.txt",
+					Name: "file.txt",
+				},
+			},
+		},
+		{
+			name: "multiple attachments",
+			rels: []WorkItemRelation{
+				{
+					Rel: "AttachedFile",
+					URL: "https://example.com/file1.txt",
+					Attributes: map[string]interface{}{
+						"name": "file1.txt",
+					},
+				},
+				{
+					Rel: "AttachedFile",
+					URL: "https://example.com/file2.pdf",
+					Attributes: map[string]interface{}{
+						"name": "file2.pdf",
+					},
+				},
+			},
+			want: []provider.Attachment{
+				{
+					ID:   "https://example.com/file1.txt",
+					URL:  "https://example.com/file1.txt",
+					Name: "file1.txt",
+				},
+				{
+					ID:   "https://example.com/file2.pdf",
+					URL:  "https://example.com/file2.pdf",
+					Name: "file2.pdf",
+				},
+			},
+		},
+		{
+			name: "mixed relations (non-attachments filtered out)",
+			rels: []WorkItemRelation{
+				{
+					Rel: "AttachedFile",
+					URL: "https://example.com/file.txt",
+					Attributes: map[string]interface{}{
+						"name": "file.txt",
+					},
+				},
+				{
+					Rel: "WorkItemLink",
+					URL: "https://example.com/link/123",
+				},
+			},
+			want: []provider.Attachment{
+				{
+					ID:   "https://example.com/file.txt",
+					URL:  "https://example.com/file.txt",
+					Name: "file.txt",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractAttachments(tt.rels)
+			if len(got) != len(tt.want) {
+				t.Errorf("extractAttachments() returned %d items, want %d", len(got), len(tt.want))
+
+				return
+			}
+			for i := range got {
+				if got[i].URL != tt.want[i].URL || got[i].Name != tt.want[i].Name {
+					t.Errorf("extractAttachments()[%d] = %+v, want %+v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// workItemToWorkUnit tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestWorkItemToWorkUnit(t *testing.T) {
+	tests := []struct {
+		name string
+		wi   *WorkItem
+		want provider.WorkUnit
+	}{
+		{
+			name: "basic work item",
+			wi: &WorkItem{
+				ID: 123,
+				Fields: WorkItemFields{
+					Title: "Test Bug",
+					State: "Active",
+				},
+				URL: "https://dev.azure.com/testorg/testproj/_workitems/edit/123",
+			},
+			want: provider.WorkUnit{
+				ID:          "123",
+				Title:       "Test Bug",
+				Status:      provider.StatusInProgress,
+				TaskType:    "task",
+				Description: "",
+			},
+		},
+		{
+			name: "bug work item",
+			wi: &WorkItem{
+				ID: 456,
+				Fields: WorkItemFields{
+					Title:        "Fix bug",
+					State:        "New",
+					WorkItemType: "Bug",
+					Priority:     1,
+					Tags:         "urgent; bug",
+					Description:  "Fix this bug",
+				},
+				URL: "https://dev.azure.com/org/proj/_workitems/edit/456",
+			},
+			want: provider.WorkUnit{
+				ID:          "456",
+				Title:       "Fix bug",
+				Status:      provider.StatusOpen,
+				TaskType:    "fix",
+				Priority:    provider.PriorityCritical,
+				Labels:      []string{"urgent", "bug"},
+				Description: "Fix this bug",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Provider{
+				config: &Config{
+					Organization: "testorg",
+					Project:      "testproj",
+				},
+			}
+			got := p.workItemToWorkUnit(tt.wi)
+
+			if got.ID != tt.want.ID {
+				t.Errorf("workItemToWorkUnit().ID = %q, want %q", got.ID, tt.want.ID)
+			}
+			if got.Title != tt.want.Title {
+				t.Errorf("workItemToWorkUnit().Title = %q, want %q", got.Title, tt.want.Title)
+			}
+			if got.Status != tt.want.Status {
+				t.Errorf("workItemToWorkUnit().Status = %v, want %v", got.Status, tt.want.Status)
+			}
+			if got.TaskType != tt.want.TaskType {
+				t.Errorf("workItemToWorkUnit().TaskType = %q, want %q", got.TaskType, tt.want.TaskType)
+			}
+			if got.Description != tt.want.Description {
+				t.Errorf("workItemToWorkUnit().Description = %q, want %q", got.Description, tt.want.Description)
+			}
+		})
+	}
+}
