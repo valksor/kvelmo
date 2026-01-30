@@ -36,6 +36,7 @@ type WorkspaceConfig struct {
 	Browser       *BrowserSettings            `yaml:"browser,omitempty"`
 	MCP           *MCPSettings                `yaml:"mcp,omitempty"`
 	Specification SpecificationSettings       `yaml:"specification,omitempty"`
+	Review        ReviewSettings              `yaml:"review,omitempty"`
 	Security      *SecuritySettings           `yaml:"security,omitempty"`
 	Memory        *MemorySettings             `yaml:"memory,omitempty"`
 	Orchestration *OrchestrationSettings      `yaml:"orchestration,omitempty"`
@@ -473,7 +474,15 @@ type StorageSettings struct {
 
 // SpecificationSettings holds specification-related configuration.
 type SpecificationSettings struct {
-	SaveInProject bool `yaml:"save_in_project"` // Save specs in project .mehrhof/<task-id>/specifications/ (default: false)
+	SaveInProject   bool   `yaml:"save_in_project"`  // Save specs in project directory (default: false)
+	ProjectDir      string `yaml:"project_dir"`      // Project directory for specs (default: ".mehrhof", can be "tickets")
+	FilenamePattern string `yaml:"filename_pattern"` // Spec filename pattern (default: "specification-{n}.md")
+}
+
+// ReviewSettings holds code review output configuration.
+type ReviewSettings struct {
+	SaveInProject   bool   `yaml:"save_in_project"`  // Save reviews alongside specs in project (default: false)
+	FilenamePattern string `yaml:"filename_pattern"` // Review filename pattern (default: "review-{n}.txt")
 }
 
 // SandboxSettings holds agent sandboxing configuration.
@@ -565,7 +574,13 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			WorkDir: "work", // Default: work/ (relative to global workspace location)
 		},
 		Specification: SpecificationSettings{
-			SaveInProject: false, // Default: disabled (specs stored in ~/.mehrhof only)
+			SaveInProject:   false,                  // Default: disabled (specs stored in ~/.mehrhof only)
+			ProjectDir:      "",                     // Default: empty means use .mehrhof/<task-id>/
+			FilenamePattern: "specification-{n}.md", // Default: specification-1.md, specification-2.md, etc.
+		},
+		Review: ReviewSettings{
+			SaveInProject:   false,            // Default: disabled (reviews stored in work dir only)
+			FilenamePattern: "review-{n}.txt", // Default: review-1.txt, review-2.txt, etc.
 		},
 		Labels: &LabelSettings{
 			Enabled: true,
@@ -896,7 +911,21 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 # Control where specifications are stored
 # Example:
 # specification:
-#     save_in_project: true          # Save specs in .mehrhof/<task-id>/specifications/ (default: false)
+#     save_in_project: true            # Save specs in project directory (default: false)
+#     project_dir: "tickets"           # Directory for specs (default: ".mehrhof")
+#     filename_pattern: "SPEC-{n}.md"  # Filename pattern (default: "specification-{n}.md")
+`
+	}
+
+	// Add review section comment if save_in_project is disabled (default)
+	if !cfg.Review.SaveInProject {
+		content += `
+# Review settings
+# Control where code review outputs are stored
+# Example:
+# review:
+#     save_in_project: true                 # Save reviews alongside specs (default: false)
+#     filename_pattern: "CODERABBIT-{n}.txt" # Filename pattern (default: "review-{n}.txt")
 `
 	}
 

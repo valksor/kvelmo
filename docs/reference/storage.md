@@ -199,6 +199,8 @@ specifications/
 └── specification-3.md
 ```
 
+Filenames follow the `specification.filename_pattern` config (default: `specification-{n}.md`).
+
 See [Specification File Format](specification-format.md) for details.
 
 ### reviews/ Directory
@@ -212,7 +214,41 @@ reviews/
 └── security-review.txt
 ```
 
+Filenames follow the `review.filename_pattern` config (default: `review-{n}.txt`).
+
 Files are plain text with review findings.
+
+## Project-Local Storage (Optional)
+
+When `specification.save_in_project` or `review.save_in_project` is enabled, files are also saved to your project directory for version control:
+
+```
+project/
+├── .mehrhof/
+│   ├── config.yaml
+│   └── .env
+└── tickets/                    # specification.project_dir
+    └── A-123/                  # task ID
+        ├── SPEC-1.md           # specification.filename_pattern
+        ├── SPEC-2.md
+        ├── CODERABBIT-1.txt    # review.filename_pattern
+        └── CODERABBIT-2.txt
+```
+
+**Configuration example:**
+
+```yaml
+specification:
+  save_in_project: true
+  project_dir: "tickets"
+  filename_pattern: "SPEC-{n}.md"
+
+review:
+  save_in_project: true
+  filename_pattern: "CODERABBIT-{n}.txt"
+```
+
+The home directory storage remains authoritative; project storage is a copy for committing to your repository.
 
 ### sessions/ Directory
 
