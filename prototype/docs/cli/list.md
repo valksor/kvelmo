@@ -28,6 +28,7 @@ The `list` command displays all tasks in the workspace with their worktree paths
 | `--sort`       |       | string | ""      | Sort tasks (date, cost, duration)               |
 | `--format`     |       | string | "table" | Output format (table, json, csv)               |
 | `--worktrees`  | `-w`  | bool   | false   | Show only tasks with worktrees                |
+| `--running`    |       | bool   | false   | Show running parallel tasks (in-memory)        |
 | `--json`       |       | bool   | false   | Output as JSON (deprecated, use --format json) |
 
 ## Examples
@@ -99,6 +100,36 @@ e5f6g7h8    planning        Fix database queries     ../project-worktrees/e5f6g7
 
 Legend: * = active task in main repo, → = current worktree
 ```
+
+### List Running Parallel Tasks
+
+When tasks are running in parallel goroutines (via `mehr start --parallel`), use `--running` to view them:
+
+```bash
+mehr list --running
+```
+
+Output:
+
+```
+ID       REFERENCE       STATUS     TASK ID     DURATION   WORKTREE
+abc123   file:a.md       running    task-001    5m30s      ../worktrees/abc123
+def456   file:b.md       running    task-002    5m28s      ../worktrees/def456
+ghi789   file:c.md       completed  task-003    4m15s      ../worktrees/ghi789
+
+2 running, 3 total
+```
+
+**Output Columns for `--running`:**
+
+| Column     | Description                                          |
+| ---------- | ---------------------------------------------------- |
+| ID         | Running task ID (for `--running` flag on other cmds) |
+| REFERENCE  | Task reference (e.g., file:a.md, github:123)         |
+| STATUS     | pending, running, completed, failed, or cancelled    |
+| TASK ID    | Internal task ID once started                        |
+| DURATION   | Time elapsed since task started                      |
+| WORKTREE   | Path to worktree (if using parallel isolation)       |
 
 ### CSV Output
 

@@ -310,9 +310,10 @@ mehr project start [task-id] [flags]
 - `task-id` - Optional specific task to start (default: next ready task)
 
 **Flags:**
-| Flag     | Description                           |
-| -------- | ------------------------------------- |
-| `--auto` | Auto-chain through all tasks          |
+| Flag         | Short | Description                                      |
+| ------------ | ----- | ------------------------------------------------ |
+| `--auto`     |       | Auto-chain through all tasks                     |
+| `--parallel` | `-p`  | Max parallel tasks (requires worktree isolation) |
 
 **Examples:**
 
@@ -325,6 +326,33 @@ mehr project start task-3
 
 # Auto-implement all tasks
 mehr project start --auto
+
+# Execute tasks in parallel (up to 3 at a time)
+mehr project start --parallel=3
+```
+
+**Parallel Execution:**
+
+The `--parallel` flag enables executing multiple tasks simultaneously in separate goroutines. Each task runs in its own isolated git worktree to prevent file conflicts:
+
+```bash
+# Execute up to 3 tasks in parallel
+mehr project start --parallel=3
+```
+
+This is ideal for:
+- Independent tasks without code dependencies
+- Maximizing throughput on large task queues
+- CI/CD environments with multiple cores
+
+**Monitoring parallel tasks:**
+
+```bash
+# List running parallel tasks
+mehr list --running
+
+# Send note to a specific running task
+mehr note --running=abc123 "Consider edge case X"
 ```
 
 ## Workflow Example
