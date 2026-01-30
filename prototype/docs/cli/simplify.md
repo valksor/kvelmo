@@ -22,7 +22,7 @@ The command uses the configured AI agent to analyze and refine your content, mak
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--agent` | string | "" | Use a specific agent for simplification |
+| `--agent-simplify` | string | "" | Use a specific agent for simplification |
 | `--no-checkpoint` | bool | false | Skip creating a checkpoint before simplifying (not recommended) |
 | `--verbose` | bool | false | Show detailed simplification process |
 | `--standalone` | bool | false | Simplify without active task (see Standalone Mode) |
@@ -102,7 +102,7 @@ Simplified 3 file(s)
 ### Use specific agent
 
 ```bash
-mehr simplify --agent claude-opus
+mehr simplify --agent-simplify claude-opus
 ```
 
 ### Skip checkpoint (not recommended)
@@ -353,7 +353,7 @@ mehr simplify --standalone src/foo.go src/bar.go
 
 **Use specific agent:**
 ```bash
-mehr simplify --standalone --agent opus
+mehr simplify --standalone --agent-simplify opus
 ```
 
 **Skip checkpoint (not recommended):**

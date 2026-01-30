@@ -36,6 +36,22 @@ Or click **"Quick Tasks"** from the main dashboard.
 
 The task will be added to the queue with an auto-generated ID (e.g., `task-1`, `task-2`).
 
+### Submitting From a Source
+
+You can submit a task directly from a file or directory without pre-creating it:
+
+1. Open the **Submit From Source** card
+2. Enter a file path, directory path, or provider reference
+3. Choose a provider (GitHub, Jira, Wrike, etc.)
+4. Optionally add:
+   - **Notes** to guide the task drafting
+   - **Instructions** for how to interpret the source
+   - **Labels** to apply
+   - **Optimize** to refine the task before submission
+5. Click **Submit**
+
+The task is created in your quick task queue and submitted to the provider.
+
 ### Viewing Tasks
 
 The quick tasks page displays all tasks in your queue:
@@ -73,6 +89,19 @@ Let AI refine the task title and description:
 - Enhances description specificity
 - Organizes requirements
 - Suggests implementation considerations
+
+**Agent Configuration:**
+
+The optimization uses the agent configured for the `optimizing` step. Configure in `.mehrhof/config.yaml`:
+
+```yaml
+agent:
+  steps:
+    optimizing:
+      name: claude-opus  # Use a specific agent for task optimization
+```
+
+For CLI usage with explicit agent override, see [CLI optimize documentation](../cli/optimize.md).
 
 ### Exporting to Markdown
 

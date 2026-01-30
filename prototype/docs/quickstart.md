@@ -167,7 +167,8 @@ mehr update --check
 
 ## Learn More
 
-- [Workflow Concepts](concepts/workflow.md) - Understanding the task lifecycle
+- [Web UI Guide](web-ui/index.md) - Full Web UI documentation
 - [CLI Reference](cli/index.md) - All commands and flags
+- [Workflow Concepts](concepts/workflow.md) - Understanding the task lifecycle
 - [Configuration](configuration/index.md) - Customize behavior
 - [Task Providers](providers/index.md) - Load tasks from GitHub, Jira, Linear, etc.

@@ -24,7 +24,7 @@ This is particularly useful for quick tasks that were captured rapidly and need 
 | Flag      | Description                              |
 | --------- | ---------------------------------------- |
 | `--task`  | Queue task ID (format: `<queue-id>/<task-id>`) (required) |
-| `--agent` | Agent to use for optimization (optional) |
+| `--agent-optimize` | Agent to use for optimization (optional) |
 
 ## Examples
 
@@ -39,7 +39,7 @@ Uses the default agent to optimize the task.
 ### With Specific Agent
 
 ```bash
-mehr optimize --task=quick-tasks/task-1 --agent claude-opus
+mehr optimize --task=quick-tasks/task-1 --agent-optimize claude-opus
 ```
 
 Uses a specific AI agent for optimization.

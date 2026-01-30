@@ -51,7 +51,7 @@ POST /api/v1/workflow/simplify/standalone
 | `range` | string | No | - | Commit range for `range` mode (e.g., `HEAD~3..HEAD`) |
 | `files` | string[] | No | - | Files to simplify for `files` mode |
 | `context` | int | No | 3 | Lines of context in diff |
-| `agent` | string | No | default | Agent to use for simplification |
+| `agent` | string | No | default | Agent to use for simplification (uses `simplifying` step config if not specified) |
 | `create_checkpoint` | bool | No | true | Create a git checkpoint before changes |
 
 ## Response

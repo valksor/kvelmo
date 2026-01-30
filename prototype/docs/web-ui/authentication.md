@@ -20,13 +20,15 @@ Authentication is mandatory when using `--host 0.0.0.0` or any non-localhost add
 Before starting a network-accessible server, add users:
 
 ```bash
-# Add a user
+# Add a full-access user
 mehr serve auth add admin mypassword
+
+# Add a read-only viewer
+mehr serve auth add stakeholder viewpass --role viewer
 
 # Add multiple users
 mehr serve auth add admin secretpassword
 mehr serve auth add developer devpass123
-mehr serve auth add viewer viewpass
 ```
 
 ### List Users
@@ -40,9 +42,10 @@ mehr serve auth list
 Output:
 ```
 Configured users:
-  • admin (created: 2025-01-15 10:30:00)
-  • developer (created: 2025-01-15 10:31:00)
-  • viewer (created: 2025-01-15 10:32:00)
+USERNAME    ROLE    CREATED
+admin       user    2025-01-15 10:30
+developer   user    2025-01-15 10:31
+stakeholder viewer   2025-01-15 10:32
 ```
 
 ### Change Passwords
@@ -52,6 +55,20 @@ Update a user's password:
 ```bash
 mehr serve auth passwd admin newpassword
 ```
+
+### Change User Roles
+
+Modify a user's role after creation:
+
+```bash
+# Promote viewer to full user
+mehr serve auth role stakeholder user
+
+# Demote user to viewer
+mehr serve auth role contractor viewer
+```
+
+**Valid roles:** `user`, `viewer`
 
 ### Remove Users
 
@@ -159,13 +176,16 @@ All other endpoints require authentication:
 
 ```bash
 # Add a user
-mehr serve auth add <username> <password>
+mehr serve auth add <username> <password> [--role <role>]
 
 # List all users
 mehr serve auth list
 
 # Change password
 mehr serve auth passwd <username> <new-password>
+
+# Change user role
+mehr serve auth role <username> <role>
 
 # Remove a user
 mehr serve auth remove <username>
@@ -177,8 +197,14 @@ mehr serve auth remove <username>
 # Add admin user
 mehr serve auth add admin securepassword123
 
+# Add read-only viewer
+mehr serve auth add stakeholder viewpass123 --role viewer
+
 # Change admin password
 mehr serve auth passwd admin newsecurepassword
+
+# Promote viewer to user
+mehr serve auth role stakeholder user
 
 # List users to verify
 mehr serve auth list
@@ -211,6 +237,63 @@ Protect the auth file:
 ```bash
 chmod 600 ~/.valksor/mehrhof/auth.yaml
 ```
+
+## Read-Only Users
+
+Mehrhof supports a **viewer** role for users who need read-only access to the Web UI. This is useful for stakeholders, managers, or anyone who needs visibility into tasks and workflow progress without the ability to make changes.
+
+### What Viewers Can Access
+
+Viewers have **full read access** to all information:
+
+| Access | Description |
+|--------|-------------|
+| Dashboard | View task status, workflow state, statistics |
+| Specifications | Read all task specifications and progress |
+| History | Browse session history and conversation logs |
+| Logs | View agent output and execution logs |
+| Settings | View configuration values (read-only) |
+| Projects | View project plans and task breakdowns |
+
+### What Viewers Cannot Do
+
+Viewers are **blocked from all write operations**:
+
+| Operation | Blocked |
+|-----------|---------|
+| Starting workflows | ❌ Plan, Implement, Review commands |
+| Modifying workflows | ❌ Continue, Answer, Abandon actions |
+| Submitting tasks | ❌ Quick tasks and project submissions |
+| Changing settings | ❌ Workspace configuration modifications |
+| Running scans | ❌ Security and quality scans |
+| Clearing memory | ❌ Memory cache operations |
+
+### Creating a Viewer
+
+```bash
+# Add a new viewer
+mehr serve auth add stakeholder viewpass123 --role viewer
+```
+
+### Modifying User Roles
+
+Change an existing user's role:
+
+```bash
+# Promote viewer to full user
+mehr serve auth role stakeholder user
+
+# Demote user to viewer
+mehr serve auth role contractor viewer
+```
+
+### Viewer Experience
+
+When a viewer logs in:
+- The dashboard displays normally with all information visible
+- Action buttons (Plan, Implement, Review, etc.) are **hidden**
+- Forms are shown as **read-only** (no submit buttons)
+- API write endpoints return **403 Forbidden**
 
 ### HTTPS Considerations
 
@@ -255,14 +338,20 @@ mehr serve auth pass admin newpassword
 ## CLI Equivalent
 
 ```bash
-# Add user
+# Add user (default: user role)
 mehr serve auth add admin password
+
+# Add viewer
+mehr serve auth add stakeholder viewpass --role viewer
 
 # List users
 mehr serve auth list
 
 # Change password
 mehr serve auth passwd admin newpass
+
+# Change role
+mehr serve auth role stakeholder user
 
 # Remove user
 mehr serve auth remove admin

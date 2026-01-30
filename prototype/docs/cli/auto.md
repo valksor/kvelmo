@@ -30,7 +30,8 @@ This is ideal for well-defined tasks where you trust the AI to handle the entire
 
 | Flag               | Short | Description                          | Default     |
 | ------------------ | ----- | ------------------------------------ | ----------- |
-| `--agent`          | `-a`  | Agent to use                         | auto-detect |
+| `--agent`          | `-a`  | Agent to use for all phases          | auto-detect |
+| `--agent-quality`  |       | Agent to use for quality checks      | auto-detect |
 | `--no-branch`      |       | Do not create a git branch           | `false`     |
 | `--worktree`       | `-w`  | Create a separate git worktree       | `false`     |
 | `--max-retries`    |       | Maximum quality check retry attempts | `3`         |
@@ -60,6 +61,9 @@ mehr auto --max-retries 5 task.md
 mehr auto --no-quality task.md
 
 mehr auto --quality-target lint task.md
+
+# Use a specific agent for quality checks
+mehr auto --agent-quality claude-opus task.md
 ```
 
 ### Git Options
