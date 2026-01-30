@@ -293,6 +293,34 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 
 **See [CLI Reference](https://valksor.com/docs/mehrhof/nightly/#/cli/index) for all commands and flags.**
 
+## Quick Tasks
+
+For rapid task creation without starting the full workflow:
+
+```bash
+# Create a quick task from a description
+mehr quick "Fix login bug when token expires"
+
+# List and manage quick tasks
+mehr list --filter state:pending
+
+# Optimize a quick task with AI
+mehr optimize quick-tasks/task-1
+
+# Export to a markdown file
+mehr export quick-tasks/task-1
+
+# Delete when done
+mehr delete --task quick-tasks/task-1
+```
+
+Quick tasks are ideal for:
+- Small fixes and tweaks
+- Ideas you want to capture quickly
+- Tasks that don't need full planning
+
+See [Quick Tasks documentation](https://valksor.com/docs/mehrhof/nightly/#/cli/quick) for more details.
+
 ## Task Providers
 
 Mehrhof supports 16+ task sources. Use provider schemes to load tasks:
