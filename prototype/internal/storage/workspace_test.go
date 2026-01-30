@@ -617,11 +617,19 @@ func TestSpecsDir(t *testing.T) {
 func TestSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)
+	cfg := NewDefaultWorkspaceConfig()
 
 	// SpecPath is in the workspace data directory (home)
-	path := ws.SpecificationPath("test123", 1)
+	path := ws.SpecificationPath("test123", 1, cfg)
 	if !strings.HasSuffix(path, "/test123/specifications/specification-1.md") {
 		t.Errorf("SpecPath() = %q, want suffix /test123/specifications/specification-1.md", path)
+	}
+
+	// Custom pattern test
+	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
+	path = ws.SpecificationPath("test123", 1, cfg)
+	if !strings.HasSuffix(path, "/test123/specifications/SPEC-1.md") {
+		t.Errorf("SpecPath(SPEC) = %q, want suffix /test123/specifications/SPEC-1.md", path)
 	}
 }
 
@@ -740,22 +748,39 @@ func TestNextSpecNumber(t *testing.T) {
 func TestProjectSpecsDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)
+	cfg := NewDefaultWorkspaceConfig()
 
-	// ProjectSpecificationsDir is in the project .mehrhof directory
-	path := ws.ProjectSpecificationsDir("test123")
-	if !strings.HasSuffix(path, ".mehrhof/test123/specifications") {
-		t.Errorf("ProjectSpecificationsDir() = %q, want suffix .mehrhof/test123/specifications", path)
+	// Default: ProjectSpecificationsDir is in the project .mehrhof directory (no /specifications/ subdir)
+	path := ws.ProjectSpecificationsDir("test123", cfg)
+	if !strings.HasSuffix(path, ".mehrhof/test123") {
+		t.Errorf("ProjectSpecificationsDir() = %q, want suffix .mehrhof/test123", path)
+	}
+
+	// Custom ProjectDir: should use that directory
+	cfg.Specification.ProjectDir = "tickets"
+	path = ws.ProjectSpecificationsDir("test123", cfg)
+	if !strings.HasSuffix(path, "tickets/test123") {
+		t.Errorf("ProjectSpecificationsDir(tickets) = %q, want suffix tickets/test123", path)
 	}
 }
 
 func TestProjectSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)
+	cfg := NewDefaultWorkspaceConfig()
 
-	// ProjectSpecificationPath is in the project .mehrhof directory
-	path := ws.ProjectSpecificationPath("test123", 1)
-	if !strings.HasSuffix(path, ".mehrhof/test123/specifications/specification-1.md") {
-		t.Errorf("ProjectSpecificationPath() = %q, want suffix .mehrhof/test123/specifications/specification-1.md", path)
+	// Default pattern: specification-{n}.md
+	path := ws.ProjectSpecificationPath("test123", 1, cfg)
+	if !strings.HasSuffix(path, ".mehrhof/test123/specification-1.md") {
+		t.Errorf("ProjectSpecificationPath() = %q, want suffix .mehrhof/test123/specification-1.md", path)
+	}
+
+	// Custom pattern: SPEC-{n}.md
+	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
+	cfg.Specification.ProjectDir = "tickets"
+	path = ws.ProjectSpecificationPath("test123", 1, cfg)
+	if !strings.HasSuffix(path, "tickets/test123/SPEC-1.md") {
+		t.Errorf("ProjectSpecificationPath(SPEC) = %q, want suffix tickets/test123/SPEC-1.md", path)
 	}
 }
 
@@ -786,14 +811,20 @@ func TestSaveSpecificationInProject(t *testing.T) {
 		t.Fatalf("SaveSpecification failed: %v", err)
 	}
 
+	// Reload config after save
+	cfg, err = ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig after save: %v", err)
+	}
+
 	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1)
+	internalPath := ws.SpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(internalPath); err != nil {
 		t.Errorf("Internal spec not found: %s, error: %v", internalPath, err)
 	}
 
 	// Verify project-local storage exists
-	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	projectPath := ws.ProjectSpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(projectPath); err != nil {
 		t.Errorf("Project-local spec not found: %s, error: %v", projectPath, err)
 	}
@@ -838,13 +869,13 @@ func TestSaveSpecificationNotInProject(t *testing.T) {
 	}
 
 	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1)
+	internalPath := ws.SpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(internalPath); err != nil {
 		t.Errorf("Internal spec not found: %s, error: %v", internalPath, err)
 	}
 
 	// Verify project-local storage does NOT exist
-	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	projectPath := ws.ProjectSpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
 		t.Errorf("Project spec should not exist when SaveInProject=false, path: %s", projectPath)
 	}
@@ -879,22 +910,25 @@ func TestSaveSpecificationConfigLoadFailure(t *testing.T) {
 	}
 
 	// SaveSpecification should still succeed (internal spec is saved)
-	// but should log a warning and skip project-local save
+	// but should log a warning and use defaults
 	content := "# Spec 1\n\nThis is the first spec."
 	if err := ws.SaveSpecification("test123", 1, content); err != nil {
 		t.Errorf("SaveSpecification should succeed even with config load failure, got: %v", err)
 	}
 
+	// Use default config for path verification (config was corrupted)
+	defaultCfg := NewDefaultWorkspaceConfig()
+
 	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1)
+	internalPath := ws.SpecificationPath("test123", 1, defaultCfg)
 	if _, err := os.Stat(internalPath); err != nil {
 		t.Errorf("Internal spec should exist even with config load failure: %v", err)
 	}
 
-	// Verify project-local storage does NOT exist (config load failed)
-	projectPath := ws.ProjectSpecificationPath("test123", 1)
+	// Verify project-local storage does NOT exist (defaults don't enable project save)
+	projectPath := ws.ProjectSpecificationPath("test123", 1, defaultCfg)
 	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
-		t.Errorf("Project spec should not exist when config load fails, path: %s", projectPath)
+		t.Errorf("Project spec should not exist when using defaults, path: %s", projectPath)
 	}
 }
 
@@ -953,7 +987,7 @@ func TestSaveSpecificationProjectWriteFails(t *testing.T) {
 	}
 
 	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1)
+	internalPath := ws.SpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(internalPath); err != nil {
 		t.Errorf("Internal spec should exist even when project write fails: %v", err)
 	}
@@ -968,7 +1002,7 @@ func TestSaveSpecificationProjectWriteFails(t *testing.T) {
 	}
 
 	// Verify project-local storage does NOT exist (write failed)
-	projectSpecPath := ws.ProjectSpecificationPath("test123", 1)
+	projectSpecPath := ws.ProjectSpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(projectSpecPath); !os.IsNotExist(err) {
 		t.Errorf("Project spec should not exist when write fails, path: %s", projectSpecPath)
 	}

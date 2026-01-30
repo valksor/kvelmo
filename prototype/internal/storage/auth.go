@@ -15,6 +15,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Role represents a user's access level.
+type Role string
+
+const (
+	// RoleUser represents a user with full access.
+	RoleUser Role = "user"
+	// RoleViewer represents a user with read-only access.
+	RoleViewer Role = "viewer"
+)
+
+// ValidRole checks if a role string is valid.
+func ValidRole(role string) bool {
+	switch Role(role) {
+	case RoleUser, RoleViewer:
+		return true
+	}
+
+	return false
+}
+
 // AuthStore manages user credentials for web UI authentication.
 type AuthStore struct {
 	Version string           `yaml:"version"`
@@ -28,7 +48,29 @@ type AuthStore struct {
 type User struct {
 	Username     string    `yaml:"username"`
 	PasswordHash string    `yaml:"password_hash"`
+	Role         Role      `yaml:"role,omitempty"`
 	CreatedAt    time.Time `yaml:"created_at"`
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling with backward compatibility.
+// If role is not set, it defaults to RoleUser.
+func (u *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Define an alias type to avoid infinite recursion
+	type userAlias User
+	alias := userAlias{Role: RoleUser} // Default to RoleUser
+
+	if err := unmarshal(&alias); err != nil {
+		return err
+	}
+
+	// Validate role if set
+	if alias.Role != "" && !ValidRole(string(alias.Role)) {
+		return fmt.Errorf("invalid role: %s", alias.Role)
+	}
+
+	*u = User(alias)
+
+	return nil
 }
 
 // AuthSession represents an active user session for web UI authentication.
@@ -113,9 +155,10 @@ func (a *AuthStore) Save() error {
 	return nil
 }
 
-// AddUser adds a new user with the given password.
+// AddUser adds a new user with the given password and role.
+// Role defaults to RoleUser if empty.
 // Returns ErrUserExists if the user already exists.
-func (a *AuthStore) AddUser(username, password string) error {
+func (a *AuthStore) AddUser(username, password string, role Role) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -128,9 +171,15 @@ func (a *AuthStore) AddUser(username, password string) error {
 		return fmt.Errorf("hash password: %w", err)
 	}
 
+	// Default to RoleUser if not specified
+	if role == "" {
+		role = RoleUser
+	}
+
 	a.Users[username] = &User{
 		Username:     username,
 		PasswordHash: string(hash),
+		Role:         role,
 		CreatedAt:    time.Now(),
 	}
 
@@ -173,6 +222,27 @@ func (a *AuthStore) UpdatePassword(username, newPassword string) error {
 	return nil
 }
 
+// SetRole updates a user's role.
+// Returns ErrUserNotFound if the user doesn't exist.
+// Returns an error if the role is invalid.
+func (a *AuthStore) SetRole(username string, role Role) error {
+	if !ValidRole(string(role)) {
+		return fmt.Errorf("invalid role: %s", role)
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	user, exists := a.Users[username]
+	if !exists {
+		return ErrUserNotFound
+	}
+
+	user.Role = role
+
+	return nil
+}
+
 // ValidatePassword checks if the password is correct for the user.
 func (a *AuthStore) ValidatePassword(username, password string) bool {
 	a.mu.RLock()
@@ -196,6 +266,19 @@ func (a *AuthStore) ListUsers() []string {
 	users := make([]string, 0, len(a.Users))
 	for username := range a.Users {
 		users = append(users, username)
+	}
+
+	return users
+}
+
+// ListUsersDetails returns a list of all users with their details.
+func (a *AuthStore) ListUsersDetails() []User {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	users := make([]User, 0, len(a.Users))
+	for _, user := range a.Users {
+		users = append(users, *user)
 	}
 
 	return users
