@@ -150,11 +150,10 @@ func (b *BanditScanner) Scan(ctx context.Context, dir string) (*ScanResult, erro
 	cmd := exec.CommandContext(ctx, "bandit", args...)
 	cmd.Dir = dir
 
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxOutputSize
-	stderr.limit = maxOutputSize
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newLimitedBuffer(maxOutputSize)
+	stderr := newLimitedBuffer(maxOutputSize)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	// Bandit returns non-zero exit code when issues are found
 	_ = cmd.Run()

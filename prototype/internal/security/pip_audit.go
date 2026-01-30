@@ -154,11 +154,10 @@ func (p *PipAuditScanner) Scan(ctx context.Context, dir string) (*ScanResult, er
 	cmd := exec.CommandContext(ctx, "pip-audit", args...)
 	cmd.Dir = dir
 
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxOutputSize
-	stderr.limit = maxOutputSize
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newLimitedBuffer(maxOutputSize)
+	stderr := newLimitedBuffer(maxOutputSize)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	// pip-audit returns non-zero exit code when vulnerabilities are found
 	_ = cmd.Run()

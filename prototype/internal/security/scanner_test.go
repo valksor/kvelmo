@@ -738,7 +738,7 @@ func TestLimitedBuffer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			buf := &limitedBuffer{limit: tt.limit}
+			buf := newLimitedBuffer(tt.limit)
 
 			for _, write := range tt.writes {
 				n, err := buf.Write([]byte(write))
@@ -767,7 +767,7 @@ func TestLimitedBuffer(t *testing.T) {
 
 // TestLimitedBuffer_Reset tests buffer reset functionality.
 func TestLimitedBuffer_Reset(t *testing.T) {
-	buf := &limitedBuffer{limit: 100}
+	buf := newLimitedBuffer(100)
 
 	// Write some data
 	_, _ = buf.Write([]byte("hello world"))
@@ -792,7 +792,7 @@ func TestLimitedBuffer_Reset(t *testing.T) {
 
 // TestLimitedBuffer_BytesAndString tests Bytes() and String() methods.
 func TestLimitedBuffer_BytesAndString(t *testing.T) {
-	buf := &limitedBuffer{limit: 100}
+	buf := newLimitedBuffer(100)
 	data := []byte("test data")
 
 	n, err := buf.Write(data)

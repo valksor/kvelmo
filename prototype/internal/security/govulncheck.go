@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// maxOutputSize and limitedBuffer are defined in gosec.go
+// maxOutputSize and limitedBuffer are defined in buffer.go
 
 // GovulncheckScanner wraps the govulncheck vulnerability scanner.
 type GovulncheckScanner struct {
@@ -65,11 +65,10 @@ func (g *GovulncheckScanner) Scan(ctx context.Context, dir string) (*ScanResult,
 	cmd.Dir = dir // Explicitly set working directory to validated scan directory
 
 	// Use limited buffers to prevent memory exhaustion from maliciously large outputs
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxOutputSize
-	stderr.limit = maxOutputSize
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newLimitedBuffer(maxOutputSize)
+	stderr := newLimitedBuffer(maxOutputSize)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	runErr := cmd.Run()
 	duration := time.Since(start)

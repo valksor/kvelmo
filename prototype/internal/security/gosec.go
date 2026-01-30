@@ -14,43 +14,6 @@ import (
 	"time"
 )
 
-const maxOutputSize = 10 * 1024 * 1024 // 10MB maximum output size to prevent memory exhaustion
-
-// limitedBuffer is a buffer with a size limit to prevent memory exhaustion.
-type limitedBuffer struct {
-	buf   []byte
-	limit int
-}
-
-func (b *limitedBuffer) Write(p []byte) (int, error) {
-	remaining := b.limit - len(b.buf)
-	if remaining <= 0 {
-		return len(p), nil // Silent discard when limit reached
-	}
-	if len(p) > remaining {
-		p = p[:remaining]
-	}
-	b.buf = append(b.buf, p...)
-
-	return len(p), nil
-}
-
-func (b *limitedBuffer) Bytes() []byte {
-	return b.buf
-}
-
-func (b *limitedBuffer) String() string {
-	return string(b.buf)
-}
-
-func (b *limitedBuffer) Len() int {
-	return len(b.buf)
-}
-
-func (b *limitedBuffer) Reset() {
-	b.buf = b.buf[:0]
-}
-
 // GosecScanner wraps the gosec security scanner.
 type GosecScanner struct {
 	enabled bool
@@ -163,11 +126,10 @@ func (g *GosecScanner) Scan(ctx context.Context, dir string) (*ScanResult, error
 	cmd.Dir = dir // Explicitly set working directory to validated scan directory
 
 	// Use limited buffers to prevent memory exhaustion from maliciously large outputs
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxOutputSize
-	stderr.limit = maxOutputSize
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newLimitedBuffer(maxOutputSize)
+	stderr := newLimitedBuffer(maxOutputSize)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	runErr := cmd.Run()
 	duration := time.Since(start)
