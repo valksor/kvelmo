@@ -53,7 +53,7 @@ func TestReviewPRCommand_Flags(t *testing.T) {
 		},
 		{
 			name:         "agent flag",
-			flagName:     "agent",
+			flagName:     "agent-pr-review",
 			defaultValue: "",
 		},
 		{
@@ -125,7 +125,7 @@ func TestReviewPRCommand_Examples(t *testing.T) {
 	examples := []string{
 		"mehr review pr --pr-number",
 		"--provider",
-		"--agent",
+		"--agent-pr-review",
 		"--scope",
 		"--token",
 	}

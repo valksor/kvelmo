@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/cli/output"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
@@ -107,7 +108,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 
 	if active == nil {
 		if statusJSON {
-			return outputJSON(jsonStatusTask{})
+			return output.WriteJSON(jsonStatusTask{})
 		}
 		fmt.Print(display.ErrorWithSuggestions(
 			"No task associated with this worktree",
@@ -127,7 +128,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 
 	// JSON output path
 	if statusJSON {
-		return outputJSON(buildJSONStatusTask(ctx, ws, git, active, work, git.Root()))
+		return output.WriteJSON(buildJSONStatusTask(ctx, ws, git, active, work, git.Root()))
 	}
 
 	fmt.Printf("Worktree Task: %s\n", tkdisplay.Bold(active.ID))
@@ -218,7 +219,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) error {
 	if !ws.HasActiveTask() {
 		if statusJSON {
-			return outputJSON(jsonStatusTask{})
+			return output.WriteJSON(jsonStatusTask{})
 		}
 		fmt.Print(display.NoActiveTaskError())
 
@@ -237,7 +238,7 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 
 	// JSON output path
 	if statusJSON {
-		return outputJSON(buildJSONStatusTask(ctx, ws, git, active, work, ""))
+		return output.WriteJSON(buildJSONStatusTask(ctx, ws, git, active, work, ""))
 	}
 
 	fmt.Printf("Active Task: %s\n", tkdisplay.Bold(active.ID))
@@ -369,7 +370,7 @@ func showAllTasks(ws *storage.Workspace) error {
 
 	if len(taskIDs) == 0 {
 		if statusJSON {
-			return outputJSON(jsonStatusAllOutput{Tasks: []jsonStatusTask{}})
+			return output.WriteJSON(jsonStatusAllOutput{Tasks: []jsonStatusTask{}})
 		}
 		fmt.Println("No tasks found in workspace.")
 
@@ -415,7 +416,7 @@ func showAllTasks(ws *storage.Workspace) error {
 			})
 		}
 
-		return outputJSON(jsonStatusAllOutput{Tasks: tasks})
+		return output.WriteJSON(jsonStatusAllOutput{Tasks: tasks})
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -497,54 +498,26 @@ func hasImplementedSpecifications(ws *storage.Workspace, taskID string) bool {
 }
 
 // JSON output structures for status command.
+// Uses shared types from internal/cli/output for nested structures.
 type jsonStatusTask struct {
-	TaskID         string              `json:"task_id"`
-	Title          string              `json:"title,omitempty"`
-	State          string              `json:"state"`
-	StateDesc      string              `json:"state_description"`
-	Source         string              `json:"source"`
-	ExternalKey    string              `json:"external_key,omitempty"`
-	WorkDir        string              `json:"work_dir,omitempty"`
-	WorktreePath   string              `json:"worktree_path,omitempty"`
-	Branch         string              `json:"branch,omitempty"`
-	Started        string              `json:"started_at"`
-	AgentName      string              `json:"agent_name,omitempty"`
-	AgentSource    string              `json:"agent_source,omitempty"`
-	IsActive       bool                `json:"is_active"`
-	Specifications []jsonSpecification `json:"specifications,omitempty"`
-	SpecSummary    *jsonSpecSummary    `json:"specifications_summary,omitempty"`
-	Checkpoints    []jsonCheckpoint    `json:"checkpoints,omitempty"`
-	Sessions       []jsonSession       `json:"sessions,omitempty"`
-	TotalTokens    int                 `json:"total_tokens,omitempty"`
-}
-
-type jsonSpecification struct {
-	Number      int    `json:"number"`
-	Title       string `json:"title,omitempty"`
-	Status      string `json:"status"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	CompletedAt string `json:"completed_at,omitempty"`
-}
-
-type jsonSpecSummary struct {
-	Draft        int `json:"draft"`
-	Ready        int `json:"ready"`
-	Implementing int `json:"implementing"`
-	Done         int `json:"done"`
-}
-
-type jsonCheckpoint struct {
-	Number    int    `json:"number"`
-	Message   string `json:"message"`
-	ID        string `json:"id"`
-	Timestamp string `json:"timestamp,omitempty"`
-}
-
-type jsonSession struct {
-	Kind         string `json:"kind"`
-	StartTime    string `json:"start_time,omitempty"`
-	InputTokens  int    `json:"input_tokens,omitempty"`
-	OutputTokens int    `json:"output_tokens,omitempty"`
+	TaskID         string                       `json:"task_id"`
+	Title          string                       `json:"title,omitempty"`
+	State          string                       `json:"state"`
+	StateDesc      string                       `json:"state_description"`
+	Source         string                       `json:"source"`
+	ExternalKey    string                       `json:"external_key,omitempty"`
+	WorkDir        string                       `json:"work_dir,omitempty"`
+	WorktreePath   string                       `json:"worktree_path,omitempty"`
+	Branch         string                       `json:"branch,omitempty"`
+	Started        string                       `json:"started_at"`
+	AgentName      string                       `json:"agent_name,omitempty"`
+	AgentSource    string                       `json:"agent_source,omitempty"`
+	IsActive       bool                         `json:"is_active"`
+	Specifications []output.Specification       `json:"specifications,omitempty"`
+	SpecSummary    *output.SpecificationSummary `json:"specifications_summary,omitempty"`
+	Checkpoints    []output.Checkpoint          `json:"checkpoints,omitempty"`
+	Sessions       []output.Session             `json:"sessions,omitempty"`
+	TotalTokens    int                          `json:"total_tokens,omitempty"`
 }
 
 type jsonStatusAllOutput struct {
@@ -572,7 +545,7 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 	// Get specifications with status
 	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
 	for _, spec := range specifications {
-		task.Specifications = append(task.Specifications, jsonSpecification{
+		task.Specifications = append(task.Specifications, output.Specification{
 			Number:      spec.Number,
 			Title:       spec.Title,
 			Status:      spec.Status,
@@ -583,7 +556,7 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 
 	// Get specification summary
 	summary, _ := ws.GetSpecificationsSummary(active.ID)
-	task.SpecSummary = &jsonSpecSummary{
+	task.SpecSummary = &output.SpecificationSummary{
 		Draft:        summary[storage.SpecificationStatusDraft],
 		Ready:        summary[storage.SpecificationStatusReady],
 		Implementing: summary[storage.SpecificationStatusImplementing],
@@ -594,7 +567,7 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 	if git != nil {
 		checkpoints, _ := git.ListCheckpoints(ctx, active.ID)
 		for _, cp := range checkpoints {
-			task.Checkpoints = append(task.Checkpoints, jsonCheckpoint{
+			task.Checkpoints = append(task.Checkpoints, output.Checkpoint{
 				Number:    cp.Number,
 				Message:   cp.Message,
 				ID:        cp.ID,
@@ -613,7 +586,7 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 			outputTokens = s.Usage.OutputTokens
 			task.TotalTokens += inputTokens + outputTokens
 		}
-		task.Sessions = append(task.Sessions, jsonSession{
+		task.Sessions = append(task.Sessions, output.Session{
 			Kind:         s.Kind,
 			StartTime:    s.Metadata.StartedAt.Format("2006-01-02T15:04:05Z"),
 			InputTokens:  inputTokens,

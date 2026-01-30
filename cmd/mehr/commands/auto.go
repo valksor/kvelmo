@@ -14,10 +14,12 @@ import (
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 var (
 	autoAgent         string
+	autoAgentQuality  string
 	autoNoBranch      bool
 	autoWorktree      bool
 	autoMaxRetries    int
@@ -69,6 +71,7 @@ func init() {
 	autoCmd.Flags().StringVar(&autoQualityTarget, "quality-target", "quality", "Make target for quality checks")
 	autoCmd.Flags().BoolVar(&autoNoQuality, "no-quality", false, "Skip quality checks entirely")
 	autoCmd.Flags().BoolVar(&autoOptimize, "optimize", false, "Optimize prompts before sending to agents")
+	autoCmd.Flags().StringVar(&autoAgentQuality, "agent-quality", "", "Agent to use for quality checks")
 }
 
 func runAuto(cmd *cobra.Command, args []string) error {
@@ -94,6 +97,10 @@ func runAuto(cmd *cobra.Command, args []string) error {
 
 	if autoAgent != "" {
 		opts = append(opts, conductor.WithAgent(autoAgent))
+	}
+
+	if autoAgentQuality != "" {
+		opts = append(opts, conductor.WithStepAgent("quality", autoAgentQuality))
 	}
 
 	if autoOptimize {
@@ -147,7 +154,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 
 	// Subscribe to events for progress display
 	w := cond.GetStdout()
-	cond.GetEventBus().SubscribeAll(func(e events.Event) {
+	cond.GetEventBus().SubscribeAll(func(e eventbus.Event) {
 		switch e.Type {
 		case events.TypeProgress:
 			if msg, ok := e.Data["message"].(string); ok {

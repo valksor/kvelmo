@@ -8,8 +8,8 @@ import (
 )
 
 func TestSubmitCommand_Properties(t *testing.T) {
-	if submitCmd.Use != "submit --task <queue>/<task-id> --provider <name>" {
-		t.Errorf("Use = %q, want %q", submitCmd.Use, "submit --task <queue>/<task-id> --provider <name>")
+	if submitCmd.Use != "submit --provider <name> [--task <queue>/<task-id> | --source <path>]" {
+		t.Errorf("Use = %q, want %q", submitCmd.Use, "submit --provider <name> [--task <queue>/<task-id> | --source <path>]")
 	}
 
 	if submitCmd.Short == "" {
@@ -26,7 +26,7 @@ func TestSubmitCommand_Properties(t *testing.T) {
 }
 
 func TestSubmitCommand_ShortDescription(t *testing.T) {
-	expected := "Submit a queue task to an external provider"
+	expected := "Submit a task to an external provider"
 	if submitCmd.Short != expected {
 		t.Errorf("Short = %q, want %q", submitCmd.Short, expected)
 	}
@@ -74,6 +74,7 @@ func TestSubmitCommand_ExamplesContains(t *testing.T) {
 		`mehr submit --task=quick-tasks/task-1 --provider github`,
 		`--labels urgent`,
 		`--dry-run`,
+		`--source ./specs/overview.md`,
 	}
 
 	for _, example := range examples {
@@ -86,7 +87,7 @@ func TestSubmitCommand_ExamplesContains(t *testing.T) {
 func TestSubmitCommand_RegisteredInRoot(t *testing.T) {
 	found := false
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "submit --task <queue>/<task-id> --provider <name>" {
+		if cmd.Use == "submit --provider <name> [--task <queue>/<task-id> | --source <path>]" {
 			found = true
 
 			break
@@ -101,10 +102,15 @@ func TestSubmitCommand_HasRequiredFlags(t *testing.T) {
 	flags := submitCmd.Flags()
 
 	requiredFlags := []string{
-		"task",
 		"provider",
 		"labels",
 		"dry-run",
+		"source",
+		"note",
+		"title",
+		"instructions",
+		"queue",
+		"optimize",
 	}
 
 	for _, flagName := range requiredFlags {

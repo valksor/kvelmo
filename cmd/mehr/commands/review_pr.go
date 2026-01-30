@@ -38,7 +38,7 @@ It works from just CLI flags + optional config, making it ideal for CI/CD.
 Examples:
   mehr review pr --pr-number 123                           # Auto-detect provider
   mehr review pr --pr-number 123 --provider github          # Explicit provider
-  mehr review pr --pr-number 123 --agent claude            # Use specific agent
+  mehr review pr --pr-number 123 --agent-pr-review claude  # Use specific agent
   mehr review pr --pr-number 123 --scope compact           # Review scope
   mehr review pr --pr-number 123 --token "$GITHUB_TOKEN"   # CI with token`,
 	RunE: runReviewPR,
@@ -51,7 +51,7 @@ func init() {
 	reviewPRCmd.Flags().IntVar(&reviewPRNumber, "pr-number", 0, "PR/MR number (required)")
 	reviewPRCmd.Flags().StringVar(&reviewPRFormat, "format", "summary", "Comment format: summary, line-comments")
 	reviewPRCmd.Flags().StringVar(&reviewPRScope, "scope", "full", "Review scope: full, compact, files-changed")
-	reviewPRCmd.Flags().StringVar(&reviewPRAgent, "agent", "", "Agent to use (built-in: claude; or custom agent from config)")
+	reviewPRCmd.Flags().StringVar(&reviewPRAgent, "agent-pr-review", "", "Agent to use (built-in: claude; or custom agent from config)")
 	reviewPRCmd.Flags().StringVar(&reviewPRToken, "token", "", "Auth token (optional). Overrides config/env vars. Use for CI: --token \"$GITHUB_TOKEN\"")
 	reviewPRCmd.Flags().BoolVar(&reviewPRAcknowledge, "acknowledge-fixes", true, "Acknowledge when previously reported issues are fixed")
 	reviewPRCmd.Flags().BoolVar(&reviewPRUpdateExisting, "update-existing", true, "Edit existing comment vs post new comment")
@@ -113,7 +113,12 @@ func runReviewPR(cmd *cobra.Command, args []string) error {
 	}
 
 	// 4. Initialize lightweight conductor
-	cond, err := initializeConductorForPRReview(ctx, cfg, conductor.WithVerbose(verbose))
+	var initOpts []conductor.Option
+	initOpts = append(initOpts, conductor.WithVerbose(verbose))
+	if agent != "" {
+		initOpts = append(initOpts, conductor.WithStepAgent("pr_review", agent))
+	}
+	cond, err := initializeConductorForPRReview(ctx, cfg, initOpts...)
 	if err != nil {
 		return err
 	}

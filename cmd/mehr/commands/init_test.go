@@ -200,6 +200,113 @@ func TestInitCommand_Twice(t *testing.T) {
 	}
 }
 
+func TestInitCommand_ASCFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	setTestHome(t, tmpDir)
+
+	tc := NewTestContext(t)
+
+	rootCmd := &cobra.Command{
+		Use:   "mehr",
+		Short: "Test command",
+	}
+	rootCmd.SetOut(tc.StdoutBuf)
+	rootCmd.SetErr(tc.StderrBuf)
+	rootCmd.AddCommand(initCmd)
+
+	// Run init with --asc flag
+	rootCmd.SetArgs([]string{"init", "--asc"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+
+	// Check output mentions ASC
+	output := tc.StdoutString()
+	if !strings.Contains(output, "ASC-compatible") {
+		t.Errorf("output should mention ASC-compatible, got: %s", output)
+	}
+
+	// Read and verify config
+	configPath := filepath.Join(tc.TmpDir, ".mehrhof", "config.yaml")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Read config: %v", err)
+	}
+
+	configStr := string(content)
+
+	// Verify ASC settings are present
+	// Note: YAML serializes with single quotes for strings containing special chars
+	expectedSettings := []string{
+		"branch_pattern: asc/{key}",
+		"commit_prefix: '[{key}]'",
+		"project_dir: tickets",
+		"filename_pattern: SPEC-{n}.md",
+		"filename_pattern: CODERABBIT-{n}.txt",
+	}
+
+	for _, expected := range expectedSettings {
+		if !strings.Contains(configStr, expected) {
+			t.Errorf("config missing ASC setting: %s\nGot:\n%s", expected, configStr)
+		}
+	}
+}
+
+func TestInitCommand_ASCFlagOnExistingConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	setTestHome(t, tmpDir)
+
+	tc := NewTestContext(t)
+
+	rootCmd := &cobra.Command{
+		Use:   "mehr",
+		Short: "Test command",
+	}
+	rootCmd.SetOut(tc.StdoutBuf)
+	rootCmd.SetErr(tc.StderrBuf)
+	rootCmd.AddCommand(initCmd)
+
+	// First init without --asc
+	rootCmd.SetArgs([]string{"init"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("First Execute: %v", err)
+	}
+
+	// Reset and run with --asc on existing config
+	tc.ResetOutput()
+	rootCmd.SetArgs([]string{"init", "--asc"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Second Execute with --asc: %v", err)
+	}
+
+	output := tc.StdoutString()
+	if !strings.Contains(output, "Config file already exists") {
+		t.Errorf("should mention existing config, got: %s", output)
+	}
+	if !strings.Contains(output, "ASC-compatible") {
+		t.Errorf("should mention ASC-compatible was applied, got: %s", output)
+	}
+
+	// Verify ASC settings were applied
+	configPath := filepath.Join(tc.TmpDir, ".mehrhof", "config.yaml")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Read config: %v", err)
+	}
+
+	if !strings.Contains(string(content), "branch_pattern: asc/{key}") {
+		t.Errorf("--asc flag should update existing config with ASC settings")
+	}
+}
+
+func TestInitCommand_ASCFlagHidden(t *testing.T) {
+	// Verify the --asc flag is hidden from help output
+	help := initCmd.Flags().FlagUsages()
+	if strings.Contains(help, "--asc") {
+		t.Error("--asc flag should be hidden from help output")
+	}
+}
+
 func TestCreateEnvTemplate(t *testing.T) {
 	tmpDir := t.TempDir()
 	envPath := filepath.Join(tmpDir, ".env")

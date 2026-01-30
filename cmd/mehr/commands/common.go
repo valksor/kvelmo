@@ -18,6 +18,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/eventbus"
 	"github.com/valksor/go-toolkit/output"
 )
 
@@ -189,7 +190,7 @@ func RequireActiveTask(cond *conductor.Conductor) bool {
 // Quiet mode suppresses progress and file change events but keeps errors.
 func SetupVerboseEventHandlers(cond *conductor.Conductor) {
 	w := cond.GetStdout()
-	cond.GetEventBus().SubscribeAll(func(e events.Event) {
+	cond.GetEventBus().SubscribeAll(func(e eventbus.Event) {
 		// Suppress non-essential output in quiet mode
 		if IsQuiet() {
 			switch e.Type {

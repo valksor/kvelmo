@@ -24,6 +24,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 var (
@@ -161,7 +162,7 @@ func (s *InteractiveSession) Initialize(ctx context.Context) error {
 	s.rl = rl
 
 	// Subscribe to state change events for real-time updates
-	s.subID = s.cond.GetEventBus().SubscribeAll(func(e events.Event) {
+	s.subID = s.cond.GetEventBus().SubscribeAll(func(e eventbus.Event) {
 		s.handleEvent(e)
 	})
 
@@ -1274,7 +1275,7 @@ func (s *InteractiveSession) handleAgentEvent(event agent.Event) error {
 	}
 
 	// Also publish to event bus for other listeners
-	s.cond.GetEventBus().PublishRaw(events.Event{
+	s.cond.GetEventBus().PublishRaw(eventbus.Event{
 		Type: events.TypeAgentMessage,
 		Data: map[string]any{"event": event},
 	})
@@ -1323,7 +1324,7 @@ func (s *InteractiveSession) handleAgentQuestion(q *agent.Question) error {
 }
 
 // handleEvent processes events from the event bus.
-func (s *InteractiveSession) handleEvent(e events.Event) {
+func (s *InteractiveSession) handleEvent(e eventbus.Event) {
 	switch e.Type {
 	case events.TypeStateChanged:
 		if to, ok := e.Data["to"].(string); ok {

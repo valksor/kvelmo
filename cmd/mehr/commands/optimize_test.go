@@ -51,7 +51,7 @@ func TestOptimizeCommand_LongDescriptionContains(t *testing.T) {
 func TestOptimizeCommand_ExamplesContains(t *testing.T) {
 	examples := []string{
 		`mehr optimize --task=quick-tasks/task-1`,
-		`--agent claude-opus`,
+		`--agent-optimize claude-opus`,
 		`mehr note --task=quick-tasks/task-1`,
 	}
 
@@ -81,7 +81,7 @@ func TestOptimizeCommand_HasRequiredFlags(t *testing.T) {
 
 	requiredFlags := []string{
 		"task",
-		"agent",
+		"agent-optimize",
 	}
 
 	for _, flagName := range requiredFlags {

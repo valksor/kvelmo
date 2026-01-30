@@ -34,7 +34,7 @@ USAGE:
 
 EXAMPLES:
   mehr optimize --task=quick-tasks/task-1
-  mehr optimize --task=quick-tasks/task-1 --agent claude-opus
+  mehr optimize --task=quick-tasks/task-1 --agent-optimize claude-opus
   mehr note --task=quick-tasks/task-1 "Add requirement"
   mehr optimize --task=quick-tasks/task-1  # Uses the new note
 
@@ -50,7 +50,7 @@ func init() {
 	rootCmd.AddCommand(optimizeCmd)
 
 	optimizeCmd.Flags().StringVar(&optimizeTask, "task", "", "Queue task ID (format: <queue-id>/<task-id>)")
-	optimizeCmd.Flags().StringVar(&optimizeAgent, "agent", "", "Agent to use for optimization")
+	optimizeCmd.Flags().StringVar(&optimizeAgent, "agent-optimize", "", "Agent to use for optimization")
 	//nolint:errcheck // Flag name is constant, error won't occur
 	optimizeCmd.MarkFlagRequired("task")
 }
@@ -74,7 +74,7 @@ func runOptimize(cmd *cobra.Command, args []string) error {
 	})
 
 	if optimizeAgent != "" {
-		opts = append(opts, conductor.WithAgent(optimizeAgent))
+		opts = append(opts, conductor.WithStepAgent("optimizing", optimizeAgent))
 	}
 
 	// Initialize conductor

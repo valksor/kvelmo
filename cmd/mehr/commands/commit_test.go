@@ -21,6 +21,9 @@ func TestCommitCommand_HasFlags(t *testing.T) {
 	if commitCmd.Flags().Lookup("note") == nil {
 		t.Error("commitCmd missing --note flag")
 	}
+	if commitCmd.Flags().Lookup("agent-commit") == nil {
+		t.Error("commitCmd missing --agent-commit flag")
+	}
 }
 
 func TestAgentAdapter_ImplementsVCSAgent(t *testing.T) {

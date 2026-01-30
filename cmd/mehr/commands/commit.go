@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
@@ -19,6 +20,7 @@ var (
 	commitAll    bool
 	commitDryRun bool
 	commitNote   string // User hint for steering grouping
+	commitAgent  string // Agent to use for commit message generation
 )
 
 var commitCmd = &cobra.Command{
@@ -53,6 +55,7 @@ func init() {
 	commitCmd.Flags().BoolVarP(&commitAll, "all", "a", false, "Include unstaged changes")
 	commitCmd.Flags().BoolVarP(&commitDryRun, "dry-run", "n", false, "Show what would be committed without creating")
 	commitCmd.Flags().StringVarP(&commitNote, "note", "m", "", "Hint to guide AI grouping (e.g., 'group 1 and 3 are same feature')")
+	commitCmd.Flags().StringVar(&commitAgent, "agent-commit", "", "Agent to use for commit message generation")
 }
 
 func runCommit(cmd *cobra.Command, args []string) error {
@@ -110,7 +113,11 @@ func runCommit(cmd *cobra.Command, args []string) error {
 		analyzer := vcs.NewChangeAnalyzer(res.Git)
 
 		// We need to get the agent from conductor for the analyzer
-		cond, err := initializeConductor(ctx)
+		var opts []conductor.Option
+		if commitAgent != "" {
+			opts = append(opts, conductor.WithStepAgent("checkpointing", commitAgent))
+		}
+		cond, err := initializeConductor(ctx, opts...)
 		if err != nil {
 			return fmt.Errorf("initialize conductor: %w", err)
 		}
@@ -157,7 +164,11 @@ func runCommit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Use conductor to generate commit messages for each group
-	cond, err := initializeConductor(ctx)
+	var msgOpts []conductor.Option
+	if commitAgent != "" {
+		msgOpts = append(msgOpts, conductor.WithStepAgent("checkpointing", commitAgent))
+	}
+	cond, err := initializeConductor(ctx, msgOpts...)
 	if err != nil {
 		return err
 	}

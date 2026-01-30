@@ -12,7 +12,12 @@ import (
 	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
-var initInteractive bool
+var (
+	initInteractive bool
+	// initASC is deliberately undocumented - sets up ASC-compatible config.
+	// See ASC-COMPATIBILITY.md for details.
+	initASC bool
+)
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -24,6 +29,13 @@ and updating .gitignore.`,
 
 func init() {
 	initCmd.Flags().BoolVarP(&initInteractive, "interactive", "i", false, "Interactive setup for API key, provider, and agent")
+
+	// Deliberately undocumented flag for ASC compatibility.
+	// Hidden from help output but still functional.
+	// See ASC-COMPATIBILITY.md for details on what this configures.
+	initCmd.Flags().BoolVar(&initASC, "asc", false, "")
+	_ = initCmd.Flags().MarkHidden("asc")
+
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -61,12 +73,33 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Create config file with defaults if it doesn't exist
 	if !ws.HasConfig() {
 		cfg := storage.NewDefaultWorkspaceConfig()
+
+		// Apply ASC-compatible settings if requested (deliberately undocumented)
+		if initASC {
+			applyASCConfig(cfg)
+		}
+
 		if err := ws.SaveConfig(cfg); err != nil {
 			return fmt.Errorf("create config file: %w", err)
 		}
 		_, _ = fmt.Fprintf(out, "Created config file: %s\n", ws.ConfigPath())
+		if initASC {
+			_, _ = fmt.Fprintln(out, "Applied ASC-compatible configuration.")
+		}
 	} else {
 		_, _ = fmt.Fprintf(out, "Config file already exists: %s\n", ws.ConfigPath())
+		// Still apply ASC config to existing file if requested
+		if initASC {
+			cfg, err := ws.LoadConfig()
+			if err != nil {
+				return fmt.Errorf("load config: %w", err)
+			}
+			applyASCConfig(cfg)
+			if err := ws.SaveConfig(cfg); err != nil {
+				return fmt.Errorf("save config: %w", err)
+			}
+			_, _ = fmt.Fprintln(out, "Applied ASC-compatible configuration.")
+		}
 	}
 
 	// Create .env template if it doesn't exist
@@ -201,4 +234,22 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace, envPath string)
 	_, _ = fmt.Fprintln(out, "Configuration saved!")
 
 	return nil
+}
+
+// applyASCConfig configures the workspace to match ASC patterns.
+// This is deliberately undocumented - see ASC-COMPATIBILITY.md for details.
+//
+// ASC patterns:
+//   - Branch: asc/<ticket-id>
+//   - Commit prefix: [<ticket-id>]
+//   - Specs: tickets/<task-id>/SPEC-N.md
+//   - Reviews: tickets/<task-id>/CODERABBIT-N.txt
+func applyASCConfig(cfg *storage.WorkspaceConfig) {
+	cfg.Git.BranchPattern = "asc/{key}"
+	cfg.Git.CommitPrefix = "[{key}]"
+	cfg.Specification.SaveInProject = true
+	cfg.Specification.ProjectDir = "tickets"
+	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
+	cfg.Review.SaveInProject = true
+	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
 	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 var (
@@ -113,7 +114,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	// Set up event handlers
 	if verbose {
 		w := cond.GetStdout()
-		cond.GetEventBus().SubscribeAll(func(e events.Event) {
+		cond.GetEventBus().SubscribeAll(func(e eventbus.Event) {
 			switch e.Type {
 			case events.TypeProgress:
 				if msg, ok := e.Data["message"].(string); ok {
