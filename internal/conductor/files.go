@@ -9,6 +9,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // DeleteFileSentinel is a special marker that indicates a file should be deleted
@@ -131,7 +132,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			}
 			stats.created++
 
-			c.eventBus.PublishRaw(events.Event{
+			c.eventBus.PublishRaw(eventbus.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
 					"path":      normalizedPath,
@@ -151,7 +152,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			}
 			stats.updated++
 
-			c.eventBus.PublishRaw(events.Event{
+			c.eventBus.PublishRaw(eventbus.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
 					"path":      normalizedPath,
@@ -165,7 +166,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 			}
 			stats.deleted++
 
-			c.eventBus.PublishRaw(events.Event{
+			c.eventBus.PublishRaw(eventbus.Event{
 				Type: events.TypeFileChanged,
 				Data: map[string]any{
 					"path":      normalizedPath,
@@ -177,7 +178,7 @@ func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error
 
 	// Publish summary of file operations
 	if stats.created > 0 || stats.updated > 0 || stats.deleted > 0 {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeProgress,
 			Data: map[string]any{
 				"message": fmt.Sprintf("Files: %d created, %d updated, %d deleted",

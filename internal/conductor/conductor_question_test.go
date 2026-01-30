@@ -12,6 +12,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // TestAskQuestion_NoActiveTask tests that AskQuestion returns an error when no active task.
@@ -375,9 +376,9 @@ func TestAskQuestion_EventPublishing(t *testing.T) {
 	c.currentSession = loadedSession
 
 	// Track published events
-	var publishedEvents []events.Event
+	var publishedEvents []eventbus.Event
 	eventBus := c.GetEventBus()
-	unsubID := eventBus.SubscribeAll(func(e events.Event) {
+	unsubID := eventBus.SubscribeAll(func(e eventbus.Event) {
 		if e.Type == events.TypeAgentMessage {
 			publishedEvents = append(publishedEvents, e)
 		}

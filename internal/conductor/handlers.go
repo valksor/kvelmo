@@ -18,6 +18,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // ErrPendingQuestion is returned when the agent asks a question.
@@ -158,7 +159,7 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	var transcriptBuilder strings.Builder
 	response, err := planningAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -444,7 +445,7 @@ Please retry the implementation, taking into account this error.
 
 		response, err = implementingAgent.RunWithCallback(ctx, currentPrompt, func(event agent.Event) error {
 			// Always publish to event bus
-			c.eventBus.PublishRaw(events.Event{
+			c.eventBus.PublishRaw(eventbus.Event{
 				Type: events.TypeAgentMessage,
 				Data: map[string]any{"event": event},
 			})
@@ -725,7 +726,7 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	var transcriptBuilder strings.Builder
 	response, err := reviewAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -1198,7 +1199,7 @@ func (c *Conductor) simplifyInput(ctx context.Context, taskID string) error {
 	c.publishProgress("Agent simplifying input...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -1268,7 +1269,7 @@ func (c *Conductor) simplifyPlanning(ctx context.Context, taskID string) error {
 	c.publishProgress("Agent simplifying specifications...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -1387,7 +1388,7 @@ func (c *Conductor) simplifyImplementing(ctx context.Context, taskID string) err
 	c.publishProgress("Agent simplifying code...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
