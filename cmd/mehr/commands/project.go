@@ -51,7 +51,8 @@ var (
 	projectSubmitMention    string
 
 	// start flags.
-	projectStartAuto bool
+	projectStartAuto     bool
+	projectStartParallel int // Max parallel tasks (0 = sequential)
 
 	// sync flags.
 	projectSyncStatus      string
@@ -206,12 +207,14 @@ var projectStartCmd = &cobra.Command{
 	Long: `Start implementing the next ready task from a queue.
 
 FLAGS:
-  --auto    Auto-chain through all tasks
+  --auto         Auto-chain through all tasks
+  --parallel=N   Execute up to N tasks in parallel (requires worktrees)
 
 EXAMPLES:
   mehr project start
   mehr project start my-queue
-  mehr project start --auto`,
+  mehr project start --auto
+  mehr project start --auto --parallel=3  # Process queue with 3 parallel tasks`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runProjectStart,
 }
@@ -279,6 +282,7 @@ func init() {
 
 	// start flags
 	projectStartCmd.Flags().BoolVar(&projectStartAuto, "auto", false, "Auto-chain through all tasks")
+	projectStartCmd.Flags().IntVarP(&projectStartParallel, "parallel", "p", 0, "Max parallel tasks (requires worktrees)")
 
 	// sync flags
 	projectSyncCmd.Flags().StringVar(&projectSyncStatus, "status", "", "Filter by status (empty = smart default)")
@@ -685,7 +689,11 @@ func runProjectStart(cmd *cobra.Command, args []string) error {
 
 	if projectStartAuto {
 		// Run full automation
-		opts := conductor.ProjectAutoOptions{}
+		opts := conductor.ProjectAutoOptions{
+			AutoOptions: conductor.AutoOptions{
+				Parallel: projectStartParallel,
+			},
+		}
 		result, err := cond.RunProjectAuto(ctx, "", opts)
 		if err != nil {
 			return fmt.Errorf("auto: %w", err)

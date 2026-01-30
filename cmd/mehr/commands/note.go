@@ -17,7 +17,10 @@ import (
 	kitdisplay "github.com/valksor/go-toolkit/display"
 )
 
-var noteTask string // Add note to queue task (format: <queue-id>/<task-id>)
+var (
+	noteTask    string // Add note to queue task (format: <queue-id>/<task-id>)
+	noteRunning string // Add note to running parallel task (running task ID)
+)
 
 var noteCmd = &cobra.Command{
 	Use:     "note [message]",
@@ -30,6 +33,9 @@ Notes are included when the agent runs during plan/implement/review phases.
 
 You can also add notes to queue tasks (without starting them) using --task:
   mehr note --task=quick-tasks/task-1 "Add requirement"
+
+You can send notes to running parallel tasks using --running:
+  mehr note --running=abc123 "Consider this edge case"
 
 WHEN TO USE:
   • You want to add requirements or context before running plan/implement
@@ -51,6 +57,7 @@ Examples:
   mehr note "Use PostgreSQL"          # Add a note
   mehr note "Add error handling"      # Add context before planning
   mehr note --task=quick-tasks/task-1 "Add requirement"  # Add to queue task
+  mehr note --running=abc123 "edge case"  # Send note to parallel running task
   mehr answer "Yes, proceed"          # Answer agent question (alias)`,
 	RunE: runNote,
 }
@@ -58,6 +65,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(noteCmd)
 	noteCmd.Flags().StringVar(&noteTask, "task", "", "Queue task ID (format: <queue-id>/<task-id>)")
+	noteCmd.Flags().StringVar(&noteRunning, "running", "", "Running parallel task ID (from 'mehr list --running')")
 }
 
 func runNote(cmd *cobra.Command, args []string) error {
@@ -72,6 +80,11 @@ func runNote(cmd *cobra.Command, args []string) error {
 	cond, err := initializeConductor(ctx, opts...)
 	if err != nil {
 		return err
+	}
+
+	// If --running specified, add note to running parallel task
+	if noteRunning != "" {
+		return addNoteToRunningTask(ctx, noteRunning, args)
 	}
 
 	// If --task specified, add note to queue task
@@ -274,6 +287,61 @@ func addNoteToQueueTask(ctx context.Context, cond *conductor.Conductor, taskRef 
 	fmt.Println("\nNext steps:")
 	fmt.Printf("  %s\n", kitdisplay.Cyan(fmt.Sprintf("mehr note --task=%s/%s \"more context\"", queueID, taskID)))
 	fmt.Printf("  %s\n", kitdisplay.Cyan(fmt.Sprintf("mehr optimize --task=%s/%s", queueID, taskID)))
+
+	return nil
+}
+
+// addNoteToRunningTask adds a note to a running parallel task.
+func addNoteToRunningTask(ctx context.Context, runningID string, args []string) error {
+	registry := GetParallelRegistry()
+	if registry == nil {
+		return errors.New("no parallel tasks are running")
+	}
+
+	// Check if the task exists
+	task := registry.Get(runningID)
+	if task == nil {
+		return fmt.Errorf("running task %q not found\n\nUse 'mehr list --running' to see active parallel tasks", runningID)
+	}
+
+	// Get the message
+	var message string
+	if len(args) > 0 {
+		message = strings.Join(args, " ")
+	} else {
+		// Interactive mode
+		fmt.Printf("Adding note to running task: %s (%s)\n", runningID, task.Reference)
+		fmt.Println("Enter your note below (empty line to finish, or Ctrl+C to cancel):")
+
+		reader := bufio.NewReader(os.Stdin)
+		var lines []string
+
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return fmt.Errorf("read input: %w", err)
+			}
+
+			line = strings.TrimSuffix(line, "\n")
+			if line == "" {
+				break
+			}
+			lines = append(lines, line)
+		}
+
+		message = strings.Join(lines, "\n")
+	}
+
+	if strings.TrimSpace(message) == "" {
+		return errors.New("note cannot be empty")
+	}
+
+	// Send note to running task
+	if err := registry.AddNote(ctx, runningID, message); err != nil {
+		return fmt.Errorf("send note: %w", err)
+	}
+
+	fmt.Printf("✓ Note sent to running task %s\n", runningID)
 
 	return nil
 }

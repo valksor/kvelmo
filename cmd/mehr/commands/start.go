@@ -7,15 +7,19 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/go-toolkit/eventbus"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/stack"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/taskrunner"
 	"github.com/valksor/go-mehrhof/internal/template"
 )
 
@@ -31,6 +35,7 @@ var (
 	startBranchPattern string // Branch pattern template override
 	startTemplate      string // Template to apply
 	startDependsOn     string // Parent task for stacked features
+	startParallel      int    // Max parallel tasks (0 or 1 = sequential)
 
 	// Per-step agent overrides.
 	startAgentPlanning     string
@@ -83,6 +88,12 @@ TEMPLATES:
   --template refactor       Apply refactor template
   mehr templates            List all available templates
 
+PARALLEL EXECUTION:
+  --parallel=N              Start multiple tasks in parallel (requires --worktree)
+
+  When using --parallel, each task runs in its own goroutine with an isolated
+  worktree. Use 'mehr list --running' to see active tasks.
+
 EXAMPLES:
   mehr start empty:FEATURE-1      # Create empty task, then use 'mehr note'
   mehr start empty:"Implement auth"  # Create with descriptive title
@@ -92,11 +103,16 @@ EXAMPLES:
   mehr start --worktree task.md   # Start with a separate worktree
   mehr start --template bug-fix file:task.md  # Apply bug-fix template
 
+  # Parallel execution
+  mehr start file:a.md file:b.md --parallel=2 --worktree  # Start 2 tasks in parallel
+  mehr start file:a.md file:b.md file:c.md -p 3 -w        # Short form
+
 See also:
   mehr plan                 - Create implementation specifications
   mehr status               - Show active task status
+  mehr list --running       - Show running parallel tasks
   mehr templates            - List available task templates`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MinimumNArgs(1),
 	RunE: runStart,
 }
 
@@ -121,11 +137,25 @@ func init() {
 	startCmd.Flags().StringVar(&startAgentPlanning, "agent-plan", "", "Agent for planning step")
 	startCmd.Flags().StringVar(&startAgentImplementing, "agent-implement", "", "Agent for implementation step")
 	startCmd.Flags().StringVar(&startAgentReviewing, "agent-review", "", "Agent for review step")
+
+	// Parallel execution
+	startCmd.Flags().IntVarP(&startParallel, "parallel", "p", 0, "Max parallel tasks (requires --worktree)")
 }
 
 func runStart(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
-	reference := args[0]
+	references := args
+
+	// Validate parallel execution requirements
+	if len(references) > 1 || startParallel > 1 {
+		if !startWorktree {
+			return errors.New("parallel execution requires --worktree flag to prevent file conflicts\n\nUsage: mehr start file:a.md file:b.md --parallel=2 --worktree")
+		}
+
+		return runStartParallel(ctx, references)
+	}
+
+	reference := references[0]
 
 	// Apply template if specified (only works for file: provider)
 	if startTemplate != "" {
@@ -455,4 +485,136 @@ func trackStackedFeature(cond *conductor.Conductor, status *conductor.TaskStatus
 	fmt.Printf("Added to stack: %s (depends on %s)\n", parentStack.ID, parentTaskID)
 
 	return nil
+}
+
+// runStartParallel starts multiple tasks in parallel using goroutines.
+func runStartParallel(ctx context.Context, references []string) error {
+	// Create shared event bus for all tasks
+	bus := eventbus.NewBus()
+
+	// Create task registry
+	registry := taskrunner.NewRegistry(bus)
+
+	// Determine parallelism
+	maxParallel := startParallel
+	if maxParallel <= 0 {
+		maxParallel = len(references)
+	}
+	if maxParallel > len(references) {
+		maxParallel = len(references)
+	}
+
+	fmt.Printf("Starting %d tasks in parallel (max %d concurrent)...\n\n", len(references), maxParallel)
+
+	// Create conductor factory with registration function
+	factory := conductor.NewFactory(
+		conductor.WithBaseOptions(
+			conductor.WithVerbose(verbose),
+			conductor.WithUseWorktree(true),
+			conductor.WithCreateBranch(true),
+			conductor.WithAutoInit(true),
+		),
+		conductor.WithRegistrationFunc(func(cond *conductor.Conductor) error {
+			registration.RegisterStandardProviders(cond)
+
+			return registration.RegisterStandardAgents(cond)
+		}),
+	)
+
+	// Create runner
+	runner := taskrunner.NewRunner(registry, maxParallel, bus)
+
+	// Track results for display
+	var resultsMu sync.Mutex
+	var completedCount int
+
+	// Run options
+	opts := taskrunner.RunOptions{
+		MaxParallel:     maxParallel,
+		RequireWorktree: true,
+		StopOnError:     false, // Continue other tasks even if one fails
+		ConductorFactory: &conductorFactoryAdapter{
+			factory: factory,
+		},
+		OnTaskStart: func(runningID, ref string) {
+			fmt.Printf("  [%s] Starting: %s\n", runningID, ref)
+		},
+		OnTaskComplete: func(result taskrunner.TaskResult) {
+			resultsMu.Lock()
+			completedCount++
+			resultsMu.Unlock()
+
+			if result.Error != nil {
+				fmt.Printf("  [%s] Failed: %s - %v\n", result.RunningTaskID, result.Reference, result.Error)
+			} else {
+				fmt.Printf("  [%s] Completed: %s (task: %s, %v)\n",
+					result.RunningTaskID, result.Reference, result.TaskID, result.Duration.Round(time.Second))
+			}
+		},
+	}
+
+	// Execute
+	results, err := runner.Run(ctx, references, opts)
+
+	// Display summary
+	fmt.Println()
+	fmt.Println("─────────────────────────────────────────────")
+	fmt.Printf("Parallel execution complete: %d/%d tasks succeeded\n", countSuccessful(results), len(results))
+	fmt.Println()
+
+	// Show running tasks
+	runningTasks := registry.List()
+	if len(runningTasks) > 0 {
+		fmt.Println("Tasks:")
+		for _, task := range runningTasks {
+			status := string(task.Status)
+			if task.Error != nil {
+				status = fmt.Sprintf("failed: %v", task.Error)
+			}
+			fmt.Printf("  [%s] %s - %s\n", task.ID, task.Reference, status)
+			if task.WorktreePath != "" {
+				fmt.Printf("        worktree: %s\n", task.WorktreePath)
+			}
+		}
+		fmt.Println()
+	}
+
+	// Show next steps
+	fmt.Println("Next steps:")
+	fmt.Printf("  mehr list --running  - View running tasks\n")
+	fmt.Printf("  mehr note --running=<id> \"message\"  - Send note to task\n")
+	fmt.Println()
+
+	return err
+}
+
+// conductorFactoryAdapter adapts conductor.Factory to taskrunner.ConductorFactory.
+type conductorFactoryAdapter struct {
+	factory *conductor.Factory
+}
+
+func (a *conductorFactoryAdapter) Create(ctx context.Context, ref string, worktree bool) (taskrunner.TaskConductor, error) {
+	var opts []conductor.Option
+	if worktree {
+		opts = append(opts, conductor.WithUseWorktree(true))
+	}
+
+	cond, err := a.factory.Create(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return taskrunner.NewConductorAdapter(cond), nil
+}
+
+// countSuccessful counts successful results.
+func countSuccessful(results []taskrunner.TaskResult) int {
+	count := 0
+	for _, r := range results {
+		if r.Error == nil {
+			count++
+		}
+	}
+
+	return count
 }
