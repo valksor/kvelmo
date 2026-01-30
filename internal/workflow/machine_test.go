@@ -302,7 +302,7 @@ func TestEventBusIntegration(t *testing.T) {
 	m := NewMachine(bus)
 
 	var received atomic.Bool
-	bus.Subscribe(events.TypeStateChanged, func(e events.Event) {
+	bus.Subscribe(events.TypeStateChanged, func(e eventbus.Event) {
 		received.Store(true)
 	})
 
@@ -723,6 +723,8 @@ func TestAllSteps(t *testing.T) {
 		StepCheckpointing,
 		StepSimplifying,
 		StepOptimizing,
+		StepQuality,
+		StepPRReview,
 	}
 
 	if len(steps) != len(expectedSteps) {
@@ -748,6 +750,8 @@ func TestIsValidStep(t *testing.T) {
 		{"checkpointing", "checkpointing", true},
 		{"simplifying", "simplifying", true},
 		{"optimizing", "optimizing", true},
+		{"quality", "quality", true},
+		{"pr_review", "pr_review", true},
 		{"invalid step", "invalid", false},
 		{"empty string", "", false},
 		{"mixed case", "Planning", false},

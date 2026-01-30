@@ -16,6 +16,10 @@ const (
 	StepSimplifying Step = "simplifying"
 	// StepOptimizing is the prompt optimization phase where prompts are refined.
 	StepOptimizing Step = "optimizing"
+	// StepQuality is the quality review phase in auto mode.
+	StepQuality Step = "quality"
+	// StepPRReview is the standalone PR review step.
+	StepPRReview Step = "pr_review"
 )
 
 // AllSteps returns all valid step names.
@@ -27,6 +31,8 @@ func AllSteps() []Step {
 		StepCheckpointing,
 		StepSimplifying,
 		StepOptimizing,
+		StepQuality,
+		StepPRReview,
 	}
 }
 

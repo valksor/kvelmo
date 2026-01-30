@@ -4,12 +4,14 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestEventTypes(t *testing.T) {
 	tests := []struct {
 		name  string
-		event Type
+		event eventbus.Type
 		want  string
 	}{
 		{"TypeStateChanged", TypeStateChanged, "state_changed"},
@@ -515,7 +517,7 @@ func TestEventTimestamps(t *testing.T) {
 	now := time.Now()
 	events := []struct {
 		name  string
-		event interface{ ToEvent() Event }
+		event interface{ ToEvent() eventbus.Event }
 	}{
 		{"StateChanged", &StateChangedEvent{From: "a", To: "b"}},
 		{"Progress", &ProgressEvent{TaskID: "t1"}},

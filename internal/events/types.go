@@ -6,37 +6,29 @@ import (
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
-// Type identifies event categories.
-// This is an alias for go-toolkit's eventbus.Type for domain-specific event type constants.
-type Type = eventbus.Type
-
-// Event is the base event structure from go-toolkit.
-// This is an alias for convenience in defining domain-specific events.
-type Event = eventbus.Event
-
 // Domain-specific event type constants for mehrhof.
 const (
-	TypeStateChanged   Type = "state_changed"
-	TypeProgress       Type = "progress"
-	TypeError          Type = "error"
-	TypeFileChanged    Type = "file_changed"
-	TypeAgentMessage   Type = "agent_message"
-	TypeCheckpoint     Type = "checkpoint"
-	TypeBlueprintReady Type = "blueprint_ready"
+	TypeStateChanged   = "state_changed"
+	TypeProgress       = "progress"
+	TypeError          = "error"
+	TypeFileChanged    = "file_changed"
+	TypeAgentMessage   = "agent_message"
+	TypeCheckpoint     = "checkpoint"
+	TypeBlueprintReady = "blueprint_ready"
 
 	// GitHub-related events.
-	TypeBranchCreated Type = "branch_created"
-	TypePlanCompleted Type = "plan_completed"
-	TypeImplementDone Type = "implement_done"
-	TypePRCreated     Type = "pr_created"
+	TypeBranchCreated = "branch_created"
+	TypePlanCompleted = "plan_completed"
+	TypeImplementDone = "implement_done"
+	TypePRCreated     = "pr_created"
 
 	// Browser-related events.
-	TypeBrowserAction     Type = "browser_action"
-	TypeBrowserTabOpened  Type = "browser_tab_opened"
-	TypeBrowserScreenshot Type = "browser_screenshot"
+	TypeBrowserAction     = "browser_action"
+	TypeBrowserTabOpened  = "browser_tab_opened"
+	TypeBrowserScreenshot = "browser_screenshot"
 
 	// Sandbox-related events.
-	TypeSandboxStatusChanged Type = "sandbox_status_changed"
+	TypeSandboxStatusChanged = "sandbox_status_changed"
 )
 
 // SandboxStatusChangedEvent when sandbox status changes.
