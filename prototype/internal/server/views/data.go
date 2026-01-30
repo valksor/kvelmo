@@ -11,6 +11,7 @@ type PageData struct {
 	AuthEnabled      bool
 	CanSwitchProject bool
 	CurrentUser      string
+	IsViewer         bool // True if current user has read-only access
 
 	// Project info (when in project mode)
 	ProjectName string

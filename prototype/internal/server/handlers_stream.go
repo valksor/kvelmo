@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/rs/xid"
-
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // handleAgentLogs streams agent output logs via SSE.
@@ -58,7 +57,7 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Subscribe to all workflow events
-	subID := s.config.EventBus.SubscribeAll(func(e events.Event) {
+	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
 		// Filter events for this task
 		eventTaskID, _ := e.Data["task_id"].(string)
 		if eventTaskID != taskID {

@@ -20,6 +20,7 @@ func TestComputePageData(t *testing.T) {
 		isGlobalMode     bool
 		authEnabled      bool
 		canSwitchProject bool
+		isViewer         bool
 		currentUser      string
 		want             PageData
 	}{
@@ -29,6 +30,7 @@ func TestComputePageData(t *testing.T) {
 			isGlobalMode:     false,
 			authEnabled:      true,
 			canSwitchProject: true,
+			isViewer:         false,
 			currentUser:      "user@example.com",
 			want: PageData{
 				Mode:             "project",
@@ -36,6 +38,7 @@ func TestComputePageData(t *testing.T) {
 				IsProjectMode:    true,
 				AuthEnabled:      true,
 				CanSwitchProject: true,
+				IsViewer:         false,
 				CurrentUser:      "user@example.com",
 			},
 		},
@@ -45,6 +48,7 @@ func TestComputePageData(t *testing.T) {
 			isGlobalMode:     true,
 			authEnabled:      false,
 			canSwitchProject: false,
+			isViewer:         false,
 			currentUser:      "",
 			want: PageData{
 				Mode:             "global",
@@ -52,20 +56,40 @@ func TestComputePageData(t *testing.T) {
 				IsProjectMode:    false,
 				AuthEnabled:      false,
 				CanSwitchProject: false,
+				IsViewer:         false,
 				CurrentUser:      "",
+			},
+		},
+		{
+			name:             "viewer mode",
+			mode:             "project",
+			isGlobalMode:     false,
+			authEnabled:      true,
+			canSwitchProject: false,
+			isViewer:         true,
+			currentUser:      "viewer@example.com",
+			want: PageData{
+				Mode:             "project",
+				IsGlobalMode:     false,
+				IsProjectMode:    true,
+				AuthEnabled:      true,
+				CanSwitchProject: false,
+				IsViewer:         true,
+				CurrentUser:      "viewer@example.com",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ComputePageData(tt.mode, tt.isGlobalMode, tt.authEnabled, tt.canSwitchProject, tt.currentUser)
+			result := ComputePageData(tt.mode, tt.isGlobalMode, tt.authEnabled, tt.canSwitchProject, tt.isViewer, tt.currentUser)
 
 			assert.Equal(t, tt.want.Mode, result.Mode)
 			assert.Equal(t, tt.want.IsGlobalMode, result.IsGlobalMode)
 			assert.Equal(t, tt.want.IsProjectMode, result.IsProjectMode)
 			assert.Equal(t, tt.want.AuthEnabled, result.AuthEnabled)
 			assert.Equal(t, tt.want.CanSwitchProject, result.CanSwitchProject)
+			assert.Equal(t, tt.want.IsViewer, result.IsViewer)
 			assert.Equal(t, tt.want.CurrentUser, result.CurrentUser)
 			assert.NotNil(t, result.Events) // Events should always be initialized
 		})
@@ -610,7 +634,7 @@ func TestComputeLabels_Empty(t *testing.T) {
 }
 
 func TestComputePageData_EventsPopulated(t *testing.T) {
-	result := ComputePageData("project", false, true, false, "user@example.com")
+	result := ComputePageData("project", false, true, false, false, "user@example.com")
 
 	assert.NotNil(t, result.Events)
 	// Events should contain common event names

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestHandler_StandaloneReview_NoConductor(t *testing.T) {
@@ -383,7 +383,7 @@ func TestStreamEvent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &responseWriterRecorder{header: make(http.Header)}
-			e := events.Event{
+			e := eventbus.Event{
 				Type: "test",
 				Data: tt.data,
 			}

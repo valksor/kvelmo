@@ -10,7 +10,7 @@ import (
 )
 
 // ComputePageData creates the common page data from server configuration.
-func ComputePageData(mode string, isGlobalMode, authEnabled, canSwitchProject bool, currentUser string) PageData {
+func ComputePageData(mode string, isGlobalMode, authEnabled, canSwitchProject, isViewer bool, currentUser string) PageData {
 	return PageData{
 		Mode:             mode,
 		IsGlobalMode:     isGlobalMode,
@@ -18,6 +18,7 @@ func ComputePageData(mode string, isGlobalMode, authEnabled, canSwitchProject bo
 		AuthEnabled:      authEnabled,
 		CanSwitchProject: canSwitchProject,
 		CurrentUser:      currentUser,
+		IsViewer:         isViewer,
 		Events:           DefaultEventNames(),
 	}
 }

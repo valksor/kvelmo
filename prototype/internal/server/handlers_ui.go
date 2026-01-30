@@ -20,6 +20,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 
@@ -200,6 +201,7 @@ func (s *Server) handleLoginPageUI(w http.ResponseWriter, r *http.Request, error
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		false, // Login page - no user
 		"",
 	)
 
@@ -228,6 +230,7 @@ func (s *Server) handleProjectUI(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 
@@ -254,6 +257,7 @@ func (s *Server) handleHistoryUI(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 
@@ -332,6 +336,7 @@ func (s *Server) handleLicensePage(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 

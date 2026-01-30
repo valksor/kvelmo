@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 // contextKey is a type for context keys to avoid collisions.
@@ -39,6 +41,7 @@ type sessionStore struct {
 type session struct {
 	Token     string
 	Username  string
+	Role      storage.Role
 	CreatedAt time.Time
 	ExpiresAt time.Time
 }
@@ -107,8 +110,8 @@ func (s *sessionStore) cleanup() {
 	}
 }
 
-// create creates a new session for a user.
-func (s *sessionStore) create(username string) (*session, error) {
+// create creates a new session for a user with their role.
+func (s *sessionStore) create(username string, role storage.Role) (*session, error) {
 	token, err := generateToken()
 	if err != nil {
 		return nil, err
@@ -117,6 +120,7 @@ func (s *sessionStore) create(username string) (*session, error) {
 	sess := &session{
 		Token:     token,
 		Username:  username,
+		Role:      role,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
@@ -244,4 +248,41 @@ func GetUserFromContext(ctx context.Context) string {
 	user, _ := ctx.Value(userContextKey).(string)
 
 	return user
+}
+
+// isViewer returns true if the current request is from a viewer (read-only) user.
+// Returns false for localhost mode (no auth) or regular users.
+func (s *Server) isViewer(r *http.Request) bool {
+	// Localhost mode - full access
+	if s.config.AuthStore == nil {
+		return false
+	}
+
+	sess := s.getSessionFromRequest(r)
+	if sess == nil {
+		return false
+	}
+
+	return sess.Role == storage.RoleViewer
+}
+
+// getSessionFromRequest retrieves the session from the request.
+// Returns nil if no valid session exists.
+func (s *Server) getSessionFromRequest(r *http.Request) *session {
+	// Localhost mode - no session
+	if s.config.AuthStore == nil {
+		return nil
+	}
+
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return nil
+	}
+
+	sess, valid := s.sessions.get(cookie.Value)
+	if !valid {
+		return nil
+	}
+
+	return sess
 }

@@ -6,11 +6,6 @@
       "unknown": false
     },
     {
-      "path": "ariga.io/atlas",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
       "license": "Apache-2.0",
       "unknown": false
@@ -36,18 +31,8 @@
       "unknown": false
     },
     {
-      "path": "entgo.io/ent",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/AlecAivazis/survey/v2",
       "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/DATA-DOG/go-sqlmock",
-      "license": "Apache-2.0",
       "unknown": false
     },
     {
@@ -61,33 +46,13 @@
       "unknown": false
     },
     {
-      "path": "github.com/agext/levenshtein",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/antlr4-go/antlr/v4",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/apparentlymart/go-textseg/v13",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/apparentlymart/go-textseg/v15",
       "license": "Apache-2.0",
       "unknown": false
     },
     {
       "path": "github.com/bahlo/generic-list-go",
       "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/bmatcuk/doublestar",
-      "license": "MIT",
       "unknown": false
     },
     {
@@ -156,32 +121,12 @@
       "unknown": false
     },
     {
-      "path": "github.com/go-openapi/inflect",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/go-rod/rod",
       "license": "MIT",
       "unknown": false
     },
     {
-      "path": "github.com/go-test/deep",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/go-viper/mapstructure/v2",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
       "path": "github.com/godbus/dbus/v5",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/golang/groupcache",
       "license": "Apache-2.0",
       "unknown": false
     },
@@ -211,11 +156,6 @@
       "unknown": false
     },
     {
-      "path": "github.com/gorilla/websocket",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/hashicorp/go-cleanhttp",
       "license": "Apache-2.0",
       "unknown": false
@@ -227,11 +167,6 @@
     },
     {
       "path": "github.com/hashicorp/go-retryablehttp",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/hashicorp/hcl/v2",
       "license": "Apache-2.0",
       "unknown": false
     },
@@ -251,11 +186,6 @@
       "unknown": false
     },
     {
-      "path": "github.com/jessevdk/go-flags",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/jmoiron/sqlx",
       "license": "Apache-2.0",
       "unknown": false
@@ -267,11 +197,6 @@
     },
     {
       "path": "github.com/josharian/intern",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/json-iterator/go",
       "license": "MIT",
       "unknown": false
     },
@@ -296,16 +221,6 @@
       "unknown": false
     },
     {
-      "path": "github.com/kylelemons/godebug",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/lib/pq",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/mailru/easyjson",
       "license": "Apache-2.0",
       "unknown": false
@@ -326,58 +241,13 @@
       "unknown": false
     },
     {
-      "path": "github.com/mattn/go-runewidth",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/mattn/go-sqlite3",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
       "path": "github.com/mgutz/ansi",
       "license": "MIT",
       "unknown": false
     },
     {
-      "path": "github.com/mitchellh/go-wordwrap",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/mitchellh/mapstructure",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/modern-go/concurrent",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/modern-go/reflect2",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/niemeyer/pretty",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/olekukonko/tablewriter",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/pelletier/go-toml",
       "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/pelletier/go-toml/v2",
-      "license": "MIT",
       "unknown": false
     },
     {
@@ -406,26 +276,6 @@
       "unknown": false
     },
     {
-      "path": "github.com/sagikazarmark/locafero",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/sergi/go-diff",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/sourcegraph/conc",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/spf13/afero",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/spf13/cast",
       "license": "MIT",
       "unknown": false
@@ -441,11 +291,6 @@
       "unknown": false
     },
     {
-      "path": "github.com/spf13/viper",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
       "path": "github.com/stoewer/go-strcase",
       "license": "MIT",
       "unknown": false
@@ -457,11 +302,6 @@
     },
     {
       "path": "github.com/stretchr/testify",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/subosito/gotenv",
       "license": "MIT",
       "unknown": false
     },
@@ -496,32 +336,12 @@
       "unknown": false
     },
     {
-      "path": "github.com/valksor/go-calendar",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/valksor/go-mehrhof",
       "license": "Apache-2.0",
       "unknown": false
     },
     {
-      "path": "github.com/valksor/go-perkunvakars",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "github.com/valksor/go-toolkit",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/vmihailenco/msgpack/v5",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/vmihailenco/tagparser/v2",
       "license": "Apache-2.0",
       "unknown": false
     },
@@ -581,27 +401,7 @@
       "unknown": false
     },
     {
-      "path": "github.com/zclconf/go-cty",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/zclconf/go-cty-debug",
-      "license": "MIT",
-      "unknown": false
-    },
-    {
-      "path": "github.com/zclconf/go-cty-yaml",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
       "path": "gitlab.com/gitlab-org/api/client-go",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "go.opencensus.io",
       "license": "Apache-2.0",
       "unknown": false
     },
@@ -647,11 +447,6 @@
     },
     {
       "path": "golang.org/x/sys",
-      "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "golang.org/x/telemetry",
       "license": "Apache-2.0",
       "unknown": false
     },
@@ -706,5 +501,5 @@
       "unknown": false
     }
   ],
-  "count": 141
+  "count": 100
 }
