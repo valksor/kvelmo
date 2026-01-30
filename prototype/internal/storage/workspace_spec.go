@@ -18,30 +18,50 @@ import (
 // Valid task IDs contain only alphanumeric characters, hyphens, and underscores.
 var validTaskIDRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-// SpecificationsDir returns the specifications directory path.
+// resolveFilenamePattern converts a pattern like "SPEC-{n}.md" with a number into a filename.
+// Example: resolveFilenamePattern("SPEC-{n}.md", 1) returns "SPEC-1.md".
+func resolveFilenamePattern(pattern string, number int) string {
+	if pattern == "" {
+		pattern = "specification-{n}.md" // fallback default
+	}
+
+	return strings.Replace(pattern, "{n}", strconv.Itoa(number), 1)
+}
+
+// SpecificationsDir returns the specifications directory path (internal storage).
 func (w *Workspace) SpecificationsDir(taskID string) string {
 	return filepath.Join(w.WorkPath(taskID), specsDirName)
 }
 
-// SpecificationPath returns the path for a specification file.
-func (w *Workspace) SpecificationPath(taskID string, number int) string {
-	filename := fmt.Sprintf("specification-%d.md", number)
+// SpecificationPath returns the path for a specification file (internal storage).
+func (w *Workspace) SpecificationPath(taskID string, number int, cfg *WorkspaceConfig) string {
+	pattern := "specification-{n}.md"
+	if cfg != nil && cfg.Specification.FilenamePattern != "" {
+		pattern = cfg.Specification.FilenamePattern
+	}
 
-	return filepath.Join(w.SpecificationsDir(taskID), filename)
+	return filepath.Join(w.SpecificationsDir(taskID), resolveFilenamePattern(pattern, number))
 }
 
 // ProjectSpecificationsDir returns the project-local specifications directory path.
-// Returns .mehrhof/<task-id>/specifications/.
-func (w *Workspace) ProjectSpecificationsDir(taskID string) string {
-	return filepath.Join(w.taskRoot, taskID, specsDirName)
+// If ProjectDir is set (e.g., "tickets"), returns <root>/tickets/<task-id>/
+// If ProjectDir is empty, returns .mehrhof/<task-id>/ (no /specifications/ subdirectory).
+func (w *Workspace) ProjectSpecificationsDir(taskID string, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Specification.ProjectDir != "" {
+		return filepath.Join(w.root, cfg.Specification.ProjectDir, taskID)
+	}
+
+	return filepath.Join(w.taskRoot, taskID)
 }
 
 // ProjectSpecificationPath returns the project-local path for a specification file.
-// Returns .mehrhof/<task-id>/specifications/specification-N.md.
-func (w *Workspace) ProjectSpecificationPath(taskID string, number int) string {
-	filename := fmt.Sprintf("specification-%d.md", number)
+func (w *Workspace) ProjectSpecificationPath(taskID string, number int, cfg *WorkspaceConfig) string {
+	pattern := "specification-{n}.md"
+	if cfg != nil && cfg.Specification.FilenamePattern != "" {
+		pattern = cfg.Specification.FilenamePattern
+	}
 
-	return filepath.Join(w.ProjectSpecificationsDir(taskID), filename)
+	return filepath.Join(w.ProjectSpecificationsDir(taskID, cfg), resolveFilenamePattern(pattern, number))
 }
 
 // isValidTaskID validates that a taskID is safe to use as a directory name.
@@ -100,29 +120,30 @@ func (w *Workspace) SaveSpecification(taskID string, number int, content string)
 		return fmt.Errorf("invalid task ID %q: must contain only alphanumeric characters, hyphens, and underscores", taskID)
 	}
 
-	// Step 1: Always save to internal storage (authoritative location)
-	specPath := w.SpecificationPath(taskID, number)
-	if err := os.WriteFile(specPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("save internal specification: %w", err)
-	}
-
-	// Step 2: Load config to check if project-local saving is enabled
+	// Load config first - needed for filename pattern
 	cfg, err := w.LoadConfig()
 	if err != nil {
-		// Config is unavailable - internal spec was saved successfully, so log
-		// a warning and continue. The spec is still accessible from internal storage.
-		slog.Warn("failed to load workspace config, skipping project-local specification save",
+		slog.Warn("failed to load workspace config, using defaults",
 			"task_id", taskID,
 			"spec_number", number,
 			"error", err,
 		)
-
-		return nil
+		cfg = NewDefaultWorkspaceConfig()
 	}
 
-	// Step 3: Save to project-local storage if enabled (non-fatal on failure)
+	// Step 1: Always save to internal storage (authoritative location)
+	specPath := w.SpecificationPath(taskID, number, cfg)
+	specDir := filepath.Dir(specPath)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		return fmt.Errorf("create specifications directory: %w", err)
+	}
+	if err := os.WriteFile(specPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("save internal specification: %w", err)
+	}
+
+	// Step 2: Save to project-local storage if enabled (non-fatal on failure)
 	if cfg.Specification.SaveInProject {
-		projectSpecPath := w.ProjectSpecificationPath(taskID, number)
+		projectSpecPath := w.ProjectSpecificationPath(taskID, number, cfg)
 		projectDir := filepath.Dir(projectSpecPath)
 
 		// Ensure directory exists
@@ -188,7 +209,8 @@ func (w *Workspace) SaveSpecification(taskID string, number int, content string)
 
 // LoadSpecification loads a specification file content.
 func (w *Workspace) LoadSpecification(taskID string, number int) (string, error) {
-	specPath := w.SpecificationPath(taskID, number)
+	cfg, _ := w.LoadConfig() // ignore error, will use defaults
+	specPath := w.SpecificationPath(taskID, number, cfg)
 	data, err := os.ReadFile(specPath)
 	if err != nil {
 		return "", err
@@ -197,8 +219,23 @@ func (w *Workspace) LoadSpecification(taskID string, number int) (string, error)
 	return string(data), nil
 }
 
+// buildSpecPatternRegex builds a regex to match filenames based on the config pattern.
+// E.g., "SPEC-{n}.md" becomes `^SPEC-(\d+)\.md$`.
+func buildSpecPatternRegex(pattern string) *regexp.Regexp {
+	if pattern == "" {
+		pattern = "specification-{n}.md"
+	}
+	// Escape regex special chars except {n} placeholder
+	escaped := regexp.QuoteMeta(pattern)
+	// Replace escaped \{n\} with capturing group for digits
+	regexStr := strings.Replace(escaped, `\{n\}`, `(\d+)`, 1)
+
+	return regexp.MustCompile(`^` + regexStr + `$`)
+}
+
 // ListSpecifications returns all specification numbers for a task.
 func (w *Workspace) ListSpecifications(taskID string) ([]int, error) {
+	cfg, _ := w.LoadConfig() // ignore error, will use defaults
 	specsDir := w.SpecificationsDir(taskID)
 
 	entries, err := os.ReadDir(specsDir)
@@ -210,7 +247,7 @@ func (w *Workspace) ListSpecifications(taskID string) ([]int, error) {
 		return nil, fmt.Errorf("read specifications directory: %w", err)
 	}
 
-	pattern := regexp.MustCompile(`^specification-(\d+)\.md$`)
+	pattern := buildSpecPatternRegex(cfg.Specification.FilenamePattern)
 	var numbers []int
 
 	for _, entry := range entries {
