@@ -11,8 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/display"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -169,7 +168,7 @@ func runFind(cmd *cobra.Command, args []string) error {
 
 	// Non-stream mode - collect all results first
 	if verbose {
-		fmt.Println(tkdisplay.InfoMsg("Searching..."))
+		fmt.Println(display.InfoMsg("Searching..."))
 	} else {
 		spinner := display.NewSpinner("Searching...")
 		spinner.Start()
@@ -295,14 +294,14 @@ func formatFindStructured(results []conductor.FindResult, query string) error {
 
 		// Show snippet
 		if r.Snippet != "" {
-			fmt.Printf("   %s\n", tkdisplay.Muted(r.Snippet))
+			fmt.Printf("   %s\n", display.Muted(r.Snippet))
 		}
 
 		// Show context if available
 		if len(r.Context) > 0 {
-			fmt.Printf("   %s\n", tkdisplay.Muted("---"))
+			fmt.Printf("   %s\n", display.Muted("---"))
 			for _, ctx := range r.Context {
-				fmt.Printf("   %s\n", tkdisplay.Muted(ctx))
+				fmt.Printf("   %s\n", display.Muted(ctx))
 			}
 		}
 

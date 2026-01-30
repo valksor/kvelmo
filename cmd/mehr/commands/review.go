@@ -267,7 +267,7 @@ func runStandaloneReview(cmd *cobra.Command, args []string) error {
 		fmt.Println(tkdisplay.InfoMsg("Reviewing..."))
 		result, reviewErr = cond.ReviewStandalone(ctx, reviewOpts)
 	} else {
-		spinner := display.NewSpinner("Reviewing code...")
+		spinner := tkdisplay.NewSpinner("Reviewing code...")
 		spinner.Start()
 		result, reviewErr = cond.ReviewStandalone(ctx, reviewOpts)
 		if reviewErr != nil {

@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/provider/github"
 	"github.com/valksor/go-mehrhof/internal/update"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -54,7 +53,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		// Continue without token - may hit rate limits but works for public repos
 		fmt.Fprintf(os.Stderr, "%s Running without authentication (rate limits may apply)\n",
-			tkdisplay.Warning("→"))
+			display.Warning("→"))
 	}
 
 	opts := update.CheckOptions{
@@ -63,7 +62,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show checking message
-	fmt.Println(tkdisplay.Info("→") + " Checking for updates...")
+	fmt.Println(display.Info("→") + " Checking for updates...")
 
 	// Check for updates
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
@@ -75,13 +74,13 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	status, err := checker.Check(ctx, opts)
 	if err != nil {
 		if errors.Is(err, update.ErrNoUpdateAvailable) {
-			tkdisplay.Success("Already up to date")
+			display.Success("Already up to date")
 			fmt.Printf("Current version: %s\n", Version)
 
 			return nil
 		}
 		if errors.Is(err, update.ErrDevBuild) {
-			fmt.Printf(tkdisplay.Warning("⚠")+" Dev build detected (%s)\n", Version)
+			fmt.Printf(display.Warning("⚠")+" Dev build detected (%s)\n", Version)
 			fmt.Println("Update checks are not available for dev builds.")
 			fmt.Println("Install a release version to enable updates:")
 			fmt.Println("  https://github.com/valksor/go-mehrhof/releases")
@@ -93,15 +92,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display update available
-	fmt.Printf("\n%s %s\n", tkdisplay.Success("✓"), tkdisplay.Bold("Update available"))
-	fmt.Printf("  Current:   %s\n", tkdisplay.Muted(status.CurrentVersion))
-	fmt.Printf("  Latest:    %s\n", tkdisplay.Success(status.LatestVersion))
+	fmt.Printf("\n%s %s\n", display.Success("✓"), display.Bold("Update available"))
+	fmt.Printf("  Current:   %s\n", display.Muted(status.CurrentVersion))
+	fmt.Printf("  Latest:    %s\n", display.Success(status.LatestVersion))
 	if status.ReleaseURL != "" {
-		fmt.Printf("  Release:   %s\n", tkdisplay.Muted(status.ReleaseURL))
+		fmt.Printf("  Release:   %s\n", display.Muted(status.ReleaseURL))
 	}
 	if status.AssetSize > 0 {
 		sizeMB := float64(status.AssetSize) / 1024 / 1024
-		fmt.Printf("  Download:  %s (%.1f MB)\n", tkdisplay.Muted(status.AssetName), sizeMB)
+		fmt.Printf("  Download:  %s (%.1f MB)\n", display.Muted(status.AssetName), sizeMB)
 	}
 
 	if updateCheckOnly {
@@ -116,7 +115,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if !confirmed {
-			fmt.Println(tkdisplay.Muted("Update cancelled"))
+			fmt.Println(display.Muted("Update cancelled"))
 
 			return nil
 		}
@@ -126,7 +125,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	installer := update.NewInstaller()
 	writable, _ := installer.IsWritable()
 	if !writable {
-		return fmt.Errorf("%s\n\nTry running with sudo: sudo mehr update", tkdisplay.ErrorMsg(
+		return fmt.Errorf("%s\n\nTry running with sudo: sudo mehr update", display.ErrorMsg(
 			"Cannot write to binary directory"))
 	}
 
@@ -155,7 +154,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	// Warn if no checksum was available
 	if checksumsURL != "" && status.Checksum == "" {
 		fmt.Printf("\n%s Checksum verification unavailable - proceeding anyway\n",
-			tkdisplay.Warning("→"))
+			display.Warning("→"))
 	}
 
 	// Install the update
@@ -170,8 +169,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	spinner.StopWithSuccess("Installation complete")
 
-	fmt.Printf("\n%s Updated to %s\n", tkdisplay.SuccessMsg(""), tkdisplay.Bold(status.LatestVersion))
-	fmt.Printf("%s Restart mehr to use the new version\n\n", tkdisplay.Muted("→"))
+	fmt.Printf("\n%s Updated to %s\n", display.SuccessMsg(""), display.Bold(status.LatestVersion))
+	fmt.Printf("%s Restart mehr to use the new version\n\n", display.Muted("→"))
 
 	return nil
 }
