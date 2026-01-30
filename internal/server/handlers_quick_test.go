@@ -175,6 +175,27 @@ func TestHandler_QuickTaskSubmit_NoConductor(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }
 
+func TestHandler_QuickTaskSubmitSource_NoConductor(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	body := bytes.NewBufferString(`{"source": "./docs", "provider": "github"}`)
+	resp, err := doPost(ctx, client, srv.URL()+"/api/v1/quick/submit-source", body)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+}
+
 func TestHandler_QuickTaskStart_NoConductor(t *testing.T) {
 	cfg := Config{
 		Port:      0,

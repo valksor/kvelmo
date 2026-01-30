@@ -25,18 +25,20 @@
             >
                 {{if eq .Command "implement"}}
                 <button
-                    hx-post="{{.Endpoint}}"
-                    hx-vals='{"mode": "all"}'
+                    {{if not $.IsViewer}}hx-post="{{.Endpoint}}"{{end}}
+                    {{if not $.IsViewer}}hx-vals='{"mode": "all"}'{{end}}
                     hx-target="#main-content"
-                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth"
+                    {{if $.IsViewer}}disabled{{end}}
+                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
                 >
                     Implement All
                 </button>
                 <button
-                    hx-post="{{.Endpoint}}"
-                    hx-vals='{"mode": "next"}'
+                    {{if not $.IsViewer}}hx-post="{{.Endpoint}}"{{end}}
+                    {{if not $.IsViewer}}hx-vals='{"mode": "next"}'{{end}}
                     hx-target="#main-content"
-                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth"
+                    {{if $.IsViewer}}disabled{{end}}
+                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
                 >
                     Implement Next Spec
                 </button>
@@ -46,11 +48,11 @@
         {{else if .Dangerous}}
         {{/* Dangerous action with confirmation */}}
         <button
-            hx-{{if eq .Method "GET"}}get{{else}}post{{end}}="{{.Endpoint}}"
+            {{if not $.IsViewer}}hx-{{if eq .Method "GET"}}get{{else}}post{{end}}="{{.Endpoint}}"{{end}}
             hx-confirm="{{.Confirm}}"
             hx-target="#main-content"
             class="{{.ButtonClass}}"
-            {{if .Disabled}}disabled{{end}}
+            {{if or .Disabled $.IsViewer}}disabled{{end}}
             {{if .Tooltip}}title="{{.Tooltip}}"{{end}}
         >
             {{if .Icon}}
@@ -65,10 +67,10 @@
         {{else}}
         {{/* Regular action button */}}
         <button
-            hx-{{if eq .Method "GET"}}get{{else}}post{{end}}="{{.Endpoint}}"
+            {{if not $.IsViewer}}hx-{{if eq .Method "GET"}}get{{else}}post{{end}}="{{.Endpoint}}"{{end}}
             hx-target="#main-content"
             class="{{.ButtonClass}}"
-            {{if .Disabled}}disabled{{end}}
+            {{if or .Disabled $.IsViewer}}disabled{{end}}
             {{if .Tooltip}}title="{{.Tooltip}}"{{end}}
         >
             {{/* Loading indicator */}}

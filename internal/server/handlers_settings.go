@@ -105,6 +105,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 	pageData.Success = r.URL.Query().Get("success")
@@ -201,6 +202,12 @@ func (s *Server) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 
 // handleSaveSettings saves the settings from form submission.
 func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify settings")
+
+		return
+	}
+
 	selectedProject := r.URL.Query().Get("project")
 	contentType := r.Header.Get("Content-Type")
 
@@ -373,6 +380,21 @@ func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSe
 		if days, err := strconv.Atoi(v); err == nil && days > 0 {
 			cfg.Workflow.SessionRetentionDays = days
 		}
+	}
+
+	// Specification storage settings
+	cfg.Specification.SaveInProject = r.FormValue("specification.save_in_project") == "true"
+	if v := r.FormValue("specification.project_dir"); v != "" {
+		cfg.Specification.ProjectDir = v
+	}
+	if v := r.FormValue("specification.filename_pattern"); v != "" {
+		cfg.Specification.FilenamePattern = v
+	}
+
+	// Review storage settings
+	cfg.Review.SaveInProject = r.FormValue("review.save_in_project") == "true"
+	if v := r.FormValue("review.filename_pattern"); v != "" {
+		cfg.Review.FilenamePattern = v
 	}
 
 	// Browser settings
