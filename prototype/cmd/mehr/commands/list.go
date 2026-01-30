@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ Tasks with worktrees can be worked on independently in separate terminals.
 Examples:
   mehr list                   # List all tasks
   mehr list --worktrees       # Show only tasks with worktrees
+  mehr list --running         # Show running parallel tasks (in-memory)
   mehr list --json            # Output as JSON
   mehr list --search "api"    # Search tasks by title
   mehr list --filter state:done  # Filter by state
@@ -44,6 +46,7 @@ var (
 	listLabelFilter   string
 	listLabelAny      []string
 	listNoLabel       bool
+	listRunning       bool // Show running parallel tasks
 )
 
 func init() {
@@ -58,6 +61,7 @@ func init() {
 	listCmd.Flags().StringVar(&listLabelFilter, "label", "", "Filter by label (e.g., --label=priority:high)")
 	listCmd.Flags().StringSliceVar(&listLabelAny, "label-any", nil, "Filter by any label (OR logic)")
 	listCmd.Flags().BoolVar(&listNoLabel, "no-label", false, "Show only tasks without labels")
+	listCmd.Flags().BoolVar(&listRunning, "running", false, "Show running parallel tasks (in-memory goroutines)")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -66,6 +70,11 @@ func runList(cmd *cobra.Command, args []string) error {
 	// Handle legacy --json flag (map to --format json)
 	if listJSON {
 		listFormat = "json"
+	}
+
+	// Handle --running flag to show parallel running tasks
+	if listRunning {
+		return runListRunning(ctx)
 	}
 
 	// Resolve workspace root and git context
@@ -395,4 +404,109 @@ func formatLabels(labels []string) string {
 	}
 
 	return strings.Join(labels, ", ")
+}
+
+// runListRunning shows running parallel tasks (in-memory).
+func runListRunning(_ context.Context) error {
+	registry := GetParallelRegistry()
+
+	tasks := registry.List()
+	if len(tasks) == 0 {
+		if listFormat == "json" {
+			return output.WriteJSON([]jsonRunningTask{})
+		}
+		fmt.Println("No running parallel tasks.")
+		fmt.Println("\nStart tasks in parallel with:")
+		fmt.Println("  mehr start file:a.md file:b.md --parallel=2 --worktree")
+
+		return nil
+	}
+
+	// JSON output
+	if listFormat == "json" {
+		var jsonTasks []jsonRunningTask
+		for _, task := range tasks {
+			errStr := ""
+			if task.Error != nil {
+				errStr = task.Error.Error()
+			}
+			jsonTasks = append(jsonTasks, jsonRunningTask{
+				RunningID:    task.ID,
+				Reference:    task.Reference,
+				TaskID:       task.TaskID,
+				Status:       string(task.Status),
+				StartedAt:    task.StartedAt,
+				FinishedAt:   task.FinishedAt,
+				Duration:     task.Duration().String(),
+				WorktreePath: task.WorktreePath,
+				Error:        errStr,
+			})
+		}
+
+		return output.WriteJSON(jsonTasks)
+	}
+
+	// Table output
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	if _, err := fmt.Fprintln(w, "ID\tREFERENCE\tSTATUS\tTASK ID\tDURATION\tWORKTREE"); err != nil {
+		return fmt.Errorf("print header: %w", err)
+	}
+
+	for _, task := range tasks {
+		// Format duration
+		duration := task.Duration().Round(time.Second).String()
+
+		// Format worktree
+		worktree := task.WorktreePath
+		if worktree == "" {
+			worktree = "-"
+		}
+
+		// Format status
+		status := string(task.Status)
+		if task.Error != nil {
+			status = "failed"
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			task.ID,
+			task.Reference,
+			status,
+			task.TaskID,
+			duration,
+			worktree,
+		); err != nil {
+			return fmt.Errorf("print row: %w", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("flush table: %w", err)
+	}
+
+	// Summary
+	running := registry.CountRunning()
+	total := registry.Count()
+	fmt.Printf("\n%d running, %d total\n", running, total)
+
+	if running > 0 {
+		fmt.Println("\nCommands:")
+		fmt.Println("  mehr note --running=<id> \"message\"  - Send note to task")
+		fmt.Println("  mehr list --running                 - Refresh this list")
+	}
+
+	return nil
+}
+
+// jsonRunningTask is the JSON output structure for running tasks.
+type jsonRunningTask struct {
+	RunningID    string    `json:"running_id"`
+	Reference    string    `json:"reference"`
+	TaskID       string    `json:"task_id,omitempty"`
+	Status       string    `json:"status"`
+	StartedAt    time.Time `json:"started_at"`
+	FinishedAt   time.Time `json:"finished_at,omitempty"`
+	Duration     string    `json:"duration"`
+	WorktreePath string    `json:"worktree_path,omitempty"`
+	Error        string    `json:"error,omitempty"`
 }
