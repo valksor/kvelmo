@@ -11,6 +11,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/progress"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // StandaloneDiffMode specifies how to gather diffs for standalone operations.
@@ -190,7 +191,7 @@ func (c *Conductor) ReviewStandalone(ctx context.Context, opts StandaloneReviewO
 	c.publishProgress(progressMsg, 20)
 	var transcriptBuilder strings.Builder
 	response, err := reviewAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -292,7 +293,7 @@ func (c *Conductor) SimplifyStandalone(ctx context.Context, opts StandaloneSimpl
 	c.publishProgress("Agent simplifying code...", 20)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})

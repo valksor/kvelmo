@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // createCheckpointIfNeeded creates a git checkpoint if there are changes.
-func (c *Conductor) createCheckpointIfNeeded(ctx context.Context, taskID, message string) *events.Event {
+func (c *Conductor) createCheckpointIfNeeded(ctx context.Context, taskID, message string) *eventbus.Event {
 	if c.git == nil || !c.activeTask.UseGit {
 		return nil
 	}
@@ -42,7 +43,7 @@ func (c *Conductor) createCheckpointIfNeeded(ctx context.Context, taskID, messag
 		return nil
 	}
 
-	return &events.Event{
+	return &eventbus.Event{
 		Type: events.TypeCheckpoint,
 		Data: map[string]any{
 			"action":     "create",

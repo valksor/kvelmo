@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 func TestDefaultOptions(t *testing.T) {
@@ -367,7 +367,7 @@ func TestOnStateChanged_NoCallback(t *testing.T) {
 	}
 
 	// Should not panic with nil callback
-	c.onStateChanged(events.Event{
+	c.onStateChanged(eventbus.Event{
 		Data: map[string]any{
 			"from": "idle",
 			"to":   "planning",
@@ -388,7 +388,7 @@ func TestOnStateChanged_WithCallback(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	c.onStateChanged(events.Event{
+	c.onStateChanged(eventbus.Event{
 		Data: map[string]any{
 			"from": "idle",
 			"to":   "planning",
@@ -420,7 +420,7 @@ func TestOnStateChanged_MissingData(t *testing.T) {
 	}
 
 	// Event with no data fields
-	c.onStateChanged(events.Event{
+	c.onStateChanged(eventbus.Event{
 		Data: map[string]any{},
 	})
 

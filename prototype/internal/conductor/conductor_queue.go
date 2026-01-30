@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/workflow"
 )
 
 // QuickTaskOptions configures quick task creation.
@@ -106,8 +107,8 @@ func (c *Conductor) OptimizeQueueTask(ctx context.Context, queueID, taskID strin
 	// Build optimization prompt
 	prompt := buildOptimizePrompt(task, notes)
 
-	// Get agent for optimization (use planning agent)
-	ag, err := c.GetAgentForStep(ctx, "planning")
+	// Get agent for optimization
+	ag, err := c.GetAgentForStep(ctx, workflow.StepOptimizing)
 	if err != nil {
 		return nil, fmt.Errorf("get agent: %w", err)
 	}

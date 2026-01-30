@@ -12,6 +12,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Plan enters the planning phase to create specifications.
@@ -185,7 +186,7 @@ func (c *Conductor) Undo(ctx context.Context) error {
 	}
 
 	// Publish event
-	c.eventBus.PublishRaw(events.Event{
+	c.eventBus.PublishRaw(eventbus.Event{
 		Type: events.TypeCheckpoint,
 		Data: map[string]any{
 			"action":     "undo",
@@ -236,7 +237,7 @@ func (c *Conductor) Redo(ctx context.Context) error {
 	}
 
 	// Publish event
-	c.eventBus.PublishRaw(events.Event{
+	c.eventBus.PublishRaw(eventbus.Event{
 		Type: events.TypeCheckpoint,
 		Data: map[string]any{
 			"action":     "redo",
@@ -389,7 +390,7 @@ func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
 	c.logVerbosef("Asking agent question...")
 	response, err := questionAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Publish to event bus for Web UI consumption
-		c.eventBus.PublishRaw(events.Event{
+		c.eventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -553,7 +554,7 @@ func (c *Conductor) buildWorkUnit() *workflow.WorkUnit {
 }
 
 // onStateChanged handles state change events.
-func (c *Conductor) onStateChanged(e events.Event) {
+func (c *Conductor) onStateChanged(e eventbus.Event) {
 	if c.opts.OnStateChange == nil {
 		return
 	}
@@ -584,7 +585,7 @@ func (c *Conductor) countCheckpoints(ctx context.Context) int {
 
 // publishProgress publishes a progress event.
 func (c *Conductor) publishProgress(message string, percent int) {
-	c.eventBus.PublishRaw(events.Event{
+	c.eventBus.PublishRaw(eventbus.Event{
 		Type: events.TypeProgress,
 		Data: map[string]any{
 			"message": message,
