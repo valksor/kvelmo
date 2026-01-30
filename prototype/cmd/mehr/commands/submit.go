@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,27 +13,36 @@ import (
 )
 
 var (
-	submitTask     string
-	submitProvider string
-	submitLabels   []string
-	submitDryRun   bool
+	submitTask         string
+	submitProvider     string
+	submitLabels       []string
+	submitDryRun       bool
+	submitSource       string
+	submitNotes        []string
+	submitTitle        string
+	submitInstructions string
+	submitQueue        string
+	submitOptimize     bool
 )
 
 var submitCmd = &cobra.Command{
-	Use:   "submit --task <queue>/<task-id> --provider <name>",
-	Short: "Submit a queue task to an external provider",
-	Long: `Submit a single queue task to an external provider.
+	Use:   "submit --provider <name> [--task <queue>/<task-id> | --source <path>]",
+	Short: "Submit a task to an external provider",
+	Long: `Submit a single queue task to an external provider, or create one from a source and submit.
 
 The task will be created in the external provider (GitHub, Jira, Wrike, etc.)
 and the queue task will be updated with the external ID and URL.
 
 USAGE:
-  mehr submit --task=<queue>/<task-id> --provider=<name>
+  mehr submit --provider=<name> --task=<queue>/<task-id>
+  mehr submit --provider=<name> --source=<path-or-ref>
 
 EXAMPLES:
   mehr submit --task=quick-tasks/task-1 --provider github
   mehr submit --task=quick-tasks/task-1 --provider wrike --labels urgent
   mehr submit --task=quick-tasks/task-1 --provider jira --dry-run
+  mehr submit --provider github --source ./specs/overview.md --note "Prefer tasks scoped to backend"
+  mehr submit --provider jira --source ./docs/ --optimize --dry-run
 
 Supported providers: github, gitlab, jira, linear, asana, notion, trello, wrike,
 youtrack, bitbucket, clickup, azuredevops
@@ -52,8 +62,12 @@ func init() {
 	submitCmd.Flags().StringVar(&submitProvider, "provider", "", "Provider name (github, wrike, jira, etc.)")
 	submitCmd.Flags().StringSliceVar(&submitLabels, "labels", []string{}, "Additional labels to apply")
 	submitCmd.Flags().BoolVar(&submitDryRun, "dry-run", false, "Preview without submitting")
-	//nolint:errcheck // Flag names are constants, error won't occur
-	submitCmd.MarkFlagRequired("task")
+	submitCmd.Flags().StringVar(&submitSource, "source", "", "Create task from a file/dir/provider ref and submit")
+	submitCmd.Flags().StringSliceVar(&submitNotes, "note", []string{}, "Notes to guide task creation (repeatable)")
+	submitCmd.Flags().StringVar(&submitTitle, "title", "", "Title override when creating from source")
+	submitCmd.Flags().StringVar(&submitInstructions, "instructions", "", "Custom instructions for task creation")
+	submitCmd.Flags().StringVar(&submitQueue, "queue", "", "Queue ID to store the created task (default: quick-tasks)")
+	submitCmd.Flags().BoolVar(&submitOptimize, "optimize", false, "Optimize the generated task before submitting")
 	//nolint:errcheck // Flag names are constants, error won't occur
 	submitCmd.MarkFlagRequired("provider")
 }
@@ -62,17 +76,14 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	// Validate flags
-	if submitTask == "" {
-		return errors.New("--task flag is required (format: <queue-id>/<task-id>)")
-	}
 	if submitProvider == "" {
 		return errors.New("--provider flag is required")
 	}
-
-	// Parse queue task reference
-	queueID, taskID, err := conductor.ParseQueueTaskRef(submitTask)
-	if err != nil {
-		return err
+	if submitTask != "" && submitSource != "" {
+		return errors.New("--task and --source cannot be used together")
+	}
+	if submitSource == "" && submitTask == "" {
+		return errors.New("either --task or --source is required")
 	}
 
 	// Build conductor options
@@ -86,16 +97,14 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Show what we're doing
-	fmt.Println()
-	if submitDryRun {
-		fmt.Printf("📤 Dry-run: Previewing submission to %s\n", display.Bold(submitProvider))
-	} else {
-		fmt.Printf("📤 Submitting to %s\n", display.Bold(submitProvider))
+	if submitSource != "" {
+		return runSubmitFromSource(ctx, cond)
 	}
-	fmt.Printf("  Task: %s/%s\n", queueID, taskID)
-	if len(submitLabels) > 0 {
-		fmt.Printf("  Labels: %s\n", strings.Join(submitLabels, ", "))
+
+	// Parse queue task reference
+	queueID, taskID, err := conductor.ParseQueueTaskRef(submitTask)
+	if err != nil {
+		return err
 	}
 
 	// Submit task
@@ -110,6 +119,66 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display results
+	displaySubmitResults(result, submitDryRun)
+
+	return nil
+}
+
+func runSubmitFromSource(ctx context.Context, cond *conductor.Conductor) error {
+	fmt.Println()
+	if submitDryRun {
+		fmt.Printf("📤 Dry-run: Previewing submission to %s\n", display.Bold(submitProvider))
+	} else {
+		fmt.Printf("📤 Submitting to %s\n", display.Bold(submitProvider))
+	}
+	fmt.Printf("  Source: %s\n", submitSource)
+	if submitTitle != "" {
+		fmt.Printf("  Title: %s\n", submitTitle)
+	}
+	if len(submitNotes) > 0 {
+		fmt.Printf("  Notes: %d\n", len(submitNotes))
+	}
+	if len(submitLabels) > 0 {
+		fmt.Printf("  Labels: %s\n", strings.Join(submitLabels, ", "))
+	}
+
+	sourceResult, err := cond.CreateQueueTaskFromSource(ctx, submitSource, conductor.SourceTaskOptions{
+		QueueID:      submitQueue,
+		Title:        submitTitle,
+		Instructions: submitInstructions,
+		Notes:        submitNotes,
+		Provider:     submitProvider,
+		Labels:       submitLabels,
+	})
+	if err != nil {
+		return fmt.Errorf("create task from source: %w", err)
+	}
+
+	queueID := sourceResult.QueueID
+	taskID := sourceResult.TaskID
+
+	fmt.Printf("  Task: %s/%s\n", queueID, taskID)
+
+	if submitOptimize {
+		fmt.Println("\n✨ Optimizing task with AI...")
+		fmt.Println()
+		optResult, err := cond.OptimizeQueueTask(ctx, queueID, taskID)
+		if err != nil {
+			return fmt.Errorf("optimize task: %w", err)
+		}
+		displayOptimizeResult(optResult)
+	}
+
+	result, err := cond.SubmitQueueTask(ctx, queueID, taskID, conductor.SubmitOptions{
+		Provider: submitProvider,
+		Labels:   submitLabels,
+		TaskIDs:  []string{taskID},
+		DryRun:   submitDryRun,
+	})
+	if err != nil {
+		return fmt.Errorf("submit task: %w", err)
+	}
+
 	displaySubmitResults(result, submitDryRun)
 
 	return nil

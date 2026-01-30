@@ -53,6 +53,12 @@ var serveAuthAddCmd = &cobra.Command{
 	RunE:  runServeAuthAdd,
 }
 
+var authRole string
+
+func init() {
+	serveAuthAddCmd.Flags().StringVar(&authRole, "role", "user", "User role: user or viewer")
+}
+
 var serveAuthListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all users",
@@ -71,6 +77,13 @@ var serveAuthPasswdCmd = &cobra.Command{
 	Short: "Change a user's password",
 	Args:  cobra.ExactArgs(2),
 	RunE:  runServeAuthPasswd,
+}
+
+var serveAuthRoleCmd = &cobra.Command{
+	Use:   "role <username> <role>",
+	Short: "Change a user's role",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runServeAuthRole,
 }
 
 var serveCmd = &cobra.Command{
@@ -159,6 +172,7 @@ func init() {
 	serveAuthCmd.AddCommand(serveAuthListCmd)
 	serveAuthCmd.AddCommand(serveAuthRemoveCmd)
 	serveAuthCmd.AddCommand(serveAuthPasswdCmd)
+	serveAuthCmd.AddCommand(serveAuthRoleCmd)
 }
 
 func runServe(cmd *cobra.Command, _ []string) error {
@@ -526,7 +540,15 @@ func runServeAuthAdd(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load auth store: %w", err)
 	}
 
-	if err := authStore.AddUser(username, password); err != nil {
+	role := storage.Role(authRole)
+	if role != "" && !storage.ValidRole(string(role)) {
+		return fmt.Errorf("invalid role: %s (must be 'user' or 'viewer')", role)
+	}
+	if role == "" {
+		role = storage.RoleUser
+	}
+
+	if err := authStore.AddUser(username, password, role); err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			return fmt.Errorf("user %q already exists", username)
 		}
@@ -538,7 +560,7 @@ func runServeAuthAdd(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("save auth store: %w", err)
 	}
 
-	fmt.Printf("User %q added successfully.\n", username)
+	fmt.Printf("User %q added successfully (role: %s).\n", username, role)
 
 	return nil
 }
@@ -550,24 +572,25 @@ func runServeAuthList(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("load auth store: %w", err)
 	}
 
-	users := authStore.ListUsers()
+	users := authStore.ListUsersDetails()
 	if len(users) == 0 {
 		fmt.Println("No users configured.")
-		fmt.Println("\nUse 'mehr serve auth add <username> <password>' to add a user.")
+		fmt.Println("\nUse 'mehr serve auth add <username> <password> [--role <role>]' to add a user.")
 
 		return nil
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "USERNAME\tCREATED")
+	_, _ = fmt.Fprintln(w, "USERNAME\tROLE\tCREATED")
 
-	for _, username := range users {
-		user, exists := authStore.GetUser(username)
-		if !exists {
-			continue
+	for _, user := range users {
+		role := user.Role
+		if role == "" {
+			role = storage.RoleUser
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n",
 			user.Username,
+			role,
 			user.CreatedAt.Format("2006-01-02 15:04"),
 		)
 	}
@@ -626,6 +649,37 @@ func runServeAuthPasswd(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Password updated for user %q.\n", username)
+
+	return nil
+}
+
+// runServeAuthRole handles "mehr serve auth role".
+func runServeAuthRole(_ *cobra.Command, args []string) error {
+	username := args[0]
+	role := storage.Role(args[1])
+
+	if !storage.ValidRole(string(role)) {
+		return fmt.Errorf("invalid role: %s (must be 'user' or 'viewer')", role)
+	}
+
+	authStore, err := storage.LoadAuthStore()
+	if err != nil {
+		return fmt.Errorf("load auth store: %w", err)
+	}
+
+	if err := authStore.SetRole(username, role); err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return fmt.Errorf("user %q not found", username)
+		}
+
+		return fmt.Errorf("set role: %w", err)
+	}
+
+	if err := authStore.Save(); err != nil {
+		return fmt.Errorf("save auth store: %w", err)
+	}
+
+	fmt.Printf("Role updated for user %q to %s.\n", username, role)
 
 	return nil
 }

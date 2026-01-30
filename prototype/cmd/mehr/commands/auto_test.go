@@ -92,6 +92,12 @@ func TestAutoCommand_Flags(t *testing.T) {
 			shorthand:    "",
 			defaultValue: "false",
 		},
+		{
+			name:         "agent-quality flag",
+			flagName:     "agent-quality",
+			shorthand:    "",
+			defaultValue: "",
+		},
 	}
 
 	for _, tt := range tests {

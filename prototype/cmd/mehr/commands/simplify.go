@@ -51,7 +51,7 @@ SAFETY:
   mehr simplify --verbose
 
   # Use specific agent
-  mehr simplify --agent opus
+  mehr simplify --agent-simplify opus
 
   # Skip checkpoint creation (not recommended)
   mehr simplify --no-checkpoint
@@ -70,7 +70,7 @@ func init() {
 
 	simplifyCmd.Flags().BoolVar(&simplifyNoCheckpoint, "no-checkpoint", false,
 		"Skip creating a checkpoint before simplifying")
-	simplifyCmd.Flags().StringVar(&simplifyAgent, "agent", "",
+	simplifyCmd.Flags().StringVar(&simplifyAgent, "agent-simplify", "",
 		"Agent to use for simplification")
 
 	// Standalone mode flags

@@ -171,12 +171,11 @@ func runReview(cmd *cobra.Command, args []string) error {
 		fmt.Println("Review completed successfully")
 	}
 
-	// Determine output filename
-	outputFile := reviewOutput
-	if outputFile == "" {
-		outputFile = getNextReviewFilename(ws.WorkPath(activeTask.ID))
+	// Get next review number
+	reviewNum, err := ws.NextReviewNumber(activeTask.ID)
+	if err != nil {
+		return fmt.Errorf("get next review number: %w", err)
 	}
-	outputPath := filepath.Join(ws.WorkPath(activeTask.ID), outputFile)
 
 	// Build review content
 	var content strings.Builder
@@ -190,11 +189,14 @@ func runReview(cmd *cobra.Command, args []string) error {
 	content.WriteString("\n---\n\n")
 	content.WriteString(outputStr)
 
-	// Save review output
-	if err := os.WriteFile(outputPath, []byte(content.String()), 0o644); err != nil {
+	// Save review output using workspace storage
+	if err := ws.SaveReview(activeTask.ID, reviewNum, content.String()); err != nil {
 		return fmt.Errorf("save review output: %w", err)
 	}
 
+	// Get the path for display (load config for pattern)
+	cfg, _ := ws.LoadConfig()
+	outputPath := ws.ReviewPath(activeTask.ID, reviewNum, cfg)
 	fmt.Printf("\nReview saved to: %s\n", outputPath)
 	fmt.Printf("Status: %s\n", status)
 

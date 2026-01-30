@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/cli/output"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -88,7 +89,7 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	if len(taskIDs) == 0 {
 		if listFormat == "json" {
-			return outputJSON([]jsonListTask{})
+			return output.WriteJSON([]jsonListTask{})
 		}
 		fmt.Println("No tasks found in workspace.")
 		fmt.Println("\nUse 'mehr start <reference>' to create a new task.")
@@ -293,7 +294,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			})
 		}
 
-		return outputJSON(jsonTasks)
+		return output.WriteJSON(jsonTasks)
 	}
 
 	// CSV output

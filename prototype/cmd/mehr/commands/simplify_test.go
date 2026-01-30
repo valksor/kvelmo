@@ -41,7 +41,7 @@ func TestSimplifyCommand_Flags(t *testing.T) {
 		},
 		{
 			name:         "agent flag",
-			flagName:     "agent",
+			flagName:     "agent-simplify",
 			shorthand:    "",
 			defaultValue: "",
 		},

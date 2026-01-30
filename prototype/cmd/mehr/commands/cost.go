@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/cli/output"
 	"github.com/valksor/go-mehrhof/internal/cost"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
@@ -80,45 +80,29 @@ func runCost(cmd *cobra.Command, args []string) error {
 	return showActiveCost(ws)
 }
 
-// JSON output structures.
+// JSON output structures for cost command.
+// Uses shared types from internal/cli/output for token/cost metrics.
 type jsonCostOutput struct {
-	TaskID        string                  `json:"task_id"`
-	Title         string                  `json:"title,omitempty"`
-	TotalTokens   int                     `json:"total_tokens"`
-	InputTokens   int                     `json:"input_tokens"`
-	OutputTokens  int                     `json:"output_tokens"`
-	CachedTokens  int                     `json:"cached_tokens"`
-	CachedPercent float64                 `json:"cached_percent,omitempty"`
-	TotalCostUSD  float64                 `json:"total_cost_usd"`
-	ByStep        map[string]jsonStepCost `json:"by_step,omitempty"`
-}
-
-type jsonStepCost struct {
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	CachedTokens int     `json:"cached_tokens"`
-	TotalTokens  int     `json:"total_tokens"`
-	CostUSD      float64 `json:"cost_usd"`
-	Calls        int     `json:"calls"`
+	TaskID        string                     `json:"task_id"`
+	Title         string                     `json:"title,omitempty"`
+	TotalTokens   int                        `json:"total_tokens"`
+	InputTokens   int                        `json:"input_tokens"`
+	OutputTokens  int                        `json:"output_tokens"`
+	CachedTokens  int                        `json:"cached_tokens"`
+	CachedPercent float64                    `json:"cached_percent,omitempty"`
+	TotalCostUSD  float64                    `json:"total_cost_usd"`
+	ByStep        map[string]output.StepCost `json:"by_step,omitempty"`
 }
 
 type jsonAllCostsOutput struct {
-	Tasks      []jsonCostOutput `json:"tasks"`
-	GrandTotal jsonGrandTotal   `json:"grand_total"`
-}
-
-type jsonGrandTotal struct {
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	TotalTokens  int     `json:"total_tokens"`
-	CachedTokens int     `json:"cached_tokens"`
-	CostUSD      float64 `json:"cost_usd"`
+	Tasks      []jsonCostOutput   `json:"tasks"`
+	GrandTotal output.CostMetrics `json:"grand_total"`
 }
 
 type jsonSummaryOutput struct {
-	TaskCount  int                     `json:"task_count"`
-	GrandTotal jsonGrandTotal          `json:"grand_total"`
-	ByStep     map[string]jsonStepCost `json:"by_step"`
+	TaskCount  int                        `json:"task_count"`
+	GrandTotal output.CostMetrics         `json:"grand_total"`
+	ByStep     map[string]output.StepCost `json:"by_step"`
 }
 
 func showWorktreeCost(ws *storage.Workspace, git interface{}) error {
@@ -171,7 +155,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 	// Check if any costs have been recorded
 	if costs.TotalInputTokens == 0 && costs.TotalOutputTokens == 0 {
 		if costJSON {
-			return outputJSON(jsonCostOutput{
+			return output.WriteJSON(jsonCostOutput{
 				TaskID:       taskID,
 				Title:        work.Metadata.Title,
 				InputTokens:  0,
@@ -196,7 +180,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 
 	// JSON output
 	if costJSON {
-		output := jsonCostOutput{
+		result := jsonCostOutput{
 			TaskID:       taskID,
 			Title:        work.Metadata.Title,
 			InputTokens:  costs.TotalInputTokens,
@@ -206,14 +190,14 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 			TotalCostUSD: costs.TotalCostUSD,
 		}
 		if cachedPercent > 0 {
-			output.CachedPercent = cachedPercent
+			result.CachedPercent = cachedPercent
 		}
 
 		// Add by-step breakdown if requested or if there are multiple steps
 		if costByStep || len(costs.ByStep) > 1 {
-			output.ByStep = make(map[string]jsonStepCost)
+			result.ByStep = make(map[string]output.StepCost)
 			for step, stats := range costs.ByStep {
-				output.ByStep[step] = jsonStepCost{
+				result.ByStep[step] = output.StepCost{
 					InputTokens:  stats.InputTokens,
 					OutputTokens: stats.OutputTokens,
 					CachedTokens: stats.CachedTokens,
@@ -224,7 +208,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 			}
 		}
 
-		return outputJSON(output)
+		return output.WriteJSON(result)
 	}
 
 	// Regular text output
@@ -283,13 +267,6 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 	return nil
 }
 
-func outputJSON(v any) error {
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-
-	return enc.Encode(v)
-}
-
 func showAllCosts(ws *storage.Workspace, summaryMode bool) error {
 	taskIDs, err := ws.ListWorks()
 	if err != nil {
@@ -298,9 +275,9 @@ func showAllCosts(ws *storage.Workspace, summaryMode bool) error {
 
 	if len(taskIDs) == 0 {
 		if costJSON {
-			return outputJSON(jsonAllCostsOutput{
+			return output.WriteJSON(jsonAllCostsOutput{
 				Tasks:      []jsonCostOutput{},
-				GrandTotal: jsonGrandTotal{},
+				GrandTotal: output.CostMetrics{},
 			})
 		}
 		fmt.Println("No tasks found in workspace.")
@@ -357,9 +334,9 @@ func showAllCosts(ws *storage.Workspace, summaryMode bool) error {
 			grandTotalCost += costs.TotalCostUSD
 		}
 
-		return outputJSON(jsonAllCostsOutput{
+		return output.WriteJSON(jsonAllCostsOutput{
 			Tasks: tasks,
-			GrandTotal: jsonGrandTotal{
+			GrandTotal: output.CostMetrics{
 				InputTokens:  grandTotalInput,
 				OutputTokens: grandTotalOutput,
 				TotalTokens:  grandTotalInput + grandTotalOutput,
@@ -475,10 +452,10 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 
 	if taskCount == 0 {
 		if costJSON {
-			return outputJSON(jsonSummaryOutput{
+			return output.WriteJSON(jsonSummaryOutput{
 				TaskCount:  0,
-				GrandTotal: jsonGrandTotal{},
-				ByStep:     make(map[string]jsonStepCost),
+				GrandTotal: output.CostMetrics{},
+				ByStep:     make(map[string]output.StepCost),
 			})
 		}
 		fmt.Println("No tasks found.")
@@ -490,9 +467,9 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 
 	// JSON output
 	if costJSON {
-		byStep := make(map[string]jsonStepCost)
+		byStep := make(map[string]output.StepCost)
 		for step, stats := range stepTotals {
-			byStep[step] = jsonStepCost{
+			byStep[step] = output.StepCost{
 				InputTokens:  stats.InputTokens,
 				OutputTokens: stats.OutputTokens,
 				CachedTokens: stats.CachedTokens,
@@ -502,9 +479,9 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 			}
 		}
 
-		return outputJSON(jsonSummaryOutput{
+		return output.WriteJSON(jsonSummaryOutput{
 			TaskCount: taskCount,
-			GrandTotal: jsonGrandTotal{
+			GrandTotal: output.CostMetrics{
 				InputTokens:  grandTotalInput,
 				OutputTokens: grandTotalOutput,
 				TotalTokens:  totalTokens,
