@@ -30,6 +30,7 @@ package conductor
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -253,6 +254,76 @@ func (c *Conductor) ClearAgent() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.agentOverride = ""
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Methods for taskrunner.ConductorRef interface support
+// ─────────────────────────────────────────────────────────────────────────────
+
+// AddNote adds a note to the active task's notes.md file.
+// This method is used by the taskrunner to send messages to running tasks.
+func (c *Conductor) AddNote(ctx context.Context, message string) error {
+	c.mu.RLock()
+	activeTask := c.activeTask
+	workspace := c.workspace
+	c.mu.RUnlock()
+
+	if activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	if workspace == nil {
+		return errors.New("workspace not initialized")
+	}
+
+	return workspace.AppendNote(activeTask.ID, message, activeTask.State)
+}
+
+// GetTaskID returns the active task's ID.
+// Returns empty string if no task is active.
+func (c *Conductor) GetTaskID() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.activeTask == nil {
+		return ""
+	}
+
+	return c.activeTask.ID
+}
+
+// GetWorktreePath returns the worktree path if using worktrees.
+// Returns empty string if not using worktrees.
+func (c *Conductor) GetWorktreePath() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.activeTask == nil {
+		return ""
+	}
+
+	return c.activeTask.WorktreePath
+}
+
+// Close performs cleanup for the conductor.
+// This should be called when the conductor is no longer needed.
+func (c *Conductor) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Flush any pending usage data
+	if c.workspace != nil {
+		_ = c.workspace.FlushUsage()
+	}
+
+	// Disconnect browser if initialized
+	if c.browser != nil {
+		_ = c.browser.Disconnect()
+	}
+
+	// Plugin adapters don't have cleanup - they share processes with the registry
+
+	return nil
 }
 
 // logError logs an error using the callback if configured.
