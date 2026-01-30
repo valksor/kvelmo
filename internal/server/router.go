@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/server/static"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // setupRouter creates and configures the HTTP router.
@@ -207,6 +207,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /quick", s.handleQuickTasksUI)
 		mux.HandleFunc("GET /api/v1/quick", s.handleQuickTaskList)
 		mux.HandleFunc("POST /api/v1/quick", s.handleQuickTaskCreate)
+		mux.HandleFunc("POST /api/v1/quick/submit-source", s.handleQuickTaskSubmitSource)
 		// Quick task item endpoints using Go 1.22+ wildcard patterns
 		mux.HandleFunc("GET /api/v1/quick/{taskId}", s.handleQuickTaskGet)
 		mux.HandleFunc("POST /api/v1/quick/{taskId}/note", s.handleQuickTaskNote)
@@ -520,7 +521,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Subscribe to all events
-	subID := s.config.EventBus.SubscribeAll(func(e events.Event) {
+	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
 		s.writeSSEEvent(w, flusher, string(e.Type), e.Data)
 	})
 	defer s.config.EventBus.Unsubscribe(subID)

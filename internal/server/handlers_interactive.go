@@ -17,6 +17,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/memory"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Interactive chat request/response types.
@@ -115,7 +116,7 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 
 	response, err := activeAgent.RunWithCallback(opCtx, prompt, func(event agent.Event) error {
 		// Stream event via SSE to connected clients
-		s.config.EventBus.PublishRaw(events.Event{
+		s.config.EventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
 			Data: map[string]any{"event": event},
 		})
@@ -546,7 +547,7 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 
 	// Also publish state update
 	if taskID != "" {
-		s.config.EventBus.PublishRaw(events.Event{
+		s.config.EventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeStateChanged,
 			Data: map[string]any{
 				"task_id": taskID,

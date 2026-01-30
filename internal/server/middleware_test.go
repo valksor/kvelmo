@@ -16,7 +16,7 @@ import (
 func TestSessionStore_Create(t *testing.T) {
 	store := newSessionStore()
 
-	sess, err := store.create("admin")
+	sess, err := store.create("admin", storage.RoleUser)
 	require.NoError(t, err)
 
 	assert.Equal(t, "admin", sess.Username)
@@ -30,7 +30,7 @@ func TestSessionStore_Get(t *testing.T) {
 	store := newSessionStore()
 
 	// Create a session
-	sess, err := store.create("admin")
+	sess, err := store.create("admin", storage.RoleUser)
 	require.NoError(t, err)
 
 	// Get the session
@@ -46,7 +46,7 @@ func TestSessionStore_Get(t *testing.T) {
 func TestSessionStore_Delete(t *testing.T) {
 	store := newSessionStore()
 
-	sess, err := store.create("admin")
+	sess, err := store.create("admin", storage.RoleUser)
 	require.NoError(t, err)
 
 	// Verify session exists
@@ -68,6 +68,7 @@ func TestSessionStore_Expiry(t *testing.T) {
 	sess := &session{
 		Token:     "test-token",
 		Username:  "admin",
+		Role:      storage.RoleUser,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(-time.Hour), // Already expired
 	}
@@ -156,7 +157,7 @@ func TestAuthMiddleware_PublicEndpoint(t *testing.T) {
 	tmpDir := t.TempDir()
 	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
 	require.NoError(t, err)
-	require.NoError(t, authStore.AddUser("admin", "pass"))
+	require.NoError(t, authStore.AddUser("admin", "pass", storage.RoleUser))
 
 	cfg := Config{
 		Port:      0,
@@ -187,7 +188,7 @@ func TestAuthMiddleware_ProtectedEndpoint_NoSession(t *testing.T) {
 	tmpDir := t.TempDir()
 	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
 	require.NoError(t, err)
-	require.NoError(t, authStore.AddUser("admin", "pass"))
+	require.NoError(t, authStore.AddUser("admin", "pass", storage.RoleUser))
 
 	cfg := Config{
 		Port:      0,
@@ -215,7 +216,7 @@ func TestAuthMiddleware_ProtectedEndpoint_WithSession(t *testing.T) {
 	tmpDir := t.TempDir()
 	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
 	require.NoError(t, err)
-	require.NoError(t, authStore.AddUser("admin", "pass"))
+	require.NoError(t, authStore.AddUser("admin", "pass", storage.RoleUser))
 
 	cfg := Config{
 		Port:      0,
@@ -227,7 +228,7 @@ func TestAuthMiddleware_ProtectedEndpoint_WithSession(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a session
-	sess, err := srv.sessions.create("admin")
+	sess, err := srv.sessions.create("admin", storage.RoleUser)
 	require.NoError(t, err)
 
 	handler := srv.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +255,7 @@ func TestAuthMiddleware_PageRedirect(t *testing.T) {
 	tmpDir := t.TempDir()
 	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
 	require.NoError(t, err)
-	require.NoError(t, authStore.AddUser("admin", "pass"))
+	require.NoError(t, authStore.AddUser("admin", "pass", storage.RoleUser))
 
 	cfg := Config{
 		Port:      0,
@@ -277,4 +278,89 @@ func TestAuthMiddleware_PageRedirect(t *testing.T) {
 
 	assert.Equal(t, http.StatusSeeOther, rec.Code)
 	assert.Equal(t, "/login", rec.Header().Get("Location"))
+}
+
+func TestServer_IsViewer_LocalhostMode(t *testing.T) {
+	// Server without auth store (localhost mode)
+	cfg := Config{
+		Port: 0,
+		Mode: ModeProject,
+		// AuthStore is nil - localhost mode
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/workflow/plan", nil)
+
+	// isViewer should always return false in localhost mode
+	// This ensures localhost users have full access (no viewer restrictions)
+	assert.False(t, srv.isViewer(req), "localhost mode should never be a viewer")
+}
+
+func TestServer_IsViewer_WithRole(t *testing.T) {
+	tmpDir := t.TempDir()
+	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
+	require.NoError(t, err)
+	require.NoError(t, authStore.AddUser("viewer", "pass", storage.RoleViewer))
+	require.NoError(t, authStore.AddUser("user", "pass", storage.RoleUser))
+
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		AuthStore: authStore,
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		username string
+		role     storage.Role
+		expected bool
+	}{
+		{"viewer role returns true", "viewer", storage.RoleViewer, true},
+		{"user role returns false", "user", storage.RoleUser, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a session for the user
+			sess, err := srv.sessions.create(tt.username, tt.role)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/workflow/plan", nil)
+			req.AddCookie(&http.Cookie{
+				Name:  sessionCookieName,
+				Value: sess.Token,
+			})
+
+			result := srv.isViewer(req)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestServer_IsViewer_NoSession(t *testing.T) {
+	tmpDir := t.TempDir()
+	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
+	require.NoError(t, err)
+	require.NoError(t, authStore.AddUser("admin", "pass", storage.RoleUser))
+
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		AuthStore: authStore,
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	// Request without session cookie
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/workflow/plan", nil)
+
+	// isViewer should return false when no session exists
+	// (the auth middleware would block unauthenticated requests anyway)
+	assert.False(t, srv.isViewer(req), "no session should not be treated as viewer")
 }

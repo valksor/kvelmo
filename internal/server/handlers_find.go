@@ -185,6 +185,7 @@ func (s *Server) handleFindUI(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 

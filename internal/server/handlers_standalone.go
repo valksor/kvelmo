@@ -7,6 +7,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // handleStandaloneReview handles POST /api/v1/workflow/review/standalone.
@@ -134,8 +135,8 @@ func (s *Server) handleStandaloneReviewSSE(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	eventCh := make(chan events.Event, 100)
-	unsubscribeID := eventBus.SubscribeAll(func(e events.Event) {
+	eventCh := make(chan eventbus.Event, 100)
+	unsubscribeID := eventBus.SubscribeAll(func(e eventbus.Event) {
 		if e.Type == events.TypeAgentMessage || e.Type == events.TypeProgress {
 			select {
 			case eventCh <- e:
@@ -322,8 +323,8 @@ func (s *Server) handleStandaloneSimplifySSE(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	eventCh := make(chan events.Event, 100)
-	unsubscribeID := eventBus.SubscribeAll(func(e events.Event) {
+	eventCh := make(chan eventbus.Event, 100)
+	unsubscribeID := eventBus.SubscribeAll(func(e eventbus.Event) {
 		if e.Type == events.TypeAgentMessage || e.Type == events.TypeProgress {
 			select {
 			case eventCh <- e:
@@ -398,7 +399,7 @@ func (s *Server) handleStandaloneSimplifySSE(w http.ResponseWriter, r *http.Requ
 }
 
 // streamEvent streams an event to the SSE client.
-func (s *Server) streamEvent(w http.ResponseWriter, e events.Event) {
+func (s *Server) streamEvent(w http.ResponseWriter, e eventbus.Event) {
 	if eventData, ok := e.Data["event"].(map[string]any); ok {
 		if eventType, ok := eventData["type"].(string); ok {
 			switch eventType {

@@ -526,6 +526,12 @@ func (s *Server) handleProjectReorder(w http.ResponseWriter, r *http.Request) {
 // handleProjectSubmit submits tasks to a provider.
 // POST /api/v1/project/submit.
 func (s *Server) handleProjectSubmit(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify projects")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 

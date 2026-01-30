@@ -17,6 +17,12 @@ import (
 
 // handleWorkflowSync syncs a task from the provider and generates delta spec if changed.
 func (s *Server) handleWorkflowSync(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -193,6 +199,12 @@ func extractWorkUnitContent(wu *provider.WorkUnit) string {
 
 // handleWorkflowSimplify auto-simplifies content based on workflow state.
 func (s *Server) handleWorkflowSimplify(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 

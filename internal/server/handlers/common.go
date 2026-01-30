@@ -23,6 +23,7 @@ type Context struct {
 	AuthEnabled      bool
 	CanSwitchProject bool
 	CurrentUser      string
+	IsViewer         bool
 }
 
 // PageData creates a PageData struct from the handler context.
@@ -32,6 +33,7 @@ func (c *Context) PageData() views.PageData {
 		c.IsGlobalMode,
 		c.AuthEnabled,
 		c.CanSwitchProject,
+		c.IsViewer,
 		c.CurrentUser,
 	)
 }

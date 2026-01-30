@@ -36,6 +36,12 @@ type finishRequest struct {
 // 2. application/x-www-form-urlencoded with "content" or "ref" field - form submission
 // 3. application/json with "content" or "ref" field - API call.
 func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -198,6 +204,12 @@ func (e *invalidFileError) Error() string {
 
 // handleWorkflowPlan triggers planning phase.
 func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -226,6 +238,12 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowImplement triggers implementation phase.
 func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -264,6 +282,12 @@ func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request)
 
 // handleWorkflowReview triggers review phase.
 func (s *Server) handleWorkflowReview(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -292,6 +316,12 @@ func (s *Server) handleWorkflowReview(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowFinish completes the task.
 func (s *Server) handleWorkflowFinish(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -329,6 +359,12 @@ func (s *Server) handleWorkflowFinish(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowUndo undoes to the previous checkpoint.
 func (s *Server) handleWorkflowUndo(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -349,6 +385,12 @@ func (s *Server) handleWorkflowUndo(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowRedo redoes to the next checkpoint.
 func (s *Server) handleWorkflowRedo(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -371,6 +413,12 @@ func (s *Server) handleWorkflowRedo(w http.ResponseWriter, r *http.Request) {
 // This saves the answer to notes and clears the pending question,
 // allowing the next plan/implement call to continue with the answer.
 func (s *Server) handleWorkflowAnswer(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -447,6 +495,12 @@ func (s *Server) handleWorkflowAnswer(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowAbandon abandons the current task.
 func (s *Server) handleWorkflowAbandon(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -610,8 +664,16 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create session
-	sess, err := s.sessions.create(req.Username)
+	// Get user to retrieve their role
+	user, userExists := s.config.AuthStore.GetUser(req.Username)
+	if !userExists {
+		s.writeError(w, http.StatusInternalServerError, "failed to get user")
+
+		return
+	}
+
+	// Create session with user's role
+	sess, err := s.sessions.create(req.Username, user.Role)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, "failed to create session")
 
@@ -644,6 +706,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 // handleWorkflowResume resumes a task paused due to budget limits.
 func (s *Server) handleWorkflowResume(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
