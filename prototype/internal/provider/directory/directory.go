@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/file"
+	"github.com/valksor/go-toolkit/naming"
 	"github.com/valksor/go-toolkit/slug"
 )
 

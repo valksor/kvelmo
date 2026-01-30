@@ -398,7 +398,7 @@ func RunWithSpinner(verbose bool, spinnerMsg string, fn func() error) error {
 		return fn()
 	}
 
-	spinner := mehrhofdisplay.NewSpinner(spinnerMsg)
+	spinner := display.NewSpinner(spinnerMsg)
 	spinner.Start()
 	err := fn()
 

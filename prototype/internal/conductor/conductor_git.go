@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/naming"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/naming"
 	"github.com/valksor/go-toolkit/slug"
 )
 

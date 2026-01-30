@@ -164,7 +164,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		}
 		implErr = cond.RunImplementation(ctx)
 	} else {
-		spinner := display.NewSpinner(spinnerMsg)
+		spinner := tkdisplay.NewSpinner(spinnerMsg)
 		spinner.Start()
 		implErr = cond.RunImplementation(ctx)
 		if implErr != nil && !errors.Is(implErr, conductor.ErrBudgetPaused) && !errors.Is(implErr, conductor.ErrBudgetStopped) {

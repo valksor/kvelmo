@@ -7,8 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/display"
-	tkdisplay "github.com/valksor/go-toolkit/display"
+	"github.com/valksor/go-toolkit/display"
 )
 
 var (
@@ -103,7 +102,7 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 
 	if !RequireActiveTask(cond) {
 		fmt.Println()
-		fmt.Println(tkdisplay.InfoMsg("Tip: Use --standalone to simplify without an active task:"))
+		fmt.Println(display.InfoMsg("Tip: Use --standalone to simplify without an active task:"))
 		fmt.Println("  mehr simplify --standalone              # Simplify uncommitted changes")
 		fmt.Println("  mehr simplify --standalone --branch     # Simplify current branch vs main")
 
@@ -116,7 +115,7 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 
 	var simplifyErr error
 	if verbose {
-		fmt.Println(tkdisplay.InfoMsg("Simplifying..."))
+		fmt.Println(display.InfoMsg("Simplifying..."))
 		simplifyErr = cond.Simplify(ctx, "", !simplifyNoCheckpoint)
 	} else {
 		spinner := display.NewSpinner("Simplifying...")
@@ -135,7 +134,7 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 
 	if verbose {
 		fmt.Println()
-		fmt.Println(tkdisplay.SuccessMsg("Simplification complete!"))
+		fmt.Println(display.SuccessMsg("Simplification complete!"))
 	}
 
 	// Determine what was simplified based on state
@@ -145,7 +144,7 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 	if !hasSpecs {
 		fmt.Println("  Task input simplified")
 	} else {
-		fmt.Printf("  Specifications simplified: %s\n", tkdisplay.Bold(strconv.Itoa(len(specs))))
+		fmt.Printf("  Specifications simplified: %s\n", display.Bold(strconv.Itoa(len(specs))))
 	}
 
 	PrintNextSteps(
@@ -213,7 +212,7 @@ func runStandaloneSimplify(cmd *cobra.Command, args []string) error {
 	var result *conductor.StandaloneSimplifyResult
 	var simplifyErr error
 	if verbose {
-		fmt.Println(tkdisplay.InfoMsg("Simplifying..."))
+		fmt.Println(display.InfoMsg("Simplifying..."))
 		result, simplifyErr = cond.SimplifyStandalone(ctx, simplifyOpts)
 	} else {
 		spinner := display.NewSpinner("Simplifying code...")
@@ -241,35 +240,35 @@ func runStandaloneSimplify(cmd *cobra.Command, args []string) error {
 func printSimplifyModeInfo(opts conductor.StandaloneDiffOptions) {
 	switch opts.Mode {
 	case conductor.DiffModeUncommitted:
-		fmt.Println(tkdisplay.InfoMsg("Simplifying uncommitted changes (staged + unstaged)..."))
+		fmt.Println(display.InfoMsg("Simplifying uncommitted changes (staged + unstaged)..."))
 	case conductor.DiffModeBranch:
 		if opts.BaseBranch != "" {
-			fmt.Printf("%s Simplifying current branch vs %s...\n", tkdisplay.InfoMsg(""), opts.BaseBranch)
+			fmt.Printf("%s Simplifying current branch vs %s...\n", display.InfoMsg(""), opts.BaseBranch)
 		} else {
-			fmt.Println(tkdisplay.InfoMsg("Simplifying current branch vs default branch..."))
+			fmt.Println(display.InfoMsg("Simplifying current branch vs default branch..."))
 		}
 	case conductor.DiffModeRange:
-		fmt.Printf("%s Simplifying commit range: %s...\n", tkdisplay.InfoMsg(""), opts.Range)
+		fmt.Printf("%s Simplifying commit range: %s...\n", display.InfoMsg(""), opts.Range)
 	case conductor.DiffModeFiles:
-		fmt.Printf("%s Simplifying files: %s...\n", tkdisplay.InfoMsg(""), strings.Join(opts.Files, ", "))
+		fmt.Printf("%s Simplifying files: %s...\n", display.InfoMsg(""), strings.Join(opts.Files, ", "))
 	}
 }
 
 // printStandaloneSimplifyResult prints the simplification results to stdout.
 func printStandaloneSimplifyResult(result *conductor.StandaloneSimplifyResult) {
-	fmt.Println(tkdisplay.SuccessMsg("✓ Simplification complete"))
+	fmt.Println(display.SuccessMsg("✓ Simplification complete"))
 
 	// Print summary
 	if result.Summary != "" {
 		fmt.Println()
-		fmt.Println(tkdisplay.Bold("Summary:"))
+		fmt.Println(display.Bold("Summary:"))
 		fmt.Println(result.Summary)
 	}
 
 	// Print changes
 	if len(result.Changes) > 0 {
 		fmt.Println()
-		fmt.Println(tkdisplay.Bold("Suggested Changes:"))
+		fmt.Println(display.Bold("Suggested Changes:"))
 		for _, change := range result.Changes {
 			fmt.Printf("  [%s] %s\n", strings.ToUpper(string(change.Operation)), change.Path)
 		}

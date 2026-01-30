@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/cli/output"
-	"github.com/valksor/go-mehrhof/internal/cost"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/chart"
 	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
@@ -605,7 +605,7 @@ func renderStepCostChart(byStep map[string]storage.StepCostStats) {
 	}
 
 	// Prepare bars for the chart
-	var bars []cost.Bar
+	var bars []chart.Bar
 	maxVal := 0
 
 	for _, stats := range byStep {
@@ -626,21 +626,21 @@ func renderStepCostChart(byStep map[string]storage.StepCostStats) {
 	for _, step := range steps {
 		stats := byStep[step]
 		totalTokens := stats.InputTokens + stats.OutputTokens
-		bars = append(bars, cost.Bar{
+		bars = append(bars, chart.Bar{
 			Label: formatStepName(step),
 			Value: totalTokens,
 		})
 	}
 
 	// Generate horizontal bar chart
-	opts := cost.ChartOptions{
+	opts := chart.Options{
 		Title:      "Token Usage by Step",
 		Width:      50,
 		ShowValues: true,
 		ScaleLabel: "tokens",
 	}
-	chart := cost.ASCIIBarChart(bars, opts)
-	fmt.Print(chart)
+	rendered := chart.BarChart(bars, opts)
+	fmt.Print(rendered)
 }
 
 // renderAllTasksChart renders a bar chart comparing costs across all tasks.
@@ -701,27 +701,27 @@ func renderAllTasksChart(ws *storage.Workspace, taskIDs []string) {
 	}
 
 	// Create bars
-	var bars []cost.Bar
+	var bars []chart.Bar
 	for _, task := range tasks {
 		label := task.Title
 		if len(label) > 15 {
 			label = label[:12] + "..."
 		}
-		bars = append(bars, cost.Bar{
+		bars = append(bars, chart.Bar{
 			Label: label,
 			Value: task.Cost,
 		})
 	}
 
 	// Generate horizontal bar chart
-	opts := cost.ChartOptions{
+	opts := chart.Options{
 		Title:      "Token Usage by Task (Top 10)",
 		Width:      50,
 		ShowValues: true,
 		ScaleLabel: "tokens",
 	}
-	chart := cost.ASCIIBarChart(bars, opts)
-	fmt.Print(chart)
+	rendered := chart.BarChart(bars, opts)
+	fmt.Print(rendered)
 }
 
 // renderSummaryChart renders charts for the summary view.
@@ -733,7 +733,7 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 	}
 
 	// First, render bar chart
-	var bars []cost.Bar
+	var bars []chart.Bar
 	maxVal := 0
 
 	// Sort steps by name
@@ -754,28 +754,24 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 	for _, stepName := range steps {
 		stats := stepTotals[stepName]
 		totalTokens := stats.InputTokens + stats.OutputTokens
-		bars = append(bars, cost.Bar{
+		bars = append(bars, chart.Bar{
 			Label: formatStepName(stepName),
 			Value: totalTokens,
 		})
 	}
 
 	// Generate horizontal bar chart
-	barOpts := cost.ChartOptions{
+	barOpts := chart.Options{
 		Title:      "Total Token Usage by Step",
 		Width:      50,
 		ShowValues: true,
 		ScaleLabel: "tokens",
 	}
-	chart := cost.ASCIIBarChart(bars, barOpts)
-	fmt.Print(chart)
+	rendered := chart.BarChart(bars, barOpts)
+	fmt.Print(rendered)
 
 	// Second, render pie chart
-	var slices []struct {
-		Label   string
-		Value   int
-		Percent float64
-	}
+	var slices []chart.Slice
 
 	totalTokens := 0
 	for _, stats := range stepTotals {
@@ -789,20 +785,16 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 		if totalTokens > 0 {
 			percent = float64(stepTotal) / float64(totalTokens) * 100
 		}
-		slices = append(slices, struct {
-			Label   string
-			Value   int
-			Percent float64
-		}{
+		slices = append(slices, chart.Slice{
 			Label:   formatStepName(step),
 			Value:   stepTotal,
 			Percent: percent,
 		})
 	}
 
-	pieOpts := cost.ChartOptions{
+	pieOpts := chart.Options{
 		Title: "\nToken Distribution by Step",
 	}
-	pieChart := cost.ASCIIPieChart(slices, pieOpts)
+	pieChart := chart.PieChart(slices, pieOpts)
 	fmt.Print(pieChart)
 }
