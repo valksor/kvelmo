@@ -142,11 +142,10 @@ func (s *SemgrepScanner) Scan(ctx context.Context, dir string) (*ScanResult, err
 	cmd := exec.CommandContext(ctx, "semgrep", args...)
 	cmd.Dir = dir
 
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxOutputSize
-	stderr.limit = maxOutputSize
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newLimitedBuffer(maxOutputSize)
+	stderr := newLimitedBuffer(maxOutputSize)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	runErr := cmd.Run()
 	duration := time.Since(start)
