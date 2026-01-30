@@ -28,6 +28,12 @@
                         Workflow
                     </span>
                 </button>
+                <button data-action="show-section" data-section="storage" id="nav-storage" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                        Storage
+                    </span>
+                </button>
                 <button data-action="show-section" data-section="browser" id="nav-browser" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
@@ -116,7 +122,7 @@
             {{end}}
 
             {{if or (ne .Mode "global") .SelectedProject}}
-            <form hx-post="/api/v1/settings{{if .SelectedProject}}?project={{.SelectedProject}}{{end}}" hx-target="body" hx-swap="innerHTML" class="space-y-6">
+            <form {{if not .IsViewer}}hx-post="/api/v1/settings{{if .SelectedProject}}?project={{.SelectedProject}}{{end}}"{{end}} hx-target="body" hx-swap="innerHTML" class="space-y-6">
                 <!-- General Settings Section -->
                 <div id="section-general" class="settings-section">
                     <!-- Git Settings -->
@@ -449,6 +455,68 @@
                                     <label for="workflow-delete-work-abandon" class="font-semibold text-surface-900 dark:text-surface-100 cursor-pointer">Delete work on abandon</label>
                                     <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Clean up work directories when task is abandoned</p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Settings Section -->
+                <div id="section-storage" class="settings-section hidden">
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Specification Storage</h3>
+                            <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Configure where specifications are saved</p>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" name="specification.save_in_project" value="true" id="spec-save-in-project"
+                                       {{if .Config.Specification.SaveInProject}}checked{{end}}
+                                       class="mt-1 h-5 w-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500">
+                                <div>
+                                    <label for="spec-save-in-project" class="font-semibold text-surface-900 dark:text-surface-100 cursor-pointer">Save in project</label>
+                                    <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Also save specifications to project directory for version control</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="spec-project-dir" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Project Directory</label>
+                                <input type="text" name="specification.project_dir" id="spec-project-dir"
+                                       value="{{.Config.Specification.ProjectDir}}"
+                                       placeholder="tickets"
+                                       class="input text-sm">
+                                <p class="text-xs text-surface-400 mt-2">Directory name in project root (e.g., "tickets" creates tickets/&lt;task-id&gt;/)</p>
+                            </div>
+                            <div>
+                                <label for="spec-filename-pattern" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Filename Pattern</label>
+                                <input type="text" name="specification.filename_pattern" id="spec-filename-pattern"
+                                       value="{{.Config.Specification.FilenamePattern}}"
+                                       placeholder="specification-{n}.md"
+                                       class="input text-sm">
+                                <p class="text-xs text-surface-400 mt-2">Use {n} for specification number (e.g., "SPEC-{n}.md" → SPEC-1.md, SPEC-2.md)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Review Storage</h3>
+                            <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Configure where code reviews are saved</p>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" name="review.save_in_project" value="true" id="review-save-in-project"
+                                       {{if .Config.Review.SaveInProject}}checked{{end}}
+                                       class="mt-1 h-5 w-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500">
+                                <div>
+                                    <label for="review-save-in-project" class="font-semibold text-surface-900 dark:text-surface-100 cursor-pointer">Save in project</label>
+                                    <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Also save reviews alongside specifications in project directory</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="review-filename-pattern" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Filename Pattern</label>
+                                <input type="text" name="review.filename_pattern" id="review-filename-pattern"
+                                       value="{{.Config.Review.FilenamePattern}}"
+                                       placeholder="review-{n}.txt"
+                                       class="input text-sm">
+                                <p class="text-xs text-surface-400 mt-2">Use {n} for review number (e.g., "CODERABBIT-{n}.txt" → CODERABBIT-1.txt)</p>
                             </div>
                         </div>
                     </div>
@@ -1275,6 +1343,7 @@
                 </div>
 
                 <!-- Save Button -->
+                {{if not .IsViewer}}
                 <div class="flex justify-end gap-4 pt-6 border-t border-surface-200 dark:border-surface-700">
                     <a href="/" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">
@@ -1282,6 +1351,11 @@
                         Save Settings
                     </button>
                 </div>
+                {{else}}
+                <div class="flex justify-end gap-4 pt-6 border-t border-surface-200 dark:border-surface-700">
+                    <a href="/" class="btn btn-secondary">Back</a>
+                </div>
+                {{end}}
             </form>
 
             <!-- Security Scan Form - OUTSIDE main settings form (HTML forbids nested forms) -->
@@ -1342,6 +1416,7 @@
                                 </div>
                             </div>
 
+                            {{if not .IsViewer}}
                             <div class="flex justify-end gap-4 pt-6 border-t border-surface-200 dark:border-surface-700">
                                 <button type="submit" class="btn btn-primary">
                                     <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
@@ -1351,6 +1426,7 @@
                                     Run Security Scan
                                 </button>
                             </div>
+                            {{end}}
                         </form>
                     </div>
                 </div>

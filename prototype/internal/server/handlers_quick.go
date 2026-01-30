@@ -37,6 +37,18 @@ type quickTaskListItem struct {
 	NoteCount int      `json:"note_count"`
 }
 
+type submitSourceRequest struct {
+	Source       string   `json:"source"`
+	Provider     string   `json:"provider"`
+	Notes        []string `json:"notes"`
+	Title        string   `json:"title,omitempty"`
+	Instructions string   `json:"instructions,omitempty"`
+	Labels       []string `json:"labels,omitempty"`
+	QueueID      string   `json:"queue_id,omitempty"`
+	Optimize     bool     `json:"optimize"`
+	DryRun       bool     `json:"dry_run"`
+}
+
 // handleQuickTaskGet returns a single quick task with its notes.
 // GET /api/v1/quick/{taskId}.
 func (s *Server) handleQuickTaskGet(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +107,82 @@ func (s *Server) handleQuickTaskSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.handleQuickTaskSubmitWithID(w, r, taskID)
+}
+
+// handleQuickTaskSubmitSource creates a quick task from source and submits it.
+// POST /api/v1/quick/submit-source.
+func (s *Server) handleQuickTaskSubmitSource(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	var req submitSourceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+		return
+	}
+
+	if strings.TrimSpace(req.Source) == "" {
+		s.writeError(w, http.StatusBadRequest, "source is required")
+
+		return
+	}
+	if strings.TrimSpace(req.Provider) == "" {
+		s.writeError(w, http.StatusBadRequest, "provider is required")
+
+		return
+	}
+
+	result, err := s.config.Conductor.CreateQueueTaskFromSource(r.Context(), req.Source, conductor.SourceTaskOptions{
+		QueueID:      req.QueueID,
+		Title:        req.Title,
+		Instructions: req.Instructions,
+		Notes:        req.Notes,
+		Provider:     req.Provider,
+		Labels:       req.Labels,
+	})
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "create task from source failed: "+err.Error())
+
+		return
+	}
+
+	if req.Optimize {
+		if _, err := s.config.Conductor.OptimizeQueueTask(r.Context(), result.QueueID, result.TaskID); err != nil {
+			s.writeError(w, http.StatusInternalServerError, "optimize task failed: "+err.Error())
+
+			return
+		}
+	}
+
+	submitResult, err := s.config.Conductor.SubmitQueueTask(r.Context(), result.QueueID, result.TaskID, conductor.SubmitOptions{
+		Provider: req.Provider,
+		Labels:   req.Labels,
+		TaskIDs:  []string{result.TaskID},
+		DryRun:   req.DryRun,
+	})
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "submission failed: "+err.Error())
+
+		return
+	}
+
+	response := map[string]any{
+		"success":  true,
+		"queue_id": result.QueueID,
+		"task_id":  result.TaskID,
+		"provider": req.Provider,
+		"dry_run":  submitResult.DryRun,
+	}
+	if len(submitResult.Tasks) > 0 {
+		response["external_id"] = submitResult.Tasks[0].ExternalID
+		response["external_url"] = submitResult.Tasks[0].ExternalURL
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
 }
 
 // handleQuickTaskStart starts working on a task.
@@ -607,6 +695,7 @@ func (s *Server) handleQuickTasksUI(w http.ResponseWriter, r *http.Request) {
 		s.config.Mode == ModeGlobal,
 		s.config.AuthStore != nil,
 		s.canSwitchProject(),
+		s.isViewer(r),
 		s.getCurrentUser(r),
 	)
 

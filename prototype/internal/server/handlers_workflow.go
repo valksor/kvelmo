@@ -11,10 +11,17 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // handleWorkflowContinue resumes work on the active task with optional auto-execution.
 func (s *Server) handleWorkflowContinue(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -210,6 +217,12 @@ func getNextActionsForState(state workflow.State, specifications int) []string {
 
 // handleWorkflowAuto runs a complete automation cycle.
 func (s *Server) handleWorkflowAuto(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -318,6 +331,12 @@ func (s *Server) handleWorkflowDiagram(w http.ResponseWriter, r *http.Request) {
 // handleWorkflowQuestion asks the agent a question during planning/implementing/reviewing.
 // Streams the agent's response via SSE.
 func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -352,8 +371,8 @@ func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Set up event subscription for this request
-	eventCh := make(chan events.Event, 100)
-	unsubscribeID := eventBus.SubscribeAll(func(e events.Event) {
+	eventCh := make(chan eventbus.Event, 100)
+	unsubscribeID := eventBus.SubscribeAll(func(e eventbus.Event) {
 		if e.Type == events.TypeAgentMessage {
 			select {
 			case eventCh <- e:

@@ -3,6 +3,19 @@
     <!-- SSE connection for real-time updates -->
 </div>
 
+{{if .IsViewer}}
+<!-- Read-Only Mode Notice -->
+<div class="mb-6 p-4 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-xl flex items-center gap-3">
+    <svg class="w-5 h-5 text-warning-600 dark:text-warning-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+    </svg>
+    <div>
+        <span class="font-semibold text-warning-800 dark:text-warning-200">Read-Only Mode</span>
+        <p class="text-sm text-warning-700 dark:text-warning-300 mt-0.5">You can view all content but cannot make changes. Contact an administrator for full access.</p>
+    </div>
+</div>
+{{end}}
+
 {{if .ActiveWork}}
 <!-- Task Card with State Banner -->
 <div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:{{eventWorkflowStateChanged}}, every 30s" hx-swap="outerHTML">
@@ -41,6 +54,7 @@
 </div>
 {{end}}
 
+{{if not .IsViewer}}
 <!-- Quick Question Input -->
 {{if .State}}
 <div id="quick-question" class="card">
@@ -146,6 +160,7 @@
         <p id="agent-logs-content" class="text-success-500 whitespace-pre-wrap">// Agent output will appear here...</p>
     </div>
 </div>
+{{end}}
 
 {{else}}
 {{if .IsGlobalMode}}
@@ -616,6 +631,7 @@ function clearSavedProject() {
     document.getElementById('saved-project-link').classList.add('hidden');
 }
 </script>
+{{end}}
 
 <!-- Workspace Stats (when no active task) -->
 {{if .Stats}}
@@ -632,7 +648,6 @@ function clearSavedProject() {
     </div>
     <div class="text-surface-500 dark:text-surface-400 text-center py-8">Loading...</div>
 </div>
-{{end}}
 {{end}}
 {{end}}
 
@@ -729,6 +744,7 @@ function clearSavedProject() {
     <div class="p-6">
         <p class="text-surface-800 dark:text-surface-200 mb-6 text-lg">{{.Question}}</p>
 
+        {{if not $.IsViewer}}
         {{if .Options}}
         <div class="flex flex-wrap gap-2 mb-6">
             {{range .Options}}
@@ -753,6 +769,9 @@ function clearSavedProject() {
                 Submit
             </button>
         </form>
+        {{else}}
+        <p class="text-warning-600 dark:text-warning-400 italic">You are in read-only mode and cannot answer questions. Contact an administrator to respond.</p>
+        {{end}}
     </div>
 </div>
 {{end}}

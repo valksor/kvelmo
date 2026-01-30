@@ -230,10 +230,12 @@
                 <div id="plan-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
                 <div id="plan-success" class="hidden p-4 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-xl text-success-700 dark:text-success-300 text-sm"></div>
 
+                {{if not .IsViewer}}
                 <button type="submit" id="plan-submit" class="btn btn-primary w-full">
                     <span id="plan-spinner" class="htmx-indicator hidden animate-spin mr-2">&#9696;</span>
                     Create Plan
                 </button>
+                {{end}}
             </form>
         </div>
     </div>
@@ -287,6 +289,7 @@
 
             <!-- Actions -->
             <div id="submit-actions" class="hidden mt-6 pt-6 border-t border-surface-200 dark:border-surface-700">
+                {{if not .IsViewer}}
                 <div class="flex flex-wrap gap-4 mb-4">
                     <button type="button" data-action="auto-reorder" id="reorder-btn" class="btn btn-secondary">
                         <span id="reorder-spinner" class="htmx-indicator hidden animate-spin mr-2">&#9696;</span>
@@ -309,6 +312,9 @@
                     <button type="button" data-action="submit-tasks" data-dry-run="false" class="btn btn-primary">Submit to Provider</button>
                     <button type="button" data-action="start-implementation" class="btn btn-success">Start Implementation</button>
                 </div>
+                {{else}}
+                <p class="text-surface-500 dark:text-surface-400 italic">Task submission is not available in read-only mode</p>
+                {{end}}
             </div>
         </div>
     </div>
@@ -370,7 +376,9 @@
             <div id="edit-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" data-action="close-modal" class="btn btn-secondary">Cancel</button>
+                {{if not .IsViewer}}
                 <button type="submit" class="btn btn-primary">Save Changes</button>
+                {{end}}
             </div>
         </form>
     </div>

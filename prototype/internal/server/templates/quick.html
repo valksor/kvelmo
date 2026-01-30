@@ -67,6 +67,85 @@
         </div>
     </div>
 
+    <!-- Submit From Source -->
+    <div class="card mb-8">
+        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+            <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Submit From Source</h2>
+        </div>
+        <div class="p-6">
+            <form id="submit-source-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="source-path" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Source Path or Ref <span class="text-error-500">*</span>
+                        </label>
+                        <input type="text" id="source-path" name="source" required
+                               placeholder="e.g., ./docs or file:requirements.md"
+                               class="input input-enhanced w-full">
+                    </div>
+                    <div>
+                        <label for="source-provider" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Provider <span class="text-error-500">*</span>
+                        </label>
+                        <input type="text" id="source-provider" name="provider" required
+                               placeholder="github, jira, wrike"
+                               class="input input-enhanced w-full">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="source-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Title (optional)
+                        </label>
+                        <input type="text" id="source-title" name="title"
+                               placeholder="Override generated title"
+                               class="input input-enhanced w-full">
+                    </div>
+                    <div>
+                        <label for="source-labels" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Labels
+                        </label>
+                        <input type="text" id="source-labels" name="labels"
+                               placeholder="bug, urgent"
+                               class="input input-enhanced w-full">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="source-notes" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Notes (one per line)
+                        </label>
+                        <textarea id="source-notes" name="notes" rows="4"
+                                  placeholder="Add constraints or guidance"
+                                  class="input input-enhanced w-full"></textarea>
+                    </div>
+                    <div>
+                        <label for="source-instructions" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Instructions
+                        </label>
+                        <textarea id="source-instructions" name="instructions" rows="4"
+                                  placeholder="Custom instructions for drafting the task"
+                                  class="input input-enhanced w-full"></textarea>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <label class="flex items-center gap-2 text-sm text-surface-700 dark:text-surface-300">
+                        <input type="checkbox" id="source-optimize" name="optimize">
+                        Optimize before submitting
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-surface-700 dark:text-surface-300">
+                        <input type="checkbox" id="source-dry-run" name="dry_run">
+                        Dry run
+                    </label>
+                    <button type="submit" class="btn btn-primary ml-auto">
+                        <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
+                        Submit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Tasks List -->
     <div class="card">
         <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
@@ -94,5 +173,48 @@ document.addEventListener('DOMContentLoaded', function() {
         swap: 'innerHTML'
     });
 });
+
+const submitSourceForm = document.getElementById('submit-source-form');
+if (submitSourceForm) {
+    submitSourceForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const notesRaw = document.getElementById('source-notes').value || '';
+        const notes = notesRaw.split('\n').map((note) => note.trim()).filter((note) => note !== '');
+        const labelsRaw = document.getElementById('source-labels').value || '';
+        const labels = labelsRaw.split(',').map((label) => label.trim()).filter((label) => label !== '');
+
+        const payload = {
+            source: document.getElementById('source-path').value.trim(),
+            provider: document.getElementById('source-provider').value.trim(),
+            title: document.getElementById('source-title').value.trim(),
+            instructions: document.getElementById('source-instructions').value.trim(),
+            notes: notes,
+            labels: labels,
+            optimize: document.getElementById('source-optimize').checked,
+            dry_run: document.getElementById('source-dry-run').checked
+        };
+
+        try {
+            const resp = await fetch('/api/v1/quick/submit-source', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) {
+                throw new Error('Request failed');
+            }
+
+            submitSourceForm.reset();
+            htmx.ajax('GET', '/api/v1/quick', {
+                target: '#task-list',
+                swap: 'innerHTML'
+            });
+        } catch (err) {
+            // Error toast handled by global response handler
+        }
+    });
+}
 </script>
 {{end}}
