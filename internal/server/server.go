@@ -15,6 +15,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/taskrunner"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -66,6 +67,9 @@ type Server struct {
 	running             bool
 	actualPort          int
 	startedInGlobalMode bool // Tracks if server originally started in global mode
+
+	// Task registry for parallel task tracking
+	taskRegistry *taskrunner.Registry
 
 	// Operation tracking for interactive mode cancellation
 	opMu      sync.RWMutex

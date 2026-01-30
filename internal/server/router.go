@@ -217,6 +217,12 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleQuickTaskStart)
 		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleQuickTaskDelete)
 		mux.HandleFunc("GET /api/v1/quick/{taskId}/card", s.handleQuickTaskCard)
+
+		// Running parallel tasks endpoints
+		mux.HandleFunc("GET /api/v1/running", s.handleRunningTasks)
+		mux.HandleFunc("POST /api/v1/running/", s.handleRunningTaskRoutes) // Handles cancel sub-routes
+		mux.HandleFunc("GET /api/v1/running/", s.handleRunningTaskRoutes)  // Handles stream sub-routes
+		mux.HandleFunc("POST /api/v1/parallel", s.handleParallelStart)
 	}
 
 	// Global mode routes
