@@ -104,6 +104,19 @@ This creates a self-correcting feedback loop where the AI can fix its own mistak
 
 **Default Max Retries:** 3 (configurable)
 
+**Quality Agent Configuration:**
+
+Configure the agent for quality checks in `.mehrhof/config.yaml`:
+
+```yaml
+agent:
+  steps:
+    quality:
+      name: claude-opus  # Use a specific agent for quality checks
+```
+
+For CLI usage with explicit agent override, see [CLI auto documentation](../cli/auto.md) (`--agent-quality` flag).
+
 ### Agent Question Handling
 
 In auto mode, if the AI asks a clarifying question during planning:

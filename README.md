@@ -287,6 +287,7 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr serve` | Start web UI server (includes auth, register subcommands) |
 | `mehr project plan` | Create task breakdown from source with dependencies |
 | `mehr project submit` | Submit tasks to provider with dependencies |
+| `mehr submit` | Submit a single task (queue or source) to a provider |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
@@ -351,6 +352,13 @@ mehr project submit --provider wrike
 
 # Auto-implement all tasks in order
 mehr project start --auto
+```
+
+### Submit a Single Task From Any Source
+
+```bash
+# Draft a single task from a file or directory and submit it
+mehr submit --provider github --source ./specs/overview.md --note "Scope to backend only"
 ```
 
 **Source Types:**
@@ -421,13 +429,23 @@ agent:
 providers:
   default: file
 
+# Save specifications/reviews in project (for version control)
+specification:
+  save_in_project: true           # Save to project directory
+  project_dir: "tickets"          # Directory name (e.g., tickets/<task-id>/)
+  filename_pattern: "SPEC-{n}.md" # Filename template
+
+review:
+  save_in_project: true
+  filename_pattern: "review-{n}.txt"
+
 # Auto-update checks
 update:
   enabled: true
   check_interval: 24  # hours
 ```
 
-**Note**: Task data (specifications, sessions, notes) is stored in `~/.valksor/mehrhof/workspaces/<project-id>/` to keep project directories clean.
+**Note**: Task data (specifications, sessions, notes) is stored in `~/.valksor/mehrhof/workspaces/<project-id>/` by default. Enable `save_in_project` to also save specs/reviews to your project directory for version control.
 
 **See [Configuration Guide](https://valksor.com/docs/mehrhof/nightly/#/configuration/index) for all options including agent aliases, per-step agents, and provider settings.**
 

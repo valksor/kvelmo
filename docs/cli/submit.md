@@ -5,12 +5,12 @@ Submit a queue task to an external provider.
 ## Synopsis
 
 ```bash
-mehr submit --task <queue>/<task-id> --provider <name> [flags]
+mehr submit --provider <name> [--task <queue>/<task-id> | --source <path/ref>] [flags]
 ```
 
 ## Description
 
-The `submit` command creates a task in an external provider (GitHub, Jira, Wrike, etc.) from a queue task. The task is created in the external system with:
+The `submit` command creates a task in an external provider (GitHub, Jira, Wrike, etc.) from a queue task, or creates a queue task from a source and submits it in one step. The task is created in the external system with:
 
 - Title and description from the queue task
 - Labels applied
@@ -21,12 +21,18 @@ This enables quick capture in mehrhof and submission to your project management 
 
 ## Flags
 
-| Flag        | Short | Description                              |
-| ----------- | ----- | ---------------------------------------- |
-| `--task`    |       | Queue task ID (format: `<queue-id>/<task-id>`) (required) |
-| `--provider`|       | Provider name (github, jira, wrike, etc.) (required) |
-| `--labels`  |       | Additional labels to apply (can be specified multiple times) |
-| `--dry-run` |       | Preview without submitting                |
+| Flag              | Short | Description                              |
+| ----------------- | ----- | ---------------------------------------- |
+| `--task`          |       | Queue task ID (format: `<queue-id>/<task-id>`) |
+| `--source`        |       | Create a task from a file/dir/provider ref and submit |
+| `--provider`      |       | Provider name (github, jira, wrike, etc.) (required) |
+| `--labels`        |       | Additional labels to apply (can be specified multiple times) |
+| `--note`          |       | Notes to guide task creation (repeatable) |
+| `--title`         |       | Title override when creating from source |
+| `--instructions`  |       | Custom instructions for task creation |
+| `--queue`         |       | Queue ID to store the created task (default: quick-tasks) |
+| `--optimize`      |       | Optimize the generated task before submitting |
+| `--dry-run`       |       | Preview without submitting                |
 
 ## Examples
 
@@ -59,6 +65,22 @@ Shows what would be submitted without actually creating the issue.
 ```bash
 mehr submit --task=backlog/task-5 --provider jira
 ```
+
+### Submit From a Source File
+
+```bash
+mehr submit --provider github --source ./specs/overview.md --note "Scope to backend only"
+```
+
+Creates a quick task from the file and submits it in one step.
+
+### Submit From a Directory
+
+```bash
+mehr submit --provider jira --source ./docs --instructions "Prefer a single actionable task" --optimize
+```
+
+Scans the directory, drafts a single task, optimizes it, and submits.
 
 Submits a task from a custom queue.
 
@@ -142,6 +164,12 @@ mehr note --task=quick-tasks/task-1 "stack trace included"
 
 # Submit to GitHub
 mehr submit --task=quick-tasks/task-1 --provider github --labels bug,critical
+```
+
+### Source → Submit (Single Command)
+
+```bash
+mehr submit --provider github --source ./request.md --note "Include acceptance criteria"
 ```
 
 ### Batch Submission

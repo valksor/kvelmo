@@ -23,6 +23,20 @@ Navigate to `/commit` in the Web UI, or click "Commit" in the navigation menu.
 5. Optionally check "Push after creating"
 6. Click "Create Commits" to execute
 
+## Agent Configuration
+
+The commit grouping and message generation uses the agent configured for the `checkpointing` step. You can configure this in your workspace config:
+
+```yaml
+# .mehrhof/config.yaml
+agent:
+  steps:
+    checkpointing:
+      name: claude-opus  # Use a specific agent for commit operations
+```
+
+For CLI usage with explicit agent override, see [CLI commit documentation](../cli/commit.md).
+
 ## API Endpoints
 
 ### `GET /commit`

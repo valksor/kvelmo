@@ -2,107 +2,65 @@
   - [Home](README.md)
   - [Quickstart](quickstart.md)
 
-- **Guides**
-  - [Your First Task](guides/first-task.md)
-  - [Iterative Workflow](guides/iterative-workflow.md)
-  - [Recovery & Undo](guides/recovery.md)
-  - [PR Review State Management](guides/pr-review-state.md)
-  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
-
 - **Web UI**
   - [Overview](web-ui/index.md)
   - [Getting Started](web-ui/getting-started.md)
   - [Dashboard](web-ui/dashboard.md)
+  - [Your First Task](guides/first-task.md)
+  - **Workflow**
+    - [Creating Tasks](web-ui/creating-tasks.md)
+    - [Planning](web-ui/planning.md)
+    - [Implementing](web-ui/implementing.md)
+    - [Reviewing](web-ui/reviewing.md)
+    - [Finishing](web-ui/finishing.md)
+    - [Continuing](web-ui/continuing.md)
+    - [Auto Mode](web-ui/auto.md)
+    - [Undo & Redo](web-ui/undo-redo.md)
+  - **Quick Tasks**
+    - [Quick Tasks](web-ui/quick-tasks.md)
+  - **Project Planning**
+    - [Project Planning](web-ui/project-planning.md)
+  - **Management**
+    - [Task History](web-ui/task-history.md)
+    - [Notes](web-ui/notes.md)
+    - [Quick Question](web-ui/questions.md)
+    - [Security & Quality](web-ui/security-quality.md)
+    - [Memory](web-ui/memory.md)
+    - [Templates](web-ui/templates.md)
+  - **Settings**
+    - [Settings](web-ui/settings.md)
+    - [Authentication](web-ui/authentication.md)
+  - **Tools**
+    - [Browser Control](web-ui/browser.md)
+    - [Remote Access](web-ui/remote-access.md)
+  - **Guides**
+    - [Iterative Workflow](guides/iterative-workflow.md)
+    - [Recovery & Undo](guides/recovery.md)
+    - [PR Review State Management](guides/pr-review-state.md)
+  - **API Reference**
+    - [REST API](web-ui/api.md)
 
-  **Task Workflows**
-  - [Creating Tasks](web-ui/creating-tasks.md)
-  - [Planning](web-ui/planning.md)
-  - [Implementing](web-ui/implementing.md)
-  - [Reviewing](web-ui/reviewing.md)
-  - [Finishing](web-ui/finishing.md)
-  - [Continuing](web-ui/continuing.md)
-  - [Auto Mode](web-ui/auto.md)
-  - [Undo & Redo](web-ui/undo-redo.md)
-
-  **Quick Tasks**
-  - [Quick Tasks](web-ui/quick-tasks.md)
-
-  **Project Planning**
-  - [Project Planning](web-ui/project-planning.md)
-
-  **Management**
-  - [Task History](web-ui/task-history.md)
-  - [Notes](web-ui/notes.md)
-  - [Quick Question](web-ui/questions.md)
-  - [Security & Quality](web-ui/security-quality.md)
-  - [Memory](web-ui/memory.md)
-  - [Templates](web-ui/templates.md)
-
-  **Configuration**
-  - [Settings](web-ui/settings.md)
-  - [Authentication](web-ui/authentication.md)
-
-  **Tools**
-  - [Browser Control](web-ui/browser.md)
-  - [Remote Access](web-ui/remote-access.md)
-
-  **Reference**
-  - [REST API](web-ui/api.md)
-
-- **Core Concepts**
-  - [Workflow](concepts/workflow.md)
-  - [Tasks](concepts/tasks.md)
-  - [Checkpoints](concepts/checkpoints.md)
-  - [Plugins](concepts/plugins.md)
-
-- **AI Agents**
-  - [Overview & Config](agents/index.md)
-  - [Claude](agents/claude.md)
-  - [Codex](agents/codex.md)
-
-- **Task Providers**
-  - [Overview](providers/index.md)
-  - [Empty](providers/empty.md)
-  - [File](providers/file.md)
-  - [Directory](providers/directory.md)
-  - [GitHub](providers/github.md)
-  - [GitLab](providers/gitlab.md)
-  - [Bitbucket](providers/bitbucket.md)
-  - [Jira](providers/jira.md)
-  - [Linear](providers/linear.md)
-  - [Asana](providers/asana.md)
-  - [ClickUp](providers/clickup.md)
-  - [Azure DevOps](providers/azure-devops.md)
-  - [Notion](providers/notion.md)
-  - [Queue](providers/queue.md)
-  - [Trello](providers/trello.md)
-  - [Wrike](providers/wrike.md)
-  - [YouTrack](providers/youtrack.md)
-
-- **Configuration**
-  - [Overview](configuration/index.md)
-  - [Git](configuration/git.md)
-  - [Browser](configuration/browser.md)
-  - [Storage](configuration/storage.md)
-
-- **CLI Reference**
+- **CLI**
   - [Overview](cli/index.md)
+  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
   - **Workflow**
     - [workflow](cli/workflow.md)
     - [start](cli/start.md)
     - [plan](cli/plan.md)
     - [implement](cli/implement.md)
     - [review](cli/review.md)
-    - [review pr](cli/review.md) - PR/MR review without active task
     - [simplify](cli/simplify.md)
     - [finish](cli/finish.md)
     - [auto](cli/auto.md)
+    - [undo](cli/undo.md)
+    - [redo](cli/redo.md)
   - **Task Management**
     - [status](cli/status.md)
     - [continue](cli/continue.md)
     - [note](cli/note.md)
     - [question](cli/question.md)
     - [list](cli/list.md)
+    - [delete](cli/delete.md)
     - [sync](cli/sync.md)
     - [abandon](cli/abandon.md)
   - **Quick Tasks**
@@ -110,9 +68,8 @@
     - [optimize](cli/optimize.md)
     - [export](cli/export.md)
     - [submit](cli/submit.md)
-  - **History**
-    - [undo](cli/undo.md)
-    - [redo](cli/redo.md)
+  - **Project Planning**
+    - [project](cli/project.md)
   - **Utility**
     - [init](cli/init.md)
     - [guide](cli/guide.md)
@@ -131,17 +88,46 @@
     - [mcp](cli/mcp.md)
     - [update](cli/update.md)
     - [version](cli/version.md)
-  - **Project Planning**
-    - [project](cli/project.md)
   - **Server**
     - [serve](cli/serve.md)
     - [register](cli/register.md)
 
-- **Reference**
-  - [Feature Parity](reference/feature-parity.md)
-  - [Storage Structure](reference/storage.md)
-  - [Task File Format](reference/task-format.md)
-  - [Specification File Format](reference/specification-format.md)
+- **Concepts**
+  - [Workflow](concepts/workflow.md)
+  - [Tasks](concepts/tasks.md)
+  - [Checkpoints](concepts/checkpoints.md)
+  - [Plugins](concepts/plugins.md)
+  - [Linking](concepts/linking.md)
+
+- **AI Agents**
+  - [Overview & Config](agents/index.md)
+  - [Claude](agents/claude.md)
+  - [Codex](agents/codex.md)
+
+- **Task Providers**
+  - [Overview](providers/index.md)
+  - [Empty](providers/empty.md)
+  - [File](providers/file.md)
+  - [Directory](providers/directory.md)
+  - [Queue](providers/queue.md)
+  - [GitHub](providers/github.md)
+  - [GitLab](providers/gitlab.md)
+  - [Bitbucket](providers/bitbucket.md)
+  - [Jira](providers/jira.md)
+  - [Linear](providers/linear.md)
+  - [Asana](providers/asana.md)
+  - [ClickUp](providers/clickup.md)
+  - [Azure DevOps](providers/azure-devops.md)
+  - [Notion](providers/notion.md)
+  - [Trello](providers/trello.md)
+  - [Wrike](providers/wrike.md)
+  - [YouTrack](providers/youtrack.md)
+
+- **Configuration**
+  - [Overview](configuration/index.md)
+  - [Git](configuration/git.md)
+  - [Browser](configuration/browser.md)
+  - [Storage](configuration/storage.md)
 
 - **Advanced**
   - [Performance & Cost](advanced/optimization.md)
@@ -151,6 +137,12 @@
   - [Security Scanning](advanced/security.md)
   - [ML Predictions](advanced/predictions.md)
   - [E2E Testing](advanced/e2e.md)
+
+- **Reference**
+  - [Feature Parity](reference/feature-parity.md)
+  - [Storage Structure](reference/storage.md)
+  - [Task File Format](reference/task-format.md)
+  - [Specification File Format](reference/specification-format.md)
 
 - **Troubleshooting**
   - [Common Issues](troubleshooting/index.md)

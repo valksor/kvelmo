@@ -216,6 +216,61 @@ Click any provider to expand its configuration:
 | Trello | API Key + Token | (both required) |
 | Azure DevOps | Personal Access Token | Organization, Project |
 
+### Specification Settings
+
+Configure where specifications are saved:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Specification Settings                                      │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Save in project         [✗ Disabled]                       │
+│  Project directory       [tickets          ]                │
+│  Filename pattern        [specification-{n}.md]             │
+│                                                              │
+│  Pattern Variables:                                          │
+│    {n}    - Specification number (1, 2, 3, ...)             │
+│                                                              │
+│  Example: "SPEC-{n}.md" → SPEC-1.md, SPEC-2.md, ...         │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Save in project** | Save specifications to project directory for version control | `false` |
+| **Project directory** | Directory name (e.g., "tickets") | `""` (home dir only) |
+| **Filename pattern** | Template with `{n}` placeholder | `specification-{n}.md` |
+
+When enabled, specifications are saved to both:
+- Home directory (authoritative): `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/specifications/`
+- Project directory (committable): `<project-dir>/<task-id>/`
+
+### Review Settings
+
+Configure where code reviews are saved:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Review Settings                                             │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Save in project         [✗ Disabled]                       │
+│  Filename pattern        [review-{n}.txt   ]                │
+│                                                              │
+│  Example: "CODERABBIT-{n}.txt" → CODERABBIT-1.txt, ...      │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Save in project** | Save reviews alongside specifications in project | `false` |
+| **Filename pattern** | Template with `{n}` placeholder | `review-{n}.txt` |
+
+Reviews use the same project directory as specifications.
+
 ### Provider Settings
 
 Configure default provider behavior:
@@ -378,6 +433,15 @@ workflow:
   session_retention_days: 7
   delete_work_on_finish: false
   delete_work_on_abandon: false
+
+specification:
+  save_in_project: false
+  project_dir: ""
+  filename_pattern: "specification-{n}.md"
+
+review:
+  save_in_project: false
+  filename_pattern: "review-{n}.txt"
 
 browser:
   enabled: true

@@ -37,7 +37,8 @@ These flags work with any command:
 | [quick](cli/quick.md)         | Create a task quickly in a queue        |
 | [optimize](cli/optimize.md)   | AI optimize a task based on notes        |
 | [export](cli/export.md)       | Export queue task to markdown file       |
-| [submit](cli/submit.md)       | Submit queue task to external provider   |
+| [submit](cli/submit.md)       | Submit a task to external provider (queue or source) |
+| [delete](cli/delete.md)       | Delete a queue task                      |
 
 ### Workflow
 

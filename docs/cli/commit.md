@@ -16,6 +16,7 @@ mehr commit [flags]
 
 | Flag | Short | Description |
 |------|-------|-------------|
+| `--agent-commit` | | Agent to use for commit message generation |
 | `--all` | `-a` | Include unstaged changes in addition to staged changes |
 | `--dry-run` | `-n` | Show what would be committed without creating commits |
 | `--note` | `-m` | Hint to guide AI grouping when re-running |

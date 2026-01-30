@@ -1,5 +1,4 @@
 // Package wrike provides Wrike-specific utilities for handling files and attachments.
-// Ported from Python: .backup/aerones-super-code/aerones_super_code/wrike/files.py
 package wrike
 
 import (

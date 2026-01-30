@@ -391,16 +391,16 @@ Use `--provider` to override auto-detection.
 
 #### Flags
 
-| Flag                | Description                                                            |
-| ------------------- | ---------------------------------------------------------------------- |
-| `--provider`        | Provider: `github`, `gitlab`, `bitbucket`, `azuredevops` (auto-detected) |
-| `--pr-number`       | PR/MR number (required)                                                |
-| `--format`          | Comment format: `summary` (default), `line-comments`                   |
-| `--scope`           | Review scope: `full` (default), `compact`, `files-changed`             |
-| `--agent`           | Agent to use (default: `claude`)                                       |
-| `--token`           | Auth token (overrides config/env vars; use for CI)                     |
+| Flag                  | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| `--provider`          | Provider: `github`, `gitlab`, `bitbucket`, `azuredevops` (auto-detected) |
+| `--pr-number`         | PR/MR number (required)                                                |
+| `--format`            | Comment format: `summary` (default), `line-comments`                   |
+| `--scope`             | Review scope: `full` (default), `compact`, `files-changed`             |
+| `--agent-pr-review`   | Agent to use for PR review (default: `claude`)                         |
+| `--token`             | Auth token (overrides config/env vars; use for CI)                     |
 | `--acknowledge-fixes` | Acknowledge when previously reported issues are fixed (default: true)  |
-| `--update-existing` | Edit existing comment vs post new comment (default: true)               |
+| `--update-existing`   | Edit existing comment vs post new comment (default: true)              |
 
 #### Examples
 
@@ -426,7 +426,7 @@ mehr review pr --pr-number 100 --scope compact
 
 **Use specific agent:**
 ```bash
-mehr review pr --pr-number 200 --agent claude-opus
+mehr review pr --pr-number 200 --agent-pr-review claude-opus
 ```
 
 #### Output

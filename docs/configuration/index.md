@@ -67,6 +67,8 @@ env:
 | `sandbox` | Agent execution sandboxing | [Sandbox Guide](../advanced/sandbox.md) |
 | `browser` | Browser automation | [Browser Configuration](browser.md) |
 | `storage` | Task data and caches | [Storage Configuration](storage.md) |
+| `specification` | Spec storage location and naming | [Storage Configuration](storage.md) |
+| `review` | Review storage location and naming | [Storage Configuration](storage.md) |
 | `context` | Hierarchical task context | [Context Configuration](context.md) |
 | `budget` | Cost and token budgets | (see below) |
 | `quality` | Code quality and linters | (see below) |

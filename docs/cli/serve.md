@@ -42,6 +42,30 @@ Add a new user for authentication.
 mehr serve auth add <username> <password>
 ```
 
+##### --role flag
+
+Specify the user role:
+
+```bash
+# Add full-access user (default)
+mehr serve auth add admin mypassword
+
+# Add read-only viewer
+mehr serve auth add stakeholder viewpass123 --role viewer
+```
+
+**Available roles:**
+- `user` - Full access (default)
+- `viewer` - Read-only access (can view but not modify)
+
+**Viewer permissions:**
+- ✅ View dashboard, tasks, specifications, history, logs
+- ✅ View settings and configuration values
+- ❌ Cannot start, modify, or interact with workflows
+- ❌ Cannot submit projects or quick tasks
+- ❌ Cannot change settings
+- ❌ Cannot run security/quality scans
+
 #### mehr serve auth list
 
 List all configured users.
@@ -65,6 +89,20 @@ Change a user's password.
 ```bash
 mehr serve auth passwd <username> <new-password>
 ```
+
+#### mehr serve auth role
+
+Change a user's role.
+
+```bash
+# Promote viewer to full user
+mehr serve auth role stakeholder user
+
+# Demote user to viewer
+mehr serve auth role contractor viewer
+```
+
+**Valid roles:** `user`, `viewer`
 
 ### mehr serve register
 
@@ -172,12 +210,16 @@ ngrok http 3000
 # Add users before starting network-accessible server
 mehr serve auth add admin secretpassword
 mehr serve auth add developer devpass123
+mehr serve auth add stakeholder viewpass123 --role viewer
 
-# List configured users
+# List configured users (shows roles)
 mehr serve auth list
 
 # Change password
 mehr serve auth passwd admin newpassword
+
+# Change user role
+mehr serve auth role stakeholder user
 
 # Remove user
 mehr serve auth remove developer

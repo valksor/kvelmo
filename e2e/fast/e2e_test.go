@@ -5,6 +5,7 @@ package e2e_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -312,7 +313,7 @@ func TestFindNoQuery(t *testing.T) {
 // WriteFile creates a file with the given content.
 func (h *Helper) WriteFile(name, content string) {
 	path := h.JoinDir(name)
-	if err := os.MkdirAll(h.Dir(), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		h.t.Fatalf("MkdirAll: %v", err)
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {

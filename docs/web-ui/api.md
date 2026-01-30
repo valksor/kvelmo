@@ -32,7 +32,7 @@ curl -b cookies.txt http://localhost:PORT/api/v1/status
 | **Read** | Status, context, tasks, specs, sessions, notes, costs |
 | **Workflow** | start, plan, implement, review, finish, undo, redo, continue, auto |
 | **Project** | plan, tasks, submit, reorder, start |
-| **Quick Tasks** | list, get, create, note, optimize, export, submit, start, delete, card |
+| **Quick Tasks** | list, get, create, note, optimize, export, submit, submit-source, start, delete, card |
 | **Browser** | Status, tabs, goto, navigate, screenshot, click, type, eval, dom, close |
 | **Settings** | Get, update settings |
 | **Templates** | List, get, apply |
@@ -1158,6 +1158,48 @@ curl -X POST http://localhost:PORT/api/v1/quick/task-1/submit \
     "title": "Fix typo in README"
   }],
   "message": "Task submitted successfully"
+}
+```
+
+### POST /api/v1/quick/submit-source
+
+Create a quick task from a source and submit it in one request.
+
+```bash
+curl -X POST http://localhost:PORT/api/v1/quick/submit-source \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "./docs",
+    "provider": "jira",
+    "notes": ["Keep scope small", "Focus on backend"],
+    "instructions": "Draft a single actionable task",
+    "labels": ["triage"],
+    "optimize": true,
+    "dry_run": true
+  }'
+```
+
+**Request Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | File/dir/provider ref to create the task from (required) |
+| `provider` | string | Provider name (required) |
+| `notes` | array | Notes to guide task creation |
+| `title` | string | Optional title override |
+| `instructions` | string | Custom instructions for task creation |
+| `labels` | array | Labels to apply |
+| `queue_id` | string | Queue ID to store the created task (default: quick-tasks) |
+| `optimize` | boolean | Optimize the generated task before submitting |
+| `dry_run` | boolean | Preview without submitting (default: false) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "queue_id": "quick-tasks",
+  "task_id": "task-7",
+  "provider": "jira",
+  "dry_run": true
 }
 ```
 
