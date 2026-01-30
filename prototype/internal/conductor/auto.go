@@ -17,6 +17,9 @@ type AutoOptions struct {
 	DeleteBranch bool   // Delete branch after merge (default: true)
 	TargetBranch string // Branch to merge into (default: auto-detect)
 	Push         bool   // Push after merge
+
+	// Parallel execution
+	Parallel int // Max parallel tasks (0 = sequential, requires worktrees)
 }
 
 // DefaultAutoOptions returns sensible defaults for auto mode.
