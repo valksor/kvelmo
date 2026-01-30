@@ -59,6 +59,7 @@ providers:
 | `--agent-review`       |       | string |                        | Agent for review step                                 |
 | `--no-branch`          |       | bool   | false                  | Skip creating a git branch                            |
 | `--worktree`           | `-w`  | bool   | false                  | Create a separate git worktree                        |
+| `--parallel`           | `-p`  | int    | 1                      | Max parallel tasks (requires `--worktree` if > 1)     |
 | `--stash`              |       | bool   | false                  | Stash uncommitted changes before creating branch      |
 | `--key`                | `-k`  | string | auto                   | External key for branch/commit naming                 |
 | `--title`              |       | string | auto                   | Task title override                                   |
@@ -241,6 +242,49 @@ mehr list
 ```
 
 **Note:** New tasks must be started from the main repository, not from within a worktree.
+
+### Start Multiple Tasks in Parallel
+
+```bash
+mehr start file:a.md file:b.md file:c.md --parallel=3 --worktree
+```
+
+Starts multiple tasks simultaneously in parallel goroutines:
+
+```
+Starting 3 tasks in parallel (max workers: 3)
+Registered: abc123 (file:a.md)
+Registered: def456 (file:b.md)
+Registered: ghi789 (file:c.md)
+Running tasks in background...
+```
+
+**Requirements:**
+
+- `--worktree` is required when `--parallel > 1` to avoid file conflicts
+- Each task gets its own conductor instance and worktree
+- Tasks run the full workflow: start → plan → implement
+
+**Monitoring parallel tasks:**
+
+```bash
+# List running parallel tasks (in-memory goroutines)
+mehr list --running
+
+# Send a note to a specific running task
+mehr note --running=abc123 "Consider edge case X"
+```
+
+**Output from `mehr list --running`:**
+
+```
+ID       REFERENCE       STATUS     TASK ID     DURATION   WORKTREE
+abc123   file:a.md       running    task-001    5m30s      ../worktrees/abc123
+def456   file:b.md       running    task-002    5m28s      ../worktrees/def456
+ghi789   file:c.md       completed  task-003    4m15s      ../worktrees/ghi789
+
+2 running, 3 total
+```
 
 ### Start with Stash (Uncommitted Changes)
 

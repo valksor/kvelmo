@@ -68,6 +68,7 @@ See individual workflow pages for details:
 - **Browser Control** - Automate Chrome for testing and authentication
 - **Task History** - Search, filter, and resume past tasks
 - **Notes** - Add context and answer agent questions
+- **[Parallel Tasks](parallel-tasks.md)** - Run and monitor multiple tasks simultaneously
 - [REST API](api.md) - Programmatic access to all features
 
 ## Remote Access

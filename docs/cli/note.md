@@ -21,6 +21,12 @@ Unlike `plan` or `implement`, the `note` command does **not** run the AI agent. 
 | --------- | ------------------------ |
 | `message` | Optional note to add     |
 
+## Flags
+
+| Flag       | Short | Type   | Default | Description                              |
+| ---------- | ----- | ------ | ------- | ---------------------------------------- |
+| `--running`|       | string | ""      | Send note to a running parallel task ID  |
+
 ## Examples
 
 ### Interactive Mode
@@ -74,6 +80,24 @@ mehr plan
 ```
 
 All notes are included when the agent runs during planning.
+
+### Send Note to Running Parallel Task
+
+When tasks are running in parallel (via `mehr start --parallel`), send notes to a specific running task:
+
+```bash
+# List running tasks to get IDs
+mehr list --running
+
+# Send note to a specific running task
+mehr note --running=abc123 "Consider edge case X"
+mehr note --running=def456 "Use the existing UserService"
+```
+
+This is useful for:
+- Providing real-time guidance to parallel tasks
+- Answering questions from a specific task
+- Steering implementation direction mid-execution
 
 ## What Happens
 
