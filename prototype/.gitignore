@@ -17,3 +17,8 @@ internal/memory/.mehrhof
 node_modules/
 /mehr
 .mehrhof/browser.json
+
+# Playwright test artifacts
+web-ui-tests/test-results/
+web-ui-tests/playwright-report/
+web-ui-tests/node_modules/
