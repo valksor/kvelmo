@@ -59,9 +59,7 @@ function reinitAfterSwap() {
     initTheme();
     updateThemeIcons();
 
-    // Reinitialize dropdown menus with fresh DOM references
-    initDropdowns();
-    initMoreMenu();
+    // Note: Dropdowns use event delegation, so no reinitialization needed
 }
 
 // Initialize on DOM ready

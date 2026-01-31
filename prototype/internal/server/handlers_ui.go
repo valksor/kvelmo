@@ -124,6 +124,9 @@ func (s *Server) handleQuestionPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set viewer status for template
+	data.IsViewer = s.isViewer(r)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderer.RenderPartial(w, "question", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
