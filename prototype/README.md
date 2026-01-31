@@ -221,7 +221,7 @@ Use Mehrhof directly in your IDE without switching to browser or terminal.
 | IDE | Status | Features |
 |-----|--------|----------|
 | **JetBrains** (IntelliJ, GoLand, etc.) | ✅ Available | Tool window, status bar, menu actions |
-| **VS Code** | 🚧 Planned | Coming soon |
+| **VS Code** | ✅ Available | Sidebar panel, status bar, command palette |
 
 **JetBrains Plugin:**
 ```bash
@@ -230,7 +230,14 @@ cd ide/jetbrains && make build
 # Install: Settings → Plugins → Install from Disk → build/distributions/*.zip
 ```
 
-Requires JetBrains IDE 2025.1+ and `mehr` CLI installed. The plugin can start `mehr serve` automatically. **[Full IDE Documentation](https://valksor.com/docs/mehrhof/nightly/#/ide/index)**
+**VS Code Extension:**
+```bash
+# Build from source
+cd ide/vscode && bun install && bun run package
+# Install: code --install-extension mehrhof-*.vsix
+```
+
+Both plugins can start `mehr serve` automatically. **[Full IDE Documentation](https://valksor.com/docs/mehrhof/nightly/#/ide/index)**
 
 ---
 
