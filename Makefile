@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check
+.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check web-ui-test web-ui-test-smoke web-ui-test-ui test-all vscode-quality jetbrains-quality webui-quality ide-quality quality-all
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -93,6 +93,28 @@ check-alias:
 	fi
 
 # ──────────────────────────────────────────────────────────────────────────────
+# IDE Plugin Quality
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Run VS Code extension quality checks
+vscode-quality:
+	cd ide/vscode && make quality
+
+## Run JetBrains plugin quality checks
+jetbrains-quality:
+	cd ide/jetbrains && make quality
+
+## Run Web UI tests quality checks
+webui-quality:
+	cd web-ui-tests && make quality
+
+## Run quality checks on all IDEs and web-ui-tests
+ide-quality: vscode-quality jetbrains-quality webui-quality
+
+## Run ALL quality checks (Go + IDEs + Web UI)
+quality-all: quality ide-quality
+
+# ──────────────────────────────────────────────────────────────────────────────
 # E2E Tests (Local Manual Only)
 # ──────────────────────────────────────────────────────────────────────────────
 #
@@ -117,3 +139,30 @@ e2e-fast: build e2e-check
 
 ## Run E2E tests (alias for e2e-fast)
 e2e: e2e-fast
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Web UI Tests (Playwright)
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Install Web UI test dependencies
+web-ui-test-install:
+	@echo "Installing Web UI test dependencies..."
+	cd web-ui-tests && make deps
+
+## Run all Web UI tests
+web-ui-test: build
+	@echo "Running Web UI tests..."
+	cd web-ui-tests && make test
+
+## Run Web UI smoke tests (faster, for CI)
+web-ui-test-smoke: build
+	@echo "Running Web UI smoke tests..."
+	cd web-ui-tests && make test-smoke
+
+## Run Web UI tests with UI mode (for debugging)
+web-ui-test-ui: build
+	@echo "Running Web UI tests with UI..."
+	cd web-ui-tests && make test-ui
+
+## Run all tests (Go + Web UI smoke)
+test-all: test web-ui-test-smoke
