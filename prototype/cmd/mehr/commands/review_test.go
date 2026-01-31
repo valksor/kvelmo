@@ -53,6 +53,12 @@ func TestReviewCommand_Flags(t *testing.T) {
 			shorthand:    "",
 			defaultValue: "",
 		},
+		{
+			name:         "force flag",
+			flagName:     "force",
+			shorthand:    "",
+			defaultValue: "false",
+		},
 	}
 
 	for _, tt := range tests {

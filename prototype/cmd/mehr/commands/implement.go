@@ -21,6 +21,7 @@ var (
 	implementOptimize          bool
 	implementOnly              string
 	implementParallel          string
+	implementForce             bool // Force reset state before implementing
 
 	// Hierarchical context flags (override workspace config).
 	implementWithParent      bool // Include parent task context
@@ -55,6 +56,7 @@ func init() {
 	implementCmd.Flags().BoolVar(&implementOptimize, "optimize", false, "Optimize prompt before sending to agent")
 	implementCmd.Flags().StringVar(&implementOnly, "only", "", "Only implement this component (e.g., backend, frontend, tests)")
 	implementCmd.Flags().StringVar(&implementParallel, "parallel", "", "Run N agents in parallel, or comma-separated agent list")
+	implementCmd.Flags().BoolVar(&implementForce, "force", false, "Reset workflow state and retry (use after hung agent)")
 
 	// Hierarchical context flags (override workspace config)
 	implementCmd.Flags().BoolVar(&implementWithParent, "with-parent", false, "Include parent task context (overrides config)")
@@ -109,6 +111,14 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		fmt.Print(display.NoActiveTaskError())
 
 		return errors.New("no active task")
+	}
+
+	// Handle --force flag to reset stuck state
+	if implementForce {
+		if err := cond.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		fmt.Println(tkdisplay.InfoMsg("State reset to idle"))
 	}
 
 	// Set up event handlers
