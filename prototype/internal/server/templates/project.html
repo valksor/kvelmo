@@ -3,26 +3,26 @@
 <!-- Global Mode: Project Picker -->
 <div class="card">
     <div class="text-center py-12">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-900/30 dark:to-brand-800/20 flex items-center justify-center">
-            <svg class="w-10 h-10 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
             </svg>
         </div>
-        <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-100 mb-3">Select a Project</h2>
-        <p class="text-surface-500 dark:text-surface-400 mb-8 max-w-md mx-auto">Choose a project to access project planning</p>
+        <h2 class="text-3xl font-bold text-base-content mb-3">Select a Project</h2>
+        <p class="text-base-content/60 mb-8 max-w-md mx-auto">Choose a project to access project planning</p>
 
         {{if .Projects}}
         <div class="max-w-lg mx-auto">
-            <div class="divide-y divide-surface-200 dark:divide-surface-700 border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden shadow-card">
+            <div class="divide-y divide-base-200 border border-base-300 rounded-2xl overflow-hidden shadow-card">
                 {{range .Projects}}
                 <form hx-post="/api/v1/projects/select" hx-target="body" hx-swap="innerHTML" class="block">
                     <input type="hidden" name="path" value="{{.Path}}">
-                    <button type="submit" class="w-full px-6 py-4 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 text-left transition-smooth group">
+                    <button type="submit" class="w-full px-6 py-4 flex items-center justify-between hover:bg-base-100 text-left transition-smooth group">
                         <div>
-                            <div class="font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth">{{.Name}}</div>
-                            <div class="text-sm text-surface-500 dark:text-surface-400 font-mono truncate mt-0.5">{{.Path}}</div>
+                            <div class="font-semibold text-base-content group-hover:text-primary transition-smooth">{{.Name}}</div>
+                            <div class="text-sm text-base-content/60 font-mono truncate mt-0.5">{{.Path}}</div>
                         </div>
-                        <svg class="w-5 h-5 text-surface-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-base-content/50 group-hover:text-primary transition-smooth" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </button>
@@ -31,14 +31,14 @@
             </div>
         </div>
         {{else}}
-        <div class="max-w-md mx-auto bg-surface-50 dark:bg-surface-800/50 rounded-2xl p-8 border border-surface-200 dark:border-surface-700">
-            <svg class="w-12 h-12 mx-auto text-surface-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="max-w-md mx-auto bg-base-200 rounded-2xl p-8 border border-base-300">
+            <svg class="w-12 h-12 mx-auto text-base-content/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <p class="text-surface-600 dark:text-surface-400 mb-4 font-medium">No projects registered yet.</p>
-            <p class="text-sm text-surface-500 dark:text-surface-500">
+            <p class="text-base-content/70 mb-4 font-medium">No projects registered yet.</p>
+            <p class="text-sm text-base-content/60">
                 Register a project by running:<br>
-                <code class="bg-surface-200 dark:bg-surface-700 px-3 py-1.5 rounded-lg mt-3 inline-block font-mono text-xs">mehr serve register</code>
+                <code class="bg-base-200 px-3 py-1.5 rounded-lg mt-3 inline-block font-mono text-xs">mehr serve register</code>
             </p>
         </div>
         {{end}}
@@ -53,8 +53,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Project Planning</h1>
-            <p class="mt-2 text-surface-500 dark:text-surface-400">Create and manage task queues with dependencies</p>
+            <h1 class="text-3xl font-bold text-base-content">Project Planning</h1>
+            <p class="mt-2 text-base-content/60">Create and manage task queues with dependencies</p>
         </div>
         <a href="/" class="btn btn-secondary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -63,17 +63,17 @@
     </div>
 
     <!-- Segmented Control for Tabs -->
-    <div class="inline-flex p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl">
+    <div class="inline-flex p-1 bg-base-200 rounded-2xl">
         <button data-action="show-project-tab" data-tab="create" id="project-tab-create"
-                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl bg-white dark:bg-surface-700 text-brand-600 dark:text-brand-400 shadow-sm transition-smooth">
+                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl bg-base-100 text-primary shadow-sm transition-smooth">
             Create Plan
         </button>
         <button data-action="show-project-tab" data-tab="queues" id="project-tab-queues"
-                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
+                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-base-content/60 hover:text-base-content/80 transition-smooth">
             Queues
         </button>
         <button data-action="show-project-tab" data-tab="tasks" id="project-tab-tasks"
-                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
+                class="project-tab px-6 py-2.5 text-sm font-semibold rounded-xl text-base-content/60 hover:text-base-content/80 transition-smooth">
             Tasks
         </button>
     </div>
@@ -81,46 +81,46 @@
     <!-- Create Plan Panel -->
     <div id="project-panel-create" class="project-panel">
         <div class="card">
-            <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Create Project Plan</h3>
-                <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">Import requirements from various sources to create a task plan</p>
+            <div class="px-6 py-4 border-b border-base-300">
+                <h3 class="text-lg font-bold text-base-content">Create Project Plan</h3>
+                <p class="text-sm text-base-content/60 mt-1">Import requirements from various sources to create a task plan</p>
             </div>
             <form id="plan-form" class="p-6 space-y-6">
                 <div>
-                    <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Project Title</label>
+                    <label class="block text-sm font-semibold text-base-content/80 mb-2">Project Title</label>
                     <input type="text" name="title" id="plan-title" placeholder="My Project" class="input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Source Type</label>
+                    <label class="block text-sm font-semibold text-base-content/80 mb-3">Source Type</label>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-surface-200 dark:border-surface-700 rounded-2xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-900/20 transition-smooth">
+                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-primary/10 transition-smooth">
                             <input type="radio" name="source_type" value="file" checked class="sr-only peer" onchange="updateSourceInput()">
-                            <div class="w-10 h-10 mb-2 rounded-xl bg-surface-100 dark:bg-surface-800 peer-checked:bg-brand-100 dark:peer-checked:bg-brand-900/30 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-surface-400 peer-checked:text-brand-600 dark:peer-checked:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <div class="w-10 h-10 mb-2 rounded-xl bg-base-200 peer-checked:bg-primary/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-base-content/50 peer-checked:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                             </div>
-                            <span class="text-xs font-medium text-surface-700 dark:text-surface-300">File Upload</span>
+                            <span class="text-xs font-medium text-base-content/80">File Upload</span>
                         </label>
-                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-surface-200 dark:border-surface-700 rounded-2xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-900/20 transition-smooth">
+                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-primary/10 transition-smooth">
                             <input type="radio" name="source_type" value="text" class="sr-only peer" onchange="updateSourceInput()">
-                            <div class="w-10 h-10 mb-2 rounded-xl bg-surface-100 dark:bg-surface-800 peer-checked:bg-brand-100 dark:peer-checked:bg-brand-900/30 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-surface-400 peer-checked:text-brand-600 dark:peer-checked:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            <div class="w-10 h-10 mb-2 rounded-xl bg-base-200 peer-checked:bg-primary/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-base-content/50 peer-checked:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </div>
-                            <span class="text-xs font-medium text-surface-700 dark:text-surface-300">Write Content</span>
+                            <span class="text-xs font-medium text-base-content/80">Write Content</span>
                         </label>
-                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-surface-200 dark:border-surface-700 rounded-2xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-900/20 transition-smooth">
+                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-primary/10 transition-smooth">
                             <input type="radio" name="source_type" value="url" class="sr-only peer" onchange="updateSourceInput()">
-                            <div class="w-10 h-10 mb-2 rounded-xl bg-surface-100 dark:bg-surface-800 peer-checked:bg-brand-100 dark:peer-checked:bg-brand-900/30 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-surface-400 peer-checked:text-brand-600 dark:peer-checked:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <div class="w-10 h-10 mb-2 rounded-xl bg-base-200 peer-checked:bg-primary/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-base-content/50 peer-checked:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                             </div>
-                            <span class="text-xs font-medium text-surface-700 dark:text-surface-300">Fetch URL</span>
+                            <span class="text-xs font-medium text-base-content/80">Fetch URL</span>
                         </label>
-                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-surface-200 dark:border-surface-700 rounded-2xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-900/20 transition-smooth">
+                        <label class="source-type-option flex flex-col items-center p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-primary/10 transition-smooth">
                             <input type="radio" name="source_type" value="reference" class="sr-only peer" onchange="updateSourceInput()">
-                            <div class="w-10 h-10 mb-2 rounded-xl bg-surface-100 dark:bg-surface-800 peer-checked:bg-brand-100 dark:peer-checked:bg-brand-900/30 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-surface-400 peer-checked:text-brand-600 dark:peer-checked:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
+                            <div class="w-10 h-10 mb-2 rounded-xl bg-base-200 peer-checked:bg-primary/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-base-content/50 peer-checked:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
                             </div>
-                            <span class="text-xs font-medium text-surface-700 dark:text-surface-300">Provider Reference</span>
+                            <span class="text-xs font-medium text-base-content/80">Provider Reference</span>
                         </label>
                     </div>
                 </div>
@@ -128,44 +128,44 @@
                 <!-- File Upload -->
                 <div id="source-file" class="source-input">
                     <div id="drop-zone"
-                         class="border-2 border-dashed border-surface-300 dark:border-surface-600 rounded-2xl p-12 text-center transition-all cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/30 dark:hover:bg-brand-900/10 group"
-                         ondragover="event.preventDefault(); this.classList.add('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');"
-                         ondragleave="this.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');"
-                         ondrop="event.preventDefault(); this.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20'); handleFileDrop(event);">
+                         class="border-2 border-dashed border-base-300 rounded-2xl p-12 text-center transition-all cursor-pointer hover:border-primary hover:bg-primary/10 group"
+                         ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/10', );"
+                         ondragleave="this.classList.remove('border-primary', 'bg-primary/10', );"
+                         ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/10', ); handleFileDrop(event);">
                         <input type="file" name="file" id="plan-file" accept=".md,.txt,.zip,.tar.gz" class="hidden" onchange="updatePlanFileName()">
                         <div id="upload-prompt">
-                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-100 dark:bg-surface-800 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 flex items-center justify-center transition-smooth">
-                                <svg class="w-8 h-8 text-surface-400 group-hover:text-brand-600 dark:group-hover:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 group-hover:bg-primary/20 flex items-center justify-center transition-smooth">
+                                <svg class="w-8 h-8 text-base-content/50 group-hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                             </div>
-                            <p class="text-surface-700 dark:text-surface-300 mb-2 font-medium">Drop file or archive here or <label for="plan-file" class="text-brand-600 dark:text-brand-400 font-semibold cursor-pointer hover:underline">browse</label></p>
-                            <p class="text-xs text-surface-400">Accepts .md, .txt, .zip, .tar.gz (max 10MB)</p>
+                            <p class="text-base-content/80 mb-2 font-medium">Drop file or archive here or <label for="plan-file" class="text-primary font-semibold cursor-pointer hover:underline">browse</label></p>
+                            <p class="text-xs text-base-content/50">Accepts .md, .txt, .zip, .tar.gz (max 10MB)</p>
                         </div>
                         <div id="upload-progress" class="hidden">
                             <div class="flex items-center justify-between mb-3">
-                                <span id="upload-filename" class="text-sm font-medium text-surface-700 dark:text-surface-300"></span>
-                                <span id="upload-percent" class="text-sm text-brand-600 dark:text-brand-400 font-semibold">0%</span>
+                                <span id="upload-filename" class="text-sm font-medium text-base-content/80"></span>
+                                <span id="upload-percent" class="text-sm text-primary font-semibold">0%</span>
                             </div>
-                            <div class="w-full bg-surface-200 dark:bg-surface-700 rounded-full h-2 overflow-hidden">
-                                <div id="upload-bar" class="bg-gradient-to-r from-brand-600 to-brand-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div class="w-full bg-base-200 rounded-full h-2 overflow-hidden">
+                                <div id="upload-bar" class="bg-gradient-to-r from-primary to-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                             </div>
-                            <p id="upload-status" class="text-xs text-surface-500 dark:text-surface-400 mt-2">Uploading...</p>
+                            <p id="upload-status" class="text-xs text-base-content/60 mt-2">Uploading...</p>
                         </div>
                         <div id="upload-complete" class="hidden">
-                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-success-50 dark:bg-success-900/20 flex items-center justify-center">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-success-50 flex items-center justify-center">
                                 <svg class="w-8 h-8 text-success-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                             </div>
-                            <p id="upload-complete-name" class="text-sm font-medium text-surface-900 dark:text-surface-100 mb-2"></p>
-                            <p class="text-xs text-surface-500 dark:text-surface-400">
+                            <p id="upload-complete-name" class="text-sm font-medium text-base-content mb-2"></p>
+                            <p class="text-xs text-base-content/60">
                                 <span id="upload-size"></span> • Uploaded successfully
                             </p>
-                            <button type="button" data-action="reset-upload" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Upload different file</button>
+                            <button type="button" data-action="reset-upload" class="text-primary hover:underline text-sm font-medium mt-3">Upload different file</button>
                         </div>
                         <div id="upload-error" class="hidden">
-                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-error-50 dark:bg-error-900/20 flex items-center justify-center">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-error-50 flex items-center justify-center">
                                 <svg class="w-8 h-8 text-error-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
                             </div>
-                            <p id="upload-error-message" class="text-sm font-medium text-error-600 dark:text-error-400"></p>
-                            <button type="button" data-action="reset-upload" class="text-brand-600 dark:text-brand-400 hover:underline text-sm font-medium mt-3">Try again</button>
+                            <p id="upload-error-message" class="text-sm font-medium text-error-600"></p>
+                            <button type="button" data-action="reset-upload" class="text-primary hover:underline text-sm font-medium mt-3">Try again</button>
                         </div>
                     </div>
                 </div>
@@ -175,23 +175,23 @@
                     <textarea name="content" id="plan-content" rows="12"
                               placeholder="# Project Requirements&#10;&#10;## Feature 1&#10;- Requirement A&#10;- Requirement B&#10;&#10;## Feature 2&#10;..."
                               class="input font-mono text-sm resize-none"></textarea>
-                    <p class="text-xs text-surface-400 mt-2">Use Markdown formatting for better structure</p>
+                    <p class="text-xs text-base-content/50 mt-2">Use Markdown formatting for better structure</p>
                 </div>
 
                 <!-- URL Input -->
                 <div id="source-url" class="source-input hidden">
-                    <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">URL</label>
+                    <label class="block text-sm font-semibold text-base-content/80 mb-2">URL</label>
                     <input type="url" name="url" id="plan-url"
                            placeholder="https://raw.githubusercontent.com/user/repo/main/requirements.md"
                            class="input font-mono text-sm">
-                    <p class="text-xs text-surface-400 mt-2">Enter a URL to fetch requirements from (e.g., raw GitHub file, gist, or any public URL)</p>
+                    <p class="text-xs text-base-content/50 mt-2">Enter a URL to fetch requirements from (e.g., raw GitHub file, gist, or any public URL)</p>
                 </div>
 
                 <!-- Provider Reference -->
                 <div id="source-reference" class="source-input hidden">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Provider</label>
+                            <label class="block text-sm font-semibold text-base-content/80 mb-2">Provider</label>
                             <select name="provider" id="plan-provider" class="input">
                                 <option value="github">GitHub</option>
                                 <option value="gitlab">GitLab</option>
@@ -204,7 +204,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Reference ID</label>
+                            <label class="block text-sm font-semibold text-base-content/80 mb-2">Reference ID</label>
                             <input type="text" name="reference_id" id="plan-reference"
                                    placeholder="123 or PROJECT-123"
                                    class="input font-mono text-sm">
@@ -215,20 +215,20 @@
                 <div class="mt-4">
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" name="use_schema" id="plan-use-schema" checked
-                               class="mr-2 rounded border-gray-300 dark:border-gray-600
-                                      text-brand-600 dark:text-brand-500
-                                      focus:ring-brand-500 dark:focus:ring-brand-400">
-                        <span class="text-sm font-medium text-surface-700 dark:text-surface-300">
+                               class="mr-2 rounded checkbox checkbox-primary
+                                      text-primary
+                                      focus:ring-primary">
+                        <span class="text-sm font-medium text-base-content/80">
                             Use schema-driven extraction
                         </span>
                     </label>
-                    <p class="text-xs text-surface-500 dark:text-surface-400 mt-1 ml-6">
+                    <p class="text-xs text-base-content/60 mt-1 ml-6">
                         Enables structured parsing of AI responses (falls back to regex if needed)
                     </p>
                 </div>
 
-                <div id="plan-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
-                <div id="plan-success" class="hidden p-4 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-xl text-success-700 dark:text-success-300 text-sm"></div>
+                <div id="plan-error" class="hidden p-4 bg-error-50 border border-error-200 rounded-xl text-error-700 text-sm"></div>
+                <div id="plan-success" class="hidden p-4 bg-success-50 border border-success-200 rounded-xl text-success-700 text-sm"></div>
 
                 {{if not .IsViewer}}
                 <button type="submit" id="plan-submit" class="btn btn-primary w-full">
@@ -243,12 +243,12 @@
     <!-- Queues Panel -->
     <div id="project-panel-queues" class="project-panel hidden">
         <div class="card">
-            <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Task Queues</h3>
+            <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-base-content">Task Queues</h3>
                 <button type="button" data-action="load-queues" class="btn btn-secondary">Refresh</button>
             </div>
-            <div id="queues-list" class="divide-y divide-surface-200 dark:divide-surface-700">
-                <p class="text-surface-500 dark:text-surface-400 text-center py-8">Loading queues...</p>
+            <div id="queues-list" class="divide-y divide-base-200">
+                <p class="text-base-content/60 text-center py-8">Loading queues...</p>
             </div>
         </div>
     </div>
@@ -256,8 +256,8 @@
     <!-- Tasks Panel -->
     <div id="project-panel-tasks" class="project-panel hidden">
         <div class="card">
-            <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between gap-4">
-                <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Tasks</h3>
+            <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between gap-4">
+                <h3 class="text-lg font-bold text-base-content">Tasks</h3>
                 <div class="flex items-center gap-3">
                     <select id="queue-selector" data-action-change="load-tasks" class="input text-sm py-2">
                         <option value="">Select Queue...</option>
@@ -268,34 +268,34 @@
 
             <!-- Tasks Table -->
             <div id="tasks-container" class="overflow-x-auto">
-                <p class="text-surface-500 dark:text-surface-400 text-center py-8">Select a queue to view tasks</p>
+                <p class="text-base-content/60 text-center py-8">Select a queue to view tasks</p>
             </div>
 
             <!-- Dependency Graph Section -->
             <div id="graph-section" class="hidden mt-6">
-                <div class="border-t border-surface-200 dark:border-surface-700 pt-6">
+                <div class="border-t border-base-300 pt-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Dependency Graph</h3>
+                        <h3 class="text-lg font-bold text-base-content">Dependency Graph</h3>
                         <div class="flex gap-2">
                             <button type="button" data-action="show-graph" data-view="tree" class="btn btn-secondary">Tree View</button>
                             <button type="button" data-action="show-graph" data-view="critical" class="btn btn-secondary">Critical Path</button>
                         </div>
                     </div>
-                    <div id="graph-visualization" class="bg-surface-50 dark:bg-surface-800/50 rounded-2xl p-6 overflow-x-auto min-h-[200px]">
-                        <p class="text-surface-500 dark:text-surface-400 text-center">Select a view type to see the dependency graph</p>
+                    <div id="graph-visualization" class="bg-base-200 rounded-2xl p-6 overflow-x-auto min-h-[200px]">
+                        <p class="text-base-content/60 text-center">Select a view type to see the dependency graph</p>
                     </div>
                 </div>
             </div>
 
             <!-- Actions -->
-            <div id="submit-actions" class="hidden mt-6 pt-6 border-t border-surface-200 dark:border-surface-700">
+            <div id="submit-actions" class="hidden mt-6 pt-6 border-t border-base-300">
                 {{if not .IsViewer}}
                 <div class="flex flex-wrap gap-4 mb-4">
                     <button type="button" data-action="auto-reorder" id="reorder-btn" class="btn btn-secondary">
                         <span id="reorder-spinner" class="htmx-indicator hidden animate-spin mr-2">&#9696;</span>
                         AI Suggest Order
                     </button>
-                    <span id="reorder-status" class="text-sm text-surface-500 dark:text-surface-400 self-center"></span>
+                    <span id="reorder-status" class="text-sm text-base-content/60 self-center"></span>
                 </div>
                 <div class="flex flex-wrap gap-3 items-center">
                     <select id="submit-provider" class="input py-2 text-sm">
@@ -313,7 +313,7 @@
                     <button type="button" data-action="start-implementation" class="btn btn-success">Start Implementation</button>
                 </div>
                 {{else}}
-                <p class="text-surface-500 dark:text-surface-400 italic">Task submission is not available in read-only mode</p>
+                <p class="text-base-content/60 italic">Task submission is not available in read-only mode</p>
                 {{end}}
             </div>
         </div>
@@ -321,27 +321,27 @@
 </div>
 
 <!-- Edit Task Modal -->
-<div id="edit-modal" class="hidden fixed inset-0 bg-surface-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-surface-800 rounded-2xl shadow-2xl max-w-lg w-full">
-        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-            <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Edit Task</h3>
-            <button type="button" data-action="close-modal" class="p-2 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700">
+<div id="edit-modal" class="hidden fixed inset-0 bg-base-300/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-base-100 rounded-2xl shadow-2xl max-w-lg w-full">
+        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-base-content">Edit Task</h3>
+            <button type="button" data-action="close-modal" class="p-2 rounded-lg text-base-content/50 hover:text-base-content/70 hover:bg-base-200300">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
             </button>
         </div>
         <form id="edit-form" class="p-6 space-y-4">
             <input type="hidden" name="task_id" id="edit-task-id">
             <div>
-                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Title</label>
+                <label class="block text-sm font-semibold text-base-content/80 mb-2">Title</label>
                 <input type="text" name="title" id="edit-title" class="input">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Description</label>
+                <label class="block text-sm font-semibold text-base-content/80 mb-2">Description</label>
                 <textarea name="description" id="edit-description" rows="3" class="input resize-none"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Priority</label>
+                    <label class="block text-sm font-semibold text-base-content/80 mb-2">Priority</label>
                     <select name="priority" id="edit-priority" class="input">
                         <option value="1">1 - Highest</option>
                         <option value="2">2 - High</option>
@@ -351,7 +351,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Status</label>
+                    <label class="block text-sm font-semibold text-base-content/80 mb-2">Status</label>
                     <select name="status" id="edit-status" class="input">
                         <option value="pending">Pending</option>
                         <option value="ready">Ready</option>
@@ -361,19 +361,19 @@
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Parent Task (makes this a subtask)</label>
+                <label class="block text-sm font-semibold text-base-content/80 mb-2">Parent Task (makes this a subtask)</label>
                 <input type="text" name="parent_id" id="edit-parent-id" placeholder="task-1 (or leave empty for top-level)" class="input font-mono text-sm">
-                <p class="text-xs text-surface-400 mt-1">Set a parent to create a subtask hierarchy. Clear to make top-level.</p>
+                <p class="text-xs text-base-content/50 mt-1">Set a parent to create a subtask hierarchy. Clear to make top-level.</p>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Depends On (comma-separated task IDs)</label>
+                <label class="block text-sm font-semibold text-base-content/80 mb-2">Depends On (comma-separated task IDs)</label>
                 <input type="text" name="depends_on" id="edit-depends-on" placeholder="task-1, task-2" class="input font-mono text-sm">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Labels (comma-separated)</label>
+                <label class="block text-sm font-semibold text-base-content/80 mb-2">Labels (comma-separated)</label>
                 <input type="text" name="labels" id="edit-labels" placeholder="backend, urgent" class="input">
             </div>
-            <div id="edit-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm"></div>
+            <div id="edit-error" class="hidden p-4 bg-error-50 border border-error-200 rounded-xl text-error-700 text-sm"></div>
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" data-action="close-modal" class="btn btn-secondary">Cancel</button>
                 {{if not .IsViewer}}
@@ -389,13 +389,13 @@
 function showProjectTab(tabName) {
     document.querySelectorAll('.project-panel').forEach(p => p.classList.add('hidden'));
     document.querySelectorAll('.project-tab').forEach(t => {
-        t.classList.remove('bg-white', 'dark:bg-surface-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
-        t.classList.add('text-surface-500', 'dark:text-surface-400');
+        t.classList.remove('bg-base-100', 'text-primary', 'shadow-sm');
+        t.classList.add('text-base-content/60');
     });
     document.getElementById('project-panel-' + tabName).classList.remove('hidden');
     const tab = document.getElementById('project-tab-' + tabName);
-    tab.classList.remove('text-surface-500', 'dark:text-surface-400');
-    tab.classList.add('bg-white', 'dark:bg-surface-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+    tab.classList.remove('text-base-content/60');
+    tab.classList.add('bg-base-100', 'text-primary', 'shadow-sm');
     if (tabName === 'queues') loadQueues();
     if (tabName === 'tasks') loadQueueSelector();
 }
@@ -578,7 +578,7 @@ document.getElementById('plan-form').addEventListener('submit', async function(e
         const planData = await planResp.json();
         const sourceInfo = getSourceTypeLabel(planData.source || '');
         const sourceBadge = sourceInfo.label !== 'Unknown' ?
-            ` <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-${sourceInfo.color}-100 dark:bg-${sourceInfo.color}-900/30 text-${sourceInfo.color}-700 dark:text-${sourceInfo.color}-400">
+            ` <span class="badge ${sourceInfo.badgeClass} badge-sm">
                 ${sourceInfo.label}
             </span>` : '';
         successEl.innerHTML = 'Plan created! Queue ID: ' + escapeHtml(planData.queue_id) + ', ' + planData.tasks.length + ' tasks identified.' + sourceBadge;
@@ -604,30 +604,30 @@ async function loadQueues() {
         const resp = await fetch('/api/v1/project/queues');
         const data = await resp.json();
         if (!data.queues || data.queues.length === 0) {
-            container.innerHTML = '<p class="text-surface-500 dark:text-surface-400 text-center py-8">No queues yet. Create a plan to get started.</p>';
+            container.innerHTML = '<p class="text-base-content/60 text-center py-8">No queues yet. Create a plan to get started.</p>';
             return;
         }
         container.innerHTML = data.queues.map(q => {
             const sourceInfo = getSourceTypeLabel(q.source);
             return `
-            <div class="p-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-smooth flex items-center justify-between">
+            <div class="p-4 hover:bg-base-200 transition-smooth flex items-center justify-between">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="font-semibold text-surface-900 dark:text-surface-100">${escapeHtml(q.title || q.id)}</span>
-                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-${sourceInfo.color}-100 dark:bg-${sourceInfo.color}-900/30 text-${sourceInfo.color}-700 dark:text-${sourceInfo.color}-400">
+                        <span class="font-semibold text-base-content">${escapeHtml(q.title || q.id)}</span>
+                        <span class="badge ${sourceInfo.badgeClass} badge-sm">
                             ${sourceInfo.label}
                         </span>
                     </div>
-                    <div class="text-sm text-surface-500 dark:text-surface-400">${q.task_count} tasks - ${escapeHtml(q.status)}</div>
+                    <div class="text-sm text-base-content/60">${q.task_count} tasks - ${escapeHtml(q.status)}</div>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" data-action="view-queue" data-queue="${q.id}" class="btn btn-secondary text-sm py-2">View Tasks</button>
-                    <button type="button" data-action="delete-queue" data-queue="${q.id}" class="btn btn-danger text-sm py-2">Delete</button>
+                    <button type="button" data-action="view-queue" data-queue="${q.id}" class="btn btn-secondary btn-sm">View Tasks</button>
+                    <button type="button" data-action="delete-queue" data-queue="${q.id}" class="btn btn-error btn-sm">Delete</button>
                 </div>
             </div>
         `}).join('');
     } catch (err) {
-        container.innerHTML = '<p class="text-error-600 dark:text-error-400 text-center py-4">Failed to load queues: ' + err.message + '</p>';
+        container.innerHTML = '<p class="text-error-600 text-center py-4">Failed to load queues: ' + err.message + '</p>';
     }
 }
 
@@ -673,7 +673,7 @@ async function loadTasks() {
     const container = document.getElementById('tasks-container');
     const submitActions = document.getElementById('submit-actions');
     if (!queueId) {
-        container.innerHTML = '<p class="text-surface-500 dark:text-surface-400 text-center py-8">Select a queue to view tasks</p>';
+        container.innerHTML = '<p class="text-base-content/60 text-center py-8">Select a queue to view tasks</p>';
         submitActions.classList.add('hidden');
         return;
     }
@@ -681,34 +681,34 @@ async function loadTasks() {
         const resp = await fetch('/api/v1/project/tasks?queue_id=' + queueId);
         const data = await resp.json();
         if (!data.tasks || data.tasks.length === 0) {
-            container.innerHTML = '<p class="text-surface-500 dark:text-surface-400 text-center py-8">No tasks in this queue</p>';
+            container.innerHTML = '<p class="text-base-content/60 text-center py-8">No tasks in this queue</p>';
             submitActions.classList.add('hidden');
             return;
         }
         container.innerHTML = `
-            <table class="min-w-full divide-y divide-surface-200 dark:divide-surface-700">
-                <thead class="bg-surface-50 dark:bg-surface-800">
+            <table class="min-w-full divide-y divide-base-200">
+                <thead class="bg-base-100">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Title</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Priority</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Parent</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Depends On</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Title</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Priority</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Parent</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Depends On</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-base-content/60 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
+                <tbody class="bg-base-100 divide-y divide-base-200">
                     ${data.tasks.map(t => `
-                        <tr class="hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-smooth ${t.parent_id ? 'pl-4' : ''}">
-                            <td class="px-4 py-3 text-sm font-mono text-surface-900 dark:text-surface-100">${t.parent_id ? '<span class="text-surface-400 mr-1">└</span>' : ''}${escapeHtml(t.id)}</td>
-                            <td class="px-4 py-3 text-sm text-surface-700 dark:text-surface-300">${escapeHtml(truncate(t.title, 40))}</td>
+                        <tr class="hover:bg-base-100300/50 transition-smooth ${t.parent_id ? 'pl-4' : ''}">
+                            <td class="px-4 py-3 text-sm font-mono text-base-content">${t.parent_id ? '<span class="text-base-content/50 mr-1">└</span>' : ''}${escapeHtml(t.id)}</td>
+                            <td class="px-4 py-3 text-sm text-base-content/80">${escapeHtml(truncate(t.title, 40))}</td>
                             <td class="px-4 py-3 text-sm"><span class="status-badge ${statusClass(t.status)}">${escapeHtml(t.status)}</span></td>
-                            <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.priority}</td>
-                            <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.parent_id ? '<span class="text-brand-600 dark:text-brand-400 font-mono">' + escapeHtml(t.parent_id) + '</span>' : '-'}</td>
-                            <td class="px-4 py-3 text-sm text-surface-600 dark:text-surface-400">${t.depends_on ? t.depends_on.join(', ') : '-'}</td>
+                            <td class="px-4 py-3 text-sm text-base-content/70">${t.priority}</td>
+                            <td class="px-4 py-3 text-sm text-base-content/70">${t.parent_id ? '<span class="text-primary font-mono">' + escapeHtml(t.parent_id) + '</span>' : '-'}</td>
+                            <td class="px-4 py-3 text-sm text-base-content/70">${t.depends_on ? t.depends_on.join(', ') : '-'}</td>
                             <td class="px-4 py-3 text-sm">
-                                <button type="button" data-action="edit-task" data-task="${t.id}" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">Edit</button>
+                                <button type="button" data-action="edit-task" data-task="${t.id}" class="text-primary hover:underline font-medium">Edit</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -720,16 +720,16 @@ async function loadTasks() {
         document.getElementById('graph-section').classList.remove('hidden');
         showGraphVisualization('tree');
     } catch (err) {
-        container.innerHTML = '<p class="text-error-600 dark:text-error-400 text-center py-4">Failed to load tasks: ' + err.message + '</p>';
+        container.innerHTML = '<p class="text-error-600 text-center py-4">Failed to load tasks: ' + err.message + '</p>';
     }
 }
 
 function statusClass(status) {
     switch (status) {
-        case 'ready': return 'bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300';
-        case 'blocked': return 'bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300';
-        case 'submitted': return 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300';
-        default: return 'bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-400';
+        case 'ready': return 'bg-success-100 text-success-800';
+        case 'blocked': return 'bg-warning-100 text-warning-800';
+        case 'submitted': return 'bg-primary/20 text-primary/30';
+        default: return 'bg-base-200 text-base-content/90';
     }
 }
 
@@ -743,19 +743,19 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Returns label and color for source type badge
+// Returns label and badge class for source type
 function getSourceTypeLabel(source) {
-    if (!source) return { label: 'Unknown', color: 'gray' };
+    if (!source) return { label: 'Unknown', badgeClass: 'badge-ghost' };
     if (source.startsWith('research:')) {
-        return { label: 'Reusing Docs', color: 'brand' };
+        return { label: 'Reusing Docs', badgeClass: 'badge-primary' };
     } else if (source.startsWith('dir:')) {
-        return { label: 'From Files', color: 'surface' };
+        return { label: 'From Files', badgeClass: 'badge-secondary' };
     } else if (source.startsWith('file:')) {
-        return { label: 'From File', color: 'surface' };
+        return { label: 'From File', badgeClass: 'badge-secondary' };
     } else if (source.includes(':')) {
-        return { label: 'From ' + source.split(':')[0], color: 'surface' };
+        return { label: 'From ' + source.split(':')[0], badgeClass: 'badge-secondary' };
     }
-    return { label: 'New Plan', color: 'surface' };
+    return { label: 'New Plan', badgeClass: 'badge-info' };
 }
 
 let currentTasks = [];
@@ -764,7 +764,7 @@ async function showGraphVisualization(viewType) {
     const graphSection = document.getElementById('graph-section');
     const graphVisualization = document.getElementById('graph-visualization');
     if (!currentTasks || currentTasks.length === 0) {
-        graphVisualization.innerHTML = '<p class="text-surface-500 dark:text-surface-400 text-center py-8">No tasks to display</p>';
+        graphVisualization.innerHTML = '<p class="text-base-content/60 text-center py-8">No tasks to display</p>';
         return;
     }
     graphSection.classList.remove('hidden');
@@ -815,21 +815,21 @@ function renderTreeGraph(tasks, container) {
     levelGroups.forEach((group, level) => {
         if (group.length === 0) return;
         html += `<div class="flex flex-col items-start">`;
-        html += `<div class="text-xs font-bold text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-3 px-2">Level ${level}</div>`;
+        html += `<div class="text-xs font-bold text-base-content/60 uppercase tracking-wide mb-3 px-2">Level ${level}</div>`;
         html += '<div class="flex flex-col space-y-2 ml-4">';
         group.forEach(task => {
             const deps = task.depends_on || [];
             const hasChildren = edges.some(e => e.from === task.id);
             html += `
                 <div class="relative">
-                    <div class="flex items-center p-3 bg-white dark:bg-surface-700 rounded-xl shadow-card border border-surface-200 dark:border-surface-600">
+                    <div class="flex items-center p-3 bg-base-100 rounded-xl shadow-card border border-base-300">
                         <span class="mr-2 text-lg">${getStatusIcon(task.status)}</span>
                         <div>
-                            <div class="font-semibold text-surface-900 dark:text-surface-100">${escapeHtml(truncate(task.title, 30))}</div>
-                            <div class="text-xs text-surface-500 dark:text-surface-400 font-mono">${escapeHtml(task.id)}</div>
+                            <div class="font-semibold text-base-content">${escapeHtml(truncate(task.title, 30))}</div>
+                            <div class="text-xs text-base-content/60 font-mono">${escapeHtml(task.id)}</div>
                         </div>
                     </div>
-                    ${hasChildren ? '<div class="absolute left-4 top-full h-4 w-px bg-surface-300 dark:bg-surface-600"></div>' : ''}
+                    ${hasChildren ? '<div class="absolute left-4 top-full h-4 w-px bg-base-200"></div>' : ''}
                 </div>
             `;
         });
@@ -861,28 +861,28 @@ function renderCriticalPath(tasks, container) {
     });
     const longestPath = paths.reduce((longest, path) => path.length > longest.length ? path : longest, []);
     let html = '<div class="space-y-2">';
-    html += '<div class="text-sm font-bold text-surface-700 dark:text-surface-300 mb-4">Critical Path (Longest Execution Path)</div>';
+    html += '<div class="text-sm font-bold text-base-content/80 mb-4">Critical Path (Longest Execution Path)</div>';
     longestPath.forEach((taskId, index) => {
         const task = taskMap[taskId];
         const isLast = index === longestPath.length - 1;
         html += `
             <div class="flex items-center">
-                <div class="flex items-center p-3 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-700 rounded-xl">
-                    <span class="mr-2 text-brand-600 dark:text-brand-400 font-bold text-sm">${index + 1}</span>
+                <div class="flex items-center p-3 bg-primary/10 border border-primary/20 rounded-xl">
+                    <span class="mr-2 text-primary font-bold text-sm">${index + 1}</span>
                     <span class="mr-2">${getStatusIcon(task.status)}</span>
                     <div>
-                        <div class="font-semibold text-surface-900 dark:text-surface-100">${escapeHtml(truncate(task.title, 30))}</div>
-                        <div class="text-xs text-surface-500 dark:text-surface-400 font-mono">${escapeHtml(task.id)}</div>
+                        <div class="font-semibold text-base-content">${escapeHtml(truncate(task.title, 30))}</div>
+                        <div class="text-xs text-base-content/60 font-mono">${escapeHtml(task.id)}</div>
                     </div>
                 </div>
-                ${!isLast ? '<div class="mx-3 text-surface-400 dark:text-surface-600">→</div>' : ''}
+                ${!isLast ? '<div class="mx-3 text-base-content/50">→</div>' : ''}
             </div>
         `;
     });
     html += '</div>';
     html += `
-        <div class="mt-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
-            <div class="text-sm text-surface-600 dark:text-surface-400">
+        <div class="mt-4 p-4 bg-base-100 rounded-xl">
+            <div class="text-sm text-base-content/70">
                 <span class="font-semibold">Path Length:</span> ${longestPath.length} tasks<br>
                 <span class="font-semibold">Total Paths:</span> ${paths.length}
             </div>
@@ -895,8 +895,8 @@ function getStatusIcon(status) {
     switch (status) {
         case 'ready': return '<span class="text-success-500">●</span>';
         case 'blocked': return '<span class="text-warning-500">⊘</span>';
-        case 'submitted': return '<span class="text-brand-500">◐</span>';
-        default: return '<span class="text-surface-300">○</span>';
+        case 'submitted': return '<span class="text-primary">◐</span>';
+        default: return '<span class="text-base-content/40">○</span>';
     }
 }
 

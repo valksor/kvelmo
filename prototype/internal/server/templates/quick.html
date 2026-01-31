@@ -7,21 +7,21 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Quick Tasks</h1>
-            <p class="text-surface-500 dark:text-surface-400 mt-1">Capture tasks quickly without full planning</p>
+            <h1 class="text-3xl font-bold text-base-content">Quick Tasks</h1>
+            <p class="text-base-content/60 mt-1">Capture tasks quickly without full planning</p>
         </div>
     </div>
 
     <!-- Create Task Form -->
     <div class="card mb-8">
-        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-            <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Create Quick Task</h2>
+        <div class="px-6 py-4 border-b border-base-300">
+            <h2 class="text-lg font-bold text-base-content">Create Quick Task</h2>
         </div>
         <div class="p-6">
             <form hx-post="/api/v1/quick" hx-target="#task-list" hx-swap="innerHTML">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="quick-description" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="quick-description" class="block text-sm font-medium text-base-content/80 mb-2">
                             Description <span class="text-error-500">*</span>
                         </label>
                         <input type="text" id="quick-description" name="description" required
@@ -29,7 +29,7 @@
                                class="input input-enhanced w-full">
                     </div>
                     <div>
-                        <label for="quick-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="quick-title" class="block text-sm font-medium text-base-content/80 mb-2">
                             Title (optional)
                         </label>
                         <input type="text" id="quick-title" name="title"
@@ -39,7 +39,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label for="quick-priority" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="quick-priority" class="block text-sm font-medium text-base-content/80 mb-2">
                             Priority
                         </label>
                         <select id="quick-priority" name="priority" class="input input-enhanced w-full">
@@ -49,7 +49,7 @@
                         </select>
                     </div>
                     <div>
-                        <label for="quick-labels" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="quick-labels" class="block text-sm font-medium text-base-content/80 mb-2">
                             Labels
                         </label>
                         <input type="text" id="quick-labels" name="labels"
@@ -69,14 +69,14 @@
 
     <!-- Submit From Source -->
     <div class="card mb-8">
-        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-            <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Submit From Source</h2>
+        <div class="px-6 py-4 border-b border-base-300">
+            <h2 class="text-lg font-bold text-base-content">Submit From Source</h2>
         </div>
         <div class="p-6">
             <form id="submit-source-form">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="source-path" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-path" class="block text-sm font-medium text-base-content/80 mb-2">
                             Source Path or Ref <span class="text-error-500">*</span>
                         </label>
                         <input type="text" id="source-path" name="source" required
@@ -84,7 +84,7 @@
                                class="input input-enhanced w-full">
                     </div>
                     <div>
-                        <label for="source-provider" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-provider" class="block text-sm font-medium text-base-content/80 mb-2">
                             Provider <span class="text-error-500">*</span>
                         </label>
                         <input type="text" id="source-provider" name="provider" required
@@ -94,7 +94,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="source-title" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-title" class="block text-sm font-medium text-base-content/80 mb-2">
                             Title (optional)
                         </label>
                         <input type="text" id="source-title" name="title"
@@ -102,7 +102,7 @@
                                class="input input-enhanced w-full">
                     </div>
                     <div>
-                        <label for="source-labels" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-labels" class="block text-sm font-medium text-base-content/80 mb-2">
                             Labels
                         </label>
                         <input type="text" id="source-labels" name="labels"
@@ -112,7 +112,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="source-notes" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-notes" class="block text-sm font-medium text-base-content/80 mb-2">
                             Notes (one per line)
                         </label>
                         <textarea id="source-notes" name="notes" rows="4"
@@ -120,7 +120,7 @@
                                   class="input input-enhanced w-full"></textarea>
                     </div>
                     <div>
-                        <label for="source-instructions" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label for="source-instructions" class="block text-sm font-medium text-base-content/80 mb-2">
                             Instructions
                         </label>
                         <textarea id="source-instructions" name="instructions" rows="4"
@@ -129,11 +129,11 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-4 items-center">
-                    <label class="flex items-center gap-2 text-sm text-surface-700 dark:text-surface-300">
+                    <label class="flex items-center gap-2 text-sm text-base-content/80">
                         <input type="checkbox" id="source-optimize" name="optimize">
                         Optimize before submitting
                     </label>
-                    <label class="flex items-center gap-2 text-sm text-surface-700 dark:text-surface-300">
+                    <label class="flex items-center gap-2 text-sm text-base-content/80">
                         <input type="checkbox" id="source-dry-run" name="dry_run">
                         Dry run
                     </label>
@@ -148,14 +148,14 @@
 
     <!-- Tasks List -->
     <div class="card">
-        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Tasks</h2>
-            <span id="task-count" class="text-sm text-surface-500 dark:text-surface-400">Loading...</span>
+        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-base-content">Tasks</h2>
+            <span id="task-count" class="text-sm text-base-content/60">Loading...</span>
         </div>
         <div id="task-list" hx-get="/api/v1/quick" hx-trigger="load, sse:{{eventQuickTasksUpdated}}" hx-swap="innerHTML">
-            <div class="text-center text-surface-500 dark:text-surface-400 py-12">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
-                    <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="text-center text-base-content/60 py-12">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                 </div>
