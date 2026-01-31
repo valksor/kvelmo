@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -495,7 +494,7 @@ func TestSendSSE(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w := &responseWriterRecorder{header: make(http.Header)}
+			w := &sseResponseWriter{header: make(http.Header)}
 			sendSSE(w, "", tt.data)
 
 			output := w.output.String()
@@ -562,25 +561,25 @@ func TestEscapeJSON(t *testing.T) {
 	}
 }
 
-// responseWriterRecorder is a test double for http.ResponseWriter that records output.
-type responseWriterRecorder struct {
+// sseResponseWriter is a test double for http.ResponseWriter that records SSE output.
+type sseResponseWriter struct {
 	header http.Header
 	output strings.Builder
 }
 
-func (w *responseWriterRecorder) Header() http.Header {
+func (w *sseResponseWriter) Header() http.Header {
 	return w.header
 }
 
-func (w *responseWriterRecorder) Write(b []byte) (int, error) {
+func (w *sseResponseWriter) Write(b []byte) (int, error) {
 	return w.output.Write(b)
 }
 
-func (w *responseWriterRecorder) WriteHeader(statusCode int) {
-	w.header.Set("Status", strconv.Itoa(statusCode))
+func (w *sseResponseWriter) WriteHeader(_ int) {
+	// No-op for test
 }
 
-func (w *responseWriterRecorder) Flush() {
+func (w *sseResponseWriter) Flush() {
 	// No-op for test
 }
 

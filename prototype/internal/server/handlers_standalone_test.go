@@ -15,6 +15,23 @@ import (
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
+// responseWriterRecorder is a mock http.ResponseWriter that records output.
+type responseWriterRecorder struct {
+	header http.Header
+	output bytes.Buffer
+}
+
+func (r *responseWriterRecorder) Header() http.Header {
+	return r.header
+}
+
+func (r *responseWriterRecorder) Write(data []byte) (int, error) {
+	return r.output.Write(data)
+}
+
+func (r *responseWriterRecorder) WriteHeader(statusCode int) {
+}
+
 func TestHandler_StandaloneReview_NoConductor(t *testing.T) {
 	cfg := Config{
 		Port:      0,
