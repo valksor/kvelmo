@@ -544,3 +544,129 @@ func TestContainsWorktreePath(t *testing.T) {
 		})
 	}
 }
+
+func TestServer_APIOnlyMode_DisablesWebUI(t *testing.T) {
+	cfg := Config{
+		Port:     0,
+		Mode:     ModeProject,
+		APIOnly:  true,
+		EventBus: eventbus.NewBus(),
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		_ = srv.Start(ctx) // Error intentionally ignored in test goroutine
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	client := testHTTPClient()
+	baseURL := srv.URL()
+
+	// API endpoints should still work
+	t.Run("health endpoint works", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/health")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("status API endpoint works", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/api/v1/status")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	// Web UI pages should return 404
+	t.Run("index page returns 404", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("static assets return 404", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/static/css/styles.css")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("interactive page returns 404", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/interactive")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("project page returns 404", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/project")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	// Interactive API endpoints should still work (for IDE plugins)
+	t.Run("interactive state API works", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/api/v1/interactive/state")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		// Should be OK (no active task, but endpoint exists)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+}
+
+func TestServer_APIOnlyMode_GlobalMode(t *testing.T) {
+	cfg := Config{
+		Port:     0,
+		Mode:     ModeGlobal,
+		APIOnly:  true,
+		EventBus: eventbus.NewBus(),
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		_ = srv.Start(ctx)
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	client := testHTTPClient()
+	baseURL := srv.URL()
+
+	// API endpoints should work
+	t.Run("projects endpoint works", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/api/v1/projects")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	// Settings page should return 404
+	t.Run("settings page returns 404", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/settings")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	// Settings API should still work
+	t.Run("settings API works", func(t *testing.T) {
+		resp, err := doGet(ctx, client, baseURL+"/api/v1/settings")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+}

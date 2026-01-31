@@ -2,6 +2,23 @@
 
 The Mehrhof Web UI exposes a REST API for programmatic access to all workflow features.
 
+## API-Only Mode
+
+For IDE plugin integration or headless usage, start the server in API-only mode:
+
+```bash
+mehr serve --api --port 8080
+```
+
+In API-only mode:
+- ✅ All `/api/v1/*` endpoints are available
+- ✅ `/health` endpoint works
+- ✅ Server-Sent Events at `/api/v1/events` work
+- ❌ Web UI pages (`/`, `/project`, etc.) return 404
+- ❌ Static assets (`/static/*`) are not served
+
+This mode is ideal for IDE plugins (JetBrains, VS Code) that connect via API without needing the web interface.
+
 ## Base URL
 
 ```

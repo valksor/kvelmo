@@ -25,6 +25,7 @@ var (
 	serveGlobal     bool
 	serveOpen       bool
 	serveTunnelInfo bool
+	serveAPIOnly    bool
 
 	// Register subcommand flags.
 	serveRegisterList bool
@@ -108,6 +109,7 @@ Examples:
   mehr serve --global               # Global mode (all projects)
   mehr serve --open                 # Open browser automatically
   mehr serve --host 0.0.0.0         # Network accessible (requires auth)
+  mehr serve --api                  # API-only mode (no web UI, for IDE plugins)
   mehr serve --tunnel-info          # Show SSH tunnel instructions
 
 Subcommands:
@@ -158,6 +160,7 @@ func init() {
 	serveCmd.Flags().BoolVar(&serveGlobal, "global", false, "Global mode (show all projects)")
 	serveCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
 	serveCmd.Flags().BoolVar(&serveTunnelInfo, "tunnel-info", false, "Show SSH tunnel instructions")
+	serveCmd.Flags().BoolVar(&serveAPIOnly, "api", false, "API-only mode (no web UI)")
 
 	// Register subcommand
 	serveCmd.AddCommand(serveRegisterCmd)
@@ -197,8 +200,9 @@ func runServe(cmd *cobra.Command, _ []string) error {
 
 	// Create server config
 	cfg := server.Config{
-		Port: servePort,
-		Host: serveHost,
+		Port:    servePort,
+		Host:    serveHost,
+		APIOnly: serveAPIOnly,
 	}
 
 	// Check if auth is required (non-localhost binding)
@@ -295,8 +299,8 @@ func runServe(cmd *cobra.Command, _ []string) error {
 
 	fmt.Println("\nPress Ctrl+C to stop")
 
-	// Open browser if requested
-	if serveOpen {
+	// Open browser if requested (skip in API-only mode)
+	if serveOpen && !serveAPIOnly {
 		if err := openBrowser(url); err != nil {
 			fmt.Printf("Warning: could not open browser: %v\n", err)
 		}

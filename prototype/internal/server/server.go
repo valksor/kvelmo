@@ -52,6 +52,8 @@ type Config struct {
 	WorkspaceRoot string
 	// AuthStore is the authentication store (nil means no auth required).
 	AuthStore *storage.AuthStore
+	// APIOnly specifies whether to run in API-only mode (no web UI).
+	APIOnly bool
 }
 
 // Server is the Mehrhof web UI HTTP server.

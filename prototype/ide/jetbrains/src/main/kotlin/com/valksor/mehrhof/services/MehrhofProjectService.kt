@@ -189,7 +189,8 @@ class MehrhofProjectService(private val project: Project) : Disposable {
         try {
             // Use IntelliJ's EnvironmentUtil to get user's shell environment
             // This loads PATH and other variables from user's login shell (bash, zsh, fish, etc.)
-            val processBuilder = ProcessBuilder(mehrBinary, "serve")
+            // Start server in API-only mode (no web UI needed for IDE plugin)
+            val processBuilder = ProcessBuilder(mehrBinary, "serve", "--api")
                 .directory(File(projectPath))
                 .redirectErrorStream(true)
 
