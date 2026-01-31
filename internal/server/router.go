@@ -14,29 +14,35 @@ import (
 func (s *Server) setupRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	// Serve static assets (self-hosted JS/CSS)
-	staticFS := http.FileServer(http.FS(static.Public()))
-	mux.Handle("GET /static/", http.StripPrefix("/static/", staticFS))
+	// Serve static assets (self-hosted JS/CSS) - skip in API-only mode
+	if !s.config.APIOnly {
+		staticFS := http.FileServer(http.FS(static.Public()))
+		mux.Handle("GET /static/", http.StripPrefix("/static/", staticFS))
+	}
 
 	// Health check (public)
 	mux.HandleFunc("GET /health", s.handleHealth)
 
-	// Auth routes (public)
-	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-		s.handleLoginPageUI(w, r, "")
-	})
+	// Auth routes (public) - API endpoints always available, web pages only in full mode
 	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
-	mux.HandleFunc("GET /logout", s.handleLogout)
 	mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
+	if !s.config.APIOnly {
+		mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
+			s.handleLoginPageUI(w, r, "")
+		})
+		mux.HandleFunc("GET /logout", s.handleLogout)
+	}
 
 	// API routes
 	mux.HandleFunc("GET /api/v1/status", s.handleStatus)
 	mux.HandleFunc("GET /api/v1/context", s.handleContext)
 
-	// License routes (available in both project and global modes)
+	// License routes (API endpoints always available, web page only in full mode)
 	mux.HandleFunc("GET /api/v1/license", s.handleLicense)
 	mux.HandleFunc("GET /api/v1/license/info", s.handleLicenseInfo)
-	mux.HandleFunc("GET /license", s.handleLicensePage)
+	if !s.config.APIOnly {
+		mux.HandleFunc("GET /license", s.handleLicensePage)
+	}
 
 	// Project mode routes
 	if s.config.Mode == ModeProject {
@@ -119,10 +125,12 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/links/stats", s.handleLinksStats)
 		mux.HandleFunc("POST /api/v1/links/rebuild", s.handleRebuildLinks)
 
-		// Find search endpoints (available in both project and global mode)
+		// Find search endpoints (API always available, UI only in full mode)
 		mux.HandleFunc("GET /api/v1/find", s.handleFindSearch)
 		mux.HandleFunc("POST /api/v1/find", s.handleFindSearch)
-		mux.HandleFunc("GET /find", s.handleFindUI)
+		if !s.config.APIOnly {
+			mux.HandleFunc("GET /find", s.handleFindUI)
+		}
 
 		// Budget endpoints
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
@@ -141,26 +149,21 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/templates/{name}", s.handleGetTemplate)
 		mux.HandleFunc("POST /api/v1/templates/apply", s.handleApplyTemplate)
 
-		// Settings endpoints
-		mux.HandleFunc("GET /settings", s.handleSettingsPage)
+		// Settings endpoints (API always available, UI only in full mode)
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+		if !s.config.APIOnly {
+			mux.HandleFunc("GET /settings", s.handleSettingsPage)
+		}
 
 		// Sandbox endpoints
 		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
 		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
 		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
 
-		// Project planning UI
-		mux.HandleFunc("GET /project", s.handleProjectUI)
-
-		// Browser control panel UI
-		mux.HandleFunc("GET /browser", s.handleBrowserUI)
-
-		// Interactive chat UI
-		mux.HandleFunc("GET /interactive", s.handleInteractivePage)
+		// Interactive chat API (always available in API mode for IDE plugins)
 		mux.HandleFunc("POST /api/v1/interactive/chat", s.handleInteractiveChat)
 		mux.HandleFunc("POST /api/v1/interactive/command", s.handleInteractiveCommand)
 		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleInteractiveAnswer)
@@ -168,25 +171,41 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
 		mux.HandleFunc("POST /ui/interactive/send", s.handleInteractiveSend)
 
-		// Task history UI
-		mux.HandleFunc("GET /history", s.handleHistoryUI)
+		// Web UI routes (skip in API-only mode)
+		if !s.config.APIOnly {
+			// Project planning UI
+			mux.HandleFunc("GET /project", s.handleProjectUI)
 
-		// Memory UI
-		mux.HandleFunc("GET /memory", s.handleMemoryUI)
+			// Browser control panel UI
+			mux.HandleFunc("GET /browser", s.handleBrowserUI)
 
-		// Links UI
-		mux.HandleFunc("GET /links", s.handleLinksUI)
+			// Interactive chat web page
+			mux.HandleFunc("GET /interactive", s.handleInteractivePage)
 
-		// Commit UI and API
-		mux.HandleFunc("GET /commit", s.handleCommitPage)
+			// Task history UI
+			mux.HandleFunc("GET /history", s.handleHistoryUI)
+
+			// Memory UI
+			mux.HandleFunc("GET /memory", s.handleMemoryUI)
+
+			// Links UI
+			mux.HandleFunc("GET /links", s.handleLinksUI)
+
+			// Commit UI and API
+			mux.HandleFunc("GET /commit", s.handleCommitPage)
+
+			// Security scan UI
+			mux.HandleFunc("GET /scan", s.handleScanPage)
+
+			// Stack management UI
+			mux.HandleFunc("GET /stack", s.handleStacksUI)
+		}
+
+		// Commit API endpoints (always available)
 		mux.HandleFunc("GET /api/v1/commit/plan", s.handleCommitPlan)
 		mux.HandleFunc("POST /api/v1/commit/execute", s.handleCommitExecute)
 
-		// Security scan UI
-		mux.HandleFunc("GET /scan", s.handleScanPage)
-
-		// Stack management UI and API
-		mux.HandleFunc("GET /stack", s.handleStacksUI)
+		// Stack management API (always available)
 		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)
 		mux.HandleFunc("POST /api/v1/stack/sync", s.handleStackSync)
 		mux.HandleFunc("POST /api/v1/stack/rebase", s.handleStackRebase)
@@ -205,8 +224,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/project/start", s.handleProjectStart)
 		mux.HandleFunc("POST /api/v1/project/sync", s.handleProjectSync)
 
-		// Quick tasks endpoints
-		mux.HandleFunc("GET /quick", s.handleQuickTasksUI)
+		// Quick tasks endpoints (API always available, UI only in full mode)
 		mux.HandleFunc("GET /api/v1/quick", s.handleQuickTaskList)
 		mux.HandleFunc("POST /api/v1/quick", s.handleQuickTaskCreate)
 		mux.HandleFunc("POST /api/v1/quick/submit-source", s.handleQuickTaskSubmitSource)
@@ -219,6 +237,9 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleQuickTaskStart)
 		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleQuickTaskDelete)
 		mux.HandleFunc("GET /api/v1/quick/{taskId}/card", s.handleQuickTaskCard)
+		if !s.config.APIOnly {
+			mux.HandleFunc("GET /quick", s.handleQuickTasksUI)
+		}
 
 		// Running parallel tasks endpoints
 		mux.HandleFunc("GET /api/v1/running", s.handleRunningTasks)
@@ -232,12 +253,14 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/projects", s.handleListProjects)
 		mux.HandleFunc("POST /api/v1/projects/select", s.handleSelectProject)
 
-		// Settings endpoints (also available in global mode for viewing/editing config)
-		mux.HandleFunc("GET /settings", s.handleSettingsPage)
+		// Settings endpoints (API always available, UI only in full mode)
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+		if !s.config.APIOnly {
+			mux.HandleFunc("GET /settings", s.handleSettingsPage)
+		}
 
 		// Budget status endpoint (returns placeholder when no workspace)
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
@@ -260,18 +283,20 @@ func (s *Server) setupRouter() http.Handler {
 	mux.HandleFunc("GET /api/v1/agent/logs/stream", s.handleAgentLogs)
 	mux.HandleFunc("GET /api/v1/agent/logs/history", s.handleAgentLogsHistory)
 
-	// UI partial routes (for HTMX updates)
-	mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
-	mux.HandleFunc("GET /ui/partials/actions", s.handleActionsPartial)
-	mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
-	mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
-	mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
-	mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)
-	mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
-	mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
+	// UI partial routes (for HTMX updates) - skip in API-only mode
+	if !s.config.APIOnly {
+		mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
+		mux.HandleFunc("GET /ui/partials/actions", s.handleActionsPartial)
+		mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
+		mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
+		mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
+		mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)
+		mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
+		mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
 
-	// Main dashboard
-	mux.HandleFunc("GET /", s.handleDashboard)
+		// Main dashboard
+		mux.HandleFunc("GET /", s.handleDashboard)
+	}
 
 	// Wrap with middleware (logging, then auth)
 	handler := s.withMiddleware(mux)

@@ -1,7 +1,7 @@
 # Mehrhof IntelliJ Plugin - Build Commands
 
 # Java version - must match .github/workflows/ci.yml jetbrains job
-JAVA_VERSION ?= 21
+JAVA_VERSION ?= 22
 JAVA_HOME ?= $(shell /usr/libexec/java_home -v $(JAVA_VERSION) 2>/dev/null || echo "")
 
 # Gradle wrapper

@@ -26,6 +26,7 @@ The `serve` command starts a local HTTP server providing a web-based UI for mana
 | `--host` | string | localhost | Host to bind to (use 0.0.0.0 for network access) |
 | `--global` | bool | false | Run in global mode showing all projects |
 | `--open` | bool | false | Automatically open browser after server starts |
+| `--api` | bool | false | API-only mode (no web UI, for IDE plugins) |
 | `--tunnel-info` | bool | false | Show SSH tunnel instructions for remote access |
 
 ## Subcommands
@@ -145,6 +146,31 @@ mehr serve --open
 # Start in global mode to see all projects
 mehr serve --global
 ```
+
+### API-Only Mode
+
+Start the server without the web UI for IDE plugin integration (JetBrains, VS Code):
+
+```bash
+# API-only mode - no web UI, all /api/v1/* endpoints available
+mehr serve --api --port 8080
+
+# API-only with network binding (authentication required)
+mehr serve --api --host 0.0.0.0 --port 8080
+```
+
+**What's available in API-only mode:**
+- ✅ All `/api/v1/*` endpoints including `/api/v1/interactive/*`
+- ✅ Health check at `/health`
+- ✅ Server-Sent Events at `/api/v1/events`
+- ✅ Agent log streaming at `/api/v1/agent/logs/*`
+
+**What's disabled in API-only mode:**
+- ❌ Web UI pages (`/`, `/project`, `/interactive`, etc.)
+- ❌ Static assets (`/static/*`)
+- ❌ UI partials (`/ui/partials/*`)
+
+**Use case:** IDE plugins connect via API endpoints and don't require the web UI.
 
 ### Remote Access
 
