@@ -314,17 +314,22 @@ func (c *controller) Disconnect() error {
 }
 
 // isConnectionClosedError checks if an error is a "connection closed" type error.
+// This includes EOF which occurs when the WebSocket connection is dropped.
 func isConnectionClosedError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Import strings package at top of file if not already present
+	// Check for io.EOF specifically
+	if errors.Is(err, io.EOF) {
+		return true
+	}
 	errStr := err.Error()
 	// Common error messages for closed connections
 	return strings.Contains(errStr, "use of closed network connection") ||
 		strings.Contains(errStr, "connection reset by peer") ||
 		strings.Contains(errStr, "broken pipe") ||
-		strings.Contains(errStr, "connection refused")
+		strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "EOF")
 }
 
 // isTargetNotFoundError checks if an error is a CDP "target not found" error.
@@ -385,10 +390,20 @@ func (c *controller) ListTabs(ctx context.Context) ([]Tab, error) {
 	for i := range maxRetries {
 		pages, err := c.browser.Pages()
 		if err != nil {
-			// During concurrent tab operations, targets may be closed
-			// between the time we request the list and when CDP responds.
-			// Return empty list instead of failing.
-			if isTargetNotFoundError(err) {
+			// Handle transient errors that can occur during browser operations:
+			// - Target not found: tab was closed between list request and response
+			// - Connection closed/EOF: WebSocket connection dropped temporarily
+			if isTargetNotFoundError(err) || isConnectionClosedError(err) {
+				// On transient error, retry with backoff if retries remaining
+				if i < maxRetries-1 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(time.Duration(i+1) * 100 * time.Millisecond):
+						continue
+					}
+				}
+				// Last retry, return empty list instead of hard failure
 				return []Tab{}, nil
 			}
 
