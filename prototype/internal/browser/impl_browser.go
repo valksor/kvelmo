@@ -366,6 +366,8 @@ func (c *controller) GetPort() int {
 }
 
 // ListTabs returns all open tabs.
+// Implements retry logic to handle race conditions with newly created pages
+// that may not immediately appear in Chrome's target list.
 func (c *controller) ListTabs(ctx context.Context) ([]Tab, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -374,33 +376,55 @@ func (c *controller) ListTabs(ctx context.Context) ([]Tab, error) {
 		return nil, errNotFound("not connected")
 	}
 
-	pages, err := c.browser.Pages()
-	if err != nil {
-		// During concurrent tab operations, targets may be closed
-		// between the time we request the list and when CDP responds.
-		// Return empty list instead of failing.
-		if isTargetNotFoundError(err) {
-			return []Tab{}, nil
-		}
+	// Try up to 3 times to handle race condition with newly created pages.
+	// After OpenTab creates a page, there's a timing window where Chrome's CDP
+	// target list hasn't yet registered the new target, causing Pages() to
+	// return an incomplete list.
+	const maxRetries = 3
 
-		return nil, errListTabs(err)
-	}
-
-	var result []Tab
-	for _, page := range pages {
-		info, err := page.Info()
+	for i := range maxRetries {
+		pages, err := c.browser.Pages()
 		if err != nil {
-			// Page was closed concurrently, skip it
-			continue
+			// During concurrent tab operations, targets may be closed
+			// between the time we request the list and when CDP responds.
+			// Return empty list instead of failing.
+			if isTargetNotFoundError(err) {
+				return []Tab{}, nil
+			}
+
+			return nil, errListTabs(err)
 		}
-		result = append(result, Tab{
-			ID:    string(info.TargetID),
-			Title: info.Title,
-			URL:   info.URL,
-		})
+
+		var result []Tab
+		for _, page := range pages {
+			info, err := page.Info()
+			if err != nil {
+				// Page was closed concurrently, skip it
+				continue
+			}
+			result = append(result, Tab{
+				ID:    string(info.TargetID),
+				Title: info.Title,
+				URL:   info.URL,
+			})
+		}
+
+		// If we got results or this is the last retry, return immediately.
+		// This avoids unnecessary delays when the page list is populated correctly.
+		if len(result) > 0 || i == maxRetries-1 {
+			return result, nil
+		}
+
+		// Short backoff before retry (100ms, 200ms) to give Chrome time to register the target.
+		// Check context cancellation to respect caller's timeout.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(i+1) * 100 * time.Millisecond):
+		}
 	}
 
-	return result, nil
+	return []Tab{}, nil
 }
 
 // OpenTab opens a new tab with the given URL.
