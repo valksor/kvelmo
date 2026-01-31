@@ -1,4 +1,13 @@
-@import "tailwindcss"; /* Self-hosted Inter font */
+@import "tailwindcss";
+
+@plugin "daisyui" {
+	themes: winter --default, business --prefersdark;
+}
+
+/* Make dark: variant work with DaisyUI data-theme */
+@custom-variant dark (&:where([data-theme="business"], [data-theme="business"] *));
+
+/* Self-hosted Inter font */
 @font-face {
 	font-family: 'Inter';
 	font-style: normal;
@@ -46,8 +55,6 @@
 
 @source "internal/server/templates/*.html";
 @source "internal/server/templates/**/*.html";
-
-@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
 	--font-sans: 'Inter', sans-serif;
