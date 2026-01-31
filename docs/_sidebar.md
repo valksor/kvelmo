@@ -43,6 +43,7 @@
 - **IDE Integrations**
   - [Overview](ide/index.md)
   - [JetBrains](ide/jetbrains.md)
+  - [VS Code](ide/vscode.md)
 
 - **CLI**
   - [Overview](cli/index.md)
