@@ -10,7 +10,7 @@ Mehrhof is a **Go CLI + Web UI** for AI-powered task automation. It orchestrates
 
 **Key constraint**: ALL features require BOTH CLI and Web UI implementations unless explicitly CLI-only.
 
-**Note**: JetBrains plugin consumes existing REST API + SSE endpoints. When adding workflow commands, ensure the `/interactive` API supports the new operation - the plugin automatically inherits the functionality.
+**Note**: IDE plugins (JetBrains, VS Code) consume existing REST API + SSE endpoints. When adding workflow commands, ensure the `/interactive` API supports the new operation - plugins automatically inherit the functionality.
 
 ---
 
@@ -20,7 +20,7 @@ Mehrhof is a **Go CLI + Web UI** for AI-powered task automation. It orchestrates
 
 Every feature needs CLI (`cmd/mehr/commands/`) + Web UI (`internal/server/`). Shared logic goes in `internal/conductor/`. Both interfaces call the same conductor methods.
 
-**Interfaces**: CLI, Interactive CLI (`mehr interactive`), Web UI, Interactive Web (`/interactive`), JetBrains Plugin
+**Interfaces**: CLI, Interactive CLI (`mehr interactive`), Web UI, Interactive Web (`/interactive`), JetBrains Plugin, VS Code Extension
 
 See [docs/reference/feature-parity.md](docs/reference/feature-parity.md) for implementation checklist and status tables.
 
@@ -176,6 +176,7 @@ mehr agents | providers | templates | update | generate-secret
 | Web UI | → `serve` → `internal/server/server.go` → handlers → templates |
 | Interactive Web | → `/interactive` handler → SSE + HTMX |
 | JetBrains Plugin | → `ide/jetbrains/` → Kotlin plugin → REST API + SSE |
+| VS Code Extension | → `ide/vscode/` → TypeScript extension → REST API + SSE |
 
 ### Core Packages
 
@@ -194,7 +195,8 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/mcp/` | Model Context Protocol server |
 | `internal/memory/` | Semantic memory with vector embeddings |
 | `internal/server/` | Web UI: REST API, SSE, authentication |
-| `ide/jetbrains/` | JetBrains IDE plugin - native integration via REST API + SSE |
+| `ide/jetbrains/` | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE |
+| `ide/vscode/` | VS Code extension - TypeScript, webview-based UI via REST API + SSE |
 | `internal/links/` | Bidirectional linking (`[[reference]]` syntax) |
 | `internal/plugin/` | External agent/provider extensions (JSON-RPC) |
 | `internal/security/` | SAST (gosec), secrets (gitleaks), vulns (govulncheck) |

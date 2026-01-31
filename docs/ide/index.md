@@ -7,7 +7,7 @@ Mehrhof provides native IDE plugins that integrate directly with your developmen
 | IDE | Status | Installation |
 |-----|--------|--------------|
 | [JetBrains](#jetbrains) | ✅ Available | [Install](jetbrains.md) |
-| [VS Code](#vscode) | 🚧 Planned | Coming soon |
+| [VS Code](#vscode) | ✅ Available | [Install](vscode.md) |
 
 ## How It Works
 
@@ -52,10 +52,13 @@ Supports IntelliJ IDEA, GoLand, WebStorm, PyCharm, and other JetBrains IDEs (202
 
 ## VS Code
 
-*Coming soon.*
+VS Code extension providing full Mehrhof integration.
 
-The VS Code extension will provide similar functionality:
-- Sidebar panel with task tree
-- Status bar item
-- Command palette integration
+**Features:**
+- Interactive sidebar panel with chat and workflow controls
+- Task tree view for browsing tasks
+- Status bar widget showing current state
+- Command palette integration for all workflow commands
 - Output channel for agent logs
+
+[Full VS Code documentation →](vscode.md)
