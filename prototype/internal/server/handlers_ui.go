@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/valksor/go-mehrhof/internal/server/views"
+	"github.com/valksor/go-toolkit/licensing"
 )
 
 // handleDashboard renders the main dashboard page.
@@ -344,7 +345,8 @@ func (s *Server) handleLicensePage(w http.ResponseWriter, r *http.Request) {
 	)
 
 	data := views.LicenseData{
-		PageData: pageData,
+		PageData:       pageData,
+		ProjectLicense: licensing.GetProjectLicense(),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

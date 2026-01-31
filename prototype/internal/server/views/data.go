@@ -556,8 +556,9 @@ type LoginData struct {
 type LicenseData struct {
 	PageData
 
-	Licenses []LicenseItemData
-	Count    int
+	ProjectLicense string
+	Licenses       []LicenseItemData
+	Count          int
 }
 
 // LicenseItemData represents a license entry.

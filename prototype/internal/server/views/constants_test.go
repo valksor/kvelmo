@@ -14,8 +14,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "○",
 				Badge:    "Ready",
-				Color:    "text-gray-500 dark:text-gray-400",
-				BarColor: "bg-gray-500",
+				Color:    "text-base-content/60",
+				BarColor: "bg-base-300",
 			},
 		},
 		{
@@ -24,8 +24,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "◐",
 				Badge:    "Planning...",
-				Color:    "text-blue-500 dark:text-blue-400",
-				BarColor: "bg-blue-500",
+				Color:    "text-info",
+				BarColor: "bg-info",
 			},
 		},
 		{
@@ -34,8 +34,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "◑",
 				Badge:    "Implementing...",
-				Color:    "text-purple-500 dark:text-purple-400",
-				BarColor: "bg-purple-500",
+				Color:    "text-warning",
+				BarColor: "bg-warning",
 			},
 		},
 		{
@@ -44,8 +44,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "◉",
 				Badge:    "Reviewing...",
-				Color:    "text-orange-500 dark:text-orange-400",
-				BarColor: "bg-orange-500",
+				Color:    "text-primary",
+				BarColor: "bg-primary",
 			},
 		},
 		{
@@ -54,8 +54,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "●",
 				Badge:    "Done",
-				Color:    "text-green-500 dark:text-green-400",
-				BarColor: "bg-green-500",
+				Color:    "text-success",
+				BarColor: "bg-success",
 			},
 		},
 		{
@@ -64,8 +64,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "✗",
 				Badge:    "Failed",
-				Color:    "text-red-500 dark:text-red-400",
-				BarColor: "bg-red-500",
+				Color:    "text-error",
+				BarColor: "bg-error",
 			},
 		},
 		{
@@ -74,8 +74,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "?",
 				Badge:    "Waiting...",
-				Color:    "text-yellow-500 dark:text-yellow-400",
-				BarColor: "bg-yellow-500",
+				Color:    "text-warning",
+				BarColor: "bg-warning",
 			},
 		},
 		{
@@ -84,8 +84,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "⏸",
 				Badge:    "Paused",
-				Color:    "text-yellow-600 dark:text-yellow-500",
-				BarColor: "bg-yellow-600",
+				Color:    "text-neutral",
+				BarColor: "bg-neutral",
 			},
 		},
 		{
@@ -94,8 +94,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "?",
 				Badge:    "unknown-state",
-				Color:    "text-gray-500 dark:text-gray-400",
-				BarColor: "bg-gray-500",
+				Color:    "text-base-content/60",
+				BarColor: "bg-base-300",
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func TestGetStateDisplay(t *testing.T) {
 			want: StateDisplayInfo{
 				Icon:     "?",
 				Badge:    "",
-				Color:    "text-gray-500 dark:text-gray-400",
-				BarColor: "bg-gray-500",
+				Color:    "text-base-content/60",
+				BarColor: "bg-base-300",
 			},
 		},
 	}
@@ -140,7 +140,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: SpecStatusPending,
 			want: SpecStatusDisplayInfo{
 				Icon:  "○",
-				Color: "text-gray-400 dark:text-gray-500",
+				Color: "text-base-content/40",
 			},
 		},
 		{
@@ -148,7 +148,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: SpecStatusActive,
 			want: SpecStatusDisplayInfo{
 				Icon:  "◐",
-				Color: "text-blue-500 dark:text-blue-400",
+				Color: "text-info",
 			},
 		},
 		{
@@ -156,7 +156,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: SpecStatusCompleted,
 			want: SpecStatusDisplayInfo{
 				Icon:  "●",
-				Color: "text-green-500 dark:text-green-400",
+				Color: "text-success",
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: SpecStatusSkipped,
 			want: SpecStatusDisplayInfo{
 				Icon:  "⊘",
-				Color: "text-gray-400 dark:text-gray-500",
+				Color: "text-base-content/40",
 			},
 		},
 		{
@@ -172,7 +172,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: "unknown-status",
 			want: SpecStatusDisplayInfo{
 				Icon:  "?",
-				Color: "text-gray-400 dark:text-gray-500",
+				Color: "text-base-content/40",
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func TestGetSpecStatusDisplay(t *testing.T) {
 			status: "",
 			want: SpecStatusDisplayInfo{
 				Icon:  "?",
-				Color: "text-gray-400 dark:text-gray-500",
+				Color: "text-base-content/40",
 			},
 		},
 	}
