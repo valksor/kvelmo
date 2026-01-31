@@ -1,3 +1,4 @@
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
@@ -103,6 +104,12 @@ tasks {
     test {
         useJUnitPlatform()
         finalizedBy(jacocoTestReport)
+        // Fix for JaCoCo 0% coverage with IntelliJ Platform plugin
+        // See: https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1383
+        configure<JacocoTaskExtension> {
+            isIncludeNoLocationClasses = true
+            excludes = listOf("jdk.internal.*")
+        }
     }
 
     jacocoTestReport {
@@ -111,6 +118,8 @@ tasks {
             xml.required.set(true)
             html.required.set(true)
         }
+        // Use instrumented classes to match runtime execution data
+        classDirectories.setFrom(named("instrumentCode"))
     }
 
     buildSearchableOptions {
