@@ -195,9 +195,7 @@ suite('API Client Test Suite', () => {
       title: 'Test Task',
       state: 'planning',
       specifications: 2,
-      next_actions: [
-        { command: 'implement', description: 'Execute the specifications' },
-      ],
+      next_actions: [{ command: 'implement', description: 'Execute the specifications' }],
     };
     setupMockFetch(mockResponse);
 
@@ -226,7 +224,7 @@ suite('API Client Test Suite', () => {
   test('startTask sends correct request body', async () => {
     let capturedBody: unknown;
     global.fetch = ((_url: unknown, init?: RequestInit): Promise<Response> => {
-      capturedBody = init?.body ? JSON.parse(init.body as string) as unknown : undefined;
+      capturedBody = init?.body ? (JSON.parse(init.body as string) as unknown) : undefined;
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -244,7 +242,7 @@ suite('API Client Test Suite', () => {
   test('executeCommand sends correct request body', async () => {
     let capturedBody: unknown;
     global.fetch = ((_url: unknown, init?: RequestInit): Promise<Response> => {
-      capturedBody = init?.body ? JSON.parse(init.body as string) as unknown : undefined;
+      capturedBody = init?.body ? (JSON.parse(init.body as string) as unknown) : undefined;
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -262,7 +260,7 @@ suite('API Client Test Suite', () => {
   test('chat sends correct request body', async () => {
     let capturedBody: unknown;
     global.fetch = ((_url: unknown, init?: RequestInit): Promise<Response> => {
-      capturedBody = init?.body ? JSON.parse(init.body as string) as unknown : undefined;
+      capturedBody = init?.body ? (JSON.parse(init.body as string) as unknown) : undefined;
       return Promise.resolve({
         ok: true,
         status: 200,

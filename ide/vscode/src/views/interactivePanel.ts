@@ -125,9 +125,29 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
 
   private isCommand(input: string): boolean {
     const commands = [
-      'start', 'plan', 'implement', 'review', 'finish', 'abandon', 'continue',
-      'undo', 'redo', 'status', 'st', 'cost', 'list', 'budget', 'help',
-      'note', 'quick', 'label', 'specification', 'spec', 'find', 'memory', 'simplify'
+      'start',
+      'plan',
+      'implement',
+      'review',
+      'finish',
+      'abandon',
+      'continue',
+      'undo',
+      'redo',
+      'status',
+      'st',
+      'cost',
+      'list',
+      'budget',
+      'help',
+      'note',
+      'quick',
+      'label',
+      'specification',
+      'spec',
+      'find',
+      'memory',
+      'simplify',
     ];
     const firstWord = input.split(/\s+/)[0].toLowerCase();
     return commands.includes(firstWord);
@@ -155,7 +175,12 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
       }
       await this.service.refreshState();
     } catch (error) {
-      const msg = error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Unknown error';
+      const msg =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error';
       this.addMessage('error', msg);
     }
   }
@@ -175,23 +200,28 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
         this.addMessage('error', response.error);
       }
     } catch (error) {
-      const msg = error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Unknown error';
+      const msg =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error';
       this.addMessage('error', msg);
     }
   }
 
   private async handleAction(action: string): Promise<void> {
     const commandMap: Record<string, string> = {
-      'startTask': 'mehrhof.startTask',
-      'plan': 'mehrhof.plan',
-      'implement': 'mehrhof.implement',
-      'review': 'mehrhof.review',
-      'continue': 'mehrhof.continue',
-      'finish': 'mehrhof.finish',
-      'abandon': 'mehrhof.abandon',
-      'undo': 'mehrhof.undo',
-      'redo': 'mehrhof.redo',
-      'status': 'mehrhof.status',
+      startTask: 'mehrhof.startTask',
+      plan: 'mehrhof.plan',
+      implement: 'mehrhof.implement',
+      review: 'mehrhof.review',
+      continue: 'mehrhof.continue',
+      finish: 'mehrhof.finish',
+      abandon: 'mehrhof.abandon',
+      undo: 'mehrhof.undo',
+      redo: 'mehrhof.redo',
+      status: 'mehrhof.status',
     };
 
     const command = commandMap[action];

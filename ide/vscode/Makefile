@@ -1,4 +1,4 @@
-.PHONY: all build watch test lint lint-fix package install clean deps
+.PHONY: all build watch test lint lint-fix format format-check quality package install clean deps
 
 all: build
 
@@ -34,6 +34,18 @@ lint: deps
 lint-fix: deps
 	bun run lint:fix
 
+# Format code with Prettier
+format: deps
+	bun run format
+
+# Check formatting (for CI)
+format-check: deps
+	bun run format:check
+
+# Run all quality checks (lint + format)
+quality: deps
+	bun run quality
+
 # Package the extension
 package: build
 	bun run package
@@ -57,6 +69,9 @@ help:
 	@echo "  test-unit    - Run unit tests (fast, no VS Code)"
 	@echo "  lint         - Run ESLint"
 	@echo "  lint-fix     - Run ESLint with auto-fix"
+	@echo "  format       - Format code with Prettier"
+	@echo "  format-check - Check formatting (for CI)"
+	@echo "  quality      - Run all quality checks (lint + format)"
 	@echo "  package      - Create .vsix package"
 	@echo "  install      - Install extension in VS Code"
 	@echo "  clean        - Remove build artifacts"

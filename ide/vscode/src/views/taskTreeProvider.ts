@@ -62,7 +62,9 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskItem>, vsco
   private readonly service: MehrhofProjectService;
   private tasks: TaskSummary[] = [];
 
-  private readonly _onDidChangeTreeData = new vscode.EventEmitter<TaskItem | undefined | null | void>();
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<
+    TaskItem | undefined | null | void
+  >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   constructor(service: MehrhofProjectService) {

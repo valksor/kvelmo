@@ -8,10 +8,7 @@ export class StatusBarWidget implements vscode.Disposable {
   constructor(service: MehrhofProjectService) {
     this.service = service;
 
-    this.statusBarItem = vscode.window.createStatusBarItem(
-      vscode.StatusBarAlignment.Left,
-      100
-    );
+    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     this.statusBarItem.command = 'mehrhof.statusBarClicked';
     this.statusBarItem.show();
 
@@ -55,17 +52,31 @@ export class StatusBarWidget implements vscode.Disposable {
 
     if (task && work?.title) {
       this.statusBarItem.text = `${stateIcon} Mehrhof: ${stateDisplay} - ${this.truncate(work.title, 30)}`;
-      this.statusBarItem.tooltip = this.buildTooltip(workflowState, task.id, work.title, task.branch);
+      this.statusBarItem.tooltip = this.buildTooltip(
+        workflowState,
+        task.id,
+        work.title,
+        task.branch
+      );
     } else if (task) {
       this.statusBarItem.text = `${stateIcon} Mehrhof: ${stateDisplay} - ${this.truncate(task.id, 10)}`;
-      this.statusBarItem.tooltip = this.buildTooltip(workflowState, task.id, undefined, task.branch);
+      this.statusBarItem.tooltip = this.buildTooltip(
+        workflowState,
+        task.id,
+        undefined,
+        task.branch
+      );
     } else {
       this.statusBarItem.text = `${stateIcon} Mehrhof: ${stateDisplay}`;
       this.statusBarItem.tooltip = 'Click to show actions';
     }
 
     // Set background color for active states
-    if (workflowState === 'planning' || workflowState === 'implementing' || workflowState === 'reviewing') {
+    if (
+      workflowState === 'planning' ||
+      workflowState === 'implementing' ||
+      workflowState === 'reviewing'
+    ) {
       this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     } else {
       this.statusBarItem.backgroundColor = undefined;
@@ -162,7 +173,10 @@ export class StatusBarWidget implements vscode.Disposable {
       items.push({ label: '$(redo) Redo', description: 'Redo checkpoint' });
       items.push({ label: '$(info) Status', description: 'Show task status' });
       items.push({ label: '$(refresh) Refresh', description: 'Refresh state' });
-      items.push({ label: '$(debug-disconnect) Disconnect', description: 'Disconnect from server' });
+      items.push({
+        label: '$(debug-disconnect) Disconnect',
+        description: 'Disconnect from server',
+      });
     }
 
     void vscode.window.showQuickPick(items, { placeHolder: 'Mehrhof Actions' }).then((selected) => {
