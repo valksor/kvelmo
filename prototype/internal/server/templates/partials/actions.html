@@ -21,7 +21,7 @@
             </button>
             <div
                 data-dropdown-menu
-                class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-surface-800 rounded-xl shadow-lg border border-surface-200 dark:border-surface-700 py-1 z-50"
+                class="hidden absolute left-0 mt-2 w-48 bg-base-100 rounded-xl shadow-lg border border-base-300 py-1 z-50"
             >
                 {{if eq .Command "implement"}}
                 <button
@@ -29,7 +29,7 @@
                     {{if not $.IsViewer}}hx-vals='{"mode": "all"}'{{end}}
                     hx-target="#main-content"
                     {{if $.IsViewer}}disabled{{end}}
-                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
+                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-base-content/80 hover:bg-base-200 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
                 >
                     Implement All
                 </button>
@@ -38,7 +38,7 @@
                     {{if not $.IsViewer}}hx-vals='{"mode": "next"}'{{end}}
                     hx-target="#main-content"
                     {{if $.IsViewer}}disabled{{end}}
-                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
+                    class="block w-full px-4 py-2.5 text-left text-sm font-medium text-base-content/80 hover:bg-base-200 transition-smooth {{if $.IsViewer}}opacity-50 cursor-not-allowed{{end}}"
                 >
                     Implement Next Spec
                 </button>
@@ -86,7 +86,7 @@
         {{end}}
     </div>
     {{else}}
-    <p class="mt-4 text-surface-500 dark:text-surface-400 text-center py-4">
+    <p class="mt-4 text-base-content/60 text-center py-4">
         No actions available
     </p>
     {{end}}

@@ -1,10 +1,10 @@
 {{/* Specifications partial - displays the list of specifications with progress */}}
 {{define "specifications"}}
 <div class="card p-6" id="specifications-section">
-    <div class="flex items-center justify-between pb-4 border-b border-surface-100 dark:border-surface-700">
-        <h3 class="text-xl font-bold text-surface-900 dark:text-surface-100">Specifications</h3>
+    <div class="flex items-center justify-between pb-4 border-b border-base-200">
+        <h3 class="text-xl font-bold text-base-content">Specifications</h3>
         {{if .}}
-        <span class="text-sm text-surface-500 dark:text-surface-400">
+        <span class="text-sm text-base-content/60">
             {{.Done}}/{{.Total}} complete
         </span>
         {{end}}
@@ -14,10 +14,10 @@
     {{/* Progress bar */}}
     {{if gt .Total 0}}
     <div class="mt-4 mb-6">
-        <div class="h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+        <div class="h-2 bg-base-200 rounded-full overflow-hidden">
             <div class="h-full bg-gradient-to-r from-success-500 to-success-400 transition-all duration-500" style="width: {{.Progress}}%"></div>
         </div>
-        <p class="text-xs text-surface-500 dark:text-surface-400 mt-1">{{formatPercent .Progress}} complete</p>
+        <p class="text-xs text-base-content/60 mt-1">{{formatPercent .Progress}} complete</p>
     </div>
     {{end}}
 
@@ -25,17 +25,17 @@
     {{if .Items}}
     <div class="space-y-4">
         {{range .Items}}
-        <div class="p-4 rounded-xl bg-surface-50 dark:bg-surface-900/50 border border-surface-100 dark:border-surface-700 {{if .IsActive}}ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-surface-800{{end}}">
+        <div class="p-4 rounded-xl bg-base-100 border border-base-200 {{if .IsActive}}ring-2 ring-primary ring-offset-2 {{end}}">
             {{/* Header */}}
             <div class="flex items-start justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <span class="text-lg {{.StatusColor}}">{{.StatusIcon}}</span>
-                    <h4 class="font-semibold text-surface-900 dark:text-surface-100">
+                    <h4 class="font-semibold text-base-content">
                         {{if .Title}}{{.Title}}{{else}}Spec #{{.Number}}{{end}}
                     </h4>
                 </div>
                 {{if .Component}}
-                <span class="px-2 py-1 text-xs font-medium rounded-full bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400">
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-base-200 text-base-content/60">
                     {{.Component}}
                 </span>
                 {{end}}
@@ -43,19 +43,19 @@
 
             {{/* Description */}}
             {{if .Description}}
-            <div class="text-sm text-surface-600 dark:text-surface-400 whitespace-pre-wrap">
+            <div class="text-sm text-base-content/60 whitespace-pre-wrap">
                 {{truncate .Description 500}}
             </div>
             {{end}}
 
             {{/* Timestamps */}}
             {{if or .CreatedAt .CompletedAt}}
-            <div class="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700 flex items-center gap-4 text-xs text-surface-500 dark:text-surface-400">
+            <div class="mt-3 pt-3 border-t border-base-200 flex items-center gap-4 text-xs text-base-content/60">
                 {{if .CreatedAt}}
                 <span>Created: {{.CreatedAt}}</span>
                 {{end}}
                 {{if .CompletedAt}}
-                <span class="text-success-600 dark:text-success-400">Completed: {{.CompletedAt}}</span>
+                <span class="text-success-600">Completed: {{.CompletedAt}}</span>
                 {{end}}
             </div>
             {{end}}
@@ -63,11 +63,11 @@
         {{end}}
     </div>
     {{else}}
-    <p class="text-surface-500 dark:text-surface-400 text-center py-8">No specifications yet</p>
+    <p class="text-base-content/60 text-center py-8">No specifications yet</p>
     {{end}}
     {{else}}
-    <p class="mt-4 text-surface-500 dark:text-surface-400 text-center py-8">
-        No specifications yet. Run <code class="px-2 py-1 bg-surface-100 dark:bg-surface-800 rounded">plan</code> to generate them.
+    <p class="mt-4 text-base-content/60 text-center py-8">
+        No specifications yet. Run <code class="px-2 py-1 bg-base-200 rounded">plan</code> to generate them.
     </p>
     {{end}}
 </div>
