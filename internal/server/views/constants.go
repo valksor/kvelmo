@@ -35,23 +35,23 @@ const (
 	WorkTypeProject = "project"
 )
 
-// Button classes - Tailwind CSS classes for action buttons.
+// Button classes - DaisyUI button classes.
 const (
-	BtnPrimary   = "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-	BtnSecondary = "inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-	BtnDanger    = "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800"
-	BtnSuccess   = "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800"
-	BtnWarning   = "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:focus:ring-offset-gray-800"
-	BtnGhost     = "inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+	BtnPrimary   = "btn btn-primary"
+	BtnSecondary = "btn btn-secondary"
+	BtnDanger    = "btn btn-error"
+	BtnSuccess   = "btn btn-success"
+	BtnWarning   = "btn btn-warning"
+	BtnGhost     = "btn btn-ghost"
 )
 
-// Progress bar colors - for budget and completion indicators.
+// Progress bar colors - DaisyUI semantic colors for budget and completion indicators.
 const (
-	ProgressGreen  = "bg-green-500"
-	ProgressYellow = "bg-yellow-500"
-	ProgressRed    = "bg-red-500"
-	ProgressBlue   = "bg-blue-500"
-	ProgressPurple = "bg-purple-500"
+	ProgressGreen  = "bg-success"
+	ProgressYellow = "bg-warning"
+	ProgressRed    = "bg-error"
+	ProgressBlue   = "bg-info"
+	ProgressPurple = "bg-primary"
 )
 
 // StateDisplayInfo contains all display properties for a workflow state.
@@ -64,54 +64,55 @@ type StateDisplayInfo struct {
 
 // StateDisplay maps workflow states to their display properties.
 // This is the single source of truth for state visualization.
+// Uses DaisyUI semantic color classes.
 var StateDisplay = map[string]StateDisplayInfo{
 	StateIdle: {
 		Icon:     "○",
 		Badge:    "Ready",
-		Color:    "text-gray-500 dark:text-gray-400",
-		BarColor: "bg-gray-500",
+		Color:    "text-base-content/60",
+		BarColor: "bg-base-300",
 	},
 	StatePlanning: {
 		Icon:     "◐",
 		Badge:    "Planning...",
-		Color:    "text-blue-500 dark:text-blue-400",
-		BarColor: "bg-blue-500",
+		Color:    "text-info",
+		BarColor: "bg-info",
 	},
 	StateImplementing: {
 		Icon:     "◑",
 		Badge:    "Implementing...",
-		Color:    "text-purple-500 dark:text-purple-400",
-		BarColor: "bg-purple-500",
+		Color:    "text-warning",
+		BarColor: "bg-warning",
 	},
 	StateReviewing: {
 		Icon:     "◉",
 		Badge:    "Reviewing...",
-		Color:    "text-orange-500 dark:text-orange-400",
-		BarColor: "bg-orange-500",
+		Color:    "text-primary",
+		BarColor: "bg-primary",
 	},
 	StateDone: {
 		Icon:     "●",
 		Badge:    "Done",
-		Color:    "text-green-500 dark:text-green-400",
-		BarColor: "bg-green-500",
+		Color:    "text-success",
+		BarColor: "bg-success",
 	},
 	StateFailed: {
 		Icon:     "✗",
 		Badge:    "Failed",
-		Color:    "text-red-500 dark:text-red-400",
-		BarColor: "bg-red-500",
+		Color:    "text-error",
+		BarColor: "bg-error",
 	},
 	StateWaiting: {
 		Icon:     "?",
 		Badge:    "Waiting...",
-		Color:    "text-yellow-500 dark:text-yellow-400",
-		BarColor: "bg-yellow-500",
+		Color:    "text-warning",
+		BarColor: "bg-warning",
 	},
 	StatePaused: {
 		Icon:     "⏸",
 		Badge:    "Paused",
-		Color:    "text-yellow-600 dark:text-yellow-500",
-		BarColor: "bg-yellow-600",
+		Color:    "text-neutral",
+		BarColor: "bg-neutral",
 	},
 }
 
@@ -124,8 +125,8 @@ func GetStateDisplay(state string) StateDisplayInfo {
 	return StateDisplayInfo{
 		Icon:     "?",
 		Badge:    state,
-		Color:    "text-gray-500 dark:text-gray-400",
-		BarColor: "bg-gray-500",
+		Color:    "text-base-content/60",
+		BarColor: "bg-base-300",
 	}
 }
 
@@ -144,22 +145,23 @@ type SpecStatusDisplayInfo struct {
 }
 
 // SpecStatusDisplay maps spec statuses to their display properties.
+// Uses DaisyUI semantic color classes.
 var SpecStatusDisplay = map[string]SpecStatusDisplayInfo{
 	SpecStatusPending: {
 		Icon:  "○",
-		Color: "text-gray-400 dark:text-gray-500",
+		Color: "text-base-content/40",
 	},
 	SpecStatusActive: {
 		Icon:  "◐",
-		Color: "text-blue-500 dark:text-blue-400",
+		Color: "text-info",
 	},
 	SpecStatusCompleted: {
 		Icon:  "●",
-		Color: "text-green-500 dark:text-green-400",
+		Color: "text-success",
 	},
 	SpecStatusSkipped: {
 		Icon:  "⊘",
-		Color: "text-gray-400 dark:text-gray-500",
+		Color: "text-base-content/40",
 	},
 }
 
@@ -171,22 +173,22 @@ func GetSpecStatusDisplay(status string) SpecStatusDisplayInfo {
 
 	return SpecStatusDisplayInfo{
 		Icon:  "?",
-		Color: "text-gray-400 dark:text-gray-500",
+		Color: "text-base-content/40",
 	}
 }
 
-// Label color palettes - deterministic colors based on label hash.
+// Label color palettes - DaisyUI badge variants for deterministic colors based on label hash.
 var labelColors = []string{
-	"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-	"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-	"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-	"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-	"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-	"bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-	"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-	"bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-	"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-	"bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+	"badge badge-info badge-outline",
+	"badge badge-success badge-outline",
+	"badge badge-warning badge-outline",
+	"badge badge-error badge-outline",
+	"badge badge-primary badge-outline",
+	"badge badge-secondary badge-outline",
+	"badge badge-accent badge-outline",
+	"badge badge-neutral badge-outline",
+	"badge badge-info badge-soft",
+	"badge badge-success badge-soft",
 }
 
 // LabelColor returns a deterministic color class for a label based on its hash.
