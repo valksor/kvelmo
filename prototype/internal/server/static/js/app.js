@@ -59,7 +59,13 @@ function reinitAfterSwap() {
     initTheme();
     updateThemeIcons();
 
-    // Note: Dropdowns use event delegation, so no reinitialization needed
+    // Reinit notifications for navbar bell
+    initNotifications();
+
+    // Reinit UI components
+    initDropdowns();
+    initMoreMenu();
+    initMobileMenu();
 }
 
 // Initialize on DOM ready
