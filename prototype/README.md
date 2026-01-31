@@ -214,6 +214,26 @@ ssh -R 3000:localhost:3000 user@your-server.com
 
 ---
 
+## IDE Integrations
+
+Use Mehrhof directly in your IDE without switching to browser or terminal.
+
+| IDE | Status | Features |
+|-----|--------|----------|
+| **JetBrains** (IntelliJ, GoLand, etc.) | ✅ Available | Tool window, status bar, menu actions |
+| **VS Code** | 🚧 Planned | Coming soon |
+
+**JetBrains Plugin:**
+```bash
+# Build from source
+cd ide/jetbrains && make build
+# Install: Settings → Plugins → Install from Disk → build/distributions/*.zip
+```
+
+Requires JetBrains IDE 2025.1+ and `mehr` CLI installed. The plugin can start `mehr serve` automatically. **[Full IDE Documentation](https://valksor.com/docs/mehrhof/nightly/#/ide/index)**
+
+---
+
 ## For CLI Users
 
 Prefer the command line? Mehrhof's CLI offers the same features with scriptable automation.
@@ -243,8 +263,11 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 **Recovery commands:**
 - `mehr continue` - Resume workflow, optionally auto-execute (`--auto`)
 - `mehr undo` / `mehr redo` - Revert to previous checkpoint
+- `mehr reset` - Reset stuck workflow state to idle (preserves all work)
 - `mehr abandon` - Abandon task without merging
 - `mehr simplify` - Auto-detects what to simplify (task input, specs, or code)
+
+**Tip:** Use `--force` on step commands to reset and retry in one command (e.g., `mehr plan --force`).
 
 ## Essential Commands
 
@@ -269,6 +292,7 @@ Prefer the command line? Mehrhof's CLI offers the same features with scriptable 
 | `mehr finish` | Complete task and merge changes |
 | `mehr list` | List all tasks with search, filter, and sort (`--search`, `--filter`, `--sort`, `--format`) |
 | `mehr undo` / `mehr redo` | Navigate checkpoints |
+| `mehr reset` | Reset stuck workflow state to idle |
 | `mehr note <msg>` | Add notes for AI context |
 | `mehr cost` | View token usage and costs with ASCII charts (`--chart`) |
 | `mehr memory <query>` | Search semantic memory for similar past tasks |
