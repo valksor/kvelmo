@@ -1,0 +1,151 @@
+<idea-plugin>
+    <id>com.valksor.mehrhof</id>
+    <name>Mehrhof</name>
+    <version>0.1.0</version>
+    <vendor url="https://valksor.com" email="support@valksor.com">Valksor</vendor>
+
+    <description><![CDATA[
+        <p>AI-powered task automation for software development.</p>
+        <p>Mehrhof helps you:</p>
+        <ul>
+            <li>Plan features with AI-generated specifications</li>
+            <li>Implement code changes with AI assistance</li>
+            <li>Review code automatically</li>
+            <li>Track costs and token usage</li>
+        </ul>
+        <p>Requires a running Mehrhof server (<code>mehr serve</code>).</p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <p>0.1.0 - Initial release</p>
+        <ul>
+            <li>Task list sidebar</li>
+            <li>Workflow actions (plan, implement, review, finish)</li>
+            <li>Status bar widget</li>
+            <li>Real-time event streaming</li>
+        </ul>
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Application-level settings -->
+        <applicationService
+            serviceImplementation="com.valksor.mehrhof.settings.MehrhofSettings"/>
+
+        <!-- Project-level service -->
+        <projectService
+            serviceImplementation="com.valksor.mehrhof.services.MehrhofProjectService"/>
+
+        <!-- Tool window (sidebar) -->
+        <toolWindow
+            id="Mehrhof"
+            anchor="right"
+            icon="/icons/mehrhof.svg"
+            factoryClass="com.valksor.mehrhof.toolwindow.MehrhofToolWindowFactory"/>
+
+        <!-- Status bar widget -->
+        <statusBarWidgetFactory
+            id="MehrhofStatusWidget"
+            implementation="com.valksor.mehrhof.statusbar.MehrhofStatusWidgetFactory"/>
+
+        <!-- Settings page -->
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.valksor.mehrhof.settings.MehrhofConfigurable"
+            id="com.valksor.mehrhof.settings"
+            displayName="Mehrhof"/>
+
+        <!-- Notification group -->
+        <notificationGroup
+            id="Mehrhof"
+            displayType="BALLOON"
+            toolWindowId="Mehrhof"/>
+    </extensions>
+
+    <actions>
+        <!-- Main menu group -->
+        <group id="Mehrhof.MainMenu" text="Mehrhof" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <!-- Connection -->
+            <action id="Mehrhof.Connect"
+                    class="com.valksor.mehrhof.actions.ConnectAction"
+                    text="Connect to Server"
+                    description="Connect to Mehrhof server"/>
+
+            <action id="Mehrhof.Disconnect"
+                    class="com.valksor.mehrhof.actions.DisconnectAction"
+                    text="Disconnect"
+                    description="Disconnect from Mehrhof server"/>
+
+            <separator/>
+
+            <!-- Workflow actions -->
+            <action id="Mehrhof.StartTask"
+                    class="com.valksor.mehrhof.actions.StartTaskAction"
+                    text="Start Task..."
+                    description="Start a new task"/>
+
+            <action id="Mehrhof.Plan"
+                    class="com.valksor.mehrhof.actions.PlanAction"
+                    text="Plan"
+                    description="Generate specifications for the current task"/>
+
+            <action id="Mehrhof.Implement"
+                    class="com.valksor.mehrhof.actions.ImplementAction"
+                    text="Implement"
+                    description="Implement the specifications"/>
+
+            <action id="Mehrhof.Review"
+                    class="com.valksor.mehrhof.actions.ReviewAction"
+                    text="Review"
+                    description="Review the implementation"/>
+
+            <action id="Mehrhof.Continue"
+                    class="com.valksor.mehrhof.actions.ContinueAction"
+                    text="Continue"
+                    description="Resume workflow from waiting state"/>
+
+            <action id="Mehrhof.Finish"
+                    class="com.valksor.mehrhof.actions.FinishAction"
+                    text="Finish"
+                    description="Complete the task"/>
+
+            <action id="Mehrhof.Abandon"
+                    class="com.valksor.mehrhof.actions.AbandonAction"
+                    text="Abandon"
+                    description="Discard the current task"/>
+
+            <separator/>
+
+            <!-- Checkpoint actions -->
+            <action id="Mehrhof.Undo"
+                    class="com.valksor.mehrhof.actions.UndoAction"
+                    text="Undo (Checkpoint)"
+                    description="Revert to previous checkpoint"/>
+
+            <action id="Mehrhof.Redo"
+                    class="com.valksor.mehrhof.actions.RedoAction"
+                    text="Redo (Checkpoint)"
+                    description="Restore to next checkpoint"/>
+
+            <separator/>
+
+            <!-- Task actions -->
+            <action id="Mehrhof.Refresh"
+                    class="com.valksor.mehrhof.actions.RefreshAction"
+                    text="Refresh"
+                    description="Refresh task state"/>
+        </group>
+
+        <!-- Toolbar actions -->
+        <group id="Mehrhof.ToolbarActions">
+            <action id="Mehrhof.Toolbar.Refresh"
+                    class="com.valksor.mehrhof.actions.RefreshAction"
+                    text="Refresh"
+                    description="Refresh task state"
+                    icon="AllIcons.Actions.Refresh"/>
+        </group>
+    </actions>
+</idea-plugin>

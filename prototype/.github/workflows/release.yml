@@ -17,6 +17,68 @@ env:
     GO_VERSION: '1.25'
 
 jobs:
+    jetbrains-plugin:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Set up Java
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'zulu'
+                    java-version: '21'
+
+            -   name: Setup Gradle
+                uses: gradle/actions/setup-gradle@v4
+
+            -   name: Build Plugin
+                working-directory: ide/jetbrains
+                env:
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    # Extract version from tag (strip 'v' prefix if present)
+                    VERSION="${RELEASE_TAG#v}"
+
+                    # Handle special 'nightly' tag - use 0.0.0 with nightly suffix
+                    if [ "$VERSION" = "nightly" ]; then
+                        DATE=$(date +%Y%m%d)
+                        VERSION="0.0.0-nightly.${DATE}"
+                    fi
+
+                    ./gradlew buildPlugin -PpluginVersion="$VERSION"
+
+            -   name: Upload Plugin to Release
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    gh release upload "$RELEASE_TAG" \
+                        ide/jetbrains/build/distributions/*.zip \
+                        --clobber
+
+            -   name: Publish to JetBrains Marketplace
+                working-directory: ide/jetbrains
+                env:
+                    PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+                    PUBLISH_CHANNEL: ${{ github.event.release.prerelease && 'eap' || 'default' }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    if [ -z "$PUBLISH_TOKEN" ]; then
+                        echo "::notice::JETBRAINS_MARKETPLACE_TOKEN not set, skipping marketplace publish"
+                        exit 0
+                    fi
+                    # Extract version from tag (strip 'v' prefix if present)
+                    VERSION="${RELEASE_TAG#v}"
+
+                    # Handle special 'nightly' tag - use 0.0.0 with nightly suffix
+                    if [ "$VERSION" = "nightly" ]; then
+                        DATE=$(date +%Y%m%d)
+                        VERSION="0.0.0-nightly.${DATE}"
+                    fi
+
+                    ./gradlew publishPlugin -PpluginVersion="$VERSION" -PpublishChannel="$PUBLISH_CHANNEL"
+
     release:
         runs-on: ubuntu-latest
         steps:

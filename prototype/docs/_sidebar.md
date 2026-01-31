@@ -40,6 +40,10 @@
   - **API Reference**
     - [REST API](web-ui/api.md)
 
+- **IDE Integrations**
+  - [Overview](ide/index.md)
+  - [JetBrains](ide/jetbrains.md)
+
 - **CLI**
   - [Overview](cli/index.md)
   - [Web UI vs CLI](guides/web-ui-vs-cli.md)
