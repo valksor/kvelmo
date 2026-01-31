@@ -4,7 +4,7 @@ The Mehrhof VS Code extension integrates AI-powered task automation directly int
 
 ## Prerequisites
 
-- VS Code 1.85.0 or later
+- VS Code 1.108.0 or later
 - Mehrhof CLI installed (`go install github.com/valksor/go-mehrhof/cmd/mehr@latest`)
 
 ### Build Requirements (for development)

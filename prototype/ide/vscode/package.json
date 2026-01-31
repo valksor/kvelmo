@@ -10,7 +10,7 @@
     "url": "https://github.com/valksor/go-mehrhof"
   },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.108.0"
   },
   "categories": [
     "Other",
@@ -194,7 +194,7 @@
     "test": "node ./out/test/runTest.js",
     "test:coverage": "c8 --reporter=lcov --reporter=text node ./out/test/runTest.js",
     "test:unit": "bun test",
-    "package": "vsce package",
+    "package": "vsce package --no-dependencies",
     "publish": "vsce publish"
   },
   "dependencies": {
