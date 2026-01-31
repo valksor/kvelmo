@@ -79,6 +79,59 @@ jobs:
 
                     ./gradlew publishPlugin -PpluginVersion="$VERSION" -PpublishChannel="$PUBLISH_CHANNEL"
 
+    vscode-extension:
+        runs-on: ubuntu-latest
+        env:
+            NODE_VERSION: '24'
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Setup Node.js
+                uses: actions/setup-node@v6
+                with:
+                    node-version: ${{ env.NODE_VERSION }}
+
+            -   name: Install Dependencies
+                working-directory: ide/vscode
+                run: bun install
+
+            -   name: Build Extension
+                working-directory: ide/vscode
+                run: bun run compile
+
+            -   name: Package Extension
+                working-directory: ide/vscode
+                env:
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    # Extract version from tag (strip 'v' prefix if present)
+                    VERSION="${RELEASE_TAG#v}"
+
+                    # Handle special 'nightly' tag
+                    if [ "$VERSION" = "nightly" ]; then
+                        DATE=$(date +%Y%m%d)
+                        VERSION="0.0.0-nightly.${DATE}"
+                    fi
+
+                    # Update version in package.json before packaging
+                    bun x json -I -f package.json -e "this.version='$VERSION'"
+                    bun run package
+
+            -   name: Upload Extension to Release
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    gh release upload "$RELEASE_TAG" \
+                        ide/vscode/*.vsix \
+                        --clobber
+
     release:
         runs-on: ubuntu-latest
         steps:
