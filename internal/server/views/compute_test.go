@@ -261,19 +261,19 @@ func TestComputeActions_WithStates(t *testing.T) {
 			name:         "planning state",
 			state:        StatePlanning,
 			hasSpecs:     false,
-			wantCommands: []string{"undo"},
+			wantCommands: []string{"undo", "reset"},
 		},
 		{
 			name:         "implementing state",
 			state:        StateImplementing,
 			hasSpecs:     false,
-			wantCommands: []string{"undo"},
+			wantCommands: []string{"undo", "reset"},
 		},
 		{
 			name:         "reviewing state",
 			state:        StateReviewing,
 			hasSpecs:     false,
-			wantCommands: []string{"undo"},
+			wantCommands: []string{"undo", "reset"},
 		},
 		{
 			name:         "done state",

@@ -449,3 +449,39 @@ func escapeJSON(s string) string {
 func (s *Server) writeErrorSSE(w http.ResponseWriter, message string) {
 	sendSSE(w, "", "{\"event\":\"error\",\"error\":\""+escapeJSON(message)+"\"}")
 }
+
+// handleWorkflowReset resets the workflow state to idle without losing work.
+// Use this to recover from hung agent sessions.
+func (s *Server) handleWorkflowReset(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	// Check for active task
+	if s.config.Conductor.GetActiveTask() == nil {
+		s.writeError(w, http.StatusBadRequest, "no active task")
+
+		return
+	}
+
+	// Reset state
+	if err := s.config.Conductor.ResetState(r.Context()); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "reset state: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]string{
+		"status":  "reset",
+		"state":   "idle",
+		"message": "workflow state reset to idle",
+	})
+}
