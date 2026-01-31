@@ -1,0 +1,56 @@
+name: JetBrains Plugin
+
+on:
+    pull_request:
+        paths:
+            - 'ide/jetbrains/**'
+            - '.github/workflows/jetbrains-plugin.yml'
+    push:
+        branches: [ master ]
+        paths:
+            - 'ide/jetbrains/**'
+            - '.github/workflows/jetbrains-plugin.yml'
+
+concurrency:
+    group: jetbrains-${{ github.ref }}
+    cancel-in-progress: true
+
+defaults:
+    run:
+        working-directory: ide/jetbrains
+
+env:
+    JAVA_VERSION: '21'
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Set up Java
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'zulu'
+                    java-version: ${{ env.JAVA_VERSION }}
+
+            -   name: Setup Gradle
+                uses: gradle/actions/setup-gradle@v4
+
+            -   name: Build Plugin
+                run: ./gradlew buildPlugin
+
+            -   name: Verify Plugin
+                run: ./gradlew verifyPlugin
+
+            -   name: Run Tests
+                run: ./gradlew test
+
+            -   name: Upload Plugin Artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: mehrhof-intellij-plugin
+                    path: ide/jetbrains/build/distributions/*.zip
+                    retention-days: 14
