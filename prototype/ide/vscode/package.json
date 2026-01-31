@@ -190,9 +190,12 @@
     "watch": "bun esbuild.js --watch",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "quality": "bun run lint && bun run format:check",
     "pretest": "bun run compile && bun run compile:test",
     "test": "node ./out/test/runTest.js",
-    "test:coverage": "c8 --reporter=lcov --reporter=text node ./out/test/runTest.js",
+    "test:coverage": "c8 --include='out/src/**/*.js' --reporter=lcov --reporter=text node ./out/test/runTest.js",
     "test:unit": "bun test",
     "package": "vsce package --no-dependencies",
     "publish": "vsce publish"
@@ -211,8 +214,11 @@
     "c8": "^10.1.3",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
     "glob": "^13.0.0",
     "mocha": "^11.7.5",
+    "prettier": "^3.8.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
   }

@@ -40,7 +40,10 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   // Register interactive panel webview
-  const interactivePanelProvider = new InteractivePanelProvider(context.extensionUri, projectService);
+  const interactivePanelProvider = new InteractivePanelProvider(
+    context.extensionUri,
+    projectService
+  );
   context.subscriptions.push(interactivePanelProvider);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(

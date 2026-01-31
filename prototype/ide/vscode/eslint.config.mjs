@@ -1,5 +1,7 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import eslintPluginPrettier from 'eslint-plugin-prettier';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -39,6 +41,12 @@ export default tseslint.config(
       'no-throw-literal': 'warn',
       semi: 'off',
     },
+  },
+  // Prettier config - must be after other configs to override conflicting rules
+  eslintConfigPrettier,
+  {
+    plugins: { prettier: eslintPluginPrettier },
+    rules: { 'prettier/prettier': 'warn' },
   },
   {
     ignores: ['out/**', 'dist/**', '**/*.d.ts', 'esbuild.js', 'eslint.config.js'],

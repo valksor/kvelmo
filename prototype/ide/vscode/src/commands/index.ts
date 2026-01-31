@@ -262,7 +262,12 @@ async function withProgress<T>(title: string, task: () => Promise<T>): Promise<T
       }
     );
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Unknown error';
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : 'Unknown error';
     void vscode.window.showErrorMessage(`Mehrhof: ${message}`);
     return undefined;
   }

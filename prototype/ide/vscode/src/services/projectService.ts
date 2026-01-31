@@ -37,10 +37,8 @@ export class MehrhofProjectService implements vscode.Disposable {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
 
-  private readonly listeners: Map<
-    keyof ProjectServiceEvents,
-    Set<(...args: unknown[]) => void>
-  > = new Map();
+  private readonly listeners: Map<keyof ProjectServiceEvents, Set<(...args: unknown[]) => void>> =
+    new Map();
 
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -269,7 +267,9 @@ export class MehrhofProjectService implements vscode.Disposable {
     const delay = this.getConfig('reconnectDelaySeconds', 5) * 1000;
     const backoffDelay = delay * Math.min(this.reconnectAttempts + 1, 5);
 
-    this.log(`Scheduling reconnect in ${backoffDelay / 1000}s (attempt ${this.reconnectAttempts + 1}/${maxAttempts})`);
+    this.log(
+      `Scheduling reconnect in ${backoffDelay / 1000}s (attempt ${this.reconnectAttempts + 1}/${maxAttempts})`
+    );
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempts++;

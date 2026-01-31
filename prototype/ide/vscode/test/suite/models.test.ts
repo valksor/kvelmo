@@ -142,11 +142,11 @@ suite('API Models Test Suite', () => {
       input_tokens: 6000,
       output_tokens: 4000,
       cached_tokens: 2000,
-      total_cost_usd: 0.50,
+      total_cost_usd: 0.5,
     };
 
     assert.strictEqual(cost.total_tokens, 10000);
-    assert.strictEqual(cost.total_cost_usd, 0.50);
+    assert.strictEqual(cost.total_cost_usd, 0.5);
   });
 
   test('TaskCostResponse with by_step', () => {
@@ -157,14 +157,14 @@ suite('API Models Test Suite', () => {
       input_tokens: 12000,
       output_tokens: 8000,
       cached_tokens: 4000,
-      total_cost_usd: 1.00,
+      total_cost_usd: 1.0,
       by_step: {
         planning: {
           input_tokens: 4000,
           output_tokens: 2000,
           cached_tokens: 1000,
           total_tokens: 6000,
-          cost_usd: 0.30,
+          cost_usd: 0.3,
           calls: 2,
         },
         implementing: {
@@ -172,7 +172,7 @@ suite('API Models Test Suite', () => {
           output_tokens: 6000,
           cached_tokens: 3000,
           total_tokens: 14000,
-          cost_usd: 0.70,
+          cost_usd: 0.7,
           calls: 5,
         },
       },
@@ -180,7 +180,7 @@ suite('API Models Test Suite', () => {
 
     assert.strictEqual(cost.task_id, 'task-789');
     assert.strictEqual(cost.by_step?.planning.calls, 2);
-    assert.strictEqual(cost.by_step?.implementing.cost_usd, 0.70);
+    assert.strictEqual(cost.by_step?.implementing.cost_usd, 0.7);
   });
 
   test('AgentInfo with capabilities', () => {
