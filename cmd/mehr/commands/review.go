@@ -24,6 +24,7 @@ var (
 	reviewOutput         string
 	reviewAgentReviewing string
 	reviewOptimize       bool
+	reviewForce          bool // Force reset state before reviewing
 	// Standalone mode flags.
 	reviewStandalone  bool
 	reviewBranch      string
@@ -85,6 +86,7 @@ func init() {
 	reviewCmd.Flags().StringVarP(&reviewOutput, "output", "o", "", "Output file name (default: review-N.txt)")
 	reviewCmd.Flags().StringVar(&reviewAgentReviewing, "agent-review", "", "Agent for review step (when using agent-based review)")
 	reviewCmd.Flags().BoolVar(&reviewOptimize, "optimize", false, "Optimize prompt before sending to agent")
+	reviewCmd.Flags().BoolVar(&reviewForce, "force", false, "Reset workflow state and retry (use after hung agent)")
 
 	// Standalone mode flags
 	reviewCmd.Flags().BoolVar(&reviewStandalone, "standalone", false, "Review without an active task")
@@ -127,6 +129,14 @@ func runReview(cmd *cobra.Command, args []string) error {
 		fmt.Println("  mehr review --standalone --branch     # Review current branch vs main")
 
 		return errors.New("no active task")
+	}
+
+	// Handle --force flag to reset stuck state
+	if reviewForce {
+		if err := cond.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		fmt.Println(tkdisplay.InfoMsg("State reset to idle"))
 	}
 
 	// Get workspace

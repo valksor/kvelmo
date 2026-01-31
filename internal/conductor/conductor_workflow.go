@@ -150,6 +150,29 @@ func (c *Conductor) ResumePaused(ctx context.Context) error {
 	return nil
 }
 
+// ResetState resets the workflow state to idle without losing work.
+// Use this to recover from hung agent sessions where the process was killed
+// but the state remains stuck in planning/implementing/reviewing.
+func (c *Conductor) ResetState(_ context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	// Reset to idle
+	c.activeTask.State = "idle"
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
+	}
+
+	// Also reset state machine to idle
+	c.machine.Reset()
+
+	return nil
+}
+
 // Undo reverts to the previous checkpoint.
 func (c *Conductor) Undo(ctx context.Context) error {
 	c.mu.Lock()

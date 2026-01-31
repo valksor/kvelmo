@@ -23,6 +23,7 @@ var (
 	planAgentPlanning string // Per-step agent override
 	planAutoApprove   bool   // Auto-approve defaults without asking user
 	planOptimize      bool   // Optimize prompt before sending to agent
+	planForce         bool   // Force reset state before planning
 
 	// Hierarchical context flags (override workspace config).
 	planWithParent      bool // Include parent task context
@@ -76,6 +77,7 @@ func init() {
 	planCmd.Flags().StringVar(&planAgentPlanning, "agent-plan", "", "Agent for planning step")
 	planCmd.Flags().BoolVar(&planAutoApprove, "auto-approve", false, "Auto-approve defaults without asking user")
 	planCmd.Flags().BoolVar(&planOptimize, "optimize", false, "Optimize prompt before sending to agent")
+	planCmd.Flags().BoolVar(&planForce, "force", false, "Reset workflow state and retry (use after hung agent)")
 
 	// Hierarchical context flags (override workspace config)
 	planCmd.Flags().BoolVar(&planWithParent, "with-parent", false, "Include parent task context (overrides config)")
@@ -128,6 +130,14 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	// Check for active task
 	if !RequireActiveTask(cond) {
 		return nil
+	}
+
+	// Handle --force flag to reset stuck state
+	if planForce {
+		if err := cond.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		fmt.Println(display.InfoMsg("State reset to idle"))
 	}
 
 	// Set up progress callback using helper
