@@ -69,21 +69,21 @@ Documentation is organized by interface:
 
 **Rule**: One interface per document. Cross-reference between CLI and Web UI docs.
 
-### 5. Zero Broken Code
+### 5. Quality Checks by Scope
 
-**ALL tests and quality checks MUST pass before committing code.**
+Run checks **only for code you changed**:
 
-```bash
-# Before starting work - verify baseline
-make quality && make test && make race
+| Changed | Command |
+|---------|---------|
+| `cmd/`, `internal/`, `*.go` | `make quality && make test` |
+| `ide/vscode/**` | `cd ide/vscode && make quality` |
+| `ide/jetbrains/**` | `cd ide/jetbrains && make quality` |
+| `web-ui-tests/**` | `cd web-ui-tests && make quality` |
+| `docs/**`, `*.md` | None |
 
-# Before committing code changes
-make quality && make test && make race
-```
+Root shortcuts: `make ide-quality` (all IDEs), `make quality-all` (Go + IDEs).
 
 If tests fail, fix them first. No exceptions for "not my code."
-
-**Skip for docs-only changes** - no build/test needed for `.md` files.
 
 ### 6. Use Make Commands
 
