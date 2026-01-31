@@ -1,0 +1,218 @@
+{
+  "name": "mehrhof",
+  "displayName": "Mehrhof",
+  "description": "AI-powered task automation for software development",
+  "version": "0.1.0",
+  "publisher": "valksor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/valksor/go-mehrhof"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "automation",
+    "workflow",
+    "code generation"
+  ],
+  "activationEvents": [
+    "onView:mehrhof.interactive",
+    "onView:mehrhof.tasks",
+    "workspaceContains:.mehrhof/config.yaml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mehrhof.startServer",
+        "title": "Start Server",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.stopServer",
+        "title": "Stop Server",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.connect",
+        "title": "Connect",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.disconnect",
+        "title": "Disconnect",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.startTask",
+        "title": "Start Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.plan",
+        "title": "Plan",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.implement",
+        "title": "Implement",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.review",
+        "title": "Review",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.continue",
+        "title": "Continue",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.finish",
+        "title": "Finish",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.abandon",
+        "title": "Abandon",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.undo",
+        "title": "Undo",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.redo",
+        "title": "Redo",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.status",
+        "title": "Status",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.refresh",
+        "title": "Refresh",
+        "category": "Mehrhof",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mehrhof",
+          "title": "Mehrhof",
+          "icon": "resources/icons/mehrhof.svg"
+        }
+      ]
+    },
+    "views": {
+      "mehrhof": [
+        {
+          "type": "webview",
+          "id": "mehrhof.interactive",
+          "name": "Interactive"
+        },
+        {
+          "id": "mehrhof.tasks",
+          "name": "Tasks"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "mehrhof.refresh",
+          "when": "view == mehrhof.tasks",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Mehrhof",
+      "properties": {
+        "mehrhof.serverUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Manual server URL. Leave empty to use Start Server."
+        },
+        "mehrhof.mehrExecutable": {
+          "type": "string",
+          "default": "",
+          "description": "Path to mehr binary. Auto-detects from common paths if empty."
+        },
+        "mehrhof.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show balloon notifications for events."
+        },
+        "mehrhof.defaultAgent": {
+          "type": "string",
+          "default": "",
+          "description": "Default agent for workflow steps."
+        },
+        "mehrhof.autoReconnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-reconnect on disconnect."
+        },
+        "mehrhof.reconnectDelaySeconds": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Delay between reconnect attempts in seconds."
+        },
+        "mehrhof.maxReconnectAttempts": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Maximum reconnect attempts."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run compile",
+    "compile": "bun esbuild.js",
+    "compile:test": "tsc -p tsconfig.test.json",
+    "watch": "bun esbuild.js --watch",
+    "lint": "eslint src test --ext ts",
+    "lint:fix": "eslint src test --ext ts --fix",
+    "pretest": "bun run compile && bun run compile:test",
+    "test": "node ./out/test/runTest.js",
+    "test:unit": "bun test",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "eventsource": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.19.12",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  }
+}

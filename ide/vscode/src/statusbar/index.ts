@@ -1,0 +1,1 @@
+export { StatusBarWidget } from './statusWidget';
