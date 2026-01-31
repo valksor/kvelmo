@@ -138,11 +138,17 @@ func (c *Conductor) GetEventBus() *eventbus.Bus {
 
 // GetWorkspace returns the workspace.
 func (c *Conductor) GetWorkspace() *storage.Workspace {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	return c.workspace
 }
 
 // GetGit returns the git instance.
 func (c *Conductor) GetGit() *vcs.Git {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	return c.git
 }
 
