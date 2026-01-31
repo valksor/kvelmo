@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+# IT IS YEAR 2026 !!! Please use 2026 in web searches!!!  
+
 Guidance for Claude Code when working with go-mehrhof.
 
 ## Project Overview
@@ -7,6 +9,8 @@ Guidance for Claude Code when working with go-mehrhof.
 Mehrhof is a **Go CLI + Web UI** for AI-powered task automation. It orchestrates AI agents to perform planning, implementation, and code review workflows with checkpointing, parallel tasks, and multi-provider integrations.
 
 **Key constraint**: ALL features require BOTH CLI and Web UI implementations unless explicitly CLI-only.
+
+**Note**: JetBrains plugin consumes existing REST API + SSE endpoints. When adding workflow commands, ensure the `/interactive` API supports the new operation - the plugin automatically inherits the functionality.
 
 ---
 
@@ -16,7 +20,7 @@ Mehrhof is a **Go CLI + Web UI** for AI-powered task automation. It orchestrates
 
 Every feature needs CLI (`cmd/mehr/commands/`) + Web UI (`internal/server/`). Shared logic goes in `internal/conductor/`. Both interfaces call the same conductor methods.
 
-**Interfaces**: CLI, Interactive CLI (`mehr interactive`), Web UI, Interactive Web (`/interactive`)
+**Interfaces**: CLI, Interactive CLI (`mehr interactive`), Web UI, Interactive Web (`/interactive`), JetBrains Plugin
 
 See [docs/reference/feature-parity.md](docs/reference/feature-parity.md) for implementation checklist and status tables.
 
@@ -59,6 +63,7 @@ Documentation is organized by interface:
 |-----------|---------|
 | `docs/cli/` | CLI commands only |
 | `docs/web-ui/` | Web UI features only |
+| `docs/ide/` | IDE integrations (JetBrains, etc.) |
 | `docs/concepts/` | Interface-agnostic architecture |
 | `docs/reference/` | Technical reference, parity tables |
 
@@ -149,12 +154,14 @@ bun run workers:minify
 ```bash
 mehr start <ref> | plan | implement | review | finish | continue | abandon
 mehr status | list | note <msg> | question <msg> | cost
-mehr undo | redo | browser | mcp | scan | serve | interactive
+mehr undo | redo | reset | browser | mcp | scan | serve | interactive
 mehr project plan|submit|start|sync | stack | config validate
 mehr agents | providers | templates | update | generate-secret
 ```
 
 **Interactive mode** (`mehr interactive` or Web `/interactive`): workflow commands + chat.
+
+**Recovery tip:** If an agent hangs and you kill it, use `mehr reset` to reset state to idle without losing work. Or use `--force` on step commands (e.g., `mehr plan --force`).
 
 ---
 
@@ -168,6 +175,7 @@ mehr agents | providers | templates | update | generate-secret
 | Interactive CLI | → `interactive` → REPL → command dispatcher |
 | Web UI | → `serve` → `internal/server/server.go` → handlers → templates |
 | Interactive Web | → `/interactive` handler → SSE + HTMX |
+| JetBrains Plugin | → `ide/jetbrains/` → Kotlin plugin → REST API + SSE |
 
 ### Core Packages
 
@@ -186,6 +194,7 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/mcp/` | Model Context Protocol server |
 | `internal/memory/` | Semantic memory with vector embeddings |
 | `internal/server/` | Web UI: REST API, SSE, authentication |
+| `ide/jetbrains/` | JetBrains IDE plugin - native integration via REST API + SSE |
 | `internal/links/` | Bidirectional linking (`[[reference]]` syntax) |
 | `internal/plugin/` | External agent/provider extensions (JSON-RPC) |
 | `internal/security/` | SAST (gosec), secrets (gitleaks), vulns (govulncheck) |
