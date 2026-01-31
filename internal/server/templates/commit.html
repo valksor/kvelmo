@@ -2,25 +2,27 @@
 
 {{ define "content" }}
 <div class="max-w-4xl mx-auto">
-  <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Create Commits</h1>
+  <h1 class="text-3xl font-bold text-base-content mb-6">Create Commits</h1>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Uncommitted Changes</h2>
-      <div class="flex gap-2">
-        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <input type="checkbox" id="includeUnstaged" class="rounded border-gray-300">
-          Include unstaged
-        </label>
-        <button id="analyzeBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-          Analyze Changes
-        </button>
+  <div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="card-title text-base-content">Uncommitted Changes</h2>
+        <div class="flex gap-2 items-center">
+          <label class="flex items-center gap-2 text-sm text-base-content/70 cursor-pointer">
+            <input type="checkbox" id="includeUnstaged" class="checkbox checkbox-sm">
+            Include unstaged
+          </label>
+          <button id="analyzeBtn" class="btn btn-primary btn-sm">
+            Analyze Changes
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div id="commitGroups" class="space-y-4">
-      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-        <p>Click "Analyze Changes" to group your uncommitted changes into logical commits.</p>
+      <div id="commitGroups" class="space-y-4">
+        <div class="text-center py-8 text-base-content/60">
+          <p>Click "Analyze Changes" to group your uncommitted changes into logical commits.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -28,10 +30,10 @@
   <div id="actions" class="hidden">
     <div class="flex justify-between items-center">
       <div class="flex items-center gap-2">
-        <input type="checkbox" id="autoPush" class="rounded border-gray-300">
-        <label for="autoPush" class="text-sm text-gray-600 dark:text-gray-400">Push after creating</label>
+        <input type="checkbox" id="autoPush" class="checkbox checkbox-sm">
+        <label for="autoPush" class="text-sm text-base-content/70 cursor-pointer">Push after creating</label>
       </div>
-      <button id="createCommitsBtn" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+      <button id="createCommitsBtn" class="btn btn-success">
         Create Commits
       </button>
     </div>
@@ -48,11 +50,12 @@ document.getElementById('analyzeBtn').addEventListener('click', async function()
 
   currentGroups = data.groups || [];
   const groupsContainer = document.getElementById('commitGroups');
-  groupsContainer.innerHTML = '';
+  // Clear using safe DOM method
+  groupsContainer.replaceChildren();
 
   if (currentGroups.length === 0) {
     const noChanges = document.createElement('div');
-    noChanges.className = 'text-center py-8 text-gray-500 dark:text-gray-400';
+    noChanges.className = 'text-center py-8 text-base-content/60';
     noChanges.textContent = 'No changes to commit.';
     groupsContainer.appendChild(noChanges);
     return;
@@ -60,28 +63,28 @@ document.getElementById('analyzeBtn').addEventListener('click', async function()
 
   currentGroups.forEach((group, index) => {
     const groupDiv = document.createElement('div');
-    groupDiv.className = 'border border-gray-200 dark:border-gray-700 rounded-lg p-4';
+    groupDiv.className = 'border border-base-300 rounded-lg p-4';
 
     const header = document.createElement('div');
     header.className = 'flex justify-between items-start mb-2';
     const groupLabel = document.createElement('span');
-    groupLabel.className = 'text-sm font-medium text-gray-700 dark:text-gray-300';
+    groupLabel.className = 'text-sm font-medium text-base-content';
     groupLabel.textContent = 'Group ' + (index + 1);
     const fileCount = document.createElement('span');
-    fileCount.className = 'text-xs text-gray-500 dark:text-gray-400';
+    fileCount.className = 'text-xs text-base-content/60';
     fileCount.textContent = group.files.length + ' files';
     header.appendChild(groupLabel);
     header.appendChild(fileCount);
 
     const message = document.createElement('p');
-    message.className = 'font-mono text-sm text-gray-800 dark:text-gray-200 mb-2';
+    message.className = 'font-mono text-sm text-base-content mb-2';
     message.textContent = group.message;
 
     const filesDiv = document.createElement('div');
-    filesDiv.className = 'text-xs text-gray-500 dark:text-gray-400';
+    filesDiv.className = 'text-xs text-base-content/60';
     group.files.forEach(f => {
       const fileSpan = document.createElement('span');
-      fileSpan.className = 'inline-block bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-1 mb-1';
+      fileSpan.className = 'inline-block bg-base-200 px-2 py-1 rounded mr-1 mb-1';
       fileSpan.textContent = f;
       filesDiv.appendChild(fileSpan);
     });

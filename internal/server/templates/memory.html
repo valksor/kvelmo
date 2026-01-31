@@ -3,18 +3,18 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Memory</h1>
-            <p class="text-surface-600 dark:text-surface-400 mt-1">Search past tasks and decisions using semantic memory</p>
+            <h1 class="text-3xl font-bold text-base-content">Memory</h1>
+            <p class="text-base-content/60 mt-1">Search past tasks and decisions using semantic memory</p>
         </div>
         {{if .Enabled}}
         <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-success-500"></span>
-            <span class="text-sm text-surface-600 dark:text-surface-400">Memory system active</span>
+            <span class="text-sm text-base-content/60">Memory system active</span>
         </div>
         {{else}}
         <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-surface-400"></span>
-            <span class="text-sm text-surface-600 dark:text-surface-400">Memory system unavailable</span>
+            <span class="w-2 h-2 rounded-full bg-base-200"></span>
+            <span class="text-sm text-base-content/60">Memory system unavailable</span>
         </div>
         {{end}}
     </div>
@@ -24,9 +24,9 @@
         <div class="lg:col-span-2 space-y-6">
             <!-- Search Form -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                         Search Memory
@@ -35,43 +35,43 @@
                 <div class="p-6">
                     <form hx-get="/api/v1/memory/search" hx-target="#memory-results" hx-indicator="#search-indicator" class="space-y-4">
                         <div>
-                            <label for="memory-query" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Search Query</label>
+                            <label for="memory-query" class="block text-sm font-semibold text-base-content/80 mb-2">Search Query</label>
                             <div class="relative">
                                 <input type="text" name="q" id="memory-query"
                                        placeholder="e.g., authentication flow, error handling, database migrations..."
                                        class="input pr-10"
                                        required>
                                 <div id="search-indicator" class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2">
-                                    <div class="animate-spin text-brand-600">&#9696;</div>
+                                    <div class="animate-spin text-primary">&#9696;</div>
                                 </div>
                             </div>
-                            <p class="text-xs text-surface-400 mt-1">Enter a description of what you're looking for</p>
+                            <p class="text-xs text-base-content/40 mt-1">Enter a description of what you're looking for</p>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label for="memory-limit" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Results Limit</label>
+                                <label for="memory-limit" class="block text-sm font-semibold text-base-content/80 mb-2">Results Limit</label>
                                 <input type="number" name="limit" id="memory-limit" value="10" min="1" max="50"
                                        class="input text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Document Types</label>
+                                <label class="block text-sm font-semibold text-base-content/80 mb-2">Document Types</label>
                                 <div class="flex flex-wrap gap-2">
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-smooth">
-                                        <input type="checkbox" name="types" value="code_change" class="rounded text-brand-600 focus:ring-brand-500">
-                                        <span class="text-sm text-surface-700 dark:text-surface-300">Code</span>
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-base-200 cursor-pointer hover:bg-base-200 transition-smooth">
+                                        <input type="checkbox" name="types" value="code_change" class="rounded text-primary focus:ring-primary">
+                                        <span class="text-sm text-base-content/80">Code</span>
                                     </label>
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-smooth">
-                                        <input type="checkbox" name="types" value="specification" class="rounded text-brand-600 focus:ring-brand-500">
-                                        <span class="text-sm text-surface-700 dark:text-surface-300">Specs</span>
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-base-200 cursor-pointer hover:bg-base-200 transition-smooth">
+                                        <input type="checkbox" name="types" value="specification" class="rounded text-primary focus:ring-primary">
+                                        <span class="text-sm text-base-content/80">Specs</span>
                                     </label>
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-smooth">
-                                        <input type="checkbox" name="types" value="session" class="rounded text-brand-600 focus:ring-brand-500">
-                                        <span class="text-sm text-surface-700 dark:text-surface-300">Sessions</span>
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-base-200 cursor-pointer hover:bg-base-200 transition-smooth">
+                                        <input type="checkbox" name="types" value="session" class="rounded text-primary focus:ring-primary">
+                                        <span class="text-sm text-base-content/80">Sessions</span>
                                     </label>
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-smooth">
-                                        <input type="checkbox" name="types" value="solution" class="rounded text-brand-600 focus:ring-brand-500">
-                                        <span class="text-sm text-surface-700 dark:text-surface-300">Solutions</span>
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-base-200 cursor-pointer hover:bg-base-200 transition-smooth">
+                                        <input type="checkbox" name="types" value="solution" class="rounded text-primary focus:ring-primary">
+                                        <span class="text-sm text-base-content/80">Solutions</span>
                                     </label>
                                 </div>
                             </div>
@@ -93,13 +93,13 @@
             <div id="memory-results">
                 <div class="card">
                     <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-600 dark:text-surface-400">Enter a search query to find relevant past tasks and decisions.</p>
-                        <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">The memory system uses semantic search to find similar content.</p>
+                        <p class="text-base-content/60">Enter a search query to find relevant past tasks and decisions.</p>
+                        <p class="text-sm text-base-content/60 mt-1">The memory system uses semantic search to find similar content.</p>
                     </div>
                 </div>
             </div>
@@ -109,9 +109,9 @@
         <div class="space-y-6">
             <!-- Memory Stats -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                         Statistics
@@ -119,30 +119,30 @@
                 </div>
                 <div id="memory-stats" class="p-6" hx-get="/api/v1/memory/stats" hx-trigger="load" hx-swap="innerHTML">
                     <div class="flex items-center justify-center py-8">
-                        <div class="animate-spin text-xl text-brand-600">&#9696;</div>
-                        <span class="ml-3 text-sm text-surface-600 dark:text-surface-400">Loading stats...</span>
+                        <div class="animate-spin text-xl text-primary">&#9696;</div>
+                        <span class="ml-3 text-sm text-base-content/60">Loading stats...</span>
                     </div>
                 </div>
             </div>
 
             <!-- Index Actions -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
                         </svg>
                         Actions
                     </h2>
                 </div>
                 <div class="p-6 space-y-4">
-                    <p class="text-sm text-surface-600 dark:text-surface-400">
+                    <p class="text-sm text-base-content/60">
                         Index completed tasks to add them to the memory system.
                     </p>
                     <div id="index-result" class="hidden"></div>
                     <form hx-post="/api/v1/memory/index" hx-target="#index-result" hx-swap="innerHTML" class="space-y-4">
                         <div>
-                            <label for="index-task-id" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Task ID</label>
+                            <label for="index-task-id" class="block text-sm font-semibold text-base-content/80 mb-2">Task ID</label>
                             <input type="text" name="task_id" id="index-task-id"
                                    placeholder="abc12345"
                                    class="input text-sm font-mono"
@@ -160,21 +160,21 @@
 
             <!-- Help -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         About Memory
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Semantic Search:</strong>
+                        <strong class="text-base-content/80">Semantic Search:</strong>
                         The memory system uses vector embeddings to find conceptually similar content, not just keyword matches.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Document Types:</strong>
+                        <strong class="text-base-content/80">Document Types:</strong>
                     </p>
                     <ul class="list-disc list-inside space-y-1 ml-2">
                         <li><strong>Code:</strong> File changes and implementations</li>
@@ -183,7 +183,7 @@
                         <li><strong>Solutions:</strong> Problem resolutions</li>
                     </ul>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Relevance Score:</strong>
+                        <strong class="text-base-content/80">Relevance Score:</strong>
                         Results are sorted by similarity (0-100%). Higher scores indicate more relevant matches.
                     </p>
                 </div>

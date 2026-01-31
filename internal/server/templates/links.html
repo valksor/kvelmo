@@ -3,18 +3,18 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Links</h1>
-            <p class="text-surface-600 dark:text-surface-400 mt-1">Explore the knowledge graph of linked content</p>
+            <h1 class="text-3xl font-bold text-base-content">Links</h1>
+            <p class="text-base-content/60 mt-1">Explore the knowledge graph of linked content</p>
         </div>
         {{if .Enabled}}
         <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-success-500"></span>
-            <span class="text-sm text-surface-600 dark:text-surface-400">Links system active</span>
+            <span class="text-sm text-base-content/60">Links system active</span>
         </div>
         {{else}}
         <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-surface-400"></span>
-            <span class="text-sm text-surface-600 dark:text-surface-400">Links system unavailable</span>
+            <span class="w-2 h-2 rounded-full bg-base-200"></span>
+            <span class="text-sm text-base-content/60">Links system unavailable</span>
         </div>
         {{end}}
     </div>
@@ -24,9 +24,9 @@
         <div class="lg:col-span-2 space-y-6">
             <!-- Search Form -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                         </svg>
                         Search Entities
@@ -35,17 +35,17 @@
                 <div class="p-6">
                     <form hx-get="/api/v1/links/search" hx-target="#links-results" hx-indicator="#search-indicator" class="space-y-4">
                         <div>
-                            <label for="links-query" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Search by Name</label>
+                            <label for="links-query" class="block text-sm font-semibold text-base-content/80 mb-2">Search by Name</label>
                             <div class="relative">
                                 <input type="text" name="q" id="links-query"
                                        placeholder="e.g., Authentication, JWT, decision..."
                                        class="input pr-10"
                                        required>
                                 <div id="search-indicator" class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2">
-                                    <div class="animate-spin text-brand-600">&#9696;</div>
+                                    <div class="animate-spin text-primary">&#9696;</div>
                                 </div>
                             </div>
-                            <p class="text-xs text-surface-400 mt-1">Enter an entity name to search</p>
+                            <p class="text-xs text-base-content/40 mt-1">Enter an entity name to search</p>
                         </div>
 
                         <div class="flex justify-end">
@@ -64,13 +64,13 @@
             <div id="links-results">
                 <div class="card">
                     <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-600 dark:text-surface-400">Search for linked entities</p>
-                        <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">Use the search form above to find entities by name</p>
+                        <p class="text-base-content/60">Search for linked entities</p>
+                        <p class="text-sm text-base-content/60 mt-1">Use the search form above to find entities by name</p>
                     </div>
                 </div>
             </div>
@@ -80,9 +80,9 @@
         <div class="space-y-6">
             <!-- Statistics -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                         Graph Statistics
@@ -91,11 +91,11 @@
                 <div class="p-6">
                     <div hx-get="/api/v1/links/stats" hx-trigger="load" hx-target="#links-stats" hx-indicator="#stats-indicator">
                         <div id="stats-indicator" class="htmx-indicator text-center py-4">
-                            <div class="animate-spin text-brand-600 mx-auto">&#9696;</div>
+                            <div class="animate-spin text-primary mx-auto">&#9696;</div>
                         </div>
                         <div id="links-stats">
                             <div class="text-center py-4">
-                                <p class="text-sm text-surface-500 dark:text-surface-400">Loading statistics...</p>
+                                <p class="text-sm text-base-content/60">Loading statistics...</p>
                             </div>
                         </div>
                     </div>
@@ -105,16 +105,16 @@
             <!-- Rebuild Index -->
             {{if .Enabled}}
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                         Rebuild Index
                     </h2>
                 </div>
                 <div class="p-6">
-                    <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">Rebuild the link index from all workspace content.</p>
+                    <p class="text-sm text-base-content/60 mb-4">Rebuild the link index from all workspace content.</p>
                     <button hx-post="/api/v1/links/rebuild" hx-target="#rebuild-result" hx-indicator="#rebuild-indicator" class="btn btn-secondary w-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -122,7 +122,7 @@
                         Rebuild
                     </button>
                     <div id="rebuild-indicator" class="htmx-indicator text-center py-2 hidden">
-                        <div class="animate-spin text-brand-600 mx-auto text-sm">&#9696;</div>
+                        <div class="animate-spin text-primary mx-auto text-sm">&#9696;</div>
                     </div>
                     <div id="rebuild-result" class="mt-4"></div>
                 </div>
@@ -131,22 +131,22 @@
 
             <!-- Quick Actions -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Quick Actions</h2>
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content">Quick Actions</h2>
                 </div>
                 <div class="p-4 space-y-2">
-                    <a href="/memory" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth">
-                        <svg class="w-5 h-5 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="/memory" class="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 transition-smooth">
+                        <svg class="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <span class="text-sm text-surface-700 dark:text-surface-300">Search Memory</span>
+                        <span class="text-sm text-base-content/80">Search Memory</span>
                     </a>
-                    <a href="/settings" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth">
-                        <svg class="w-5 h-5 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="/settings" class="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 transition-smooth">
+                        <svg class="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
-                        <span class="text-sm text-surface-700 dark:text-surface-300">Settings</span>
+                        <span class="text-sm text-base-content/80">Settings</span>
                     </a>
                 </div>
             </div>

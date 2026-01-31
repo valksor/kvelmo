@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Standalone Simplify</h1>
-            <p class="text-surface-600 dark:text-surface-400 mt-1">Simplify code changes without an active task</p>
+            <h1 class="text-3xl font-bold text-base-content">Standalone Simplify</h1>
+            <p class="text-base-content/60 mt-1">Simplify code changes without an active task</p>
         </div>
     </div>
 
@@ -13,9 +13,9 @@
         <div class="lg:col-span-3 space-y-6">
             <!-- Simplify Form -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                         Simplify Configuration
@@ -25,56 +25,56 @@
                     <form id="simplify-form" class="space-y-4">
                         <!-- Mode Selection -->
                         <div>
-                            <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Simplify Mode</label>
+                            <label class="block text-sm font-semibold text-base-content/80 mb-2">Simplify Mode</label>
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="uncommitted" checked class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Uncommitted</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="uncommitted" checked class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Uncommitted</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="branch" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Branch</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="branch" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Branch</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="range" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Range</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="range" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Range</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="files" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Files</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="files" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Files</span>
                                 </label>
                             </div>
                         </div>
 
                         <!-- Mode-specific fields -->
                         <div id="branch-field" class="hidden">
-                            <label for="base-branch" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Base Branch</label>
+                            <label for="base-branch" class="block text-sm font-semibold text-base-content/80 mb-2">Base Branch</label>
                             <input type="text" id="base-branch" name="base_branch"
                                    placeholder="main (auto-detected if empty)"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Compare current branch against this base</p>
+                            <p class="text-xs text-base-content/40 mt-1">Compare current branch against this base</p>
                         </div>
 
                         <div id="range-field" class="hidden">
-                            <label for="commit-range" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Commit Range</label>
+                            <label for="commit-range" class="block text-sm font-semibold text-base-content/80 mb-2">Commit Range</label>
                             <input type="text" id="commit-range" name="range"
                                    placeholder="HEAD~3..HEAD"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Git revision range (e.g., HEAD~3..HEAD, abc123..def456)</p>
+                            <p class="text-xs text-base-content/40 mt-1">Git revision range (e.g., HEAD~3..HEAD, abc123..def456)</p>
                         </div>
 
                         <div id="files-field" class="hidden">
-                            <label for="file-list" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Files to Simplify</label>
+                            <label for="file-list" class="block text-sm font-semibold text-base-content/80 mb-2">Files to Simplify</label>
                             <input type="text" id="file-list" name="files"
                                    placeholder="src/handler.go, src/validation.go"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Comma-separated list of files</p>
+                            <p class="text-xs text-base-content/40 mt-1">Comma-separated list of files</p>
                         </div>
 
                         <!-- Options -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label for="context-lines" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Context Lines</label>
+                                <label for="context-lines" class="block text-sm font-semibold text-base-content/80 mb-2">Context Lines</label>
                                 <select id="context-lines" name="context" class="input w-full">
                                     <option value="1">1 line</option>
                                     <option value="3" selected>3 lines</option>
@@ -83,15 +83,15 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="agent-select" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Agent (optional)</label>
+                                <label for="agent-select" class="block text-sm font-semibold text-base-content/80 mb-2">Agent (optional)</label>
                                 <input type="text" id="agent-select" name="agent"
                                        placeholder="Default agent"
                                        class="input w-full">
                             </div>
                             <div class="flex items-end">
                                 <label class="inline-flex items-center gap-2 cursor-pointer pb-2">
-                                    <input type="checkbox" id="create-checkpoint" name="create_checkpoint" checked class="rounded text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Create checkpoint</span>
+                                    <input type="checkbox" id="create-checkpoint" name="create_checkpoint" checked class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Create checkpoint</span>
                                 </label>
                             </div>
                         </div>
@@ -115,8 +115,8 @@
             <div id="simplify-status" class="hidden">
                 <div class="card">
                     <div class="flex items-center gap-3 p-4">
-                        <div class="animate-spin text-brand-600 text-xl">&#9696;</div>
-                        <span id="simplify-status-text" class="text-surface-700 dark:text-surface-300">Running simplification...</span>
+                        <div class="animate-spin text-primary text-xl">&#9696;</div>
+                        <span id="simplify-status-text" class="text-base-content/80">Running simplification...</span>
                         <button id="simplify-cancel" class="ml-auto btn btn-secondary text-sm">Cancel</button>
                     </div>
                 </div>
@@ -127,13 +127,13 @@
                 <!-- Initial empty state -->
                 <div class="card">
                     <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-600 dark:text-surface-400">Configure the simplify options and click "Run Simplify" to start.</p>
-                        <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">The AI will analyze and simplify your code changes.</p>
+                        <p class="text-base-content/60">Configure the simplify options and click "Run Simplify" to start.</p>
+                        <p class="text-sm text-base-content/60 mt-1">The AI will analyze and simplify your code changes.</p>
                     </div>
                 </div>
             </div>
@@ -143,29 +143,29 @@
         <div class="space-y-6">
             <!-- Mode Descriptions -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Simplify Modes
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Uncommitted:</strong>
+                        <strong class="text-base-content/80">Uncommitted:</strong>
                         Simplify all staged and unstaged changes in your working directory.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Branch:</strong>
+                        <strong class="text-base-content/80">Branch:</strong>
                         Simplify changes in current branch compared to main/master.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Range:</strong>
+                        <strong class="text-base-content/80">Range:</strong>
                         Simplify changes in a specific commit range.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Files:</strong>
+                        <strong class="text-base-content/80">Files:</strong>
                         Simplify specific files only.
                     </p>
                 </div>
@@ -173,24 +173,24 @@
 
             <!-- Safety -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
                         Safety
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Checkpoint:</strong>
+                        <strong class="text-base-content/80">Checkpoint:</strong>
                         By default, a git checkpoint is created before modifications.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Recovery:</strong>
-                        Use <code class="px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-xs">git checkout .</code> or <code class="px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-xs">mehr undo</code> to revert.
+                        <strong class="text-base-content/80">Recovery:</strong>
+                        Use <code class="px-1.5 py-0.5 rounded bg-base-200 text-xs">git checkout .</code> or <code class="px-1.5 py-0.5 rounded bg-base-200 text-xs">mehr undo</code> to revert.
                     </p>
-                    <p class="text-warning-600 dark:text-warning-400">
+                    <p class="text-warning-600">
                         Skipping checkpoints is not recommended for production code.
                     </p>
                 </div>

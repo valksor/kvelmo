@@ -5,13 +5,13 @@
 
 {{if .IsViewer}}
 <!-- Read-Only Mode Notice -->
-<div class="mb-6 p-4 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-xl flex items-center gap-3">
-    <svg class="w-5 h-5 text-warning-600 dark:text-warning-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+<div class="mb-6 p-4 bg-warning-50 border border-warning-200 rounded-xl flex items-center gap-3">
+    <svg class="w-5 h-5 text-warning-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
     </svg>
     <div>
-        <span class="font-semibold text-warning-800 dark:text-warning-200">Read-Only Mode</span>
-        <p class="text-sm text-warning-700 dark:text-warning-300 mt-0.5">You can view all content but cannot make changes. Contact an administrator for full access.</p>
+        <span class="font-semibold text-warning-800">Read-Only Mode</span>
+        <p class="text-sm text-warning-700 mt-0.5">You can view all content but cannot make changes. Contact an administrator for full access.</p>
     </div>
 </div>
 {{end}}
@@ -31,13 +31,13 @@
 
 <!-- Workflow State Diagram -->
 <div id="workflow-diagram" class="card">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Workflow State</h3>
-        <div class="text-xs text-surface-500 dark:text-surface-400">Updates automatically as you work</div>
+    <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-base-content">Workflow State</h3>
+        <div class="text-xs text-base-content/60">Updates automatically as you work</div>
     </div>
     <div class="p-6 flex items-center justify-center" hx-get="/api/v1/workflow/diagram" hx-trigger="sse:{{eventWorkflowStateChanged}}, every 30s" hx-swap="innerHTML">
         <object data="/api/v1/workflow/diagram" type="image/svg+xml" class="w-full max-w-4xl" style="min-height: 300px;">
-            <div class="text-center text-surface-500 dark:text-surface-400 py-8">Loading workflow diagram...</div>
+            <div class="text-center text-base-content/60 py-8">Loading workflow diagram...</div>
         </object>
     </div>
 </div>
@@ -58,9 +58,9 @@
 <!-- Quick Question Input -->
 {{if .ActiveWork}}
 <div id="quick-question" class="card">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Quick Question</h3>
-        <p class="text-sm text-surface-500 dark:text-surface-400">Ask the agent a question without changing workflow state</p>
+    <div class="px-6 py-4 border-b border-base-300">
+        <h3 class="text-lg font-bold text-base-content">Quick Question</h3>
+        <p class="text-sm text-base-content/60">Ask the agent a question without changing workflow state</p>
     </div>
     <div class="p-4">
         <form hx-post="/api/v1/workflow/question" hx-swap="none" hx-indicator="#question-spinner">
@@ -104,11 +104,11 @@
                             responseText += data.text;
                             questionResponse.textContent = responseText;
                             questionResponse.classList.remove('hidden');
-                            questionResponse.classList.add('text-surface-700', 'dark:text-surface-300', 'whitespace-pre-wrap');
+                            questionResponse.classList.add('text-base-content/80', 'whitespace-pre-wrap');
                         } else if (data.event === 'back_question') {
                             questionResponse.textContent = 'Agent has a follow-up question. Use the Actions panel to respond.';
                             questionResponse.classList.remove('hidden');
-                            questionResponse.classList.add('text-warning-600', 'dark:text-warning-400');
+                            questionResponse.classList.add('text-warning');
                             eventSource.close();
                         } else if (data.event === 'done') {
                             eventSource.close();
@@ -149,14 +149,14 @@
 
 <!-- Agent Terminal Output -->
 <div id="agent-logs" class="card hidden">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-        <span class="text-lg font-bold text-surface-900 dark:text-surface-100">Agent Output</span>
+    <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+        <span class="text-lg font-bold text-base-content">Agent Output</span>
         <div class="flex items-center gap-2">
-            <button data-action="clear-agent-logs" class="text-xs text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 px-3 py-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth">Clear</button>
-            <button data-action="toggle-agent-logs" id="toggle-logs-btn" class="text-xs text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 px-3 py-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-smooth">▼</button>
+            <button data-action="clear-agent-logs" class="text-xs text-base-content/60 hover:text-base-content/80 dark:hover:text-base-content/20 px-3 py-1.5 rounded-lg hover:bg-base-200 transition-smooth">Clear</button>
+            <button data-action="toggle-agent-logs" id="toggle-logs-btn" class="text-xs text-base-content/60 hover:text-base-content/80 dark:hover:text-base-content/20 px-3 py-1.5 rounded-lg hover:bg-base-200 transition-smooth">▼</button>
         </div>
     </div>
-    <div id="agent-logs-container" class="bg-surface-900 dark:bg-black rounded-b-2xl p-4 font-mono text-sm text-surface-100 overflow-x-auto" style="max-height: 400px;">
+    <div id="agent-logs-container" class="bg-neutral rounded-b-2xl p-4 font-mono text-sm text-base-content overflow-x-auto" style="max-height: 400px;">
         <p id="agent-logs-content" class="text-success-500 whitespace-pre-wrap">// Agent output will appear here...</p>
     </div>
 </div>
@@ -168,9 +168,9 @@
 <div class="card">
     <div class="text-center py-12">
         <!-- Saved project link (shown if a project was previously selected) -->
-        <div id="saved-project-link" class="hidden mb-6 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-xl border border-brand-200 dark:border-brand-800">
-            <p class="text-sm text-surface-600 dark:text-surface-400 mb-3">
-                Your saved project: <strong id="saved-project-name" class="text-brand-600 dark:text-brand-400"></strong>
+        <div id="saved-project-link" class="hidden mb-6 p-4 bg-primary/10 rounded-xl border border-primary/30">
+            <p class="text-sm text-base-content/60 mb-3">
+                Your saved project: <strong id="saved-project-name" class="text-primary"></strong>
             </p>
             <div class="flex items-center justify-center gap-3">
                 <button data-action="go-to-project-settings" class="btn btn-secondary">
@@ -182,26 +182,26 @@
             </div>
         </div>
 
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-900/30 dark:to-brand-800/20 flex items-center justify-center">
-            <svg class="w-10 h-10 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
             </svg>
         </div>
-        <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-100 mb-3">Select a Project</h2>
-        <p class="text-surface-500 dark:text-surface-400 mb-8 max-w-md mx-auto">Choose a project from your workspace to begin working with tasks</p>
+        <h2 class="text-3xl font-bold text-base-content mb-3">Select a Project</h2>
+        <p class="text-base-content/60 mb-8 max-w-md mx-auto">Choose a project from your workspace to begin working with tasks</p>
 
         {{if .Projects}}
         <div class="max-w-lg mx-auto">
-            <div class="divide-y divide-surface-200 dark:divide-surface-700 border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden shadow-card">
+            <div class="divide-y divide-base-200 border border-base-300 rounded-2xl overflow-hidden shadow-card">
                 {{range .Projects}}
                 <form hx-post="/api/v1/projects/select" hx-target="body" hx-swap="innerHTML" class="block">
                     <input type="hidden" name="path" value="{{.Path}}">
-                    <button type="submit" class="w-full px-6 py-4 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 text-left transition-smooth group">
+                    <button type="submit" class="w-full px-6 py-4 flex items-center justify-between hover:bg-base-100 text-left transition-smooth group">
                         <div>
-                            <div class="font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth">{{.Name}}</div>
-                            <div class="text-sm text-surface-500 dark:text-surface-400 font-mono truncate mt-0.5">{{.Path}}</div>
+                            <div class="font-semibold text-base-content group-hover:text-primary dark:group-hover:text-primary transition-smooth">{{.Name}}</div>
+                            <div class="text-sm text-base-content/60 font-mono truncate mt-0.5">{{.Path}}</div>
                         </div>
-                        <svg class="w-5 h-5 text-surface-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth -translate-x-1 group-hover:translate-x-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-base-content/40 group-hover:text-primary dark:group-hover:text-primary transition-smooth -translate-x-1 group-hover:translate-x-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </button>
@@ -210,14 +210,14 @@
             </div>
         </div>
         {{else}}
-        <div class="max-w-md mx-auto bg-surface-50 dark:bg-surface-800/50 rounded-2xl p-8 border border-surface-200 dark:border-surface-700">
-            <svg class="w-12 h-12 mx-auto text-surface-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="max-w-md mx-auto bg-base-100/50 rounded-2xl p-8 border border-base-300">
+            <svg class="w-12 h-12 mx-auto text-base-content/40 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <p class="text-surface-600 dark:text-surface-400 mb-4 font-medium">No projects registered yet.</p>
-            <p class="text-sm text-surface-500 dark:text-surface-500">
+            <p class="text-base-content/60 mb-4 font-medium">No projects registered yet.</p>
+            <p class="text-sm text-base-content/60">
                 Register a project by running:<br>
-                <code class="bg-surface-200 dark:bg-surface-700 px-3 py-1.5 rounded-lg mt-3 inline-block font-mono text-xs">mehr serve register</code>
+                <code class="bg-base-200 px-3 py-1.5 rounded-lg mt-3 inline-block font-mono text-xs">mehr serve register</code>
             </p>
         </div>
         {{end}}
@@ -227,19 +227,19 @@
 <!-- Project Mode: No Active Task -->
 <div class="card">
     <div class="text-center py-12">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-900/30 dark:to-brand-800/20 flex items-center justify-center">
-            <svg class="w-10 h-10 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
         </div>
-        <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-100 mb-3">No Active Task</h2>
-        <p class="text-surface-500 dark:text-surface-400 mb-8 max-w-md mx-auto">Start a new task to begin working with AI-powered development</p>
+        <h2 class="text-3xl font-bold text-base-content mb-3">No Active Task</h2>
+        <p class="text-base-content/60 mb-8 max-w-md mx-auto">Start a new task to begin working with AI-powered development</p>
 
         <div class="max-w-2xl mx-auto">
             <!-- Segmented Control for Tabs -->
-            <div class="inline-flex p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl mb-8">
+            <div class="inline-flex p-1 bg-base-200 rounded-2xl mb-8">
                 <button type="button" data-action="show-tab" data-tab="upload" id="tab-upload"
-                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl bg-white dark:bg-surface-700 text-brand-600 dark:text-brand-400 shadow-sm transition-smooth">
+                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl bg-base-100 text-primary shadow-sm transition-smooth">
                     <span class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -248,7 +248,7 @@
                     </span>
                 </button>
                 <button type="button" data-action="show-tab" data-tab="write" id="tab-write"
-                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
+                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl text-base-content/60 hover:text-base-content/80 dark:hover:text-base-content/20 transition-smooth">
                     <span class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -257,7 +257,7 @@
                     </span>
                 </button>
                 <button type="button" data-action="show-tab" data-tab="external" id="tab-external"
-                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-smooth">
+                        class="tab-btn px-6 py-3 text-sm font-semibold rounded-xl text-base-content/60 hover:text-base-content/80 dark:hover:text-base-content/20 transition-smooth">
                     <span class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
@@ -271,21 +271,21 @@
             <div id="panel-upload" class="tab-panel">
                 <form id="upload-form" hx-post="/api/v1/workflow/start" hx-encoding="multipart/form-data"
                       hx-target="body" hx-swap="innerHTML" class="space-y-4">
-                    <div class="border-2 border-dashed border-surface-300 dark:border-surface-600 rounded-2xl p-10 text-center hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition-all cursor-pointer group"
-                         ondragover="event.preventDefault(); this.classList.add('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');"
-                         ondragleave="this.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');"
-                         ondrop="event.preventDefault(); this.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20'); document.getElementById('file-input').files = event.dataTransfer.files; updateFileName();"
+                    <div class="border-2 border-dashed border-base-300 rounded-2xl p-10 text-center hover:border-primary hover:bg-primary/10 dark:hover:bg-primary/10 transition-all cursor-pointer group"
+                         ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/10');"
+                         ondragleave="this.classList.remove('border-primary', 'bg-primary/10');"
+                         ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/10'); document.getElementById('file-input').files = event.dataTransfer.files; updateFileName();"
                          data-action="trigger-file-input" data-input="file-input">
                         <input type="file" name="file" id="file-input" accept=".md,.txt,.markdown"
                                class="hidden" onchange="updateFileName()">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-100 dark:bg-surface-800 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 flex items-center justify-center transition-smooth">
-                            <svg class="w-8 h-8 text-surface-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-smooth" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 group-hover:bg-primary/20 dark:group-hover:bg-primary/30 flex items-center justify-center transition-smooth">
+                            <svg class="w-8 h-8 text-base-content/40 group-hover:text-primary dark:group-hover:text-primary transition-smooth" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-700 dark:text-surface-300 mb-2 font-medium">Drop your task file here or <span class="text-brand-600 dark:text-brand-400 font-semibold">browse</span></p>
-                        <p class="text-xs text-surface-400">Supports .md, .txt, .markdown files</p>
-                        <p id="file-name" class="text-sm text-brand-600 dark:text-brand-400 mt-4 hidden font-medium"></p>
+                        <p class="text-base-content/80 mb-2 font-medium">Drop your task file here or <span class="text-primary font-semibold">browse</span></p>
+                        <p class="text-xs text-base-content/40">Supports .md, .txt, .markdown files</p>
+                        <p id="file-name" class="text-sm text-primary mt-4 hidden font-medium"></p>
                     </div>
                     <button type="submit" class="btn btn-primary w-full">
                         <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
@@ -298,11 +298,11 @@
             <div id="panel-write" class="tab-panel hidden">
                 <form hx-post="/api/v1/workflow/start" hx-target="body" hx-swap="innerHTML" class="space-y-4">
                     <div>
-                        <label for="task-content" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2 text-left">Task Description</label>
+                        <label for="task-content" class="block text-sm font-semibold text-base-content/80 mb-2 text-left">Task Description</label>
                         <textarea name="content" id="task-content" rows="10"
                                   placeholder="# Task Title&#10;&#10;Describe what you want to accomplish...&#10;&#10;## Requirements&#10;- First requirement&#10;- Second requirement"
                                   class="input font-mono text-sm resize-none"></textarea>
-                        <p class="text-xs text-surface-400 mt-2 text-left">Use Markdown formatting for better structure</p>
+                        <p class="text-xs text-base-content/40 mt-2 text-left">Use Markdown formatting for better structure</p>
                     </div>
                     <button type="submit" class="btn btn-primary w-full">
                         <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
@@ -316,77 +316,77 @@
                 <form id="external-form" hx-post="/api/v1/workflow/start" hx-target="body" hx-swap="innerHTML" class="space-y-4">
                     <input type="hidden" name="ref" id="external-ref">
 
-                    <div id="external-error" class="hidden p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl text-error-700 dark:text-error-300 text-sm">
+                    <div id="external-error" class="hidden p-4 bg-error-50 border border-error-200 rounded-xl text-error-700 text-sm">
                         Please fill only one field
                     </div>
 
                     <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2 items-center text-left max-h-80 overflow-y-auto pr-2">
-                        <label for="ext-github" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-github" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                             GitHub
                         </label>
                         <input type="text" id="ext-github" data-prefix="github:"
                                placeholder="owner/repo#123"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-gitlab" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-gitlab" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 01-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 014.82 2a.43.43 0 01.41.26l2.48 7.6h8.58l2.48-7.6A.43.43 0 0119.18 2a.42.42 0 01.41.26l2.44 7.51 1.22 3.78a.84.84 0 01-.3.94z"/></svg>
                             GitLab
                         </label>
                         <input type="text" id="ext-gitlab" data-prefix="gitlab:"
                                placeholder="owner/repo#123"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-jira" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-jira" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.57 12.63L8.9 16.77l1.32 1 2.6-4.06 2.52 4 1.33-1L14 12.63l4-1.26-1.33-1-3.86 1.19-2.66-4.22-1.32 1 2.76 4.32-4 1.25 1.33 1L11.57 12.63z"/></svg>
                             Jira
                         </label>
                         <input type="text" id="ext-jira" data-prefix="jira:"
                                placeholder="PROJECT-123"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-linear" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-linear" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
                             Linear
                         </label>
                         <input type="text" id="ext-linear" data-prefix="linear:"
                                placeholder="TEAM-123"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-asana" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-asana" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2 7h4v4H2V7zm5 0h4v4H7V7zm5 0h4v4h-4V7zm5 0h4v4h-4V7zM2 12h4v4H2v-4zm5 0h4v4H7v-4zm5 0h4v4h-4v-4zm5 0h4v4h-4v-4z"/></svg>
                             Asana
                         </label>
                         <input type="text" id="ext-asana" data-prefix="asana:"
                                placeholder="task-id"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-notion" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-notion" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952l-.7.14s-.654-1.68-.654-1.68c0-.748-.14-1.26-.14-2.055V10.14c0-.56.187-.747.56-.747l1.027-.07c.094.046.14.093.187.186l.046.093 5.299 8.267V9.254l-.839-.094.839-.84zm-11.392.466l-1.215.07v9.744l1.215-.14V8.499zm9.91-1.54L3.24 7.748v-1.54l15.267-.887v1.54z"/></svg>
                             Notion
                         </label>
                         <input type="text" id="ext-notion" data-prefix="notion:"
                                placeholder="page-id"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-trello" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-trello" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10.5 4h-6A2.5 2.5 0 002 6.5v11A2.5 2.5 0 004.5 20h6a2.5 2.5 0 002.5-2.5v-11A2.5 2.5 0 0010.5 4zm9 0h-6A2.5 2.5 0 0011 6.5v11A2.5 2.5 0 0013.5 20h6a2.5 2.5 0 002.5-2.5v-11A2.5 2.5 0 0019.5 4z"/></svg>
                             Trello
                         </label>
                         <input type="text" id="ext-trello" data-prefix="trello:"
                                placeholder="card-id"
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
 
-                        <label for="ext-url" class="text-sm font-semibold text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <label for="ext-url" class="text-sm font-semibold text-base-content/80 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                             URL
                         </label>
                         <input type="text" id="ext-url" data-prefix=""
                                placeholder="https://..."
-                               class="ext-input px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-smooth text-sm">
+                               class="input input-bordered text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth text-sm">
                     </div>
 
-                    <p class="text-xs text-surface-400 text-left">Fill only one field above</p>
+                    <p class="text-xs text-base-content/40 text-left">Fill only one field above</p>
 
                     <button type="submit" class="btn btn-primary w-full">
                         <span class="htmx-indicator animate-spin mr-2">&#9696;</span>
@@ -410,15 +410,15 @@ function showTab(tabName) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
     // Deactivate all tabs
     document.querySelectorAll('.tab-btn').forEach(t => {
-        t.classList.remove('bg-white', 'dark:bg-surface-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
-        t.classList.add('text-surface-500', 'dark:text-surface-400');
+        t.classList.remove('bg-base-100', 'text-primary', 'shadow-sm');
+        t.classList.add('text-base-content/60');
     });
     // Show selected panel
     document.getElementById('panel-' + tabName).classList.remove('hidden');
     // Activate selected tab
     const tab = document.getElementById('tab-' + tabName);
-    tab.classList.remove('text-surface-500', 'dark:text-surface-400');
-    tab.classList.add('bg-white', 'dark:bg-surface-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+    tab.classList.remove('text-base-content/60');
+    tab.classList.add('bg-base-100', 'text-primary', 'shadow-sm');
 }
 
 function updateFileName() {
@@ -528,7 +528,7 @@ function addAgentLogMessage(message, type = 'info') {
     const prefix = type !== 'info' ? `[${type.toUpperCase()}] ` : '';
 
     // Color coding based on type
-    let colorClass = 'text-surface-100';
+    let colorClass = 'text-base-content';
     if (type === 'error') colorClass = 'text-error-400';
     if (type === 'progress') colorClass = 'text-info-400';
     if (type === 'state') colorClass = 'text-warning-400';
@@ -636,17 +636,17 @@ function clearSavedProject() {
 <!-- Workspace Stats (when no active task) -->
 {{if .Stats}}
 <div id="workspace-stats" hx-get="/ui/partials/workspace-stats" hx-trigger="load, every 60s" hx-swap="outerHTML">
-    <div class="text-surface-500 dark:text-surface-400 text-center py-8">Loading...</div>
+    <div class="text-base-content/60 text-center py-8">Loading...</div>
 </div>
 {{end}}
 
 <!-- Recent Tasks -->
 <div class="card" hx-get="/ui/partials/recent-tasks" hx-trigger="load" hx-swap="innerHTML">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Recent Tasks</h3>
-        <a href="/history" class="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-smooth">View All</a>
+    <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-base-content">Recent Tasks</h3>
+        <a href="/history" class="text-sm text-primary hover:text-primary dark:hover:text-primary font-medium transition-smooth">View All</a>
     </div>
-    <div class="text-surface-500 dark:text-surface-400 text-center py-8">Loading...</div>
+    <div class="text-base-content/60 text-center py-8">Loading...</div>
 </div>
 {{end}}
 {{end}}
@@ -667,7 +667,7 @@ function clearSavedProject() {
         <div class="flex items-start justify-between gap-6">
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-3">
-                    <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-100 truncate">{{if .Title}}{{.Title}}{{else}}{{.Type}} {{.ID}}{{end}}</h2>
+                    <h2 class="text-2xl font-bold text-base-content truncate">{{if .Title}}{{.Title}}{{else}}{{.Type}} {{.ID}}{{end}}</h2>
                     {{if .Labels}}
                     <div class="flex flex-wrap gap-1">
                         {{range .Labels}}
@@ -680,26 +680,26 @@ function clearSavedProject() {
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                     {{if .Branch}}
                     <div>
-                        <dt class="text-surface-500 dark:text-surface-400 text-xs font-medium uppercase tracking-wide mb-1">Branch</dt>
-                        <dd class="font-mono text-surface-900 dark:text-surface-100">{{.Branch}}</dd>
+                        <dt class="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">Branch</dt>
+                        <dd class="font-mono text-base-content">{{.Branch}}</dd>
                     </div>
                     {{end}}
                     {{if .Ref}}
                     <div>
-                        <dt class="text-surface-500 dark:text-surface-400 text-xs font-medium uppercase tracking-wide mb-1">Source</dt>
-                        <dd class="text-surface-900 dark:text-surface-100 truncate">{{.Ref}}</dd>
+                        <dt class="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">Source</dt>
+                        <dd class="text-base-content truncate">{{.Ref}}</dd>
                     </div>
                     {{end}}
                     {{if .Started}}
                     <div>
-                        <dt class="text-surface-500 dark:text-surface-400 text-xs font-medium uppercase tracking-wide mb-1">Started</dt>
-                        <dd class="text-surface-900 dark:text-surface-100">{{.Started}}</dd>
+                        <dt class="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">Started</dt>
+                        <dd class="text-base-content">{{.Started}}</dd>
                     </div>
                     {{end}}
                     {{if .Worktree}}
                     <div>
-                        <dt class="text-surface-500 dark:text-surface-400 text-xs font-medium uppercase tracking-wide mb-1">Worktree</dt>
-                        <dd class="font-mono text-surface-900 dark:text-surface-100 truncate" title="{{.Worktree}}">{{.Worktree}}</dd>
+                        <dt class="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">Worktree</dt>
+                        <dd class="font-mono text-base-content truncate" title="{{.Worktree}}">{{.Worktree}}</dd>
                     </div>
                     {{end}}
                 </dl>
@@ -711,8 +711,8 @@ function clearSavedProject() {
 
 {{define "actions_content"}}
 <div class="card">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Actions</h3>
+    <div class="px-6 py-4 border-b border-base-300">
+        <h3 class="text-lg font-bold text-base-content">Actions</h3>
     </div>
     {{if .}}
     <div class="p-6 flex flex-wrap gap-3">
@@ -730,19 +730,19 @@ function clearSavedProject() {
         {{end}}
     </div>
     {{else}}
-    <p class="text-surface-500 dark:text-surface-400 text-center py-6">No actions available</p>
+    <p class="text-base-content/60 text-center py-6">No actions available</p>
     {{end}}
 </div>
 {{end}}
 
 {{define "question_content"}}
 <div class="card border-l-4 border-warning-500">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center gap-3">
+    <div class="px-6 py-4 border-b border-base-300 flex items-center gap-3">
         <span class="text-warning-500 text-xl">?</span>
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Pending Question</h3>
+        <h3 class="text-lg font-bold text-base-content">Pending Question</h3>
     </div>
     <div class="p-6">
-        <p class="text-surface-800 dark:text-surface-200 mb-6 text-lg">{{.Question}}</p>
+        <p class="text-base-content/90 mb-6 text-lg">{{.Question}}</p>
 
         {{if not $.IsViewer}}
         {{if .Options}}
@@ -770,7 +770,7 @@ function clearSavedProject() {
             </button>
         </form>
         {{else}}
-        <p class="text-warning-600 dark:text-warning-400 italic">You are in read-only mode and cannot answer questions. Contact an administrator to respond.</p>
+        <p class="text-warning-600 italic">You are in read-only mode and cannot answer questions. Contact an administrator to respond.</p>
         {{end}}
     </div>
 </div>
@@ -778,38 +778,38 @@ function clearSavedProject() {
 
 {{define "costs_content"}}
 <div class="card">
-    <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-        <h3 class="text-lg font-bold text-surface-900 dark:text-surface-100">Token Usage & Costs</h3>
+    <div class="px-6 py-4 border-b border-base-300">
+        <h3 class="text-lg font-bold text-base-content">Token Usage & Costs</h3>
     </div>
     <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="text-center p-5 bg-gradient-to-br from-brand-50 to-brand-100/50 dark:from-brand-900/20 dark:to-brand-800/10 rounded-2xl border border-brand-100 dark:border-brand-800/50">
-            <div class="text-3xl font-bold text-brand-600 dark:text-brand-400">{{.TotalCost}}</div>
-            <div class="text-xs text-surface-500 dark:text-surface-400 mt-1 font-medium uppercase tracking-wide">Total Cost</div>
+        <div class="text-center p-5 bg-primary/10 rounded-2xl border border-primary/30">
+            <div class="text-3xl font-bold text-primary">{{.TotalCost}}</div>
+            <div class="text-xs text-base-content/60 mt-1 font-medium uppercase tracking-wide">Total Cost</div>
         </div>
-        <div class="text-center p-5 bg-gradient-to-br from-info-50 to-info-100/50 dark:from-info-900/20 dark:to-info-800/10 rounded-2xl border border-info-100 dark:border-info-800/50">
-            <div class="text-3xl font-bold text-info-600 dark:text-info-400">{{.InputTokens}}</div>
-            <div class="text-xs text-surface-500 dark:text-surface-400 mt-1 font-medium uppercase tracking-wide">Input Tokens</div>
+        <div class="text-center p-5 bg-gradient-to-br from-info-50 to-info-100/50 rounded-2xl border border-info-100/50">
+            <div class="text-3xl font-bold text-info-600">{{.InputTokens}}</div>
+            <div class="text-xs text-base-content/60 mt-1 font-medium uppercase tracking-wide">Input Tokens</div>
         </div>
-        <div class="text-center p-5 bg-gradient-to-br from-success-50 to-success-100/50 dark:from-success-900/20 dark:to-success-800/10 rounded-2xl border border-success-100 dark:border-success-800/50">
-            <div class="text-3xl font-bold text-success-600 dark:text-success-400">{{.OutputTokens}}</div>
-            <div class="text-xs text-surface-500 dark:text-surface-400 mt-1 font-medium uppercase tracking-wide">Output Tokens</div>
+        <div class="text-center p-5 bg-gradient-to-br from-success-50 to-success-100/50 rounded-2xl border border-success-100/50">
+            <div class="text-3xl font-bold text-success-600">{{.OutputTokens}}</div>
+            <div class="text-xs text-base-content/60 mt-1 font-medium uppercase tracking-wide">Output Tokens</div>
         </div>
-        <div class="text-center p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-800/10 rounded-2xl border border-purple-100 dark:border-purple-800/50">
-            <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{.CachedTokens}}</div>
-            <div class="text-xs text-surface-500 dark:text-surface-400 mt-1 font-medium uppercase tracking-wide">Cached Tokens</div>
+        <div class="text-center p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl border border-secondary/20">
+            <div class="text-3xl font-bold text-secondary">{{.CachedTokens}}</div>
+            <div class="text-xs text-base-content/60 mt-1 font-medium uppercase tracking-wide">Cached Tokens</div>
         </div>
     </div>
     {{if .HasBudget}}
     <div class="px-6 pb-6">
-        <div class="text-sm text-surface-600 dark:text-surface-400 mb-2">Budget: {{.BudgetUsed}} / {{.BudgetMax}}</div>
-        <div class="h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+        <div class="text-sm text-base-content/60 mb-2">Budget: {{.BudgetUsed}} / {{.BudgetMax}}</div>
+        <div class="h-2 bg-base-200 rounded-full overflow-hidden">
             <div class="h-full {{.BudgetColor}} transition-all" style="width: {{.BudgetPct}}%"></div>
         </div>
         {{if .BudgetWarned}}
-        <p class="text-warning-600 dark:text-warning-400 text-sm mt-2">⚠️ Budget warning threshold reached</p>
+        <p class="text-warning-600 text-sm mt-2">⚠️ Budget warning threshold reached</p>
         {{end}}
         {{if .BudgetLimitHit}}
-        <p class="text-error-600 dark:text-error-400 text-sm mt-2">🚫 Budget limit reached</p>
+        <p class="text-error-600 text-sm mt-2">🚫 Budget limit reached</p>
         {{end}}
     </div>
     {{end}}

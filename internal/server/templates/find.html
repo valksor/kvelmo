@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Find</h1>
-            <p class="text-surface-600 dark:text-surface-400 mt-1">AI-powered code search with focused results</p>
+            <h1 class="text-3xl font-bold text-base-content">Find</h1>
+            <p class="text-base-content/60 mt-1">AI-powered code search with focused results</p>
         </div>
     </div>
 
@@ -13,9 +13,9 @@
         <div class="lg:col-span-3 space-y-6">
             <!-- Search Form -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                         Search Code
@@ -24,29 +24,29 @@
                 <div class="p-6">
                     <form id="find-form" class="space-y-4">
                         <div>
-                            <label for="find-query" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Search Query</label>
+                            <label for="find-query" class="block text-sm font-semibold text-base-content/80 mb-2">Search Query</label>
                             <input type="text" id="find-query"
                                    placeholder="e.g., archive_blade database table, authentication handler, User struct..."
                                    class="input w-full"
                                    required>
-                            <p class="text-xs text-surface-400 mt-1">Describe what you're looking for in natural language</p>
+                            <p class="text-xs text-base-content/40 mt-1">Describe what you're looking for in natural language</p>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label for="find-path" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Path (optional)</label>
+                                <label for="find-path" class="block text-sm font-semibold text-base-content/80 mb-2">Path (optional)</label>
                                 <input type="text" id="find-path"
                                        placeholder="e.g., ./internal/auth"
                                        class="input text-sm">
                             </div>
                             <div>
-                                <label for="find-pattern" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">File Pattern (optional)</label>
+                                <label for="find-pattern" class="block text-sm font-semibold text-base-content/80 mb-2">File Pattern (optional)</label>
                                 <input type="text" id="find-pattern"
                                        placeholder="e.g., **/*.go"
                                        class="input text-sm">
                             </div>
                             <div>
-                                <label for="find-context" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Context Lines</label>
+                                <label for="find-context" class="block text-sm font-semibold text-base-content/80 mb-2">Context Lines</label>
                                 <select id="find-context" class="input text-sm">
                                     <option value="1">1 line</option>
                                     <option value="3" selected>3 lines</option>
@@ -58,10 +58,10 @@
 
                         <div class="flex items-center gap-4">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="find-stream" class="rounded text-brand-600 focus:ring-brand-500">
-                                <span class="text-sm text-surface-700 dark:text-surface-300">Stream results</span>
+                                <input type="checkbox" id="find-stream" class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-base-content/80">Stream results</span>
                             </label>
-                            <span class="text-xs text-surface-500">Show results as they're found (useful for large searches)</span>
+                            <span class="text-xs text-base-content/60">Show results as they're found (useful for large searches)</span>
                         </div>
 
                         <div class="flex justify-end gap-3">
@@ -83,8 +83,8 @@
             <div id="find-status" class="hidden">
                 <div class="card">
                     <div class="flex items-center gap-3 p-4">
-                        <div class="animate-spin text-brand-600 text-xl">&#9696;</div>
-                        <span class="text-surface-700 dark:text-surface-300">Searching...</span>
+                        <div class="animate-spin text-primary text-xl">&#9696;</div>
+                        <span class="text-base-content/80">Searching...</span>
                         <button id="find-cancel" class="ml-auto btn btn-secondary text-sm">Cancel</button>
                     </div>
                 </div>
@@ -95,13 +95,13 @@
                 <!-- Initial empty state -->
                 <div class="card">
                     <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-600 dark:text-surface-400">Enter a search query to find code in your repository.</p>
-                        <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">The AI will search using Grep/Glob tools and return focused results.</p>
+                        <p class="text-base-content/60">Enter a search query to find code in your repository.</p>
+                        <p class="text-sm text-base-content/60 mt-1">The AI will search using Grep/Glob tools and return focused results.</p>
                     </div>
                 </div>
             </div>
@@ -111,59 +111,59 @@
         <div class="space-y-6">
             <!-- Search Tips -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Search Tips
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Be Specific:</strong>
+                        <strong class="text-base-content/80">Be Specific:</strong>
                         Include function names, variable names, or type names for best results.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Use Context:</strong>
+                        <strong class="text-base-content/80">Use Context:</strong>
                         Mention what the code does (e.g., "database connection", "API endpoint").
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">File Patterns:</strong>
-                        Use glob patterns like <code class="px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-xs">**/*.go</code> to narrow search scope.
+                        <strong class="text-base-content/80">File Patterns:</strong>
+                        Use glob patterns like <code class="px-1.5 py-0.5 rounded bg-base-200 text-xs">**/*.go</code> to narrow search scope.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Path Restriction:</strong>
-                        Limit to a directory like <code class="px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-xs">./internal/auth</code>.
+                        <strong class="text-base-content/80">Path Restriction:</strong>
+                        Limit to a directory like <code class="px-1.5 py-0.5 rounded bg-base-200 text-xs">./internal/auth</code>.
                     </p>
                 </div>
             </div>
 
             <!-- Output Formats -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                         </svg>
                         Output Format
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Concise:</strong>
-                        <code class="block px-2 py-1 mt-1 rounded bg-surface-100 dark:bg-surface-800 text-xs font-mono">file.go:42: the matching line</code>
+                        <strong class="text-base-content/80">Concise:</strong>
+                        <code class="block px-2 py-1 mt-1 rounded bg-base-200 text-xs font-mono">file.go:42: the matching line</code>
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Structured:</strong>
+                        <strong class="text-base-content/80">Structured:</strong>
                         Numbered list with file info, context, and reason.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">JSON:</strong>
+                        <strong class="text-base-content/80">JSON:</strong>
                         Machine-readable for scripting and pipelines.
                     </p>
-                    <p class="pt-2 border-t border-surface-200 dark:border-surface-700">
-                        <a href="/api/v1/docs" class="text-brand-600 dark:text-brand-400 hover:underline">CLI Documentation →</a>
+                    <p class="pt-2 border-t border-base-300">
+                        <a href="/api/v1/docs" class="text-primary hover:underline">CLI Documentation →</a>
                     </p>
                 </div>
             </div>

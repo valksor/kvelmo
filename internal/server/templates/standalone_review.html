@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-100">Standalone Review</h1>
-            <p class="text-surface-600 dark:text-surface-400 mt-1">Review code changes without an active task</p>
+            <h1 class="text-3xl font-bold text-base-content">Standalone Review</h1>
+            <p class="text-base-content/60 mt-1">Review code changes without an active task</p>
         </div>
     </div>
 
@@ -13,9 +13,9 @@
         <div class="lg:col-span-3 space-y-6">
             <!-- Review Form -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Review Configuration
@@ -25,56 +25,56 @@
                     <form id="review-form" class="space-y-4">
                         <!-- Mode Selection -->
                         <div>
-                            <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Review Mode</label>
+                            <label class="block text-sm font-semibold text-base-content/80 mb-2">Review Mode</label>
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="uncommitted" checked class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Uncommitted</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="uncommitted" checked class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Uncommitted</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="branch" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Branch</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="branch" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Branch</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="range" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Range</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="range" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Range</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-3 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-brand-500 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-900/20">
-                                    <input type="radio" name="mode" value="files" class="text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Files</span>
+                                <label class="flex items-center gap-2 p-3 rounded-lg border border-base-300 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/10 dark:has-[:checked]:bg-primary/20">
+                                    <input type="radio" name="mode" value="files" class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Files</span>
                                 </label>
                             </div>
                         </div>
 
                         <!-- Mode-specific fields -->
                         <div id="branch-field" class="hidden">
-                            <label for="base-branch" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Base Branch</label>
+                            <label for="base-branch" class="block text-sm font-semibold text-base-content/80 mb-2">Base Branch</label>
                             <input type="text" id="base-branch" name="base_branch"
                                    placeholder="main (auto-detected if empty)"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Compare current branch against this base</p>
+                            <p class="text-xs text-base-content/40 mt-1">Compare current branch against this base</p>
                         </div>
 
                         <div id="range-field" class="hidden">
-                            <label for="commit-range" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Commit Range</label>
+                            <label for="commit-range" class="block text-sm font-semibold text-base-content/80 mb-2">Commit Range</label>
                             <input type="text" id="commit-range" name="range"
                                    placeholder="HEAD~3..HEAD"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Git revision range (e.g., HEAD~3..HEAD, abc123..def456)</p>
+                            <p class="text-xs text-base-content/40 mt-1">Git revision range (e.g., HEAD~3..HEAD, abc123..def456)</p>
                         </div>
 
                         <div id="files-field" class="hidden">
-                            <label for="file-list" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Files to Review</label>
+                            <label for="file-list" class="block text-sm font-semibold text-base-content/80 mb-2">Files to Review</label>
                             <input type="text" id="file-list" name="files"
                                    placeholder="src/handler.go, src/validation.go"
                                    class="input w-full">
-                            <p class="text-xs text-surface-400 mt-1">Comma-separated list of files</p>
+                            <p class="text-xs text-base-content/40 mt-1">Comma-separated list of files</p>
                         </div>
 
                         <!-- Options -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label for="context-lines" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Context Lines</label>
+                                <label for="context-lines" class="block text-sm font-semibold text-base-content/80 mb-2">Context Lines</label>
                                 <select id="context-lines" name="context" class="input w-full">
                                     <option value="1">1 line</option>
                                     <option value="3" selected>3 lines</option>
@@ -83,7 +83,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="agent-select" class="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Agent (optional)</label>
+                                <label for="agent-select" class="block text-sm font-semibold text-base-content/80 mb-2">Agent (optional)</label>
                                 <input type="text" id="agent-select" name="agent"
                                        placeholder="Default agent"
                                        class="input w-full">
@@ -93,13 +93,13 @@
                         <!-- Fix Mode Options -->
                         <div class="space-y-3 pt-2">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="apply-fixes" name="apply_fixes" class="rounded text-brand-600 focus:ring-brand-500">
-                                <span class="text-sm text-surface-700 dark:text-surface-300">Apply suggested fixes</span>
+                                <input type="checkbox" id="apply-fixes" name="apply_fixes" class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-base-content/80">Apply suggested fixes</span>
                             </label>
                             <div id="checkpoint-field" class="ml-6 hidden">
                                 <label class="inline-flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="create-checkpoint" name="create_checkpoint" checked class="rounded text-brand-600 focus:ring-brand-500">
-                                    <span class="text-sm text-surface-700 dark:text-surface-300">Create checkpoint before changes</span>
+                                    <input type="checkbox" id="create-checkpoint" name="create_checkpoint" checked class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Create checkpoint before changes</span>
                                 </label>
                             </div>
                         </div>
@@ -123,8 +123,8 @@
             <div id="review-status" class="hidden">
                 <div class="card">
                     <div class="flex items-center gap-3 p-4">
-                        <div class="animate-spin text-brand-600 text-xl">&#9696;</div>
-                        <span id="review-status-text" class="text-surface-700 dark:text-surface-300">Running review...</span>
+                        <div class="animate-spin text-primary text-xl">&#9696;</div>
+                        <span id="review-status-text" class="text-base-content/80">Running review...</span>
                         <button id="review-cancel" class="ml-auto btn btn-secondary text-sm">Cancel</button>
                     </div>
                 </div>
@@ -135,13 +135,13 @@
                 <!-- Initial empty state -->
                 <div class="card">
                     <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-surface-100 to-surface-50 dark:from-surface-800 dark:to-surface-900 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-base-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <p class="text-surface-600 dark:text-surface-400">Configure the review options and click "Run Review" to start.</p>
-                        <p class="text-sm text-surface-500 dark:text-surface-500 mt-1">The AI will analyze your code changes and provide feedback.</p>
+                        <p class="text-base-content/60">Configure the review options and click "Run Review" to start.</p>
+                        <p class="text-sm text-base-content/60 mt-1">The AI will analyze your code changes and provide feedback.</p>
                     </div>
                 </div>
             </div>
@@ -151,29 +151,29 @@
         <div class="space-y-6">
             <!-- Mode Descriptions -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Review Modes
                     </h2>
                 </div>
-                <div class="p-6 space-y-3 text-sm text-surface-600 dark:text-surface-400">
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Uncommitted:</strong>
+                        <strong class="text-base-content/80">Uncommitted:</strong>
                         Review all staged and unstaged changes in your working directory.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Branch:</strong>
+                        <strong class="text-base-content/80">Branch:</strong>
                         Compare current branch against main/master or a specified base branch.
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Range:</strong>
+                        <strong class="text-base-content/80">Range:</strong>
                         Review changes in a specific commit range (e.g., last 3 commits).
                     </p>
                     <p>
-                        <strong class="text-surface-700 dark:text-surface-300">Files:</strong>
+                        <strong class="text-base-content/80">Files:</strong>
                         Review specific files only, regardless of commit history.
                     </p>
                 </div>
@@ -181,9 +181,9 @@
 
             <!-- Verdicts -->
             <div class="card">
-                <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
-                    <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                         </svg>
                         Verdicts
@@ -192,18 +192,18 @@
                 <div class="p-6 space-y-2 text-sm">
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-success-500"></span>
-                        <span class="text-surface-700 dark:text-surface-300">Approved</span>
-                        <span class="text-surface-500">- Code looks good</span>
+                        <span class="text-base-content/80">Approved</span>
+                        <span class="text-base-content/60">- Code looks good</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-warning-500"></span>
-                        <span class="text-surface-700 dark:text-surface-300">Needs Changes</span>
-                        <span class="text-surface-500">- Issues found</span>
+                        <span class="text-base-content/80">Needs Changes</span>
+                        <span class="text-base-content/60">- Issues found</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-surface-400"></span>
-                        <span class="text-surface-700 dark:text-surface-300">Comment</span>
-                        <span class="text-surface-500">- Observations only</span>
+                        <span class="w-3 h-3 rounded-full bg-base-200"></span>
+                        <span class="text-base-content/80">Comment</span>
+                        <span class="text-base-content/60">- Observations only</span>
                     </div>
                 </div>
             </div>
