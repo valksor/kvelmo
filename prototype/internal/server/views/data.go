@@ -182,6 +182,7 @@ type QuestionData struct {
 	Question string
 	Options  []OptionData
 	TaskID   string
+	IsViewer bool
 }
 
 // OptionData represents a question option.

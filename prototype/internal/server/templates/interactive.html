@@ -45,14 +45,17 @@
 
             <!-- Input Area -->
             <div class="card flex-shrink-0">
-                <form hx-post="/api/v1/interactive/chat" hx-swap="none" hx-indicator="#chat-spinner">
+                <form id="chat-form" hx-post="/ui/interactive/send"
+                      hx-target="#messages"
+                      hx-swap="beforeend"
+                      hx-indicator="#chat-spinner">
                     <div class="flex gap-2 p-4">
                         <input type="text"
+                               id="chat-input"
                                name="message"
                                placeholder="Type a message or command (e.g., 'plan', 'implement')..."
                                class="input flex-1"
-                               autocomplete="off"
-                               hx-on="htmx:xhr:after-request: this.value = ''">
+                               autocomplete="off">
                         <button type="submit" class="btn btn-primary">
                             <span id="chat-spinner" class="htmx-indicator hidden">⏳</span>
                             <span class="htmx-indicator-hidden">Send</span>
@@ -63,6 +66,27 @@
                     Tip: Type commands directly (finish, abandon, plan, implement, review, note, find, simplify, label, cost, budget, list, spec, help)
                 </div>
             </div>
+            <script>
+            (function() {
+                const form = document.getElementById('chat-form');
+                const input = document.getElementById('chat-input');
+                const messages = document.getElementById('messages');
+
+                if (form && input) {
+                    // Clear input after successful submission
+                    form.addEventListener('htmx:afterRequest', function(evt) {
+                        if (evt.detail.successful) {
+                            input.value = '';
+                            input.focus();
+                            // Scroll messages to bottom
+                            if (messages) {
+                                messages.scrollTop = messages.scrollHeight;
+                            }
+                        }
+                    });
+                }
+            })();
+            </script>
         </div>
 
         <!-- Side Panel -->

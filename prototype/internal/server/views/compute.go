@@ -196,6 +196,15 @@ func ComputeActions(active *ActiveWorkData, ws *storage.Workspace) []ActionData 
 				Method:      "POST",
 				ButtonClass: BtnSecondary,
 			},
+			{
+				Command:     "reset",
+				Label:       "Reset State",
+				Endpoint:    "/api/v1/workflow/reset",
+				Method:      "POST",
+				ButtonClass: BtnWarning,
+				Tooltip:     "Reset to idle if agent is stuck (preserves all work)",
+				Confirm:     "Reset workflow state to idle? Use this if the agent is stuck.",
+			},
 		}
 
 	case StateDone:

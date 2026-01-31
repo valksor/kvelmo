@@ -57,6 +57,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/workflow/answer", s.handleWorkflowAnswer)
 		mux.HandleFunc("POST /api/v1/workflow/resume", s.handleWorkflowResume)
 		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleWorkflowAbandon)
+		mux.HandleFunc("POST /api/v1/workflow/reset", s.handleWorkflowReset)
 		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleWorkflowContinue)
 		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleWorkflowAuto)
 		mux.HandleFunc("POST /api/v1/workflow/question", s.handleWorkflowQuestion)
@@ -165,6 +166,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleInteractiveAnswer)
 		mux.HandleFunc("GET /api/v1/interactive/state", s.handleInteractiveState)
 		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
+		mux.HandleFunc("POST /ui/interactive/send", s.handleInteractiveSend)
 
 		// Task history UI
 		mux.HandleFunc("GET /history", s.handleHistoryUI)
