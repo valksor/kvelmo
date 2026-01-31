@@ -13,31 +13,32 @@ const MAX_NOTIFICATIONS = 50;
 // Notification storage
 let notifications = [];
 let unreadCount = 0;
+let initialized = false;
 
-// Notification type configurations
+// Notification type configurations - subtle background with readable text
 const notificationTypes = {
     success: {
-        bgColor: 'bg-success-50 dark:bg-success-900/30',
-        textColor: 'text-success-800 dark:text-success-300',
-        borderColor: 'border-success-200 dark:border-success-800',
+        bgColor: 'bg-base-100',
+        textColor: 'text-success',
+        borderColor: 'border-success',
         icon: '✓'
     },
     error: {
-        bgColor: 'bg-error-50 dark:bg-error-900/30',
-        textColor: 'text-error-800 dark:text-error-300',
-        borderColor: 'border-error-200 dark:border-error-800',
+        bgColor: 'bg-base-100',
+        textColor: 'text-error',
+        borderColor: 'border-error',
         icon: '✕'
     },
     warning: {
-        bgColor: 'bg-warning-50 dark:bg-warning-900/30',
-        textColor: 'text-warning-800 dark:text-warning-300',
-        borderColor: 'border-warning-200 dark:border-warning-800',
+        bgColor: 'bg-base-100',
+        textColor: 'text-warning',
+        borderColor: 'border-warning',
         icon: '⚠'
     },
     info: {
-        bgColor: 'bg-info-50 dark:bg-info-900/30',
-        textColor: 'text-info-800 dark:text-info-300',
-        borderColor: 'border-info-200 dark:border-info-800',
+        bgColor: 'bg-base-100',
+        textColor: 'text-base-content',
+        borderColor: 'border-primary',
         icon: 'ℹ'
     }
 };
@@ -70,28 +71,44 @@ export function initNotifications() {
     const center = document.getElementById('notification-center');
     const closeBtn = document.getElementById('close-notifications');
 
-    if (bell && center) {
-        bell.addEventListener('click', () => {
-            center.classList.toggle('hidden');
-            if (!center.classList.contains('hidden')) {
+    if (!bell || !center) {
+        return;
+    }
+
+    // Prevent duplicate initialization
+    if (initialized) {
+        return;
+    }
+    initialized = true;
+
+    // Use event delegation on document body to handle clicks
+    // This ensures clicks work even after HTMX swaps
+    document.body.addEventListener('click', (e) => {
+        const bellBtn = e.target.closest('#notification-bell');
+        const centerEl = document.getElementById('notification-center');
+        const closeBtnEl = e.target.closest('#close-notifications');
+
+        if (bellBtn && centerEl) {
+            e.preventDefault();
+            e.stopPropagation();
+            centerEl.classList.toggle('hidden');
+            if (!centerEl.classList.contains('hidden')) {
                 markAllAsRead();
             }
-        });
-    }
+            return;
+        }
 
-    if (closeBtn && center) {
-        closeBtn.addEventListener('click', () => {
-            center.classList.add('hidden');
-        });
-    }
+        if (closeBtnEl && centerEl) {
+            centerEl.classList.add('hidden');
+            return;
+        }
 
-    // Close when clicking outside
-    document.addEventListener('click', (e) => {
-        if (center && bell &&
-            !center.classList.contains('hidden') &&
-            !center.contains(e.target) &&
-            !bell.contains(e.target)) {
-            center.classList.add('hidden');
+        // Close when clicking outside
+        if (centerEl && !centerEl.classList.contains('hidden')) {
+            const bell = document.getElementById('notification-bell');
+            if (!centerEl.contains(e.target) && (!bell || !bell.contains(e.target))) {
+                centerEl.classList.add('hidden');
+            }
         }
     });
 
@@ -327,9 +344,9 @@ function requestBrowserNotificationPermission() {
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'flex items-center gap-2 mt-2';
 
-        // Enable button
+        // Enable button - using DaisyUI btn classes
         const enableBtn = document.createElement('button');
-        enableBtn.className = 'px-4 py-2 bg-gradient-to-r from-brand-600 to-violet-600 text-white text-sm rounded-xl font-semibold shadow-brand hover:shadow-brand-lg transition-all duration-200 hover:scale-105';
+        enableBtn.className = 'btn btn-primary btn-sm';
         enableBtn.textContent = 'Enable';
         enableBtn.addEventListener('click', () => {
             Notification.requestPermission().then(permission => {
@@ -343,9 +360,9 @@ function requestBrowserNotificationPermission() {
             });
         });
 
-        // Dismiss button
+        // Dismiss button - using DaisyUI ghost btn
         const dismissBtn = document.createElement('button');
-        dismissBtn.className = 'px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-all duration-200';
+        dismissBtn.className = 'btn btn-ghost btn-sm';
         dismissBtn.textContent = 'Not now';
         dismissBtn.addEventListener('click', () => {
             localStorage.setItem(NOTIFICATION_PREF_KEY, 'true');
