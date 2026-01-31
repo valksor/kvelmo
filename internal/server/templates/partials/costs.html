@@ -6,53 +6,53 @@
 
     <div class="mt-4 space-y-4">
         {{/* Total cost */}}
-        <div class="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-brand-50 to-purple-50 dark:from-brand-900/20 dark:to-purple-900/20 border border-brand-100 dark:border-brand-800">
-            <span class="font-medium text-brand-700 dark:text-brand-300">Total Cost</span>
-            <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{.TotalCost}}</span>
+        <div class="flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/30">
+            <span class="font-medium text-primary">Total Cost</span>
+            <span class="text-2xl font-bold text-primary">{{.TotalCost}}</span>
         </div>
 
         {{/* Token breakdown */}}
         <div class="grid grid-cols-2 gap-4">
-            <div class="p-3 rounded-xl bg-surface-50 dark:bg-surface-900/50">
-                <p class="text-xs text-surface-500 dark:text-surface-400 mb-1">Input Tokens</p>
-                <p class="text-lg font-semibold text-surface-900 dark:text-surface-100">{{.InputTokens}}</p>
+            <div class="p-3 rounded-xl bg-base-100">
+                <p class="text-xs text-base-content/60 mb-1">Input Tokens</p>
+                <p class="text-lg font-semibold text-base-content">{{.InputTokens}}</p>
             </div>
-            <div class="p-3 rounded-xl bg-surface-50 dark:bg-surface-900/50">
-                <p class="text-xs text-surface-500 dark:text-surface-400 mb-1">Output Tokens</p>
-                <p class="text-lg font-semibold text-surface-900 dark:text-surface-100">{{.OutputTokens}}</p>
+            <div class="p-3 rounded-xl bg-base-100">
+                <p class="text-xs text-base-content/60 mb-1">Output Tokens</p>
+                <p class="text-lg font-semibold text-base-content">{{.OutputTokens}}</p>
             </div>
-            <div class="p-3 rounded-xl bg-surface-50 dark:bg-surface-900/50">
-                <p class="text-xs text-surface-500 dark:text-surface-400 mb-1">Total Tokens</p>
-                <p class="text-lg font-semibold text-surface-900 dark:text-surface-100">{{.TotalTokens}}</p>
+            <div class="p-3 rounded-xl bg-base-100">
+                <p class="text-xs text-base-content/60 mb-1">Total Tokens</p>
+                <p class="text-lg font-semibold text-base-content">{{.TotalTokens}}</p>
             </div>
-            <div class="p-3 rounded-xl bg-success-50 dark:bg-success-900/20">
-                <p class="text-xs text-success-600 dark:text-success-400 mb-1">Cached</p>
-                <p class="text-lg font-semibold text-success-700 dark:text-success-300">{{.CachedTokens}}</p>
-                <p class="text-xs text-success-600 dark:text-success-400">{{.CachedPct}} saved</p>
+            <div class="p-3 rounded-xl bg-success-50 bg-success/10">
+                <p class="text-xs text-success-600 mb-1">Cached</p>
+                <p class="text-lg font-semibold text-success-700">{{.CachedTokens}}</p>
+                <p class="text-xs text-success-600">{{.CachedPct}} saved</p>
             </div>
         </div>
 
         {{/* Budget progress */}}
         {{if .HasBudget}}
-        <div class="pt-4 border-t border-surface-200 dark:border-surface-700">
+        <div class="pt-4 border-t border-base-300">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-surface-700 dark:text-surface-300">Budget ({{.BudgetType}})</span>
-                <span class="text-sm text-surface-500 dark:text-surface-400">{{.BudgetUsed}} / {{.BudgetMax}}</span>
+                <span class="text-sm font-medium text-base-content/80">Budget ({{.BudgetType}})</span>
+                <span class="text-sm text-base-content/60">{{.BudgetUsed}} / {{.BudgetMax}}</span>
             </div>
-            <div class="h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+            <div class="h-3 bg-base-200 rounded-full overflow-hidden">
                 <div class="h-full {{.BudgetColor}} transition-all duration-300" style="width: {{.BudgetPct}}%"></div>
             </div>
 
             {{/* Budget warnings */}}
             {{if .BudgetLimitHit}}
-            <div class="mt-3 flex items-center gap-2 text-sm text-error-600 dark:text-error-400">
+            <div class="mt-3 flex items-center gap-2 text-sm text-error-600">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                 </svg>
                 Budget limit reached - task paused
             </div>
             {{else if .BudgetWarned}}
-            <div class="mt-3 flex items-center gap-2 text-sm text-warning-600 dark:text-warning-400">
+            <div class="mt-3 flex items-center gap-2 text-sm text-warning-600">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                 </svg>
@@ -64,15 +64,15 @@
 
         {{/* Step breakdown */}}
         {{if .Steps}}
-        <div class="pt-4 border-t border-surface-200 dark:border-surface-700">
-            <h4 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">By Workflow Step</h4>
+        <div class="pt-4 border-t border-base-300">
+            <h4 class="text-sm font-semibold text-base-content/80 mb-3">By Workflow Step</h4>
             <div class="space-y-2">
                 {{range .Steps}}
-                <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                    <span class="font-medium text-surface-700 dark:text-surface-300 capitalize">{{.Name}}</span>
-                    <div class="flex items-center gap-4 text-surface-500 dark:text-surface-400">
+                <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-base-100">
+                    <span class="font-medium text-base-content/80 capitalize">{{.Name}}</span>
+                    <div class="flex items-center gap-4 text-base-content/60">
                         <span>{{.TotalTokens}} tokens</span>
-                        <span class="font-medium text-surface-700 dark:text-surface-300">{{.Cost}}</span>
+                        <span class="font-medium text-base-content/80">{{.Cost}}</span>
                     </div>
                 </div>
                 {{end}}
