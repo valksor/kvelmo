@@ -106,10 +106,6 @@ jobs:
             -   name: Setup Gradle
                 uses: gradle/actions/setup-gradle@v5
 
-            -   name: Build Plugin
-                working-directory: ide/jetbrains
-                run: ./gradlew buildPlugin
-
             -   name: Verify Plugin
                 working-directory: ide/jetbrains
                 run: ./gradlew verifyPlugin
@@ -129,15 +125,48 @@ jobs:
                     flag-name: kotlin-coverage
                     base-path: ide/jetbrains
 
-            -   name: Upload Plugin Artifact
-                uses: actions/upload-artifact@v6
+    vscode:
+        runs-on: ubuntu-latest
+
+        env:
+            NODE_VERSION: '24'
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
                 with:
-                    name: mehrhof-intellij-plugin
-                    path: ide/jetbrains/build/distributions/*.zip
-                    retention-days: 3
+                    bun-version: latest
+
+            -   name: Setup Node.js
+                uses: actions/setup-node@v6
+                with:
+                    node-version: ${{ env.NODE_VERSION }}
+
+            -   name: Install Dependencies
+                working-directory: ide/vscode
+                run: bun install
+
+            -   name: Lint
+                working-directory: ide/vscode
+                run: bun run lint
+
+            -   name: Compile Extension
+                working-directory: ide/vscode
+                run: bun run compile
+
+            -   name: Compile Tests
+                working-directory: ide/vscode
+                run: bun run compile:test
+
+            -   name: Run Tests
+                working-directory: ide/vscode
+                run: xvfb-run -a bun run test
 
     coverage-finish:
-        needs: [test, jetbrains]
+        needs: [test, jetbrains, vscode]
         runs-on: ubuntu-latest
         if: github.event_name == 'push'
         steps:
@@ -146,4 +175,4 @@ jobs:
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
                     parallel-finished: true
-                    carryforward: "go-coverage,kotlin-coverage"
+                    carryforward: "go-coverage,kotlin-coverage,typescript-coverage"
