@@ -1,13 +1,16 @@
-import EventSource from 'eventsource';
+import { EventSource } from 'eventsource';
 import { EventEmitter } from 'events';
 import type {
   SSEEventType,
   StateChangedEvent,
   AgentMessageEvent,
   ProgressEvent,
-  ErrorEvent,
+  ErrorEvent as MehrhofErrorEvent,
   QuestionEvent,
 } from './models';
+
+// eventsource v4 readyState constants
+const ES_OPEN = 1;
 
 export interface EventStreamOptions {
   reconnectDelayMs?: number;
@@ -24,7 +27,7 @@ export interface EventStreamClientEvents {
   state_changed: (event: StateChangedEvent) => void;
   agent_message: (event: AgentMessageEvent) => void;
   progress: (event: ProgressEvent) => void;
-  event_error: (event: ErrorEvent) => void;
+  event_error: (event: MehrhofErrorEvent) => void;
   question: (event: QuestionEvent) => void;
   heartbeat: () => void;
   raw_event: (type: SSEEventType, data: unknown) => void;
@@ -67,18 +70,23 @@ export class EventStreamClient extends EventEmitter {
   }
 
   isConnected(): boolean {
-    return this.eventSource?.readyState === EventSource.OPEN;
+    return this.eventSource?.readyState === ES_OPEN;
   }
 
   private createEventSource(): void {
-    const headers: Record<string, string> = {};
-    if (this.sessionCookie) {
-      headers['Cookie'] = this.sessionCookie;
-    }
+    // eventsource v4 uses custom fetch for headers
+    const sessionCookie = this.sessionCookie;
+    const customFetch: typeof fetch = (url, init) => {
+      const headers = new Headers(init?.headers);
+      if (sessionCookie) {
+        headers.set('Cookie', sessionCookie);
+      }
+      return fetch(url, { ...init, headers });
+    };
 
     this.eventSource = new EventSource(this.eventsUrl, {
-      headers,
       withCredentials: true,
+      fetch: customFetch,
     });
 
     this.eventSource.onopen = () => {
@@ -86,13 +94,13 @@ export class EventStreamClient extends EventEmitter {
       this.emit('connected');
     };
 
-    this.eventSource.onerror = (error: Event) => {
+    this.eventSource.onerror = (error) => {
       if (this.intentionalClose) {
         return;
       }
 
       // Extract message from error event if available
-      const errorWithMessage = error as unknown as { message?: string };
+      const errorWithMessage = error as { message?: string };
       this.emit('error', new Error(errorWithMessage.message ?? 'EventSource error'));
       this.handleDisconnect();
     };
@@ -118,13 +126,13 @@ export class EventStreamClient extends EventEmitter {
     ];
 
     for (const eventType of eventTypes) {
-      this.eventSource.addEventListener(eventType, (event: MessageEvent<string>) => {
+      this.eventSource!.addEventListener(eventType, (event) => {
         this.handleEvent(eventType, String(event.data));
       });
     }
 
     // Also listen for generic message events
-    this.eventSource.onmessage = (event: MessageEvent<string>) => {
+    this.eventSource!.onmessage = (event) => {
       // Try to parse as JSON to determine event type
       try {
         const rawData = String(event.data);
@@ -154,7 +162,7 @@ export class EventStreamClient extends EventEmitter {
           this.emit('progress', data as ProgressEvent);
           break;
         case 'error':
-          this.emit('event_error', data as ErrorEvent);
+          this.emit('event_error', data as MehrhofErrorEvent);
           break;
         case 'heartbeat':
           this.emit('heartbeat');
