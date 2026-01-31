@@ -126,13 +126,13 @@ export class EventStreamClient extends EventEmitter {
     ];
 
     for (const eventType of eventTypes) {
-      this.eventSource!.addEventListener(eventType, (event) => {
+      this.eventSource.addEventListener(eventType, (event) => {
         this.handleEvent(eventType, String(event.data));
       });
     }
 
     // Also listen for generic message events
-    this.eventSource!.onmessage = (event) => {
+    this.eventSource.onmessage = (event) => {
       // Try to parse as JSON to determine event type
       try {
         const rawData = String(event.data);
