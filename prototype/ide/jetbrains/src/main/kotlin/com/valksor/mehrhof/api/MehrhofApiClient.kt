@@ -18,15 +18,18 @@ import java.util.concurrent.TimeUnit
 class MehrhofApiClient(
     private val baseUrl: String
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)  // Longer for workflow operations
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS) // Longer for workflow operations
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
 
-    private val gson: Gson = GsonBuilder()
-        .setLenient()
-        .create()
+    private val gson: Gson =
+        GsonBuilder()
+            .setLenient()
+            .create()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -56,15 +59,13 @@ class MehrhofApiClient(
      * Get specifications for a task.
      * GET /api/v1/tasks/{id}/specs
      */
-    fun getSpecifications(taskId: String): Result<SpecificationsResponse> =
-        get("/api/v1/tasks/$taskId/specs")
+    fun getSpecifications(taskId: String): Result<SpecificationsResponse> = get("/api/v1/tasks/$taskId/specs")
 
     /**
      * Get sessions for a task.
      * GET /api/v1/tasks/{id}/sessions
      */
-    fun getSessions(taskId: String): Result<SessionsResponse> =
-        get("/api/v1/tasks/$taskId/sessions")
+    fun getSessions(taskId: String): Result<SessionsResponse> = get("/api/v1/tasks/$taskId/sessions")
 
     /**
      * Get guidance on next actions.
@@ -80,8 +81,10 @@ class MehrhofApiClient(
      * Start a new task.
      * POST /api/v1/workflow/start
      */
-    fun startTask(ref: String? = null, content: String? = null): Result<WorkflowResponse> =
-        post("/api/v1/workflow/start", StartTaskRequest(ref = ref, content = content))
+    fun startTask(
+        ref: String? = null,
+        content: String? = null
+    ): Result<WorkflowResponse> = post("/api/v1/workflow/start", StartTaskRequest(ref = ref, content = content))
 
     /**
      * Run planning step.
@@ -141,15 +144,13 @@ class MehrhofApiClient(
      * Resume a paused task.
      * POST /api/v1/workflow/resume
      */
-    fun resume(): Result<WorkflowResponse> =
-        post("/api/v1/workflow/resume", emptyMap<String, Any>())
+    fun resume(): Result<WorkflowResponse> = post("/api/v1/workflow/resume", emptyMap<String, Any>())
 
     /**
      * Abandon the current task.
      * POST /api/v1/workflow/abandon
      */
-    fun abandon(): Result<WorkflowResponse> =
-        post("/api/v1/workflow/abandon", emptyMap<String, Any>())
+    fun abandon(): Result<WorkflowResponse> = post("/api/v1/workflow/abandon", emptyMap<String, Any>())
 
     // ========================================================================
     // Interactive API Endpoints
@@ -159,7 +160,10 @@ class MehrhofApiClient(
      * Execute an interactive command.
      * POST /api/v1/interactive/command
      */
-    fun executeCommand(command: String, args: List<String> = emptyList()): Result<InteractiveCommandResponse> =
+    fun executeCommand(
+        command: String,
+        args: List<String> = emptyList()
+    ): Result<InteractiveCommandResponse> =
         post("/api/v1/interactive/command", InteractiveCommandRequest(command, args))
 
     /**
@@ -180,15 +184,13 @@ class MehrhofApiClient(
      * Get current interactive state.
      * GET /api/v1/interactive/state
      */
-    fun getInteractiveState(): Result<InteractiveStateResponse> =
-        get("/api/v1/interactive/state")
+    fun getInteractiveState(): Result<InteractiveStateResponse> = get("/api/v1/interactive/state")
 
     /**
      * Stop the current running operation.
      * POST /api/v1/interactive/stop
      */
-    fun stopOperation(): Result<InteractiveStopResponse> =
-        post("/api/v1/interactive/stop", emptyMap<String, Any>())
+    fun stopOperation(): Result<InteractiveStopResponse> = post("/api/v1/interactive/stop", emptyMap<String, Any>())
 
     // ========================================================================
     // Cost Endpoints
@@ -198,8 +200,7 @@ class MehrhofApiClient(
      * Get costs for a specific task.
      * GET /api/v1/tasks/{id}/costs
      */
-    fun getTaskCosts(taskId: String): Result<TaskCostResponse> =
-        get("/api/v1/tasks/$taskId/costs")
+    fun getTaskCosts(taskId: String): Result<TaskCostResponse> = get("/api/v1/tasks/$taskId/costs")
 
     /**
      * Get all costs.
@@ -228,23 +229,30 @@ class MehrhofApiClient(
     // ========================================================================
 
     private inline fun <reified T> get(path: String): Result<T> {
-        val request = Request.Builder()
-            .url("$baseUrl$path")
-            .get()
-            .addHeader("Accept", "application/json")
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url("$baseUrl$path")
+                .get()
+                .addHeader("Accept", "application/json")
+                .build()
 
         return executeRequest(request)
     }
 
-    private inline fun <reified T> post(path: String, body: Any): Result<T> {
+    private inline fun <reified T> post(
+        path: String,
+        body: Any
+    ): Result<T> {
         val jsonBody = gson.toJson(body)
-        val request = Request.Builder()
-            .url("$baseUrl$path")
-            .post(jsonBody.toRequestBody(jsonMediaType))
-            .addHeader("Accept", "application/json")
-            .addHeader("Content-Type", "application/json")
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url("$baseUrl$path")
+                .post(jsonBody.toRequestBody(jsonMediaType))
+                .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/json")
+                .build()
 
         return executeRequest(request)
     }
@@ -256,11 +264,12 @@ class MehrhofApiClient(
 
                 if (!response.isSuccessful) {
                     // Try to parse error response
-                    val errorMsg = try {
-                        body?.let { gson.fromJson(it, ErrorResponse::class.java)?.error }
-                    } catch (_: Exception) {
-                        null
-                    } ?: "HTTP ${response.code}: ${response.message}"
+                    val errorMsg =
+                        try {
+                            body?.let { gson.fromJson(it, ErrorResponse::class.java)?.error }
+                        } catch (_: Exception) {
+                            null
+                        } ?: "HTTP ${response.code}: ${response.message}"
 
                     return Result.failure(ApiException(response.code, errorMsg))
                 }
@@ -286,12 +295,14 @@ class MehrhofApiClient(
     /**
      * Check if the server is reachable.
      */
-    fun isReachable(): Boolean {
-        return try {
-            val request = Request.Builder()
-                .url("$baseUrl/health")
-                .get()
-                .build()
+    fun isReachable(): Boolean =
+        try {
+            val request =
+                Request
+                    .Builder()
+                    .url("$baseUrl/health")
+                    .get()
+                    .build()
 
             client.newCall(request).execute().use { response ->
                 response.isSuccessful
@@ -299,7 +310,6 @@ class MehrhofApiClient(
         } catch (_: Exception) {
             false
         }
-    }
 }
 
 /**

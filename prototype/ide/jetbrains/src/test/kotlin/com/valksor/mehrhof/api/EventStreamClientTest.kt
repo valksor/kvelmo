@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions.*
  * Unit tests for EventStreamClient and related event types.
  */
 class EventStreamClientTest {
-
     private val gson = Gson()
 
     // ========================================================================
@@ -91,12 +90,13 @@ class EventStreamClientTest {
 
     @Test
     fun `WorkflowStateEvent parses from JSON`() {
-        val json = JsonObject().apply {
-            addProperty("state", "planning")
-            addProperty("previousState", "idle")
-            addProperty("taskId", "task-123")
-            addProperty("message", "Started planning")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("state", "planning")
+                addProperty("previousState", "idle")
+                addProperty("taskId", "task-123")
+                addProperty("message", "Started planning")
+            }
 
         val event = json.toWorkflowStateEvent(gson)
 
@@ -109,9 +109,10 @@ class EventStreamClientTest {
 
     @Test
     fun `WorkflowStateEvent handles missing optional fields`() {
-        val json = JsonObject().apply {
-            addProperty("state", "implementing")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("state", "implementing")
+            }
 
         val event = json.toWorkflowStateEvent(gson)
 
@@ -123,9 +124,10 @@ class EventStreamClientTest {
 
     @Test
     fun `WorkflowStateEvent returns null for invalid JSON`() {
-        val json = JsonObject().apply {
-            addProperty("invalid", "data")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("invalid", "data")
+            }
 
         val event = json.toWorkflowStateEvent(gson)
 
@@ -139,10 +141,11 @@ class EventStreamClientTest {
 
     @Test
     fun `AgentMessageEvent parses from JSON`() {
-        val json = JsonObject().apply {
-            addProperty("content", "Processing your request...")
-            addProperty("type", "text")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("content", "Processing your request...")
+                addProperty("type", "text")
+            }
 
         val event = json.toAgentMessageEvent(gson)
 
@@ -153,12 +156,13 @@ class EventStreamClientTest {
 
     @Test
     fun `AgentMessageEvent parses tool use`() {
-        val json = JsonObject().apply {
-            addProperty("content", "Using tool")
-            addProperty("type", "tool_use")
-            addProperty("toolName", "read_file")
-            addProperty("toolInput", "/path/to/file")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("content", "Using tool")
+                addProperty("type", "tool_use")
+                addProperty("toolName", "read_file")
+                addProperty("toolInput", "/path/to/file")
+            }
 
         val event = json.toAgentMessageEvent(gson)
 
@@ -170,9 +174,10 @@ class EventStreamClientTest {
 
     @Test
     fun `AgentMessageEvent handles missing optional fields`() {
-        val json = JsonObject().apply {
-            addProperty("content", "Simple message")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("content", "Simple message")
+            }
 
         val event = json.toAgentMessageEvent(gson)
 
@@ -188,13 +193,17 @@ class EventStreamClientTest {
 
     @Test
     fun `QuestionEvent parses from JSON with options`() {
-        val json = gson.fromJson("""
-            {
-                "question": "Which approach do you prefer?",
-                "options": ["Option A", "Option B", "Option C"],
-                "taskId": "task-123"
-            }
-        """.trimIndent(), JsonObject::class.java)
+        val json =
+            gson.fromJson(
+                """
+                {
+                    "question": "Which approach do you prefer?",
+                    "options": ["Option A", "Option B", "Option C"],
+                    "taskId": "task-123"
+                }
+                """.trimIndent(),
+                JsonObject::class.java
+            )
 
         val event = json.toQuestionEvent(gson)
 
@@ -208,9 +217,10 @@ class EventStreamClientTest {
 
     @Test
     fun `QuestionEvent parses from JSON without options`() {
-        val json = JsonObject().apply {
-            addProperty("question", "Please describe the issue")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("question", "Please describe the issue")
+            }
 
         val event = json.toQuestionEvent(gson)
 
@@ -221,12 +231,16 @@ class EventStreamClientTest {
 
     @Test
     fun `QuestionEvent handles empty options array`() {
-        val json = gson.fromJson("""
-            {
-                "question": "Any input?",
-                "options": []
-            }
-        """.trimIndent(), JsonObject::class.java)
+        val json =
+            gson.fromJson(
+                """
+                {
+                    "question": "Any input?",
+                    "options": []
+                }
+                """.trimIndent(),
+                JsonObject::class.java
+            )
 
         val event = json.toQuestionEvent(gson)
 
@@ -241,20 +255,22 @@ class EventStreamClientTest {
 
     @Test
     fun `EventStreamClient initializes as disconnected`() {
-        val client = EventStreamClient(
-            baseUrl = "http://localhost:3000",
-            onEvent = { _, _ -> }
-        )
+        val client =
+            EventStreamClient(
+                baseUrl = "http://localhost:3000",
+                onEvent = { _, _ -> }
+            )
 
         assertFalse(client.isConnected())
     }
 
     @Test
     fun `EventStreamClient disconnect when not connected is safe`() {
-        val client = EventStreamClient(
-            baseUrl = "http://localhost:3000",
-            onEvent = { _, _ -> }
-        )
+        val client =
+            EventStreamClient(
+                baseUrl = "http://localhost:3000",
+                onEvent = { _, _ -> }
+            )
 
         // Should not throw
         assertDoesNotThrow { client.disconnect() }
@@ -263,10 +279,11 @@ class EventStreamClientTest {
 
     @Test
     fun `EventStreamClient reconnect is idempotent when disconnected`() {
-        val client = EventStreamClient(
-            baseUrl = "http://localhost:3000",
-            onEvent = { _, _ -> }
-        )
+        val client =
+            EventStreamClient(
+                baseUrl = "http://localhost:3000",
+                onEvent = { _, _ -> }
+            )
 
         // Calling reconnect when already disconnected should be safe
         assertDoesNotThrow { client.reconnect() }
@@ -322,10 +339,11 @@ class EventStreamClientTest {
 
     @Test
     fun `JSON parsing handles special characters in content`() {
-        val json = JsonObject().apply {
-            addProperty("content", "Line 1\nLine 2\tTabbed\r\nWindows line")
-            addProperty("type", "text")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("content", "Line 1\nLine 2\tTabbed\r\nWindows line")
+                addProperty("type", "text")
+            }
 
         val event = json.toAgentMessageEvent(gson)
 
@@ -336,9 +354,10 @@ class EventStreamClientTest {
 
     @Test
     fun `JSON parsing handles unicode in content`() {
-        val json = JsonObject().apply {
-            addProperty("content", "Hello 世界 🌍")
-        }
+        val json =
+            JsonObject().apply {
+                addProperty("content", "Hello 世界 🌍")
+            }
 
         val event = json.toAgentMessageEvent(gson)
 

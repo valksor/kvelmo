@@ -8,15 +8,13 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.util.EnvironmentUtil
 import com.valksor.mehrhof.api.EventStreamClient
 import com.valksor.mehrhof.api.EventType
 import com.valksor.mehrhof.api.MehrhofApiClient
-import com.valksor.mehrhof.api.models.GuideResponse
 import com.valksor.mehrhof.api.models.TaskInfo
-import com.valksor.mehrhof.api.models.TaskResponse
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.settings.MehrhofSettings
-import com.intellij.util.EnvironmentUtil
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
@@ -33,8 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * - State change listeners
  */
 @Service(Service.Level.PROJECT)
-class MehrhofProjectService(private val project: Project) : Disposable {
-
+class MehrhofProjectService(
+    private val project: Project
+) : Disposable {
     private val log = Logger.getInstance(MehrhofProjectService::class.java)
     private val settings = MehrhofSettings.getInstance()
     private val gson = Gson()
@@ -85,10 +84,27 @@ class MehrhofProjectService(private val project: Project) : Disposable {
      */
     interface StateListener {
         fun onConnectionChanged(connected: Boolean) {}
-        fun onWorkflowStateChanged(state: String, previousState: String?) {}
-        fun onTaskChanged(task: TaskInfo?, work: TaskWork?) {}
-        fun onQuestionReceived(question: String, options: List<String>?) {}
-        fun onAgentMessage(content: String, type: String?) {}
+
+        fun onWorkflowStateChanged(
+            state: String,
+            previousState: String?
+        ) {}
+
+        fun onTaskChanged(
+            task: TaskInfo?,
+            work: TaskWork?
+        ) {}
+
+        fun onQuestionReceived(
+            question: String,
+            options: List<String>?
+        ) {}
+
+        fun onAgentMessage(
+            content: String,
+            type: String?
+        ) {}
+
         fun onError(message: String) {}
     }
 
@@ -142,11 +158,12 @@ class MehrhofProjectService(private val project: Project) : Disposable {
 
         // Try default install locations
         val home = System.getProperty("user.home")
-        val candidates = listOf(
-            "$home/.local/bin/mehr",
-            "$home/bin/mehr",
-            "/usr/local/bin/mehr"
-        )
+        val candidates =
+            listOf(
+                "$home/.local/bin/mehr",
+                "$home/bin/mehr",
+                "/usr/local/bin/mehr"
+            )
 
         for (path in candidates) {
             if (File(path).canExecute()) {
@@ -190,9 +207,10 @@ class MehrhofProjectService(private val project: Project) : Disposable {
             // Use IntelliJ's EnvironmentUtil to get user's shell environment
             // This loads PATH and other variables from user's login shell (bash, zsh, fish, etc.)
             // Start server in API-only mode (no web UI needed for IDE plugin)
-            val processBuilder = ProcessBuilder(mehrBinary, "serve", "--api")
-                .directory(File(projectPath))
-                .redirectErrorStream(true)
+            val processBuilder =
+                ProcessBuilder(mehrBinary, "serve", "--api")
+                    .directory(File(projectPath))
+                    .redirectErrorStream(true)
 
             // Apply user's shell environment from EnvironmentUtil
             val env = processBuilder.environment()
@@ -201,57 +219,63 @@ class MehrhofProjectService(private val project: Project) : Disposable {
             serverProcess = processBuilder.start()
 
             // Read stdout in background, parse for port
-            serverOutputJob = scope.launch(Dispatchers.IO) {
-                val output = StringBuilder()
-                val process = serverProcess ?: return@launch
+            serverOutputJob =
+                scope.launch(Dispatchers.IO) {
+                    val output = StringBuilder()
+                    val process = serverProcess ?: return@launch
 
-                try {
-                    process.inputStream?.bufferedReader()?.useLines { lines ->
-                        for (line in lines) {
-                            output.appendLine(line)
-                            log.info("Server: $line")
+                    try {
+                        process.inputStream?.bufferedReader()?.useLines { lines ->
+                            for (line in lines) {
+                                output.appendLine(line)
+                                log.info("Server: $line")
 
-                            // Parse: "Server running at: http://localhost:XXXXX" or similar
-                            val match = Regex("""Server running at: https?://[^:]+:(\d+)""").find(line)
-                            if (match != null) {
-                                val port = match.groupValues[1].toIntOrNull()
-                                if (port != null) {
-                                    serverPort = port
-                                    val url = "http://localhost:$port"
-                                    log.info("Server started on port $port")
+                                // Parse: "Server running at: http://localhost:XXXXX" or similar
+                                val match = Regex("""Server running at: https?://[^:]+:(\d+)""").find(line)
+                                if (match != null) {
+                                    val port = match.groupValues[1].toIntOrNull()
+                                    if (port != null) {
+                                        serverPort = port
+                                        val url = "http://localhost:$port"
+                                        log.info("Server started on port $port")
 
-                                    withContext(Dispatchers.Main) {
-                                        notifyInfo("Server started on port $port")
-                                        stateListeners.forEach { it.onConnectionChanged(false) }
+                                        withContext(Dispatchers.Main) {
+                                            notifyInfo("Server started on port $port")
+                                            stateListeners.forEach { it.onConnectionChanged(false) }
+                                        }
+
+                                        // Connect to the server
+                                        connectToUrl(url)
                                     }
-
-                                    // Connect to the server
-                                    connectToUrl(url)
                                 }
                             }
                         }
+                    } catch (e: Exception) {
+                        if (e !is CancellationException) {
+                            log.warn("Error reading server output: ${e.message}")
+                        }
                     }
-                } catch (e: Exception) {
-                    if (e !is CancellationException) {
-                        log.warn("Error reading server output: ${e.message}")
+
+                    // Process ended - capture exit code
+                    val exitCode =
+                        try {
+                            process.waitFor()
+                        } catch (_: Exception) {
+                            -1
+                        }
+                    val capturedPort = serverPort
+
+                    withContext(Dispatchers.Main) {
+                        if (capturedPort == null) {
+                            // Server failed to start - show error with output
+                            val lastOutput = output.toString().takeLast(500)
+                            notifyError("Server exited (code $exitCode):\n$lastOutput")
+                        }
+                        serverProcess = null
+                        serverPort = null
+                        stateListeners.forEach { it.onConnectionChanged(false) }
                     }
                 }
-
-                // Process ended - capture exit code
-                val exitCode = try { process.waitFor() } catch (_: Exception) { -1 }
-                val capturedPort = serverPort
-
-                withContext(Dispatchers.Main) {
-                    if (capturedPort == null) {
-                        // Server failed to start - show error with output
-                        val lastOutput = output.toString().takeLast(500)
-                        notifyError("Server exited (code $exitCode):\n$lastOutput")
-                    }
-                    serverProcess = null
-                    serverPort = null
-                    stateListeners.forEach { it.onConnectionChanged(false) }
-                }
-            }
         } catch (e: Exception) {
             log.error("Failed to start server: ${e.message}")
             notifyError("Failed to start server: ${e.message}")
@@ -382,32 +406,36 @@ class MehrhofProjectService(private val project: Project) : Disposable {
     private fun connectEventStream(serverUrl: String) {
         eventStreamClient?.disconnect()
 
-        eventStreamClient = EventStreamClient(
-            baseUrl = serverUrl,
-            onEvent = { eventType, data -> handleEvent(eventType, data) },
-            onError = { error ->
-                log.warn("SSE error: $error")
-                scope.launch {
-                    withContext(Dispatchers.Main) {
-                        stateListeners.forEach { it.onError(error) }
+        eventStreamClient =
+            EventStreamClient(
+                baseUrl = serverUrl,
+                onEvent = { eventType, data -> handleEvent(eventType, data) },
+                onError = { error ->
+                    log.warn("SSE error: $error")
+                    scope.launch {
+                        withContext(Dispatchers.Main) {
+                            stateListeners.forEach { it.onError(error) }
+                        }
+                    }
+                },
+                onConnected = {
+                    log.info("SSE connected")
+                },
+                onDisconnected = {
+                    log.info("SSE disconnected")
+                    if (connected.get() && settings.autoReconnect) {
+                        scheduleReconnect()
                     }
                 }
-            },
-            onConnected = {
-                log.info("SSE connected")
-            },
-            onDisconnected = {
-                log.info("SSE disconnected")
-                if (connected.get() && settings.autoReconnect) {
-                    scheduleReconnect()
-                }
-            }
-        )
+            )
 
         eventStreamClient?.connect()
     }
 
-    private fun handleEvent(eventType: EventType, data: JsonObject) {
+    private fun handleEvent(
+        eventType: EventType,
+        data: JsonObject
+    ) {
         scope.launch {
             when (eventType) {
                 EventType.WORKFLOW_STATE_CHANGED -> {
@@ -456,9 +484,10 @@ class MehrhofProjectService(private val project: Project) : Disposable {
                 }
 
                 EventType.ERROR -> {
-                    val error = data.get("error")?.asString
-                        ?: data.get("message")?.asString
-                        ?: "Unknown error"
+                    val error =
+                        data.get("error")?.asString
+                            ?: data.get("message")?.asString
+                            ?: "Unknown error"
 
                     withContext(Dispatchers.Main) {
                         stateListeners.forEach { it.onError(error) }
@@ -484,34 +513,36 @@ class MehrhofProjectService(private val project: Project) : Disposable {
             val client = apiClient ?: return@launch
 
             // Get current task
-            client.getTask().onSuccess { response ->
-                val oldTask = currentTask
-                currentTask = response.task
-                currentTaskWork = response.work
+            client
+                .getTask()
+                .onSuccess { response ->
+                    val oldTask = currentTask
+                    currentTask = response.task
+                    currentTaskWork = response.work
 
-                if (response.pendingQuestion != null) {
-                    pendingQuestion = response.pendingQuestion.question
-                    pendingQuestionOptions = response.pendingQuestion.options
-                }
+                    if (response.pendingQuestion != null) {
+                        pendingQuestion = response.pendingQuestion.question
+                        pendingQuestionOptions = response.pendingQuestion.options
+                    }
 
-                // Get workflow state from guide
-                client.getGuide().onSuccess { guide ->
-                    val newState = guide.state ?: "idle"
-                    val previousState = workflowState
-                    workflowState = newState
+                    // Get workflow state from guide
+                    client.getGuide().onSuccess { guide ->
+                        val newState = guide.state ?: "idle"
+                        val previousState = workflowState
+                        workflowState = newState
 
-                    withContext(Dispatchers.Main) {
-                        stateListeners.forEach {
-                            it.onTaskChanged(currentTask, currentTaskWork)
-                            if (newState != previousState) {
-                                it.onWorkflowStateChanged(newState, previousState)
+                        withContext(Dispatchers.Main) {
+                            stateListeners.forEach {
+                                it.onTaskChanged(currentTask, currentTaskWork)
+                                if (newState != previousState) {
+                                    it.onWorkflowStateChanged(newState, previousState)
+                                }
                             }
                         }
                     }
+                }.onFailure { error ->
+                    log.warn("Failed to refresh state: ${error.message}")
                 }
-            }.onFailure { error ->
-                log.warn("Failed to refresh state: ${error.message}")
-            }
         }
     }
 
@@ -559,11 +590,12 @@ class MehrhofProjectService(private val project: Project) : Disposable {
             delay(settings.reconnectDelaySeconds * 1000L)
             if (!connected.get()) {
                 // Reconnect to the appropriate URL
-                val url = when {
-                    serverPort != null -> "http://localhost:$serverPort"
-                    settings.serverUrl.isNotEmpty() -> settings.serverUrl
-                    else -> return@launch // No URL to reconnect to
-                }
+                val url =
+                    when {
+                        serverPort != null -> "http://localhost:$serverPort"
+                        settings.serverUrl.isNotEmpty() -> settings.serverUrl
+                        else -> return@launch // No URL to reconnect to
+                    }
                 doConnectToUrl(url)
             }
         }
@@ -576,21 +608,24 @@ class MehrhofProjectService(private val project: Project) : Disposable {
     private fun notifyInfo(message: String) {
         if (!settings.showNotifications) return
 
-        NotificationGroupManager.getInstance()
+        NotificationGroupManager
+            .getInstance()
             .getNotificationGroup("Mehrhof")
             .createNotification(message, NotificationType.INFORMATION)
             .notify(project)
     }
 
     private fun notifyError(message: String) {
-        NotificationGroupManager.getInstance()
+        NotificationGroupManager
+            .getInstance()
             .getNotificationGroup("Mehrhof")
             .createNotification(message, NotificationType.ERROR)
             .notify(project)
     }
 
     private fun notifyQuestion(question: String) {
-        NotificationGroupManager.getInstance()
+        NotificationGroupManager
+            .getInstance()
             .getNotificationGroup("Mehrhof")
             .createNotification("Agent question: $question", NotificationType.WARNING)
             .notify(project)
@@ -613,7 +648,6 @@ class MehrhofProjectService(private val project: Project) : Disposable {
     }
 
     companion object {
-        fun getInstance(project: Project): MehrhofProjectService =
-            project.getService(MehrhofProjectService::class.java)
+        fun getInstance(project: Project): MehrhofProjectService = project.getService(MehrhofProjectService::class.java)
     }
 }

@@ -20,21 +20,28 @@ abstract class MehrhofAction : AnAction() {
         return MehrhofProjectService.getInstance(project)
     }
 
-    protected fun isConnected(e: AnActionEvent): Boolean {
-        return getService(e)?.isConnected() == true
-    }
+    protected fun isConnected(e: AnActionEvent): Boolean = getService(e)?.isConnected() == true
 
-    protected fun runInBackground(e: AnActionEvent, title: String, action: () -> Unit) {
+    protected fun runInBackground(
+        e: AnActionEvent,
+        title: String,
+        action: () -> Unit
+    ) {
         val project = e.project ?: return
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
-            override fun run(indicator: ProgressIndicator) {
-                action()
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(project, title, true) {
+                override fun run(indicator: ProgressIndicator) {
+                    action()
+                }
             }
-        })
+        )
     }
 
-    protected fun showError(e: AnActionEvent, message: String) {
+    protected fun showError(
+        e: AnActionEvent,
+        message: String
+    ) {
         Messages.showErrorDialog(e.project, message, "Mehrhof Error")
     }
 }
@@ -73,12 +80,13 @@ class StartTaskAction : MehrhofAction() {
         val service = getService(e) ?: return
         val client = service.getApiClient() ?: return
 
-        val ref = Messages.showInputDialog(
-            e.project,
-            "Enter task reference (e.g., github:123, file:task.md):",
-            "Start Task",
-            null
-        ) ?: return
+        val ref =
+            Messages.showInputDialog(
+                e.project,
+                "Enter task reference (e.g., github:123, file:task.md):",
+                "Start Task",
+                null
+            ) ?: return
 
         if (ref.isBlank()) return
 
@@ -190,12 +198,13 @@ class AbandonAction : MehrhofAction() {
         val service = getService(e) ?: return
         val client = service.getApiClient() ?: return
 
-        val result = Messages.showYesNoDialog(
-            e.project,
-            "Discard this task? This will delete the branch and work directory!",
-            "Abandon Task",
-            Messages.getWarningIcon()
-        )
+        val result =
+            Messages.showYesNoDialog(
+                e.project,
+                "Discard this task? This will delete the branch and work directory!",
+                "Abandon Task",
+                Messages.getWarningIcon()
+            )
 
         if (result != Messages.YES) return
 

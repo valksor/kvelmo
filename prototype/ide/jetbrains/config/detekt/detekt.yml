@@ -1,0 +1,53 @@
+build:
+  maxIssues: -1  # Allow any number of issues (warnings only)
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+
+output-reports:
+  active: true
+
+complexity:
+  TooManyFunctions:
+    thresholdInFiles: 25
+    thresholdInClasses: 30
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    functionThreshold: 10
+  CyclomaticComplexMethod:
+    threshold: 20
+  NestedBlockDepth:
+    threshold: 5
+
+style:
+  MaxLineLength:
+    maxLineLength: 160
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false  # Disabled - too noisy for existing code
+  ForbiddenComment:
+    active: false
+  ReturnCount:
+    max: 8
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  InstanceOfCheckForException:
+    active: false
+
+naming:
+  FunctionNaming:
+    # Allow backtick function names for tests
+    functionPattern: '([a-z][a-zA-Z0-9]*)|(`.*`)'
+

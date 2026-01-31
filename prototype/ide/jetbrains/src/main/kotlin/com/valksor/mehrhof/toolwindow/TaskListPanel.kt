@@ -17,9 +17,10 @@ import com.valksor.mehrhof.api.models.TaskInfo
 import com.valksor.mehrhof.api.models.TaskSummary
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.services.MehrhofProjectService
+import com.valksor.mehrhof.util.WorkflowButtonState
+import com.valksor.mehrhof.util.WorkflowUtils
 import kotlinx.coroutines.*
 import java.awt.BorderLayout
-import java.awt.Component
 import java.awt.FlowLayout
 import javax.swing.*
 
@@ -29,8 +30,8 @@ import javax.swing.*
 class TaskListPanel(
     private val project: Project,
     private val service: MehrhofProjectService
-) : SimpleToolWindowPanel(true, true), MehrhofProjectService.StateListener {
-
+) : SimpleToolWindowPanel(true, true),
+    MehrhofProjectService.StateListener {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     // UI components
@@ -52,34 +53,40 @@ class TaskListPanel(
     }
 
     private fun setupToolbar() {
-        val actionGroup = DefaultActionGroup().apply {
-            add(ActionManager.getInstance().getAction("Mehrhof.Toolbar.Refresh"))
-        }
+        val actionGroup =
+            DefaultActionGroup().apply {
+                add(ActionManager.getInstance().getAction("Mehrhof.Toolbar.Refresh"))
+            }
 
-        val toolbar = ActionManager.getInstance()
-            .createActionToolbar(ActionPlaces.TOOLWINDOW_TITLE, actionGroup, true)
+        val toolbar =
+            ActionManager
+                .getInstance()
+                .createActionToolbar(ActionPlaces.TOOLWINDOW_TITLE, actionGroup, true)
         toolbar.targetComponent = this
         setToolbar(toolbar.component)
     }
 
     private fun setupContent() {
-        val mainPanel = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.empty(8)
-        }
+        val mainPanel =
+            JPanel(BorderLayout()).apply {
+                border = JBUI.Borders.empty(8)
+            }
 
         // Connection status and server control at top
-        val statusPanel = JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-            add(startStopButton)
-            add(Box.createHorizontalStrut(16))
-            add(JBLabel("Status: "))
-            add(connectionStatusLabel)
-        }
+        val statusPanel =
+            JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+                add(startStopButton)
+                add(Box.createHorizontalStrut(16))
+                add(JBLabel("Status: "))
+                add(connectionStatusLabel)
+            }
         mainPanel.add(statusPanel, BorderLayout.NORTH)
 
         // Center split: current task + task list
-        val centerPanel = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.emptyTop(8)
-        }
+        val centerPanel =
+            JPanel(BorderLayout()).apply {
+                border = JBUI.Borders.emptyTop(8)
+            }
 
         // Current task panel
         centerPanel.add(currentTaskPanel, BorderLayout.NORTH)
@@ -90,11 +97,12 @@ class TaskListPanel(
         // Note: Task selection is view-only; double-click could be added
         // to switch to a task in the future
 
-        val listPanel = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.emptyTop(8)
-            add(JBLabel("Recent Tasks:"), BorderLayout.NORTH)
-            add(JBScrollPane(taskList), BorderLayout.CENTER)
-        }
+        val listPanel =
+            JPanel(BorderLayout()).apply {
+                border = JBUI.Borders.emptyTop(8)
+                add(JBLabel("Recent Tasks:"), BorderLayout.NORTH)
+                add(JBScrollPane(taskList), BorderLayout.CENTER)
+            }
         centerPanel.add(listPanel, BorderLayout.CENTER)
 
         mainPanel.add(centerPanel, BorderLayout.CENTER)
@@ -135,20 +143,29 @@ class TaskListPanel(
         }
     }
 
-    override fun onWorkflowStateChanged(state: String, previousState: String?) {
+    override fun onWorkflowStateChanged(
+        state: String,
+        previousState: String?
+    ) {
         SwingUtilities.invokeLater {
             updateCurrentTask()
             workflowButtonsPanel.updateState(state)
         }
     }
 
-    override fun onTaskChanged(task: TaskInfo?, work: TaskWork?) {
+    override fun onTaskChanged(
+        task: TaskInfo?,
+        work: TaskWork?
+    ) {
         SwingUtilities.invokeLater {
             updateCurrentTask()
         }
     }
 
-    override fun onQuestionReceived(question: String, options: List<String>?) {
+    override fun onQuestionReceived(
+        question: String,
+        options: List<String>?
+    ) {
         SwingUtilities.invokeLater {
             showQuestionDialog(question, options)
         }
@@ -215,16 +232,17 @@ class TaskListPanel(
         scope.launch {
             val client = service.getApiClient() ?: return@launch
 
-            val result = withContext(Dispatchers.IO) {
-                when (action) {
-                    WorkflowAction.PLAN -> client.plan()
-                    WorkflowAction.IMPLEMENT -> client.implement()
-                    WorkflowAction.REVIEW -> client.review()
-                    WorkflowAction.FINISH -> client.finish()
-                    WorkflowAction.UNDO -> client.undo()
-                    WorkflowAction.REDO -> client.redo()
+            val result =
+                withContext(Dispatchers.IO) {
+                    when (action) {
+                        WorkflowAction.PLAN -> client.plan()
+                        WorkflowAction.IMPLEMENT -> client.implement()
+                        WorkflowAction.REVIEW -> client.review()
+                        WorkflowAction.FINISH -> client.finish()
+                        WorkflowAction.UNDO -> client.undo()
+                        WorkflowAction.REDO -> client.redo()
+                    }
                 }
-            }
 
             result.onFailure { error ->
                 JOptionPane.showMessageDialog(
@@ -240,25 +258,29 @@ class TaskListPanel(
         }
     }
 
-    private fun showQuestionDialog(question: String, options: List<String>?) {
-        val answer = if (options != null && options.isNotEmpty()) {
-            JOptionPane.showInputDialog(
-                this,
-                question,
-                "Agent Question",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options.toTypedArray(),
-                options.first()
-            ) as? String
-        } else {
-            JOptionPane.showInputDialog(
-                this,
-                question,
-                "Agent Question",
-                JOptionPane.QUESTION_MESSAGE
-            )
-        }
+    private fun showQuestionDialog(
+        question: String,
+        options: List<String>?
+    ) {
+        val answer =
+            if (options != null && options.isNotEmpty()) {
+                JOptionPane.showInputDialog(
+                    this,
+                    question,
+                    "Agent Question",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options.toTypedArray(),
+                    options.first()
+                ) as? String
+            } else {
+                JOptionPane.showInputDialog(
+                    this,
+                    question,
+                    "Agent Question",
+                    JOptionPane.QUESTION_MESSAGE
+                )
+            }
 
         if (answer != null) {
             scope.launch {
@@ -285,55 +307,48 @@ private class CurrentTaskPanel : JPanel(BorderLayout()) {
     private val refLabel = JBLabel()
 
     init {
-        border = JBUI.Borders.compound(
-            JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0),
-            JBUI.Borders.empty(8)
+        border =
+            JBUI.Borders.compound(
+                JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0),
+                JBUI.Borders.empty(8)
+            )
+
+        val infoPanel =
+            JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                add(titleLabel)
+                add(Box.createVerticalStrut(4))
+                add(stateLabel)
+                add(Box.createVerticalStrut(2))
+                add(refLabel)
+            }
+
+        add(
+            JBLabel("Current Task").apply {
+                font = font.deriveFont(font.style or java.awt.Font.BOLD)
+            },
+            BorderLayout.NORTH
         )
-
-        val infoPanel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            add(titleLabel)
-            add(Box.createVerticalStrut(4))
-            add(stateLabel)
-            add(Box.createVerticalStrut(2))
-            add(refLabel)
-        }
-
-        add(JBLabel("Current Task").apply {
-            font = font.deriveFont(font.style or java.awt.Font.BOLD)
-        }, BorderLayout.NORTH)
         add(infoPanel, BorderLayout.CENTER)
 
         update(null, null, "idle")
     }
 
-    fun update(task: TaskInfo?, work: TaskWork?, state: String) {
+    fun update(
+        task: TaskInfo?,
+        work: TaskWork?,
+        state: String
+    ) {
         if (task == null) {
             titleLabel.text = "No active task"
             stateLabel.text = ""
             refLabel.text = ""
         } else {
             titleLabel.text = work?.title ?: task.ref
-            stateLabel.text = "State: ${formatState(state)}"
-            stateLabel.foreground = getStateColor(state)
+            stateLabel.text = "State: ${WorkflowUtils.formatState(state)}"
+            stateLabel.foreground = WorkflowUtils.getStateColor(state)
             refLabel.text = "Ref: ${task.ref}"
             refLabel.foreground = JBColor.GRAY
-        }
-    }
-
-    private fun formatState(state: String): String {
-        return state.replace("_", " ").replaceFirstChar { it.uppercase() }
-    }
-
-    private fun getStateColor(state: String): java.awt.Color {
-        return when (state) {
-            "planning" -> JBColor.BLUE
-            "implementing" -> JBColor.ORANGE
-            "reviewing" -> JBColor.MAGENTA
-            "done" -> JBColor.GREEN.darker()
-            "failed" -> JBColor.RED
-            "waiting" -> JBColor.YELLOW.darker()
-            else -> JBColor.GRAY
         }
     }
 }
@@ -381,86 +396,23 @@ private class WorkflowButtonsPanel : JPanel(FlowLayout(FlowLayout.CENTER, 8, 8))
     }
 
     fun updateState(state: String) {
-        // Enable/disable buttons based on current state
-        when (state) {
-            "idle" -> {
-                // No active task - only Plan is available
-                planButton.isEnabled = true
-                implementButton.isEnabled = false
-                reviewButton.isEnabled = false
-                finishButton.isEnabled = false
-                undoButton.isEnabled = false
-                redoButton.isEnabled = false
-            }
-            "planning", "implementing", "reviewing", "checkpointing", "reverting", "restoring" -> {
-                // Workflow in progress - disable all buttons
-                planButton.isEnabled = false
-                implementButton.isEnabled = false
-                reviewButton.isEnabled = false
-                finishButton.isEnabled = false
-                undoButton.isEnabled = false
-                redoButton.isEnabled = false
-            }
-            "waiting" -> {
-                // Waiting for user input - disable workflow buttons
-                planButton.isEnabled = false
-                implementButton.isEnabled = false
-                reviewButton.isEnabled = false
-                finishButton.isEnabled = false
-                undoButton.isEnabled = true  // Can undo while waiting
-                redoButton.isEnabled = false
-            }
-            "planned" -> {
-                // Planning complete - can implement or undo
-                planButton.isEnabled = true  // Can re-plan
-                implementButton.isEnabled = true
-                reviewButton.isEnabled = false
-                finishButton.isEnabled = false
-                undoButton.isEnabled = true
-                redoButton.isEnabled = false
-            }
-            "implemented" -> {
-                // Implementation complete - can review or undo
-                planButton.isEnabled = false
-                implementButton.isEnabled = true  // Can re-implement
-                reviewButton.isEnabled = true
-                finishButton.isEnabled = false
-                undoButton.isEnabled = true
-                redoButton.isEnabled = false
-            }
-            "reviewed", "done" -> {
-                // Review complete or task done - can finish or undo
-                planButton.isEnabled = false
-                implementButton.isEnabled = false
-                reviewButton.isEnabled = true  // Can re-review
-                finishButton.isEnabled = true
-                undoButton.isEnabled = true
-                redoButton.isEnabled = false
-            }
-            "failed" -> {
-                // Task failed - allow recovery actions
-                planButton.isEnabled = true  // Can retry planning
-                implementButton.isEnabled = true  // Can retry implementation
-                reviewButton.isEnabled = true  // Can retry review
-                finishButton.isEnabled = true  // Can finish anyway
-                undoButton.isEnabled = true
-                redoButton.isEnabled = false
-            }
-            else -> {
-                // Unknown state - enable basic actions
-                planButton.isEnabled = true
-                implementButton.isEnabled = false
-                reviewButton.isEnabled = false
-                finishButton.isEnabled = false
-                undoButton.isEnabled = true
-                redoButton.isEnabled = true
-            }
-        }
+        val buttonStates = WorkflowButtonState.getButtonStates(state)
+        planButton.isEnabled = buttonStates.plan
+        implementButton.isEnabled = buttonStates.implement
+        reviewButton.isEnabled = buttonStates.review
+        finishButton.isEnabled = buttonStates.finish
+        undoButton.isEnabled = buttonStates.undo
+        redoButton.isEnabled = buttonStates.redo
     }
 }
 
 enum class WorkflowAction {
-    PLAN, IMPLEMENT, REVIEW, FINISH, UNDO, REDO
+    PLAN,
+    IMPLEMENT,
+    REVIEW,
+    FINISH,
+    UNDO,
+    REDO
 }
 
 /**
@@ -476,12 +428,13 @@ private class TaskListCellRenderer : ColoredListCellRenderer<TaskSummary>() {
     ) {
         value ?: return
 
-        icon = when (value.state) {
-            "done" -> AllIcons.RunConfigurations.TestPassed
-            "failed" -> AllIcons.RunConfigurations.TestFailed
-            "planning", "implementing", "reviewing" -> AllIcons.Process.Step_1
-            else -> AllIcons.RunConfigurations.TestNotRan
-        }
+        icon =
+            when (value.state) {
+                "done" -> AllIcons.RunConfigurations.TestPassed
+                "failed" -> AllIcons.RunConfigurations.TestFailed
+                "planning", "implementing", "reviewing" -> AllIcons.Process.Step_1
+                else -> AllIcons.RunConfigurations.TestNotRan
+            }
 
         append(value.title ?: value.id, SimpleTextAttributes.REGULAR_ATTRIBUTES)
         append(" ")

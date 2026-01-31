@@ -17,12 +17,11 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 )
 @Service(Service.Level.APP)
 class MehrhofSettings : PersistentStateComponent<MehrhofSettings.State> {
-
     private var myState = State()
 
     data class State(
-        var serverUrl: String = "",  // Empty = plugin manages server
-        var mehrExecutable: String = "",  // Empty = auto-detect from default locations
+        var serverUrl: String = "", // Empty = plugin manages server
+        var mehrExecutable: String = "", // Empty = auto-detect from default locations
         var showNotifications: Boolean = true,
         var defaultAgent: String = "",
         var autoReconnect: Boolean = true,

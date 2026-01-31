@@ -4,8 +4,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
-import com.valksor.mehrhof.api.models.TaskInfo
-import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.services.MehrhofProjectService
 import java.awt.BorderLayout
 import java.awt.Font
@@ -19,14 +17,15 @@ import javax.swing.SwingUtilities
 class OutputPanel(
     private val project: Project,
     private val service: MehrhofProjectService
-) : JPanel(BorderLayout()), MehrhofProjectService.StateListener {
-
-    private val outputArea = JBTextArea().apply {
-        isEditable = false
-        font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-        lineWrap = true
-        wrapStyleWord = true
-    }
+) : JPanel(BorderLayout()),
+    MehrhofProjectService.StateListener {
+    private val outputArea =
+        JBTextArea().apply {
+            isEditable = false
+            font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+            lineWrap = true
+            wrapStyleWord = true
+        }
 
     private val clearButton = JButton("Clear")
 
@@ -37,9 +36,10 @@ class OutputPanel(
         add(JBScrollPane(outputArea), BorderLayout.CENTER)
 
         // Clear button at bottom
-        val buttonPanel = JPanel().apply {
-            add(clearButton)
-        }
+        val buttonPanel =
+            JPanel().apply {
+                add(clearButton)
+            }
         add(buttonPanel, BorderLayout.SOUTH)
 
         // Button actions
@@ -51,13 +51,19 @@ class OutputPanel(
         service.addStateListener(this)
     }
 
-    override fun onAgentMessage(content: String, type: String?) {
+    override fun onAgentMessage(
+        content: String,
+        type: String?
+    ) {
         SwingUtilities.invokeLater {
             appendOutput(content)
         }
     }
 
-    override fun onWorkflowStateChanged(state: String, previousState: String?) {
+    override fun onWorkflowStateChanged(
+        state: String,
+        previousState: String?
+    ) {
         SwingUtilities.invokeLater {
             appendOutput("\n--- State changed: $previousState → $state ---\n")
         }
@@ -69,7 +75,10 @@ class OutputPanel(
         }
     }
 
-    override fun onQuestionReceived(question: String, options: List<String>?) {
+    override fun onQuestionReceived(
+        question: String,
+        options: List<String>?
+    ) {
         SwingUtilities.invokeLater {
             appendOutput("\n[QUESTION] $question\n")
             options?.forEachIndexed { index, option ->
