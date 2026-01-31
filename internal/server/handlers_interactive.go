@@ -56,6 +56,54 @@ type stateResponse struct {
 	Title   string `json:"title,omitempty"`
 }
 
+// parseChatRequest parses chat request from either JSON or form data.
+// HTMX sends form-encoded by default, but JSON is also supported.
+func parseChatRequest(r *http.Request) (chatRequest, error) {
+	contentType := r.Header.Get("Content-Type")
+	var req chatRequest
+
+	if strings.HasPrefix(contentType, "application/json") {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return req, fmt.Errorf("invalid JSON: %w", err)
+		}
+	} else {
+		// Form-encoded (HTMX default)
+		if err := r.ParseForm(); err != nil {
+			return req, fmt.Errorf("invalid form data: %w", err)
+		}
+		req.Message = r.FormValue("message")
+	}
+
+	return req, nil
+}
+
+// parseCommandRequest parses command request from either JSON or form data.
+// HTMX sends form-encoded by default, but JSON is also supported.
+func parseCommandRequest(r *http.Request) (commandRequest, error) {
+	contentType := r.Header.Get("Content-Type")
+	var req commandRequest
+
+	if strings.HasPrefix(contentType, "application/json") {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return req, fmt.Errorf("invalid JSON: %w", err)
+		}
+	} else {
+		// Form-encoded (HTMX default)
+		if err := r.ParseForm(); err != nil {
+			return req, fmt.Errorf("invalid form data: %w", err)
+		}
+		req.Command = r.FormValue("command")
+		// Args can be passed as comma-separated or multiple values
+		if args := r.Form["args"]; len(args) > 0 {
+			req.Args = args
+		} else if argsStr := r.FormValue("args"); argsStr != "" {
+			req.Args = strings.Split(argsStr, ",")
+		}
+	}
+
+	return req, nil
+}
+
 // handleInteractiveChat processes a chat message from the Web UI.
 // POST /api/v1/interactive/chat.
 func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +119,9 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request
-	var req chatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// Parse request (supports both JSON and form-encoded from HTMX)
+	req, err := parseChatRequest(r)
+	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
 
 		return
@@ -177,6 +225,310 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleInteractiveSend processes input from the interactive UI and returns HTML.
+// POST /ui/interactive/send.
+// This handles both chat messages and workflow commands, returning HTML for HTMX.
+func (s *Server) handleInteractiveSend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.writeHTML(w, http.StatusMethodNotAllowed, `<div class="text-red-500 p-2">Method not allowed</div>`)
+
+		return
+	}
+
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		s.writeHTML(w, http.StatusBadRequest, `<div class="text-red-500 p-2">Invalid request</div>`)
+
+		return
+	}
+
+	message := strings.TrimSpace(r.FormValue("message"))
+	if message == "" {
+		return // Empty message, do nothing
+	}
+
+	// Check if it's a command (starts with known command word)
+	parts := strings.Fields(message)
+	command := strings.ToLower(parts[0])
+	args := parts[1:]
+
+	// List of known commands
+	knownCommands := map[string]bool{
+		"start": true, "plan": true, "implement": true, "review": true,
+		"continue": true, "finish": true, "abandon": true,
+		"undo": true, "redo": true, "status": true, "st": true,
+		"cost": true, "budget": true, "list": true, "note": true,
+		"quick": true, "find": true, "memory": true, "simplify": true,
+		"label": true, "specification": true, "spec": true,
+		"chat": true, "answer": true, "help": true,
+	}
+
+	var html string
+
+	if knownCommands[command] {
+		// It's a command - execute it
+		html = s.executeInteractiveCommand(r.Context(), command, args, message)
+	} else {
+		// Treat as chat message
+		html = s.executeInteractiveChat(r.Context(), message)
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(html))
+}
+
+// executeInteractiveCommand runs a workflow command and returns HTML response.
+func (s *Server) executeInteractiveCommand(ctx context.Context, command string, args []string, original string) string {
+	// Show user's command
+	html := fmt.Sprintf(`<div class="flex gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg">
+		<span class="text-brand-600 dark:text-brand-400 font-medium">You:</span>
+		<span class="text-surface-700 dark:text-surface-300">%s</span>
+	</div>`, escapeHTML(original))
+
+	if s.config.Conductor == nil {
+		return html + `<div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+			Error: Conductor not initialized
+		</div>`
+	}
+
+	cond := s.config.Conductor
+	var result string
+	var err error
+
+	switch command {
+	case "status", "st":
+		status, statusErr := cond.Status(ctx)
+		if statusErr != nil {
+			err = statusErr
+		} else {
+			result = "State: " + status.State
+			if status.TaskID != "" {
+				result += "\nTask: " + status.TaskID
+			}
+			if status.Title != "" {
+				result += "\nTitle: " + status.Title
+			}
+			if status.Branch != "" {
+				result += "\nBranch: " + status.Branch
+			}
+			if status.Specifications > 0 {
+				result += fmt.Sprintf("\nSpecifications: %d", status.Specifications)
+			}
+			if status.Checkpoints > 0 {
+				result += fmt.Sprintf("\nCheckpoints: %d", status.Checkpoints)
+			}
+		}
+
+	case "start":
+		if len(args) == 0 {
+			err = errors.New("start requires a reference (e.g., start github:123)")
+		} else {
+			err = cond.Start(ctx, args[0])
+			if err == nil {
+				result = "Task started"
+			}
+		}
+
+	case "plan":
+		err = cond.Plan(ctx)
+		if err == nil {
+			result = "Planning started"
+		}
+
+	case "implement":
+		err = cond.Implement(ctx)
+		if err == nil {
+			result = "Implementation started"
+		}
+
+	case "review":
+		err = cond.Review(ctx)
+		if err == nil {
+			result = "Review started"
+		}
+
+	case "continue":
+		err = cond.ResumePaused(ctx)
+		if err == nil {
+			result = "Resumed"
+		}
+
+	case "finish":
+		if cond.GetActiveTask() == nil {
+			err = errors.New("no active task")
+		} else {
+			err = cond.Finish(ctx, conductor.FinishOptions{})
+			if err == nil {
+				result = "Task completed"
+			}
+		}
+
+	case "abandon":
+		if cond.GetActiveTask() == nil {
+			err = errors.New("no active task")
+		} else {
+			err = cond.Delete(ctx, conductor.DeleteOptions{
+				Force:      true,
+				KeepBranch: false,
+				DeleteWork: conductor.BoolPtr(true),
+			})
+			if err == nil {
+				result = "Task abandoned"
+			}
+		}
+
+	case "undo":
+		err = cond.Undo(ctx)
+		if err == nil {
+			result = "Undo complete"
+		}
+
+	case "redo":
+		err = cond.Redo(ctx)
+		if err == nil {
+			result = "Redo complete"
+		}
+
+	case "cost":
+		task := cond.GetActiveTask()
+		if task == nil {
+			err = errors.New("no active task")
+		} else {
+			ws := cond.GetWorkspace()
+			work, loadErr := ws.LoadWork(task.ID)
+			if loadErr != nil {
+				err = loadErr
+			} else {
+				costs := work.Costs
+				result = fmt.Sprintf("Input: %d tokens\nOutput: %d tokens\nTotal: $%.4f",
+					costs.TotalInputTokens, costs.TotalOutputTokens, costs.TotalCostUSD)
+			}
+		}
+
+	case "list":
+		ws := cond.GetWorkspace()
+		taskIDs, listErr := ws.ListWorks()
+		if listErr != nil {
+			err = listErr
+		} else if len(taskIDs) == 0 {
+			result = "No tasks found"
+		} else {
+			var lines []string
+			for _, id := range taskIDs {
+				work, loadErr := ws.LoadWork(id)
+				if loadErr != nil {
+					continue
+				}
+				shortID := id
+				if len(id) > 8 {
+					shortID = id[:8]
+				}
+				title := work.Metadata.Title
+				if title == "" {
+					title = work.Source.Ref
+				}
+				lines = append(lines, fmt.Sprintf("• %s: %s (%s)", shortID, title, work.Metadata.State))
+			}
+			result = strings.Join(lines, "\n")
+		}
+
+	case "help":
+		result = `Commands:
+• start <ref> - Start a task
+• plan - Run planning
+• implement - Run implementation
+• review - Run code review
+• continue - Resume paused
+• finish - Complete task
+• abandon - Discard task
+• undo/redo - Checkpoints
+• status - Show status
+• cost - Show token usage
+• list - List tasks
+• help - Show this help`
+
+	default:
+		result = "Unknown command: " + command
+	}
+
+	if err != nil {
+		html += fmt.Sprintf(`<div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+			Error: %s
+		</div>`, escapeHTML(err.Error()))
+	} else if result != "" {
+		html += fmt.Sprintf(`<div class="flex gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-lg">
+			<span class="text-green-600 dark:text-green-400 font-medium">System:</span>
+			<pre class="text-surface-700 dark:text-surface-300 whitespace-pre-wrap">%s</pre>
+		</div>`, escapeHTML(result))
+	}
+
+	return html
+}
+
+// executeInteractiveChat runs a chat message and returns HTML response.
+func (s *Server) executeInteractiveChat(ctx context.Context, message string) string {
+	// Show user's message
+	html := fmt.Sprintf(`<div class="flex gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg">
+		<span class="text-brand-600 dark:text-brand-400 font-medium">You:</span>
+		<span class="text-surface-700 dark:text-surface-300">%s</span>
+	</div>`, escapeHTML(message))
+
+	if s.config.Conductor == nil {
+		return html + `<div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+			Error: Conductor not initialized
+		</div>`
+	}
+
+	activeAgent := s.config.Conductor.GetActiveAgent()
+	if activeAgent == nil {
+		return html + `<div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-600 dark:text-yellow-400">
+			No active agent. Start a task first or check agent configuration.
+		</div>`
+	}
+
+	// Build prompt and run agent
+	prompt := s.buildChatPrompt(message)
+	response, err := activeAgent.Run(ctx, prompt)
+
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			html += `<div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-600 dark:text-yellow-400">
+				Chat cancelled
+			</div>`
+		} else {
+			html += fmt.Sprintf(`<div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+				Error: %s
+			</div>`, escapeHTML(err.Error()))
+		}
+	} else if response != nil && response.Summary != "" {
+		html += fmt.Sprintf(`<div class="flex gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-lg">
+			<span class="text-purple-600 dark:text-purple-400 font-medium">Agent:</span>
+			<div class="text-surface-700 dark:text-surface-300 prose dark:prose-invert prose-sm max-w-none">%s</div>
+		</div>`, escapeHTML(response.Summary))
+	}
+
+	return html
+}
+
+// escapeHTML escapes special HTML characters.
+func escapeHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+
+	return s
+}
+
+// writeHTML writes an HTML response.
+func (s *Server) writeHTML(w http.ResponseWriter, status int, html string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(html))
+}
+
 // handleInteractiveCommand executes a workflow command.
 // POST /api/v1/interactive/command.
 func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request) {
@@ -192,13 +544,15 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Parse request
-	var req commandRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// Parse request (supports both JSON and form-encoded from HTMX)
+	req, err := parseCommandRequest(r)
+	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
 
 		return
 	}
+
+	slog.Debug("interactive command received", "command", req.Command, "args", req.Args)
 
 	// Create cancellable context for ALL commands
 	opCtx, cancel := context.WithCancel(r.Context())
@@ -210,7 +564,6 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 	defer s.unregisterOperation(sessionID)
 
 	cond := s.config.Conductor
-	var err error
 	var message string
 
 	// Execute command
@@ -495,6 +848,58 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 		totalTokens := costs.TotalInputTokens + costs.TotalOutputTokens
 		message = fmt.Sprintf("Tokens: %d, Cost: $%.4f / $%.2f",
 			totalTokens, costs.TotalCostUSD, taskBudget.MaxCost)
+
+	case "status", "st":
+		status, err := cond.Status(opCtx)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, "failed to get status: "+err.Error())
+
+			return
+		}
+
+		// Build human-readable status message
+		var statusMsg strings.Builder
+		statusMsg.WriteString("State: " + status.State)
+		if status.TaskID != "" {
+			statusMsg.WriteString("\nTask: " + status.TaskID[:min(7, len(status.TaskID))])
+		}
+		if status.Title != "" {
+			statusMsg.WriteString("\nTitle: " + status.Title)
+		}
+		if status.Branch != "" {
+			statusMsg.WriteString("\nBranch: " + status.Branch)
+		}
+		if status.Ref != "" {
+			statusMsg.WriteString("\nRef: " + status.Ref)
+		}
+		if status.Specifications > 0 {
+			statusMsg.WriteString(fmt.Sprintf("\nSpecifications: %d", status.Specifications))
+		}
+		if status.Checkpoints > 0 {
+			statusMsg.WriteString(fmt.Sprintf("\nCheckpoints: %d", status.Checkpoints))
+		}
+
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"status": map[string]any{
+				"taskId":         status.TaskID,
+				"title":          status.Title,
+				"externalKey":    status.ExternalKey,
+				"state":          status.State,
+				"ref":            status.Ref,
+				"branch":         status.Branch,
+				"worktreePath":   status.WorktreePath,
+				"specifications": status.Specifications,
+				"checkpoints":    status.Checkpoints,
+				"started":        status.Started,
+				"agent":          status.Agent,
+				"agentSource":    status.AgentSource,
+			},
+			"message": statusMsg.String(),
+			"state":   status.State,
+		})
+
+		return
 
 	default:
 		s.writeError(w, http.StatusBadRequest, "unknown command: "+req.Command)

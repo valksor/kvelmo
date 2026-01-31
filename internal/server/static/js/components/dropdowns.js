@@ -2,40 +2,74 @@
  * Dropdown Components Module
  *
  * Handles dropdown menus, mobile menu, and the "More" navigation dropdown.
+ * Uses event delegation for robust handling across HTMX swaps.
  *
  * @module components/dropdowns
  */
 
-// Store cleanup functions to prevent listener accumulation
-let moreMenuCleanup = null;
+let dropdownInitialized = false;
+let mobileMenuInitialized = false;
 
 /**
  * Initialize all dropdown components.
+ * Uses event delegation so we don't need to reinitialize after HTMX swaps.
  */
 export function initDropdowns() {
-    setupDropdownHandlers();
-}
+    if (dropdownInitialized) {
+        console.log('[Dropdowns] Already initialized');
+        return;
+    }
+    dropdownInitialized = true;
+    console.log('[Dropdowns] Initializing with event delegation');
 
-/**
- * Set up generic dropdown handlers using data attributes.
- */
-function setupDropdownHandlers() {
-    document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
-        const trigger = dropdown.querySelector('[data-dropdown-trigger]');
-        const menu = dropdown.querySelector('[data-dropdown-menu]');
+    // Delegated click handler for dropdown triggers
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-dropdown-trigger]');
 
-        if (!trigger || !menu) return;
-
-        trigger.addEventListener('click', (e) => {
+        if (trigger) {
             e.stopPropagation();
-            menu.classList.toggle('hidden');
-        });
-    });
+            e.preventDefault();
 
-    // Close all dropdowns on outside click
-    document.addEventListener('click', () => {
+            const dropdown = trigger.closest('[data-dropdown]');
+            if (!dropdown) return;
+
+            const menu = dropdown.querySelector('[data-dropdown-menu]');
+            if (!menu) return;
+
+            // Close other dropdowns first
+            document.querySelectorAll('[data-dropdown-menu]').forEach(m => {
+                if (m !== menu) {
+                    m.classList.add('hidden');
+                    // Reset chevron on other dropdowns
+                    const otherDropdown = m.closest('[data-dropdown]');
+                    const otherChevron = otherDropdown?.querySelector('[data-dropdown-chevron]');
+                    if (otherChevron) {
+                        otherChevron.classList.remove('rotate-180');
+                    }
+                }
+            });
+
+            // Toggle this dropdown
+            const isOpening = menu.classList.toggle('hidden');
+
+            // Rotate chevron if present
+            const chevron = dropdown.querySelector('[data-dropdown-chevron]');
+            if (chevron) {
+                if (isOpening) {
+                    chevron.classList.remove('rotate-180');
+                } else {
+                    chevron.classList.add('rotate-180');
+                }
+            }
+            return;
+        }
+
+        // Click outside - close all dropdowns
         document.querySelectorAll('[data-dropdown-menu]').forEach(menu => {
             menu.classList.add('hidden');
+        });
+        document.querySelectorAll('[data-dropdown-chevron]').forEach(chevron => {
+            chevron.classList.remove('rotate-180');
         });
     });
 
@@ -45,93 +79,40 @@ function setupDropdownHandlers() {
             document.querySelectorAll('[data-dropdown-menu]').forEach(menu => {
                 menu.classList.add('hidden');
             });
+            document.querySelectorAll('[data-dropdown-chevron]').forEach(chevron => {
+                chevron.classList.remove('rotate-180');
+            });
         }
     });
 }
 
 /**
  * Initialize the "More" navigation dropdown.
- * Re-queries DOM elements each time to get fresh references after HTMX swaps.
+ * This is a no-op since we now use data-dropdown attributes and event delegation.
+ * Kept for backwards compatibility.
  */
 export function initMoreMenu() {
-    // Clean up previous listeners
-    if (moreMenuCleanup) {
-        moreMenuCleanup();
-        moreMenuCleanup = null;
-    }
-
-    const btn = document.getElementById('more-menu-btn');
-    const menu = document.getElementById('more-menu');
-    const chevron = document.getElementById('more-menu-chevron');
-
-    // Only initialize if the More menu exists
-    if (!btn || !menu) return;
-
-    // Button click handler
-    const handleBtnClick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        menu.classList.toggle('hidden');
-        if (chevron) {
-            chevron.classList.toggle('rotate-180');
-        }
-    };
-
-    // Outside click handler
-    const handleOutsideClick = (e) => {
-        const currentMenu = document.getElementById('more-menu');
-        const currentBtn = document.getElementById('more-menu-btn');
-        const currentChevron = document.getElementById('more-menu-chevron');
-
-        if (currentMenu && !currentMenu.classList.contains('hidden')) {
-            if (!currentBtn || !currentBtn.contains(e.target)) {
-                currentMenu.classList.add('hidden');
-                if (currentChevron) {
-                    currentChevron.classList.remove('rotate-180');
-                }
-            }
-        }
-    };
-
-    // Escape key handler
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            const currentMenu = document.getElementById('more-menu');
-            const currentChevron = document.getElementById('more-menu-chevron');
-
-            if (currentMenu && !currentMenu.classList.contains('hidden')) {
-                currentMenu.classList.add('hidden');
-                if (currentChevron) {
-                    currentChevron.classList.remove('rotate-180');
-                }
-            }
-        }
-    };
-
-    // Add listeners
-    btn.addEventListener('click', handleBtnClick);
-    document.addEventListener('click', handleOutsideClick);
-    document.addEventListener('keydown', handleEscape);
-
-    // Store cleanup function
-    moreMenuCleanup = () => {
-        btn.removeEventListener('click', handleBtnClick);
-        document.removeEventListener('click', handleOutsideClick);
-        document.removeEventListener('keydown', handleEscape);
-    };
+    // No-op: "More" menu now uses data-dropdown pattern and is handled by initDropdowns()
 }
 
 /**
  * Initialize the mobile menu toggle.
+ * Uses event delegation for robustness.
  */
 export function initMobileMenu() {
-    const button = document.getElementById('mobile-menu-button');
-    const menu = document.getElementById('mobile-menu');
+    if (mobileMenuInitialized) {
+        return;
+    }
+    mobileMenuInitialized = true;
 
-    if (!button || !menu) return;
-
-    button.addEventListener('click', () => {
-        menu.classList.toggle('hidden');
+    document.addEventListener('click', (e) => {
+        const button = e.target.closest('#mobile-menu-button');
+        if (button) {
+            const menu = document.getElementById('mobile-menu');
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        }
     });
 }
 
@@ -143,16 +124,9 @@ export function closeAllDropdowns() {
     document.querySelectorAll('[data-dropdown-menu]').forEach(menu => {
         menu.classList.add('hidden');
     });
-
-    // Close More menu
-    const moreMenu = document.getElementById('more-menu');
-    const moreChevron = document.getElementById('more-menu-chevron');
-    if (moreMenu) {
-        moreMenu.classList.add('hidden');
-    }
-    if (moreChevron) {
-        moreChevron.classList.remove('rotate-180');
-    }
+    document.querySelectorAll('[data-dropdown-chevron]').forEach(chevron => {
+        chevron.classList.remove('rotate-180');
+    });
 
     // Close mobile menu
     const mobileMenu = document.getElementById('mobile-menu');

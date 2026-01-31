@@ -35,16 +35,14 @@ export function updateThemeIcons() {
 
 /**
  * Initialize theme on page load.
- * Checks localStorage first, then falls back to system preference.
+ * Defaults to light mode; only uses dark if explicitly chosen by the user.
  */
 export function initTheme() {
     const storedTheme = localStorage.getItem(THEME_KEY);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // Determine initial theme
-    if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+    // Default to light mode, only use dark if explicitly chosen
+    if (storedTheme === 'dark') {
         document.documentElement.classList.add('dark');
-        localStorage.setItem(THEME_KEY, 'dark');
     } else {
         document.documentElement.classList.remove('dark');
         if (!storedTheme) {
