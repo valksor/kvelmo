@@ -8,6 +8,7 @@ import com.intellij.util.Consumer
 import com.valksor.mehrhof.api.models.TaskInfo
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.services.MehrhofProjectService
+import com.valksor.mehrhof.util.WorkflowUtils
 import java.awt.event.MouseEvent
 import javax.swing.SwingUtilities
 
@@ -21,9 +22,7 @@ class MehrhofStatusWidgetFactory : StatusBarWidgetFactory {
 
     override fun isAvailable(project: Project): Boolean = true
 
-    override fun createWidget(project: Project): StatusBarWidget {
-        return MehrhofStatusWidget(project)
-    }
+    override fun createWidget(project: Project): StatusBarWidget = MehrhofStatusWidget(project)
 
     override fun disposeWidget(widget: StatusBarWidget) {
         (widget as? MehrhofStatusWidget)?.dispose()
@@ -37,8 +36,9 @@ class MehrhofStatusWidgetFactory : StatusBarWidgetFactory {
  */
 class MehrhofStatusWidget(
     private val project: Project
-) : StatusBarWidget, StatusBarWidget.TextPresentation, MehrhofProjectService.StateListener {
-
+) : StatusBarWidget,
+    StatusBarWidget.TextPresentation,
+    MehrhofProjectService.StateListener {
     private var statusBar: StatusBar? = null
     private val service = MehrhofProjectService.getInstance(project)
 
@@ -54,22 +54,21 @@ class MehrhofStatusWidget(
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
 
-    override fun getText(): String {
-        return if (!service.isConnected()) {
+    override fun getText(): String =
+        if (!service.isConnected()) {
             "Mehrhof: Disconnected"
         } else {
-            val state = formatState(service.workflowState)
+            val state = WorkflowUtils.formatState(service.workflowState)
             val task = service.currentTaskWork?.title ?: service.currentTask?.ref
             if (task != null) {
-                "Mehrhof: $state - ${truncate(task, 20)}"
+                "Mehrhof: $state - ${WorkflowUtils.truncate(task, 20)}"
             } else {
                 "Mehrhof: $state"
             }
         }
-    }
 
-    override fun getTooltipText(): String {
-        return if (!service.isConnected()) {
+    override fun getTooltipText(): String =
+        if (!service.isConnected()) {
             "Click to connect to Mehrhof server"
         } else {
             buildString {
@@ -86,19 +85,19 @@ class MehrhofStatusWidget(
                 }
             }
         }
-    }
 
     override fun getAlignment(): Float = 0f
 
-    override fun getClickConsumer(): Consumer<MouseEvent> = Consumer { _ ->
-        if (!service.isConnected()) {
-            service.connect()
-        } else {
-            // Toggle tool window or show quick actions popup
-            // For now, just refresh state
-            service.refreshState()
+    override fun getClickConsumer(): Consumer<MouseEvent> =
+        Consumer { _ ->
+            if (!service.isConnected()) {
+                service.connect()
+            } else {
+                // Toggle tool window or show quick actions popup
+                // For now, just refresh state
+                service.refreshState()
+            }
         }
-    }
 
     override fun dispose() {
         service.removeStateListener(this)
@@ -110,11 +109,17 @@ class MehrhofStatusWidget(
         updateWidget()
     }
 
-    override fun onWorkflowStateChanged(state: String, previousState: String?) {
+    override fun onWorkflowStateChanged(
+        state: String,
+        previousState: String?
+    ) {
         updateWidget()
     }
 
-    override fun onTaskChanged(task: TaskInfo?, work: TaskWork?) {
+    override fun onTaskChanged(
+        task: TaskInfo?,
+        work: TaskWork?
+    ) {
         updateWidget()
     }
 
@@ -122,14 +127,5 @@ class MehrhofStatusWidget(
         SwingUtilities.invokeLater {
             statusBar?.updateWidget(ID())
         }
-    }
-
-    private fun formatState(state: String): String {
-        return state.replace("_", " ").replaceFirstChar { it.uppercase() }
-    }
-
-    private fun truncate(text: String, maxLength: Int): String {
-        return if (text.length <= maxLength) text
-        else text.take(maxLength - 3) + "..."
     }
 }

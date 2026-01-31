@@ -11,9 +11,13 @@ import com.valksor.mehrhof.services.MehrhofProjectService
 /**
  * Factory for creating the Mehrhof tool window.
  */
-class MehrhofToolWindowFactory : ToolWindowFactory, DumbAware {
-
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+class MehrhofToolWindowFactory :
+    ToolWindowFactory,
+    DumbAware {
+    override fun createToolWindowContent(
+        project: Project,
+        toolWindow: ToolWindow
+    ) {
         val service = MehrhofProjectService.getInstance(project)
         val contentFactory = ContentFactory.getInstance()
 
@@ -47,7 +51,9 @@ class MehrhofToolWindowFactory : ToolWindowFactory, DumbAware {
 /**
  * Simple Disposable wrapper for cleanup callbacks.
  */
-private class DisposableWrapper(private val onDispose: () -> Unit) : Disposable {
+private class DisposableWrapper(
+    private val onDispose: () -> Unit
+) : Disposable {
     override fun dispose() {
         onDispose()
     }

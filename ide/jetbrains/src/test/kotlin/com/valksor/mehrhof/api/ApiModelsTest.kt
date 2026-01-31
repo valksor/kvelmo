@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.*
  * Unit tests for API model JSON deserialization.
  */
 class ApiModelsTest {
-
     private val gson: Gson = GsonBuilder().setLenient().create()
 
     // ========================================================================
@@ -44,7 +43,8 @@ class ApiModelsTest {
 
     @Test
     fun `TaskResponse deserializes with active task`() {
-        val json = """
+        val json =
+            """
             {
                 "active": true,
                 "task": {
@@ -62,7 +62,7 @@ class ApiModelsTest {
                     "updated_at": "2024-01-15T11:00:00Z"
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, TaskResponse::class.java)
 
@@ -81,7 +81,8 @@ class ApiModelsTest {
 
     @Test
     fun `TaskResponse deserializes with pending question`() {
-        val json = """
+        val json =
+            """
             {
                 "active": true,
                 "task": {"id": "task-1", "state": "waiting", "ref": "file:task.md"},
@@ -90,7 +91,7 @@ class ApiModelsTest {
                     "options": ["Option A", "Option B"]
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, TaskResponse::class.java)
 
@@ -116,7 +117,8 @@ class ApiModelsTest {
 
     @Test
     fun `TaskListResponse deserializes task list`() {
-        val json = """
+        val json =
+            """
             {
                 "tasks": [
                     {"id": "task-1", "title": "Task 1", "state": "done", "created_at": "2024-01-01"},
@@ -124,7 +126,7 @@ class ApiModelsTest {
                 ],
                 "count": 2
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, TaskListResponse::class.java)
 
@@ -178,7 +180,8 @@ class ApiModelsTest {
 
     @Test
     fun `ContinueResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "success": true,
                 "state": "implementing",
@@ -186,7 +189,7 @@ class ApiModelsTest {
                 "next_actions": ["review", "finish"],
                 "message": "Implementation started"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, ContinueResponse::class.java)
 
@@ -203,7 +206,8 @@ class ApiModelsTest {
 
     @Test
     fun `GuideResponse deserializes with next actions`() {
-        val json = """
+        val json =
+            """
             {
                 "has_task": true,
                 "task_id": "task-123",
@@ -215,7 +219,7 @@ class ApiModelsTest {
                     {"command": "abandon", "description": "Abandon task"}
                 ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, GuideResponse::class.java)
 
@@ -229,7 +233,8 @@ class ApiModelsTest {
 
     @Test
     fun `GuideResponse deserializes with pending question`() {
-        val json = """
+        val json =
+            """
             {
                 "has_task": true,
                 "task_id": "task-1",
@@ -241,7 +246,7 @@ class ApiModelsTest {
                 },
                 "next_actions": []
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, GuideResponse::class.java)
 
@@ -256,7 +261,8 @@ class ApiModelsTest {
 
     @Test
     fun `CostInfo deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "total_tokens": 1500,
                 "input_tokens": 1000,
@@ -264,7 +270,7 @@ class ApiModelsTest {
                 "cached_tokens": 200,
                 "total_cost_usd": 0.075
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, CostInfo::class.java)
 
@@ -287,7 +293,8 @@ class ApiModelsTest {
 
     @Test
     fun `TaskCostResponse deserializes with step breakdown`() {
-        val json = """
+        val json =
+            """
             {
                 "task_id": "task-123",
                 "title": "Test task",
@@ -308,7 +315,7 @@ class ApiModelsTest {
                     }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, TaskCostResponse::class.java)
 
@@ -322,7 +329,8 @@ class ApiModelsTest {
 
     @Test
     fun `AllCostsResponse deserializes with grand total`() {
-        val json = """
+        val json =
+            """
             {
                 "tasks": [],
                 "grand_total": {
@@ -340,7 +348,7 @@ class ApiModelsTest {
                     "warning_sent": false
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, AllCostsResponse::class.java)
 
@@ -357,7 +365,8 @@ class ApiModelsTest {
 
     @Test
     fun `SpecificationsResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "specifications": [
                     {
@@ -369,7 +378,7 @@ class ApiModelsTest {
                     }
                 ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, SpecificationsResponse::class.java)
 
@@ -386,7 +395,8 @@ class ApiModelsTest {
 
     @Test
     fun `SessionsResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "sessions": [
                     {
@@ -403,7 +413,7 @@ class ApiModelsTest {
                     }
                 ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, SessionsResponse::class.java)
 
@@ -420,7 +430,8 @@ class ApiModelsTest {
 
     @Test
     fun `AgentsListResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "agents": [
                     {
@@ -452,7 +463,7 @@ class ApiModelsTest {
                 ],
                 "count": 1
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, AgentsListResponse::class.java)
 
@@ -478,7 +489,8 @@ class ApiModelsTest {
 
     @Test
     fun `ProvidersListResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "providers": [
                     {
@@ -496,7 +508,7 @@ class ApiModelsTest {
                 ],
                 "count": 2
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, ProvidersListResponse::class.java)
 
@@ -514,16 +526,17 @@ class ApiModelsTest {
 
     @Test
     fun `FinishRequest serializes correctly`() {
-        val request = FinishRequest(
-            squashMerge = true,
-            deleteBranch = false,
-            targetBranch = "main",
-            pushAfter = true,
-            forceMerge = false,
-            draftPr = true,
-            prTitle = "Fix: Login bug",
-            prBody = "This PR fixes the login issue"
-        )
+        val request =
+            FinishRequest(
+                squashMerge = true,
+                deleteBranch = false,
+                targetBranch = "main",
+                pushAfter = true,
+                forceMerge = false,
+                draftPr = true,
+                prTitle = "Fix: Login bug",
+                prBody = "This PR fixes the login issue"
+            )
 
         val json = gson.toJson(request)
 
@@ -630,7 +643,8 @@ class ApiModelsTest {
 
     @Test
     fun `InteractiveChatResponse deserializes with messages`() {
-        val json = """
+        val json =
+            """
             {
                 "success": true,
                 "messages": [
@@ -638,7 +652,7 @@ class ApiModelsTest {
                     {"role": "assistant", "content": "Hi there!", "timestamp": "2024-01-15T10:00:01Z"}
                 ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, InteractiveChatResponse::class.java)
 
@@ -673,14 +687,15 @@ class ApiModelsTest {
 
     @Test
     fun `InteractiveStateResponse deserializes correctly`() {
-        val json = """
+        val json =
+            """
             {
                 "success": true,
                 "state": "planning",
                 "task_id": "task-abc123",
                 "title": "Fix login bug"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val response = gson.fromJson(json, InteractiveStateResponse::class.java)
 

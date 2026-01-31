@@ -12,7 +12,7 @@ else
     GRADLE_CMD = JAVA_HOME=$(JAVA_HOME) $(GRADLE)
 endif
 
-.PHONY: all build clean test coverage coverage-html run install help check verify publish deps wrapper stop
+.PHONY: all build clean test coverage coverage-html run install help check verify publish deps wrapper stop lint lint-fix detekt format quality
 
 all: build ## Build the plugin (default)
 
@@ -47,6 +47,21 @@ install: build ## Build and show install instructions
 
 check: ## Compile and check for errors
 	$(GRADLE_CMD) compileKotlin
+
+lint: ## Run ktlint linter
+	$(GRADLE_CMD) ktlintCheck
+
+lint-fix: ## Auto-fix ktlint issues
+	$(GRADLE_CMD) ktlintFormat
+
+detekt: ## Run detekt static analysis
+	$(GRADLE_CMD) detekt
+
+format: ## Format Kotlin code with ktlint
+	$(GRADLE_CMD) ktlintFormat
+
+quality: ## Run all quality checks (ktlint + detekt)
+	$(GRADLE_CMD) quality
 
 verify: ## Verify plugin compatibility
 	$(GRADLE_CMD) verifyPlugin

@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.*
  * Unit tests for MehrhofApiClient.
  */
 class MehrhofApiClientTest {
-
     private lateinit var mockServer: MockWebServer
     private lateinit var client: MehrhofApiClient
 
@@ -59,7 +58,8 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "active": true,
                         "task": {
@@ -73,7 +73,8 @@ class MehrhofApiClientTest {
                             "external_key": "42"
                         }
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getTask()
@@ -109,7 +110,8 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "tasks": [
                             {"id": "task-1", "title": "Task 1", "state": "done"},
@@ -117,7 +119,8 @@ class MehrhofApiClientTest {
                         ],
                         "count": 2
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getTasks()
@@ -136,7 +139,8 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "has_task": true,
                         "task_id": "task-123",
@@ -147,7 +151,8 @@ class MehrhofApiClientTest {
                             {"command": "plan", "description": "Run planning", "endpoint": "/api/v1/workflow/plan"}
                         ]
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getGuide()
@@ -408,7 +413,7 @@ class MehrhofApiClientTest {
 
     @Test
     fun `returns failure on network error`() {
-        mockServer.shutdown()  // Force connection failure
+        mockServer.shutdown() // Force connection failure
 
         val result = client.getStatus()
 
@@ -462,7 +467,8 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "task_id": "task-123",
                         "title": "Fix bug",
@@ -472,7 +478,8 @@ class MehrhofApiClientTest {
                         "cached_tokens": 100,
                         "total_cost_usd": 0.05
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getTaskCosts("task-123")
@@ -490,7 +497,8 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "tasks": [],
                         "grand_total": {
@@ -501,7 +509,8 @@ class MehrhofApiClientTest {
                             "cost_usd": 0.25
                         }
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getAllCosts()
@@ -522,14 +531,16 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "agents": [
                             {"name": "claude", "type": "claude", "available": true}
                         ],
                         "count": 1
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getAgents()
@@ -546,14 +557,16 @@ class MehrhofApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""
+                .setBody(
+                    """
                     {
                         "providers": [
                             {"scheme": "github", "name": "GitHub", "description": "GitHub issues"}
                         ],
                         "count": 1
                     }
-                """.trimIndent())
+                    """.trimIndent()
+                )
         )
 
         val result = client.getProviders()

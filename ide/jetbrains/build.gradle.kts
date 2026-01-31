@@ -5,6 +5,8 @@ plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.0.21"
     id("org.jetbrains.intellij.platform") version "2.11.0"
+    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
     jacoco
 }
 
@@ -96,9 +98,45 @@ intellijPlatform {
     }
 }
 
+// ktlint configuration
+ktlint {
+    version.set("1.5.0")
+    android.set(false)
+    ignoreFailures.set(false)
+    reporters {
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.SARIF)
+    }
+    filter {
+        exclude("**/generated/**")
+    }
+}
+
+// detekt configuration
+detekt {
+    config.setFrom("$projectDir/config/detekt/detekt.yml")
+    buildUponDefaultConfig = true
+    allRules = false
+    parallel = true
+    autoCorrect = false
+    ignoreFailures = false
+}
+
 tasks {
     wrapper {
         gradleVersion = "9.3.1"
+    }
+
+    register("quality") {
+        group = "verification"
+        description = "Run all quality checks (ktlint + detekt)"
+        dependsOn("ktlintCheck", "detekt")
+    }
+
+    register("formatKotlin") {
+        group = "formatting"
+        description = "Format Kotlin files with ktlint"
+        dependsOn("ktlintFormat")
     }
 
     test {

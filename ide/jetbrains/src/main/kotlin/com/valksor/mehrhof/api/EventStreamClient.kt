@@ -24,10 +24,12 @@ class EventStreamClient(
     private val onConnected: () -> Unit = {},
     private val onDisconnected: () -> Unit = {}
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.SECONDS)  // No timeout for SSE
-        .build()
+    private val client =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS) // No timeout for SSE
+            .build()
 
     private val gson: Gson = GsonBuilder().setLenient().create()
 
@@ -45,76 +47,91 @@ class EventStreamClient(
         }
 
         val sseUrl = "$baseUrl/api/v1/events"
-        val request = Request.Builder()
-            .url(sseUrl)
-            .header("Accept", "text/event-stream")
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url(sseUrl)
+                .header("Accept", "text/event-stream")
+                .build()
 
         println("Connecting to SSE: $sseUrl")
 
-        val listener = object : EventSourceListener() {
-            override fun onOpen(eventSource: EventSource, response: Response) {
-                connected.set(true)
-                onConnected()
-            }
-
-            override fun onEvent(
-                eventSource: EventSource,
-                id: String?,
-                type: String?,
-                data: String
-            ) {
-                try {
-                    val eventType = EventType.fromString(type ?: "message")
-                    val jsonData = try {
-                        gson.fromJson(data, JsonObject::class.java) ?: JsonObject()
-                    } catch (_: Exception) {
-                        // If data is not JSON, wrap it
-                        JsonObject().apply { addProperty("data", data) }
-                    }
-                    onEvent(eventType, jsonData)
-                } catch (e: Exception) {
-                    onError("Failed to parse event: ${e.message}")
+        val listener =
+            object : EventSourceListener() {
+                override fun onOpen(
+                    eventSource: EventSource,
+                    response: Response
+                ) {
+                    connected.set(true)
+                    onConnected()
                 }
-            }
 
-            override fun onClosed(eventSource: EventSource) {
-                connected.set(false)
-                onDisconnected()
-            }
+                override fun onEvent(
+                    eventSource: EventSource,
+                    id: String?,
+                    type: String?,
+                    data: String
+                ) {
+                    try {
+                        val eventType = EventType.fromString(type ?: "message")
+                        val jsonData =
+                            try {
+                                gson.fromJson(data, JsonObject::class.java) ?: JsonObject()
+                            } catch (_: Exception) {
+                                // If data is not JSON, wrap it
+                                JsonObject().apply { addProperty("data", data) }
+                            }
+                        onEvent(eventType, jsonData)
+                    } catch (e: Exception) {
+                        onError("Failed to parse event: ${e.message}")
+                    }
+                }
 
-            override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                connected.set(false)
-                // Only report error if not an intentional disconnect
-                if (!intentionalDisconnect.getAndSet(false)) {
-                    // Don't report EOF on successful responses as error - it's just a graceful close
-                    val isGracefulClose = response?.isSuccessful == true &&
-                        (t is java.io.EOFException || t?.cause is java.io.EOFException)
+                override fun onClosed(eventSource: EventSource) {
+                    connected.set(false)
+                    onDisconnected()
+                }
 
-                    if (!isGracefulClose) {
-                        val errorMsg = buildString {
-                            if (response != null) {
-                                append("HTTP ${response.code}")
-                                if (response.message.isNotEmpty()) append(" ${response.message}")
-                                try {
-                                    response.body?.string()?.takeIf { it.isNotBlank() }?.let { body ->
-                                        append(" - $body")
+                override fun onFailure(
+                    eventSource: EventSource,
+                    t: Throwable?,
+                    response: Response?
+                ) {
+                    connected.set(false)
+                    // Only report error if not an intentional disconnect
+                    if (!intentionalDisconnect.getAndSet(false)) {
+                        // Don't report EOF on successful responses as error - it's just a graceful close
+                        val isGracefulClose =
+                            response?.isSuccessful == true &&
+                                (t is java.io.EOFException || t?.cause is java.io.EOFException)
+
+                        if (!isGracefulClose) {
+                            val errorMsg =
+                                buildString {
+                                    if (response != null) {
+                                        append("HTTP ${response.code}")
+                                        if (response.message.isNotEmpty()) append(" ${response.message}")
+                                        try {
+                                            response.body?.string()?.takeIf { it.isNotBlank() }?.let { body ->
+                                                append(" - $body")
+                                            }
+                                        } catch (_: Exception) {
+                                            // ignore
+                                        }
                                     }
-                                } catch (_: Exception) { /* ignore */ }
-                            }
-                            if (t != null) {
-                                if (isNotEmpty()) append(": ")
-                                append(t.javaClass.simpleName)
-                                t.message?.let { append(": $it") }
-                            }
-                            if (isEmpty()) append("Unknown error")
+                                    if (t != null) {
+                                        if (isNotEmpty()) append(": ")
+                                        append(t.javaClass.simpleName)
+                                        t.message?.let { append(": $it") }
+                                    }
+                                    if (isEmpty()) append("Unknown error")
+                                }
+                            onError("SSE connection failed: $errorMsg")
                         }
-                        onError("SSE connection failed: $errorMsg")
                     }
+                    onDisconnected()
                 }
-                onDisconnected()
             }
-        }
 
         val factory = EventSources.createFactory(client)
         eventSource = factory.newEventSource(request, listener)
@@ -178,8 +195,8 @@ enum class EventType {
     UNKNOWN;
 
     companion object {
-        fun fromString(type: String): EventType {
-            return when (type.lowercase().replace("-", "_")) {
+        fun fromString(type: String): EventType =
+            when (type.lowercase().replace("-", "_")) {
                 "workflow_state_changed", "state_changed" -> WORKFLOW_STATE_CHANGED
                 "task_started" -> TASK_STARTED
                 "task_completed" -> TASK_COMPLETED
@@ -198,7 +215,6 @@ enum class EventType {
                 "error" -> ERROR
                 else -> UNKNOWN
             }
-        }
     }
 }
 
@@ -217,7 +233,7 @@ data class WorkflowStateEvent(
  */
 data class AgentMessageEvent(
     val content: String,
-    val type: String? = null,  // "text", "tool_use", "tool_result", etc.
+    val type: String? = null, // "text", "tool_use", "tool_result", etc.
     val toolName: String? = null,
     val toolInput: String? = null
 )
@@ -234,26 +250,23 @@ data class QuestionEvent(
 /**
  * Extension functions for parsing event data.
  */
-fun JsonObject.toWorkflowStateEvent(gson: Gson): WorkflowStateEvent? {
-    return try {
+fun JsonObject.toWorkflowStateEvent(gson: Gson): WorkflowStateEvent? =
+    try {
         gson.fromJson(this, WorkflowStateEvent::class.java)
     } catch (_: Exception) {
         null
     }
-}
 
-fun JsonObject.toAgentMessageEvent(gson: Gson): AgentMessageEvent? {
-    return try {
+fun JsonObject.toAgentMessageEvent(gson: Gson): AgentMessageEvent? =
+    try {
         gson.fromJson(this, AgentMessageEvent::class.java)
     } catch (_: Exception) {
         null
     }
-}
 
-fun JsonObject.toQuestionEvent(gson: Gson): QuestionEvent? {
-    return try {
+fun JsonObject.toQuestionEvent(gson: Gson): QuestionEvent? =
+    try {
         gson.fromJson(this, QuestionEvent::class.java)
     } catch (_: Exception) {
         null
     }
-}
