@@ -38,17 +38,17 @@ Mehrhof is not magic. It's a structured way to work with tools you already have,
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                                                                     │
-│   1. TASK          2. PLAN          3. CREATE         4. REVIEW    │
-│   ─────────        ────────         ────────          ────────     │
-│   Describe what    Break it into    Execute via       Human        │
-│   you want         actionable       agent CLI         approval     │
-│                    steps                              before ship  │
+│   1. TASK          2. PLAN          3. CREATE         4. REVIEW     │
+│   ─────────        ────────         ────────          ────────      │
+│   Describe what    Break it into    Execute via       Human         │
+│   you want         actionable       agent CLI         approval      │
+│                    steps                              before ship   │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 **1. Define a Task**
-Start with a plain-language description of what you want to create or change. No code required—just write what you need in your own words.
+Start with a plain-language description of what you want to create or change. No code required — write what you need in your own words.
 
 **2. Generate a Plan**
 Mehrhof helps break your intent into actionable steps. You review this plan before any changes are made. Nothing happens without your approval.
@@ -73,7 +73,7 @@ Mehrhof is built on principles that keep you in control:
 - **Configurable guardrails** — Match your company's policies, guidelines, and approval workflows
 - **Undo/redo support** — Made a mistake? Roll back to any checkpoint
 
-We believe AI is a useful support tool for routine work and exploration, but critical decisions require human understanding and oversight. Mehrhof is designed to assist, not replace, your judgment.
+We believe AI is a useful support tool for routine work and exploration, but critical decisions require human understanding and oversight. Mehrhof is designed to help, not replace, your judgment.
 
 ---
 
@@ -81,12 +81,12 @@ We believe AI is a useful support tool for routine work and exploration, but cri
 
 Choose the interface that fits your workflow:
 
-| Web UI | CLI |
-|--------|-----|
-| Comfortable browser-based experience | Text-based workflow for power users |
-| Click-through workflow with visual feedback | Scriptable commands for automation |
-| Ideal for non-technical contributors | Ideal for developers and CI/CD pipelines |
-| Real-time progress and streaming output | Composable with other tools |
+| Web UI                                      | CLI                                      |
+|---------------------------------------------|------------------------------------------|
+| Comfortable browser-based experience        | Text-based workflow for power users      |
+| Click-through workflow with visual feedback | Scriptable commands for automation       |
+| Ideal for non-technical contributors        | Ideal for developers and CI/CD pipelines |
+| Real-time progress and streaming output     | Composable with other tools              |
 
 Both interfaces use the same underlying engine and configuration. Your work is portable between them.
 
@@ -108,18 +108,18 @@ Click **"Create Task"** in your browser and you're ready to go.
 
 **Web UI Features:**
 
-| Feature | Description |
-|---------|-------------|
-| 📊 **Dashboard** | See all tasks at a glance with real-time progress |
+| Feature                 | Description                                             |
+|-------------------------|---------------------------------------------------------|
+| 📊 **Dashboard**        | See all tasks at a glance with real-time progress       |
 | 🎨 **Workflow Diagram** | Visual state showing current step and available actions |
-| 📝 **Task Creation** | Write tasks directly in browser or upload files |
-| 📜 **Live Output** | Watch progress as it happens |
-| 🔙 **Undo/Redo** | Easy checkpoint navigation |
-| 💬 **Notes** | Add context for the workflow at any point |
-| 💰 **Budgets** | Set cost/token limits with warnings |
-| 🔍 **History** | Browse and search past tasks |
-| 🌓 **Dark Mode** | Toggle between light and dark themes |
-| 📱 **Mobile Ready** | Full functionality on phone or tablet |
+| 📝 **Task Creation**    | Write tasks directly in browser or upload files         |
+| 📜 **Live Output**      | Watch progress as it happens                            |
+| 🔙 **Undo/Redo**        | Easy checkpoint navigation                              |
+| 💬 **Notes**            | Add context for the workflow at any point               |
+| 💰 **Budgets**          | Set cost/token limits with warnings                     |
+| 🔍 **History**          | Browse and search past tasks                            |
+| 🌓 **Dark Mode**        | Toggle between light and dark themes                    |
+| 📱 **Mobile Ready**     | Full functionality on phone or tablet                   |
 
 ### Getting Started with CLI
 
@@ -145,55 +145,55 @@ mehr finish
 
 ### Workflow Commands
 
-| Command | Description |
-|---------|-------------|
-| `mehr init` | Initialize workspace (creates `.mehrhof/config.yaml`) |
-| `mehr start <ref>` | Start task from file, directory, or provider |
-| `mehr plan` | Generate structured plan from task description |
-| `mehr implement` | Execute the plan to create changes |
-| `mehr review` | Run quality checks on changes |
-| `mehr finish` | Complete task and merge changes |
-| `mehr auto <ref>` | Full workflow: plan → implement → review → finish |
+| Command            | Description                                           |
+|--------------------|-------------------------------------------------------|
+| `mehr init`        | Initialize workspace (creates `.mehrhof/config.yaml`) |
+| `mehr start <ref>` | Start task from file, directory, or provider          |
+| `mehr plan`        | Generate structured plan from task description        |
+| `mehr implement`   | Execute the plan to create changes                    |
+| `mehr review`      | Run quality checks on changes                         |
+| `mehr finish`      | Complete task and merge changes                       |
+| `mehr auto <ref>`  | Full workflow: plan → implement → review → finish     |
 
 ### Task Management
 
-| Command | Description |
-|---------|-------------|
-| `mehr status` | Show current task state with workflow diagram |
-| `mehr list` | List all tasks with search, filter, and sort |
-| `mehr continue` | Resume work on task |
-| `mehr guide` | Get suggestion for next action |
-| `mehr note <msg>` | Add context notes for the workflow |
-| `mehr question <msg>` | Ask questions during workflow steps |
-| `mehr undo` / `mehr redo` | Navigate checkpoints |
-| `mehr reset` | Reset stuck workflow state to idle |
-| `mehr abandon` | Abandon task without merging |
+| Command                   | Description                                   |
+|---------------------------|-----------------------------------------------|
+| `mehr status`             | Show current task state with workflow diagram |
+| `mehr list`               | List all tasks with search, filter, and sort  |
+| `mehr continue`           | Resume work on task                           |
+| `mehr guide`              | Get suggestion for next action                |
+| `mehr note <msg>`         | Add context notes for the workflow            |
+| `mehr question <msg>`     | Ask questions during workflow steps           |
+| `mehr undo` / `mehr redo` | Navigate checkpoints                          |
+| `mehr reset`              | Reset stuck workflow state to idle            |
+| `mehr abandon`            | Abandon task without merging                  |
 
 ### Providers
 
-| Command | Description |
-|---------|-------------|
-| `mehr start file:task.md` | Load from file |
-| `mehr start github:123` | Load from GitHub issue |
-| `mehr start jira:PROJ-123` | Load from Jira |
-| `mehr start linear:ENG-123` | Load from Linear |
-| `mehr start notion:<uuid>` | Load from Notion |
+| Command                     | Description            |
+|-----------------------------|------------------------|
+| `mehr start file:task.md`   | Load from file         |
+| `mehr start github:123`     | Load from GitHub issue |
+| `mehr start jira:PROJ-123`  | Load from Jira         |
+| `mehr start linear:ENG-123` | Load from Linear       |
+| `mehr start notion:<uuid>`  | Load from Notion       |
 
 Supports 16+ sources: Empty, File, Directory, GitHub, GitLab, Bitbucket, Jira, Linear, Asana, ClickUp, Azure DevOps, Notion, Trello, Wrike, YouTrack, and Research.
 
 ### Advanced
 
-| Command | Description |
-|---------|-------------|
-| `mehr serve` | Start Web UI server |
-| `mehr interactive` | REPL mode with chat and workflow control |
-| `mehr project plan` | Create task breakdown with dependencies |
-| `mehr project submit` | Submit tasks to provider |
-| `mehr browser` | Browser automation commands |
-| `mehr mcp` | Start MCP server for external integration |
-| `mehr scan` | Run security scanners (SAST, secrets, vulnerabilities) |
-| `mehr cost` | View token usage and costs |
-| `mehr memory <query>` | Search semantic memory for similar past tasks |
+| Command               | Description                                            |
+|-----------------------|--------------------------------------------------------|
+| `mehr serve`          | Start Web UI server                                    |
+| `mehr interactive`    | REPL mode with chat and workflow control               |
+| `mehr project plan`   | Create task breakdown with dependencies                |
+| `mehr project submit` | Submit tasks to provider                               |
+| `mehr browser`        | Browser automation commands                            |
+| `mehr mcp`            | Start MCP server for external integration              |
+| `mehr scan`           | Run security scanners (SAST, secrets, vulnerabilities) |
+| `mehr cost`           | View token usage and costs                             |
+| `mehr memory <query>` | Search semantic memory for similar past tasks          |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
@@ -287,9 +287,9 @@ git:
 
 # Workflow settings
 workflow:
-  require_review: true    # Enforce review step before finishing
+  require_review: true    # Enforce a review step before finishing
 
-# Save plans in project for version control
+# Save plans in a project for version control
 specification:
   save_in_project: true
   project_dir: "plans"
