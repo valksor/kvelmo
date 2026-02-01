@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestHandleBudgetMonthlyStatus_NoConductor(t *testing.T) {
 	bodyStr := string(body)
 	// Without conductor, it shows default budget info (100 max cost)
 	// The HTML should contain budget information
-	assert.Contains(t, bodyStr, "January") // month label
+	assert.Contains(t, bodyStr, time.Now().Format("January")) // month label
 	assert.Contains(t, bodyStr, "100")     // default max cost
 }
 
@@ -65,7 +66,7 @@ func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {
 
 	// Create budget state
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       45.50,
 		WarningSent: false,
 	}
@@ -120,7 +121,7 @@ func TestHandleBudgetMonthlyStatus_ExceededBudget(t *testing.T) {
 
 	// Set state with exceeded budget
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       75.0, // Over budget
 		WarningSent: true,
 	}
@@ -260,7 +261,7 @@ func TestHandleBudgetMonthlyReset_Success(t *testing.T) {
 
 	// Set initial state with some spending
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       75.0,
 		WarningSent: true,
 	}
@@ -359,7 +360,7 @@ func TestWriteBudgetStatusHTML_WithState(t *testing.T) {
 	wsConfig.Budget.Monthly.MaxCost = 100.0
 
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       50.0,
 		WarningSent: false,
 	}
@@ -370,7 +371,7 @@ func TestWriteBudgetStatusHTML_WithState(t *testing.T) {
 	body := w.Body.String()
 
 	// Should contain budget info
-	assert.Contains(t, body, "January 2026")
+	assert.Contains(t, body, time.Now().Format("January 2006"))
 	assert.Contains(t, body, "50")  // spent
 	assert.Contains(t, body, "100") // max
 	assert.Contains(t, body, "50")  // percentage
@@ -391,7 +392,7 @@ func TestWriteBudgetStatusHTML_WarningLevel(t *testing.T) {
 	wsConfig.Budget.Monthly.WarningAt = 0.8
 
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       85.0, // 85% - over warning threshold
 		WarningSent: true,
 	}
@@ -419,7 +420,7 @@ func TestWriteBudgetStatusHTML_ErrorLevel(t *testing.T) {
 	wsConfig.Budget.Monthly.MaxCost = 100.0
 
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       110.0, // Over budget
 		WarningSent: true,
 	}
@@ -518,7 +519,7 @@ func TestWriteBudgetStatusHTML_ContentTypes(t *testing.T) {
 			wsConfig.Budget.Monthly.WarningAt = tt.warningAt
 
 			state := &storage.MonthlyBudgetState{
-				Month: "2026-01",
+				Month: time.Now().Format("2006-01"),
 				Spent: tt.spent,
 			}
 
