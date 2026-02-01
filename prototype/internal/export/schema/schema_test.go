@@ -212,7 +212,7 @@ func TestToStorageTasks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tasks, questions, blockers := ToStorageTasks(tt.plan)
 			if (tasks == nil && questions == nil && blockers == nil) != tt.wantNil {
-				t.Errorf("ToStorageTasks() nil = %v, want nil %v", (tasks == nil && questions == nil && blockers == nil), tt.wantNil)
+				t.Errorf("ToStorageTasks() nil = %v, want nil %v", tasks == nil && questions == nil && blockers == nil, tt.wantNil)
 			}
 
 			if !tt.wantNil {

@@ -3,6 +3,7 @@ package links
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -553,7 +554,7 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			for j := range opsPerGoroutine {
-				_ = mgr.RegisterName(TypeSpec, "Spec"+string(rune('a'+n%26))+string(rune('0'+j%10)), "spec:task:"+string(rune('0'+j%10)))
+				_ = mgr.RegisterName(TypeSpec, "Spec"+string(rune('a'+n%26))+strconv.Itoa(int(rune('0'+j%10))), "spec:task:"+strconv.Itoa(int(rune('0'+j%10))))
 			}
 		}(i)
 	}

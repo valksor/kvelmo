@@ -115,7 +115,7 @@ func TestNoteCommand_NoFlags(t *testing.T) {
 }
 
 func TestNoteCommand_UsesWorkDirectory(t *testing.T) {
-	// The command should document that it saves to work directory
+	// The command should document that it saves it to the work directory
 	if !containsString(noteCmd.Long, "work directory") {
 		t.Error("Long description does not mention work directory")
 	}

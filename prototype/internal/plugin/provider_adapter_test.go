@@ -196,7 +196,7 @@ func TestConvertWorkUnit(t *testing.T) {
 	if result.Description != "Description text" {
 		t.Errorf("Description = %q, want %q", result.Description, "Description text")
 	}
-	if result.Status != provider.Status("open") {
+	if result.Status != ("open") {
 		t.Errorf("Status = %v, want %v", result.Status, provider.Status("open"))
 	}
 	if result.Priority != provider.Priority(2) {

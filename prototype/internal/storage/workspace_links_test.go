@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -1126,7 +1127,7 @@ func TestLinkManager_ConcurrentIndexing(t *testing.T) {
 	const specsPerTask = 5
 
 	for i := range numTasks {
-		taskID := strings.Join([]string{"test-task-concurrent", string(rune('a' + i))}, "-")
+		taskID := strings.Join([]string{"test-task-concurrent", strconv.Itoa(int(rune('a' + i)))}, "-")
 		_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 		require.NoError(t, err)
 

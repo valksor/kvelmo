@@ -51,7 +51,7 @@ func (s *Server) writeBudgetStatusHTML(w http.ResponseWriter, cfg *storage.Works
 		return
 	}
 
-	// Check if budget is configured
+	// Check if the budget is configured
 	maxCost := float64(0)
 	warningAt := float64(0.8)
 

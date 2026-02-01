@@ -98,7 +98,7 @@ func TestShouldAttemptDisambiguation(t *testing.T) {
 }
 
 func TestGetSettings(t *testing.T) {
-	// GetSettings returns the loaded settings (may be nil before PersistentPreRunE)
+	// GetSettings returns the loaded settings (maybe nil before PersistentPreRunE)
 	got := GetSettings()
 	// Just verify it doesn't panic - the value may be nil or non-nil
 	_ = got

@@ -99,7 +99,7 @@ func TestStatusCommand_LongDescriptionContains(t *testing.T) {
 }
 
 func TestStatusCommand_WhenToUseSection(t *testing.T) {
-	// Should document when to use status vs guide vs continue
+	// Should document when to use status vs. a guide vs continue
 	expected := []string{
 		"RELATED COMMANDS",
 		"guide",
@@ -175,7 +175,7 @@ func TestStatusCommand_NoAliases(t *testing.T) {
 }
 
 func TestStatusCommand_JSONFlagNoShorthand(t *testing.T) {
-	// JSON flag should not have a shorthand to avoid conflicts
+	// JSON flag should not have shorthand to avoid conflicts
 	flag := statusCmd.Flags().Lookup("json")
 	if flag == nil {
 		t.Fatal("json flag not found")

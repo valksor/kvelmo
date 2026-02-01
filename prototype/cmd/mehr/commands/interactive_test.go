@@ -87,7 +87,7 @@ func TestInteractiveCommand_HasSubcommands(t *testing.T) {
 
 // TestInteractiveCommand_CommandPath verifies the command path.
 func TestInteractiveCommand_CommandPath(t *testing.T) {
-	// Verify the command is accessible from root
+	// Verify the command is accessible from the root
 	path := interactiveCmd.CommandPath()
 	expected := "mehr interactive"
 
@@ -98,7 +98,7 @@ func TestInteractiveCommand_CommandPath(t *testing.T) {
 
 // TestInteractiveRepeatableAsAlias verifies the command can be called via aliases.
 func TestInteractiveRepeatableAsAlias(t *testing.T) {
-	// Create a test root command with interactive subcommand
+	// Create a test root command with an interactive subcommand
 	testRoot := &cobra.Command{
 		Use: "test",
 	}

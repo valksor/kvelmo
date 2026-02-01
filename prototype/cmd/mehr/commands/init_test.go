@@ -191,7 +191,7 @@ func TestInitCommand_Twice(t *testing.T) {
 
 	secondOutput := tc.StdoutString()
 
-	// First run should create, second should say already exists
+	// The first run should create, the second should say already exists
 	if !strings.Contains(firstOutput, "Created config file") {
 		t.Errorf("First run should create config file, got: %s", firstOutput)
 	}
@@ -316,7 +316,7 @@ func TestCreateEnvTemplate(t *testing.T) {
 		t.Fatalf("createEnvTemplate: %v", err)
 	}
 
-	// Check file exists
+	// Check a file exists
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		t.Fatal(".env file was not created")
 	}

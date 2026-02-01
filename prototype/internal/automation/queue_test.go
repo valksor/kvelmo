@@ -2,6 +2,7 @@ package automation
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -148,7 +149,7 @@ func TestJobQueue_ListJobs(t *testing.T) {
 	// Enqueue multiple jobs.
 	for i := range 5 {
 		event := &WebhookEvent{
-			ID:       "test-" + string(rune('A'+i)),
+			ID:       "test-" + strconv.Itoa(int(rune('A'+i))),
 			Provider: "github",
 			Type:     EventTypeIssueOpened,
 		}
@@ -194,7 +195,7 @@ func TestJobQueue_Status(t *testing.T) {
 	// Enqueue some jobs.
 	for i := range 3 {
 		event := &WebhookEvent{
-			ID:       "test-" + string(rune('A'+i)),
+			ID:       "test-" + strconv.Itoa(int(rune('A'+i))),
 			Provider: "github",
 			Type:     EventTypeIssueOpened,
 		}
@@ -235,7 +236,7 @@ func TestJobQueue_StartStop(t *testing.T) {
 	// Enqueue jobs before starting.
 	for i := range 3 {
 		event := &WebhookEvent{
-			ID:       "test-" + string(rune('A'+i)),
+			ID:       "test-" + strconv.Itoa(int(rune('A'+i))),
 			Provider: "github",
 			Type:     EventTypeIssueOpened,
 		}

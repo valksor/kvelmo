@@ -153,7 +153,7 @@ func TestWriteTokenToEnv(t *testing.T) {
 			t.Fatalf("writeTokenToEnv failed: %v", err)
 		}
 
-		// Verify file was created
+		// Verify the file was created
 		data, err := os.ReadFile(envPath)
 		if err != nil {
 			t.Fatalf("read .env: %v", err)
@@ -178,7 +178,7 @@ func TestWriteTokenToEnv(t *testing.T) {
 		tmpDir := t.TempDir()
 		envPath := filepath.Join(tmpDir, ".env")
 
-		// Create initial file
+		// Create an initial file
 		err := os.WriteFile(envPath, []byte("EXISTING_VAR=value\n"), 0o600)
 		if err != nil {
 			t.Fatalf("create initial .env: %v", err)
@@ -207,7 +207,7 @@ func TestWriteTokenToEnv(t *testing.T) {
 		tmpDir := t.TempDir()
 		envPath := filepath.Join(tmpDir, ".env")
 
-		// Create initial file with token
+		// Create an initial file with token
 		err := os.WriteFile(envPath, []byte("GITHUB_TOKEN=old_token\n"), 0o600)
 		if err != nil {
 			t.Fatalf("create initial .env: %v", err)
@@ -383,7 +383,7 @@ func TestLoadEnv(t *testing.T) {
 		tmpDir := t.TempDir()
 		ws := openTestWorkspace(t, tmpDir)
 
-		// Ensure directory exists
+		// Ensure a directory exists
 		if err := ws.EnsureInitialized(); err != nil {
 			t.Fatalf("EnsureInitialized: %v", err)
 		}

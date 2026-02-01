@@ -1011,8 +1011,8 @@ func (s *Server) handleInteractiveAnswer(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Add answer as a note
-	if err := cond.GetWorkspace().AppendNote(task.ID, string(workflow.State(task.State)), req.Response); err != nil {
+	// Add an answer as a note
+	if err := cond.GetWorkspace().AppendNote(task.ID, task.State, req.Response); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "save answer: "+err.Error())
 
 		return

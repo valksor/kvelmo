@@ -288,7 +288,7 @@ func TestGetNextReviewFilename(t *testing.T) {
 				}
 			}
 
-			// Test with full path (workDir should be reviews dir)
+			// Test with the full path (workDir should be reviews dir)
 			result := getNextReviewFilename(reviewsDir)
 
 			// Check that the result ends with the expected suffix

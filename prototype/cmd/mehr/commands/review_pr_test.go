@@ -90,7 +90,7 @@ func TestReviewPRCommand_Flags(t *testing.T) {
 }
 
 func TestReviewPRCommand_PRNumberRequired(t *testing.T) {
-	// Check that pr-number flag exists
+	// Check that the pr-number flag exists
 	flag := reviewPRCmd.Flags().Lookup("pr-number")
 	if flag == nil {
 		t.Error("pr-number flag not found")
@@ -166,7 +166,7 @@ func TestReviewPRCommand_Standalone(t *testing.T) {
 }
 
 func TestReviewPRCommand_FormatFlagValues(t *testing.T) {
-	// Verify the format flag exists and has correct default
+	// Verify the format flag exists and has the correct default
 	flag := reviewPRCmd.Flags().Lookup("format")
 	if flag == nil {
 		t.Fatal("format flag not found")

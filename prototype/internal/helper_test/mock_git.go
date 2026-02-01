@@ -1,4 +1,4 @@
-// Package testutil_test provides shared testing utilities for go-mehrhof tests.
+// Package helper_test provides shared testing utilities for go-mehrhof tests.
 package helper_test
 
 import (
