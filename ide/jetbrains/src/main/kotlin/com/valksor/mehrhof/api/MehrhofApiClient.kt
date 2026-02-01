@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
  *
  * All methods are blocking and should be called from a background thread.
  */
+@Suppress("TooManyFunctions") // API client: each method maps to one endpoint
 class MehrhofApiClient(
     private val baseUrl: String
 ) {
@@ -257,40 +258,50 @@ class MehrhofApiClient(
         return executeRequest(request)
     }
 
-    private inline fun <reified T> executeRequest(request: Request): Result<T> {
-        return try {
+    private inline fun <reified T> executeRequest(request: Request): Result<T> =
+        try {
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string()
-
-                if (!response.isSuccessful) {
-                    // Try to parse error response
-                    val errorMsg =
-                        try {
-                            body?.let { gson.fromJson(it, ErrorResponse::class.java)?.error }
-                        } catch (_: Exception) {
-                            null
-                        } ?: "HTTP ${response.code}: ${response.message}"
-
-                    return Result.failure(ApiException(response.code, errorMsg))
-                }
-
-                if (body.isNullOrBlank()) {
-                    return Result.failure(ApiException(0, "Empty response body"))
-                }
-
-                try {
-                    val result = gson.fromJson(body, T::class.java)
-                    Result.success(result)
-                } catch (e: Exception) {
-                    Result.failure(ApiException(0, "Failed to parse response: ${e.message}"))
-                }
+                processResponse(response)
             }
         } catch (e: IOException) {
             Result.failure(ApiException(0, "Network error: ${e.message}"))
         } catch (e: Exception) {
             Result.failure(ApiException(0, "Unexpected error: ${e.message}"))
         }
+
+    private inline fun <reified T> processResponse(response: okhttp3.Response): Result<T> {
+        val body = response.body?.string()
+
+        if (!response.isSuccessful) {
+            val errorMsg = parseErrorMessage(body, response.code, response.message)
+            return Result.failure(ApiException(response.code, errorMsg))
+        }
+
+        if (body.isNullOrBlank()) {
+            return Result.failure(ApiException(0, "Empty response body"))
+        }
+
+        return parseResponseBody(body)
     }
+
+    private fun parseErrorMessage(
+        body: String?,
+        code: Int,
+        message: String
+    ): String =
+        try {
+            body?.let { gson.fromJson(it, ErrorResponse::class.java)?.error }
+        } catch (_: Exception) {
+            null
+        } ?: "HTTP $code: $message"
+
+    private inline fun <reified T> parseResponseBody(body: String): Result<T> =
+        try {
+            val result = gson.fromJson(body, T::class.java)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(ApiException(0, "Failed to parse response: ${e.message}"))
+        }
 
     /**
      * Check if the server is reachable.
