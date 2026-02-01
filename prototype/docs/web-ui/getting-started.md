@@ -7,14 +7,14 @@ Learn to use Mehrhof through the web interface - no command-line expertise requi
 By the end of this guide, you'll be able to:
 - Start the Web UI server
 - Create a task from scratch
-- Watch the AI plan and implement
+- Watch the plan and implementation steps
 - Review and complete your task
 
 ## Prerequisites
 
 - Mehrhof installed ([Quickstart](../quickstart.md) if needed)
 - A project directory (can be empty or an existing codebase)
-- Claude CLI configured with an API key
+- An agent CLI configured (Claude recommended, see [AI Agents](../agents/index.md))
 
 > **Don't have a project?** You can start with an empty directory. Mehrhof will create everything it needs.
 

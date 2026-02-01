@@ -32,6 +32,7 @@ When using other agents:
 |-------|-------------|
 | [Claude](claude.md) | Anthropic's Claude AI (Default, Primary) |
 | [Codex](codex.md) | OpenAI's Codex AI (Alternative, experimental - untested implementation) |
+| [Noop](noop.md) | No-operation agent for testing/CI (auto-registered when `MEHR_TEST_MODE=1`) |
 
 ## Basic Configuration
 

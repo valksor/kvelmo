@@ -1,15 +1,16 @@
-# Valksor Mehrhof
+# Mehrhof
 
-> AI-powered task automation for developers
+> Structured Creation Environment
 
-- Calls Claude CLI for intelligent planning and implementation
-- Git-integrated workflow with automatic checkpoints
-- Undo/redo support for safe experimentation
-- Multiple task sources: files, directories, and more
+Turn ideas into reliable changes with clear steps and human review.
+
+- Plan before you build
+- Review before you ship
+- Stay in control throughout
 
 [valksor.com](https://valksor.com)
-[CLI Reference](cli/index.md)
-[Quickstart](quickstart.md)
-[Mehrhof](README.md)
+[Web UI Guide](web-ui/getting-started.md)
+[CLI Guide](guides/first-task.md)
+[Get Started](quickstart.md)
 
 ![color](#f0eee9)

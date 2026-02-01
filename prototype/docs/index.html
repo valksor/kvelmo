@@ -26,6 +26,10 @@
             ) var(--color-bg);
         }
 
+        .app-name-link {
+            font-weight: bold;
+        }
+
         .anchor span {
             color: var(--color-text);
         }
@@ -64,6 +68,18 @@
             border-left: 4px solid #ff9800;
             background: rgba(255, 152, 0, 0.05);
             margin: 1em 0;
+        }
+
+        /* Top-level section headers - LARGER */
+        .sidebar-nav > ul > li > p > strong,
+        .sidebar-nav > ul > li > a {
+            font-size: 1.3em;
+        }
+
+        /* Nested headers inside - smaller */
+        .sidebar-nav > ul > li > ul strong {
+            font-size: 0.9em;
+            font-weight: 600;
         }
 
     </style>
