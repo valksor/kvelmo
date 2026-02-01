@@ -39,7 +39,7 @@ curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.s
 
 The script auto-detects your OS and architecture, verifies checksums, and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
 
-**Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) and run the install script from a Linux shell.
+**Windows Users:** Use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) and run the installation script from a Linux shell.
 
 ### Other Installation Options
 
@@ -51,12 +51,12 @@ chmod +x mehr
 sudo mv mehr /usr/local/bin/
 ```
 
-| Platform | Binary |
-|----------|--------|
-| macOS Intel | `mehr-darwin-amd64` |
+| Platform            | Binary              |
+|---------------------|---------------------|
+| macOS Intel         | `mehr-darwin-amd64` |
 | macOS Apple Silicon | `mehr-darwin-arm64` |
-| Linux AMD64 | `mehr-linux-amd64` |
-| Linux ARM64 | `mehr-linux-arm64` |
+| Linux AMD64         | `mehr-linux-amd64`  |
+| Linux ARM64         | `mehr-linux-arm64`  |
 
 **Build from Source** (requires Go 1.25+):
 ```bash
@@ -137,11 +137,11 @@ mehr finish          # Complete and merge
 
 ## Which Should I Choose?
 
-| Choose Web UI if you... | Choose CLI if you... |
-|------------------------|---------------------|
-| Prefer visual interfaces | Love terminal workflows |
-| Are new to development tools | Want to script automation |
-| Want to see everything at once | Work in CI/CD pipelines |
+| Choose Web UI if you...                 | Choose CLI if you...          |
+|-----------------------------------------|-------------------------------|
+| Prefer visual interfaces                | Love terminal workflows       |
+| Are new to development tools            | Want to script automation     |
+| Want to see everything at once          | Work in CI/CD pipelines       |
 | Share work with non-technical teammates | Use keyboard-driven workflows |
 
 You can switch between them at any time. Both use the same underlying engine and configuration.
@@ -150,18 +150,18 @@ You can switch between them at any time. Both use the same underlying engine and
 
 ## Common Commands
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr init` | Initialize workspace (one-time per project) |
-| `mehr serve --open` | Start Web UI and open browser |
-| `mehr start <file>` | Begin a task from a description file |
-| `mehr plan` | Generate a plan from your task |
-| `mehr implement` | Execute the plan to create changes |
-| `mehr review` | Run quality checks |
-| `mehr finish` | Complete and merge changes |
-| `mehr status` | Show current task state |
-| `mehr undo` / `mehr redo` | Navigate checkpoints |
-| `mehr note "..."` | Add context for the workflow |
+| Command                   | What It Does                                |
+|---------------------------|---------------------------------------------|
+| `mehr init`               | Initialize workspace (one-time per project) |
+| `mehr serve --open`       | Start Web UI and open browser               |
+| `mehr start <file>`       | Begin a task from a description file        |
+| `mehr plan`               | Generate a plan from your task              |
+| `mehr implement`          | Execute the plan to create changes          |
+| `mehr review`             | Run quality checks                          |
+| `mehr finish`             | Complete and merge changes                  |
+| `mehr status`             | Show current task state                     |
+| `mehr undo` / `mehr redo` | Navigate checkpoints                        |
+| `mehr note "..."`         | Add context for the workflow                |
 
 ---
 

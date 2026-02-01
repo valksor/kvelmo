@@ -66,29 +66,29 @@ Combining your reviewed changes back into the main project. This happens when yo
 
 ## Workflow States
 
-| State | What's Happening |
-|-------|------------------|
-| **Idle** | Task is registered, waiting for your next action |
-| **Planning** | Creating a structured plan from your task description |
-| **Creating** | Executing the plan to produce changes |
-| **Reviewing** | Quality checks running on the changes |
-| **Done** | Task completed and changes merged |
+| State         | What's Happening                                      |
+|---------------|-------------------------------------------------------|
+| **Idle**      | Task is registered, waiting for your next action      |
+| **Planning**  | Creating a structured plan from your task description |
+| **Creating**  | Executing the plan to produce changes                 |
+| **Reviewing** | Quality checks running on the changes                 |
+| **Done**      | Task completed and changes merged                     |
 
 ---
 
 ## Common Actions
 
-| Action | What It Does |
-|--------|--------------|
-| **Start** | Begin a new task from a description |
-| **Plan** | Create a structured plan |
-| **Implement** | Execute the plan to create changes |
-| **Review** | Run quality checks |
-| **Finish** | Complete and merge changes |
-| **Undo** | Go back to a previous checkpoint |
-| **Redo** | Go forward to a later checkpoint |
-| **Note** | Add context for the workflow |
-| **Abandon** | Cancel task without keeping changes |
+| Action        | What It Does                        |
+|---------------|-------------------------------------|
+| **Start**     | Begin a new task from a description |
+| **Plan**      | Create a structured plan            |
+| **Implement** | Execute the plan to create changes  |
+| **Review**    | Run quality checks                  |
+| **Finish**    | Complete and merge changes          |
+| **Undo**      | Go back to a previous checkpoint    |
+| **Redo**      | Go forward to a later checkpoint    |
+| **Note**      | Add context for the workflow        |
+| **Abandon**   | Cancel task without keeping changes |
 
 ---
 
