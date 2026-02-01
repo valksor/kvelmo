@@ -308,6 +308,30 @@ func (c *Client) GetPullRequestComments(ctx context.Context, number int) ([]*git
 	return c.GetIssueComments(ctx, number)
 }
 
+// CreateReview creates a formal review on a pull request.
+func (c *Client) CreateReview(ctx context.Context, number int, event, body string, comments []*github.DraftReviewComment) (*github.PullRequestReview, error) {
+	review := &github.PullRequestReviewRequest{
+		Event: ptr(event),
+	}
+
+	// Only set body if non-empty
+	if body != "" {
+		review.Body = ptr(body)
+	}
+
+	// Only set comments if non-empty
+	if len(comments) > 0 {
+		review.Comments = comments
+	}
+
+	result, _, err := c.gh.PullRequests.CreateReview(ctx, c.owner, c.repo, number, review)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+
+	return result, nil
+}
+
 // SetOwnerRepo updates the owner and repo for the client.
 func (c *Client) SetOwnerRepo(owner, repo string) {
 	c.owner = owner

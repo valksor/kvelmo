@@ -510,3 +510,33 @@ func (c *Client) GetMergeRequestNotes(ctx context.Context, iid int64) ([]*gl.Not
 
 	return allNotes, nil
 }
+
+// CreateMergeRequestDiffNote creates a discussion note on a specific line of a merge request diff.
+// This uses GitLab's Discussions API to create inline comments on the diff.
+func (c *Client) CreateMergeRequestDiffNote(ctx context.Context, iid int64, headSHA, filePath string, newLine int, body string) error {
+	pid, err := c.getProjectID(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Create a new discussion with a position on the diff
+	lineNum := int64(newLine)
+	position := &gl.PositionOptions{
+		BaseSHA:      ptr(headSHA),
+		HeadSHA:      ptr(headSHA),
+		StartSHA:     ptr(headSHA),
+		PositionType: ptr("text"),
+		NewPath:      ptr(filePath),
+		NewLine:      &lineNum,
+	}
+
+	_, _, err = c.gl.Discussions.CreateMergeRequestDiscussion(pid, iid, &gl.CreateMergeRequestDiscussionOptions{
+		Body:     ptr(body),
+		Position: position,
+	}, gl.WithContext(ctx))
+	if err != nil {
+		return wrapAPIError(err)
+	}
+
+	return nil
+}
