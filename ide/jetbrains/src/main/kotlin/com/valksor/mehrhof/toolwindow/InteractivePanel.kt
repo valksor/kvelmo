@@ -30,7 +30,7 @@ import javax.swing.text.html.StyleSheet
  * Provides chat interface, command input, and action buttons.
  */
 class InteractivePanel(
-    private val project: Project,
+    @Suppress("unused") private val project: Project,
     private val service: MehrhofProjectService
 ) : SimpleToolWindowPanel(true, true),
     MehrhofProjectService.StateListener {
