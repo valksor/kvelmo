@@ -105,14 +105,14 @@ Shows API rate limit status when available (format: `used/limit` with reset time
 
 Some providers have short scheme aliases:
 
-| Provider   | Schemes         | Short Alias |
-| ---------- | --------------- | ----------- |
-| GitHub     | `github:`       | `gh:`        |
-| Jira       | `jira:`         | `j:`         |
-| Linear     | `linear:`       | `ln:`        |
-| Notion     | `notion:`       | `nt:`        |
-| YouTrack   | `youtrack:`     | `yt:`        |
-| Wrike      | `wrike:`        | `wk:`        |
+| Provider | Schemes     | Short Alias |
+|----------|-------------|-------------|
+| GitHub   | `github:`   | `gh:`       |
+| Jira     | `jira:`     | `j:`        |
+| Linear   | `linear:`   | `ln:`       |
+| Notion   | `notion:`   | `nt:`       |
+| YouTrack | `youtrack:` | `yt:`       |
+| Wrike    | `wrike:`    | `wk:`       |
 
 ## Available Providers
 

@@ -104,15 +104,15 @@ Stack: auth-system
 
 ## Stack States
 
-| State | Icon | Description |
-|-------|------|-------------|
-| `active` | ● | Being worked on |
-| `pending-review` | ◯ | PR open, awaiting review |
-| `approved` | ◉ | PR approved, ready to merge |
-| `merged` | ✓ | PR merged to target |
-| `needs-rebase` | ⟳ | Parent merged, needs rebasing |
-| `conflict` | ✗ | Rebase failed due to conflicts |
-| `abandoned` | ○ | PR closed without merge |
+| State            | Icon | Description                    |
+|------------------|------|--------------------------------|
+| `active`         | ●    | Being worked on                |
+| `pending-review` | ◯    | PR open, awaiting review       |
+| `approved`       | ◉    | PR approved, ready to merge    |
+| `merged`         | ✓    | PR merged to target            |
+| `needs-rebase`   | ⟳    | Parent merged, needs rebasing  |
+| `conflict`       | ✗    | Rebase failed due to conflicts |
+| `abandoned`      | ○    | PR closed without merge        |
 
 ## Creating Stacked Features
 
@@ -198,13 +198,13 @@ mehr stack rebase
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `--graph` | Show ASCII graph visualization |
-| `--mermaid` | Show Mermaid diagram |
-| `--stack <id>` | Target specific stack |
-| `--task <id>` | Target specific task |
-| `--json` | Output as JSON |
+| Flag           | Description                    |
+|----------------|--------------------------------|
+| `--graph`      | Show ASCII graph visualization |
+| `--mermaid`    | Show Mermaid diagram           |
+| `--stack <id>` | Target specific stack          |
+| `--task <id>`  | Target specific task           |
+| `--json`       | Output as JSON                 |
 
 ## Configuration
 

@@ -37,8 +37,8 @@ mehr serve register --list
 
 #### Flags
 
-| Flag | Type | Description |
-|------|------|-------------|
+| Flag           | Type | Description                                         |
+|----------------|------|-----------------------------------------------------|
 | `--list`, `-l` | bool | List all registered projects instead of registering |
 
 ### mehr serve unregister

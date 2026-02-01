@@ -10,7 +10,7 @@ mehr serve --api [flags]
 
 ## Description
 
-When running `mehr serve --api`, Mehrhof can receive webhooks from GitHub and GitLab to automatically:
+When running `mehr serve --api`, Mehrhof can receive webhooks from GitHub and GitLab too automatically:
 
 - **Fix issues** - Automatically runs plan → implement → review → finish → PR/MR
 - **Review external PRs/MRs** - Posts review comments with findings
@@ -106,25 +106,25 @@ export MEHR_GITLAB_WEBHOOK_SECRET="your-gitlab-webhook-secret"
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/webhooks/github` | Receive GitHub webhooks |
-| `POST` | `/api/v1/webhooks/gitlab` | Receive GitLab webhooks |
-| `GET` | `/api/v1/automation/status` | Queue status (enabled, workers, job counts) |
-| `GET` | `/api/v1/automation/jobs` | List all jobs (filter with `?status=pending`) |
-| `GET` | `/api/v1/automation/jobs/{id}` | Get specific job details |
-| `POST` | `/api/v1/automation/jobs/{id}/cancel` | Cancel a pending/running job |
+| Method | Path                                  | Description                                   |
+|--------|---------------------------------------|-----------------------------------------------|
+| `POST` | `/api/v1/webhooks/github`             | Receive GitHub webhooks                       |
+| `POST` | `/api/v1/webhooks/gitlab`             | Receive GitLab webhooks                       |
+| `GET`  | `/api/v1/automation/status`           | Queue status (enabled, workers, job counts)   |
+| `GET`  | `/api/v1/automation/jobs`             | List all jobs (filter with `?status=pending`) |
+| `GET`  | `/api/v1/automation/jobs/{id}`        | Get specific job details                      |
+| `POST` | `/api/v1/automation/jobs/{id}/cancel` | Cancel a pending/running job                  |
 
 ## Comment Commands
 
 Users can trigger workflows by commenting on issues or PRs:
 
-| Command | Description | Context |
-|---------|-------------|---------|
-| `@mehrhof fix` | Trigger issue fix workflow | Issue |
-| `@mehrhof review` | Trigger PR review | Pull request |
-| `@mehrhof status` | Report queue status | Any |
-| `@mehrhof help` | List available commands | Any |
+| Command           | Description                | Context      |
+|-------------------|----------------------------|--------------|
+| `@mehrhof fix`    | Trigger issue fix workflow | Issue        |
+| `@mehrhof review` | Trigger PR review          | Pull request |
+| `@mehrhof status` | Report queue status        | Any          |
+| `@mehrhof help`   | List available commands    | Any          |
 
 ### Examples
 
@@ -176,11 +176,11 @@ Failed jobs are automatically retried up to `max_attempts` times with exponentia
 
 ### Modes
 
-| Mode | Behavior |
-|------|----------|
-| `all` | Allow everyone (subject to blocklist) |
-| `allowlist` | Only allow listed users/orgs |
-| `blocklist` | Allow everyone except blocked |
+| Mode        | Behavior                              |
+|-------------|---------------------------------------|
+| `all`       | Allow everyone (subject to blocklist) |
+| `allowlist` | Only allow listed users/orgs          |
+| `blocklist` | Allow everyone except blocked         |
 
 ### Pattern Matching
 
@@ -203,11 +203,11 @@ access_control:
 
 ## Labels
 
-| Label | Purpose |
-|-------|---------|
-| `mehrhof-generated` | PRs created by automation (skip self-review) |
-| `mehrhof-processing` | Job currently in progress |
-| `mehrhof-failed` | Job failed after all retries |
+| Label                | Purpose                                      |
+|----------------------|----------------------------------------------|
+| `mehrhof-generated`  | PRs created by automation (skip self-review) |
+| `mehrhof-processing` | Job currently in progress                    |
+| `mehrhof-failed`     | Job failed after all retries                 |
 
 Labels are customizable in config. Set to empty string to disable:
 

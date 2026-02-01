@@ -24,8 +24,8 @@ This is particularly useful when you return to a project and need to remember wh
 
 ## Flags
 
-| Flag     | Type | Default | Description                             |
-| -------- | ---- | ------- | --------------------------------------- |
+| Flag     | Type | Default | Description                                 |
+|----------|------|---------|---------------------------------------------|
 | `--auto` | bool | false   | Auto-execute the next logical workflow step |
 
 ## Examples
@@ -122,21 +122,21 @@ To start a new task, run: mehr start <reference>
 
 The suggested actions depend on the current task state:
 
-| State          | Primary Suggestions                                |
-| -------------- | -------------------------------------------------- |
+| State          | Primary Suggestions                                                  |
+|----------------|----------------------------------------------------------------------|
 | `idle`         | `plan` (if no specifications), `implement` (if specifications exist) |
-| `planning`     | `implement`, `note`                                |
-| `implementing` | `implement`, `note`, `undo`, `finish`              |
-| `reviewing`    | `finish`, `implement`                              |
-| `done`         | `start` (new task)                                 |
+| `planning`     | `implement`, `note`                                                  |
+| `implementing` | `implement`, `note`, `undo`, `finish`                                |
+| `reviewing`    | `finish`, `implement`                                                |
+| `done`         | `start` (new task)                                                   |
 
 ## Choosing the Right Command
 
-| Command         | When to Use                                                    |
-| --------------- | -------------------------------------------------------------- |
-| `mehr guide`    | "What should I do next?" (fastest, minimal output)             |
-| `mehr status`   | "Show full task details" (full inspection, all details)        |
-| `mehr continue` | "Resume work on task" (`--auto` runs next step)                |
+| Command         | When to Use                                             |
+|-----------------|---------------------------------------------------------|
+| `mehr guide`    | "What should I do next?" (fastest, minimal output)      |
+| `mehr status`   | "Show full task details" (full inspection, all details) |
+| `mehr continue` | "Resume work on task" (`--auto` runs next step)         |
 
 Use `guide` for quick suggestions. Use `status` for full details. Use `continue` when resuming work with optional auto-execution.
 

@@ -44,8 +44,8 @@ memory:
 
 ### Vector Database Backends
 
-| Backend | Description | Connection String |
-|---------|-------------|-------------------|
+| Backend    | Description                              | Connection String                         |
+|------------|------------------------------------------|-------------------------------------------|
 | `chromadb` | Local in-memory vector storage (default) | File path (default: `./.mehrhof/vectors`) |
 
 ### Embedding Models

@@ -24,9 +24,9 @@ mehr config init [flags]
 
 **Flags:**
 
-| Flag        | Short | Description                                                    |
-| ----------- | ----- | -------------------------------------------------------------- |
-| `--force`   | `-f`  | Overwrite existing config without prompting (requires confirmation) |
+| Flag        | Short | Description                                                          |
+|-------------|-------|----------------------------------------------------------------------|
+| `--force`   | `-f`  | Overwrite existing config without prompting (requires confirmation)  |
 | `--project` |       | Project type for intelligent defaults: `go`, `node`, `python`, `php` |
 
 **Behavior:**
@@ -99,7 +99,7 @@ mehr config validate [flags]
 **Flags:**
 
 | Flag               | Description                                                |
-| ------------------ | ---------------------------------------------------------- |
+|--------------------|------------------------------------------------------------|
 | `--workspace-only` | Only validate workspace config (`.mehrhof/config.yaml`)    |
 | `--app-only`       | Only validate app config (`.env` files)                    |
 | `--strict`         | Treat warnings as errors (exit code 1 if warnings present) |
@@ -108,7 +108,7 @@ mehr config validate [flags]
 **Exit Codes:**
 
 | Code | Meaning                             |
-| ---- | ----------------------------------- |
+|------|-------------------------------------|
 | 0    | Configuration is valid              |
 | 1    | One or more validation errors found |
 
@@ -122,10 +122,10 @@ mehr config explain --agent <step> [flags]
 
 **Flags:**
 
-| Flag       | Description                                    |
-| ---------- | ---------------------------------------------- |
+| Flag       | Description                                        |
+|------------|----------------------------------------------------|
 | `--agent`  | Workflow step to explain (plan, implement, review) |
-| `--format` | Output format: `text` (default), `json`          |
+| `--format` | Output format: `text` (default), `json`            |
 
 **Examples:**
 
@@ -261,7 +261,7 @@ mehr config validate --app-only
 ### Workspace Config (`.mehrhof/config.yaml`)
 
 | Check                     | Error Code               | Description                          |
-| ------------------------- | ------------------------ | ------------------------------------ |
+|---------------------------|--------------------------|--------------------------------------|
 | YAML syntax               | `YAML_SYNTAX`            | Invalid YAML structure               |
 | Agent alias circular deps | `AGENT_ALIAS_CIRCULAR`   | Alias chain forms a loop             |
 | Undefined agent reference | `AGENT_ALIAS_UNDEFINED`  | `extends` references unknown agent   |
@@ -276,7 +276,7 @@ mehr config validate --app-only
 ### App Config (`.env` files)
 
 | Check             | Error Code       | Description                          |
-| ----------------- | ---------------- | ------------------------------------ |
+|-------------------|------------------|--------------------------------------|
 | Load error        | `ENV_LOAD_ERROR` | Failed to parse .env file            |
 | Invalid agent     | `INVALID_ENUM`   | Unknown `agent.default` value        |
 | Invalid UI format | `INVALID_ENUM`   | Must be `text` or `json`             |
@@ -286,7 +286,7 @@ mehr config validate --app-only
 ### Cross-Config Validation
 
 | Check             | Error Code        | Description                                 |
-| ----------------- | ----------------- | ------------------------------------------- |
+|-------------------|-------------------|---------------------------------------------|
 | Agent consistency | `AGENT_MISMATCH`  | Workspace default agent unknown             |
 | Config conflict   | `CONFIG_CONFLICT` | Different values in app vs workspace (info) |
 
@@ -295,7 +295,7 @@ mehr config validate --app-only
 The following placeholders are valid in `git.branch_pattern` and `git.commit_prefix`:
 
 | Placeholder | Description                       |
-| ----------- | --------------------------------- |
+|-------------|-----------------------------------|
 | `{key}`     | Task key/ID                       |
 | `{task_id}` | Task ID                           |
 | `{type}`    | Task type (feature, bugfix, etc.) |

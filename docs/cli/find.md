@@ -103,22 +103,22 @@ Found 3 matches
 
 ## Output Formats
 
-| Format   | Description                                                          |
-| -------- | -------------------------------------------------------------------- |
-| concise  | `file.go:line: snippet` (default)                                   |
-| structured | Numbered list with file info, context, and reason                    |
-| json     | Machine-readable for scripting and pipelines                          |
+| Format     | Description                                       |
+|------------|---------------------------------------------------|
+| concise    | `file.go:line: snippet` (default)                 |
+| structured | Numbered list with file info, context, and reason |
+| json       | Machine-readable for scripting and pipelines      |
 
 ## Flags
 
-| Flag               | Default | Description                                                          |
-| ------------------ | -------- | -------------------------------------------------------------------- |
-| `--path`, `-p`      |         | Restrict search to directory (relative to project root)            |
-| `--pattern`         |         | Glob pattern for files (e.g., `**/*.go`, `**/*test*.go`)            |
-| `--format`          | concise | Output format: `concise`, `structured`, or `json`                    |
-| `--stream`          | false   | Stream results as found (for large codebases)                     |
-| `--agent`           |         | Agent to use for search (e.g., `opus`, `claude-sonnet`)              |
-| `--context`, `-C`    | 3       | Lines of context to include in results                             |
+| Flag              | Default | Description                                              |
+|-------------------|---------|----------------------------------------------------------|
+| `--path`, `-p`    |         | Restrict search to directory (relative to project root)  |
+| `--pattern`       |         | Glob pattern for files (e.g., `**/*.go`, `**/*test*.go`) |
+| `--format`        | concise | Output format: `concise`, `structured`, or `json`        |
+| `--stream`        | false   | Stream results as found (for large codebases)            |
+| `--agent`         |         | Agent to use for search (e.g., `opus`, `claude-sonnet`)  |
+| `--context`, `-C` | 3       | Lines of context to include in results                   |
 
 ## How It Works
 

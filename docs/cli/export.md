@@ -20,10 +20,10 @@ This bridges the gap between quick task capture and the full workflow, allowing 
 
 ## Flags
 
-| Flag        | Description                              |
-| ----------- | ---------------------------------------- |
-| `--task`    | Queue task ID (format: `<queue-id>/<task-id>`) (required) |
-| `--output`  | Output file path (required)               |
+| Flag       | Description                                               |
+|------------|-----------------------------------------------------------|
+| `--task`   | Queue task ID (format: `<queue-id>/<task-id>`) (required) |
+| `--output` | Output file path (required)                               |
 
 ## Examples
 

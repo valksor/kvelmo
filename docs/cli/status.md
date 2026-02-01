@@ -25,11 +25,11 @@ The `status` command displays information about the active task including:
 
 ## Flags
 
-| Flag        | Short | Type | Default | Description                              |
-| ----------- | ----- | ---- | ------- | ---------------------------------------- |
-| `--all`     |       | bool | false   | Show all tasks in workspace              |
-| `--diagram` |       | bool | false   | Show ASCII workflow state diagram        |
-| `--json`    |       | bool | false   | Output as JSON for programmatic use      |
+| Flag        | Short | Type | Default | Description                         |
+|-------------|-------|------|---------|-------------------------------------|
+| `--all`     |       | bool | false   | Show all tasks in workspace         |
+| `--diagram` |       | bool | false   | Show ASCII workflow state diagram   |
+| `--json`    |       | bool | false   | Output as JSON for programmatic use |
 
 **Note:** The `--json` flag is useful for scripting and integration with other tools.
 
@@ -149,14 +149,14 @@ Workflow State: implementing
 └───────┬───────┘
         │
         ▼
-  ┌──────────┐
-  │ reviewing│
-  └────┬─────┘
+  ┌───────────┐
+  │ reviewing │
+  └────┬──────┘
        │
        ▼
-   ┌─────┐
+   ┌──────┐
    │ done │
-   └─────┘
+   └──────┘
 
 Available transitions:
   → reviewing (after implementation complete)
@@ -220,7 +220,7 @@ Output:
 ## Status Fields
 
 | Field          | Description                   |
-| -------------- | ----------------------------- |
+|----------------|-------------------------------|
 | Task           | Unique 8-character identifier |
 | State          | Current workflow state        |
 | Source         | Original task file/directory  |
@@ -232,14 +232,14 @@ Output:
 
 ## States
 
-| State        | Meaning                                        |
-| ------------ | ---------------------------------------------- |
+| State        | Meaning                                                                                                   |
+|--------------|-----------------------------------------------------------------------------------------------------------|
 | idle         | Ready for action (or: "Implementation complete - ready for review or finish" after specs are implemented) |
-| planning     | Creating specifications                        |
-| implementing | Generating code                                |
-| reviewing    | Running review                                 |
-| done         | Completed                                      |
-| failed       | Error occurred                                 |
+| planning     | Creating specifications                                                                                   |
+| implementing | Generating code                                                                                           |
+| reviewing    | Running review                                                                                            |
+| done         | Completed                                                                                                 |
+| failed       | Error occurred                                                                                            |
 
 **Context-aware descriptions:** The `idle` state shows different messages depending on context:
 - "Ready to start" - Before any specifications are implemented
@@ -369,11 +369,11 @@ More contextual than `mehr status` with action suggestions.
 
 ### Choosing the Right Command
 
-| Command         | When to Use                                                    |
-| --------------- | -------------------------------------------------------------- |
-| `mehr guide`    | "What should I do next?" (fastest, minimal output)             |
-| `mehr status`   | "Show full task details" (full inspection, all details)        |
-| `mehr continue` | "Resume work on task" (`--auto` runs next step)                |
+| Command         | When to Use                                             |
+|-----------------|---------------------------------------------------------|
+| `mehr guide`    | "What should I do next?" (fastest, minimal output)      |
+| `mehr status`   | "Show full task details" (full inspection, all details) |
+| `mehr continue` | "Resume work on task" (`--auto` runs next step)         |
 
 ## See Also
 

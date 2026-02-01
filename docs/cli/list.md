@@ -21,15 +21,15 @@ The `list` command displays all tasks in the workspace with their worktree paths
 
 ## Flags
 
-| Flag           | Short | Type   | Default | Description                                    |
-| -------------- | ----- | ------ | ------- | ---------------------------------------------- |
-| `--search`     |       | string | ""      | Search tasks by title or description           |
-| `--filter`     |       | string | ""      | Filter tasks (format: key:value, e.g., state:done) |
-| `--sort`       |       | string | ""      | Sort tasks (date, cost, duration)               |
-| `--format`     |       | string | "table" | Output format (table, json, csv)               |
-| `--worktrees`  | `-w`  | bool   | false   | Show only tasks with worktrees                |
-| `--running`    |       | bool   | false   | Show running parallel tasks (in-memory)        |
-| `--json`       |       | bool   | false   | Output as JSON (deprecated, use --format json) |
+| Flag          | Short | Type   | Default | Description                                        |
+|---------------|-------|--------|---------|----------------------------------------------------|
+| `--search`    |       | string | ""      | Search tasks by title or description               |
+| `--filter`    |       | string | ""      | Filter tasks (format: key:value, e.g., state:done) |
+| `--sort`      |       | string | ""      | Sort tasks (date, cost, duration)                  |
+| `--format`    |       | string | "table" | Output format (table, json, csv)                   |
+| `--worktrees` | `-w`  | bool   | false   | Show only tasks with worktrees                     |
+| `--running`   |       | bool   | false   | Show running parallel tasks (in-memory)            |
+| `--json`      |       | bool   | false   | Output as JSON (deprecated, use --format json)     |
 
 ## Examples
 
@@ -122,14 +122,14 @@ ghi789   file:c.md       completed  task-003    4m15s      ../worktrees/ghi789
 
 **Output Columns for `--running`:**
 
-| Column     | Description                                          |
-| ---------- | ---------------------------------------------------- |
-| ID         | Running task ID (for `--running` flag on other cmds) |
-| REFERENCE  | Task reference (e.g., file:a.md, github:123)         |
-| STATUS     | pending, running, completed, failed, or cancelled    |
-| TASK ID    | Internal task ID once started                        |
-| DURATION   | Time elapsed since task started                      |
-| WORKTREE   | Path to worktree (if using parallel isolation)       |
+| Column    | Description                                          |
+|-----------|------------------------------------------------------|
+| ID        | Running task ID (for `--running` flag on other cmds) |
+| REFERENCE | Task reference (e.g., file:a.md, github:123)         |
+| STATUS    | pending, running, completed, failed, or cancelled    |
+| TASK ID   | Internal task ID once started                        |
+| DURATION  | Time elapsed since task started                      |
+| WORKTREE  | Path to worktree (if using parallel isolation)       |
 
 ### CSV Output
 
@@ -179,7 +179,7 @@ Output:
 ## Output Columns
 
 | Column   | Description                                                 |
-| -------- | ----------------------------------------------------------- |
+|----------|-------------------------------------------------------------|
 | TASK ID  | Unique 8-character task identifier                          |
 | STATE    | Current workflow state (idle, planning, implementing, etc.) |
 | TITLE    | Task title from source file                                 |

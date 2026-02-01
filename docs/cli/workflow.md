@@ -74,25 +74,25 @@ mehr guide
 
 ## States Overview
 
-| State         | Description                       | Next Steps                             |
-| ------------- | --------------------------------- | -------------------------------------- |
-| **idle**      | Central hub, ready for action     | plan, implement, review, finish, etc. |
-| **planning**  | AI creating specifications        | Wait for completion or answer          |
-| **implementing** | AI generating code            | Wait for completion or answer          |
-| **reviewing** | Code review in progress           | Wait for completion                    |
-| **waiting**   | Agent needs your input            | Answer with `mehr note` or `mehr answer` |
-| **paused**    | Paused due to budget limits       | `mehr budget status`, `mehr budget resume --confirm` |
-| **done**      | Task completed                    | Start a new task                       |
-| **failed**    | Error occurred                    | Restart task                           |
+| State            | Description                   | Next Steps                                           |
+|------------------|-------------------------------|------------------------------------------------------|
+| **idle**         | Central hub, ready for action | plan, implement, review, finish, etc.                |
+| **planning**     | AI creating specifications    | Wait for completion or answer                        |
+| **implementing** | AI generating code            | Wait for completion or answer                        |
+| **reviewing**    | Code review in progress       | Wait for completion                                  |
+| **waiting**      | Agent needs your input        | Answer with `mehr note` or `mehr answer`             |
+| **paused**       | Paused due to budget limits   | `mehr budget status`, `mehr budget resume --confirm` |
+| **done**         | Task completed                | Start a new task                                     |
+| **failed**       | Error occurred                | Restart task                                         |
 
 ## Choosing the Right Command
 
-| Command      | Purpose                                          |
-| ------------ | ------------------------------------------------ |
-| `workflow`   | Visual diagram of all states and transitions     |
-| `status`     | Current task state and details                   |
-| `guide`      | Context-aware suggestions for next actions       |
-| `continue`   | Resume workflow with auto-execution option       |
+| Command    | Purpose                                      |
+|------------|----------------------------------------------|
+| `workflow` | Visual diagram of all states and transitions |
+| `status`   | Current task state and details               |
+| `guide`    | Context-aware suggestions for next actions   |
+| `continue` | Resume workflow with auto-execution option   |
 
 ## Related Concepts
 
@@ -100,17 +100,17 @@ For a deeper understanding of the workflow state machine, guards, and lifecycle,
 
 ## Key Transitions
 
-| From         | To           | Command         | Condition                              |
-| ------------ | ------------ | --------------- | -------------------------------------- |
-| idle         | planning     | `mehr plan`     | Task has valid source                  |
-| planning     | idle         | (completion)    | Specifications created                 |
-| planning     | paused       | (budget limit)  | Budget limit reached                   |
-| idle         | implementing | `mehr implement` | Specifications exist                   |
-| implementing | paused       | (budget limit)  | Budget limit reached                   |
-| implementing | idle         | (completion)    | Code generated                         |
-| idle         | reviewing    | `mehr review`   | Code changes exist                     |
-| reviewing    | paused       | (budget limit)  | Budget limit reached                   |
-| idle         | done         | `mehr finish`   | Quality checks pass                    |
+| From         | To           | Command                        | Condition                 |
+|--------------|--------------|--------------------------------|---------------------------|
+| idle         | planning     | `mehr plan`                    | Task has valid source     |
+| planning     | idle         | (completion)                   | Specifications created    |
+| planning     | paused       | (budget limit)                 | Budget limit reached      |
+| idle         | implementing | `mehr implement`               | Specifications exist      |
+| implementing | paused       | (budget limit)                 | Budget limit reached      |
+| implementing | idle         | (completion)                   | Code generated            |
+| idle         | reviewing    | `mehr review`                  | Code changes exist        |
+| reviewing    | paused       | (budget limit)                 | Budget limit reached      |
+| idle         | done         | `mehr finish`                  | Quality checks pass       |
 | paused       | idle         | `mehr budget resume --confirm` | Resume after budget pause |
 
 ## See Also

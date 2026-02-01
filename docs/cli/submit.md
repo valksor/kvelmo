@@ -21,18 +21,18 @@ This enables quick capture in mehrhof and submission to your project management 
 
 ## Flags
 
-| Flag              | Short | Description                              |
-| ----------------- | ----- | ---------------------------------------- |
-| `--task`          |       | Queue task ID (format: `<queue-id>/<task-id>`) |
-| `--source`        |       | Create a task from a file/dir/provider ref and submit |
-| `--provider`      |       | Provider name (github, jira, wrike, etc.) (required) |
-| `--labels`        |       | Additional labels to apply (can be specified multiple times) |
-| `--note`          |       | Notes to guide task creation (repeatable) |
-| `--title`         |       | Title override when creating from source |
-| `--instructions`  |       | Custom instructions for task creation |
-| `--queue`         |       | Queue ID to store the created task (default: quick-tasks) |
-| `--optimize`      |       | Optimize the generated task before submitting |
-| `--dry-run`       |       | Preview without submitting                |
+| Flag             | Short | Description                                                  |
+|------------------|-------|--------------------------------------------------------------|
+| `--task`         |       | Queue task ID (format: `<queue-id>/<task-id>`)               |
+| `--source`       |       | Create a task from a file/dir/provider ref and submit        |
+| `--provider`     |       | Provider name (github, jira, wrike, etc.) (required)         |
+| `--labels`       |       | Additional labels to apply (can be specified multiple times) |
+| `--note`         |       | Notes to guide task creation (repeatable)                    |
+| `--title`        |       | Title override when creating from source                     |
+| `--instructions` |       | Custom instructions for task creation                        |
+| `--queue`        |       | Queue ID to store the created task (default: quick-tasks)    |
+| `--optimize`     |       | Optimize the generated task before submitting                |
+| `--dry-run`      |       | Preview without submitting                                   |
 
 ## Examples
 
@@ -86,20 +86,20 @@ Submits a task from a custom queue.
 
 ## Supported Providers
 
-| Provider      | Provider Name | Task Type          | Dependencies Support |
-| ------------- | ------------- | ------------------ | ------------------- |
-| GitHub        | `github`      | Issues             | Task lists in epic   |
-| GitLab        | `gitlab`      | Issues             | Task lists in epic   |
-| Jira          | `jira`        | Issues             | Issue links          |
-| Linear        | `linear`      | Issues             | Description-based    |
-| Asana         | `asana`       | Tasks              | Native dependencies  |
-| Notion        | `notion`      | Database items     | Description-based    |
-| Trello        | `trello`      | Cards              | Description-based    |
-| Wrike         | `wrike`       | Tasks              | Native dependencies  |
-| YouTrack      | `youtrack`    | Issues             | Description-based    |
-| Bitbucket     | `bitbucket`   | Issues             | Description-based    |
-| ClickUp       | `clickup`     | Tasks              | Native dependencies  |
-| Azure DevOps  | `azuredevops` | Work items         | Work item links     |
+| Provider     | Provider Name | Task Type      | Dependencies Support |
+|--------------|---------------|----------------|----------------------|
+| GitHub       | `github`      | Issues         | Task lists in epic   |
+| GitLab       | `gitlab`      | Issues         | Task lists in epic   |
+| Jira         | `jira`        | Issues         | Issue links          |
+| Linear       | `linear`      | Issues         | Description-based    |
+| Asana        | `asana`       | Tasks          | Native dependencies  |
+| Notion       | `notion`      | Database items | Description-based    |
+| Trello       | `trello`      | Cards          | Description-based    |
+| Wrike        | `wrike`       | Tasks          | Native dependencies  |
+| YouTrack     | `youtrack`    | Issues         | Description-based    |
+| Bitbucket    | `bitbucket`   | Issues         | Description-based    |
+| ClickUp      | `clickup`     | Tasks          | Native dependencies  |
+| Azure DevOps | `azuredevops` | Work items     | Work item links      |
 
 ## What Happens
 
@@ -217,20 +217,20 @@ See [provider documentation](../providers/index.md) for provider-specific setup.
 
 Labels are mapped as follows:
 
-| Mehrhof Labels  | Provider Labels |
-| --------------- | --------------- |
+| Mehrhof Labels  | Provider Labels                     |
+|-----------------|-------------------------------------|
 | Task labels     | Provider labels (created if needed) |
-| `--labels` flag | Additional labels                     |
+| `--labels` flag | Additional labels                   |
 
 ## Priority Mapping
 
 Priority is mapped to provider-specific values:
 
-| Mehrhof Priority | GitHub      | Jira      | Wrike   |
-| ---------------- | ----------- | --------- | ------- |
-| 1 (High)         | High/P1     | Highest   | High    |
-| 2 (Normal)       | Medium/P2   | High      | Medium  |
-| 3 (Low)          | Low/P3      | Medium    | Low     |
+| Mehrhof Priority | GitHub    | Jira    | Wrike  |
+|------------------|-----------|---------|--------|
+| 1 (High)         | High/P1   | Highest | High   |
+| 2 (Normal)       | Medium/P2 | High    | Medium |
+| 3 (Low)          | Low/P3    | Medium  | Low    |
 
 ## Re-submission
 

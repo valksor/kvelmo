@@ -14,20 +14,20 @@ The `mehr <provider> login` commands provide an interactive way to configure aut
 
 ## Supported Providers
 
-| Provider | Command | Environment Variable |
-|----------|---------|----------------------|
-| GitHub | `mehr github login` | `GITHUB_TOKEN` |
-| GitLab | `mehr gitlab login` | `GITLAB_TOKEN` |
-| Notion | `mehr notion login` | `NOTION_TOKEN` |
-| Jira | `mehr jira login` | `JIRA_TOKEN` |
-| Linear | `mehr linear login` | `LINEAR_API_KEY` |
-| Wrike | `mehr wrike login` | `WRIKE_TOKEN` |
-| YouTrack | `mehr youtrack login` | `YOUTRACK_TOKEN` |
-| Bitbucket | `mehr bitbucket login` | `BITBUCKET_APP_PASSWORD` |
-| Asana | `mehr asana login` | `ASANA_TOKEN` |
-| ClickUp | `mehr clickup login` | `CLICKUP_TOKEN` |
-| Trello | `mehr trello login` | `TRELLO_TOKEN` |
-| Azure DevOps | `mehr azuredevops login` | `AZURE_DEVOPS_PAT` |
+| Provider     | Command                  | Environment Variable     |
+|--------------|--------------------------|--------------------------|
+| GitHub       | `mehr github login`      | `GITHUB_TOKEN`           |
+| GitLab       | `mehr gitlab login`      | `GITLAB_TOKEN`           |
+| Notion       | `mehr notion login`      | `NOTION_TOKEN`           |
+| Jira         | `mehr jira login`        | `JIRA_TOKEN`             |
+| Linear       | `mehr linear login`      | `LINEAR_API_KEY`         |
+| Wrike        | `mehr wrike login`       | `WRIKE_TOKEN`            |
+| YouTrack     | `mehr youtrack login`    | `YOUTRACK_TOKEN`         |
+| Bitbucket    | `mehr bitbucket login`   | `BITBUCKET_APP_PASSWORD` |
+| Asana        | `mehr asana login`       | `ASANA_TOKEN`            |
+| ClickUp      | `mehr clickup login`     | `CLICKUP_TOKEN`          |
+| Trello       | `mehr trello login`      | `TRELLO_TOKEN`           |
+| Azure DevOps | `mehr azuredevops login` | `AZURE_DEVOPS_PAT`       |
 
 ## What Happens When You Run Login
 
@@ -127,14 +127,14 @@ notion:
 
 Many providers have short aliases for faster typing:
 
-| Alias | Resolves To |
-|-------|-------------|
-| `gh` | github |
-| `gl` | gitlab |
-| `nt` | notion |
-| `yt` | youtrack |
-| `bb` | bitbucket |
-| `cu` | clickup |
+| Alias          | Resolves To |
+|----------------|-------------|
+| `gh`           | github      |
+| `gl`           | gitlab      |
+| `nt`           | notion      |
+| `yt`           | youtrack    |
+| `bb`           | bitbucket   |
+| `cu`           | clickup     |
 | `ado`, `azure` | azuredevops |
 
 ```bash
@@ -149,7 +149,7 @@ mehr ado login       # Same as above
 
 ### GitHub
 Visit: https://github.com/settings/tokens
-- Create a **Classic** Personal Access Token
+- Create **Classic** Personal Access Token
 - Required scopes: `repo`, `read:org`
 
 ### GitLab

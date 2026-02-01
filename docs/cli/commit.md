@@ -14,13 +14,13 @@ mehr commit [flags]
 
 ## Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--agent-commit` | | Agent to use for commit message generation |
-| `--all` | `-a` | Include unstaged changes in addition to staged changes |
-| `--dry-run` | `-n` | Show what would be committed without creating commits |
-| `--note` | `-m` | Hint to guide AI grouping when re-running |
-| `--push` | `-p` | Push commits to remote after creating |
+| Flag             | Short | Description                                            |
+|------------------|-------|--------------------------------------------------------|
+| `--agent-commit` |       | Agent to use for commit message generation             |
+| `--all`          | `-a`  | Include unstaged changes in addition to staged changes |
+| `--dry-run`      | `-n`  | Show what would be committed without creating commits  |
+| `--note`         | `-m`  | Hint to guide AI grouping when re-running              |
+| `--push`         | `-p`  | Push commits to remote after creating                  |
 
 ## Examples
 

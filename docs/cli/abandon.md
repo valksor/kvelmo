@@ -21,7 +21,7 @@ Use this when you want to discard work without merging.
 ## Flags
 
 | Flag            | Short | Type | Default | Description              |
-| --------------- | ----- | ---- | ------- | ------------------------ |
+|-----------------|-------|------|---------|--------------------------|
 | `--yes`         | `-y`  | bool | false   | Skip confirmation prompt |
 | `--keep-branch` |       | bool | false   | Keep the git branch      |
 | `--keep-work`   |       | bool | false   | Keep the work directory  |
@@ -84,14 +84,14 @@ Only delete the branch. Work directory remains for reference.
 
 ### By Default
 
-| Item             | Location                                      | Deleted |
-| ---------------- | --------------------------------------------- | ------- |
-| Git branch       | `task/<id>`                                   | Yes     |
-| Work directory   | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/` | Yes     |
+| Item             | Location                                                               | Deleted |
+|------------------|------------------------------------------------------------------------|---------|
+| Git branch       | `task/<id>`                                                            | Yes     |
+| Work directory   | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/`                | Yes     |
 | Specifications   | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/specifications/` | Yes     |
-| Session logs     | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/sessions/` | Yes     |
-| Notes            | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/notes.md` | Yes     |
-| Active reference | `~/.valksor/mehrhof/workspaces/<project-id>/.active_task` | Cleared |
+| Session logs     | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/sessions/`       | Yes     |
+| Notes            | `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/notes.md`        | Yes     |
+| Active reference | `~/.valksor/mehrhof/workspaces/<project-id>/.active_task`              | Cleared |
 
 **Note:** The default behavior for work directory deletion can be configured in `config.yaml`:
 

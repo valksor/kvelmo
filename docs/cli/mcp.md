@@ -31,43 +31,43 @@ The `mcp` command starts a stdio-based MCP server that exposes Mehrhof commands 
 
 Safe Mehrhof commands exposed as MCP tools:
 
-| Tool | Description |
-|------|-------------|
-| `mehr_status` | Show workspace state |
-| `mehr_list` | List all tasks |
-| `mehr_guide` | Get suggested next actions |
+| Tool             | Description                                        |
+|------------------|----------------------------------------------------|
+| `mehr_status`    | Show workspace state                               |
+| `mehr_list`      | List all tasks                                     |
+| `mehr_guide`     | Get suggested next actions                         |
 | `mehr_browser_*` | Browser automation (goto, screenshot, click, etc.) |
-| `mehr_version` | Print version information |
-| `mehr_config` | Validate and show configuration |
-| `mehr_providers` | List available providers |
-| `mehr_templates` | List task templates |
-| `mehr_agents` | List available AI agents |
-| `mehr_cost` | Show token usage and costs |
-| `mehr_scan` | Run security scans on codebase |
-| `mehr_find` | Search tasks by pattern |
+| `mehr_version`   | Print version information                          |
+| `mehr_config`    | Validate and show configuration                    |
+| `mehr_providers` | List available providers                           |
+| `mehr_templates` | List task templates                                |
+| `mehr_agents`    | List available AI agents                           |
+| `mehr_cost`      | Show token usage and costs                         |
+| `mehr_scan`      | Run security scans on codebase                     |
+| `mehr_find`      | Search tasks by pattern                            |
 
 ### Workspace Data
 
 Direct access to workspace state:
 
-| Tool | Description |
-|------|-------------|
-| `workspace_get_active_task` | Get current active task info |
-| `workspace_list_tasks` | List all tasks with metadata |
-| `workspace_get_specs` | Get specifications for a task |
-| `workspace_get_sessions` | Get session history |
-| `workspace_get_notes` | Get task notes |
+| Tool                        | Description                   |
+|-----------------------------|-------------------------------|
+| `workspace_get_active_task` | Get current active task info  |
+| `workspace_list_tasks`      | List all tasks with metadata  |
+| `workspace_get_specs`       | Get specifications for a task |
+| `workspace_get_sessions`    | Get session history           |
+| `workspace_get_notes`       | Get task notes                |
 
 ### Registry Queries
 
 Agent and provider registry information:
 
-| Tool | Description |
-|------|-------------|
-| `agents_list` | List all registered agents |
-| `agents_get_default` | Get default agent |
-| `providers_list` | List all registered providers |
-| `providers_resolve` | Resolve provider from reference |
+| Tool                 | Description                     |
+|----------------------|---------------------------------|
+| `agents_list`        | List all registered agents      |
+| `agents_get_default` | Get default agent               |
+| `providers_list`     | List all registered providers   |
+| `providers_resolve`  | Resolve provider from reference |
 
 ## Configuration
 
@@ -125,7 +125,7 @@ MCP tools automatically detect the workspace from the current working directory:
 
 1. Check if `.git/worktrees` exists → use worktree root
 2. Check if `.git` exists → use repo root
-3. Otherwise → use current directory
+3. Otherwise, → use current directory
 
 No workspace parameter is needed in tool arguments.
 

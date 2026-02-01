@@ -23,14 +23,14 @@ specification files are saved to `~/.valksor/mehrhof/workspaces/<project-id>/wor
 
 ## Flags
 
-| Flag               | Short | Type   | Default | Description                          |
-| ------------------ | ----- | ------ | ------- | ------------------------------------ |
-| `--standalone`     |       | bool   | false   | Start standalone planning (no task)  |
-| `--seed`           | `-s`  | string |         | Initial topic for standalone planning |
-| `--verbose`        | `-v`  | bool   | false   | Show agent output in real-time       |
-| `--agent-plan`     |       | string |         | Override agent for planning step     |
-| `--full-context`   |       | bool   | false   | Load full transcripts instead of summaries |
-| `--optimize`       |       | bool   | false   | Optimize prompt before sending to agent |
+| Flag             | Short | Type   | Default | Description                                |
+|------------------|-------|--------|---------|--------------------------------------------|
+| `--standalone`   |       | bool   | false   | Start standalone planning (no task)        |
+| `--seed`         | `-s`  | string |         | Initial topic for standalone planning      |
+| `--verbose`      | `-v`  | bool   | false   | Show agent output in real-time             |
+| `--agent-plan`   |       | string |         | Override agent for planning step           |
+| `--full-context` |       | bool   | false   | Load full transcripts instead of summaries |
+| `--optimize`     |       | bool   | false   | Optimize prompt before sending to agent    |
 
 **Note:** For standalone mode, you can also provide the seed topic as a positional argument:
 ```bash

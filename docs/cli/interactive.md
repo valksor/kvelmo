@@ -20,67 +20,67 @@ mehr interactive
 
 ### Chat
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `chat <msg>` | `ask`, `c` | Chat with the agent |
-| `answer <resp>` | `a` | Answer agent's question |
-| `note <msg>` | - | Add a note to the current task |
+| Command         | Aliases    | Description                    |
+|-----------------|------------|--------------------------------|
+| `chat <msg>`    | `ask`, `c` | Chat with the agent            |
+| `answer <resp>` | `a`        | Answer agent's question        |
+| `note <msg>`    | -          | Add a note to the current task |
 
 ### Workflow
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `start <ref>` | - | Start a new task from reference |
-| `plan [prompt]` | - | Enter planning phase |
-| `implement` | `impl` | Execute specifications |
-| `review` | - | Review code |
-| `continue` | `cont` | Resume from waiting/paused |
-| `finish` | - | Complete the task |
-| `abandon` | - | Discard the task |
+| Command         | Aliases | Description                     |
+|-----------------|---------|---------------------------------|
+| `start <ref>`   | -       | Start a new task from reference |
+| `plan [prompt]` | -       | Enter planning phase            |
+| `implement`     | `impl`  | Execute specifications          |
+| `review`        | -       | Review code                     |
+| `continue`      | `cont`  | Resume from waiting/paused      |
+| `finish`        | -       | Complete the task               |
+| `abandon`       | -       | Discard the task                |
 
 ### Info
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `status` | `st` | Show task status |
-| `cost` | - | Show token usage and costs |
-| `budget` | - | Show token budget status |
-| `list` | - | List all tasks |
-| `specification <n>` | `spec` | View specification |
+| Command             | Aliases | Description                |
+|---------------------|---------|----------------------------|
+| `status`            | `st`    | Show task status           |
+| `cost`              | -       | Show token usage and costs |
+| `budget`            | -       | Show token budget status   |
+| `list`              | -       | List all tasks             |
+| `specification <n>` | `spec`  | View specification         |
 
 ### Search
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `find <query>` | - | AI-powered code search |
-| `memory <query>` | - | Search semantic memory |
+| Command          | Aliases | Description            |
+|------------------|---------|------------------------|
+| `find <query>`   | -       | AI-powered code search |
+| `memory <query>` | -       | Search semantic memory |
 
 ### Task Management
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `simplify [files]` | - | Simplify code based on workflow state |
-| `label add <lbl...>` | - | Add labels to active task |
-| `label remove <lbl...>` | `label rm` | Remove labels from active task |
-| `label set <lbl...>` | - | Set all labels (replace) |
-| `label clear` | - | Clear all labels |
-| `label list` | `label ls` | List all labels |
+| Command                 | Aliases    | Description                           |
+|-------------------------|------------|---------------------------------------|
+| `simplify [files]`      | -          | Simplify code based on workflow state |
+| `label add <lbl...>`    | -          | Add labels to active task             |
+| `label remove <lbl...>` | `label rm` | Remove labels from active task        |
+| `label set <lbl...>`    | -          | Set all labels (replace)              |
+| `label clear`           | -          | Clear all labels                      |
+| `label list`            | `label ls` | List all labels                       |
 
 ### Control
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `quick <desc>` | - | Create a quick task |
-| `undo` | - | Undo to previous checkpoint |
-| `redo` | - | Redo to next checkpoint |
+| Command        | Aliases | Description                 |
+|----------------|---------|-----------------------------|
+| `quick <desc>` | -       | Create a quick task         |
+| `undo`         | -       | Undo to previous checkpoint |
+| `redo`         | -       | Redo to next checkpoint     |
 
 ### Session
 
-| Command | Aliases | Description |
-|---------|----------|-------------|
-| `clear` | - | Clear screen |
-| `help` | `?` | Show available commands |
-| `exit` | `quit`, `q` | Exit interactive mode |
+| Command | Aliases     | Description             |
+|---------|-------------|-------------------------|
+| `clear` | -           | Clear screen            |
+| `help`  | `?`         | Show available commands |
+| `exit`  | `quit`, `q` | Exit interactive mode   |
 
 **Note**: Any unrecognized input will be sent to the agent as a chat message.
 
@@ -145,8 +145,8 @@ mehrhof (idle) > plan   # Retry is safe
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag           | Description                                               |
+|----------------|-----------------------------------------------------------|
 | `--no-history` | Disable command history (doesn't save to ~/.mehr_history) |
 
 ## Chat History

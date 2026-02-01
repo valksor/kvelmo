@@ -26,11 +26,11 @@ The synced queue includes:
 
 ## Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--status` | Filter by status (comma-separated) | *smart default* |
-| `--max-depth` | Max depth for recursive fetch | 0 (unlimited) |
-| `--preserve-ext` | Keep external IDs/URLs | true |
+| Flag             | Description                        | Default         |
+|------------------|------------------------------------|-----------------|
+| `--status`       | Filter by status (comma-separated) | *smart default* |
+| `--max-depth`    | Max depth for recursive fetch      | 0 (unlimited)   |
+| `--preserve-ext` | Keep external IDs/URLs             | true            |
 
 ### Smart Status Filter
 

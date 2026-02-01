@@ -20,15 +20,15 @@ The command uses the configured AI agent to analyze and refine your content, mak
 
 ## Flags
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--agent-simplify` | string | "" | Use a specific agent for simplification |
-| `--no-checkpoint` | bool | false | Skip creating a checkpoint before simplifying (not recommended) |
-| `--verbose` | bool | false | Show detailed simplification process |
-| `--standalone` | bool | false | Simplify without active task (see Standalone Mode) |
-| `--branch` | string | "" | Compare current branch vs base (standalone only) |
-| `--range` | string | "" | Compare commit range (standalone only) |
-| `--context` | int | 3 | Lines of context in diff (standalone only) |
+| Flag               | Type   | Default | Description                                                     |
+|--------------------|--------|---------|-----------------------------------------------------------------|
+| `--agent-simplify` | string | ""      | Use a specific agent for simplification                         |
+| `--no-checkpoint`  | bool   | false   | Skip creating a checkpoint before simplifying (not recommended) |
+| `--verbose`        | bool   | false   | Show detailed simplification process                            |
+| `--standalone`     | bool   | false   | Simplify without active task (see Standalone Mode)              |
+| `--branch`         | string | ""      | Compare current branch vs base (standalone only)                |
+| `--range`          | string | ""      | Compare commit range (standalone only)                          |
+| `--context`        | int    | 3       | Lines of context in diff (standalone only)                      |
 
 ## Examples
 
@@ -233,11 +233,11 @@ These instructions are appended to all simplification prompts.
 
 The command automatically detects what to simplify based on:
 
-| State | Simplifies | Condition |
-|-------|-----------|-----------|
-| No specifications | Task input | `work/<task-id>/specifications/` is empty |
-| Specifications exist | Specifications | Found `.md` files in specifications directory |
-| Implemented files exist | Code | Specification metadata lists implemented files |
+| State                   | Simplifies     | Condition                                      |
+|-------------------------|----------------|------------------------------------------------|
+| No specifications       | Task input     | `work/<task-id>/specifications/` is empty      |
+| Specifications exist    | Specifications | Found `.md` files in specifications directory  |
+| Implemented files exist | Code           | Specification metadata lists implemented files |
 
 Run `mehr status` to see current state and what would be simplified.
 

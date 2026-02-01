@@ -78,10 +78,10 @@ gopkg.in/yaml.v3                                    MIT
 
 ### `license info` Flags
 
-| Flag           | Description                                      |
-| -------------- | ------------------------------------------------ |
-| `--json`       | Output as JSON                                   |
-| `--unknown-only` | Only show packages with unknown licenses       |
+| Flag             | Description                              |
+|------------------|------------------------------------------|
+| `--json`         | Output as JSON                           |
+| `--unknown-only` | Only show packages with unknown licenses |
 
 ## Examples
 
@@ -123,12 +123,12 @@ Mehrhof uses [Google's go-licenses](https://github.com/google/go-licenses) libra
 
 The detector classifies licenses into these types:
 
-| Type          | Examples                                     |
-| ------------- | -------------------------------------------- |
-| Permissive    | MIT, BSD, Apache-2.0                         |
-| Reciprocal    | GPL-2.0, MPL-2.0                              |
-| Restricted    | AGPL-3.0, GPL-3.0                            |
-| Unknown       | Custom or undetectable license text          |
+| Type       | Examples                            |
+|------------|-------------------------------------|
+| Permissive | MIT, BSD, Apache-2.0                |
+| Reciprocal | GPL-2.0, MPL-2.0                    |
+| Restricted | AGPL-3.0, GPL-3.0                   |
+| Unknown    | Custom or undetectable license text |
 
 ## Attribution
 

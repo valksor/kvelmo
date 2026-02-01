@@ -20,14 +20,14 @@ The `serve` command starts a local HTTP server providing a web-based UI for mana
 
 ## Flags
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--port`, `-p` | int | 0 | Server port (0 = random available port) |
-| `--host` | string | localhost | Host to bind to (use 0.0.0.0 for network access) |
-| `--global` | bool | false | Run in global mode showing all projects |
-| `--open` | bool | false | Automatically open browser after server starts |
-| `--api` | bool | false | API-only mode (no web UI, for IDE plugins) |
-| `--tunnel-info` | bool | false | Show SSH tunnel instructions for remote access |
+| Flag            | Type   | Default   | Description                                      |
+|-----------------|--------|-----------|--------------------------------------------------|
+| `--port`, `-p`  | int    | 0         | Server port (0 = random available port)          |
+| `--host`        | string | localhost | Host to bind to (use 0.0.0.0 for network access) |
+| `--global`      | bool   | false     | Run in global mode showing all projects          |
+| `--open`        | bool   | false     | Automatically open browser after server starts   |
+| `--api`         | bool   | false     | API-only mode (no web UI, for IDE plugins)       |
+| `--tunnel-info` | bool   | false     | Show SSH tunnel instructions for remote access   |
 
 ## Subcommands
 
