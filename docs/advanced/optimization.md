@@ -228,8 +228,8 @@ mehr cost --summary       # Aggregate statistics
        extends: claude
        args: ["--max-turns", "5"]
    ```
-3. **Reuse specifications**: Run `mehr implement` multiple times on the same specification instead of replanning
-4. **Chat efficiently**: Provide clear context to reduce back-and-forth
+2. **Reuse specifications**: Run `mehr implement` multiple times on the same specification instead of replanning
+3. **Chat efficiently**: Provide clear context to reduce back-and-forth
 
 ## Resource Cleanup
 
