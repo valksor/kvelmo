@@ -4,8 +4,40 @@
 package commands
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
+
+// chdirToModuleRoot changes to the project root directory where go.mod lives,
+// needed because template loading uses os.ReadFile with paths relative to CWD.
+func chdirToModuleRoot(t *testing.T) {
+	t.Helper()
+
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd: %v", err)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			t.Chdir(dir)
+
+			return
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("could not find go.mod in any parent directory")
+		}
+
+		dir = parent
+	}
+}
 
 func TestTemplatesCommand_Properties(t *testing.T) {
 	if templatesCmd.Use != "templates" {
@@ -155,5 +187,137 @@ func TestTemplateApplyCommand_Examples(t *testing.T) {
 func TestTemplateApplyCommand_DocumentsMerge(t *testing.T) {
 	if !containsString(templateApplyCmd.Long, "merge") {
 		t.Error("Long description does not mention merging with existing frontmatter")
+	}
+}
+
+func TestRunTemplatesList(t *testing.T) {
+	chdirToModuleRoot(t)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runTemplatesList(nil, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runTemplatesList() error = %v", err)
+	}
+
+	expectedSubstrings := []string{
+		"Available templates:",
+		"bug-fix",
+		"feature",
+		"refactor",
+		"docs",
+		"test",
+		"chore",
+		"mehr templates show",
+		"mehr templates apply",
+	}
+
+	for _, substr := range expectedSubstrings {
+		if !strings.Contains(output, substr) {
+			t.Errorf("output does not contain %q\nGot:\n%s", substr, output)
+		}
+	}
+}
+
+func TestRunTemplateShow_ValidTemplate(t *testing.T) {
+	chdirToModuleRoot(t)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runTemplateShow(nil, []string{"feature"})
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runTemplateShow(feature) error = %v", err)
+	}
+
+	expectedSubstrings := []string{
+		"Template:",
+		"feature",
+		"Description:",
+		"Example usage:",
+	}
+
+	for _, substr := range expectedSubstrings {
+		if !strings.Contains(output, substr) {
+			t.Errorf("output does not contain %q\nGot:\n%s", substr, output)
+		}
+	}
+}
+
+func TestRunTemplateShow_InvalidTemplate(t *testing.T) {
+	chdirToModuleRoot(t)
+
+	err := runTemplateShow(nil, []string{"nonexistent"})
+	if err == nil {
+		t.Fatal("runTemplateShow(nonexistent) expected error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "load template") {
+		t.Errorf("error = %q, want it to contain 'load template'", err.Error())
+	}
+}
+
+func TestRunTemplateApply_NewFile(t *testing.T) {
+	chdirToModuleRoot(t)
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "task.md")
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	err := runTemplateApply(cmd, []string{"feature", filePath})
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runTemplateApply() error = %v", err)
+	}
+
+	// Verify stdout message
+	if !strings.Contains(output, "Applied template") {
+		t.Errorf("output does not contain 'Applied template'\nGot:\n%s", output)
+	}
+
+	// Verify a file was created
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", filePath, err)
+	}
+
+	content := string(data)
+	if content == "" {
+		t.Error("applied template produced empty file")
+	}
+
+	// New files get a placeholder title
+	if !strings.Contains(content, "Task Title") {
+		t.Errorf("file content does not contain placeholder title\nGot:\n%s", content)
 	}
 }
