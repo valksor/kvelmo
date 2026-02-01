@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Check unnecessary aliased imports where no conflict exists
-# Flags alias != basename and where basename is not already imported
+# Flags: 1) alias != basename when basename is not imported, 2) redundant alias == basename
 # Exception: when the actual package name equals the current package name, alias is NOT flagged
 # (since using the same name would conflict with the current package)
 
@@ -93,6 +93,10 @@ find . -type f -name '*.go' \
             if (alias != "_" && alias != "." && alias != base && !(base in used) && pkg_name != current_package && base != current_package) {
               print FILENAME ":" i+1 ":" line
             }
+            # Flag redundant alias (alias == base) - the alias provides no benefit
+            if (alias != "_" && alias != "." && alias == base) {
+              print FILENAME ":" i+1 ": redundant alias (remove \"" alias "\"): " line
+            }
             continue
           }
 
@@ -115,6 +119,10 @@ find . -type f -name '*.go' \
             # Same check for single-line import
             if (alias != "_" && alias != "." && alias != base && !(base in used) && pkg_name != current_package && base != current_package) {
               print FILENAME ":" i+1 ":" line
+            }
+            # Flag redundant alias (alias == base) - the alias provides no benefit
+            if (alias != "_" && alias != "." && alias == base) {
+              print FILENAME ":" i+1 ": redundant alias (remove \"" alias "\"): " line
             }
           }
         }
