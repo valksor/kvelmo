@@ -121,6 +121,49 @@ type PRCommentUpdater interface {
 	UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*Comment, error)
 }
 
+// PRReviewer submits formal reviews to pull requests.
+// For GitHub: Creates a PR review with APPROVED/REQUEST_CHANGES.
+// For GitLab: Creates MR notes (no formal review API).
+type PRReviewer interface {
+	SubmitReview(ctx context.Context, opts SubmitReviewOptions) (*ReviewSubmission, error)
+}
+
+// SubmitReviewOptions contains options for submitting a PR review.
+type SubmitReviewOptions struct {
+	PRNumber int             // PR/MR number
+	Event    ReviewEvent     // APPROVE, REQUEST_CHANGES, COMMENT
+	Summary  string          // Overall review summary
+	Comments []ReviewComment // Per-line comments (optional)
+}
+
+// ReviewEvent represents the type of review action.
+type ReviewEvent string
+
+const (
+	// ReviewEventApprove approves the PR.
+	ReviewEventApprove ReviewEvent = "APPROVE"
+	// ReviewEventRequestChanges requests changes to the PR.
+	ReviewEventRequestChanges ReviewEvent = "REQUEST_CHANGES"
+	// ReviewEventComment posts a comment without approval/rejection.
+	ReviewEventComment ReviewEvent = "COMMENT"
+)
+
+// ReviewComment represents a per-line comment in a review.
+type ReviewComment struct {
+	Path      string // File path
+	Line      int    // Line number in the diff
+	Body      string // Comment body
+	Side      string // "LEFT" (old) or "RIGHT" (new) for GitHub; ignored for GitLab
+	StartLine int    // For multi-line comments (0 if single line)
+}
+
+// ReviewSubmission contains the result of submitting a review.
+type ReviewSubmission struct {
+	ID             string // Review/note ID
+	URL            string // URL to the review
+	CommentsPosted int    // Number of comments posted
+}
+
 // PullRequestOptions for creating a PR.
 type PullRequestOptions struct {
 	Title        string

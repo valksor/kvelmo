@@ -375,3 +375,68 @@ func determineFileMode(status string) string {
 		return "modified"
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR Review Submission (PRReviewer interface)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SubmitReview submits a formal review to a pull request.
+// This creates a GitHub PR review with APPROVED/REQUEST_CHANGES/COMMENT.
+func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewOptions) (*provider.ReviewSubmission, error) {
+	if p.owner == "" || p.repo == "" {
+		return nil, ErrRepoNotConfigured
+	}
+
+	p.client.SetOwnerRepo(p.owner, p.repo)
+
+	// Map provider event to GitHub event
+	var event string
+	switch opts.Event {
+	case provider.ReviewEventApprove:
+		event = "APPROVE"
+	case provider.ReviewEventRequestChanges:
+		event = "REQUEST_CHANGES"
+	case provider.ReviewEventComment:
+		event = "COMMENT"
+	default:
+		event = "COMMENT"
+	}
+
+	// Build review comments
+	var comments []*gh.DraftReviewComment
+	for _, c := range opts.Comments {
+		comment := &gh.DraftReviewComment{
+			Path: ptr(c.Path),
+			Body: ptr(c.Body),
+		}
+
+		// Set line number
+		if c.Line > 0 {
+			comment.Line = ptr(c.Line)
+		}
+
+		// Set side if specified
+		if c.Side != "" {
+			comment.Side = ptr(c.Side)
+		}
+
+		// Multi-line comment support
+		if c.StartLine > 0 && c.StartLine != c.Line {
+			comment.StartLine = ptr(c.StartLine)
+		}
+
+		comments = append(comments, comment)
+	}
+
+	// Submit review
+	review, err := p.client.CreateReview(ctx, opts.PRNumber, event, opts.Summary, comments)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.ReviewSubmission{
+		ID:             strconv.FormatInt(review.GetID(), 10),
+		URL:            review.GetHTMLURL(),
+		CommentsPosted: len(comments),
+	}, nil
+}

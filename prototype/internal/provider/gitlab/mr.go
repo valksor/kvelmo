@@ -377,3 +377,88 @@ func mapMRNoteToComment(note *gl.Note) *provider.Comment {
 		UpdatedAt: updatedAt,
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MR Review Submission (PRReviewer interface)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SubmitReview submits a review to a merge request.
+// GitLab doesn't have a formal review API like GitHub.
+// Instead, we post:
+// 1. A summary note with the overall review
+// 2. Individual diff notes for per-line comments.
+func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewOptions) (*provider.ReviewSubmission, error) {
+	projectPath := p.config.ProjectPath
+	if projectPath == "" {
+		return nil, ErrProjectNotConfigured
+	}
+
+	p.client.SetProjectPath(projectPath)
+
+	iid := int64(opts.PRNumber)
+	commentsPosted := 0
+
+	// Get MR details for the HEAD SHA (needed for diff notes)
+	mr, err := p.client.GetMergeRequest(ctx, iid)
+	if err != nil {
+		return nil, fmt.Errorf("get merge request: %w", err)
+	}
+
+	// Post per-line comments as diff notes
+	for _, c := range opts.Comments {
+		if c.Path != "" && c.Line > 0 {
+			// Create discussion on diff
+			err := p.client.CreateMergeRequestDiffNote(ctx, iid, mr.DiffRefs.HeadSha, c.Path, c.Line, c.Body)
+			if err != nil {
+				// Log but continue - some lines may not be in the diff
+				continue
+			}
+			commentsPosted++
+		}
+	}
+
+	// Build summary note with review verdict
+	summaryBody := buildGitLabReviewSummary(opts)
+
+	// Post summary note
+	note, err := p.client.CreateMergeRequestNote(ctx, iid, summaryBody)
+	if err != nil {
+		return nil, fmt.Errorf("create summary note: %w", err)
+	}
+
+	return &provider.ReviewSubmission{
+		ID:             strconv.FormatInt(note.ID, 10),
+		URL:            mr.WebURL + "#note_" + strconv.FormatInt(note.ID, 10),
+		CommentsPosted: commentsPosted + 1, // +1 for summary
+	}, nil
+}
+
+// buildGitLabReviewSummary creates a formatted review summary note.
+func buildGitLabReviewSummary(opts provider.SubmitReviewOptions) string {
+	var sb strings.Builder
+
+	// Add verdict header
+	switch opts.Event {
+	case provider.ReviewEventApprove:
+		sb.WriteString("### ✅ Mehr Review: Approved\n\n")
+	case provider.ReviewEventRequestChanges:
+		sb.WriteString("### ⚠️ Mehr Review: Changes Requested\n\n")
+	case provider.ReviewEventComment:
+		sb.WriteString("### 💬 Mehr Review: Comment\n\n")
+	default:
+		sb.WriteString("### 📝 Mehr Review\n\n")
+	}
+
+	// Add summary
+	if opts.Summary != "" {
+		sb.WriteString(opts.Summary)
+		sb.WriteString("\n\n")
+	}
+
+	// Note about inline comments
+	if len(opts.Comments) > 0 {
+		sb.WriteString(fmt.Sprintf("---\n*%d inline comments posted.*\n", len(opts.Comments)))
+	}
+
+	return sb.String()
+}
