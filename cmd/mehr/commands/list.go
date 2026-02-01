@@ -106,7 +106,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Check which task is active (in main repo)
+	// Check which task is active (in the main repo)
 	var activeID string
 	if ws.HasActiveTask() {
 		active, _ := ws.LoadActiveTask()
@@ -115,7 +115,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Get current worktree path if we're in one
+	// Get the current worktree path if we're in one
 	var currentWorktreePath string
 	if res.IsWorktree {
 		currentWorktreePath = res.Git.Root()

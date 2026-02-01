@@ -79,14 +79,14 @@ func runCommit(cmd *cobra.Command, args []string) error {
 	history := storage.NewCommitHistory(ws.DataRoot())
 	previousAttempts, _ := history.LoadAttempts() // Ignore error if no history yet
 
-	// Calculate current file hash to detect if files changed
+	// Calculate the current file hash to detect if files changed
 	currentHash, _ := res.Git.HashChangedFiles(ctx, commitAll)
 
 	// Check if we can reuse the most recent attempt (optimization)
 	var reusedGroups []storage.ChangeGroup
 	if len(previousAttempts) > 0 {
 		lastAttempt := previousAttempts[len(previousAttempts)-1]
-		// Reuse if: same files, last was dry-run (user approved), and no new note
+		// Reuse if: same files, the last was dry-run (user approved), and no new note
 		if lastAttempt.FileHash == currentHash && lastAttempt.IsDryRun && commitNote == lastAttempt.Note {
 			// User saw dry-run and now wants to commit - reuse the groups!
 			reusedGroups = lastAttempt.Groups
@@ -95,7 +95,7 @@ func runCommit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Show attempt number if we have history and not reusing
+	// Show the attempt number if we have history and not reusing
 	if len(reusedGroups) == 0 && len(previousAttempts) > 0 {
 		lastAttempt := previousAttempts[len(previousAttempts)-1]
 		fmt.Printf("Attempt #%d (refining attempt from %s)\n",

@@ -59,19 +59,19 @@ For Web UI:      mehr serve`,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Load .env file FIRST, before anything else
-		// This ensures env vars are available for all subsequent operations
+		// This ensures env vars are available for all later operations
 		if err := config.LoadDotEnvFromCwd(); err != nil {
 			// Log warning but don't fail - .env parsing errors should be reported
 			// but shouldn't prevent the command from running
 			fmt.Fprintf(os.Stderr, "warning: failed to load .mehrhof/.env: %v\n", err)
 		}
 
-		// Configure logging from CLI flag
+		// Configure logging from the CLI flag
 		log.Configure(log.Options{
 			Verbose: verbose,
 		})
 
-		// Initialize color output from CLI flag (also respects NO_COLOR env)
+		// Initialize color output from the CLI flag (also respects NO_COLOR env)
 		display.InitColors(noColor)
 
 		// Load settings (user preferences)
@@ -146,7 +146,7 @@ func Execute() error {
 }
 
 // resolveCommandArgs handles colon notation (e.g., "c:v" -> "config validate").
-// Returns nil if no transformation needed.
+// Returns nil if no transformation is needed.
 func resolveCommandArgs(args []string) ([]string, error) {
 	if len(args) == 0 || !strings.Contains(args[0], ":") {
 		return nil, nil
@@ -174,7 +174,7 @@ func resolveCommandArgs(args []string) ([]string, error) {
 		resolved = selected.Path
 	}
 
-	// Replace colon path with resolved space-separated args
+	// Replace a colon path with resolved space-separated args
 	return append(resolved, args[1:]...), nil
 }
 
@@ -242,7 +242,7 @@ func init() {
 		Title: "Utility Commands:",
 	})
 
-	// Setup contextual help that shows available/unavailable commands
+	// Set up contextual help that shows available/unavailable commands
 	help.SetupContextualHelp(rootCmd)
 }
 
@@ -253,7 +253,7 @@ func GetSettings() *config.Settings {
 
 // FormatError formats an error for stderr output.
 // Multi-line errors are passed through as-is.
-// Single-line errors get an "Error: " prefix.
+// Single-line errors get an "Error:" prefix.
 func FormatError(err error) string {
 	if err == nil {
 		return ""

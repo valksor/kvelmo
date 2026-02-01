@@ -95,7 +95,7 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Sort agent names for consistent output
+	// Sort agent names for a consistent output
 	slices.Sort(agentNames)
 
 	// Gather info about each agent

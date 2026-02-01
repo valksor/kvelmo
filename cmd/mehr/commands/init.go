@@ -44,7 +44,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 	errOut := cmd.ErrOrStderr()
 
-	// Try to find git root, fall back to current directory
+	// Try to find git root, fall back to the current directory
 	workDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get current directory: %w", err)
@@ -70,7 +70,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("update .gitignore: %w", err)
 	}
 
-	// Create config file with defaults if it doesn't exist
+	// Create a config file with defaults if it doesn't exist
 	if !ws.HasConfig() {
 		cfg := storage.NewDefaultWorkspaceConfig()
 
@@ -88,7 +88,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		_, _ = fmt.Fprintf(out, "Config file already exists: %s\n", ws.ConfigPath())
-		// Still apply ASC config to existing file if requested
+		// Still apply ASC config to an existing file if requested
 		if initASC {
 			cfg, err := ws.LoadConfig()
 			if err != nil {
@@ -102,7 +102,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create .env template if it doesn't exist
+	// Create an .env template if it doesn't exist
 	envPath := filepath.Join(ws.TaskRoot(), ".env")
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		if err := createEnvTemplate(envPath); err != nil {
@@ -121,7 +121,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintf(out, "Workspace initialized in %s\n", root)
 
-	// Show welcome message and next steps
+	// Show a welcome message and next steps
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "Welcome to Mehrhof!")
 	_, _ = fmt.Fprintln(out)

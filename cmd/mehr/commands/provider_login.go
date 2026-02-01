@@ -21,7 +21,7 @@ type providerLoginConfig struct {
 	ConfigField string // Field path in WorkspaceConfig (e.g., "GitHub.Token")
 	HelpURL     string // URL for getting a token
 	TokenPrefix string // Optional token prefix for validation (e.g., "ghp_")
-	HelpSteps   string // Navigation steps to get token
+	HelpSteps   string // Navigation steps to get a token
 	Scopes      string // Required permissions/scopes
 }
 
@@ -172,7 +172,7 @@ func normalizeProviderName(name string) string {
 
 // tokenSource represents where a token value was found.
 type tokenSource struct {
-	Source string // Description of where token was found
+	Source string // Description of where the token was found
 	Value  string // The token value (possibly masked)
 }
 
@@ -184,7 +184,7 @@ func detectExistingToken(cfg providerLoginConfig, ws *storage.Workspace) *tokenS
 		return &tokenSource{Source: cfg.EnvVar + " environment variable", Value: maskToken(val)}
 	}
 
-	// 2. Check .env file
+	// 2. Check the .env file
 	envVars, err := ws.LoadEnv()
 	if err == nil {
 		if val, ok := envVars[cfg.EnvVar]; ok && val != "" {
@@ -204,7 +204,7 @@ func detectExistingToken(cfg providerLoginConfig, ws *storage.Workspace) *tokenS
 	return nil
 }
 
-// getConfigToken retrieves a token from WorkspaceConfig using field path (e.g., "GitHub.Token").
+// getConfigToken retrieves a token from WorkspaceConfig using the field path (e.g., "GitHub.Token").
 func getConfigToken(cfg *storage.WorkspaceConfig, fieldPath string) string {
 	parts := strings.Split(fieldPath, ".")
 	if len(parts) != 2 {
@@ -291,7 +291,7 @@ func confirmOverride(cmd *cobra.Command, source, maskedValue string) (bool, erro
 	return response == "y" || response == "yes", nil
 }
 
-// printTokenHelp displays formatted guidance for obtaining a token.
+// printTokenHelp displays formatted guidance for getting a token.
 func printTokenHelp(cmd *cobra.Command, cfg providerLoginConfig) {
 	out := cmd.OutOrStdout()
 	_, _ = fmt.Fprintln(out)
@@ -340,7 +340,7 @@ func promptForToken(cmd *cobra.Command, cfg providerLoginConfig) (string, error)
 
 // writeTokenToEnv writes a token to the .env file, creating or updating it.
 func writeTokenToEnv(envPath, key, value string) error {
-	// Ensure directory exists
+	// Ensure a directory exists
 	if err := os.MkdirAll(filepath.Dir(envPath), 0o755); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
@@ -374,7 +374,7 @@ func writeTokenToEnv(envPath, key, value string) error {
 		result.WriteString(key + "=" + value + "\n")
 	}
 
-	// Atomic write: write to temp file then rename
+	// Atomically write: write to a temp file, then rename
 	content := result.String()
 	tmpPath := envPath + ".tmp"
 	if err := os.WriteFile(tmpPath, []byte(content), 0o600); err != nil {
@@ -392,7 +392,7 @@ func writeTokenToEnv(envPath, key, value string) error {
 }
 
 // writeTokenReferenceToConfig adds ${VAR} reference to config.yaml.
-// Creates provider section if it doesn't exist.
+// Creates a provider section if it doesn't exist.
 func writeTokenReferenceToConfig(ws *storage.Workspace, providerName, envVar string) error {
 	// Load existing config
 	cfg, err := ws.LoadConfig()
@@ -400,7 +400,7 @@ func writeTokenReferenceToConfig(ws *storage.Workspace, providerName, envVar str
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	// Set the token reference based on provider name
+	// Set the token reference based on the provider name
 	switch providerName {
 	case "github":
 		if cfg.GitHub == nil {
@@ -480,7 +480,7 @@ func runProviderLogin(providerName string) func(*cobra.Command, []string) error 
 			return fmt.Errorf("unknown provider: %s", providerName)
 		}
 
-		// Get working directory
+		// Get a working directory
 		root, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("get working directory: %w", err)

@@ -97,7 +97,7 @@ func runQuick(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create quick task
+	// Create a quick task
 	result, err := cond.CreateQuickTask(ctx, conductor.QuickTaskOptions{
 		Description: description,
 		Title:       quickTitle,
@@ -112,11 +112,11 @@ func runQuick(cmd *cobra.Command, args []string) error {
 	// Display success
 	displayQuickTaskSuccess(result)
 
-	// Show interactive menu
+	// Show an interactive menu
 	return quickTaskMenu(ctx, cond, queueID, result.TaskID)
 }
 
-// displayQuickTaskSuccess shows the success message for created task.
+// displayQuickTaskSuccess shows the success message for a created task.
 func displayQuickTaskSuccess(result *conductor.QuickTaskResult) {
 	fmt.Println()
 	fmt.Printf("✓ Created task: %s\n", display.Success(result.TaskID))
@@ -199,7 +199,7 @@ func executeQuickChoice(ctx context.Context, cond *conductor.Conductor, queueID,
 		return nil
 
 	case "t":
-		// Start working on task
+		// Start working on the task
 		fmt.Println("\n▶️ Starting task...")
 
 		return cond.Start(ctx, "queue:"+taskRef)
@@ -221,7 +221,7 @@ func executeQuickChoice(ctx context.Context, cond *conductor.Conductor, queueID,
 
 // enterDiscussMode enters interactive discussion mode for adding notes.
 //
-//nolint:unparam // ctx is kept for consistent signature with other command functions
+//nolint:unparam // ctx is kept for a consistent signature with other command functions
 func enterDiscussMode(ctx context.Context, cond *conductor.Conductor, queueID, taskID string) error {
 	fmt.Println("\n💬 Discussion Mode")
 	fmt.Println("Type your notes below. Type 'exit' or 'quit' when done.")
@@ -260,7 +260,7 @@ func enterDiscussMode(ctx context.Context, cond *conductor.Conductor, queueID, t
 	}
 }
 
-// displaySubmitResult shows the result of task submission.
+// displaySubmitResult shows the result of the task submission.
 func displaySubmitResult(result *conductor.SubmitResult) {
 	if len(result.Tasks) == 0 {
 		fmt.Println("  No tasks submitted")

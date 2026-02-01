@@ -102,7 +102,7 @@ func runFind(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		query = strings.Join(args, " ")
 	} else {
-		// Check if query was piped in
+		// Check if the query was piped in
 		stat, _ := os.Stdin.Stat()
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			// Input is being piped
@@ -140,7 +140,7 @@ func runFind(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Setup verbose event handlers if needed
+	// Set up verbose event handlers if needed
 	if verbose {
 		SetupVerboseEventHandlers(cond)
 	}

@@ -151,11 +151,11 @@ func runTemplateApply(cmd *cobra.Command, args []string) error {
 	var content string
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		// If file doesn't exist, start with empty content
+		// If a file doesn't exist, start with empty content
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("read file: %w", err)
 		}
-		// Add a placeholder title if file is new
+		// Add a placeholder title if a file is new
 		content = "# Task Title\n\nDescribe your task here.\n"
 	} else {
 		content = string(data)

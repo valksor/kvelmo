@@ -68,7 +68,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 	defer cancel()
 
-	// Create checker
+	// Create a checker
 	checker := update.NewChecker(ctx, token, "valksor", "go-mehrhof")
 
 	status, err := checker.Check(ctx, opts)

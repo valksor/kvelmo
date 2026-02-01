@@ -88,7 +88,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return showAllTasks(ws)
 	}
 
-	// If in a worktree, auto-detect task from worktree path
+	// If in a worktree, auto-detect a task from a worktree path
 	if res.IsWorktree {
 		return showWorktreeTask(ctx, ws, res.Git)
 	}
@@ -97,7 +97,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 }
 
 func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) error {
-	// Auto-detect task from current worktree
+	// Auto-detect a task from the current worktree
 	if git == nil {
 		return errors.New("not in a worktree")
 	}
@@ -186,7 +186,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 		printSpecLegend()
 	}
 
-	// Show workflow diagram if requested
+	// Show a workflow diagram if requested
 	if statusDiagram {
 		// Get conductor to access the state machine
 		cond, err := initializeConductor(ctx)
@@ -332,7 +332,7 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 		printSpecLegend()
 	}
 
-	// Show workflow diagram if requested
+	// Show a workflow diagram if requested
 	if statusDiagram {
 		// Get conductor to access the state machine
 		cond, err := initializeConductor(ctx)

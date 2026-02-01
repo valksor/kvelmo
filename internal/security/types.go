@@ -16,7 +16,7 @@ const (
 	SeverityInfo     Severity = "info"
 )
 
-// SeverityRank returns a numeric rank for severity (higher = more severe).
+// Rank returns a numeric rank for severity (higher = more severe).
 func (s Severity) Rank() int {
 	switch s {
 	case SeverityCritical:

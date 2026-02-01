@@ -83,7 +83,7 @@ func runOptimize(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Show current task state
+	// Show the current task state
 	if err := showTaskBeforeOptimization(cond, queueID, taskID); err != nil {
 		return err
 	}

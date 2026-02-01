@@ -27,7 +27,7 @@ var (
 	startAgent         string
 	startNoBranch      bool
 	startWorktree      bool
-	startStash         bool   // Stash uncommitted changes before creating branch
+	startStash         bool   // Stash uncommitted changes before creating a branch
 	startKey           string // External key override (e.g., "FEATURE-123")
 	startTitle         string // Title override for the task
 	startSlug          string // Slug override for branch naming
@@ -215,21 +215,21 @@ func runStart(cmd *cobra.Command, args []string) error {
 		opts = append(opts, conductor.WithStepAgent("reviewing", startAgentReviewing))
 	}
 
-	// Pass default provider from workspace config
+	// Pass the default provider from workspace config
 	if wd, err := os.Getwd(); err == nil {
 		if ws, err := storage.OpenWorkspace(context.Background(), wd, nil); err == nil {
 			if wsCfg, err := ws.LoadConfig(); err == nil {
-				// Apply default provider from config if not set via flag
+				// Apply the default provider from config if not set via a flag
 				if wsCfg.Providers.Default != "" {
 					opts = append(opts, conductor.WithDefaultProvider(wsCfg.Providers.Default))
 				}
-				// Apply stash-on-start from config if not explicitly set via flag
+				// Apply stash-on-start from config if not explicitly set via a flag
 				if !startStash && wsCfg.Git.StashOnStart {
 					opts = append(opts, conductor.WithStashChanges(true))
-					// Also apply auto-pop-stash setting from config
+					// Also apply the auto-pop-stash setting from config
 					opts = append(opts, conductor.WithAutoPopStash(wsCfg.Git.AutoPopStash))
 				}
-				// If stash was explicitly set via flag, apply auto-pop-stash from config
+				// If stash was explicitly set via a flag, apply auto-pop-stash from config
 				if startStash {
 					opts = append(opts, conductor.WithAutoPopStash(wsCfg.Git.AutoPopStash))
 				}
@@ -298,7 +298,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for existing task
+	// Check for an existing task
 	if cond.GetActiveTask() != nil {
 		return fmt.Errorf("task already active: %s\n\nOptions:\n  mehr status   - View task details\n  mehr finish   - Complete the task\n  mehr abandon  - Cancel and start fresh", cond.GetActiveTask().ID)
 	}
@@ -308,7 +308,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	if err == nil && len(workDirs) > 0 {
 		fmt.Printf("Found %d previous task(s) with existing work directories:\n", len(workDirs))
 		for _, taskID := range workDirs {
-			// Try to load work to get title
+			// Try to load work to get a title
 			if work, err := cond.GetWorkspace().LoadWork(taskID); err == nil {
 				fmt.Printf("  - %s: %s\n", taskID, work.Metadata.Title)
 			} else {
@@ -339,7 +339,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 			}
 			fmt.Println("\nArchived existing work directories")
 		case "c", "continue":
-			// Continue with first existing work directory
+			// Continue with the first existing work directory
 			existingTaskID := workDirs[0]
 			fmt.Printf("\nReusing existing work directory: %s\n", existingTaskID)
 
@@ -415,7 +415,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		Worktree:    status.WorktreePath,
 	}
 	displayOpts := display.DefaultTaskInfoOptions()
-	displayOpts.ShowStarted = false // Not relevant for just-started task
+	displayOpts.ShowStarted = false // Not relevant for a just-started task
 	displayOpts.Compact = true      // Don't need state description on start
 	fmt.Print(display.FormatTaskInfo("Task started", info, displayOpts))
 
@@ -489,10 +489,10 @@ func trackStackedFeature(cond *conductor.Conductor, status *conductor.TaskStatus
 
 // runStartParallel starts multiple tasks in parallel using goroutines.
 func runStartParallel(ctx context.Context, references []string) error {
-	// Create shared event bus for all tasks
+	// Create a shared event bus for all tasks
 	bus := eventbus.NewBus()
 
-	// Create task registry
+	// Create a task registry
 	registry := taskrunner.NewRegistry(bus)
 
 	// Determine parallelism

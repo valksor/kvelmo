@@ -68,7 +68,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for active task
+	// Check for an active task
 	activeTask := cond.GetActiveTask()
 	if activeTask == nil {
 		// Try to detect from branch
@@ -120,7 +120,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  %-14s%d\n", "Checkpoints:", status.Checkpoints)
 	fmt.Println()
 
-	// Auto-execute next step if --auto flag is set
+	// Auto-execute the next step if --auto flag is set
 	if continueAuto {
 		return executeNextStep(ctx, cond, status)
 	}

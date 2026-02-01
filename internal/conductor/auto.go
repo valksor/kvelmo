@@ -132,7 +132,7 @@ func (c *Conductor) RunAuto(ctx context.Context, reference string, opts AutoOpti
 			if attempt < maxRetries {
 				c.publishProgress(fmt.Sprintf("Quality failed, re-implementing (attempt %d)...", attempt+1), 55)
 
-				// Re-run implementation with quality feedback
+				// Re-run the implementation with quality feedback
 				if err := c.reImplementWithFeedback(ctx, qualityResult.Output); err != nil {
 					result.Error = err
 					result.FailedAt = "re-implementation"
@@ -149,11 +149,11 @@ func (c *Conductor) RunAuto(ctx context.Context, reference string, opts AutoOpti
 
 			return result, result.Error
 		}
-	} else {
-		// Quality skipped
-		result.QualityPassed = true
-		c.publishProgress("Quality checks skipped", 80)
 	}
+
+	// Quality skipped
+	result.QualityPassed = true
+	c.publishProgress("Quality checks skipped", 80)
 
 	// Step 5: Finish (merge)
 	c.publishProgress("Finishing task...", 85)

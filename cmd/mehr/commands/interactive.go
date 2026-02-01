@@ -98,7 +98,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create interactive session
+	// Create an interactive session
 	session := newInteractiveSession(cond)
 	if err := session.Initialize(ctx); err != nil {
 		return err
@@ -118,7 +118,7 @@ type InteractiveSession struct {
 	transcript *strings.Builder
 	sessionID  string
 	cancelMu   sync.Mutex         // Protects cancelFunc from concurrent access
-	cancelFunc context.CancelFunc // Cancel function for current operation
+	cancelFunc context.CancelFunc // Cancel function for the current operation
 }
 
 // newInteractiveSession creates a new interactive session.
@@ -173,14 +173,14 @@ func (s *InteractiveSession) Initialize(ctx context.Context) error {
 func (s *InteractiveSession) Run(ctx context.Context) error {
 	defer s.cleanup()
 
-	// Setup signal handling for canceling operations
+	// Set up signal handling for canceling operations
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 	defer signal.Stop(sigCh)
 
 	go func() {
 		for range sigCh {
-			// Handle Ctrl+C - cancel current operation but stay in REPL
+			// Handle Ctrl+C - cancel the current operation but stay in REPL
 			s.cancelCurrentOperation()
 			s.printf(true, "\nOperation stopped. %s\n", display.Muted("Type 'exit' to quit."))
 		}
@@ -190,7 +190,7 @@ func (s *InteractiveSession) Run(ctx context.Context) error {
 	s.printf(true, "Type %s for help, %s to exit\n\n", display.Cyan("help"), display.Cyan("exit"))
 
 	for {
-		// Update prompt based on current state
+		// Update prompt based on the current state
 		s.rl.Config.Prompt = s.getPrompt()
 
 		line, err := s.rl.Readline()
@@ -256,7 +256,7 @@ func (s *InteractiveSession) handleCommand(ctx context.Context, input string) er
 		cmd = "exit"
 	}
 
-	// Create cancellable context for this command
+	// Create a cancellable context for this command
 	opCtx, cancel := context.WithCancel(ctx)
 
 	// Store cancel func with mutex protection for signal handler access
@@ -362,7 +362,7 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 		return s.handleBudget(ctx)
 
 	default:
-		// If no recognized command, treat as chat message
+		// If no recognized command, treat as a chat message
 		return s.handleChat(ctx, input)
 	}
 
@@ -449,7 +449,7 @@ func (s *InteractiveSession) handleChat(ctx context.Context, message string) err
 
 	fmt.Println() // New line after response
 
-	// Handle if agent asked a question
+	// Handle if the agent asked a question
 	if response != nil && response.Question != nil {
 		return s.handleAgentQuestion(response.Question)
 	}
@@ -598,12 +598,12 @@ func (s *InteractiveSession) handleAnswer(ctx context.Context, response string) 
 		return fmt.Errorf("clear pending question: %w", err)
 	}
 
-	// Add answer as a note
+	// Add an answer as a note
 	if err := s.cond.GetWorkspace().AppendNote(task.ID, string(s.state), response); err != nil {
 		return fmt.Errorf("save answer: %w", err)
 	}
 
-	// Resume workflow based on current state
+	// Resume workflow based on the current state
 	switch s.state {
 	case workflow.StatePlanning:
 		if err := s.cond.Plan(ctx); err != nil {
@@ -657,7 +657,7 @@ func (s *InteractiveSession) handleRedo(ctx context.Context) error {
 
 // handleClear clears the screen.
 func (s *InteractiveSession) handleClear() {
-	// ANSI escape code to clear screen
+	// ANSI escape code to clear the screen
 	fmt.Print("\033[H\033[2J")
 }
 
@@ -1033,9 +1033,9 @@ func (s *InteractiveSession) handleFind(ctx context.Context, args []string) erro
 	return nil
 }
 
-// handleSimplify simplifies code based on current workflow state.
+// handleSimplify simplifies code based on the current workflow The handleSimplify function optimizes code according to the current workflow status.
 //
-//nolint:unparam // args is kept for consistent signature with other handlers
+//nolint:unparam // args are kept for consistent signature with other handlers
 func (s *InteractiveSession) handleSimplify(ctx context.Context, args []string) error {
 	if s.cond.GetActiveTask() == nil {
 		return errors.New("no active task")
@@ -1274,7 +1274,7 @@ func (s *InteractiveSession) handleAgentEvent(event agent.Event) error {
 		// Ignore other event types for display purposes
 	}
 
-	// Also publish to event bus for other listeners
+	// Also publish to eventbus for other listeners
 	s.cond.GetEventBus().PublishRaw(eventbus.Event{
 		Type: events.TypeAgentMessage,
 		Data: map[string]any{"event": event},
@@ -1357,7 +1357,7 @@ func (s *InteractiveSession) buildChatPrompt(message string) string {
 
 	builder.WriteString("You are an AI assistant helping with a software development task.\n\n")
 
-	// Add current task context
+	// Add the current task context
 	task := s.cond.GetActiveTask()
 	if task != nil {
 		if work := s.cond.GetTaskWork(); work != nil {
@@ -1376,7 +1376,7 @@ func (s *InteractiveSession) buildChatPrompt(message string) string {
 func (s *InteractiveSession) getPrompt() string {
 	stateStr := string(s.state)
 
-	// Use ColorState from internal display package for consistent coloring
+	// Use ColorState from the internal display package for consistent coloring
 	return fmt.Sprintf("mehrhof (%s) > ", mehrhofdisplay.ColorState(stateStr, stateStr))
 }
 

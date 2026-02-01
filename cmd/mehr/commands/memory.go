@@ -51,7 +51,7 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(memoryCmd)
-	memoryCmd.GroupID = "utility" // Add to utility group
+	memoryCmd.GroupID = "utility" // Add to the utility group
 
 	memoryCmd.Flags().StringVarP(&memoryQuery, "search", "s", "", "Search query for similar tasks")
 	memoryCmd.Flags().IntVarP(&memoryLimit, "limit", "l", 5, "Maximum results to return")
@@ -85,7 +85,7 @@ func runMemory(cmd *cobra.Command, args []string) error {
 		return errors.New("memory system is not enabled. Enable it in .mehrhof/config.yaml with memory.enabled: true")
 	}
 
-	// Get memory system from conductor
+	// Get memory system from a conductor
 	mem := cond.GetMemory()
 	if mem == nil {
 		return errors.New("memory system is not available. Ensure memory is enabled in config")
@@ -139,7 +139,7 @@ func clearMemory(ctx context.Context, mem *memory.MemorySystem) error {
 
 // showMemoryStats displays memory statistics.
 func showMemoryStats(ctx context.Context, mem *memory.MemorySystem, ws *storage.Workspace) error {
-	// Create indexer to get stats
+	// Create an indexer to get stats
 	indexer := memory.NewIndexer(mem, ws, nil)
 	stats, err := indexer.GetStats(ctx)
 	if err != nil {

@@ -73,7 +73,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 	// Set up verbose event handlers for agent output
 	SetupVerboseEventHandlers(cond)
 
-	// Check for active task
+	// Check for an active task
 	if cond.GetActiveTask() == nil {
 		fmt.Print(display.NoActiveTaskError())
 
@@ -86,7 +86,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 	status, _ := cond.Status(ctx)
 	currentState := status.State
 
-	// Check if questions are allowed in current state
+	// Check if questions are allowed in the current state
 	validStates := map[string]bool{
 		"planning":     true,
 		"implementing": true,
@@ -112,7 +112,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 
 		if err := cond.AskQuestion(ctx, question); err != nil {
-			// Check if agent asked a back-question
+			// Check if the agent asked a back-question
 			if errors.Is(err, conductor.ErrPendingQuestion) {
 				fmt.Println()
 				fmt.Println(kitdisplay.Warning("Agent has a follow-up question."))
@@ -127,7 +127,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// If message provided as argument, ask it and exit
+	// If a message provided as argument, ask it and exit
 	if len(args) > 0 {
 		question := joinArgs(args)
 		if err := askQuestion(question); err != nil {

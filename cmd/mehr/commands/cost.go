@@ -72,7 +72,7 @@ func runCost(cmd *cobra.Command, args []string) error {
 		return showAllCosts(ws, costSummary)
 	}
 
-	// If in a worktree, auto-detect task from worktree path
+	// If in a worktree, auto-detect a task from the worktree path
 	if res.IsWorktree {
 		return showWorktreeCost(ws, res.Git)
 	}
@@ -193,7 +193,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 			result.CachedPercent = cachedPercent
 		}
 
-		// Add by-step breakdown if requested or if there are multiple steps
+		// Add a by-step breakdown if requested or if there are multiple steps
 		if costByStep || len(costs.ByStep) > 1 {
 			result.ByStep = make(map[string]output.StepCost)
 			for step, stats := range costs.ByStep {
@@ -229,7 +229,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 	fmt.Printf("  Total cost:    %s\n", tkdisplay.Bold(formatCost(costs.TotalCostUSD)))
 	fmt.Println(tkdisplay.Muted("  (Based on Claude API pricing)"))
 
-	// Show by-step breakdown if requested or if there are multiple steps
+	// Show a by-step breakdown if requested or if there are multiple steps
 	if costByStep || len(costs.ByStep) > 1 {
 		if len(costs.ByStep) > 0 {
 			fmt.Printf("\n%s\n", tkdisplay.Bold("By Step:"))
@@ -258,7 +258,7 @@ func showTaskCost(ws *storage.Workspace, taskID, label string) error {
 		}
 	}
 
-	// Show chart if requested
+	// Show a chart if requested
 	if costChart {
 		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
 		renderStepCostChart(costs.ByStep)
@@ -405,7 +405,7 @@ func showAllCosts(ws *storage.Workspace, summaryMode bool) error {
 		formatCost(float64(grandTotalCost)/10000),
 	)
 
-	// Show chart if requested
+	// Show a chart if requested
 	if costChart {
 		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
 		renderAllTasksChart(ws, taskIDs)
@@ -538,7 +538,7 @@ func showCostSummary(ws *storage.Workspace, taskIDs []string) error {
 		_ = w.Flush()
 	}
 
-	// Show chart if requested
+	// Show a chart if requested
 	if costChart {
 		fmt.Printf("\n%s\n", tkdisplay.Bold("Cost Visualization:"))
 		renderSummaryChart(stepTotals)
@@ -557,7 +557,7 @@ func formatNumber(n int) string {
 	numCommas := (len(s) - 1) / 3
 	result := make([]byte, 0, len(s)+numCommas)
 
-	// First segment (may be 1-3 digits)
+	// First segment (maybe 1-3 digits)
 	firstLen := len(s) % 3
 	if firstLen == 0 {
 		firstLen = 3
@@ -588,7 +588,7 @@ func formatCost(cost float64) string {
 
 // formatStepName formats a step name for display.
 func formatStepName(step string) string {
-	// Capitalize first letter
+	// Capitalize the first letter
 	if len(step) == 0 {
 		return step
 	}
@@ -695,7 +695,7 @@ func renderAllTasksChart(ws *storage.Workspace, taskIDs []string) {
 		}
 	}
 
-	// Limit to top 10 tasks for readability
+	// Limit to the top 10 tasks for readability
 	if len(tasks) > 10 {
 		tasks = tasks[:10]
 	}
@@ -770,8 +770,8 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 	rendered := chart.BarChart(bars, barOpts)
 	fmt.Print(rendered)
 
-	// Second, render pie chart
-	var slices []chart.Slice
+	// Second, render a pie chart
+	var chartSlices []chart.Slice
 
 	totalTokens := 0
 	for _, stats := range stepTotals {
@@ -785,7 +785,7 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 		if totalTokens > 0 {
 			percent = float64(stepTotal) / float64(totalTokens) * 100
 		}
-		slices = append(slices, chart.Slice{
+		chartSlices = append(chartSlices, chart.Slice{
 			Label:   formatStepName(step),
 			Value:   stepTotal,
 			Percent: percent,
@@ -795,6 +795,6 @@ func renderSummaryChart(stepTotals map[string]*storage.StepCostStats) {
 	pieOpts := chart.Options{
 		Title: "\nToken Distribution by Step",
 	}
-	pieChart := chart.PieChart(slices, pieOpts)
+	pieChart := chart.PieChart(chartSlices, pieOpts)
 	fmt.Print(pieChart)
 }

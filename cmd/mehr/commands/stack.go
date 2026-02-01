@@ -364,7 +364,7 @@ func runStackSync(cmd *cobra.Command, _ []string) error {
 
 	fmt.Printf("Syncing PR status for %d task(s)...\n", prCount)
 
-	// Initialize conductor to get provider registry
+	// Initialize conductor to get the provider registry
 	cond, err := initializeConductor(ctx)
 	if err != nil {
 		return fmt.Errorf("initialize conductor: %w", err)
@@ -406,7 +406,7 @@ func runStackSync(cmd *cobra.Command, _ []string) error {
 		return errors.New("no provider with PR fetching capability found")
 	}
 
-	// Create tracker and sync
+	// Create a tracker and sync
 	tracker := stack.NewTracker(stackStorage)
 	result, err := tracker.Sync(ctx, prFetcher)
 	if err != nil {

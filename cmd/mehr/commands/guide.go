@@ -61,7 +61,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	var active *storage.ActiveTask
 	var work *storage.TaskWork
 	if res.IsWorktree {
-		// Auto-detect task from current worktree
+		// Auto-detect the task from the current worktree
 		active, err = ws.FindTaskByWorktreePath(res.Git.Root())
 		if err != nil {
 			return fmt.Errorf("find task by worktree: %w", err)
@@ -76,7 +76,7 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		}
 		work, _ = ws.LoadWork(active.ID)
 	} else {
-		// Check for active task in main repo
+		// Check for an active task in the main repo
 		if !ws.HasActiveTask() {
 			fmt.Println("No active task.")
 			fmt.Println()

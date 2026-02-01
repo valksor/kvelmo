@@ -106,14 +106,14 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for active task
+	// Check for an active task
 	if cond.GetActiveTask() == nil {
 		fmt.Print(display.NoActiveTaskError())
 
 		return errors.New("no active task")
 	}
 
-	// Handle --force flag to reset stuck state
+	// Handle --force a flag to reset the stuck state
 	if implementForce {
 		if err := cond.ResetState(ctx); err != nil {
 			return fmt.Errorf("reset state: %w", err)

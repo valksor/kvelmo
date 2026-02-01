@@ -41,7 +41,7 @@ func runUndo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for active task
+	// Check for an active task
 	activeTask := cond.GetActiveTask()
 	if activeTask == nil {
 		fmt.Print(display.NoActiveTaskError())
