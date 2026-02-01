@@ -153,18 +153,18 @@ steps:
 
 Each agent in the pipeline supports:
 
-| Field | Description |
-|-------|-------------|
-| `name` | Unique step identifier |
-| `agent` | Agent to use (from registry) |
-| `model` | Model override (optional) |
-| `role` | Instructions for the agent |
-| `input` | List of input artifacts to consume |
-| `output` | Output artifact name |
+| Field     | Description                                   |
+|-----------|-----------------------------------------------|
+| `name`    | Unique step identifier                        |
+| `agent`   | Agent to use (from registry)                  |
+| `model`   | Model override (optional)                     |
+| `role`    | Instructions for the agent                    |
+| `input`   | List of input artifacts to consume            |
+| `output`  | Output artifact name                          |
 | `depends` | List of step dependencies (for DAG execution) |
-| `env` | Environment variables for the agent |
-| `args` | Additional arguments for the agent |
-| `timeout` | Per-step timeout in seconds |
+| `env`     | Environment variables for the agent           |
+| `args`    | Additional arguments for the agent            |
+| `timeout` | Per-step timeout in seconds                   |
 
 ## Artifact Pipeline
 

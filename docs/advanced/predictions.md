@@ -105,20 +105,20 @@ task-7f3a8c92e4
 
 Features extracted from tasks:
 
-| Feature | Type | Description |
-|---------|------|-------------|
-| `title_length` | int | Character count of title |
-| `title_word_count` | int | Word count of title |
-| `task_type` | string | Classified type (fix, feature, refactor, test) |
-| `has_specifications` | bool | Whether specs exist |
-| `provider` | string | Task source provider |
-| `num_files_changed` | int | Files changed in git |
-| `lines_added` | int | Lines of code added |
-| `lines_deleted` | int | Lines of code deleted |
-| `languages` | []string | Programming languages used |
-| `hour_of_day` | int | Current hour (0-23) |
-| `day_of_week` | int | Day of week (0-6) |
-| `is_weekend` | bool | Whether it's weekend |
+| Feature              | Type     | Description                                    |
+|----------------------|----------|------------------------------------------------|
+| `title_length`       | int      | Character count of title                       |
+| `title_word_count`   | int      | Word count of title                            |
+| `task_type`          | string   | Classified type (fix, feature, refactor, test) |
+| `has_specifications` | bool     | Whether specs exist                            |
+| `provider`           | string   | Task source provider                           |
+| `num_files_changed`  | int      | Files changed in git                           |
+| `lines_added`        | int      | Lines of code added                            |
+| `lines_deleted`      | int      | Lines of code deleted                          |
+| `languages`          | []string | Programming languages used                     |
+| `hour_of_day`        | int      | Current hour (0-23)                            |
+| `day_of_week`        | int      | Day of week (0-6)                              |
+| `is_weekend`         | bool     | Whether it's weekend                           |
 
 ### Task Type Classification
 
@@ -364,28 +364,28 @@ agent:
 
 ### Prediction Accuracy
 
-| Predictor | Accuracy (after 100 tasks) | Accuracy (after 1000 tasks) |
-|-----------|---------------------------|----------------------------|
-| Next Action | 85% | 92% |
-| Duration | 70% | 82% |
-| Complexity | 75% | 88% |
-| Risk | 68% | 80% |
+| Predictor   | Accuracy (after 100 tasks) | Accuracy (after 1000 tasks) |
+|-------------|----------------------------|-----------------------------|
+| Next Action | 85%                        | 92%                         |
+| Duration    | 70%                        | 82%                         |
+| Complexity  | 75%                        | 88%                         |
+| Risk        | 68%                        | 80%                         |
 
 ### Training Time
 
 | Samples | Training Time |
 |---------|---------------|
-| 100 | <1s |
-| 1000 | ~5s |
-| 10000 | ~30s |
+| 100     | <1s           |
+| 1000    | ~5s           |
+| 10000   | ~30s          |
 
 ### Memory Usage
 
-| Component | Memory |
-|-----------|--------|
-| Feature vectors (1000 tasks) | ~1MB |
-| XGBoost models | ~500KB |
-| Telemetry cache | ~5MB |
+| Component                    | Memory |
+|------------------------------|--------|
+| Feature vectors (1000 tasks) | ~1MB   |
+| XGBoost models               | ~500KB |
+| Telemetry cache              | ~5MB   |
 
 ## Troubleshooting
 

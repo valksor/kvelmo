@@ -10,12 +10,12 @@ The security system integrates multiple scanners into the Mehrhof workflow.
 
 Scanners are **auto-detected** based on project marker files:
 
-| Marker File | Language | Scanners |
-|-------------|----------|----------|
-| `go.mod` | Go | Gosec, Govulncheck |
-| `package.json` | JavaScript/TypeScript | npm audit, ESLint Security |
-| `requirements.txt`, `pyproject.toml` | Python | Bandit, pip-audit |
-| (always) | Cross-language | Semgrep, Gitleaks |
+| Marker File                          | Language              | Scanners                   |
+|--------------------------------------|-----------------------|----------------------------|
+| `go.mod`                             | Go                    | Gosec, Govulncheck         |
+| `package.json`                       | JavaScript/TypeScript | npm audit, ESLint Security |
+| `requirements.txt`, `pyproject.toml` | Python                | Bandit, pip-audit          |
+| (always)                             | Cross-language        | Semgrep, Gitleaks          |
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -444,11 +444,11 @@ jobs:
 
 ### Scanner Execution Times
 
-| Scanner | Time (1000 files) | Time (10000 files) |
-|---------|-------------------|---------------------|
-| Gosec | ~30s | ~5min |
-| Gitleaks | ~10s | ~1min |
-| Govulncheck | ~20s | ~2min |
+| Scanner     | Time (1000 files) | Time (10000 files) |
+|-------------|-------------------|--------------------|
+| Gosec       | ~30s              | ~5min              |
+| Gitleaks    | ~10s              | ~1min              |
+| Govulncheck | ~20s              | ~2min              |
 
 ### Optimization Tips
 

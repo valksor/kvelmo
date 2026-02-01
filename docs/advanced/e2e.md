@@ -39,12 +39,12 @@ make e2e-fast
 
 ## Test Coverage
 
-| Test | Description | Duration |
-|------|-------------|----------|
-| `TestHappyPath` | Full workflow: start → plan → implement → review → finish | ~10 min |
-| `TestBasicCommands` | Commands that don't need agent (version, help, init, etc.) | ~1 min |
-| `TestStartAndPlan` | Start task and run plan | ~5 min |
-| `TestImplementDryRun` | Implement with --dry-run flag | ~8 min |
+| Test                  | Description                                                | Duration |
+|-----------------------|------------------------------------------------------------|----------|
+| `TestHappyPath`       | Full workflow: start → plan → implement → review → finish  | ~10 min  |
+| `TestBasicCommands`   | Commands that don't need agent (version, help, init, etc.) | ~1 min   |
+| `TestStartAndPlan`    | Start task and run plan                                    | ~5 min   |
+| `TestImplementDryRun` | Implement with --dry-run flag                              | ~8 min   |
 
 ## What's Validated
 

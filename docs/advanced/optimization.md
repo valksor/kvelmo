@@ -10,13 +10,13 @@ Mehrhof includes an **in-memory TTL cache** for provider API responses. This red
 
 The cache stores provider responses with configurable time-to-live (TTL) values:
 
-| Resource Type | Default TTL | Description |
-|--------------|-------------|-------------|
-| Issues | 5 minutes | Task/issue data from providers |
-| Comments | 1 minute | Issue comments and discussions |
-| Metadata | 30 minutes | Repositories, projects, users |
-| Databases | 1 hour | Database queries and listings |
-| Plugins | 10 minutes | Plugin metadata and manifests |
+| Resource Type | Default TTL | Description                    |
+|---------------|-------------|--------------------------------|
+| Issues        | 5 minutes   | Task/issue data from providers |
+| Comments      | 1 minute    | Issue comments and discussions |
+| Metadata      | 30 minutes  | Repositories, projects, users  |
+| Databases     | 1 hour      | Database queries and listings  |
+| Plugins       | 10 minutes  | Plugin metadata and manifests  |
 
 ### Configuration
 
@@ -76,11 +76,11 @@ agent:
 
 ### Cost vs Capability Trade-offs
 
-| Agent | Use Case | Cost | Speed | Quality |
-|-------|----------|------|-------|---------|
-| claude-opus | Planning, code review | High | Slow | Best |
-| claude | Implementation | Medium | Fast | Good |
-| claude-haiku | Quick questions | Low | Fastest | Adequate |
+| Agent        | Use Case              | Cost   | Speed   | Quality  |
+|--------------|-----------------------|--------|---------|----------|
+| claude-opus  | Planning, code review | High   | Slow    | Best     |
+| claude       | Implementation        | Medium | Fast    | Good     |
+| claude-haiku | Quick questions       | Low    | Fastest | Adequate |
 
 ### Recommended Patterns
 
@@ -115,12 +115,12 @@ agent:
 
 ### Guidelines
 
-| Scenario | Timeout | Retries |
-|----------|---------|---------|
-| Stable network, simple tasks | 180 | 2 |
-| Default (most cases) | 300 | 3 |
-| Unstable network | 600 | 5 |
-| Large codebases, complex tasks | 900 | 3 |
+| Scenario                       | Timeout | Retries |
+|--------------------------------|---------|---------|
+| Stable network, simple tasks   | 180     | 2       |
+| Default (most cases)           | 300     | 3       |
+| Unstable network               | 600     | 5       |
+| Large codebases, complex tasks | 900     | 3       |
 
 ### Timeout Errors
 
