@@ -17,10 +17,10 @@ When you search, Mehrhof finds semantically similar past tasks using vector simi
 
 Memory features are available through:
 
-| Feature | Location |
-|---------|----------|
-| **Memory Search** | Settings → Memory tab |
-| **Memory Statistics** | Settings → Memory → Stats |
+| Feature                  | Location                   |
+|--------------------------|----------------------------|
+| **Memory Search**        | Settings → Memory tab      |
+| **Memory Statistics**    | Settings → Memory → Stats  |
 | **Memory Configuration** | Settings → Memory → Config |
 
 Memory search results appear automatically in the dashboard when starting similar tasks.
@@ -45,13 +45,13 @@ Results show similar documents with similarity scores.
 
 Each search result shows:
 
-| Field | Description |
-|-------|-------------|
-| Similarity | Score from 0-1 (higher = more similar) |
-| Document Type | What kind of content |
-| Task ID | Source task |
-| Excerpt | Relevant content snippet |
-| Date | When the document was created |
+| Field         | Description                            |
+|---------------|----------------------------------------|
+| Similarity    | Score from 0-1 (higher = more similar) |
+| Document Type | What kind of content                   |
+| Task ID       | Source task                            |
+| Excerpt       | Relevant content snippet               |
+| Date          | When the document was created          |
 
 **Similarity Threshold:** Only results above 0.8 (default) are shown. Adjust this in settings.
 
@@ -192,12 +192,12 @@ This helps the AI apply lessons learned from previous work.
 
 See [`mehr memory`](../cli/memory.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr memory search "query"` | Search memory |
-| `mehr memory stats` | View statistics |
+| CLI Command                       | Web UI Action       |
+|-----------------------------------|---------------------|
+| `mehr memory search "query"`      | Search memory       |
+| `mehr memory stats`               | View statistics     |
 | `mehr memory index --task abc123` | Manually index task |
-| `mehr memory clear` | Clear all memory |
+| `mehr memory clear`               | Clear all memory    |
 
 ## Memory Storage
 

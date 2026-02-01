@@ -32,11 +32,11 @@ curl -X POST http://localhost:8080/api/v1/parallel \
 
 **Request Body:**
 
-| Field         | Type     | Default | Description                                    |
-| ------------- | -------- | ------- | ---------------------------------------------- |
-| `references`  | string[] | -       | Array of task references to start              |
-| `max_workers` | int      | 2       | Maximum parallel workers (goroutines)          |
-| `use_worktree`| bool     | false   | Create isolated git worktree for each task     |
+| Field          | Type     | Default | Description                                |
+|----------------|----------|---------|--------------------------------------------|
+| `references`   | string[] | -       | Array of task references to start          |
+| `max_workers`  | int      | 2       | Maximum parallel workers (goroutines)      |
+| `use_worktree` | bool     | false   | Create isolated git worktree for each task |
 
 **Response:**
 
@@ -142,13 +142,13 @@ curl http://localhost:8080/api/v1/running
 
 ### Task Status Values
 
-| Status      | Description                                |
-| ----------- | ------------------------------------------ |
-| `pending`   | Task registered, not yet started           |
-| `running`   | Task actively executing                    |
-| `completed` | Task finished successfully                 |
-| `failed`    | Task encountered an error                  |
-| `cancelled` | Task was manually cancelled                |
+| Status      | Description                      |
+|-------------|----------------------------------|
+| `pending`   | Task registered, not yet started |
+| `running`   | Task actively executing          |
+| `completed` | Task finished successfully       |
+| `failed`    | Task encountered an error        |
+| `cancelled` | Task was manually cancelled      |
 
 ## Per-Task Streaming
 
@@ -281,12 +281,12 @@ mehr note --running=abc123 "Consider edge case X"
 
 **Components:**
 
-| Component       | Description                                    |
-| --------------- | ---------------------------------------------- |
-| Task Registry   | Thread-safe map tracking all running tasks     |
-| Task Runner     | Worker pool with configurable parallelism      |
-| Conductor       | Per-task orchestrator (AI agent, storage, VCS) |
-| Git Worktrees   | Isolated working directories per task          |
+| Component     | Description                                    |
+|---------------|------------------------------------------------|
+| Task Registry | Thread-safe map tracking all running tasks     |
+| Task Runner   | Worker pool with configurable parallelism      |
+| Conductor     | Per-task orchestrator (AI agent, storage, VCS) |
+| Git Worktrees | Isolated working directories per task          |
 
 ### Thread Safety
 
@@ -312,11 +312,11 @@ The registry uses `sync.RWMutex` to ensure thread-safe access:
 
 ### Recommended Settings
 
-| Scenario              | `max_workers` | Notes                          |
-| --------------------- | ------------- | ------------------------------ |
-| Development machine   | 2-3           | Leave headroom for other work  |
-| CI server             | 4-8           | Based on available cores       |
-| Sequential execution  | 1             | Default, no worktree needed    |
+| Scenario             | `max_workers` | Notes                         |
+|----------------------|---------------|-------------------------------|
+| Development machine  | 2-3           | Leave headroom for other work |
+| CI server            | 4-8           | Based on available cores      |
+| Sequential execution | 1             | Default, no worktree needed   |
 
 ### Monitoring Tips
 

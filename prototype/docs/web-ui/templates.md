@@ -12,14 +12,14 @@ Templates include:
 
 ## Available Templates
 
-| Template | Description | Best For |
-|----------|-------------|----------|
-| `bug-fix` | Stricter validation | Bug fixes, issues |
-| `feature` | New feature development | New capabilities |
-| `refactor` | Quality-focused | Code improvements |
-| `docs` | Skips quality checks | Documentation changes |
-| `test` | Test-focused | Adding/improving tests |
-| `chore` | Maintenance | Routine tasks |
+| Template   | Description             | Best For               |
+|------------|-------------------------|------------------------|
+| `bug-fix`  | Stricter validation     | Bug fixes, issues      |
+| `feature`  | New feature development | New capabilities       |
+| `refactor` | Quality-focused         | Code improvements      |
+| `docs`     | Skips quality checks    | Documentation changes  |
+| `test`     | Test-focused            | Adding/improving tests |
+| `chore`    | Maintenance             | Routine tasks          |
 
 ## Accessing in the Web UI
 
@@ -271,12 +271,12 @@ agent: claude
 
 See [`mehr templates`](../cli/templates.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr templates` | List templates |
-| `mehr templates show bug-fix` | Show template details |
-| `mehr templates apply bug-fix task.md` | Apply to file |
-| `mehr start --template bug-fix file:task.md` | Create with template |
+| CLI Command                                  | Web UI Action         |
+|----------------------------------------------|-----------------------|
+| `mehr templates`                             | List templates        |
+| `mehr templates show bug-fix`                | Show template details |
+| `mehr templates apply bug-fix task.md`       | Apply to file         |
+| `mehr start --template bug-fix file:task.md` | Create with template  |
 
 ## Template Storage
 

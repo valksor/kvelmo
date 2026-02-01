@@ -14,7 +14,7 @@ Navigate to `/browser` or click **"Browser"** in the navigation.
 │                                                              │
 │  Open Tabs:                                                  │
 │  ┌────────────────────────────────────────────────────┐      │
-│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]    │      │
+│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]   │      │
 │  │ 🌐 Localhost:8080 - Health Endpoint                │      │
 │  │ 🌐 Google - "How to implement OAuth"               │      │
 │  └────────────────────────────────────────────────────┘      │
@@ -49,12 +49,12 @@ chrome --remote-debugging-port=9222
 
 View and manage all open Chrome tabs:
 
-| Action | Description |
-|--------|-------------|
-| **List tabs** | Shows all open tabs with URLs |
+| Action          | Description                   |
+|-----------------|-------------------------------|
+| **List tabs**   | Shows all open tabs with URLs |
 | **Switch tabs** | Click a tab to make it active |
-| **Close tab** | Close the selected tab |
-| **Refresh** | Reload the tab list |
+| **Close tab**   | Close the selected tab        |
+| **Refresh**     | Reload the tab list           |
 
 ### Navigation
 
@@ -80,7 +80,7 @@ Capture screenshots of the current page:
 │  Screenshot Options                                          │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  [Full Page]  [Visible Only]                                │
+│  [Full Page]  [Visible Only]                                 │
 │                                                              │
 │  Format: [PNG ▼]  [JPEG]                                     │
 │                                                              │
@@ -98,14 +98,14 @@ Inspect page elements using CSS selectors:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  DOM Query                                                    │
+│  DOM Query                                                   │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Selector: [#submit-button________________]                   │
+│  Selector: [#submit-button________________]                  │
 │                                                              │
 │  Results (1):                                                │
-│  • <button id="submit-button" class="btn primary">          │
-│      Submit                                                   │
+│  • <button id="submit-button" class="btn primary">           │
+│      Submit                                                  │
 │    </button>                                                 │
 │                                                              │
 │  [Query]  [Cancel]                                           │
@@ -121,12 +121,12 @@ View console output:
 │  Console Output                                              │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Level: [All ▼]  [Info]  [Warn]  [Error]                   │
+│  Level: [All ▼]  [Info]  [Warn]  [Error]                     │
 │                                                              │
 │  10:23:45 [Info]   Page loaded                               │
 │  10:23:46 [Info]   API request: GET /api/users               │
 │  10:23:47 [Warn]   Deprecated API usage detected             │
-│  10:23:48 [Error]  Failed to load resource: net::ERR_...    │
+│  10:23:48 [Error]  Failed to load resource: net::ERR_...     │
 │                                                              │
 │  [Clear]  [Close]                                            │
 └──────────────────────────────────────────────────────────────┘
@@ -141,11 +141,11 @@ Click elements and type text:
 │  Interact with Element                                       │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Action: [Click ▼]  [Type]                                  │
+│  Action: [Click ▼]  [Type]                                   │
 │                                                              │
 │  Selector: [#email-input________________]                    │
 │                                                              │
-│  Text to type: [user@example.com____________]               │
+│  Text to type: [user@example.com____________]                │
 │  (for Type action only)                                      │
 │                                                              │
 │  [Execute]  [Cancel]                                         │

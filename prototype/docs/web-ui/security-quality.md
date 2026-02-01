@@ -18,12 +18,12 @@ Mehrhof integrates security scanning and code quality tools that run automatical
 
 Security and quality features are available from:
 
-| Feature | Location |
-|---------|----------|
-| **Run Scan** | Dashboard → Quick Actions → "Run Scan" |
-| **Simplify** | Dashboard → Quick Actions → "Simplify" |
-| **Quality Settings** | Settings → Quality |
-| **Security Settings** | Settings → Security |
+| Feature               | Location                               |
+|-----------------------|----------------------------------------|
+| **Run Scan**          | Dashboard → Quick Actions → "Run Scan" |
+| **Simplify**          | Dashboard → Quick Actions → "Simplify" |
+| **Quality Settings**  | Settings → Quality                     |
+| **Security Settings** | Settings → Security                    |
 
 Scans run automatically during implementation and review if enabled.
 
@@ -45,22 +45,22 @@ Results appear in the agent output area.
 
 Results show:
 
-| Section | Description |
-|---------|-------------|
-| **Findings** | Issues discovered by each scanner |
-| **Severity** | critical, high, medium, low |
-| **Location** | File and line number |
-| **Description** | What the issue is |
-| **Recommendation** | How to fix it |
+| Section            | Description                       |
+|--------------------|-----------------------------------|
+| **Findings**       | Issues discovered by each scanner |
+| **Severity**       | critical, high, medium, low       |
+| **Location**       | File and line number              |
+| **Description**    | What the issue is                 |
+| **Recommendation** | How to fix it                     |
 
 ### Severity Levels
 
-| Level | Description |
-|-------|-------------|
+| Level      | Description                                         |
+|------------|-----------------------------------------------------|
 | `critical` | Immediate security risk (default failure threshold) |
-| `high` | Significant security issue |
-| `medium` | Potential security concern |
-| `low` | Minor issue or informational |
+| `high`     | Significant security issue                          |
+| `medium`   | Potential security concern                          |
+| `low`      | Minor issue or informational                        |
 
 ### Available Scanners
 
@@ -270,11 +270,11 @@ curl -X POST http://localhost:8080/api/v1/scan \
 
 See [`mehr scan`](../cli/scan.md) and [`mehr simplify`](../cli/simplify.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr scan` | Run scan from dashboard |
-| `mehr simplify` | Simplify from dashboard |
-| `mehr scan --sarif --output report.json` | Generate SARIF report |
+| CLI Command                              | Web UI Action           |
+|------------------------------------------|-------------------------|
+| `mehr scan`                              | Run scan from dashboard |
+| `mehr simplify`                          | Simplify from dashboard |
+| `mehr scan --sarif --output report.json` | Generate SARIF report   |
 
 ## Troubleshooting
 
@@ -303,4 +303,4 @@ Simplification creates checkpoints, so you can undo:
 1. Click **"Undo"** from dashboard
 2. Or use CLI: `mehr undo`
 3. Add note with better instructions
-4. Try simplify again
+4. Try to simplify again

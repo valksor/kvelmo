@@ -19,9 +19,9 @@ After creating a task, click the **"Plan"** button in the Active Task card:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
+│  State: ● Idle                                               │
 │  Branch: feature/user-oauth                                  │
 │                                                              │
 │  Actions:                                                    │
@@ -48,15 +48,15 @@ Watch the AI work in the **Agent Output** section:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                          │
+│  Agent Output (Live)                                         │
 ├──────────────────────────────────────────────────────────────┤
-│  $ Reading task description...                                │
-│  $ Analyzing codebase structure...                            │
+│  $ Reading task description...                               │
+│  $ Analyzing codebase structure...                           │
 │  ✓ Scanning internal/ directory                              │
 │  ✓ Reviewing existing auth patterns                          │
-│  $ Creating specification...                                  │
+│  $ Creating specification...                                 │
 │  ✓ Generated specification-1.md                              │
-│  ▶ Streaming...                                               │
+│  ▶ Streaming...                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -64,11 +64,11 @@ Watch the AI work in the **Agent Output** section:
 
 During planning, the task state changes to **"Planning"**:
 
-| State | What's Happening | What You Can Do |
-|-------|------------------|-----------------|
+| State        | What's Happening                   | What You Can Do                     |
+|--------------|------------------------------------|-------------------------------------|
 | **Planning** | AI is analyzing and creating specs | Watch progress, wait for completion |
-| **Waiting** | AI has a question | Answer in the Questions section |
-| **Idle** | Planning complete, specs ready | Review specs, proceed to implement |
+| **Waiting**  | AI has a question                  | Answer in the Questions section     |
+| **Idle**     | Planning complete, specs ready     | Review specs, proceed to implement  |
 
 ## Reviewing Specifications
 
@@ -127,13 +127,13 @@ Add notes to provide additional context before planning:
 │  Add Note                                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Use the existing OAuth2 library from go-oauth2:    │     │
-│  │ we already have this as a dependency.              │     │
-│  │                                                    │     │
-│  │ Sessions should be stored in PostgreSQL, not       │     │
-│  │ Redis.                                             │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Use the existing OAuth2 library from go-oauth2:    │      │
+│  │ we already have this as a dependency.              │      │
+│  │                                                    │      │
+│  │ Sessions should be stored in PostgreSQL, not       │      │
+│  │ Redis.                                             │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                                              │
 │                                    [Cancel] [Add Note]       │
 └──────────────────────────────────────────────────────────────┘
@@ -145,7 +145,7 @@ If the AI needs clarification during planning, it will enter the **"Waiting"** s
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Question from Agent                                          │
+│  Question from Agent                                         │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Which OAuth2 library should we use for Google integration?  │
@@ -155,7 +155,7 @@ If the AI needs clarification during planning, it will enter the **"Waiting"** s
 │    • golang.org/x/oauth2                                     │
 │    • Other (specify)                                         │
 │                                                              │
-│  [Answer: go-oauth2/oauth2]  [Answer: golang.org/x/oauth2]  │
+│  [Answer: go-oauth2/oauth2]  [Answer: golang.org/x/oauth2]   │
 │  [Provide custom answer]                                     │
 └──────────────────────────────────────────────────────────────┘
 ```

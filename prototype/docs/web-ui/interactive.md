@@ -27,42 +27,42 @@ The chat interface allows you to:
 
 Quick action buttons let you control the workflow:
 
-| Action | Description |
-|--------|-------------|
-| **Status** | Show current task status |
-| **Plan** | Enter planning phase |
-| **Implement** | Execute specifications |
-| **Review** | Review code |
-| **Continue** | Resume from waiting/paused |
-| **Finish** | Complete the task |
-| **Abandon** | Discard the task |
+| Action        | Description                |
+|---------------|----------------------------|
+| **Status**    | Show current task status   |
+| **Plan**      | Enter planning phase       |
+| **Implement** | Execute specifications     |
+| **Review**    | Review code                |
+| **Continue**  | Resume from waiting/paused |
+| **Finish**    | Complete the task          |
+| **Abandon**   | Discard the task           |
 
 ### Commands Reference
 
 Available commands via the API:
 
-| Command | Description |
-|---------|-------------|
-| `chat <msg>` | Chat with agent |
-| `start <ref>` | Start a new task |
-| `plan` | Enter planning phase |
-| `implement` | Execute specifications |
-| `review` | Review code |
-| `continue` | Resume from waiting |
-| `finish` | Complete the task |
-| `abandon` | Discard the task |
-| `note <msg>` | Add a note |
-| `quick <desc>` | Create a quick task |
-| `cost` | Show token usage |
-| `budget` | Show token budget status |
-| `list` | List all tasks |
-| `specification <n>` | View specification |
-| `answer <resp>` | Answer agent's question |
-| `find <query>` | AI-powered code search |
-| `simplify [files]` | Simplify code based on state |
-| `label add|remove|set|list` | Manage labels |
-| `memory <query>` | Search semantic memory |
-| `undo` / `redo` | Navigate checkpoints |
+| Command             | Description                  |
+|---------------------|------------------------------|
+| `chat <msg>`        | Chat with agent              |
+| `start <ref>`       | Start a new task             |
+| `plan`              | Enter planning phase         |
+| `implement`         | Execute specifications       |
+| `review`            | Review code                  |
+| `continue`          | Resume from waiting          |
+| `finish`            | Complete the task            |
+| `abandon`           | Discard the task             |
+| `note <msg>`        | Add a note                   |
+| `quick <desc>`      | Create a quick task          |
+| `cost`              | Show token usage             |
+| `budget`            | Show token budget status     |
+| `list`              | List all tasks               |
+| `specification <n>` | View specification           |
+| `answer <resp>`     | Answer agent's question      |
+| `find <query>`      | AI-powered code search       |
+| `simplify [files]`  | Simplify code based on state |
+| `label add          | remove                       |set|list` | Manage labels |
+| `memory <query>`    | Search semantic memory       |
+| `undo` / `redo`     | Navigate checkpoints         |
 
 ### State Panel
 
@@ -75,14 +75,14 @@ The side panel shows:
 
 The interactive page uses these API endpoints:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/interactive` | GET | Render interactive page |
-| `/api/v1/interactive/chat` | POST | Send chat message to agent |
-| `/api/v1/interactive/command` | POST | Execute workflow command |
-| `/api/v1/interactive/state` | GET | Get current state |
-| `/api/v1/interactive/answer` | POST | Answer agent question |
-| `/api/v1/interactive/stop` | POST | Cancel current operation |
+| Endpoint                      | Method | Description                |
+|-------------------------------|--------|----------------------------|
+| `/interactive`                | GET    | Render interactive page    |
+| `/api/v1/interactive/chat`    | POST   | Send chat message to agent |
+| `/api/v1/interactive/command` | POST   | Execute workflow command   |
+| `/api/v1/interactive/state`   | GET    | Get current state          |
+| `/api/v1/interactive/answer`  | POST   | Answer agent question      |
+| `/api/v1/interactive/stop`    | POST   | Cancel current operation   |
 
 ## Cancellation
 
@@ -141,14 +141,14 @@ Use cancellation when:
 
 ## Comparison with CLI Interactive Mode
 
-| Feature | Web UI | CLI |
-|---------|--------|-----|
-| Chat interface | Visual panel | Terminal REPL |
-| Command history | N/A | Up/Down arrows |
-| Tab completion | N/A | Yes |
-| Copy/paste | Easy | Terminal dependent |
-| Remote access | Any browser | SSH required |
-| Cancellation | POST `/api/v1/interactive/stop` | Ctrl+C |
+| Feature         | Web UI                          | CLI                |
+|-----------------|---------------------------------|--------------------|
+| Chat interface  | Visual panel                    | Terminal REPL      |
+| Command history | N/A                             | Up/Down arrows     |
+| Tab completion  | N/A                             | Yes                |
+| Copy/paste      | Easy                            | Terminal dependent |
+| Remote access   | Any browser                     | SSH required       |
+| Cancellation    | POST `/api/v1/interactive/stop` | Ctrl+C             |
 
 For CLI interactive mode, see [`mehr interactive`](../cli/interactive.md).
 

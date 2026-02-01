@@ -4,16 +4,16 @@ The Mehrhof Web UI provides a comfortable browser-based interface for the plan �
 
 ## When to Use the Web UI
 
-| Use Case | Web UI | CLI |
-|----------|--------|-----|
-| **First-time users** | ✅ Visual discovery | ⚠️ Requires memorizing commands |
+| Use Case                       | Web UI                        | CLI                             |
+|--------------------------------|-------------------------------|---------------------------------|
+| **First-time users**           | ✅ Visual discovery            | ⚠️ Requires memorizing commands |
 | **Non-technical contributors** | ✅ Familiar browser experience | ⚠️ Terminal can be intimidating |
-| **Screen sharing** | ✅ Easy to follow | ❌ Hard to see terminal |
-| **Task monitoring** | ✅ Real-time dashboard | ⚠️ Manual status checks |
-| **Configuration** | ✅ Forms with validation | ⚠️ Editing YAML files |
-| **Automation** | ❌ Not available | ✅ Scriptable |
-| **Git workflows** | ⚠️ Possible | ✅ Native integration |
-| **Remote access** | ✅ Any browser | ⚠️ SSH required |
+| **Screen sharing**             | ✅ Easy to follow              | ❌ Hard to see terminal          |
+| **Task monitoring**            | ✅ Real-time dashboard         | ⚠️ Manual status checks         |
+| **Configuration**              | ✅ Forms with validation       | ⚠️ Editing YAML files           |
+| **Automation**                 | ❌ Not available               | ✅ Scriptable                    |
+| **Git workflows**              | ⚠️ Possible                   | ✅ Native integration            |
+| **Remote access**              | ✅ Any browser                 | ⚠️ SSH required                 |
 
 ## Getting Started
 
@@ -43,15 +43,15 @@ The main dashboard provides:
 
 Each workflow phase has a dedicated button:
 
-| Action | Button Location | Description |
-|--------|----------------|-------------|
-| Create Task | Dashboard | Start a new task from file, URL, or provider |
-| Plan | Active Task Card | Generate a structured plan |
-| Create | Active Task Card | Execute the plan to produce changes |
-| Review | Active Task Card | Run quality checks |
-| Finish | Active Task Card | Complete and merge the task |
-| Continue | Dashboard | Execute next logical step |
-| Undo/Redo | Dashboard | Navigate checkpoint history |
+| Action      | Button Location  | Description                                  |
+|-------------|------------------|----------------------------------------------|
+| Create Task | Dashboard        | Start a new task from file, URL, or provider |
+| Plan        | Active Task Card | Generate a structured plan                   |
+| Create      | Active Task Card | Execute the plan to produce changes          |
+| Review      | Active Task Card | Run quality checks                           |
+| Finish      | Active Task Card | Complete and merge the task                  |
+| Continue    | Dashboard        | Execute next logical step                    |
+| Undo/Redo   | Dashboard        | Navigate checkpoint history                  |
 
 See individual workflow pages for details:
 - [Creating Tasks](creating-tasks.md)
@@ -82,13 +82,13 @@ Access the Web UI from anywhere:
 
 Both interfaces provide the same core functionality. The choice depends on your workflow:
 
-| Feature | Web UI | CLI |
-|---------|--------|-----|
-| Task management | Buttons and forms | Commands and flags |
-| Status monitoring | Always visible | Run `mehr status` |
-| Configuration | Visual forms | Edit YAML files |
-| Automation | Not available | Scriptable |
-| Learning curve | Lower | Higher |
+| Feature           | Web UI            | CLI                |
+|-------------------|-------------------|--------------------|
+| Task management   | Buttons and forms | Commands and flags |
+| Status monitoring | Always visible    | Run `mehr status`  |
+| Configuration     | Visual forms      | Edit YAML files    |
+| Automation        | Not available     | Scriptable         |
+| Learning curve    | Lower             | Higher             |
 
 For a detailed comparison, see [Web UI vs CLI](../guides/web-ui-vs-cli.md).
 

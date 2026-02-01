@@ -16,7 +16,7 @@ When you click **"Implement"**, the AI:
 
 ## Starting Implementation
 
-After planning completes and you've reviewed the specifications, click the **"Implement"** button:
+After planning completes, and you've reviewed the specifications, click the **"Implement"** button:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -78,44 +78,44 @@ Watch the AI work in the **Agent Output** section:
 
 During implementation, the task state changes to **"Implementing"**:
 
-| State | What's Happening | What You Can Do |
-|-------|------------------|-----------------|
-| **Implementing** | AI is writing code | Watch progress, wait for completion |
-| **Waiting** | AI has a question | Answer in the Questions section |
-| **Idle** | Implementation complete | Review changes, run tests |
+| State            | What's Happening        | What You Can Do                     |
+|------------------|-------------------------|-------------------------------------|
+| **Implementing** | AI is writing code      | Watch progress, wait for completion |
+| **Waiting**      | AI has a question       | Answer in the Questions section     |
+| **Idle**         | Implementation complete | Review changes, run tests           |
 
 ## Reviewing File Changes
 
 After implementation completes, review what changed:
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  File Changes (5 files)                                       │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ▼ internal/auth/oauth.go                 [+ Created, 87 lines] │
-│     │  + package auth                                          │
-│     │  +                                                        │
-│     │  + type OAuthConfig struct { ... }                        │
-│     │  + func NewGoogleProvider(...)                           │
-│     │  + func (p *GoogleProvider) RedirectURL(...)             │
-│                                                              │
-│  ▼ internal/auth/middleware.go             [+ Modified, 23 lines]│
-│     │  @@ -5,6 +5,10 @@                                        │
-│     │     + "github.com/valksor/go-mehrhof/internal/auth"      │
-│     │   ...                                                     │
-│     │  +45:        func AuthMiddleware(...)                    │
-│                                                              │
-│  ▼ internal/auth/oauth_test.go             [+ Created, 54 lines]│
-│     │  [expand to view tests...]                                │
-│                                                              │
-│  ▼ cmd/server/main.go                     [+ Modified, 8 lines]  │
-│     │  [expand to view changes...]                              │
-│                                                              │
+┌────────────────────────────────────────────────────────────────────┐
+│  File Changes (5 files)                                            │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ▼ internal/auth/oauth.go                 [+ Created, 87 lines]    │
+│     │  + package auth                                              │
+│     │  +                                                           │
+│     │  + type OAuthConfig struct { ... }                           │
+│     │  + func NewGoogleProvider(...)                               │
+│     │  + func (p *GoogleProvider) RedirectURL(...)                 │
+│                                                                    │
+│  ▼ internal/auth/middleware.go             [+ Modified, 23 lines]  │
+│     │  @@ -5,6 +5,10 @@                                            │
+│     │     + "github.com/valksor/go-mehrhof/internal/auth"          │
+│     │   ...                                                        │
+│     │  +45:        func AuthMiddleware(...)                        │
+│                                                                    │
+│  ▼ internal/auth/oauth_test.go             [+ Created, 54 lines]   │
+│     │  [expand to view tests...]                                   │
+│                                                                    │
+│  ▼ cmd/server/main.go                     [+ Modified, 8 lines]    │
+│     │  [expand to view changes...]                                 │
+│                                                                    │
 │  ▼ go.lock                                  [+ Modified, 2 lines]  │
-│     │  [expand to view dependencies...]                         │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+│     │  [expand to view dependencies...]                            │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 Click any file to see the full diff.

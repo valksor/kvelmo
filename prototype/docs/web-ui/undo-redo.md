@@ -24,12 +24,12 @@ When you click **"Redo"**, Mehrhof:
 
 Checkpoints are automatic snapshots created at key workflow moments:
 
-| Event | Checkpoint Created |
-|-------|-------------------|
-| After **Planning** | Saves specification files |
-| After **Implementation** | Saves code changes |
-| After **Review** | Saves review results |
-| Before **Finish** | Final state before merge |
+| Event                    | Checkpoint Created        |
+|--------------------------|---------------------------|
+| After **Planning**       | Saves specification files |
+| After **Implementation** | Saves code changes        |
+| After **Review**         | Saves review results      |
+| Before **Finish**        | Final state before merge  |
 
 ## Using Undo
 

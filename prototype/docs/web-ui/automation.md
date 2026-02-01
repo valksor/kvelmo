@@ -40,14 +40,14 @@ Navigate to **Automation** in the sidebar for detailed management:
 
 The job queue shows all automation jobs with:
 
-| Column | Description |
-|--------|-------------|
-| Status | pending, running, completed, failed, cancelled |
-| Provider | github or gitlab |
-| Type | issue_fix, pr_review, or command |
-| Reference | Issue/PR number and repository |
-| Created | When the webhook was received |
-| Duration | Time elapsed (running) or total time (completed) |
+| Column    | Description                                      |
+|-----------|--------------------------------------------------|
+| Status    | pending, running, completed, failed, cancelled   |
+| Provider  | github or gitlab                                 |
+| Type      | issue_fix, pr_review, or command                 |
+| Reference | Issue/PR number and repository                   |
+| Created   | When the webhook was received                    |
+| Duration  | Time elapsed (running) or total time (completed) |
 
 ### Filtering Jobs
 
@@ -111,12 +111,12 @@ See [docs/cli/automation.md](../cli/automation.md) for configuration options.
 
 The Web UI consumes the same REST API available for programmatic access:
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/v1/automation/status` | Queue status |
-| `GET /api/v1/automation/jobs` | List jobs |
-| `GET /api/v1/automation/jobs/{id}` | Job details |
-| `POST /api/v1/automation/jobs/{id}/cancel` | Cancel job |
+| Endpoint                                   | Description  |
+|--------------------------------------------|--------------|
+| `GET /api/v1/automation/status`            | Queue status |
+| `GET /api/v1/automation/jobs`              | List jobs    |
+| `GET /api/v1/automation/jobs/{id}`         | Job details  |
+| `POST /api/v1/automation/jobs/{id}/cancel` | Cancel job   |
 
 ## Workflow Status Integration
 
@@ -153,11 +153,11 @@ When automation creates tasks or PRs, they appear in the standard workflow views
 
 Automation applies labels to track state:
 
-| Label | Meaning |
-|-------|---------|
-| `mehrhof-processing` | Job is currently running |
-| `mehrhof-generated` | PR was created by automation |
-| `mehrhof-failed` | Job failed after all retries |
+| Label                | Meaning                      |
+|----------------------|------------------------------|
+| `mehrhof-processing` | Job is currently running     |
+| `mehrhof-generated`  | PR was created by automation |
+| `mehrhof-failed`     | Job failed after all retries |
 
 These labels are visible in both the provider UI and Mehrhof Web UI.
 

@@ -4,12 +4,12 @@ Access the Mehrhof Web UI from anywhere using SSH tunnels, Cloudflare tunnels, o
 
 ## Access Options
 
-| Method | Use Case | Difficulty |
-|--------|----------|------------|
-| **SSH Tunnel** | Secure access without open ports | Easy |
-| **Tailscale** | Mesh VPN access | Medium |
-| **Cloudflare Tunnel** | Public URL without port forwarding | Easy |
-| **Direct Binding** | LAN/exposed server | Easy (requires auth) |
+| Method                | Use Case                           | Difficulty           |
+|-----------------------|------------------------------------|----------------------|
+| **SSH Tunnel**        | Secure access without open ports   | Easy                 |
+| **Tailscale**         | Mesh VPN access                    | Medium               |
+| **Cloudflare Tunnel** | Public URL without port forwarding | Easy                 |
+| **Direct Binding**    | LAN/exposed server                 | Easy (requires auth) |
 
 ## Option 1: SSH Tunnel
 
@@ -160,13 +160,13 @@ See [Authentication](authentication.md) for details on user management.
 
 ## Access Comparison
 
-| Method | Public URL | Auth Needed | Port Forwarding |
-|--------|------------|-------------|-----------------|
-| **Default** | ❌ No | ❌ No | ❌ No |
-| **SSH Tunnel** | ❌ No | ❌ No | ❌ No |
-| **Tailscale** | ❌ No | ✅ Yes (Tailscale) | ❌ No |
-| **Cloudflare** | ✅ Yes | ❌ No (optional) | ❌ No |
-| **Direct (0.0.0.0)** | ⚠️ LAN | ✅ Yes | ❌ No |
+| Method               | Public URL | Auth Needed       | Port Forwarding |
+|----------------------|------------|-------------------|-----------------|
+| **Default**          | ❌ No       | ❌ No              | ❌ No            |
+| **SSH Tunnel**       | ❌ No       | ❌ No              | ❌ No            |
+| **Tailscale**        | ❌ No       | ✅ Yes (Tailscale) | ❌ No            |
+| **Cloudflare**       | ✅ Yes      | ❌ No (optional)   | ❌ No            |
+| **Direct (0.0.0.0)** | ⚠️ LAN     | ✅ Yes             | ❌ No            |
 
 ## Security Best Practices
 

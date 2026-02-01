@@ -17,10 +17,10 @@ After implementation completes, click the **"Review"** button:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Changes: 5 files modified                                    │
+│  State: ● Idle                                               │
+│  Changes: 5 files modified                                   │
 │                                                              │
 │  Actions:                                                    │
 │    [Plan] [Implement] [Review] [Finish] [Continue]           │
@@ -46,14 +46,14 @@ Watch the review in the **Agent Output** section:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                          │
+│  Agent Output (Live)                                         │
 ├──────────────────────────────────────────────────────────────┤
-│  $ Running quality checks...                                  │
+│  $ Running quality checks...                                 │
 │  ✓ golangci-lint - passed                                    │
 │  ✓ go test - all tests passing                               │
 │                                                              │
 │  Review complete: No issues found                            │
-│  ▶ Streaming...                                               │
+│  ▶ Streaming...                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,54 +63,54 @@ Configure which linters run during review via **Settings** → **Quality**:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Quality Settings                                              │
+│  Quality Settings                                            │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Enable Quality Checks         [✓]                            │
-│  Use Defaults                   [✗]  (Safer: require config)  │
+│  Enable Quality Checks         [✓]                           │
+│  Use Defaults                   [✗]  (Safer: require config) │
 │                                                              │
-│  Linters:                                                     │
-│    ┌─────────────────────────────────────────────────────┐    │
-│    │ golangci-lint        [Enabled: ✓]  [Run]           │    │
-│    │ eslint               [Enabled: ✗]  [Disabled]     │    │
-│    │ phpstan              [Enabled: ✓]  [Custom]        │    │
-│    │   Command: vendor/bin/phpstan analyse               │    │
-│    └─────────────────────────────────────────────────────┘    │
+│  Linters:                                                    │
+│    ┌─────────────────────────────────────────────────────┐   │
+│    │ golangci-lint        [Enabled: ✓]  [Run]            │   │
+│    │ eslint               [Enabled: ✗]  [Disabled]       │   │
+│    │ phpstan              [Enabled: ✓]  [Custom]         │   │
+│    │   Command: vendor/bin/phpstan analyse               │   │
+│    └─────────────────────────────────────────────────────┘   │
 │                                                              │
-│  [Add Custom Linter]                                           │
+│  [Add Custom Linter]                                         │
 │                                                              │
-│  [Save]                                                       │
+│  [Save]                                                      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Quality Settings:**
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Enable Quality Checks** | Master switch for all quality checks | `true` |
-| **Use Defaults** | Auto-enable built-in linters based on project files | `false` (safer) |
+| Setting                   | Description                                         | Default         |
+|---------------------------|-----------------------------------------------------|-----------------|
+| **Enable Quality Checks** | Master switch for all quality checks                | `true`          |
+| **Use Defaults**          | Auto-enable built-in linters based on project files | `false` (safer) |
 
 > **Important:** With **Use Defaults** disabled (default), built-in linters will NOT run automatically. You must explicitly enable them. This prevents unintended code modifications—for example, `php-cs-fixer` running on Symfony projects with custom config paths.
 
 **Built-in linters:**
 
-| Linter | Language | Auto-Detected When |
-|--------|----------|-------------------|
-| `golangci-lint` | Go | `go.mod` exists |
-| `eslint` | JavaScript/TypeScript | `package.json` exists |
-| `ruff` | Python | `pyproject.toml` or `requirements.txt` exists |
-| `php-cs-fixer` | PHP | `composer.json` exists |
+| Linter          | Language              | Auto-Detected When                            |
+|-----------------|-----------------------|-----------------------------------------------|
+| `golangci-lint` | Go                    | `go.mod` exists                               |
+| `eslint`        | JavaScript/TypeScript | `package.json` exists                         |
+| `ruff`          | Python                | `pyproject.toml` or `requirements.txt` exists |
+| `php-cs-fixer`  | PHP                   | `composer.json` exists                        |
 
 **Custom linters:**
 
 Add any CLI tool that outputs JSON or text:
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| Name | Identifier | `phpstan` |
-| Command | Binary path | `vendor/bin/phpstan` |
-| Args | CLI arguments | `["analyse", "--error-format=json"]` |
-| Extensions | Files to check | `[".php"]` |
+| Field      | Description    | Example                              |
+|------------|----------------|--------------------------------------|
+| Name       | Identifier     | `phpstan`                            |
+| Command    | Binary path    | `vendor/bin/phpstan`                 |
+| Args       | CLI arguments  | `["analyse", "--error-format=json"]` |
+| Extensions | Files to check | `[".php"]`                           |
 
 See [Settings Guide](settings.md) for configuration details.
 
@@ -118,10 +118,10 @@ See [Settings Guide](settings.md) for configuration details.
 
 During review, the task state changes to **"Reviewing"**:
 
-| State | What's Happening | What You Can Do |
-|-------|------------------|-----------------|
+| State         | What's Happening       | What You Can Do                     |
+|---------------|------------------------|-------------------------------------|
 | **Reviewing** | Quality checks running | Watch progress, wait for completion |
-| **Idle** | Review complete | Check findings, proceed to finish |
+| **Idle**      | Review complete        | Check findings, proceed to finish   |
 
 ## Review Results
 
@@ -129,7 +129,7 @@ After review completes, you'll see a summary:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Review Summary                                               │
+│  Review Summary                                              │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Status: ✅ Passed                                           │
@@ -144,7 +144,7 @@ After review completes, you'll see a summary:
 │  Issues Found: 0                                             │
 │                                                              │
 │  Files Analyzed: 5                                           │
-│  Test Coverage: 94.2%                                         │
+│  Test Coverage: 94.2%                                        │
 │                                                              │
 │  [View Full Report]                                          │
 └──────────────────────────────────────────────────────────────┘
@@ -156,14 +156,14 @@ If the review finds issues:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Review Summary                                               │
+│  Review Summary                                              │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Status: ⚠️ Issues Found                                     │
 │                                                              │
 │  Issues Found: 3                                             │
 │                                                              │
-│  🔴 Error: missing-return in func AuthMiddleware            │
+│  🔴 Error: missing-return in func AuthMiddleware             │
 │     File: internal/auth/middleware.go:45                     │
 │                                                              │
 │  🟡 Warning: exported function should have comment           │
@@ -186,15 +186,15 @@ If the review finds issues:
 
 The review runs tools configured in your project. Common tools:
 
-| Tool | What It Checks |
-|------|----------------|
-| **gofmt** | Code formatting |
-| **go vet** | Static analysis |
-| **staticcheck** | Additional static checks |
-| **golangci-lint** | Comprehensive linting |
-| **go test** | Unit tests |
-| **gosec** | Security issues |
-| **gitleaks** | Secret leaks |
+| Tool              | What It Checks           |
+|-------------------|--------------------------|
+| **gofmt**         | Code formatting          |
+| **go vet**        | Static analysis          |
+| **staticcheck**   | Additional static checks |
+| **golangci-lint** | Comprehensive linting    |
+| **go test**       | Unit tests               |
+| **gosec**         | Security issues          |
+| **gitleaks**      | Secret leaks             |
 
 Configure quality tools in your `Makefile` or project settings.
 

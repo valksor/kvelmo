@@ -23,10 +23,10 @@ POST /api/v1/workflow/simplify/standalone
 
 ### Headers
 
-| Header | Value | Description |
-|--------|-------|-------------|
-| `Content-Type` | `application/json` | Required |
-| `Accept` | `text/event-stream` | Optional - enables SSE streaming |
+| Header         | Value               | Description                      |
+|----------------|---------------------|----------------------------------|
+| `Content-Type` | `application/json`  | Required                         |
+| `Accept`       | `text/event-stream` | Optional - enables SSE streaming |
 
 ### Body
 
@@ -44,15 +44,15 @@ POST /api/v1/workflow/simplify/standalone
 
 ### Fields
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `mode` | string | No | `uncommitted` | Simplify mode: `uncommitted`, `branch`, `range`, `files` |
-| `base_branch` | string | No | auto-detect | Base branch for `branch` mode |
-| `range` | string | No | - | Commit range for `range` mode (e.g., `HEAD~3..HEAD`) |
-| `files` | string[] | No | - | Files to simplify for `files` mode |
-| `context` | int | No | 3 | Lines of context in diff |
-| `agent` | string | No | default | Agent to use for simplification (uses `simplifying` step config if not specified) |
-| `create_checkpoint` | bool | No | true | Create a git checkpoint before changes |
+| Field               | Type     | Required | Default       | Description                                                                       |
+|---------------------|----------|----------|---------------|-----------------------------------------------------------------------------------|
+| `mode`              | string   | No       | `uncommitted` | Simplify mode: `uncommitted`, `branch`, `range`, `files`                          |
+| `base_branch`       | string   | No       | auto-detect   | Base branch for `branch` mode                                                     |
+| `range`             | string   | No       | -             | Commit range for `range` mode (e.g., `HEAD~3..HEAD`)                              |
+| `files`             | string[] | No       | -             | Files to simplify for `files` mode                                                |
+| `context`           | int      | No       | 3             | Lines of context in diff                                                          |
+| `agent`             | string   | No       | default       | Agent to use for simplification (uses `simplifying` step config if not specified) |
+| `create_checkpoint` | bool     | No       | true          | Create a git checkpoint before changes                                            |
 
 ## Response
 
@@ -168,12 +168,12 @@ curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
 
 ## File Operations
 
-| Operation | Description |
-|-----------|-------------|
-| `modify` | File content was modified |
-| `create` | New file was created |
-| `delete` | File was removed |
-| `rename` | File was renamed |
+| Operation | Description               |
+|-----------|---------------------------|
+| `modify`  | File content was modified |
+| `create`  | New file was created      |
+| `delete`  | File was removed          |
+| `rename`  | File was renamed          |
 
 ## Safety
 

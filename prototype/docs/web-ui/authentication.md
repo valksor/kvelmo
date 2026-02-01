@@ -4,12 +4,12 @@ Manage user authentication for network-accessible Web UI servers.
 
 ## When Authentication is Required
 
-| Host Setting | Authentication |
-|--------------|----------------|
-| `localhost` (default) | ❌ Not required |
-| `127.0.0.1` | ❌ Not required |
+| Host Setting               | Authentication |
+|----------------------------|----------------|
+| `localhost` (default)      | ❌ Not required |
+| `127.0.0.1`                | ❌ Not required |
 | `0.0.0.0` (all interfaces) | ✅ **Required** |
-| Specific IP address | ✅ **Required** |
+| Specific IP address        | ✅ **Required** |
 
 Authentication is mandatory when using `--host 0.0.0.0` or any non-localhost address.
 
@@ -153,22 +153,22 @@ When accessing an authenticated server:
 
 These endpoints work without authentication:
 
-| Endpoint | Access |
-|----------|--------|
-| `/health` | Public |
-| `/login` | Public (login page itself) |
+| Endpoint  | Access                     |
+|-----------|----------------------------|
+| `/health` | Public                     |
+| `/login`  | Public (login page itself) |
 
 ### Protected Endpoints
 
 All other endpoints require authentication:
 
-| Endpoint | Auth Required |
-|----------|---------------|
-| `/` (dashboard) | ✅ Yes |
-| `/api/v1/*` | ✅ Yes |
-| `/settings` | ✅ Yes |
-| `/browser` | ✅ Yes |
-| `/history` | ✅ Yes |
+| Endpoint        | Auth Required |
+|-----------------|---------------|
+| `/` (dashboard) | ✅ Yes         |
+| `/api/v1/*`     | ✅ Yes         |
+| `/settings`     | ✅ Yes         |
+| `/browser`      | ✅ Yes         |
+| `/history`      | ✅ Yes         |
 
 ## Managing Auth via CLI
 
@@ -246,27 +246,27 @@ Mehrhof supports a **viewer** role for users who need read-only access to the We
 
 Viewers have **full read access** to all information:
 
-| Access | Description |
-|--------|-------------|
-| Dashboard | View task status, workflow state, statistics |
-| Specifications | Read all task specifications and progress |
-| History | Browse session history and conversation logs |
-| Logs | View agent output and execution logs |
-| Settings | View configuration values (read-only) |
-| Projects | View project plans and task breakdowns |
+| Access         | Description                                  |
+|----------------|----------------------------------------------|
+| Dashboard      | View task status, workflow state, statistics |
+| Specifications | Read all task specifications and progress    |
+| History        | Browse session history and conversation logs |
+| Logs           | View agent output and execution logs         |
+| Settings       | View configuration values (read-only)        |
+| Projects       | View project plans and task breakdowns       |
 
 ### What Viewers Cannot Do
 
 Viewers are **blocked from all write operations**:
 
-| Operation | Blocked |
-|-----------|---------|
-| Starting workflows | ❌ Plan, Implement, Review commands |
-| Modifying workflows | ❌ Continue, Answer, Abandon actions |
-| Submitting tasks | ❌ Quick tasks and project submissions |
-| Changing settings | ❌ Workspace configuration modifications |
-| Running scans | ❌ Security and quality scans |
-| Clearing memory | ❌ Memory cache operations |
+| Operation           | Blocked                                 |
+|---------------------|-----------------------------------------|
+| Starting workflows  | ❌ Plan, Implement, Review commands      |
+| Modifying workflows | ❌ Continue, Answer, Abandon actions     |
+| Submitting tasks    | ❌ Quick tasks and project submissions   |
+| Changing settings   | ❌ Workspace configuration modifications |
+| Running scans       | ❌ Security and quality scans            |
+| Clearing memory     | ❌ Memory cache operations               |
 
 ### Creating a Viewer
 

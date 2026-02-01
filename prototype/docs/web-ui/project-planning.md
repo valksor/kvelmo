@@ -1,6 +1,6 @@
 # Project Planning
 
-The project planning interface provides a complete workflow for breaking down large requirements into manageable tasks with dependencies. Perfect for multi-task projects, epics, and coordinated feature development.
+The project planning interface provides a complete workflow for breaking down large requirements into manageable tasks with dependencies. Perfect for multitask projects, epics, and coordinated feature development.
 
 ## Overview
 
@@ -43,12 +43,12 @@ The AI will analyze your source and create a structured task list with dependenc
 
 ### Source Type Differences
 
-| Source | Description | Best For |
-|--------|-------------|----------|
-| **Directory** | Reads all file contents | Small codebases (<50 files) |
-| **Research** | AI explores with tools | Large docs, existing tasks |
-| **File** | Single file analysis | Individual requirements |
-| **Provider** | Fetches from GitHub/Jira/etc. | External issue references |
+| Source        | Description                   | Best For                    |
+|---------------|-------------------------------|-----------------------------|
+| **Directory** | Reads all file contents       | Small codebases (<50 files) |
+| **Research**  | AI explores with tools        | Large docs, existing tasks  |
+| **File**      | Single file analysis          | Individual requirements     |
+| **Provider**  | Fetches from GitHub/Jira/etc. | External issue references   |
 
 ### Schema-Driven Extraction
 
@@ -71,14 +71,14 @@ To disable schema-driven extraction, uncheck the **"Use schema-driven extraction
 
 After creating a breakdown, you'll see a table of all tasks:
 
-| Column | Description |
-|--------|-------------|
-| ID | Task identifier (indented for subtasks) |
-| Title | Task name |
-| Status | `ready`, `blocked`, `submitted` |
-| Priority | 1 (high) to 5 (low) |
-| Parent | Parent task ID (if this is a subtask) |
-| Depends On | List of task IDs this task requires |
+| Column     | Description                             |
+|------------|-----------------------------------------|
+| ID         | Task identifier (indented for subtasks) |
+| Title      | Task name                               |
+| Status     | `ready`, `blocked`, `submitted`         |
+| Priority   | 1 (high) to 5 (low)                     |
+| Parent     | Parent task ID (if this is a subtask)   |
+| Depends On | List of task IDs this task requires     |
 
 **Dependency Visualization:**
 - Enable **"Show Dependencies"** to see the task relationship graph
@@ -162,15 +162,15 @@ This is useful when:
 
 **Dependency and Subtask Support by Provider:**
 
-| Provider | Dependencies | Subtasks |
-|----------|--------------|----------|
-| **Wrike** | Native FinishToStart | Native subtasks |
-| **GitHub** | Task lists in epic body | Issues with milestone |
-| **GitLab** | Task lists in description | Task notes |
-| **Jira** | Issue links (blocks/is-blocked-by) | Native sub-issues |
-| **Asana** | Native dependencies | Native subtasks |
-| **ClickUp** | Native dependencies | Native subtasks |
-| **Linear** | Description-based | Sub-issues |
+| Provider    | Dependencies                       | Subtasks              |
+|-------------|------------------------------------|-----------------------|
+| **Wrike**   | Native FinishToStart               | Native subtasks       |
+| **GitHub**  | Task lists in epic body            | Issues with milestone |
+| **GitLab**  | Task lists in description          | Task notes            |
+| **Jira**    | Issue links (blocks/is-blocked-by) | Native sub-issues     |
+| **Asana**   | Native dependencies                | Native subtasks       |
+| **ClickUp** | Native dependencies                | Native subtasks       |
+| **Linear**  | Description-based                  | Sub-issues            |
 
 When submitting tasks with parent relationships, parents are automatically created first and subtasks include the provider's parent ID.
 
@@ -281,17 +281,17 @@ Use `--status` to override:
 
 See [`mehr project`](../cli/project.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr project plan dir:./specs` | Create breakdown |
-| `mehr project plan dir:./specs --use-schema=false` | Create breakdown (regex-only) |
-| `mehr project sync wrike:123456` | Sync from provider |
-| `mehr project tasks` | View queue |
-| `mehr project edit task-1` | Edit task |
-| `mehr project reorder --auto` | AI reorder |
-| `mehr project submit --provider wrike` | Submit all to provider |
-| `mehr project submit --provider wrike --task task-1,task-2` | Selective submit |
-| `mehr project start` | Start task |
+| CLI Command                                                 | Web UI Action                 |
+|-------------------------------------------------------------|-------------------------------|
+| `mehr project plan dir:./specs`                             | Create breakdown              |
+| `mehr project plan dir:./specs --use-schema=false`          | Create breakdown (regex-only) |
+| `mehr project sync wrike:123456`                            | Sync from provider            |
+| `mehr project tasks`                                        | View queue                    |
+| `mehr project edit task-1`                                  | Edit task                     |
+| `mehr project reorder --auto`                               | AI reorder                    |
+| `mehr project submit --provider wrike`                      | Submit all to provider        |
+| `mehr project submit --provider wrike --task task-1,task-2` | Selective submit              |
+| `mehr project start`                                        | Start task                    |
 
 ## Project Queue Storage
 

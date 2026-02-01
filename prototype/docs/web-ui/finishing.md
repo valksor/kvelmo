@@ -18,11 +18,11 @@ When you're satisfied with the implementation, click **"Finish"** button:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Changes: 5 files modified                                    │
-│  Tests: ✅ All passing                                        │
+│  State: ● Idle                                               │
+│  Changes: 5 files modified                                   │
+│  Tests: ✅ All passing                                       │
 │                                                              │
 │  Actions:                                                    │
 │    [Plan] [Implement] [Review] [Finish] [Continue]           │
@@ -58,7 +58,7 @@ Clicking **"Finish"** shows a confirmation dialog:
 │                                                              │
 │  Summary:                                                    │
 │  • 3 files created                                           │
-│  • 2 files modified                                           │
+│  • 2 files modified                                          │
 │  • 0 files deleted                                           │
 │  • All tests passing                                         │
 │                                                              │
@@ -109,17 +109,17 @@ If quality checks fail, finish is cancelled:
 │                                                              │
 │  The following checks failed:                                │
 │                                                              │
-│  ✗ Tests: 2 failed                                          │
+│  ✗ Tests: 2 failed                                           │
 │    • TestAuthMiddleware - missing return                     │
 │    • TestOAuthFlow - timeout                                 │
 │                                                              │
-│  ✗ Lint: 3 warnings                                         │
+│  ✗ Lint: 3 warnings                                          │
 │    • missing-comments on exported functions                  │
 │    • unused variable 'ctx'                                   │
 │                                                              │
 │  Fix issues and try again, or force finish.                  │
 │                                                              │
-│                    [Try Again]  [Force Finish]  [Cancel]    │
+│                    [Try Again]  [Force Finish]  [Cancel]     │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -165,7 +165,7 @@ Once finish completes:
 │                                                              │
 │  Commit: abc1234f (main branch)                              │
 │                                                              │
-│  [View in History]  [Create New Task]                       │
+│  [View in History]  [Create New Task]                        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -173,13 +173,13 @@ Once finish completes:
 
 Configure finish behavior in [Settings](settings.md):
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| **Target branch** | Branch to merge into | `main` |
-| **Delete branch** | Delete task branch after merge | `true` |
-| **Delete work** | Clean up work directory | `false` |
-| **Run quality** | Execute quality checks before merge | `true` |
-| **Commit prefix** | Template for commit message | `[{key}]` |
+| Option            | Description                         | Default   |
+|-------------------|-------------------------------------|-----------|
+| **Target branch** | Branch to merge into                | `main`    |
+| **Delete branch** | Delete task branch after merge      | `true`    |
+| **Delete work**   | Clean up work directory             | `false`   |
+| **Run quality**   | Execute quality checks before merge | `true`    |
+| **Commit prefix** | Template for commit message         | `[{key}]` |
 
 ## Finish Best Practices
 
