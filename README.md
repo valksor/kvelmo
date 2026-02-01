@@ -12,7 +12,7 @@
 
 ---
 
-**Mehrhof** is an open-source structured creation environment designed for people who know what they want to build—whether that's feature changes, documentation updates, or well-defined modifications—without requiring deep technical skills.
+**Mehrhof** is a free, open-source structured creation environment designed for people who know what they want to build—whether that's feature changes, documentation updates, or well-defined modifications—without requiring deep technical skills.
 
 Rather than being an "AI automation tool," Mehrhof brings clarity, guardrails, and repeatable workflows to the process of transforming human intent into reliable, reviewable output. It orchestrates your local agent CLI (Claude, Codex, or custom) to handle the mechanics of planning and transformation, while you stay in control of meaning, quality, and approval.
 
@@ -26,7 +26,8 @@ Mehrhof is:
 
 - **A workflow framework** that turns requests into structured, reviewable outputs
 - **A structured process** that breaks creation into clear steps: plan → create → review → finish
-- **A wrapper for agent CLIs**—your already-installed local tools (Claude, Codex, or custom); Mehrhof never embeds or resells access
+- **A wrapper for agent CLIs**—your already-installed local tools (Claude, Codex, or custom); no extra subscriptions required
+- **Completely free**—BSD-3 licensed, no usage fees, no account needed; if you already pay for an agent CLI, Mehrhof adds zero cost
 - **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
 
 Mehrhof is not magic. It's a structured way to work with tools you already have, with clear checkpoints and human oversight at every step.
@@ -59,7 +60,7 @@ Mehrhof structures calls to your configured agent (Claude by default, or Codex/c
 **4. Review and Adjust**
 All output is presented for human review before acceptance. You can undo, adjust, add notes, and iterate until you're satisfied. Then finish to merge your changes.
 
-No hidden AI access, no servers, no licensing of proprietary models—just structured assistance using tools you control.
+No hidden AI access, no servers, no extra fees—just structured assistance using tools you already have.
 
 ---
 
