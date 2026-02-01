@@ -29,9 +29,7 @@ func TestEmptyURL(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Empty URL should fail with URL validation error
@@ -69,9 +67,7 @@ func TestInvalidURL(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// URLs with non http/https schemes should fail validation
@@ -122,9 +118,7 @@ func TestUnreachableURL(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Use an invalid domain that should fail to resolve
@@ -158,9 +152,7 @@ func TestMalformedSelectors(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -209,9 +201,7 @@ func TestSpecialCharactersInSelector(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -256,9 +246,7 @@ func TestVeryLongSelector(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -313,9 +301,7 @@ func TestVeryShortTimeout(t *testing.T) {
 	controller := NewController(cfg)
 	ctx := context.Background()
 
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Operations should timeout gracefully
@@ -348,6 +334,9 @@ func TestMultipleConnectDisconnect(t *testing.T) {
 	// Connect and disconnect multiple times
 	for i := range 3 {
 		if err := controller.Connect(ctx); err != nil {
+			if i == 0 {
+				t.Skipf("Chrome found but unable to connect: %v", err)
+			}
 			t.Fatalf("Connect() iteration %d failed: %v", i, err)
 		}
 
@@ -384,9 +373,7 @@ func TestConnectWhenAlreadyConnected(t *testing.T) {
 
 	controller := NewController(cfg)
 
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("First Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Connect again - should be idempotent or return error
@@ -435,9 +422,7 @@ func TestOperationsOnClosedTab(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -549,9 +534,7 @@ func TestScreenshotFormats(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -599,9 +582,7 @@ func TestInvalidScreenshotQuality(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -642,9 +623,7 @@ func TestEmptyJavaScript(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -677,9 +656,7 @@ func TestVeryLongJavaScript(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")

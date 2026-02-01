@@ -33,6 +33,7 @@ jobs:
                 uses: actions/checkout@v6
 
             -   name: Install Chromium
+                id: setup-chrome
                 if: "!(matrix.goos == 'linux' && matrix.goarch == 'arm64')"
                 uses: browser-actions/setup-chrome@v2
                 with:

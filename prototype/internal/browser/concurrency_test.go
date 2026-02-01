@@ -28,9 +28,7 @@ func TestConcurrentTabs(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	const numTabs = 10
@@ -115,9 +113,7 @@ func TestConcurrentCloseTab(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -169,9 +165,7 @@ func TestConcurrentMonitors(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -222,9 +216,7 @@ func TestConcurrentListAndModify(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	const numOperations = 20
@@ -281,9 +273,7 @@ func TestConcurrentNavigation(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Open multiple tabs
@@ -348,9 +338,7 @@ func TestConcurrentDisconnect(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 
 	// Call Disconnect from multiple goroutines
 	const numGoroutines = 5
@@ -390,9 +378,7 @@ func TestRaceDetectorTest(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Create a tab

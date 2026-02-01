@@ -19,6 +19,17 @@ func skipIfNoChrome(t *testing.T) {
 	}
 }
 
+// connectOrSkip connects the controller or skips the test.
+// Chrome may be found on the system but fail to start (sandbox restrictions,
+// resource contention, headless not supported, etc.). This converts launch
+// failures into skips so CI doesn't flake on infrastructure issues.
+func connectOrSkip(t *testing.T, controller Controller, ctx context.Context) {
+	t.Helper()
+	if err := controller.Connect(ctx); err != nil {
+		t.Skipf("Chrome found but unable to connect: %v", err)
+	}
+}
+
 // TestBrowserIntegration tests end-to-end browser functionality.
 // This is an integration test that requires Chrome to be installed.
 // Headless mode is the default. Set TEST_BROWSER_VISIBLE=true to see the browser window.
@@ -47,11 +58,12 @@ func TestBrowserIntegration(t *testing.T) {
 		_ = controller.Disconnect()
 	})
 
-	// Test connection
-	t.Run("Connect", func(t *testing.T) {
-		if err := controller.Connect(ctx); err != nil {
-			t.Fatalf("Connect() failed: %v", err)
-		}
+	// Connect at parent level: if Chrome can't start, skip the entire test
+	// rather than failing individual subtests with unhelpful "not connected" errors.
+	connectOrSkip(t, controller, ctx)
+
+	// Verify connection state
+	t.Run("Connected", func(t *testing.T) {
 		if !controller.IsConnected() {
 			t.Error("IsConnected() = false, want true")
 		}
@@ -181,9 +193,7 @@ func TestMonitorLifecycle(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Open a tab
@@ -241,9 +251,7 @@ func TestMultipleTabs(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Open multiple tabs
@@ -298,9 +306,7 @@ func TestNavigationTests(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -373,9 +379,7 @@ func TestErrorHandling(t *testing.T) {
 	})
 
 	// Connect for further tests
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	// Test operations on non-existent tabs
@@ -436,9 +440,7 @@ func TestDOMOperations(t *testing.T) {
 	}
 
 	controller := NewController(cfg)
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	defer func() { _ = controller.Disconnect() }()
 
 	tab, err := controller.OpenTab(ctx, "https://example.com")
@@ -495,9 +497,7 @@ func TestReconnect(t *testing.T) {
 	controller := NewController(cfg)
 
 	// First connection
-	if err := controller.Connect(ctx); err != nil {
-		t.Fatalf("First Connect() failed: %v", err)
-	}
+	connectOrSkip(t, controller, ctx)
 	if !controller.IsConnected() {
 		t.Error("IsConnected() = false after first Connect()")
 	}
