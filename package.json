@@ -7,6 +7,7 @@
         "docsify": "^4.13.1",
         "docsify-copy-code": "^3.0.2",
         "docsify-pagination": "^2.10.1",
+        "htmx-ext-sse": "^2.2.4",
         "htmx.org": "^2.0.8",
         "prettier": "^3.8.1",
         "prismjs": "^1.30.0",
@@ -16,7 +17,7 @@
     "scripts": {
         "bump": "npx npm-check-updates -u && bun i",
         "css:build": "bunx tailwindcss -i .github/input.css -o internal/server/static/css/styles.css --minify",
-        "assets:copy": "mkdir -p internal/server/static/js internal/server/static/fonts && cp node_modules/htmx.org/dist/htmx.min.js internal/server/static/js/ && cp node_modules/htmx.org/dist/ext/sse.js internal/server/static/js/sse.js && cp node_modules/@fontsource/inter/files/inter-latin-{400,500,600,700,800}-normal.woff2 internal/server/static/fonts/ && echo 'Assets copied successfully'",
+        "assets:copy": "mkdir -p internal/server/static/js internal/server/static/fonts && cp node_modules/htmx.org/dist/htmx.min.js internal/server/static/js/ && cp node_modules/htmx-ext-sse/sse.js internal/server/static/js/sse.js && cp node_modules/@fontsource/inter/files/inter-latin-{400,500,600,700,800}-normal.woff2 internal/server/static/fonts/ && echo 'Assets copied successfully'",
         "assets:build": "bun run css:build && bun run assets:copy",
         "docs:bundle": "mkdir -p docs/_media/js && cat node_modules/docsify/lib/docsify.min.js node_modules/docsify/lib/plugins/search.min.js node_modules/docsify-copy-code/dist/docsify-copy-code.min.js node_modules/docsify-pagination/dist/docsify-pagination.min.js node_modules/prismjs/components/prism-core.min.js node_modules/prismjs/components/prism-bash.min.js node_modules/prismjs/components/prism-yaml.min.js node_modules/prismjs/components/prism-json.min.js node_modules/prismjs/components/prism-go.min.js node_modules/prismjs/components/prism-markdown.min.js > docs/_media/js/bundle.min.js && HASH=$(shasum -a 256 docs/_media/js/bundle.min.js | cut -c1-8) && sed -i '' \"s|bundle.min.js[^\\\"]*|bundle.min.js?v=$HASH|\" docs/index.html",
         "docs:dev": "wrangler dev",
