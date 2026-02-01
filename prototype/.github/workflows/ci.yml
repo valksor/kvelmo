@@ -244,13 +244,14 @@ jobs:
 
             -   name: Run Web UI full tests (coverage)
                 if: github.event_name == 'push'
-                run: cd web-ui-tests && bun run test --coverage
+                run: cd web-ui-tests && bun run test:coverage
 
             -   name: Upload Web UI coverage to Coveralls
                 if: github.event_name == 'push'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: web-ui-tests/coverage/lcov.info
                     parallel: true
                     flag-name: web-ui-coverage
 
