@@ -2,6 +2,7 @@ package cost
 
 import (
 	"testing"
+	"time"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -52,7 +53,7 @@ func TestCheckBudget_MonthlyStop(t *testing.T) {
 		},
 	}
 	monthly := &storage.MonthlyBudgetState{
-		Month: "2026-01",
+		Month: time.Now().Format("2006-01"),
 		Spent: 10.0,
 	}
 

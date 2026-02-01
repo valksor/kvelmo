@@ -43,7 +43,7 @@ func TestHandleBudgetMonthlyStatus_NoConductor(t *testing.T) {
 	// Without conductor, it shows default budget info (100 max cost)
 	// The HTML should contain budget information
 	assert.Contains(t, bodyStr, time.Now().Format("January")) // month label
-	assert.Contains(t, bodyStr, "100")     // default max cost
+	assert.Contains(t, bodyStr, "100")                        // default max cost
 }
 
 func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {

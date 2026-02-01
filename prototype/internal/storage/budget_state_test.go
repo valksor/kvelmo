@@ -56,7 +56,7 @@ func TestMonthlyBudgetState_SaveLoad(t *testing.T) {
 	}
 
 	state := &MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       12.34,
 		WarningSent: true,
 	}
