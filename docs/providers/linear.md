@@ -45,19 +45,19 @@ linear:
 
 ## Status Mapping
 
-| Linear State | Provider Status |
-|--------------|-----------------|
-| Backlog, Todo, Unstarted | Open |
-| In Progress, Started, In Review | In Progress |
-| Done, Completed | Done |
-| Canceled, Cancelled | Closed |
+| Linear State                    | Provider Status |
+|---------------------------------|-----------------|
+| Backlog, Todo, Unstarted        | Open            |
+| In Progress, Started, In Review | In Progress     |
+| Done, Completed                 | Done            |
+| Canceled, Cancelled             | Closed          |
 
 ## Priority Mapping
 
 | Linear Priority | Provider Priority |
-|-----------------|------------------|
-| Urgent | Critical |
-| High | High |
-| Medium | Normal |
-| Low | Low |
-| No priority | Normal |
+|-----------------|-------------------|
+| Urgent          | Critical          |
+| High            | High              |
+| Medium          | Normal            |
+| Low             | Low               |
+| No priority     | Normal            |

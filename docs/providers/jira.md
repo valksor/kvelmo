@@ -44,12 +44,12 @@ The Jira provider supports different authentication methods based on your Jira d
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with key | `jira:JIRA-123` |
-| Short scheme | `j:PROJ-456` |
-| Issue URL | `jira:https://domain.atlassian.net/browse/JIRA-123` |
-| Jira Server URL | `j:https://jira.example.com/browse/PROJ-456` |
+| Format          | Example                                             |
+|-----------------|-----------------------------------------------------|
+| Scheme with key | `jira:JIRA-123`                                     |
+| Short scheme    | `j:PROJ-456`                                        |
+| Issue URL       | `jira:https://domain.atlassian.net/browse/JIRA-123` |
+| Jira Server URL | `j:https://jira.example.com/browse/PROJ-456`        |
 
 ## Features
 
@@ -65,22 +65,22 @@ The Jira provider supports different authentication methods based on your Jira d
 
 ## Status Mapping
 
-| Jira Status | Provider Status |
-|-------------|-----------------|
-| To Do, Backlog, Open, New | Open |
-| In Progress, Started, In Development | In Progress |
-| In Review, Code Review, Under Review, Verification | Review |
-| Done, Closed, Resolved, Complete, Finished | Done |
-| Won't Fix, Cancelled, Obsolete, Won't Do | Closed |
+| Jira Status                                        | Provider Status |
+|----------------------------------------------------|-----------------|
+| To Do, Backlog, Open, New                          | Open            |
+| In Progress, Started, In Development               | In Progress     |
+| In Review, Code Review, Under Review, Verification | Review          |
+| Done, Closed, Resolved, Complete, Finished         | Done            |
+| Won't Fix, Cancelled, Obsolete, Won't Do           | Closed          |
 
 ## Priority Mapping
 
-| Jira Priority | Provider Priority |
-|---------------|------------------|
-| Highest, Critical | Critical |
-| High | High |
-| Medium, Normal, Default | Normal |
-| Low, Lowest | Low |
+| Jira Priority           | Provider Priority |
+|-------------------------|-------------------|
+| Highest, Critical       | Critical          |
+| High                    | High              |
+| Medium, Normal, Default | Normal            |
+| Low, Lowest             | Low               |
 
 ## Workflow Transitions
 

@@ -50,10 +50,10 @@ Create a Personal Access Token at: https://app.asana.com/0/developer-console
 
 Status is determined by the task's section in Asana (case-insensitive):
 
-| Asana Section | Provider Status |
-|---------------|-----------------|
-| To Do, Backlog, New | Open |
-| In Progress, Doing | In Progress |
-| In Review, Review | Review |
-| Done, Complete | Done |
-| Archived | Closed |
+| Asana Section       | Provider Status |
+|---------------------|-----------------|
+| To Do, Backlog, New | Open            |
+| In Progress, Doing  | In Progress     |
+| In Review, Review   | Review          |
+| Done, Complete      | Done            |
+| Archived            | Closed          |

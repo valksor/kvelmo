@@ -33,13 +33,13 @@ wrike:
 
 ### Configuration Fields
 
-| Field | Description |
-|-------|-------------|
-| `token` | Wrike API token (can use env var syntax) |
-| `host` | API base URL override (default: `https://www.wrike.com/api/v4`) |
-| `space` | Space ID for listing tasks across an entire space |
-| `folder` | Folder ID for task lookup and creation (if no project) |
-| `project` | Project ID for task creation (takes priority over folder) |
+| Field     | Description                                                     |
+|-----------|-----------------------------------------------------------------|
+| `token`   | Wrike API token (can use env var syntax)                        |
+| `host`    | API base URL override (default: `https://www.wrike.com/api/v4`) |
+| `space`   | Space ID for listing tasks across an entire space               |
+| `folder`  | Folder ID for task lookup and creation (if no project)          |
+| `project` | Project ID for task creation (takes priority over folder)       |
 
 ### Task Creation Priority
 
@@ -64,11 +64,11 @@ INFO Resolved Wrike project numeric_id=4352950154 api_id=IEAAJXXXX title="My Pro
 
 Extract numeric IDs from Wrike workspace URLs:
 
-| URL Pattern | ID Location |
-|-------------|-------------|
-| `/folder/1635167041/` | Folder or project ID |
+| URL Pattern                 | ID Location                           |
+|-----------------------------|---------------------------------------|
+| `/folder/1635167041/`       | Folder or project ID                  |
 | `/task-view?id=123&pid=456` | Task ID (`id`), Parent folder (`pid`) |
-| `?spaceId=824404493` | Space ID |
+| `?spaceId=824404493`        | Space ID                              |
 
 Example: From `https://www.wrike.com/workspace.htm#/folder/4352950154/tableV2?spaceId=824404493`
 - Project ID: `4352950154`
