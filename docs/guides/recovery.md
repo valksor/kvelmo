@@ -267,13 +267,13 @@ mehr start improved-task.md
 ## Quick Reference
 
 | Situation          | Solution                                                |
-| ------------------ | ------------------------------------------------------- |
+|--------------------|---------------------------------------------------------|
 | Bad implementation | `mehr undo` → `mehr note` → `mehr implement`            |
 | Want to compare    | `mehr undo` → try alternative → `mehr undo`/`mehr redo` |
 | Accidental undo    | `mehr redo`                                             |
 | Lost redo          | `git reflog` → `git checkout <hash> -- file`            |
 | Partially bad      | Manual edit or selective checkout                       |
-| Too messy          | `mehr abandon` → start fresh                             |
+| Too messy          | `mehr abandon` → start fresh                            |
 
 ## Next Steps
 

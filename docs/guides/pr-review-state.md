@@ -180,15 +180,15 @@ mehr review pr --pr-number 123 --token "$GITHUB_TOKEN"
 
 ### Options
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--pr-number` | PR/MR number (required) | - |
-| `--provider` | Provider name | auto-detected |
-| `--format` | Comment format | `summary` |
-| `--scope` | Review scope | `full` |
-| `--agent` | Agent to use | `claude` |
-| `--acknowledge-fixes` | Acknowledge fixed issues | `true` |
-| `--update-existing` | Edit vs. new comment | `true` |
+| Flag                  | Description              | Default       |
+|-----------------------|--------------------------|---------------|
+| `--pr-number`         | PR/MR number (required)  | -             |
+| `--provider`          | Provider name            | auto-detected |
+| `--format`            | Comment format           | `summary`     |
+| `--scope`             | Review scope             | `full`        |
+| `--agent`             | Agent to use             | `claude`      |
+| `--acknowledge-fixes` | Acknowledge fixed issues | `true`        |
+| `--update-existing`   | Edit vs. new comment     | `true`        |
 
 ## Error Handling
 
@@ -225,12 +225,12 @@ Error: state signature verification failed - state may have been tampered with
 
 ## Provider Support
 
-| Provider | Status | Notes |
-|----------|--------|-------|
-| GitHub | ✅ | Full support |
-| GitLab | ✅ | Full support |
-| Bitbucket | ✅ | Full support |
-| Azure DevOps | ✅ | Full support |
+| Provider     | Status | Notes        |
+|--------------|--------|--------------|
+| GitHub       | ✅      | Full support |
+| GitLab       | ✅      | Full support |
+| Bitbucket    | ✅      | Full support |
+| Azure DevOps | ✅      | Full support |
 
 ## Implementation Details
 

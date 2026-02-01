@@ -4,10 +4,10 @@ Mehrhof provides native IDE plugins that integrate directly with your developmen
 
 ## Available Integrations
 
-| IDE | Status | Installation |
-|-----|--------|--------------|
+| IDE                     | Status      | Installation            |
+|-------------------------|-------------|-------------------------|
 | [JetBrains](#jetbrains) | ✅ Available | [Install](jetbrains.md) |
-| [VS Code](#vscode) | ✅ Available | [Install](vscode.md) |
+| [VS Code](#vscode)      | ✅ Available | [Install](vscode.md)    |
 
 ## How It Works
 

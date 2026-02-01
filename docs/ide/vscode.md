@@ -108,15 +108,15 @@ View detailed logs in the "Mehrhof" output channel.
 
 Access settings via `File > Preferences > Settings` and search "Mehrhof".
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `mehrhof.serverUrl` | string | `""` | Manual server URL. Leave empty to auto-start server. |
-| `mehrhof.mehrExecutable` | string | `""` | Path to `mehr` binary. Auto-detects from PATH if empty. |
-| `mehrhof.showNotifications` | boolean | `true` | Show notification messages for events. |
-| `mehrhof.defaultAgent` | string | `""` | Default agent for workflow steps. |
-| `mehrhof.autoReconnect` | boolean | `true` | Automatically reconnect on disconnect. |
-| `mehrhof.reconnectDelaySeconds` | number | `5` | Seconds to wait between reconnect attempts. |
-| `mehrhof.maxReconnectAttempts` | number | `10` | Maximum number of reconnection attempts. |
+| Setting                         | Type    | Default | Description                                             |
+|---------------------------------|---------|---------|---------------------------------------------------------|
+| `mehrhof.serverUrl`             | string  | `""`    | Manual server URL. Leave empty to auto-start server.    |
+| `mehrhof.mehrExecutable`        | string  | `""`    | Path to `mehr` binary. Auto-detects from PATH if empty. |
+| `mehrhof.showNotifications`     | boolean | `true`  | Show notification messages for events.                  |
+| `mehrhof.defaultAgent`          | string  | `""`    | Default agent for workflow steps.                       |
+| `mehrhof.autoReconnect`         | boolean | `true`  | Automatically reconnect on disconnect.                  |
+| `mehrhof.reconnectDelaySeconds` | number  | `5`     | Seconds to wait between reconnect attempts.             |
+| `mehrhof.maxReconnectAttempts`  | number  | `10`    | Maximum number of reconnection attempts.                |
 
 ## Commands
 
@@ -151,15 +151,15 @@ All commands available via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 
 The extension displays the current workflow state:
 
-| State | Icon | Color | Description |
-|-------|------|-------|-------------|
-| idle | ○ | Gray | No active task |
-| planning | ✎ | Blue | AI generating specifications |
-| implementing | < > | Orange | AI implementing code |
-| reviewing | 👁 | Purple | Code review in progress |
-| waiting | ? | Yellow | Waiting for user input |
-| done | ✓ | Green | Task completed |
-| failed | ✗ | Red | Task failed |
+| State        | Icon | Color  | Description                  |
+|--------------|------|--------|------------------------------|
+| idle         | ○    | Gray   | No active task               |
+| planning     | ✎    | Blue   | AI generating specifications |
+| implementing | < >  | Orange | AI implementing code         |
+| reviewing    | 👁   | Purple | Code review in progress      |
+| waiting      | ?    | Yellow | Waiting for user input       |
+| done         | ✓    | Green  | Task completed               |
+| failed       | ✗    | Red    | Task failed                  |
 
 ## Keyboard Shortcuts
 

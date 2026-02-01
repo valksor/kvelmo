@@ -52,25 +52,25 @@ The main **Interactive** tab provides a full interactive experience matching the
 
 Type these in the input field:
 
-| Command | Description |
-|---------|-------------|
-| `start <ref>` | Start a task (e.g., `start github:123`, `start file:task.md`) |
-| `plan` | Run planning phase |
-| `implement` | Run implementation phase |
-| `review` | Run code review |
-| `continue` | Resume from waiting state |
-| `finish` | Complete the task |
-| `abandon` | Discard the task |
-| `undo` / `redo` | Navigate checkpoints |
-| `status` | Show task status |
-| `cost` | Show token usage |
-| `chat <msg>` | Chat with agent |
-| `answer <resp>` | Answer agent question |
-| `note <msg>` | Add a note to task |
-| `find <query>` | AI-powered code search |
-| `list` | List all tasks |
-| `help` | Show available commands |
-| `clear` | Clear messages |
+| Command         | Description                                                   |
+|-----------------|---------------------------------------------------------------|
+| `start <ref>`   | Start a task (e.g., `start github:123`, `start file:task.md`) |
+| `plan`          | Run planning phase                                            |
+| `implement`     | Run implementation phase                                      |
+| `review`        | Run code review                                               |
+| `continue`      | Resume from waiting state                                     |
+| `finish`        | Complete the task                                             |
+| `abandon`       | Discard the task                                              |
+| `undo` / `redo` | Navigate checkpoints                                          |
+| `status`        | Show task status                                              |
+| `cost`          | Show token usage                                              |
+| `chat <msg>`    | Chat with agent                                               |
+| `answer <resp>` | Answer agent question                                         |
+| `note <msg>`    | Add a note to task                                            |
+| `find <query>`  | AI-powered code search                                        |
+| `list`          | List all tasks                                                |
+| `help`          | Show available commands                                       |
+| `clear`         | Clear messages                                                |
 
 ### Tool Window Tabs
 
@@ -104,32 +104,32 @@ Click the widget to refresh state.
 
 **Tools → Mehrhof:**
 
-| Action | Description |
-|--------|-------------|
-| Start Task... | Start a new task (prompts for reference) |
-| Plan | Generate specifications |
-| Implement | Implement specifications |
-| Review | Review implementation |
-| Continue | Resume from waiting state |
-| Finish | Complete the task |
-| Abandon | Discard the task |
-| Undo (Checkpoint) | Revert to previous checkpoint |
-| Redo (Checkpoint) | Restore to next checkpoint |
-| Refresh | Refresh task state |
+| Action            | Description                              |
+|-------------------|------------------------------------------|
+| Start Task...     | Start a new task (prompts for reference) |
+| Plan              | Generate specifications                  |
+| Implement         | Implement specifications                 |
+| Review            | Review implementation                    |
+| Continue          | Resume from waiting state                |
+| Finish            | Complete the task                        |
+| Abandon           | Discard the task                         |
+| Undo (Checkpoint) | Revert to previous checkpoint            |
+| Redo (Checkpoint) | Restore to next checkpoint               |
+| Refresh           | Refresh task state                       |
 
 ## Configuration
 
 **Settings → Tools → Mehrhof:**
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| mehr executable | *(auto-detect)* | Path to `mehr` binary. Auto-detects from `~/.local/bin`, `~/bin`, `/usr/local/bin` |
-| Server URL | *(empty)* | Optional manual server address. Leave empty to use Start Server button |
-| Show Notifications | `true` | Enable balloon notifications |
-| Auto-reconnect | `true` | Reconnect on disconnect |
-| Default Agent | *(empty)* | Agent for workflow steps |
-| Reconnect Delay | `5` seconds | Delay between reconnect attempts |
-| Max Reconnect Attempts | `10` | Stop after N failed attempts |
+| Setting                | Default         | Description                                                                        |
+|------------------------|-----------------|------------------------------------------------------------------------------------|
+| mehr executable        | *(auto-detect)* | Path to `mehr` binary. Auto-detects from `~/.local/bin`, `~/bin`, `/usr/local/bin` |
+| Server URL             | *(empty)*       | Optional manual server address. Leave empty to use Start Server button             |
+| Show Notifications     | `true`          | Enable balloon notifications                                                       |
+| Auto-reconnect         | `true`          | Reconnect on disconnect                                                            |
+| Default Agent          | *(empty)*       | Agent for workflow steps                                                           |
+| Reconnect Delay        | `5` seconds     | Delay between reconnect attempts                                                   |
+| Max Reconnect Attempts | `10`            | Stop after N failed attempts                                                       |
 
 ## Workflow Example
 
@@ -241,23 +241,23 @@ ide/jetbrains/src/main/kotlin/com/valksor/mehrhof/
 
 The plugin uses the Interactive API endpoints:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/v1/interactive/command` | POST | Execute commands (start, plan, implement, etc.) |
-| `/api/v1/interactive/chat` | POST | Chat with agent |
-| `/api/v1/interactive/answer` | POST | Answer agent question |
-| `/api/v1/interactive/state` | GET | Get current state |
-| `/api/v1/interactive/stop` | POST | Cancel running operation |
-| `/api/v1/events` | GET (SSE) | Real-time event stream |
+| Endpoint                      | Method    | Purpose                                         |
+|-------------------------------|-----------|-------------------------------------------------|
+| `/api/v1/interactive/command` | POST      | Execute commands (start, plan, implement, etc.) |
+| `/api/v1/interactive/chat`    | POST      | Chat with agent                                 |
+| `/api/v1/interactive/answer`  | POST      | Answer agent question                           |
+| `/api/v1/interactive/state`   | GET       | Get current state                               |
+| `/api/v1/interactive/stop`    | POST      | Cancel running operation                        |
+| `/api/v1/events`              | GET (SSE) | Real-time event stream                          |
 
 Additional endpoints for task info:
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/v1/status` | Server status |
-| `GET /api/v1/task` | Current task |
-| `GET /api/v1/tasks` | Task list |
-| `GET /api/v1/guide` | Next actions guidance |
-| `GET /health` | Health check |
+| Endpoint             | Purpose               |
+|----------------------|-----------------------|
+| `GET /api/v1/status` | Server status         |
+| `GET /api/v1/task`   | Current task          |
+| `GET /api/v1/tasks`  | Task list             |
+| `GET /api/v1/guide`  | Next actions guidance |
+| `GET /health`        | Health check          |
 
 See [REST API documentation](../web-ui/api.md) for full details.
