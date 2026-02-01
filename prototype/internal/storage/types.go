@@ -134,6 +134,62 @@ type ContextSettings struct {
 	DescriptionLimit int  `yaml:"description_limit,omitempty"` // Truncate descriptions to this length (default: 500)
 }
 
+// AutomationSettings holds webhook automation configuration for GitHub/GitLab.
+type AutomationSettings struct {
+	Enabled       bool                          `yaml:"enabled,omitempty"`        // Master enable switch
+	Providers     map[string]ProviderAutoConfig `yaml:"providers,omitempty"`      // Per-provider config (github, gitlab)
+	AccessControl AutomationAccessControlConfig `yaml:"access_control,omitempty"` // User/repo filtering
+	Queue         AutomationQueueConfig         `yaml:"queue,omitempty"`          // Job queue settings
+	Labels        AutomationLabelConfig         `yaml:"labels,omitempty"`         // Label configuration
+}
+
+// ProviderAutoConfig holds provider-specific automation settings.
+type ProviderAutoConfig struct {
+	Enabled       bool                    `yaml:"enabled,omitempty"`        // Enable for this provider
+	WebhookSecret string                  `yaml:"webhook_secret,omitempty"` // Webhook signature secret
+	TriggerOn     AutomationTriggerConfig `yaml:"trigger_on,omitempty"`     // Which events to trigger
+	CommandPrefix string                  `yaml:"command_prefix,omitempty"` // Comment trigger (default: @mehrhof)
+	UseWorktrees  bool                    `yaml:"use_worktrees,omitempty"`  // Isolate with worktrees
+	DryRun        bool                    `yaml:"dry_run,omitempty"`        // Log actions without executing
+}
+
+// AutomationTriggerConfig defines which events trigger automation.
+type AutomationTriggerConfig struct {
+	IssueOpened     bool     `yaml:"issue_opened,omitempty"`     // Auto-fix on issue open
+	IssueLabeled    []string `yaml:"issue_labeled,omitempty"`    // Auto-fix on specific labels
+	PROpened        bool     `yaml:"pr_opened,omitempty"`        // Auto-review on PR open (GitHub)
+	PRUpdated       bool     `yaml:"pr_updated,omitempty"`       // Re-review on PR update
+	MROpened        bool     `yaml:"mr_opened,omitempty"`        // Auto-review on MR open (GitLab)
+	MRUpdated       bool     `yaml:"mr_updated,omitempty"`       // Re-review on MR update
+	CommentCommands bool     `yaml:"comment_commands,omitempty"` // @mehrhof commands in comments
+}
+
+// AutomationAccessControlConfig defines who can trigger automation.
+type AutomationAccessControlConfig struct {
+	Mode       string   `yaml:"mode,omitempty"`        // "allowlist", "blocklist", "all"
+	Allowlist  []string `yaml:"allowlist,omitempty"`   // Allowed users/orgs
+	Blocklist  []string `yaml:"blocklist,omitempty"`   // Blocked users/orgs
+	AllowBots  bool     `yaml:"allow_bots,omitempty"`  // Allow bot accounts
+	RequireOrg bool     `yaml:"require_org,omitempty"` // Require org membership
+}
+
+// AutomationQueueConfig defines job queue behavior.
+type AutomationQueueConfig struct {
+	MaxConcurrent  int      `yaml:"max_concurrent,omitempty"`  // Max parallel jobs (default: 1)
+	JobTimeout     string   `yaml:"job_timeout,omitempty"`     // Per-job timeout (default: 30m)
+	RetryAttempts  int      `yaml:"retry_attempts,omitempty"`  // Max retry on failure (default: 0)
+	RetryDelay     string   `yaml:"retry_delay,omitempty"`     // Delay between retries
+	PriorityLabels []string `yaml:"priority_labels,omitempty"` // Labels that boost priority
+}
+
+// AutomationLabelConfig defines label management for automation.
+type AutomationLabelConfig struct {
+	MehrhofGenerated string `yaml:"mehr_generated,omitempty"` // Label for mehrhof PRs (default: "mehrhof-generated")
+	InProgress       string `yaml:"in_progress,omitempty"`    // Label during processing
+	Failed           string `yaml:"failed,omitempty"`         // Label on failure
+	SkipReview       string `yaml:"skip_review,omitempty"`    // PRs with this skip auto-review
+}
+
 // Session records an interaction session.
 type Session struct {
 	Version   string          `yaml:"version"`
