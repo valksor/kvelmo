@@ -21,4 +21,5 @@ node_modules/
 # Playwright test artifacts
 web-ui-tests/test-results/
 web-ui-tests/playwright-report/
+web-ui-tests/coverage/
 web-ui-tests/node_modules/
