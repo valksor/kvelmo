@@ -15,12 +15,12 @@ Mehrhof's links system creates a knowledge graph where:
 
 Links features are available through:
 
-| Feature | Location |
-|---------|----------|
-| **Search entities** | Navigate to **Links** in the sidebar |
-| **View statistics** | Links → Statistics panel |
-| **Rebuild index** | Links → Rebuild button |
-| **Browse all links** | Links → Search results |
+| Feature              | Location                             |
+|----------------------|--------------------------------------|
+| **Search entities**  | Navigate to **Links** in the sidebar |
+| **View statistics**  | Links → Statistics panel             |
+| **Rebuild index**    | Links → Rebuild button               |
+| **Browse all links** | Links → Search results               |
 
 ## Using Links in the Web UI
 
@@ -118,12 +118,12 @@ When content is saved:
 
 Name-based references work via the **Name Registry**:
 
-| Entity Type | Name Source | Example |
-|-------------|-------------|---------|
+| Entity Type        | Name Source                               | Example               |
+|--------------------|-------------------------------------------|-----------------------|
 | **Specifications** | YAML frontmatter `title` or first heading | `Authentication Flow` |
-| **Sessions** | Session type + timestamp | `planning session` |
-| **Decisions** | `decision:` prefix in notes | `cache-strategy` |
-| **Notes** | Entity ID (no human names) | `note:abc123:notes` |
+| **Sessions**       | Session type + timestamp                  | `planning session`    |
+| **Decisions**      | `decision:` prefix in notes               | `cache-strategy`      |
+| **Notes**          | Entity ID (no human names)                | `note:abc123:notes`   |
 
 ### Link Context
 
@@ -181,13 +181,13 @@ Useful for:
 
 See [`mehr links`](../cli/links.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr links list [entity]` | Browse/search entities |
-| `mehr links backlinks <entity>` | View entity details |
-| `mehr links search <name>` | Search box |
-| `mehr links stats` | Statistics panel |
-| `mehr links rebuild` | Rebuild button |
+| CLI Command                     | Web UI Action          |
+|---------------------------------|------------------------|
+| `mehr links list [entity]`      | Browse/search entities |
+| `mehr links backlinks <entity>` | View entity details    |
+| `mehr links search <name>`      | Search box             |
+| `mehr links stats`              | Statistics panel       |
+| `mehr links rebuild`            | Rebuild button         |
 
 ## Link Storage
 

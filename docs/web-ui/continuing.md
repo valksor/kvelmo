@@ -168,12 +168,12 @@ For experienced users, use Continue with auto-execute to speed through the workf
 
 ## Continue vs Status
 
-| Feature | Continue | Status |
-|---------|----------|--------|
-| **Speed** | Fast, minimal output | Full details |
-| **Purpose** | Action-oriented | Information-oriented |
-| **Suggestions** | Shows next action | Shows all available commands |
-| **Best for** | Resuming work | Full inspection |
+| Feature         | Continue             | Status                       |
+|-----------------|----------------------|------------------------------|
+| **Speed**       | Fast, minimal output | Full details                 |
+| **Purpose**     | Action-oriented      | Information-oriented         |
+| **Suggestions** | Shows next action    | Shows all available commands |
+| **Best for**    | Resuming work        | Full inspection              |
 
 ## Next Steps
 

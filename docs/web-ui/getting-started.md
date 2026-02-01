@@ -109,14 +109,14 @@ flowchart TD
 
 The dashboard has several sections:
 
-| Section | What It Does |
-|---------|--------------|
-| **Active Task** | Shows your current task (or "No active task") |
+| Section              | What It Does                                                              |
+|----------------------|---------------------------------------------------------------------------|
+| **Active Task**      | Shows your current task (or "No active task")                             |
 | **Workflow Diagram** | Visual state machine showing current workflow state and valid transitions |
-| **Quick Actions** | Buttons to continue, undo, redo |
-| **Task History** | List of all past tasks |
-| **Settings** | Configure agents, providers, and workflow |
-| **Dark Mode Toggle** | Switch between light/dark theme (top right) |
+| **Quick Actions**    | Buttons to continue, undo, redo                                           |
+| **Task History**     | List of all past tasks                                                    |
+| **Settings**         | Configure agents, providers, and workflow                                 |
+| **Dark Mode Toggle** | Switch between light/dark theme (top right)                               |
 
 ### Workflow Diagram
 
@@ -307,14 +307,14 @@ flowchart LR
 
 ### Understanding the States
 
-| State | What's Happening | What You Can Do |
-|-------|------------------|-----------------|
-| **Idle** | Task created, waiting for you | Click Plan, Implement, or Continue |
-| **Planning** | AI is creating a plan | Watch the output |
-| **Implementing** | AI is writing code | Watch the output |
-| **Reviewing** | Code review is running | Check results |
-| **Waiting** | AI has a question | Answer in the Questions section |
-| **Done** | Task completed | Finish or review changes |
+| State            | What's Happening              | What You Can Do                    |
+|------------------|-------------------------------|------------------------------------|
+| **Idle**         | Task created, waiting for you | Click Plan, Implement, or Continue |
+| **Planning**     | AI is creating a plan         | Watch the output                   |
+| **Implementing** | AI is writing code            | Watch the output                   |
+| **Reviewing**    | Code review is running        | Check results                      |
+| **Waiting**      | AI has a question             | Answer in the Questions section    |
+| **Done**         | Task completed                | Finish or review changes           |
 
 ---
 
@@ -505,16 +505,16 @@ This will:
 
 Quick reference for the main dashboard buttons:
 
-| Button | What It Does | When to Use |
-|--------|--------------|-------------|
-| **Continue** | Auto-runs the next logical step | When you want to speed through |
-| **Plan** | Generates implementation specifications | After creating a task |
-| **Implement** | Writes code based on specifications | After planning completes |
-| **Review** | Runs automated code review | After implementing |
-| **Finish** | Completes and merges the task | When you're happy with changes |
-| **Undo** | Goes back one checkpoint | When something goes wrong |
-| **Redo** | Goes forward one checkpoint | After undoing, if you change your mind |
-| **Abandon** | Discards the task entirely | When you want to cancel |
+| Button        | What It Does                            | When to Use                            |
+|---------------|-----------------------------------------|----------------------------------------|
+| **Continue**  | Auto-runs the next logical step         | When you want to speed through         |
+| **Plan**      | Generates implementation specifications | After creating a task                  |
+| **Implement** | Writes code based on specifications     | After planning completes               |
+| **Review**    | Runs automated code review              | After implementing                     |
+| **Finish**    | Completes and merges the task           | When you're happy with changes         |
+| **Undo**      | Goes back one checkpoint                | When something goes wrong              |
+| **Redo**      | Goes forward one checkpoint             | After undoing, if you change your mind |
+| **Abandon**   | Discards the task entirely              | When you want to cancel                |
 
 ---
 

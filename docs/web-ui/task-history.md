@@ -32,15 +32,15 @@ The Task History section appears on the dashboard showing all tasks in your work
 
 Each task card displays:
 
-| Field | Description |
-|-------|-------------|
-| **Icon/Emoji** | Visual indicator for the task |
-| **Title** | Task name |
-| **State Badge** | Current state with color |
-| **Branch** | Git branch name (or "deleted" if finished) |
-| **Created** | Time since creation |
-| **Cost** | Token cost for this task |
-| **Sessions** | Number of AI sessions |
+| Field           | Description                                |
+|-----------------|--------------------------------------------|
+| **Icon/Emoji**  | Visual indicator for the task              |
+| **Title**       | Task name                                  |
+| **State Badge** | Current state with color                   |
+| **Branch**      | Git branch name (or "deleted" if finished) |
+| **Created**     | Time since creation                        |
+| **Cost**        | Token cost for this task                   |
+| **Sessions**    | Number of AI sessions                      |
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -75,13 +75,13 @@ Search is case-insensitive and matches partial titles.
 
 Filter tasks by state:
 
-| Filter | Shows |
-|--------|-------|
-| **All** | Every task in the workspace |
-| **Active** | Currently running tasks (planning, implementing, reviewing) |
-| **Completed** | Tasks that finished successfully |
-| **Failed** | Tasks that encountered errors |
-| **Idle** | Tasks ready for action |
+| Filter        | Shows                                                       |
+|---------------|-------------------------------------------------------------|
+| **All**       | Every task in the workspace                                 |
+| **Active**    | Currently running tasks (planning, implementing, reviewing) |
+| **Completed** | Tasks that finished successfully                            |
+| **Failed**    | Tasks that encountered errors                               |
+| **Idle**      | Tasks ready for action                                      |
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -98,12 +98,12 @@ Filter tasks by state:
 
 Change the sort order:
 
-| Sort | Order |
-|------|-------|
-| **Date** | Most recent first (default) |
-| **Cost** | Highest cost first |
-| **Duration** | Longest running first |
-| **Name** | Alphabetical by title |
+| Sort         | Order                       |
+|--------------|-----------------------------|
+| **Date**     | Most recent first (default) |
+| **Cost**     | Highest cost first          |
+| **Duration** | Longest running first       |
+| **Name**     | Alphabetical by title       |
 
 ## Viewing Task Details
 
@@ -177,12 +177,12 @@ Resume a task when you need to:
 
 ### Task States for Resuming
 
-| Current State | Can Resume? | What Happens |
-|---------------|-------------|--------------|
-| **Idle** | ✅ Yes | Task becomes active, ready for action |
-| **Done** | ⚠️ Limited | Can view, but cannot continue (branch deleted) |
-| **Failed** | ✅ Yes | Can retry from last checkpoint |
-| **Implementing** | ✅ Yes | Can continue or cancel |
+| Current State    | Can Resume? | What Happens                                   |
+|------------------|-------------|------------------------------------------------|
+| **Idle**         | ✅ Yes       | Task becomes active, ready for action          |
+| **Done**         | ⚠️ Limited  | Can view, but cannot continue (branch deleted) |
+| **Failed**       | ✅ Yes       | Can retry from last checkpoint                 |
+| **Implementing** | ✅ Yes       | Can continue or cancel                         |
 
 ## Deleting Tasks
 
@@ -211,12 +211,12 @@ Click **"Delete"** to remove a task from history:
 
 ## Task History Actions
 
-| Action | Description |
-|--------|-------------|
-| **View** | See full task details |
-| **Load** | Make task active (for idle/failed tasks) |
-| **Delete** | Remove task permanently |
-| **Copy** | Copy task title/description for new task |
+| Action     | Description                              |
+|------------|------------------------------------------|
+| **View**   | See full task details                    |
+| **Load**   | Make task active (for idle/failed tasks) |
+| **Delete** | Remove task permanently                  |
+| **Copy**   | Copy task title/description for new task |
 
 ## Working with Multiple Tasks
 

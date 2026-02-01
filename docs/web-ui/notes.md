@@ -16,9 +16,9 @@ Click the **"Add Note"** button in the Active Task card:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
+│  State: ● Idle                                               │
 │                                                              │
 │  [+ Add Note] ← Click this button                            │
 │                                                              │
@@ -37,11 +37,11 @@ Click the **"Add Note"** button in the Active Task card:
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Enter your note (markdown supported):                       │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │                                                    │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │                                                    │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                                              │
-│  This note will be included in the next planning or         │
+│  This note will be included in the next planning or          │
 │  implementation prompt.                                      │
 │                                                              │
 │                                    [Cancel] [Add Note]       │
@@ -117,7 +117,7 @@ Add notes before implementation to guide code generation:
 │  Specifications (2 ready)                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  [+ Add Note]  Click before implementing                    │
+│  [+ Add Note]  Click before implementing                     │
 │                                                              │
 │  Note: Use the existing session store from                   │
 │  internal/session/ - don't create a new one.                 │
@@ -132,10 +132,10 @@ When the AI asks a question during planning, use notes to answer:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Question from Agent                                          │
+│  Question from Agent                                         │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Should session tokens expire? If so, how long?             │
+│  Should session tokens expire? If so, how long?              │
 │                                                              │
 │  [+ Add Note to Answer]                                      │
 └──────────────────────────────────────────────────────────────┘
@@ -179,15 +179,15 @@ View all notes in the Active Task card:
 │  Notes (5)                                                   │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  📝 2025-01-15 11:30 - Answer to agent question            │
-│     Use golang.org/x/oauth2 library                         │
+│  📝 2025-01-15 11:30 - Answer to agent question              │
+│     Use golang.org/x/oauth2 library                          │
 │     [View] [Delete]                                          │
 │                                                              │
-│  📝 2025-01-15 11:00 - Planning context                     │
+│  📝 2025-01-15 11:00 - Planning context                      │
 │     Support Google OAuth only initially                      │
 │     [View] [Delete]                                          │
 │                                                              │
-│  📝 2025-01-15 10:45 - Storage preference                   │
+│  📝 2025-01-15 10:45 - Storage preference                    │
 │     Use PostgreSQL for sessions, not Redis                   │
 │     [View] [Delete]                                          │
 │                                                              │
@@ -219,12 +219,12 @@ The most recent notes appear first and are included first in prompts.
 
 ## Notes vs Task Description
 
-| Feature | Notes | Task Description |
-|---------|--------|------------------|
-| **Purpose** | Add context during workflow | Initial requirements |
-| **Timing** | Anytime | Before creation |
-| **Scope** | Specific details | Overall goal |
-| **Examples** | "Use existing patterns" | "Add authentication" |
+| Feature      | Notes                       | Task Description     |
+|--------------|-----------------------------|----------------------|
+| **Purpose**  | Add context during workflow | Initial requirements |
+| **Timing**   | Anytime                     | Before creation      |
+| **Scope**    | Specific details            | Overall goal         |
+| **Examples** | "Use existing patterns"     | "Add authentication" |
 
 ## Next Steps
 

@@ -43,17 +43,17 @@ curl -b cookies.txt http://localhost:PORT/api/v1/status
 
 ## Endpoints Overview
 
-| Category | Endpoints |
-|----------|-----------|
-| **Authentication** | Login, logout |
-| **Read** | Status, context, tasks, specs, sessions, notes, costs |
-| **Workflow** | start, plan, implement, review, finish, undo, redo, continue, auto |
-| **Project** | plan, tasks, submit, reorder, start |
-| **Quick Tasks** | list, get, create, note, optimize, export, submit, submit-source, start, delete, card |
-| **Browser** | Status, tabs, goto, navigate, screenshot, click, type, eval, dom, close |
-| **Settings** | Get, update settings |
-| **Templates** | List, get, apply |
-| **Utilities** | Guide, scan, memory search, providers, agents, diagram |
+| Category           | Endpoints                                                                             |
+|--------------------|---------------------------------------------------------------------------------------|
+| **Authentication** | Login, logout                                                                         |
+| **Read**           | Status, context, tasks, specs, sessions, notes, costs                                 |
+| **Workflow**       | start, plan, implement, review, finish, undo, redo, continue, auto                    |
+| **Project**        | plan, tasks, submit, reorder, start                                                   |
+| **Quick Tasks**    | list, get, create, note, optimize, export, submit, submit-source, start, delete, card |
+| **Browser**        | Status, tabs, goto, navigate, screenshot, click, type, eval, dom, close               |
+| **Settings**       | Get, update settings                                                                  |
+| **Templates**      | List, get, apply                                                                      |
+| **Utilities**      | Guide, scan, memory search, providers, agents, diagram                                |
 
 ---
 
@@ -836,7 +836,7 @@ curl -X POST http://localhost:PORT/api/v1/settings \
 
 ## Project Planning
 
-The project planning API provides a complete workflow for planning and executing multi-task projects with dependencies.
+The project planning API provides a complete workflow for planning and executing multitask projects with dependencies.
 
 ### POST /api/v1/project/plan
 
@@ -915,7 +915,7 @@ curl -X POST http://localhost:PORT/api/v1/project/submit \
 | Field | Type | Description |
 |-------|------|-------------|
 | `queue_id` | string | Queue ID (default: most recent) |
-| `provider` | string | Provider name (wrike, github, jira, etc.) |
+| `provider` | string | Provider name (wrike, GitHub, jira, etc.) |
 | `create_epic` | boolean | Create parent epic/project |
 | `labels` | array | Labels to apply to all tasks |
 | `dry_run` | boolean | Preview without creating |
@@ -1160,7 +1160,7 @@ curl -X POST http://localhost:PORT/api/v1/quick/task-1/submit \
 **Request Fields:**
 | Field | Type | Description |
 |-------|------|-------------|
-| `provider` | string | Provider name (required) - github, jira, wrike, etc. |
+| `provider` | string | Provider name (required) - GitHub, jira, wrike, etc. |
 | `labels` | array | Additional labels to apply |
 | `dry_run` | boolean | Preview without submitting (default: false) |
 

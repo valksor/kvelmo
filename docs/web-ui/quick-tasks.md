@@ -56,14 +56,14 @@ The task is created in your quick task queue and submitted to the provider.
 
 The quick tasks page displays all tasks in your queue:
 
-| Field | Description |
-|-------|-------------|
-| ID | Auto-generated task identifier |
-| Title | Task title (extracted or custom) |
-| Description | Full task description |
-| Priority | 1 (high), 2 (normal), 3 (low) |
-| Labels | Categorization tags |
-| Status | Current task state |
+| Field       | Description                      |
+|-------------|----------------------------------|
+| ID          | Auto-generated task identifier   |
+| Title       | Task title (extracted or custom) |
+| Description | Full task description            |
+| Priority    | 1 (high), 2 (normal), 3 (low)    |
+| Labels      | Categorization tags              |
+| Status      | Current task state               |
 
 ### Adding Notes
 
@@ -196,14 +196,14 @@ The default queue ID is `quick-tasks`. You can create multiple queues for differ
 
 See [`mehr quick`](../cli/quick.md) for CLI usage.
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr quick "description"` | Create task |
-| `mehr note --task=... "text"` | Add note |
-| `mehr optimize --task=...` | Optimize task |
-| `mehr export --task=...` | Export to markdown |
-| `mehr submit --task=...` | Submit to provider |
-| `mehr start queue:...` | Start task |
+| CLI Command                   | Web UI Action      |
+|-------------------------------|--------------------|
+| `mehr quick "description"`    | Create task        |
+| `mehr note --task=... "text"` | Add note           |
+| `mehr optimize --task=...`    | Optimize task      |
+| `mehr export --task=...`      | Export to markdown |
+| `mehr submit --task=...`      | Submit to provider |
+| `mehr start queue:...`        | Start task         |
 
 ## Managing Multiple Queues
 

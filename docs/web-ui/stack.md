@@ -8,7 +8,7 @@ Navigate to **Stacked Features** in the sidebar, or go directly to `/stack`:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Sidebar                                                      │
+│  Sidebar                                                     │
 ├──────────────────────────────────────────────────────────────┤
 │  Dashboard                                                   │
 │  Tasks                                                       │
@@ -31,17 +31,17 @@ The stack page shows all feature stacks with their tasks and status:
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Stack: auth-system                                          │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  3 tasks · Root: issue-100                              │ │
-│  │                                                          │ │
-│  │  ✓ issue-100  feature/auth-system       merged          │ │
-│  │  ⟳ issue-101  feature/auth-oauth        needs-rebase    │ │
-│  │  ● issue-102  feature/auth-oauth-google active          │ │
-│  │                                                          │ │
-│  │  [⚠ Needs Rebase]                    [Rebase All]       │ │
-│  │                                                          │ │
-│  │  Created: 2024-01-15 10:00 · Updated: 2024-01-18 14:30  │ │
-│  └────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  3 tasks · Root: issue-100                             │  │
+│  │                                                        │  │
+│  │  ✓ issue-100  feature/auth-system       merged         │  │
+│  │  ⟳ issue-101  feature/auth-oauth        needs-rebase   │  │
+│  │  ● issue-102  feature/auth-oauth-google active         │  │
+│  │                                                        │  │
+│  │  [⚠ Needs Rebase]                    [Rebase All]      │  │
+│  │                                                        │  │
+│  │  Created: 2024-01-15 10:00 · Updated: 2024-01-18 14:30 │  │
+│  └────────────────────────────────────────────────────────┘  │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -50,15 +50,15 @@ The stack page shows all feature stacks with their tasks and status:
 
 Each task displays its current state with a visual indicator:
 
-| Icon | State | Color | Description |
-|------|-------|-------|-------------|
-| ✓ | merged | Green | PR merged to target |
-| ⟳ | needs-rebase | Yellow | Parent merged, needs rebasing |
-| ✗ | conflict | Red | Rebase failed due to conflicts |
-| ◯ | pending-review | Blue | PR open, awaiting review |
-| ◉ | approved | Green | PR approved, ready to merge |
-| ● | active | Gray | Being worked on |
-| ○ | abandoned | Gray | PR closed without merge |
+| Icon | State          | Color  | Description                    |
+|------|----------------|--------|--------------------------------|
+| ✓    | merged         | Green  | PR merged to target            |
+| ⟳    | needs-rebase   | Yellow | Parent merged, needs rebasing  |
+| ✗    | conflict       | Red    | Rebase failed due to conflicts |
+| ◯    | pending-review | Blue   | PR open, awaiting review       |
+| ◉    | approved       | Green  | PR approved, ready to merge    |
+| ●    | active         | Gray   | Being worked on                |
+| ○    | abandoned      | Gray   | PR closed without merge        |
 
 ## Syncing PR Status
 
@@ -68,9 +68,9 @@ Click **"Sync PR Status"** to fetch the latest PR status from your provider:
 ┌──────────────────────────────────────────────────────────────┐
 │  [Sync PR Status]  ← Click this button                       │
 │                     ↓                                        │
-│  Syncing... ⟳                                               │
+│  Syncing... ⟳                                                │
 │                     ↓                                        │
-│  ✓ Synced: 2 tasks updated                                  │
+│  ✓ Synced: 2 tasks updated                                   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,11 +86,11 @@ When a parent feature merges, its children need rebasing. Click **"Rebase All"**
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  Stack: auth-system                                          │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  [⚠ Needs Rebase]                    [Rebase All]  ←   │ │
-│  │                                                          │ │
-│  │  Click to rebase all tasks in this stack                │ │
-│  └────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [⚠ Needs Rebase]                    [Rebase All]  ←   │  │
+│  │                                                        │  │
+│  │  Click to rebase all tasks in this stack               │  │
+│  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -102,8 +102,8 @@ Watch the rebase progress in real-time:
 ┌──────────────────────────────────────────────────────────────┐
 │  Rebasing stack auth-system...                               │
 │                                                              │
-│  ✓ issue-101: rebased onto main                             │
-│  ⟳ issue-102: rebasing onto feature/auth-oauth...          │
+│  ✓ issue-101: rebased onto main                              │
+│  ⟳ issue-102: rebasing onto feature/auth-oauth...            │
 │                                                              │
 │  ▶ In progress...                                            │
 └──────────────────────────────────────────────────────────────┘
@@ -114,17 +114,17 @@ Watch the rebase progress in real-time:
 When rebase completes successfully:
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  ✓ Rebase Complete                                          │
-│                                                              │
-│  Rebased 2 tasks:                                           │
-│    • issue-101: main ← feature/auth-system                  │
+┌────────────────────────────────────────────────────────────────┐
+│  ✓ Rebase Complete                                             │
+│                                                                │
+│  Rebased 2 tasks:                                              │
+│    • issue-101: main ← feature/auth-system                     │
 │    • issue-102: feature/auth-oauth ← feature/auth-oauth-google │
-│                                                              │
-│  Next steps:                                                 │
-│    1. Push updated branches                                  │
-│    2. Update PRs if needed                                   │
-└──────────────────────────────────────────────────────────────┘
+│                                                                │
+│  Next steps:                                                   │
+│    1. Push updated branches                                    │
+│    2. Update PRs if needed                                     │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Rebase Conflict
@@ -132,26 +132,26 @@ When rebase completes successfully:
 If a conflict occurs, the rebase aborts and shows the conflict:
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  ✗ Rebase Failed - Conflict                                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: issue-102 (feature/auth-oauth-google)                 │
-│  Rebasing onto: feature/auth-oauth                           │
-│                                                              │
-│  Conflict hint:                                              │
-│    Merge conflict in internal/auth/oauth.go                  │
-│                                                              │
-│  Resolution:                                                 │
-│    1. Open terminal in your project                          │
+┌───────────────────────────────────────────────────────────────────┐
+│  ✗ Rebase Failed - Conflict                                       │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Task: issue-102 (feature/auth-oauth-google)                      │
+│  Rebasing onto: feature/auth-oauth                                │
+│                                                                   │
+│  Conflict hint:                                                   │
+│    Merge conflict in internal/auth/oauth.go                       │
+│                                                                   │
+│  Resolution:                                                      │
+│    1. Open terminal in your project                               │
 │    2. Checkout the branch: git checkout feature/auth-oauth-google │
-│    3. Start rebase: git rebase feature/auth-oauth            │
-│    4. Resolve conflicts manually                             │
-│    5. Continue rebase: git rebase --continue                 │
-│    6. Return here and sync status                            │
-│                                                              │
-│  [Copy Resolution Steps]                                     │
-└──────────────────────────────────────────────────────────────┘
+│    3. Start rebase: git rebase feature/auth-oauth                 │
+│    4. Resolve conflicts manually                                  │
+│    5. Continue rebase: git rebase --continue                      │
+│    6. Return here and sync status                                 │
+│                                                                   │
+│  [Copy Resolution Steps]                                          │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ## Task Details
@@ -165,14 +165,14 @@ Click on a task to see more details:
 │                                                              │
 │  Branch: feature/auth-oauth                                  │
 │  State: needs-rebase                                         │
-│  PR: #101 (https://github.com/org/repo/pull/101)            │
+│  PR: #101 (https://github.com/org/repo/pull/101)             │
 │                                                              │
-│  Depends on: issue-100 (merged)                             │
+│  Depends on: issue-100 (merged)                              │
 │  Blocks: issue-102                                           │
 │                                                              │
 │  Part of stack: auth-system                                  │
 │                                                              │
-│  [View PR] [Rebase This Task]                               │
+│  [View PR] [Rebase This Task]                                │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -187,9 +187,9 @@ When no stacks exist:
 │                                                              │
 │  Create dependent features by using:                         │
 │                                                              │
-│    mehr start <task> --depends-on <parent>                  │
+│    mehr start <task> --depends-on <parent>                   │
 │                                                              │
-│  Or start a task while on a feature branch to be prompted   │
+│  Or start a task while on a feature branch to be prompted    │
 │  about creating a dependency.                                │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
@@ -199,11 +199,11 @@ When no stacks exist:
 
 Stacks display status badges for quick visibility:
 
-| Badge | Meaning |
-|-------|---------|
-| `⚠ Needs Rebase` | One or more tasks need rebasing |
-| `✗ Conflict` | One or more tasks have conflicts |
-| `✓ All Merged` | All tasks in stack are merged |
+| Badge            | Meaning                          |
+|------------------|----------------------------------|
+| `⚠ Needs Rebase` | One or more tasks need rebasing  |
+| `✗ Conflict`     | One or more tasks have conflicts |
+| `✓ All Merged`   | All tasks in stack are merged    |
 
 ## Help Section
 
@@ -218,7 +218,7 @@ The page includes a help section explaining stacked features:
 │  Feature A is waiting on code review.                        │
 │                                                              │
 │  • Create a dependent feature:                               │
-│      mehr start feature-b --depends-on feature-a            │
+│      mehr start feature-b --depends-on feature-a             │
 │                                                              │
 │  • Sync PR status:                                           │
 │      Click "Sync PR Status" to fetch latest PR states        │
@@ -237,11 +237,11 @@ The page includes a help section explaining stacked features:
 
 The stack page uses these API endpoints:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/stack` | List all stacks |
-| POST | `/api/v1/stack/sync` | Sync PR status |
-| POST | `/api/v1/stack/rebase` | Rebase stacks/tasks |
+| Method | Endpoint               | Description         |
+|--------|------------------------|---------------------|
+| GET    | `/api/v1/stack`        | List all stacks     |
+| POST   | `/api/v1/stack/sync`   | Sync PR status      |
+| POST   | `/api/v1/stack/rebase` | Rebase stacks/tasks |
 
 ## CLI Equivalent
 

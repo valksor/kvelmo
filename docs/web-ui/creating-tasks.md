@@ -130,16 +130,16 @@ Pull tasks directly from external project management tools.
 
 ### Supported Providers
 
-| Provider | Setup Command |
-|----------|---------------|
-| GitHub | `mehr github login` |
-| GitLab | `mehr gitlab login` |
-| Jira | `mehr jira configure` |
-| Linear | `mehr linear configure` |
-| Notion | `mehr notion configure` |
-| Trello | `mehr trello configure` |
-| Asana | `mehr asana configure` |
-| ClickUp | `mehr clickup configure` |
+| Provider | Setup Command            |
+|----------|--------------------------|
+| GitHub   | `mehr github login`      |
+| GitLab   | `mehr gitlab login`      |
+| Jira     | `mehr jira configure`    |
+| Linear   | `mehr linear configure`  |
+| Notion   | `mehr notion configure`  |
+| Trello   | `mehr trello configure`  |
+| Asana    | `mehr asana configure`   |
+| ClickUp  | `mehr clickup configure` |
 
 See [Providers](../providers/index.md) for complete setup instructions.
 
@@ -165,11 +165,11 @@ Mehrhof automatically fetches:
 
 Some providers support shorthand notation:
 
-| Provider | Shorthand | Example |
-|----------|-----------|---------|
-| GitHub | `gh` | `gh:42` |
-| GitLab | `gl` | `gl:123` |
-| Jira | None (requires project key) | `PROJ-123` |
+| Provider | Shorthand                   | Example    |
+|----------|-----------------------------|------------|
+| GitHub   | `gh`                        | `gh:42`    |
+| GitLab   | `gl`                        | `gl:123`   |
+| Jira     | None (requires project key) | `PROJ-123` |
 
 ## What Happens After Creating
 

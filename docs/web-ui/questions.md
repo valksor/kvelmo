@@ -148,10 +148,10 @@ The agent's response streams in real-time:
 After getting your answer, the workflow state remains unchanged:
 
 | Before Question | After Question |
-|----------------|----------------|
-| Planning | Planning |
-| Implementing | Implementing |
-| Reviewing | Reviewing |
+|-----------------|----------------|
+| Planning        | Planning       |
+| Implementing    | Implementing   |
+| Reviewing       | Reviewing      |
 
 You can continue where you left off:
 - **Planning** - Click **"Plan"** to continue
@@ -204,13 +204,13 @@ A: The approach includes:
 
 ## Questions vs Notes
 
-| Feature | Quick Question | Notes |
-|---------|---------------|--------|
-| **AI Response** | ✅ Yes | ❌ No |
-| **Context Aware** | ✅ Full context | ❌ None |
-| **Tokens Consumed** | ✅ Yes | ❌ No |
-| **State Change** | ❌ No | ❌ No |
-| **Use When** | Need an answer | Want to add info |
+| Feature             | Quick Question | Notes            |
+|---------------------|----------------|------------------|
+| **AI Response**     | ✅ Yes          | ❌ No             |
+| **Context Aware**   | ✅ Full context | ❌ None           |
+| **Tokens Consumed** | ✅ Yes          | ❌ No             |
+| **State Change**    | ❌ No           | ❌ No             |
+| **Use When**        | Need an answer | Want to add info |
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -268,14 +268,14 @@ When the agent asks a back-question:
 
 Quick Question is only available during active AI work:
 
-| State | Quick Question Available |
-|-------|-------------------------|
-| **Planning** | ✅ Yes |
-| **Implementing** | ✅ Yes |
-| **Reviewing** | ✅ Yes |
-| **Idle** | ❌ No (use notes instead) |
-| **Waiting** | ❌ No (answer agent question first) |
-| **Done** | ❌ No (task complete) |
+| State            | Quick Question Available           |
+|------------------|------------------------------------|
+| **Planning**     | ✅ Yes                              |
+| **Implementing** | ✅ Yes                              |
+| **Reviewing**    | ✅ Yes                              |
+| **Idle**         | ❌ No (use notes instead)           |
+| **Waiting**      | ❌ No (answer agent question first) |
+| **Done**         | ❌ No (task complete)               |
 
 ## Error Cases
 
@@ -356,10 +356,10 @@ Quick Question is only available during active AI work:
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
+| Key          | Action                               |
+|--------------|--------------------------------------|
 | `Ctrl+Enter` | Submit question (when input focused) |
-| `Esc` | Close response dialog |
+| `Esc`        | Close response dialog                |
 
 ## API Endpoint
 

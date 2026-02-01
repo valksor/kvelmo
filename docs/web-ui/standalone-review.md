@@ -23,10 +23,10 @@ POST /api/v1/workflow/review/standalone
 
 ### Headers
 
-| Header | Value | Description |
-|--------|-------|-------------|
-| `Content-Type` | `application/json` | Required |
-| `Accept` | `text/event-stream` | Optional - enables SSE streaming |
+| Header         | Value               | Description                      |
+|----------------|---------------------|----------------------------------|
+| `Content-Type` | `application/json`  | Required                         |
+| `Accept`       | `text/event-stream` | Optional - enables SSE streaming |
 
 ### Body
 
@@ -45,16 +45,16 @@ POST /api/v1/workflow/review/standalone
 
 ### Fields
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `mode` | string | No | `uncommitted` | Review mode: `uncommitted`, `branch`, `range`, `files` |
-| `base_branch` | string | No | auto-detect | Base branch for `branch` mode |
-| `range` | string | No | - | Commit range for `range` mode (e.g., `HEAD~3..HEAD`) |
-| `files` | string[] | No | - | Files to review for `files` mode |
-| `context` | int | No | 3 | Lines of context in diff |
-| `agent` | string | No | default | Agent to use for review |
-| `apply_fixes` | bool | No | false | If true, apply suggested fixes to files |
-| `create_checkpoint` | bool | No | true | Create checkpoint before changes (only used if `apply_fixes` is true) |
+| Field               | Type     | Required | Default       | Description                                                           |
+|---------------------|----------|----------|---------------|-----------------------------------------------------------------------|
+| `mode`              | string   | No       | `uncommitted` | Review mode: `uncommitted`, `branch`, `range`, `files`                |
+| `base_branch`       | string   | No       | auto-detect   | Base branch for `branch` mode                                         |
+| `range`             | string   | No       | -             | Commit range for `range` mode (e.g., `HEAD~3..HEAD`)                  |
+| `files`             | string[] | No       | -             | Files to review for `files` mode                                      |
+| `context`           | int      | No       | 3             | Lines of context in diff                                              |
+| `agent`             | string   | No       | default       | Agent to use for review                                               |
+| `apply_fixes`       | bool     | No       | false         | If true, apply suggested fixes to files                               |
+| `create_checkpoint` | bool     | No       | true          | Create checkpoint before changes (only used if `apply_fixes` is true) |
 
 ## Response
 
@@ -191,20 +191,20 @@ curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
 
 ## Verdicts
 
-| Verdict | Description |
-|---------|-------------|
-| `APPROVED` | Code looks good, no significant issues found |
-| `NEEDS_CHANGES` | Issues found that should be addressed |
-| `COMMENT` | General observations without a strong verdict |
+| Verdict         | Description                                   |
+|-----------------|-----------------------------------------------|
+| `APPROVED`      | Code looks good, no significant issues found  |
+| `NEEDS_CHANGES` | Issues found that should be addressed         |
+| `COMMENT`       | General observations without a strong verdict |
 
 ## Issue Severities
 
-| Severity | Description |
-|----------|-------------|
+| Severity   | Description                               |
+|------------|-------------------------------------------|
 | `critical` | Security vulnerabilities, data loss risks |
-| `high` | Bugs, correctness issues |
-| `medium` | Code quality, maintainability concerns |
-| `low` | Style issues, minor improvements |
+| `high`     | Bugs, correctness issues                  |
+| `medium`   | Code quality, maintainability concerns    |
+| `low`      | Style issues, minor improvements          |
 
 ## Error Response
 

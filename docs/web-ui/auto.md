@@ -47,17 +47,17 @@ The workflow runs automatically without further interaction needed.
        │
        ▼
 ┌─────────────────────────────────────┐
-│  2. Implementation                 │
+│  2. Implementation                  │
 └──────┬──────────────────────────────┘
        │
        ▼
 ┌─────────────┐     ┌──────────┐
 │ Quality     │────▶│ Failed?  │
 └──────┬──────┘     └────┬─────┘
-       │               │
-    Passed          Yes │
-       │               │ retry
-       │               ▼
+       │                 │
+    Passed           Yes │
+       │                 │ retry
+       │                 ▼
        │    ┌─────────────────────┐
        │    │ Add errors to notes │
        │    │ Re-implement        │
@@ -67,7 +67,7 @@ The workflow runs automatically without further interaction needed.
        │
        ▼
 ┌─────────────────────────────────────┐
-│  4. Review                         │
+│  4. Review                          │
 └──────┬──────────────────────────────┘
        │
        ▼
@@ -185,13 +185,13 @@ AUTO failed at: quality
 
 ## Comparison with Manual Workflow
 
-| Aspect | Auto | Manual |
-|--------|------|--------|
-| User interaction | None | At each step |
-| Agent questions | Skipped | Answered |
-| Quality failures | Auto-retry | Manual fix |
-| Review specifications | No | Yes |
-| Control | Less | Full |
+| Aspect                | Auto       | Manual       |
+|-----------------------|------------|--------------|
+| User interaction      | None       | At each step |
+| Agent questions       | Skipped    | Answered     |
+| Quality failures      | Auto-retry | Manual fix   |
+| Review specifications | No         | Yes          |
+| Control               | Less       | Full         |
 
 ## CLI Equivalent
 
