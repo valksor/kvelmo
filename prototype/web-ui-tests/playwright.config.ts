@@ -34,6 +34,18 @@ export default defineConfig({
                 // Include our source files
                 return sourcePath.includes('/static/js/');
               },
+              sourcePath: (filePath: string) => {
+                // V8 coverage produces URL-based paths like "localhost-PORT/static/js/actions.js"
+                // Remap to repo-relative paths so Coveralls can match them to source files
+                const match = filePath.match(/static\/js\/(.*)/);
+                if (match) {
+                  let fileName = match[1];
+                  // Strip query parameter artifacts (e.g., "app.js-v=2" → "app.js")
+                  fileName = fileName.replace(/(\.\w+)-.+$/, '$1');
+                  return `internal/server/static/js/${fileName}`;
+                }
+                return filePath;
+              },
               reports: [['lcovonly', { file: 'lcov.info' }], ['text-summary'], ['html']],
               outputDir: './coverage',
             },
