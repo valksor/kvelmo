@@ -13,9 +13,7 @@ import (
 
 // TestEmptyURL tests opening a tab with an empty URL.
 func TestEmptyURL(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -51,9 +49,7 @@ func TestEmptyURL(t *testing.T) {
 
 // TestInvalidURL tests opening a tab with various invalid URLs.
 func TestInvalidURL(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -102,9 +98,7 @@ func TestInvalidURL(t *testing.T) {
 
 // TestUnreachableURL tests navigating to an unreachable/unresolvable URL.
 func TestUnreachableURL(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -136,9 +130,7 @@ func TestUnreachableURL(t *testing.T) {
 
 // TestMalformedSelectors tests various malformed CSS selectors.
 func TestMalformedSelectors(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -185,9 +177,7 @@ func TestMalformedSelectors(t *testing.T) {
 
 // TestSpecialCharactersInSelector tests selectors with special characters.
 func TestSpecialCharactersInSelector(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -230,9 +220,7 @@ func TestSpecialCharactersInSelector(t *testing.T) {
 
 // TestVeryLongSelector tests an extremely long CSS selector.
 func TestVeryLongSelector(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -285,9 +273,7 @@ func TestZeroTimeout(t *testing.T) {
 
 // TestVeryShortTimeout tests operations with very short timeout.
 func TestVeryShortTimeout(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 
@@ -314,9 +300,7 @@ func TestVeryShortTimeout(t *testing.T) {
 
 // TestMultipleConnectDisconnect tests connecting and disconnecting multiple times.
 func TestMultipleConnectDisconnect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -356,9 +340,7 @@ func TestMultipleConnectDisconnect(t *testing.T) {
 
 // TestConnectWhenAlreadyConnected tests calling Connect() multiple times.
 func TestConnectWhenAlreadyConnected(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -406,9 +388,7 @@ func TestDisconnectWhenNotConnected(t *testing.T) {
 
 // TestOperationsOnClosedTab tests performing operations on a closed tab.
 func TestOperationsOnClosedTab(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -488,9 +468,7 @@ func TestOperationsOnClosedTab(t *testing.T) {
 
 // TestContextCancellation tests operations with cancelled context.
 func TestContextCancellation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithCancel(context.Background())
@@ -518,9 +496,7 @@ func TestContextCancellation(t *testing.T) {
 
 // TestScreenshotFormats tests different screenshot formats.
 func TestScreenshotFormats(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -566,9 +542,7 @@ func TestScreenshotFormats(t *testing.T) {
 
 // TestInvalidScreenshotQuality tests screenshot with invalid quality values.
 func TestInvalidScreenshotQuality(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -607,9 +581,7 @@ func TestInvalidScreenshotQuality(t *testing.T) {
 
 // TestEmptyJavaScript tests evaluating empty JavaScript.
 func TestEmptyJavaScript(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -640,9 +612,7 @@ func TestEmptyJavaScript(t *testing.T) {
 
 // TestVeryLongJavaScript tests evaluating very long JavaScript code.
 func TestVeryLongJavaScript(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping edge case test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

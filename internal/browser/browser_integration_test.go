@@ -10,9 +10,19 @@ import (
 	"time"
 )
 
-// skipIfNoChrome skips the test if Chrome is not available.
-func skipIfNoChrome(t *testing.T) {
+// skipBrowserIntegration skips the test when browser integration tests
+// cannot or should not run. Checks (in order):
+//   - testing.Short: skipped when running with -short flag
+//   - CI without opt-in: skipped in CI unless BROWSER_TESTS=true
+//   - Chrome not found: skipped when no Chrome binary is available
+func skipBrowserIntegration(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping browser integration test in short mode")
+	}
+	if os.Getenv("CI") != "" && os.Getenv("BROWSER_TESTS") != "true" {
+		t.Skip("browser integration tests disabled in CI (set BROWSER_TESTS=true to enable)")
+	}
 	if !ChromeAvailable() {
 		t.Skip("Chrome not found - skipping browser integration tests. " +
 			"Install Chrome or set CHROME_PATH environment variable.")
@@ -34,7 +44,7 @@ func connectOrSkip(t *testing.T, controller Controller, ctx context.Context) {
 // This is an integration test that requires Chrome to be installed.
 // Headless mode is the default. Set TEST_BROWSER_VISIBLE=true to see the browser window.
 func TestBrowserIntegration(t *testing.T) {
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 	// Use headless mode by default
 	// Set TEST_BROWSER_VISIBLE=true to see the browser window
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
@@ -176,10 +186,7 @@ func TestBrowserIntegration(t *testing.T) {
 
 // TestMonitorLifecycle tests monitor creation and cleanup.
 func TestMonitorLifecycle(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping monitor lifecycle test in short mode")
-	}
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -234,10 +241,7 @@ func TestMonitorLifecycle(t *testing.T) {
 
 // TestMultipleTabs tests operations on multiple tabs.
 func TestMultipleTabs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping multiple tabs test in short mode")
-	}
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -289,10 +293,7 @@ func TestMultipleTabs(t *testing.T) {
 
 // TestNavigationTests tests navigation and reload operations.
 func TestNavigationTests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping navigation test in short mode")
-	}
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -343,7 +344,7 @@ func TestNavigationTests(t *testing.T) {
 
 // TestErrorHandling tests error handling for invalid operations.
 func TestErrorHandling(t *testing.T) {
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 	ctx := context.Background()
 
 	cfg := Config{
@@ -423,10 +424,7 @@ func TestErrorHandling(t *testing.T) {
 
 // TestDOMOperations tests DOM interaction.
 func TestDOMOperations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping DOM operations test in short mode")
-	}
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -478,10 +476,7 @@ func TestDOMOperations(t *testing.T) {
 
 // TestReconnect tests disconnecting and reconnecting.
 func TestReconnect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping reconnect test in short mode")
-	}
-	skipIfNoChrome(t)
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
