@@ -11,9 +11,7 @@ import (
 
 // TestNoGoroutineLeaks verifies that browser operations don't leak goroutines.
 func TestNoGoroutineLeaks(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping goroutine leak test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	initial := runtime.NumGoroutine()
 
@@ -28,9 +26,7 @@ func TestNoGoroutineLeaks(t *testing.T) {
 	ctx := context.Background()
 
 	// Connect and perform operations
-	if err := ctrl.Connect(ctx); err != nil {
-		t.Fatalf("failed to connect: %v", err)
-	}
+	connectOrSkip(t, ctrl, ctx)
 
 	// Create and destroy multiple tabs with monitors
 	for range 5 {

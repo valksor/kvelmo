@@ -13,9 +13,7 @@ import (
 
 // TestConcurrentTabs tests opening and closing multiple tabs concurrently.
 func TestConcurrentTabs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -98,9 +96,7 @@ func TestConcurrentTabs(t *testing.T) {
 
 // TestConcurrentCloseTab tests closing the same tab from multiple goroutines.
 func TestConcurrentCloseTab(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -150,9 +146,7 @@ func TestConcurrentCloseTab(t *testing.T) {
 
 // TestConcurrentMonitors tests creating monitors for the same tab concurrently.
 func TestConcurrentMonitors(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -201,9 +195,7 @@ func TestConcurrentMonitors(t *testing.T) {
 
 // TestConcurrentListAndModify tests listing tabs while modifying them.
 func TestConcurrentListAndModify(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -258,9 +250,7 @@ func TestConcurrentListAndModify(t *testing.T) {
 
 // TestConcurrentNavigation tests navigating multiple tabs concurrently.
 func TestConcurrentNavigation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -323,9 +313,7 @@ func TestConcurrentNavigation(t *testing.T) {
 
 // TestConcurrentDisconnect tests concurrent disconnect calls.
 func TestConcurrentDisconnect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping concurrency test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
@@ -363,9 +351,7 @@ func TestConcurrentDisconnect(t *testing.T) {
 // TestRaceDetectorTest is specifically for running with go test -race.
 // It exercises potential race conditions in monitor management.
 func TestRaceDetectorTest(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping race detector test in short mode")
-	}
+	skipBrowserIntegration(t)
 
 	headless := os.Getenv("TEST_BROWSER_VISIBLE") != "true"
 	ctx := context.Background()
