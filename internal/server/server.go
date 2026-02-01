@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/automation"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/server/views"
@@ -76,6 +77,10 @@ type Server struct {
 	// Operation tracking for interactive mode cancellation
 	opMu      sync.RWMutex
 	activeOps map[string]*activeOperation // sessionID -> active operation
+
+	// Automation for webhook processing
+	automation       *automation.Automation
+	automationConfig *storage.AutomationSettings
 }
 
 // New creates a new server with the given configuration.
