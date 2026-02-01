@@ -15,16 +15,16 @@ flowchart LR
 
 ## At a Glance
 
-| Aspect | Web UI | CLI |
-|--------|--------|-----|
-| **Learning curve** | Low - visual and intuitive | Medium - requires command knowledge |
-| **Speed (once learned)** | Medium - clicking and navigation | Fast - keyboard-driven |
-| **Visibility** | See everything at once | See what you ask for |
-| **Collaboration** | Easy to screen-share | Harder to share |
-| **Automation** | Manual only | Fully scriptable |
-| **Remote access** | Requires setup | Works over SSH naturally |
-| **Configuration** | Visual forms | Edit YAML files |
-| **Multi-task** | Easy switching | Terminal per task |
+| Aspect                   | Web UI                           | CLI                                 |
+|--------------------------|----------------------------------|-------------------------------------|
+| **Learning curve**       | Low - visual and intuitive       | Medium - requires command knowledge |
+| **Speed (once learned)** | Medium - clicking and navigation | Fast - keyboard-driven              |
+| **Visibility**           | See everything at once           | See what you ask for                |
+| **Collaboration**        | Easy to screen-share             | Harder to share                     |
+| **Automation**           | Manual only                      | Fully scriptable                    |
+| **Remote access**        | Requires setup                   | Works over SSH naturally            |
+| **Configuration**        | Visual forms                     | Edit YAML files                     |
+| **Multi-task**           | Easy switching                   | Terminal per task                   |
 
 ---
 
@@ -182,24 +182,24 @@ If you prefer terminal workflows:
 
 Both interfaces have access to the same features:
 
-| Feature | Web UI | CLI |
-|---------|--------|-----|
-| Start task | ✅ Create button | ✅ `mehr start` |
-| Plan | ✅ Plan button | ✅ `mehr plan` |
-| Implement | ✅ Implement button | ✅ `mehr implement` |
-| Review | ✅ Review button | ✅ `mehr review` |
-| Finish | ✅ Finish button | ✅ `mehr finish` |
-| Undo/Redo | ✅ Buttons | ✅ `mehr undo/redo` |
-| View status | ✅ Active Task card | ✅ `mehr status` |
-| Workflow diagram | ✅ Interactive SVG | ✅ `mehr status --diagram` |
-| Add notes | ✅ Note button | ✅ `mehr note` |
-| Task history | ✅ History section | ✅ `mehr list` |
-| Cost tracking | ✅ Costs section | ✅ `mehr cost` |
-| Settings | ✅ Settings page | ✅ Edit config files |
-| Agents info | ✅ Settings (Agents tab) | ✅ `mehr agents list` |
-| Providers info | ✅ Settings (Providers tab) | ✅ `mehr providers list` |
-| Provider health | ✅ Settings (Provider Health) | ✅ `mehr providers status` |
-| Provider login | ✅ Settings form | ✅ `mehr <provider> login` |
+| Feature          | Web UI                       | CLI                       |
+|------------------|------------------------------|---------------------------|
+| Start task       | ✅ Create button              | ✅ `mehr start`            |
+| Plan             | ✅ Plan button                | ✅ `mehr plan`             |
+| Implement        | ✅ Implement button           | ✅ `mehr implement`        |
+| Review           | ✅ Review button              | ✅ `mehr review`           |
+| Finish           | ✅ Finish button              | ✅ `mehr finish`           |
+| Undo/Redo        | ✅ Buttons                    | ✅ `mehr undo/redo`        |
+| View status      | ✅ Active Task card           | ✅ `mehr status`           |
+| Workflow diagram | ✅ Interactive SVG            | ✅ `mehr status --diagram` |
+| Add notes        | ✅ Note button                | ✅ `mehr note`             |
+| Task history     | ✅ History section            | ✅ `mehr list`             |
+| Cost tracking    | ✅ Costs section              | ✅ `mehr cost`             |
+| Settings         | ✅ Settings page              | ✅ Edit config files       |
+| Agents info      | ✅ Settings (Agents tab)      | ✅ `mehr agents list`      |
+| Providers info   | ✅ Settings (Providers tab)   | ✅ `mehr providers list`   |
+| Provider health  | ✅ Settings (Provider Health) | ✅ `mehr providers status` |
+| Provider login   | ✅ Settings form              | ✅ `mehr <provider> login` |
 
 **You can switch between interfaces anytime**—they share the same state and data.
 
@@ -219,12 +219,12 @@ flowchart LR
 
 ### Common Hybrid Patterns
 
-| Pattern | Web UI For | CLI For |
-|---------|------------|----------|
-| **Developer** | Planning, reviewing | Implementing, git workflows |
-| **Team Lead** | Dashboard, history | Quick status checks |
-| **DevOps** | Configuration | CI/CD automation |
-| **Beginner** | Everything initially | Gradual CLI adoption |
+| Pattern       | Web UI For           | CLI For                     |
+|---------------|----------------------|-----------------------------|
+| **Developer** | Planning, reviewing  | Implementing, git workflows |
+| **Team Lead** | Dashboard, history   | Quick status checks         |
+| **DevOps**    | Configuration        | CI/CD automation            |
+| **Beginner**  | Everything initially | Gradual CLI adoption        |
 
 ### Seamless Switching
 
@@ -270,16 +270,16 @@ flowchart TD
 
 ### Quick Decision Table
 
-| Your Situation | Recommendation |
-|----------------|----------------|
-| First time using Mehrhof | Start with **Web UI** |
-| Need to show work to others | Use **Web UI** |
-| Building automation/CI/CD | Use **CLI** |
-| Working on remote server | Use **CLI** |
-| Managing many tasks | Use **Web UI** |
-| Love keyboard shortcuts | Use **CLI** |
-| Want visual progress | Use **Web UI** |
-| Integrating with other tools | Use **CLI** |
+| Your Situation               | Recommendation        |
+|------------------------------|-----------------------|
+| First time using Mehrhof     | Start with **Web UI** |
+| Need to show work to others  | Use **Web UI**        |
+| Building automation/CI/CD    | Use **CLI**           |
+| Working on remote server     | Use **CLI**           |
+| Managing many tasks          | Use **Web UI**        |
+| Love keyboard shortcuts      | Use **CLI**           |
+| Want visual progress         | Use **Web UI**        |
+| Integrating with other tools | Use **CLI**           |
 
 ---
 
@@ -303,14 +303,14 @@ Jump to the **[Your First Task](first-task.md)** CLI tutorial.
 
 ## Summary
 
-| Choose Web UI if you want... | Choose CLI if you want... |
-|------------------------------|---------------------------|
-| Visual, interactive experience | Command-line power |
-| Easy collaboration | Scriptability |
-| At-a-glance status | Keyboard efficiency |
-| Integrated settings | Git-native workflow |
-| Browser automation | Remote server access |
-| Lower learning curve | Faster once learned |
+| Choose Web UI if you want...   | Choose CLI if you want... |
+|--------------------------------|---------------------------|
+| Visual, interactive experience | Command-line power        |
+| Easy collaboration             | Scriptability             |
+| At-a-glance status             | Keyboard efficiency       |
+| Integrated settings            | Git-native workflow       |
+| Browser automation             | Remote server access      |
+| Lower learning curve           | Faster once learned       |
 
 **Remember:** Both interfaces share the same backend. You can switch anytime without losing your place.
 

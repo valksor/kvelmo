@@ -4,16 +4,16 @@ Solutions for common issues with Mehrhof.
 
 ## Quick Fixes
 
-| Problem | Quick Fix |
-|---------|-----------|
-| Command not found | `export PATH="$PATH:$(go env GOPATH)/bin"` |
-| Claude not working | Ensure Claude CLI is installed: `claude --version` |
-| No active task | `mehr start file:task.md` |
-| Bad implementation | `mehr undo` |
+| Problem                         | Quick Fix                                              |
+|---------------------------------|--------------------------------------------------------|
+| Command not found               | `export PATH="$PATH:$(go env GOPATH)/bin"`             |
+| Claude not working              | Ensure Claude CLI is installed: `claude --version`     |
+| No active task                  | `mehr start file:task.md`                              |
+| Bad implementation              | `mehr undo`                                            |
 | Implement says done but no code | `mehr update` (older versions had permission mode bug) |
-| Merge conflict | Resolve manually, `git add .`, `git commit` |
-| Timeout | Increase `agent.timeout` in `.mehrhof/config.yaml` |
-| Start fresh | `mehr abandon --yes && mehr start file:task.md` |
+| Merge conflict                  | Resolve manually, `git add .`, `git commit`            |
+| Timeout                         | Increase `agent.timeout` in `.mehrhof/config.yaml`     |
+| Start fresh                     | `mehr abandon --yes && mehr start file:task.md`        |
 
 ---
 
