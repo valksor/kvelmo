@@ -12,12 +12,12 @@ Mehrhof calls Claude CLI as a subprocess:
 
 ## Configuration Methods
 
-| Method | Use Case | Location |
-|--------|----------|----------|
-| CLI flags | Per-command overrides | `mehr --verbose plan` |
-| Workspace config | Project settings | `.mehrhof/config.yaml` (in project) |
-| Environment file | Secrets (gitignored) | `.mehrhof/.env` (in project) |
-| User settings | Personal preferences | `~/.valksor/mehrhof/settings.json` |
+| Method           | Use Case              | Location                            |
+|------------------|-----------------------|-------------------------------------|
+| CLI flags        | Per-command overrides | `mehr --verbose plan`               |
+| Workspace config | Project settings      | `.mehrhof/config.yaml` (in project) |
+| Environment file | Secrets (gitignored)  | `.mehrhof/.env` (in project)        |
+| User settings    | Personal preferences  | `~/.valksor/mehrhof/settings.json`  |
 
 ## File Locations
 
@@ -60,18 +60,18 @@ env:
 
 ## Configuration Sections
 
-| Section | Description | Details |
-|---------|-------------|---------|
-| `git` | Version control integration | [Git Configuration](git.md) |
-| `agent` | AI agent behavior and aliases | [Agents Guide](../agents/index.md) |
-| `sandbox` | Agent execution sandboxing | [Sandbox Guide](../advanced/sandbox.md) |
-| `browser` | Browser automation | [Browser Configuration](browser.md) |
-| `storage` | Task data and caches | [Storage Configuration](storage.md) |
-| `specification` | Spec storage location and naming | [Storage Configuration](storage.md) |
-| `review` | Review storage location and naming | [Storage Configuration](storage.md) |
-| `context` | Hierarchical task context | [Context Configuration](context.md) |
-| `budget` | Cost and token budgets | (see below) |
-| `quality` | Code quality and linters | (see below) |
+| Section         | Description                        | Details                                 |
+|-----------------|------------------------------------|-----------------------------------------|
+| `git`           | Version control integration        | [Git Configuration](git.md)             |
+| `agent`         | AI agent behavior and aliases      | [Agents Guide](../agents/index.md)      |
+| `sandbox`       | Agent execution sandboxing         | [Sandbox Guide](../advanced/sandbox.md) |
+| `browser`       | Browser automation                 | [Browser Configuration](browser.md)     |
+| `storage`       | Task data and caches               | [Storage Configuration](storage.md)     |
+| `specification` | Spec storage location and naming   | [Storage Configuration](storage.md)     |
+| `review`        | Review storage location and naming | [Storage Configuration](storage.md)     |
+| `context`       | Hierarchical task context          | [Context Configuration](context.md)     |
+| `budget`        | Cost and token budgets             | (see below)                             |
+| `quality`       | Code quality and linters           | (see below)                             |
 
 ### providers
 
@@ -136,12 +136,12 @@ quality:
 
 **Built-in linters:**
 
-| Linter | Language | Auto-Detection |
-|--------|----------|----------------|
-| `golangci-lint` | Go | `go.mod` exists |
-| `eslint` | JavaScript/TypeScript | `package.json` exists |
-| `ruff` | Python | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
-| `php-cs-fixer` | PHP | `composer.json` exists |
+| Linter          | Language              | Auto-Detection                                             |
+|-----------------|-----------------------|------------------------------------------------------------|
+| `golangci-lint` | Go                    | `go.mod` exists                                            |
+| `eslint`        | JavaScript/TypeScript | `package.json` exists                                      |
+| `ruff`          | Python                | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
+| `php-cs-fixer`  | PHP                   | `composer.json` exists                                     |
 
 > **Note:** Built-in linters are only auto-detected when `use_defaults: true`. With `use_defaults: false` (default), linters must be explicitly enabled.
 
@@ -172,14 +172,14 @@ quality:
 
 **Configuration options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | bool | `true` | Master switch for all quality checks |
-| `use_defaults` | bool | `false` | Auto-enable built-in linters based on project files |
-| `linters.<name>.enabled` | bool | - | Enable/disable specific linter |
-| `linters.<name>.command` | []string | - | Command to run (creates custom linter) |
-| `linters.<name>.extensions` | []string | - | File extensions to lint (optional) |
-| `linters.<name>.args` | []string | - | Additional arguments (optional) |
+| Option                      | Type     | Default | Description                                         |
+|-----------------------------|----------|---------|-----------------------------------------------------|
+| `enabled`                   | bool     | `true`  | Master switch for all quality checks                |
+| `use_defaults`              | bool     | `false` | Auto-enable built-in linters based on project files |
+| `linters.<name>.enabled`    | bool     | -       | Enable/disable specific linter                      |
+| `linters.<name>.command`    | []string | -       | Command to run (creates custom linter)              |
+| `linters.<name>.extensions` | []string | -       | File extensions to lint (optional)                  |
+| `linters.<name>.args`       | []string | -       | Additional arguments (optional)                     |
 
 ### env
 
@@ -293,22 +293,22 @@ Personal preferences stored automatically.
 
 Global flags available on all commands:
 
-| Flag | Description |
-|------|-------------|
-| `-v, --verbose` | Enable verbose output |
-| `--no-color` | Disable colored output |
+| Flag            | Description            |
+|-----------------|------------------------|
+| `-v, --verbose` | Enable verbose output  |
+| `--no-color`    | Disable colored output |
 
 The `NO_COLOR` environment variable is also respected.
 
 ## Quick Reference
 
-| What | How |
-|------|-----|
-| Verbose output | `mehr --verbose <command>` |
-| Disable color | `mehr --no-color <command>` or `NO_COLOR=1` |
-| Set default agent | `.mehrhof/config.yaml` → `agent.default` |
+| What                  | How                                           |
+|-----------------------|-----------------------------------------------|
+| Verbose output        | `mehr --verbose <command>`                    |
+| Disable color         | `mehr --no-color <command>` or `NO_COLOR=1`   |
+| Set default agent     | `.mehrhof/config.yaml` → `agent.default`      |
 | Custom branch pattern | `.mehrhof/config.yaml` → `git.branch_pattern` |
-| Set default provider | `.mehrhof/config.yaml` → `providers.default` |
+| Set default provider  | `.mehrhof/config.yaml` → `providers.default`  |
 
 ## Best Practices
 

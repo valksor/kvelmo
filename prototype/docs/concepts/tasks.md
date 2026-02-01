@@ -114,7 +114,7 @@ See [Specification File Format](../reference/specification-format.md) for detail
 ## Task States
 
 | State        | Meaning                 |
-| ------------ | ----------------------- |
+|--------------|-------------------------|
 | idle         | Ready for commands      |
 | planning     | Creating specifications |
 | implementing | Generating code         |

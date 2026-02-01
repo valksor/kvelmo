@@ -4,11 +4,11 @@ Mehrhof supports a plugin system for extending functionality without recompilati
 
 ## Plugin Types
 
-| Type         | Purpose                  | Example Use Cases                | Status |
-| ------------ | ------------------------ | -------------------------------- | ------ |
-| **Provider** | Custom task sources      | Jira, YouTrack, Linear, Notion   | Stable |
-| **Agent**    | Custom AI backends       | Local LLMs, custom models        | Stable |
-| **Workflow** | State machine extensions | Approval steps, notifications    | Stable |
+| Type         | Purpose                  | Example Use Cases              | Status |
+|--------------|--------------------------|--------------------------------|--------|
+| **Provider** | Custom task sources      | Jira, YouTrack, Linear, Notion | Stable |
+| **Agent**    | Custom AI backends       | Local LLMs, custom models      | Stable |
+| **Workflow** | State machine extensions | Approval steps, notifications  | Stable |
 
 ## Quick Start
 
@@ -104,7 +104,7 @@ mehr start linear:ABC-789
 ### Capabilities
 
 | Capability      | Description          |
-| --------------- | -------------------- |
+|-----------------|----------------------|
 | `read`          | Fetch task details   |
 | `snapshot`      | Capture task content |
 | `list`          | List/search tasks    |

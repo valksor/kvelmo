@@ -32,24 +32,24 @@ context:
 
 ## Settings
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `include_parent` | bool | `true` | Include parent task title and description in prompts |
-| `include_siblings` | bool | `true` | Include list of sibling subtasks in prompts |
-| `max_siblings` | int | `5` | Maximum number of siblings to include (token budget) |
-| `description_limit` | int | `500` | Maximum length of descriptions before truncation |
+| Setting             | Type | Default | Description                                          |
+|---------------------|------|---------|------------------------------------------------------|
+| `include_parent`    | bool | `true`  | Include parent task title and description in prompts |
+| `include_siblings`  | bool | `true`  | Include list of sibling subtasks in prompts          |
+| `max_siblings`      | int  | `5`     | Maximum number of siblings to include (token budget) |
+| `description_limit` | int  | `500`   | Maximum length of descriptions before truncation     |
 
 ## CLI Flags
 
 CLI flags override workspace configuration:
 
-| Flag | Description |
-|------|-------------|
-| `--with-parent` | Include parent task context (overrides config) |
-| `--without-parent` | Exclude parent task context (overrides config) |
-| `--with-siblings` | Include sibling subtask context (overrides config) |
-| `--without-siblings` | Exclude sibling subtask context (overrides config) |
-| `--max-siblings N` | Maximum sibling tasks to include (overrides config) |
+| Flag                 | Description                                         |
+|----------------------|-----------------------------------------------------|
+| `--with-parent`      | Include parent task context (overrides config)      |
+| `--without-parent`   | Exclude parent task context (overrides config)      |
+| `--with-siblings`    | Include sibling subtask context (overrides config)  |
+| `--without-siblings` | Exclude sibling subtask context (overrides config)  |
+| `--max-siblings N`   | Maximum sibling tasks to include (overrides config) |
 
 ### Examples
 
@@ -68,19 +68,19 @@ mehr plan --without-parent --without-siblings
 
 Hierarchical context is available for providers that support parent fetching:
 
-| Provider | Parent Fetching | Subtask Fetching |
-|----------|----------------|------------------|
-| Wrike | ✓ | ✓ |
-| GitHub | ✓ | ✓ |
-| GitLab | ✓ | ✓ |
-| JIRA | ✓ | ✓ |
-| Asana | ✓ | ✓ |
-| Linear | ✓ | ✓ |
-| ClickUp | ✓ | ✓ |
-| Azure DevOps | ✓ | ✓ |
-| Bitbucket | ✓ | ✓ |
-| YouTrack | ✓ | ✓ |
-| Trello | ✓ | ✓ |
+| Provider     | Parent Fetching | Subtask Fetching |
+|--------------|-----------------|------------------|
+| Wrike        | ✓               | ✓                |
+| GitHub       | ✓               | ✓                |
+| GitLab       | ✓               | ✓                |
+| JIRA         | ✓               | ✓                |
+| Asana        | ✓               | ✓                |
+| Linear       | ✓               | ✓                |
+| ClickUp      | ✓               | ✓                |
+| Azure DevOps | ✓               | ✓                |
+| Bitbucket    | ✓               | ✓                |
+| YouTrack     | ✓               | ✓                |
+| Trello       | ✓               | ✓                |
 
 For providers that don't support hierarchical features, context inclusion is silently skipped.
 
