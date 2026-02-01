@@ -161,6 +161,8 @@ mehr agents | providers | templates | update | generate-secret
 
 **Interactive mode** (`mehr interactive` or Web `/interactive`): workflow commands + chat.
 
+**Automation mode** (`mehr serve --api`): Receive GitHub/GitLab webhooks to auto-fix issues and auto-review PRs. Configure in `.mehrhof/config.yaml` under `automation:`. See [docs/cli/automation.md](docs/cli/automation.md).
+
 **Recovery tip:** If an agent hangs and you kill it, use `mehr reset` to reset state to idle without losing work. Or use `--force` on step commands (e.g., `mehr plan --force`).
 
 ---
@@ -195,6 +197,7 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/mcp/` | Model Context Protocol server |
 | `internal/memory/` | Semantic memory with vector embeddings |
 | `internal/server/` | Web UI: REST API, SSE, authentication |
+| `internal/automation/` | Webhook automation: GitHub/GitLab webhooks, job queue, access control |
 | `ide/jetbrains/` | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE |
 | `ide/vscode/` | VS Code extension - TypeScript, webview-based UI via REST API + SSE |
 | `internal/links/` | Bidirectional linking (`[[reference]]` syntax) |
@@ -292,4 +295,5 @@ agents:
 
 - [README.md](README.md) - Installation, quick start
 - [docs/reference/feature-parity.md](docs/reference/feature-parity.md) - Interface parity tables
+- [docs/cli/automation.md](docs/cli/automation.md) - Webhook automation (GitHub/GitLab)
 - [Documentation](https://valksor.com/docs/mehrhof/nightly) - Full guides

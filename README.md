@@ -43,6 +43,7 @@ Mehrhof is an AI-powered development assistant that helps you plan, implement, a
 - **ML predictions** - Predict task complexity and resource requirements from historical data
 - **State tracking** - Task state persists across sessions; resume anytime with `mehr continue`
 - **Auto mode** - Fully automated workflow: `mehr auto file:task.md` handles everything
+- **Webhook automation** - Receive GitHub/GitLab webhooks to auto-fix issues and auto-review PRs
 - **Prompt optimization** - Automatically refine prompts for clarity and effectiveness with `--optimize`
 - **Self-updating** - Auto-update from GitHub releases, no manual reinstall
 
