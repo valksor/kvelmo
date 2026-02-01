@@ -108,6 +108,7 @@ func (r *Renderer) loadTemplates() error {
 		"links",
 		"stack",
 		"scan",
+		"automation",
 	}
 
 	for _, page := range pages {
@@ -244,6 +245,11 @@ func (r *Renderer) RenderBrowser(w io.Writer, data BrowserData) error {
 // RenderHistory renders the task history page.
 func (r *Renderer) RenderHistory(w io.Writer, data HistoryData) error {
 	return r.Render(w, "history", data)
+}
+
+// RenderAutomation renders the automation page.
+func (r *Renderer) RenderAutomation(w io.Writer, data AutomationData) error {
+	return r.Render(w, "automation", data)
 }
 
 // RenderLicense renders the license page.

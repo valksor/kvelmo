@@ -1,0 +1,254 @@
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+  <!-- Header -->
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-4xl font-bold tracking-tight text-base-content sm:text-5xl">
+        Automation
+      </h1>
+      <p class="mt-3 text-lg text-base-content/70">
+        GitHub &amp; GitLab webhook automation for issues and pull requests
+      </p>
+    </div>
+    <button hx-get="/api/v1/automation/status" hx-trigger="click" hx-target="#status-card" hx-swap="innerHTML"
+            class="btn-primary px-6 py-3 flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Status Card -->
+  <div id="status-card" class="card bg-base-100 rounded-2xl shadow-xl border border-base-300 mb-6 overflow-hidden animate-slide-up" style="animation-delay: 50ms">
+    <div class="bg-primary px-6 py-4">
+      <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Queue Status
+      </h2>
+    </div>
+    <div class="p-6">
+      {{if .Enabled}}
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <!-- Enabled/Running -->
+        <div class="text-center p-4 rounded-xl bg-base-200">
+          <div class="flex items-center justify-center mb-2">
+            {{if .Running}}
+            <span class="inline-flex h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+            {{else}}
+            <span class="inline-flex h-3 w-3 rounded-full bg-yellow-500"></span>
+            {{end}}
+          </div>
+          <div class="text-2xl font-bold text-base-content">{{if .Running}}Running{{else}}Paused{{end}}</div>
+          <div class="text-sm text-base-content/60">{{.Workers}} workers</div>
+        </div>
+        <!-- Pending -->
+        <div class="text-center p-4 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
+          <div class="text-3xl font-bold text-yellow-700 dark:text-yellow-400">{{.PendingJobs}}</div>
+          <div class="text-sm text-yellow-600 dark:text-yellow-500">Pending</div>
+        </div>
+        <!-- Running -->
+        <div class="text-center p-4 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+          <div class="text-3xl font-bold text-blue-700 dark:text-blue-400">{{.RunningJobs}}</div>
+          <div class="text-sm text-blue-600 dark:text-blue-500">Running</div>
+        </div>
+        <!-- Completed -->
+        <div class="text-center p-4 rounded-xl bg-green-100 dark:bg-green-900/30">
+          <div class="text-3xl font-bold text-green-700 dark:text-green-400">{{.CompletedJobs}}</div>
+          <div class="text-sm text-green-600 dark:text-green-500">Completed</div>
+        </div>
+        <!-- Failed -->
+        <div class="text-center p-4 rounded-xl bg-red-100 dark:bg-red-900/30">
+          <div class="text-3xl font-bold text-red-700 dark:text-red-400">{{.FailedJobs}}</div>
+          <div class="text-sm text-red-600 dark:text-red-500">Failed</div>
+        </div>
+      </div>
+      {{else}}
+      <div class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-base-content/40 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-base-content mb-2">Automation Disabled</h3>
+        <p class="text-base-content/60 mb-4 max-w-md mx-auto">
+          Configure automation in <code class="bg-base-200 px-2 py-1 rounded text-sm">.mehrhof/config.yaml</code> under the <code class="bg-base-200 px-2 py-1 rounded text-sm">automation:</code> section.
+        </p>
+        <a href="/settings" class="btn btn-primary">Go to Settings</a>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  {{if .Enabled}}
+  <!-- Configuration Card -->
+  <div class="card bg-base-100 rounded-2xl shadow-xl border border-base-300 mb-6 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
+    <div class="bg-secondary px-6 py-4">
+      <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Configuration
+      </h2>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Providers -->
+        {{range .Config.Providers}}
+        <div class="p-4 rounded-xl bg-base-200">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-semibold text-base-content capitalize">{{.Name}}</span>
+            {{if .Enabled}}
+            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400">Enabled</span>
+            {{else}}
+            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400">Disabled</span>
+            {{end}}
+          </div>
+          {{if .CommandPrefix}}
+          <div class="text-sm text-base-content/60 mb-2">
+            Command: <code class="bg-base-300 px-2 py-0.5 rounded">{{.CommandPrefix}}</code>
+          </div>
+          {{end}}
+          {{if .TriggerOn}}
+          <div class="flex flex-wrap gap-1 mt-2">
+            {{range .TriggerOn}}
+            <span class="px-2 py-0.5 text-xs rounded bg-base-300 text-base-content/70">{{.}}</span>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+
+        <!-- Access Control -->
+        <div class="p-4 rounded-xl bg-base-200">
+          <div class="font-semibold text-base-content mb-3">Access Control</div>
+          <div class="text-sm text-base-content/60">
+            Mode: <span class="font-medium text-base-content">{{.Config.AccessControl.Mode}}</span>
+          </div>
+          {{if .Config.AccessControl.Allowlist}}
+          <div class="text-sm text-base-content/60 mt-1">
+            Allowlist: {{len .Config.AccessControl.Allowlist}} entries
+          </div>
+          {{end}}
+          {{if .Config.AccessControl.Blocklist}}
+          <div class="text-sm text-base-content/60 mt-1">
+            Blocklist: {{len .Config.AccessControl.Blocklist}} entries
+          </div>
+          {{end}}
+        </div>
+
+        <!-- Labels -->
+        <div class="p-4 rounded-xl bg-base-200">
+          <div class="font-semibold text-base-content mb-3">Labels</div>
+          {{if .Config.Labels.MehrhofGenerated}}
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 text-xs rounded bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-400">{{.Config.Labels.MehrhofGenerated}}</span>
+            <span class="text-xs text-base-content/50">Generated PRs</span>
+          </div>
+          {{end}}
+          {{if .Config.Labels.InProgress}}
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400">{{.Config.Labels.InProgress}}</span>
+            <span class="text-xs text-base-content/50">In progress</span>
+          </div>
+          {{end}}
+          {{if .Config.Labels.Failed}}
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400">{{.Config.Labels.Failed}}</span>
+            <span class="text-xs text-base-content/50">Failed</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jobs Table -->
+  <div class="card bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 150ms">
+    <div class="bg-accent px-6 py-4">
+      <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        Job Queue
+      </h2>
+    </div>
+    <div class="p-6">
+      {{if .Jobs}}
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-base-300">
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Status</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Type</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Repository</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Reference</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Created</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-base-content/70">Duration</th>
+              <th class="px-4 py-3 text-right text-sm font-semibold text-base-content/70">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-base-200">
+            {{range .Jobs}}
+            <tr class="hover:bg-base-100 transition-colors">
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs font-medium rounded-full {{.StatusBadge}}">
+                  {{.Status}}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-sm text-base-content">{{.WorkflowType}}</td>
+              <td class="px-4 py-3 text-sm text-base-content font-mono">{{.Repository}}</td>
+              <td class="px-4 py-3 text-sm text-base-content font-medium">{{.Reference}}</td>
+              <td class="px-4 py-3 text-sm text-base-content/70">{{.CreatedAt}}</td>
+              <td class="px-4 py-3 text-sm text-base-content/70">{{if .Duration}}{{.Duration}}{{else}}-{{end}}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  {{if .CanCancel}}
+                  <button hx-post="/api/v1/automation/jobs/{{.ID}}/cancel" hx-swap="none"
+                          class="px-2 py-1 text-xs rounded bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 dark:hover:bg-red-900/70 transition-colors">
+                    Cancel
+                  </button>
+                  {{end}}
+                  {{if .CanRetry}}
+                  <button hx-post="/api/v1/automation/jobs/{{.ID}}/retry" hx-swap="none"
+                          class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/70 transition-colors">
+                    Retry
+                  </button>
+                  {{end}}
+                </div>
+              </td>
+            </tr>
+            {{if .Error}}
+            <tr class="bg-red-50 dark:bg-red-900/10">
+              <td colspan="7" class="px-4 py-2">
+                <div class="text-sm text-red-700 dark:text-red-400">
+                  <span class="font-medium">Error:</span> {{.Error}}
+                </div>
+              </td>
+            </tr>
+            {{end}}
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-base-content/40 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-base-content mb-2">No Jobs Yet</h3>
+        <p class="text-base-content/60 max-w-md mx-auto">
+          Jobs will appear here when webhooks are received from GitHub or GitLab.
+          Configure webhooks in your repository settings pointing to:
+        </p>
+        <code class="block mt-4 px-4 py-2 bg-base-200 rounded-lg text-sm font-mono text-base-content">
+          POST /api/v1/webhooks/{github|gitlab}
+        </code>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

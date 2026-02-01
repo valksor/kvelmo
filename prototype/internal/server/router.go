@@ -197,6 +197,9 @@ func (s *Server) setupRouter() http.Handler {
 			// Security scan UI
 			mux.HandleFunc("GET /scan", s.handleScanPage)
 
+			// Automation UI
+			mux.HandleFunc("GET /automation", s.handleAutomationPage)
+
 			// Stack management UI
 			mux.HandleFunc("GET /stack", s.handleStacksUI)
 		}
@@ -275,6 +278,16 @@ func (s *Server) setupRouter() http.Handler {
 	if s.startedInGlobalMode {
 		mux.HandleFunc("POST /api/v1/projects/switch", s.handleSwitchProject)
 	}
+
+	// Automation endpoints (webhook processing)
+	// Webhook endpoint is always registered but returns error if automation not enabled
+	mux.HandleFunc("POST /api/v1/webhooks/{provider}", s.handleWebhook)
+	mux.HandleFunc("GET /api/v1/automation/status", s.handleAutomationStatus)
+	mux.HandleFunc("GET /api/v1/automation/jobs", s.handleAutomationJobs)
+	mux.HandleFunc("GET /api/v1/automation/jobs/{id}", s.handleAutomationJob)
+	mux.HandleFunc("POST /api/v1/automation/jobs/{id}/cancel", s.handleAutomationJobCancel)
+	mux.HandleFunc("POST /api/v1/automation/jobs/{id}/retry", s.handleAutomationJobRetry)
+	mux.HandleFunc("GET /api/v1/automation/config", s.handleAutomationConfig)
 
 	// SSE events endpoint
 	mux.HandleFunc("GET /api/v1/events", s.handleEvents)
