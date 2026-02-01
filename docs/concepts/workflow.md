@@ -1,6 +1,6 @@
 # Workflow
 
-Mehrhof uses a state machine to manage the task lifecycle. Understanding the workflow helps you use the tool effectively.
+Mehrhof uses a structured workflow to manage the task lifecycle. Understanding this process helps you use the tool effectively and stay in control at every step.
 
 ## Task Lifecycle
 
@@ -13,16 +13,16 @@ Mehrhof uses a state machine to manage the task lifecycle. Understanding the wor
 | State            | Description                       | CLI Action | Web UI Action |
 | ---------------- | --------------------------------- | ----------- | ------------ |
 | **idle**         | Task registered, ready for action | `mehr plan` | Click **Plan** button |
-| **planning**     | AI creating specifications        | Wait | Watch output |
-| **implementing** | AI generating code                | Wait | Watch output |
-| **reviewing**    | Code review in progress           | Wait | Watch output |
+| **planning**     | Creating a structured plan        | Wait | Watch output |
+| **implementing** | Executing the plan to create changes | Wait | Watch output |
+| **reviewing**    | Quality checks in progress        | Wait | Watch output |
 | **done**         | Task completed and merged         | None | None |
 
 ### Auxiliary States
 
 | State             | Description               |
 | ----------------- | ------------------------- |
-| **checkpointing** | Creating git checkpoint   |
+| **checkpointing** | Creating checkpoint       |
 | **reverting**     | Undo in progress          |
 | **restoring**     | Redo in progress          |
 | **failed**        | Error occurred (terminal) |
@@ -43,12 +43,12 @@ mehr start task.md
 What happens:
 - Task ID is generated
 - Git branch `task/<id>` is created
-- Work directory `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/` is initialized
-- Source content is stored (read-only)
+- Work directory is initialized
+- Your task description is stored (read-only)
 
 ### 2. Planning Phase
 
-AI analyzes requirements and creates specifications.
+Create a structured plan from your task description.
 
 **CLI:**
 ```bash
@@ -58,33 +58,35 @@ mehr plan
 **Web UI:** Click **"Plan"** button in Active Task card
 
 What happens:
-- AI reads the source content and any notes
-- Specifications (specification files) are generated
-- Files are saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/specifications/`
+- Your task description and any notes are analyzed
+- A structured plan is generated
+- Plan files are saved for your review
 - Git checkpoint is created for undo support
 
-### 3. Implementation Phase
+**Why this matters:** You review the plan before any changes are made. Nothing happens without your approval.
 
-AI implements the specifications.
+### 3. Creation Phase
+
+Execute the plan to produce changes.
 
 **CLI:**
 ```bash
 mehr implement
 ```
 
-**Web UI:** Click **"Implement"** button in Active Task card
+**Web UI:** Click **"Implement"** or **"Create"** button in Active Task card
 
-**Requirements:** At least one specification file must exist
+**Requirements:** At least one plan file must exist
 
 What happens:
-- AI reads all specification files and notes
-- Code is generated or modified
+- The plan and any notes are used to guide creation
+- Code, documentation, or configuration is generated/modified
 - Changes are committed with checkpoint
 - State returns to idle for review
 
 ### 4. Review Phase (Optional)
 
-Automated code review.
+Run quality checks on the changes.
 
 **CLI:**
 ```bash
@@ -94,9 +96,9 @@ mehr review
 **Web UI:** Click **"Review"** button in Active Task card
 
 What happens:
-- CodeRabbit analyzes the changes
-- Review saved to `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/reviews/`
-- Issues are reported for your attention
+- Automated checks analyze the changes
+- Review results are saved for your attention
+- Issues are reported so you can address them
 
 ### 5. Finish Phase
 
@@ -110,10 +112,10 @@ mehr finish
 **Web UI:** Click **"Finish"** button in Active Task card
 
 What happens:
-- Quality checks run (if `make quality` exists)
-- Changes squash-merged to target branch
-- Task branch deleted
-- Work directory cleaned up
+- Quality checks run (if configured)
+- Changes are squash-merged to target branch
+- Task branch is deleted
+- Work directory is cleaned up
 
 ## Guards
 
@@ -121,8 +123,8 @@ Guards are conditions that must be met for transitions:
 
 | Guard     | Required For | Condition                       |
 | --------- | ------------ | ------------------------------- |
-| HasSource | start        | Task has valid source reference |
-| HasSpecs  | implement    | specification files exist       |
+| HasSource | start        | Task has valid description      |
+| HasSpecs  | implement    | Plan files exist                |
 | CanUndo   | undo         | Checkpoint history available    |
 | CanRedo   | redo         | Redo stack not empty            |
 | CanFinish | finish       | Task work exists                |
@@ -135,8 +137,8 @@ Events trigger state transitions:
 | -------------- | ----------------------- |
 | EventStart     | Begin task registration |
 | EventPlan      | Enter planning phase    |
-| EventImplement | Enter implementation    |
-| EventReview    | Enter code review       |
+| EventImplement | Enter creation phase    |
+| EventReview    | Enter review phase      |
 | EventFinish    | Complete task           |
 | EventUndo/Redo | Checkpoint operations   |
 | EventError     | Handle errors           |
@@ -147,11 +149,11 @@ Events trigger state transitions:
 **CLI:**
 ```
 1. mehr start task.md     → idle (task registered)
-2. mehr plan              → planning → idle (specifications created)
-3. [Optional: mehr simplify to clarify specifications]
-4. [Review specifications, add notes with mehr note]
-5. mehr implement         → implementing → idle (code generated)
-6. [Optional: mehr simplify to reduce code complexity]
+2. mehr plan              → planning → idle (plan created)
+3. [Optional: mehr simplify to clarify the plan]
+4. [Review plan, add notes with mehr note]
+5. mehr implement         → implementing → idle (changes created)
+6. [Optional: mehr simplify to reduce complexity]
 7. [Review changes, maybe undo/redo]
 8. mehr review            → reviewing → idle (review done)
 9. mehr finish            → done (merged)
@@ -160,12 +162,12 @@ Events trigger state transitions:
 **Web UI:**
 ```
 1. Click "Create Task"    → idle (task registered)
-2. Click "Plan"           → planning → idle (specifications created)
-3. [Review specifications, add notes with "Add Note" button]
-4. Click "Implement"     → implementing → idle (code generated)
+2. Click "Plan"           → planning → idle (plan created)
+3. [Review plan, add notes with "Add Note" button]
+4. Click "Create"         → implementing → idle (changes created)
 5. [Review changes, maybe use "Undo"]
-6. Click "Review"        → reviewing → idle (review done)
-7. Click "Finish"        → done (merged)
+6. Click "Review"         → reviewing → idle (review done)
+7. Click "Finish"         → done (merged)
 ```
 
 ## Parallel Workflows
@@ -179,5 +181,6 @@ See [Tasks](tasks.md) for more on managing multiple tasks.
 
 ## See Also
 
+- [Glossary](../glossary.md) - Plain-language definitions
 - [CLI: workflow](../cli/workflow.md) - CLI workflow commands
 - [Web UI: Overview](../web-ui/index.md) - Web UI guide

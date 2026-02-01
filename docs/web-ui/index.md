@@ -1,12 +1,13 @@
 # Web UI
 
-The Mehrhof Web UI provides a browser-based interface for managing AI-powered tasks. It offers the same functionality as the CLI with a visual, interactive experience.
+The Mehrhof Web UI provides a comfortable browser-based interface for the plan → create → review workflow. It offers the same functionality as the CLI with a visual, interactive experience—no command-line expertise required.
 
 ## When to Use the Web UI
 
 | Use Case | Web UI | CLI |
 |----------|--------|-----|
 | **First-time users** | ✅ Visual discovery | ⚠️ Requires memorizing commands |
+| **Non-technical contributors** | ✅ Familiar browser experience | ⚠️ Terminal can be intimidating |
 | **Screen sharing** | ✅ Easy to follow | ❌ Hard to see terminal |
 | **Task monitoring** | ✅ Real-time dashboard | ⚠️ Manual status checks |
 | **Configuration** | ✅ Forms with validation | ⚠️ Editing YAML files |
@@ -32,10 +33,10 @@ For a complete walkthrough, see [Getting Started](getting-started.md).
 ### Dashboard
 
 The main dashboard provides:
-- **Workflow State Diagram** - Visual representation of current state
+- **Workflow State Diagram** - Visual representation of current step and available actions
 - **Active Task Card** - Title, state, branch, progress
-- **Quick Actions** - Plan, Implement, Review, Finish buttons
-- **Agent Output** - Real-time streaming of AI responses
+- **Quick Actions** - Plan, Create, Review, Finish buttons
+- **Live Output** - Real-time streaming of progress
 - **Task History** - Browse and resume past tasks
 
 ### Workflow Actions
@@ -45,11 +46,11 @@ Each workflow phase has a dedicated button:
 | Action | Button Location | Description |
 |--------|----------------|-------------|
 | Create Task | Dashboard | Start a new task from file, URL, or provider |
-| Plan | Active Task Card | Generate implementation specifications |
-| Implement | Active Task Card | Execute specifications and write code |
-| Review | Active Task Card | Run automated code review |
+| Plan | Active Task Card | Generate a structured plan |
+| Create | Active Task Card | Execute the plan to produce changes |
+| Review | Active Task Card | Run quality checks |
 | Finish | Active Task Card | Complete and merge the task |
-| Continue | Dashboard | Auto-execute next logical step |
+| Continue | Dashboard | Execute next logical step |
 | Undo/Redo | Dashboard | Navigate checkpoint history |
 
 See individual workflow pages for details:
@@ -63,11 +64,11 @@ See individual workflow pages for details:
 
 ### Additional Features
 
-- **Interactive Mode** - Chat-based interface for real-time agent communication
-- **Settings** - Configure agents, providers, git, and workflow options
+- **Interactive Mode** - Chat-based interface for real-time communication
+- **Settings** - Configure workflow, providers, git, and other options
 - **Browser Control** - Automate Chrome for testing and authentication
 - **Task History** - Search, filter, and resume past tasks
-- **Notes** - Add context and answer agent questions
+- **Notes** - Add context at any point in the workflow
 - **[Parallel Tasks](parallel-tasks.md)** - Run and monitor multiple tasks simultaneously
 - [REST API](api.md) - Programmatic access to all features
 

@@ -1,12 +1,20 @@
 - **Get Started**
   - [Home](README.md)
   - [Quickstart](quickstart.md)
+  - [Glossary](glossary.md)
+  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
+
+- **Guides**
+  - [Getting Started with the CLI](guides/first-task.md)
+  - [Company Guidelines](guides/company-guidelines.md)
+  - [Iterative Workflow](guides/iterative-workflow.md)
+  - [Recovery & Undo](guides/recovery.md)
+  - [PR Review State Management](guides/pr-review-state.md)
 
 - **Web UI**
   - [Overview](web-ui/index.md)
   - [Getting Started](web-ui/getting-started.md)
   - [Dashboard](web-ui/dashboard.md)
-  - [Your First Task](guides/first-task.md)
   - **Workflow**
     - [Creating Tasks](web-ui/creating-tasks.md)
     - [Planning](web-ui/planning.md)
@@ -33,10 +41,6 @@
   - **Tools**
     - [Browser Control](web-ui/browser.md)
     - [Remote Access](web-ui/remote-access.md)
-  - **Guides**
-    - [Iterative Workflow](guides/iterative-workflow.md)
-    - [Recovery & Undo](guides/recovery.md)
-    - [PR Review State Management](guides/pr-review-state.md)
   - **API Reference**
     - [REST API](web-ui/api.md)
 
@@ -47,7 +51,6 @@
 
 - **CLI**
   - [Overview](cli/index.md)
-  - [Web UI vs CLI](guides/web-ui-vs-cli.md)
   - **Workflow**
     - [workflow](cli/workflow.md)
     - [start](cli/start.md)
@@ -158,5 +161,5 @@
   - [Trademark](legal/trademark.md)
 
 - **Created By**
-- [Valksor](https://valksor.com)
+- [**Valksor**](https://valksor.com)
 - &copy; 2026 Valksor. All Rights Reserved.
