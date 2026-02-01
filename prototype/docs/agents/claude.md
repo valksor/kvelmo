@@ -34,12 +34,12 @@ mehr start --agent claude file:task.md
 
 Mehrhof automatically configures Claude's permission mode based on the workflow step:
 
-| Step | Permission Mode | Description |
-|------|-----------------|-------------|
-| `planning` | `plan` | Read-only analysis, no file modifications |
-| `implementing` | `acceptEdits` | Claude can write/modify files |
-| `reviewing` | `acceptEdits` | Claude can apply review fixes |
-| `checkpointing` | Default | Summary generation only |
+| Step            | Permission Mode | Description                               |
+|-----------------|-----------------|-------------------------------------------|
+| `planning`      | `plan`          | Read-only analysis, no file modifications |
+| `implementing`  | `acceptEdits`   | Claude can write/modify files             |
+| `reviewing`     | `acceptEdits`   | Claude can apply review fixes             |
+| `checkpointing` | Default         | Summary generation only                   |
 
 Permission modes are set explicitly to ensure consistent behavior regardless of user's default Claude settings. This prevents:
 - Planning step from modifying files (if user defaults to `acceptEdits`)
