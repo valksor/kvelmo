@@ -46,6 +46,7 @@ type WorkspaceConfig struct {
 	Quality       *QualitySettings            `yaml:"quality,omitempty"`
 	Links         *LinksSettings              `yaml:"links,omitempty"`
 	Context       *ContextSettings            `yaml:"context,omitempty"`
+	Automation    *AutomationSettings         `yaml:"automation,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -622,6 +623,44 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			IncludeSiblings:  true,
 			MaxSiblings:      5,
 			DescriptionLimit: 500,
+		},
+		Automation: &AutomationSettings{
+			Enabled: false,
+			Providers: map[string]ProviderAutoConfig{
+				"github": {
+					Enabled:       false,
+					CommandPrefix: "@mehrhof",
+					UseWorktrees:  true,
+					TriggerOn: AutomationTriggerConfig{
+						IssueOpened:     true,
+						PROpened:        true,
+						CommentCommands: true,
+					},
+				},
+				"gitlab": {
+					Enabled:       false,
+					CommandPrefix: "@mehrhof",
+					UseWorktrees:  true,
+					TriggerOn: AutomationTriggerConfig{
+						IssueOpened:     true,
+						MROpened:        true,
+						CommentCommands: true,
+					},
+				},
+			},
+			AccessControl: AutomationAccessControlConfig{
+				Mode: "all",
+			},
+			Queue: AutomationQueueConfig{
+				MaxConcurrent: 1,
+				JobTimeout:    "30m",
+			},
+			Labels: AutomationLabelConfig{
+				MehrhofGenerated: "mehrhof-generated",
+				InProgress:       "mehrhof-processing",
+				Failed:           "mehrhof-failed",
+				SkipReview:       "mehrhof-skip-review",
+			},
 		},
 		Env: make(map[string]string),
 	}
