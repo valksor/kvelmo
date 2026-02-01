@@ -17,12 +17,12 @@ The `label` command manages custom labels on tasks. Labels are free-form strings
 
 ## Commands
 
-| Command          | Description                        |
-| ---------------- | ---------------------------------- |
-| `label add`      | Add labels to a task               |
-| `label remove`   | Remove labels from a task          |
-| `label set`      | Replace all labels on a task       |
-| `label list`     | Show labels for a task             |
+| Command        | Description                  |
+|----------------|------------------------------|
+| `label add`    | Add labels to a task         |
+| `label remove` | Remove labels from a task    |
+| `label set`    | Replace all labels on a task |
+| `label list`   | Show labels for a task       |
 
 ## Examples
 
@@ -107,14 +107,14 @@ mehr list --no-label
 
 Labels are free-form, but common conventions include:
 
-| Category    | Examples                                      | Purpose           |
-| ----------- | --------------------------------------------- | ----------------- |
-| **Priority** | `priority:critical`, `priority:high`, `priority:medium`, `priority:low` | Task urgency     |
-| **Type**     | `type:bug`, `type:feature`, `type:refactor`, `type:docs`, `type:test` | Work category    |
-| **Team**     | `team:frontend`, `team:backend`, `team:devops` | Team ownership    |
-| **Status**   | `status:blocked`, `status:in-review`           | Workflow status   |
-| **Component** | `component:auth`, `component:database`        | System affected   |
-| **Sprint**   | `sprint:2024-q1`, `sprint:backlog`            | Sprint planning   |
+| Category      | Examples                                                                | Purpose         |
+|---------------|-------------------------------------------------------------------------|-----------------|
+| **Priority**  | `priority:critical`, `priority:high`, `priority:medium`, `priority:low` | Task urgency    |
+| **Type**      | `type:bug`, `type:feature`, `type:refactor`, `type:docs`, `type:test`   | Work category   |
+| **Team**      | `team:frontend`, `team:backend`, `team:devops`                          | Team ownership  |
+| **Status**    | `status:blocked`, `status:in-review`                                    | Workflow status |
+| **Component** | `component:auth`, `component:database`                                  | System affected |
+| **Sprint**    | `sprint:2024-q1`, `sprint:backlog`                                      | Sprint planning |
 
 ## Web UI
 

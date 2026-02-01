@@ -22,19 +22,19 @@ Quick tasks are stored in a local queue (`quick-tasks` by default) and can be ma
 
 ## Arguments
 
-| Argument     | Description                    |
-| ------------ | ------------------------------ |
-| `description` | Task description (required)    |
+| Argument      | Description                 |
+|---------------|-----------------------------|
+| `description` | Task description (required) |
 
 ## Flags
 
-| Flag      | Short | Description                              |
-| --------- | ----- | ---------------------------------------- |
-| `--title` |       | Custom task title (auto-extracted from description) |
-| `--label` |       | Task labels (can be specified multiple times) |
-| `--priority` |   | Task priority (1=high, 2=normal, 3=low, default: 2) |
-| `--queue` |       | Target queue ID (default: `quick-tasks`)  |
-| `--agent` |       | Agent to use for this task               |
+| Flag         | Short | Description                                         |
+|--------------|-------|-----------------------------------------------------|
+| `--title`    |       | Custom task title (auto-extracted from description) |
+| `--label`    |       | Task labels (can be specified multiple times)       |
+| `--priority` |       | Task priority (1=high, 2=normal, 3=low, default: 2) |
+| `--queue`    |       | Target queue ID (default: `quick-tasks`)            |
+| `--agent`    |       | Agent to use for this task                          |
 
 ## Examples
 
@@ -184,11 +184,11 @@ Tasks can be deleted via the Web UI or API. See [REST API](../web-ui/api.md#quic
 
 ## Task Priority Levels
 
-| Level | Flag Value | Description        |
-| ----- | ---------- | ------------------ |
-| High  | `1`        | Urgent, do soon    |
-| Normal| `2`        | Standard priority  |
-| Low   | `3`        | Backlog item       |
+| Level  | Flag Value | Description       |
+|--------|------------|-------------------|
+| High   | `1`        | Urgent, do soon   |
+| Normal | `2`        | Standard priority |
+| Low    | `3`        | Backlog item      |
 
 ## Integration with Standard Workflow
 

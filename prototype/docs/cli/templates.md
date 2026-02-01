@@ -19,14 +19,14 @@ Templates can be applied:
 
 ## Available Templates
 
-| Template    | Description                                    |
-| ----------- | ---------------------------------------------- |
-| `bug-fix`   | Bug fix tasks with stricter validation         |
-| `feature`   | New feature development                        |
-| `refactor`  | Code refactoring (quality-focused)             |
-| `docs`      | Documentation changes (skips quality checks)   |
-| `test`      | Adding or improving tests                      |
-| `chore`     | Maintenance tasks and chores                   |
+| Template   | Description                                  |
+|------------|----------------------------------------------|
+| `bug-fix`  | Bug fix tasks with stricter validation       |
+| `feature`  | New feature development                      |
+| `refactor` | Code refactoring (quality-focused)           |
+| `docs`     | Documentation changes (skips quality checks) |
+| `test`     | Adding or improving tests                    |
+| `chore`    | Maintenance tasks and chores                 |
 
 ## Commands
 

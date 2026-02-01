@@ -1,6 +1,6 @@
 # Project Planning Commands
 
-The project commands provide a complete workflow for planning and executing multi-task projects with dependencies.
+The project commands provide a complete workflow for planning and executing multitask projects with dependencies.
 
 ## Overview
 
@@ -63,12 +63,12 @@ mehr project plan dir:/workspace/specs/ --use-schema=false
 
 **Source Type Differences:**
 
-| Source    | Description                              | Best For                    |
-|-----------|------------------------------------------|-----------------------------|
-| `dir:`     | Reads ALL file contents into prompt    | <50 files, small codebases |
-| `research:`| Provides file manifest, AI uses tools  | Large docs, existing tasks |
-| `file:`    | Single file analysis                   | Individual requirement files |
-| `provider:`| Fetches from external task provider    | GitHub/Jira/Wrike issues      |
+| Source      | Description                           | Best For                     |
+|-------------|---------------------------------------|------------------------------|
+| `dir:`      | Reads ALL file contents into prompt   | <50 files, small codebases   |
+| `research:` | Provides file manifest, AI uses tools | Large docs, existing tasks   |
+| `file:`     | Single file analysis                  | Individual requirement files |
+| `provider:` | Fetches from external task provider   | GitHub/Jira/Wrike issues     |
 
 The AI will analyze the source and produce a structured task breakdown with dependencies.
 
@@ -227,7 +227,7 @@ mehr project submit [flags]
 **Flags:**
 | Flag            | Short | Description                                     |
 | --------------- | ----- | ------------------------------------------------ |
-| `--provider`    | `-p`  | Target provider (github, jira, etc.)            |
+| `--provider`    | `-p`  | Target provider (GitHub, jira, etc.)            |
 | `--create-epic` |       | Create parent epic/folder                        |
 | `--labels`      |       | Additional labels for all tasks                  |
 | `--dry-run`     |       | Preview without creating                          |
@@ -282,19 +282,19 @@ mehr project submit --provider github --task task-3,task-5 --comment "Updated pe
 
 **Dependency and Subtask Support:**
 
-| Provider   | Dependencies                        | Subtasks                    |
-| ---------- | ----------------------------------- | --------------------------- |
-| Wrike      | Native (FinishToStart relationships)| Native (ParentID on create) |
-| GitHub     | Task lists in epic body             | Issues with milestone       |
-| GitLab     | Task lists in epic description      | Task notes                  |
-| Jira       | Issue links (blocks/is-blocked-by)  | Native subtasks             |
-| Linear     | Description-based                   | Sub-issues                  |
-| Asana      | Native task dependencies            | Native subtasks             |
-| ClickUp    | Native task dependencies            | Native subtasks             |
-| Azure DevOps | Work item links                   | Child work items            |
-| Trello     | Description-based                   | Checklists                  |
-| YouTrack   | Description-based                   | Sub-issues                  |
-| Bitbucket  | Description-based                   | Task lists                  |
+| Provider     | Dependencies                         | Subtasks                    |
+|--------------|--------------------------------------|-----------------------------|
+| Wrike        | Native (FinishToStart relationships) | Native (ParentID on create) |
+| GitHub       | Task lists in epic body              | Issues with milestone       |
+| GitLab       | Task lists in epic description       | Task notes                  |
+| Jira         | Issue links (blocks/is-blocked-by)   | Native subtasks             |
+| Linear       | Description-based                    | Sub-issues                  |
+| Asana        | Native task dependencies             | Native subtasks             |
+| ClickUp      | Native task dependencies             | Native subtasks             |
+| Azure DevOps | Work item links                      | Child work items            |
+| Trello       | Description-based                    | Checklists                  |
+| YouTrack     | Description-based                    | Sub-issues                  |
+| Bitbucket    | Description-based                    | Task lists                  |
 
 When submitting tasks with `--parent` relationships, the parent tasks are automatically created first, and the subtasks include the provider's parent ID reference.
 

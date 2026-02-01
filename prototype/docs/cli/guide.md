@@ -93,16 +93,16 @@ Suggested next actions:
 
 The `guide` command provides different suggestions based on the current workflow state:
 
-| State          | Suggestions                                                      |
-| -------------- | ---------------------------------------------------------------- |
+| State          | Suggestions                                                                        |
+|----------------|------------------------------------------------------------------------------------|
 | `idle`         | `plan`, `note` (no specifications) or `implement`, `finish` (specifications exist) |
-| `planning`     | `status`, `note`                                                |
-| `implementing` | `status`, `note`, `undo`, `finish`                              |
-| `reviewing`    | `status`, `finish`, `implement`                                 |
-| `done`         | Start new task                                                  |
-| `waiting`      | `answer` (respond to question)                                  |
-| `paused`       | `budget status`, `budget resume --confirm`                      |
-| `failed`       | `status`, `note`, start new task                                |
+| `planning`     | `status`, `note`                                                                   |
+| `implementing` | `status`, `note`, `undo`, `finish`                                                 |
+| `reviewing`    | `status`, `finish`, `implement`                                                    |
+| `done`         | Start new task                                                                     |
+| `waiting`      | `answer` (respond to question)                                                     |
+| `paused`       | `budget status`, `budget resume --confirm`                                         |
+| `failed`       | `status`, `note`, start new task                                                   |
 
 ## Worktree Support
 
@@ -120,11 +120,11 @@ State: implementing
 
 ## Choosing the Right Command
 
-| Command         | When to Use                                                    |
-| --------------- | -------------------------------------------------------------- |
-| `mehr guide`    | "What should I do next?" (fastest, minimal output)             |
-| `mehr status`   | "Show full task details" (full inspection, all details)        |
-| `mehr continue` | "Resume work on task" (`--auto` runs next step)                |
+| Command         | When to Use                                             |
+|-----------------|---------------------------------------------------------|
+| `mehr guide`    | "What should I do next?" (fastest, minimal output)      |
+| `mehr status`   | "Show full task details" (full inspection, all details) |
+| `mehr continue` | "Resume work on task" (`--auto` runs next step)         |
 
 ## See Also
 

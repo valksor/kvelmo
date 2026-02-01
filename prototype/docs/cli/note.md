@@ -17,15 +17,15 @@ Unlike `plan` or `implement`, the `note` command does **not** run the AI agent. 
 
 ## Arguments
 
-| Argument  | Description              |
-| --------- | ------------------------ |
-| `message` | Optional note to add     |
+| Argument  | Description          |
+|-----------|----------------------|
+| `message` | Optional note to add |
 
 ## Flags
 
-| Flag       | Short | Type   | Default | Description                              |
-| ---------- | ----- | ------ | ------- | ---------------------------------------- |
-| `--running`|       | string | ""      | Send note to a running parallel task ID  |
+| Flag        | Short | Type   | Default | Description                             |
+|-------------|-------|--------|---------|-----------------------------------------|
+| `--running` |       | string | ""      | Send note to a running parallel task ID |
 
 ## Examples
 
@@ -147,7 +147,7 @@ Focus on security - this will handle payments.
 In interactive mode:
 
 | Command | Action      |
-| ------- | ----------- |
+|---------|-------------|
 | `exit`  | End session |
 | `quit`  | End session |
 | Ctrl+D  | End session |

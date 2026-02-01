@@ -19,13 +19,13 @@ Mehrhof integrates security scanners that run automatically during implementatio
 
 Scanners are **auto-detected** based on your project type:
 
-| Language | SAST Scanner | Dependency Scanner |
-|----------|--------------|-------------------|
-| **Cross-language** | Semgrep | - |
-| **Secrets** | Gitleaks | - |
-| **Go** | Gosec | Govulncheck |
-| **JavaScript/TypeScript** | ESLint Security | npm audit |
-| **Python** | Bandit | pip-audit |
+| Language                  | SAST Scanner    | Dependency Scanner |
+|---------------------------|-----------------|--------------------|
+| **Cross-language**        | Semgrep         | -                  |
+| **Secrets**               | Gitleaks        | -                  |
+| **Go**                    | Gosec           | Govulncheck        |
+| **JavaScript/TypeScript** | ESLint Security | npm audit          |
+| **Python**                | Bandit          | pip-audit          |
 
 ## Configuration
 
@@ -106,21 +106,21 @@ security:
 
 ### Severity Levels
 
-| Level | Description |
-|-------|-------------|
-| `critical` | Critical vulnerabilities (default) |
-| `high` | High-severity issues |
-| `medium` | Medium-severity issues |
-| `low` | Low-severity issues |
-| `any` | All findings regardless of severity |
+| Level      | Description                         |
+|------------|-------------------------------------|
+| `critical` | Critical vulnerabilities (default)  |
+| `high`     | High-severity issues                |
+| `medium`   | Medium-severity issues              |
+| `low`      | Low-severity issues                 |
+| `any`      | All findings regardless of severity |
 
 ### Report Formats
 
-| Format | Description |
-|--------|-------------|
+| Format  | Description                       |
+|---------|-----------------------------------|
 | `sarif` | SARIF 2.1.0 JSON format (default) |
-| `json` | Custom JSON format |
-| `text` | Human-readable text output |
+| `json`  | Custom JSON format                |
+| `text`  | Human-readable text output        |
 
 ## Commands
 
@@ -212,11 +212,11 @@ Found 1 issue(s):
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | No findings or only below failure threshold |
-| 1 | Findings at or above failure threshold |
-| 2 | Scanner errors |
+| Code | Meaning                                     |
+|------|---------------------------------------------|
+| 0    | No findings or only below failure threshold |
+| 1    | Findings at or above failure threshold      |
+| 2    | Scanner errors                              |
 
 ## Scanners
 

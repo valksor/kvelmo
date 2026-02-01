@@ -19,9 +19,9 @@ Use this when:
 
 ## Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--yes` | `-y` | Skip confirmation prompt |
+| Flag    | Short | Description              |
+|---------|-------|--------------------------|
+| `--yes` | `-y`  | Skip confirmation prompt |
 
 ## Examples
 
@@ -65,11 +65,11 @@ mehr review --force    # Reset state and start reviewing
 
 ## When to use
 
-| Scenario | Command |
-|----------|---------|
-| Agent hung during planning | `mehr reset --yes` then `mehr plan` |
+| Scenario                       | Command                                  |
+|--------------------------------|------------------------------------------|
+| Agent hung during planning     | `mehr reset --yes` then `mehr plan`      |
 | Agent hung during implementing | `mehr reset --yes` then `mehr implement` |
-| One-step recovery | `mehr plan --force` (reset + plan) |
+| One-step recovery              | `mehr plan --force` (reset + plan)       |
 
 ## See Also
 

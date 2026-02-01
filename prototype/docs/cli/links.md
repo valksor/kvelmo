@@ -51,12 +51,12 @@ If no entity is specified, lists all entities with outgoing links.
 
 **Entity IDs** use the format: `type:task-id:id`
 
-| Entity Type | Format | Example |
-|-------------|--------|---------|
-| Specification | `spec:task-id:N` | `spec:abc123:1` |
-| Note | `note:task-id:notes` | `note:abc123:notes` |
-| Session | `session:task-id:timestamp` | `session:abc123:2024-01-29T10:00:00Z` |
-| Decision | `decision:task-id:id` | `decision:abc123:cache-strategy` |
+| Entity Type   | Format                      | Example                               |
+|---------------|-----------------------------|---------------------------------------|
+| Specification | `spec:task-id:N`            | `spec:abc123:1`                       |
+| Note          | `note:task-id:notes`        | `note:abc123:notes`                   |
+| Session       | `session:task-id:timestamp` | `session:abc123:2024-01-29T10:00:00Z` |
+| Decision      | `decision:task-id:id`       | `decision:abc123:cache-strategy`      |
 
 **Examples:**
 ```bash
@@ -298,13 +298,13 @@ mehr links list spec:abc123:1
 
 See [Links in the Web UI](../web-ui/links.md).
 
-| CLI Command | Web UI Action |
-|-------------|---------------|
-| `mehr links list` | Links → Browse entities |
-| `mehr links backlinks <id>` | Links → Entity details |
-| `mehr links search <name>` | Links → Search |
-| `mehr links stats` | Links → Statistics panel |
-| `mehr links rebuild` | Links → Rebuild button |
+| CLI Command                 | Web UI Action            |
+|-----------------------------|--------------------------|
+| `mehr links list`           | Links → Browse entities  |
+| `mehr links backlinks <id>` | Links → Entity details   |
+| `mehr links search <name>`  | Links → Search           |
+| `mehr links stats`          | Links → Statistics panel |
+| `mehr links rebuild`        | Links → Rebuild button   |
 
 ## See Also
 

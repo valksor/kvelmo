@@ -12,38 +12,38 @@ mehr <command> [flags]
 
 These flags work with any command:
 
-| Flag         | Short | Description                      |
-| ------------ | ----- | -------------------------------- |
-| `--verbose`  | `-v`  | Enable verbose output            |
-| `--quiet`    | `-q`  | Suppress non-essential output    |
-| `--no-color` |       | Disable colored output           |
+| Flag         | Short | Description                   |
+|--------------|-------|-------------------------------|
+| `--verbose`  | `-v`  | Enable verbose output         |
+| `--quiet`    | `-q`  | Suppress non-essential output |
+| `--no-color` |       | Disable colored output        |
 
 ## Commands
 
 ### Task Management
 
-| Command                     | Description                                |
-| --------------------------- | ------------------------------------------ |
-| [start](cli/start.md)       | Register a new task from file or directory |
-| [status](cli/status.md)     | Show task status                           |
-| [continue](cli/continue.md) | Show status and suggested next actions     |
+| Command                     | Description                                     |
+|-----------------------------|-------------------------------------------------|
+| [start](cli/start.md)       | Register a new task from file or directory      |
+| [status](cli/status.md)     | Show task status                                |
+| [continue](cli/continue.md) | Show status and suggested next actions          |
 | [sync](cli/sync.md)         | Sync task from provider and generate delta spec |
-| [abandon](cli/abandon.md)   | Abandon task without merging               |
+| [abandon](cli/abandon.md)   | Abandon task without merging                    |
 
 ### Quick Tasks
 
-| Command                       | Description                              |
-| ----------------------------- | ---------------------------------------- |
-| [quick](cli/quick.md)         | Create a task quickly in a queue        |
-| [optimize](cli/optimize.md)   | AI optimize a task based on notes        |
-| [export](cli/export.md)       | Export queue task to markdown file       |
-| [submit](cli/submit.md)       | Submit a task to external provider (queue or source) |
-| [delete](cli/delete.md)       | Delete a queue task                      |
+| Command                     | Description                                          |
+|-----------------------------|------------------------------------------------------|
+| [quick](cli/quick.md)       | Create a task quickly in a queue                     |
+| [optimize](cli/optimize.md) | AI optimize a task based on notes                    |
+| [export](cli/export.md)     | Export queue task to markdown file                   |
+| [submit](cli/submit.md)     | Submit a task to external provider (queue or source) |
+| [delete](cli/delete.md)     | Delete a queue task                                  |
 
 ### Workflow
 
 | Command                       | Description                                        |
-| ----------------------------- | -------------------------------------------------- |
+|-------------------------------|----------------------------------------------------|
 | [workflow](cli/workflow.md)   | Display the workflow state machine diagram         |
 | [plan](cli/plan.md)           | Create implementation specifications               |
 | [implement](cli/implement.md) | Implement the specifications                       |
@@ -55,60 +55,60 @@ These flags work with any command:
 
 ### History
 
-| Command                       | Description                   |
-| ----------------------------- | ----------------------------- |
-| [undo](cli/undo.md)           | Revert to previous checkpoint |
-| [redo](cli/redo.md)           | Restore undone checkpoint     |
+| Command             | Description                   |
+|---------------------|-------------------------------|
+| [undo](cli/undo.md) | Revert to previous checkpoint |
+| [redo](cli/redo.md) | Restore undone checkpoint     |
 
 ### Project Planning
 
-| Command                               | Description                                    |
-| ------------------------------------- | ---------------------------------------------- |
-| [project plan](cli/project.md#plan)   | Create task breakdown from source              |
-| [project sync](cli/project-sync.md)   | Sync project/epic from external provider       |
-| [project tasks](cli/project.md#tasks) | List tasks in a project queue                  |
-| [project edit](cli/project.md#edit)   | Edit task properties (deps, priority, status)  |
-| [project reorder](cli/project.md#reorder) | Reorder tasks in queue                     |
-| [project submit](cli/project.md#submit) | Submit tasks to provider                     |
-| [project start](cli/project.md#start) | Start implementing tasks from queue            |
+| Command                                   | Description                                   |
+|-------------------------------------------|-----------------------------------------------|
+| [project plan](cli/project.md#plan)       | Create task breakdown from source             |
+| [project sync](cli/project-sync.md)       | Sync project/epic from external provider      |
+| [project tasks](cli/project.md#tasks)     | List tasks in a project queue                 |
+| [project edit](cli/project.md#edit)       | Edit task properties (deps, priority, status) |
+| [project reorder](cli/project.md#reorder) | Reorder tasks in queue                        |
+| [project submit](cli/project.md#submit)   | Submit tasks to provider                      |
+| [project start](cli/project.md#start)     | Start implementing tasks from queue           |
 
 ### Web UI
 
-| Command                         | Description                              |
-| ------------------------------- | ---------------------------------------- |
-| [serve](cli/serve.md)           | Start web UI server                      |
-| [register](cli/register.md)     | Register project for remote access       |
-| unregister                      | Remove project from registry             |
+| Command                     | Description                        |
+|-----------------------------|------------------------------------|
+| [serve](cli/serve.md)       | Start web UI server                |
+| [register](cli/register.md) | Register project for remote access |
+| unregister                  | Remove project from registry       |
 
 ### Utility
 
-| Command                   | Description                              |
-| ------------------------- | ---------------------------------------- |
-| [init](cli/init.md)       | Initialize task workspace                |
-| [find](cli/find.md)       | AI-powered code search with focused results |
-| [agents](cli/agents.md)   | List available AI agents                 |
-| [config](cli/config.md)   | Validate configuration files             |
-| [plugins](cli/plugins.md) | Manage extension plugins                 |
-| [templates](cli/templates.md) | Manage task templates               |
-| [cost](cli/cost.md)       | Show token usage and costs               |
-| [budget](cli/budget.md)   | Manage cost and token budgets            |
-| [license](cli/license.md) | Display license information              |
-| [label](cli/label.md)     | Manage task labels                        |
-| [list](cli/list.md)       | List all tasks in workspace              |
-| [version](cli/version.md) | Print version information                |
-| [mcp](cli/mcp.md)         | Start MCP server for AI agent integration |
+| Command                       | Description                                 |
+|-------------------------------|---------------------------------------------|
+| [init](cli/init.md)           | Initialize task workspace                   |
+| [find](cli/find.md)           | AI-powered code search with focused results |
+| [agents](cli/agents.md)       | List available AI agents                    |
+| [config](cli/config.md)       | Validate configuration files                |
+| [plugins](cli/plugins.md)     | Manage extension plugins                    |
+| [templates](cli/templates.md) | Manage task templates                       |
+| [cost](cli/cost.md)           | Show token usage and costs                  |
+| [budget](cli/budget.md)       | Manage cost and token budgets               |
+| [license](cli/license.md)     | Display license information                 |
+| [label](cli/label.md)         | Manage task labels                          |
+| [list](cli/list.md)           | List all tasks in workspace                 |
+| [version](cli/version.md)     | Print version information                   |
+| [mcp](cli/mcp.md)             | Start MCP server for AI agent integration   |
 
 ### Provider Authentication
 
-| Command                        | Description                        |
-| ------------------------------ | ---------------------------------- |
-| [github login](cli/login.md)   | Authenticate with GitHub           |
-| [gitlab login](cli/login.md)   | Authenticate with GitLab           |
-| [notion login](cli/login.md)   | Authenticate with Notion           |
-| [jira login](cli/login.md)     | Authenticate with Jira             |
-| [linear login](cli/login.md)   | Authenticate with Linear           |
-| [wrike login](cli/login.md)    | Authenticate with Wrike            |
-| [youtrack login](cli/login.md) | Authenticate with YouTrack         |
+| Command                        | Description                |
+|--------------------------------|----------------------------|
+| [github login](cli/login.md)   | Authenticate with GitHub   |
+| [gitlab login](cli/login.md)   | Authenticate with GitLab   |
+| [notion login](cli/login.md)   | Authenticate with Notion   |
+| [jira login](cli/login.md)     | Authenticate with Jira     |
+| [linear login](cli/login.md)   | Authenticate with Linear   |
+| [wrike login](cli/login.md)    | Authenticate with Wrike    |
+| [youtrack login](cli/login.md) | Authenticate with YouTrack |
 
 ## Command Shortcuts
 
@@ -202,7 +202,7 @@ By default, output is human-readable text. Some commands support JSON output via
 ## Exit Codes
 
 | Code | Meaning           |
-| ---- | ----------------- |
+|------|-------------------|
 | 0    | Success           |
 | 1    | General error     |
 | 2    | Invalid arguments |

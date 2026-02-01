@@ -14,8 +14,8 @@ Permanently removes a task and its associated notes from a queue. This action ca
 
 ## Flags
 
-| Flag     | Required | Description                                    |
-| -------- | -------- | ---------------------------------------------- |
+| Flag     | Required | Description                                     |
+|----------|----------|-------------------------------------------------|
 | `--task` | Yes      | Task reference in format `<queue-id>/<task-id>` |
 
 ## Examples
@@ -26,7 +26,7 @@ Permanently removes a task and its associated notes from a queue. This action ca
 mehr delete --task=quick-tasks/task-1
 ```
 
-### Delete from a Project Queue
+### Delete it from a Project Queue
 
 ```bash
 mehr delete --task=my-project/task-5
@@ -58,10 +58,10 @@ Next steps:
 
 ## Errors
 
-| Error                        | Cause                                      |
-| ---------------------------- | ------------------------------------------ |
-| `queue not found: <queue>`   | The specified queue does not exist         |
-| `task not found: <queue>/<id>` | The task ID does not exist in the queue  |
+| Error                          | Cause                                   |
+|--------------------------------|-----------------------------------------|
+| `queue not found: <queue>`     | The specified queue does not exist      |
+| `task not found: <queue>/<id>` | The task ID does not exist in the queue |
 
 ## What Gets Deleted
 

@@ -64,7 +64,7 @@ agents:
 ### Configuration Fields
 
 | Field         | Required | Description                                            |
-| ------------- | -------- | ------------------------------------------------------ |
+|---------------|----------|--------------------------------------------------------|
 | `extends`     | Yes      | Name of the agent to wrap (built-in or another alias)  |
 | `description` | No       | Human-readable description shown in `mehr agents list` |
 | `env`         | No       | Environment variables passed to the agent              |
@@ -92,15 +92,15 @@ Displays a detailed explanation of how agents are selected based on configuratio
 
 **Priority (highest to lowest):**
 
-| Priority | Source                          | Scope                | Example                              |
-| -------- | ------------------------------- | -------------------- | ------------------------------------ |
-| 1        | `--agent-plan`, `--agent-implement`, `--agent-review` flags | Single step         | `mehr plan --agent-plan opus`        |
-| 2        | `--agent` flag                  | Entire workflow      | `mehr start --agent sonnet ...`      |
-| 3        | Task frontmatter step-specific  | Single step         | `agent_steps.planning.agent`         |
-| 4        | Task frontmatter default        | Entire workflow      | `agent: sonnet`                      |
-| 5        | Workspace config step-specific  | Single step         | `agent.steps.planning.name`          |
-| 6        | Workspace config default        | Entire workflow      | `agent.default: claude`              |
-| 7        | Auto-detection                  | Fallback            | First available agent                |
+| Priority | Source                                                      | Scope           | Example                         |
+|----------|-------------------------------------------------------------|-----------------|---------------------------------|
+| 1        | `--agent-plan`, `--agent-implement`, `--agent-review` flags | Single step     | `mehr plan --agent-plan opus`   |
+| 2        | `--agent` flag                                              | Entire workflow | `mehr start --agent sonnet ...` |
+| 3        | Task frontmatter step-specific                              | Single step     | `agent_steps.planning.agent`    |
+| 4        | Task frontmatter default                                    | Entire workflow | `agent: sonnet`                 |
+| 5        | Workspace config step-specific                              | Single step     | `agent.steps.planning.name`     |
+| 6        | Workspace config default                                    | Entire workflow | `agent.default: claude`         |
+| 7        | Auto-detection                                              | Fallback        | First available agent           |
 
 **Use when:** You want to understand why a specific agent is being used, or troubleshoot agent selection issues.
 

@@ -23,9 +23,9 @@ The key difference from `note` is that `question` **returns an AI response** whi
 
 ## Arguments
 
-| Argument  | Description                |
-| --------- | -------------------------- |
-| `message` | Question to ask the agent  |
+| Argument  | Description               |
+|-----------|---------------------------|
+| `message` | Question to ask the agent |
 
 ## When to Use
 
@@ -166,13 +166,13 @@ The testing strategy includes:
 
 ## Question vs Note
 
-| Feature | `question` | `note` |
-|---------|-----------|--------|
-| **AI Response** | ✅ Yes | ❌ No |
-| **Tokens Consumed** | ✅ Yes | ❌ No |
-| **Context Awareness** | ✅ Full | ❌ None |
-| **State Change** | ❌ No | ❌ No |
-| **Use Case** | Get answers | Add info |
+| Feature               | `question`  | `note`   |
+|-----------------------|-------------|----------|
+| **AI Response**       | ✅ Yes       | ❌ No     |
+| **Tokens Consumed**   | ✅ Yes       | ❌ No     |
+| **Context Awareness** | ✅ Full      | ❌ None   |
+| **State Change**      | ❌ No        | ❌ No     |
+| **Use Case**          | Get answers | Add info |
 
 ## Interactive Mode
 
@@ -197,11 +197,11 @@ Good question! For distributed scenarios...
 
 Three aliases are available:
 
-| Alias | Command |
-| ----- | ------- |
-| `mehr ask` | Ask a question |
-| `mehr q` | Quick question |
-| `mehr question` | Full command |
+| Alias           | Command        |
+|-----------------|----------------|
+| `mehr ask`      | Ask a question |
+| `mehr q`        | Quick question |
+| `mehr question` | Full command   |
 
 All work identically:
 

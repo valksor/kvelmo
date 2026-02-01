@@ -16,8 +16,8 @@ By default, `mehr redo` shows a confirmation prompt before proceeding. Use `--ye
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag        | Description              |
+|-------------|--------------------------|
 | `-y, --yes` | Skip confirmation prompt |
 
 ## Examples

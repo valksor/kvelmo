@@ -16,12 +16,12 @@ The `review` command runs an automated code review on the task's changes. The re
 
 Before the AI review, Mehrhof automatically detects and runs appropriate linters based on your project:
 
-| Project Type | Linter | Detection |
-|--------------|--------|-----------|
-| Go | golangci-lint | `go.mod` present |
-| JavaScript/TypeScript | ESLint | `package.json` present |
-| Python | Ruff | `pyproject.toml` or `requirements.txt` present |
-| PHP | php-cs-fixer | `composer.json` or `.php-cs-fixer.php` present |
+| Project Type          | Linter        | Detection                                      |
+|-----------------------|---------------|------------------------------------------------|
+| Go                    | golangci-lint | `go.mod` present                               |
+| JavaScript/TypeScript | ESLint        | `package.json` present                         |
+| Python                | Ruff          | `pyproject.toml` or `requirements.txt` present |
+| PHP                   | php-cs-fixer  | `composer.json` or `.php-cs-fixer.php` present |
 
 Lint results are included in the AI agent's review context, allowing it to address both lint issues and higher-level code quality concerns.
 
@@ -56,12 +56,12 @@ quality:
 
 **Built-in linters:**
 
-| Linter | Language | Auto-Detection |
-|--------|----------|----------------|
-| `golangci-lint` | Go | `go.mod` exists |
-| `eslint` | JavaScript/TypeScript | `package.json` exists |
-| `ruff` | Python | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
-| `php-cs-fixer` | PHP | `composer.json` exists |
+| Linter          | Language              | Auto-Detection                                             |
+|-----------------|-----------------------|------------------------------------------------------------|
+| `golangci-lint` | Go                    | `go.mod` exists                                            |
+| `eslint`        | JavaScript/TypeScript | `package.json` exists                                      |
+| `ruff`          | Python                | `pyproject.toml`, `setup.py`, or `requirements.txt` exists |
+| `php-cs-fixer`  | PHP                   | `composer.json` exists                                     |
 
 > **Note:** With `use_defaults: false` (default), built-in linters will NOT run unless explicitly enabled. This prevents unintended code modifications (e.g., php-cs-fixer on Symfony projects with custom config paths).
 
@@ -81,16 +81,16 @@ Review results are saved to the work directory.
 
 ## Flags
 
-| Flag       | Short | Type   | Default      | Description        |
-| ---------- | ----- | ------ | ------------ | ------------------ |
-| `--tool`   |       | string | coderabbit   | Review tool to use |
-| `--output` | `-o`  | string | REVIEW-N.txt | Output file name   |
-| `--optimize` |     | bool   | false        | Optimize prompt before sending to agent |
-| `--standalone` |   | bool   | false        | Review without active task (see Standalone Mode) |
-| `--branch` |       | string | ""           | Compare current branch vs base (standalone only) |
-| `--range`  |       | string | ""           | Compare commit range (standalone only) |
-| `--context` |      | int    | 3            | Lines of context in diff (standalone only) |
-| `--agent`  |       | string | ""           | Agent to use for review |
+| Flag           | Short | Type   | Default      | Description                                      |
+|----------------|-------|--------|--------------|--------------------------------------------------|
+| `--tool`       |       | string | coderabbit   | Review tool to use                               |
+| `--output`     | `-o`  | string | REVIEW-N.txt | Output file name                                 |
+| `--optimize`   |       | bool   | false        | Optimize prompt before sending to agent          |
+| `--standalone` |       | bool   | false        | Review without active task (see Standalone Mode) |
+| `--branch`     |       | string | ""           | Compare current branch vs base (standalone only) |
+| `--range`      |       | string | ""           | Compare commit range (standalone only)           |
+| `--context`    |       | int    | 3            | Lines of context in diff (standalone only)       |
+| `--agent`      |       | string | ""           | Agent to use for review                          |
 
 ## Examples
 
@@ -139,7 +139,7 @@ Optimize the review prompt using an optimizer agent before sending to the workin
 ## Review Status
 
 | Status   | Meaning                          |
-| -------- | -------------------------------- |
+|----------|----------------------------------|
 | COMPLETE | No issues found                  |
 | ISSUES   | Issues found that need attention |
 | ERROR    | Review tool failed to run        |
@@ -265,15 +265,15 @@ mehr review --standalone [flags] [files...]
 
 ### Standalone Flags
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--standalone` | bool | false | Enable standalone mode (no active task required) |
-| `--branch` | string | "" | Compare current branch against base branch (auto-detects main/master) |
-| `--range` | string | "" | Compare specific commit range (e.g., `HEAD~3..HEAD`) |
-| `--context` | int | 3 | Lines of context in diff |
-| `--agent` | string | "" | Agent to use for review |
-| `--fix` | bool | false | Apply suggested fixes (modifies files) |
-| `--checkpoint` | bool | true | Create checkpoint before applying fixes (use with --fix) |
+| Flag           | Type   | Default | Description                                                           |
+|----------------|--------|---------|-----------------------------------------------------------------------|
+| `--standalone` | bool   | false   | Enable standalone mode (no active task required)                      |
+| `--branch`     | string | ""      | Compare current branch against base branch (auto-detects main/master) |
+| `--range`      | string | ""      | Compare specific commit range (e.g., `HEAD~3..HEAD`)                  |
+| `--context`    | int    | 3       | Lines of context in diff                                              |
+| `--agent`      | string | ""      | Agent to use for review                                               |
+| `--fix`        | bool   | false   | Apply suggested fixes (modifies files)                                |
+| `--checkpoint` | bool   | true    | Create checkpoint before applying fixes (use with --fix)              |
 
 ### Standalone Examples
 
@@ -391,16 +391,16 @@ Use `--provider` to override auto-detection.
 
 #### Flags
 
-| Flag                  | Description                                                            |
-| --------------------- | ---------------------------------------------------------------------- |
+| Flag                  | Description                                                              |
+|-----------------------|--------------------------------------------------------------------------|
 | `--provider`          | Provider: `github`, `gitlab`, `bitbucket`, `azuredevops` (auto-detected) |
-| `--pr-number`         | PR/MR number (required)                                                |
-| `--format`            | Comment format: `summary` (default), `line-comments`                   |
-| `--scope`             | Review scope: `full` (default), `compact`, `files-changed`             |
-| `--agent-pr-review`   | Agent to use for PR review (default: `claude`)                         |
-| `--token`             | Auth token (overrides config/env vars; use for CI)                     |
-| `--acknowledge-fixes` | Acknowledge when previously reported issues are fixed (default: true)  |
-| `--update-existing`   | Edit existing comment vs post new comment (default: true)              |
+| `--pr-number`         | PR/MR number (required)                                                  |
+| `--format`            | Comment format: `summary` (default), `line-comments`                     |
+| `--scope`             | Review scope: `full` (default), `compact`, `files-changed`               |
+| `--agent-pr-review`   | Agent to use for PR review (default: `claude`)                           |
+| `--token`             | Auth token (overrides config/env vars; use for CI)                       |
+| `--acknowledge-fixes` | Acknowledge when previously reported issues are fixed (default: true)    |
+| `--update-existing`   | Edit existing comment vs post new comment (default: true)                |
 
 #### Examples
 
@@ -448,18 +448,18 @@ Format: summary
 
 #### Formats
 
-| Format        | Description                                          |
-| ------------- | ---------------------------------------------------- |
-| `summary`     | Single summary comment with all findings             |
-| `line-comments` | Individual comments on specific lines of code       |
+| Format          | Description                                   |
+|-----------------|-----------------------------------------------|
+| `summary`       | Single summary comment with all findings      |
+| `line-comments` | Individual comments on specific lines of code |
 
 #### Scopes
 
-| Scope          | Description                                          |
-| -------------- | ---------------------------------------------------- |
-| `full`         | Review all changes in detail                         |
-| `compact`      | Concise review focusing on critical issues            |
-| `files-changed` | Summary of modified files without detailed review   |
+| Scope           | Description                                       |
+|-----------------|---------------------------------------------------|
+| `full`          | Review all changes in detail                      |
+| `compact`       | Concise review focusing on critical issues        |
+| `files-changed` | Summary of modified files without detailed review |
 
 #### CI/CD Integration
 

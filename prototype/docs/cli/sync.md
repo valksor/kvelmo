@@ -10,7 +10,7 @@ mehr sync [task-id]
 
 ## Description
 
-This command is useful when a task has been modified in the external system and you want to update your local work accordingly.
+This command is useful when a task has been modified in the external system, and you want to update your local work accordingly.
 
 The command will:
 

@@ -21,9 +21,9 @@ This is typically a one-time setup per project. Running `init` again is safe - i
 
 ## Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--interactive` | `-i` | Interactive setup for API key, provider, and agent |
+| Flag            | Short | Description                                        |
+|-----------------|-------|----------------------------------------------------|
+| `--interactive` | `-i`  | Interactive setup for API key, provider, and agent |
 
 Global flags (`--verbose`, `--no-color`) are also available.
 
@@ -39,7 +39,7 @@ mehr init --interactive
 
 You'll be prompted for:
 1. **API Key** - Your Anthropic API key (validated for `sk-ant-` prefix)
-2. **Default Provider** - Choose from: file, dir, github, jira, linear, notion, wrike, youtrack
+2. **Default Provider** - Choose from: file, dir, GitHub, jira, linear, notion, wrike, youtrack
 3. **Default Agent** - Built-in agents (default: claude)
 
 Output:

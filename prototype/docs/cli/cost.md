@@ -19,13 +19,13 @@ Cost tracking works by:
 
 ## Flags
 
-| Flag            | Short | Description                              | Default |
-| --------------- | ----- | ---------------------------------------- | ------- |
-| `--breakdown`   |       | Break down costs by workflow step        | `false` |
-| `--all`         |       | Show costs for all tasks in workspace    | `false` |
-| `--summary`     | `-s`  | Show aggregate summary across all tasks  | `false` |
-| `--chart`       |       | Display ASCII bar/line/pie charts        | `false` |
-| `--json`        |       | Output as JSON for programmatic use      | `false` |
+| Flag          | Short | Description                             | Default |
+|---------------|-------|-----------------------------------------|---------|
+| `--breakdown` |       | Break down costs by workflow step       | `false` |
+| `--all`       |       | Show costs for all tasks in workspace   | `false` |
+| `--summary`   | `-s`  | Show aggregate summary across all tasks | `false` |
+| `--chart`     |       | Display ASCII bar/line/pie charts       | `false` |
+| `--json`      |       | Output as JSON for programmatic use     | `false` |
 
 ## Output
 

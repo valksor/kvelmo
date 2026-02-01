@@ -46,39 +46,39 @@ providers:
 ## Arguments
 
 | Argument           | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
+|--------------------|-----------------------------------------------------------------|
 | `scheme:reference` | Provider scheme and path (e.g., `file:task.md`, `dir:./tasks/`) |
 
 ## Flags
 
-| Flag                   | Short | Type   | Default                | Description                                           |
-| ---------------------- | ----- | ------ | ---------------------- | ----------------------------------------------------- |
-| `--agent`              | `-A`  | string | auto                   | Agent to use (overrides all steps)                    |
-| `--agent-plan`         |       | string |                        | Agent for planning step                               |
-| `--agent-implement`    |       | string |                        | Agent for implementation step                         |
-| `--agent-review`       |       | string |                        | Agent for review step                                 |
-| `--no-branch`          |       | bool   | false                  | Skip creating a git branch                            |
-| `--worktree`           | `-w`  | bool   | false                  | Create a separate git worktree                        |
-| `--parallel`           | `-p`  | int    | 1                      | Max parallel tasks (requires `--worktree` if > 1)     |
-| `--stash`              |       | bool   | false                  | Stash uncommitted changes before creating branch      |
-| `--key`                | `-k`  | string | auto                   | External key for branch/commit naming                 |
-| `--title`              |       | string | auto                   | Task title override                                   |
-| `--slug`               |       | string | auto                   | Branch slug override                                  |
-| `--commit-prefix`      |       | string | `[{key}]`              | Commit prefix template                                |
-| `--branch-pattern`     |       | string | `{type}/{key}--{slug}` | Branch pattern template                               |
-| `--template`           |       | string |                        | Template to apply (bug-fix, feature, refactor, etc.)  |
+| Flag                | Short | Type   | Default                | Description                                          |
+|---------------------|-------|--------|------------------------|------------------------------------------------------|
+| `--agent`           | `-A`  | string | auto                   | Agent to use (overrides all steps)                   |
+| `--agent-plan`      |       | string |                        | Agent for planning step                              |
+| `--agent-implement` |       | string |                        | Agent for implementation step                        |
+| `--agent-review`    |       | string |                        | Agent for review step                                |
+| `--no-branch`       |       | bool   | false                  | Skip creating a git branch                           |
+| `--worktree`        | `-w`  | bool   | false                  | Create a separate git worktree                       |
+| `--parallel`        | `-p`  | int    | 1                      | Max parallel tasks (requires `--worktree` if > 1)    |
+| `--stash`           |       | bool   | false                  | Stash uncommitted changes before creating branch     |
+| `--key`             | `-k`  | string | auto                   | External key for branch/commit naming                |
+| `--title`           |       | string | auto                   | Task title override                                  |
+| `--slug`            |       | string | auto                   | Branch slug override                                 |
+| `--commit-prefix`   |       | string | `[{key}]`              | Commit prefix template                               |
+| `--branch-pattern`  |       | string | `{type}/{key}--{slug}` | Branch pattern template                              |
+| `--template`        |       | string |                        | Template to apply (bug-fix, feature, refactor, etc.) |
 
 ### Context Flags (Hierarchical Tasks)
 
 When working on a subtask (e.g., a GitHub issue that's a child of another issue), these flags control whether to include parent and sibling context in prompts:
 
-| Flag                 | Type | Default | Description                                      |
-| -------------------- | ---- | ------- | ------------------------------------------------ |
-| `--with-parent`      | bool | config  | Include parent task context in prompts           |
-| `--without-parent`   | bool | config  | Exclude parent task context from prompts         |
-| `--with-siblings`    | bool | config  | Include sibling subtask context in prompts       |
-| `--without-siblings` | bool | config  | Exclude sibling subtask context from prompts     |
-| `--max-siblings`     | int  | config  | Maximum number of sibling tasks to include       |
+| Flag                 | Type | Default | Description                                  |
+|----------------------|------|---------|----------------------------------------------|
+| `--with-parent`      | bool | config  | Include parent task context in prompts       |
+| `--without-parent`   | bool | config  | Exclude parent task context from prompts     |
+| `--with-siblings`    | bool | config  | Include sibling subtask context in prompts   |
+| `--without-siblings` | bool | config  | Exclude sibling subtask context from prompts |
+| `--max-siblings`     | int  | config  | Maximum number of sibling tasks to include   |
 
 **Note:** These flags override the `context` section in `.mehrhof/config.yaml`. See [Context Configuration](../configuration/context.md) for details.
 
@@ -95,7 +95,7 @@ mehr start github:456 --without-parent --without-siblings
 ### Naming Template Variables
 
 | Variable    | Description                                | Example                  |
-| ----------- | ------------------------------------------ | ------------------------ |
+|-------------|--------------------------------------------|--------------------------|
 | `{key}`     | External key from filename/frontmatter/CLI | `FEATURE-123`            |
 | `{task_id}` | Internal task ID                           | `a1b2c3d4`               |
 | `{type}`    | Task type from filename prefix             | `feature`, `fix`, `task` |
@@ -307,7 +307,7 @@ This is useful when:
 
 **Error Handling:**
 - Stash restoration failures are now **fatal** (prevents silent data loss)
-- If stash pop fails, the operation will error and you can manually recover using the displayed stash reference
+- If stash pop fails, the operation will error, and you can manually recover using the displayed stash reference
 
 **Configuration:**
 You can enable stash-on-start by default in `.mehrhof/config.yaml`:
@@ -321,7 +321,7 @@ git:
 
 When `stash_on_start` is enabled in config, the `--stash` flag is not required.
 
-If `auto_pop_stash` is set to `false`, the stash will be preserved and you'll need to manually run `git stash pop` to restore the changes.
+If `auto_pop_stash` is set to `false`, the stash will be preserved, and you'll need to manually run `git stash pop` to restore the changes.
 
 **Equivalent to:**
 ```bash
@@ -377,7 +377,7 @@ Brief description of what needs to be done.
 ### Frontmatter Fields
 
 | Field   | Description                  | Example                   |
-| ------- | ---------------------------- | ------------------------- |
+|---------|------------------------------|---------------------------|
 | `title` | Task title (overrides H1)    | `Add user authentication` |
 | `key`   | External key for naming      | `AUTH-001`, `JIRA-123`    |
 | `type`  | Task type for branch pattern | `feature`, `fix`, `docs`  |

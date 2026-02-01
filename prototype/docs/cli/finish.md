@@ -26,19 +26,19 @@ The `finish` command completes the current task by:
 
 ## Flags
 
-| Flag               | Short | Type   | Default | Description                                |
-| ------------------ | ----- | ------ | ------- | ------------------------------------------ |
-| `--merge`          |       | bool   | false   | Force local merge instead of creating PR    |
-| `--delete`         |       | bool   | false   | Delete task branch after merge              |
-| `--push`           |       | bool   | false   | Push to remote after local merge            |
-| `--squash`         |       | bool   | false   | Squash merge (single commit)                |
-| `--target`         | `-t`  | string | auto    | Target branch to merge into                 |
-| `--no-quality`     |       | bool   | false   | Skip quality checks                         |
-| `--quality-target` |       | string | quality | Make target for quality checks              |
-| `--delete-work`    |       | bool   | false   | Delete work directory after finishing       |
-| `--draft`          |       | bool   | false   | Create PR as draft                          |
-| `--pr-title`       |       | string | auto    | Custom PR title                             |
-| `--pr-body`        |       | string | auto    | Custom PR body                              |
+| Flag               | Short | Type   | Default | Description                              |
+|--------------------|-------|--------|---------|------------------------------------------|
+| `--merge`          |       | bool   | false   | Force local merge instead of creating PR |
+| `--delete`         |       | bool   | false   | Delete task branch after merge           |
+| `--push`           |       | bool   | false   | Push to remote after local merge         |
+| `--squash`         |       | bool   | false   | Squash merge (single commit)             |
+| `--target`         | `-t`  | string | auto    | Target branch to merge into              |
+| `--no-quality`     |       | bool   | false   | Skip quality checks                      |
+| `--quality-target` |       | string | quality | Make target for quality checks           |
+| `--delete-work`    |       | bool   | false   | Delete work directory after finishing    |
+| `--draft`          |       | bool   | false   | Create PR as draft                       |
+| `--pr-title`       |       | string | auto    | Custom PR title                          |
+| `--pr-body`        |       | string | auto    | Custom PR body                           |
 
 ## Examples
 
@@ -186,7 +186,7 @@ Continue with modified files? [y/N]
 
 ## What Happens
 
-### With PR Creation (default for github:, gitlab:, etc.)
+### With PR Creation (default for GitHub:, gitlab:, etc.)
 
 1. **Quality Checks** (unless skipped)
 2. **Push branch** to remote

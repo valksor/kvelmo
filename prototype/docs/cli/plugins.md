@@ -21,7 +21,7 @@ The `plugins` command group manages the plugin system. Plugins extend mehr with 
 ## Subcommands
 
 | Command    | Description                             |
-| ---------- | --------------------------------------- |
+|------------|-----------------------------------------|
 | `list`     | List discovered plugins                 |
 | `install`  | Install a plugin from git URL or path   |
 | `remove`   | Remove an installed plugin              |
@@ -41,7 +41,7 @@ mehr plugins list
 **Output columns:**
 
 | Column      | Description                            |
-| ----------- | -------------------------------------- |
+|-------------|----------------------------------------|
 | NAME        | Plugin identifier                      |
 | TYPE        | `provider`, `agent`, or `workflow`     |
 | SCOPE       | `global` or `project`                  |
@@ -69,13 +69,13 @@ mehr plugins install <source> [--global]
 **Arguments:**
 
 | Argument | Description                      |
-| -------- | -------------------------------- |
+|----------|----------------------------------|
 | `source` | Git URL or local filesystem path |
 
 **Flags:**
 
-| Flag       | Description                                                     |
-| ---------- | --------------------------------------------------------------- |
+| Flag       | Description                                                             |
+|------------|-------------------------------------------------------------------------|
 | `--global` | Install to `~/.valksor/mehrhof/plugins/` (default: `.mehrhof/plugins/`) |
 
 **Examples:**
@@ -107,13 +107,13 @@ mehr plugins remove <name> [--global]
 **Arguments:**
 
 | Argument | Description       |
-| -------- | ----------------- |
+|----------|-------------------|
 | `name`   | Plugin identifier |
 
 **Flags:**
 
 | Flag       | Description                                     |
-| ---------- | ----------------------------------------------- |
+|------------|-------------------------------------------------|
 | `--global` | Remove from global directory (default: project) |
 
 **Example:**
@@ -138,7 +138,7 @@ mehr plugins validate [name]
 **Arguments:**
 
 | Argument | Description                   |
-| -------- | ----------------------------- |
+|----------|-------------------------------|
 | `name`   | Plugin to validate (optional) |
 
 If no name is provided, all discovered plugins are validated.
@@ -216,9 +216,9 @@ Expected Environment Variables:
 
 Plugins are discovered from two locations:
 
-| Scope   | Path                  | Priority |
-| ------- | --------------------- | -------- |
-| Project | `.mehrhof/plugins/`   | Higher   |
+| Scope   | Path                          | Priority |
+|---------|-------------------------------|----------|
+| Project | `.mehrhof/plugins/`           | Higher   |
 | Global  | `~/.valksor/mehrhof/plugins/` | Lower    |
 
 Project plugins with the same name override global plugins.

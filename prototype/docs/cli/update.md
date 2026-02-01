@@ -30,11 +30,11 @@ On Unix systems (Linux/macOS), the binary replacement is atomic using `os.Rename
 
 ## Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --pre-release` | Include pre-release versions | `false` |
-| `--check` | Check for updates without installing | `false` |
-| `-y, --yes` | Skip confirmation prompt | `false` |
+| Flag                | Description                          | Default |
+|---------------------|--------------------------------------|---------|
+| `-p, --pre-release` | Include pre-release versions         | `false` |
+| `--check`           | Check for updates without installing | `false` |
+| `-y, --yes`         | Skip confirmation prompt             | `false` |
 
 ## Examples
 

@@ -23,25 +23,25 @@ This is ideal for well-defined tasks where you trust the AI to handle the entire
 ## Arguments
 
 | Argument    | Description                                              |
-| ----------- | -------------------------------------------------------- |
+|-------------|----------------------------------------------------------|
 | `reference` | Task source: file path, directory, or provider reference |
 
 ## Flags
 
-| Flag               | Short | Description                          | Default     |
-| ------------------ | ----- | ------------------------------------ | ----------- |
-| `--agent`          | `-a`  | Agent to use for all phases          | auto-detect |
-| `--agent-quality`  |       | Agent to use for quality checks      | auto-detect |
-| `--no-branch`      |       | Do not create a git branch           | `false`     |
-| `--worktree`       | `-w`  | Create a separate git worktree       | `false`     |
-| `--max-retries`    |       | Maximum quality check retry attempts | `3`         |
-| `--no-quality`     |       | Skip quality checks entirely         | `false`     |
-| `--no-push`        |       | Don't push after merge               | `false`     |
-| `--no-delete`      |       | Don't delete task branch after merge | `false`     |
-| `--no-squash`      |       | Use regular merge instead of squash  | `false`     |
-| `--target`         | `-t`  | Target branch to merge into          | auto-detect |
-| `--quality-target` |       | Make target for quality checks       | `quality`   |
-| `--optimize`       |       | Optimize prompts before sending to agents | `false` |
+| Flag               | Short | Description                               | Default     |
+|--------------------|-------|-------------------------------------------|-------------|
+| `--agent`          | `-a`  | Agent to use for all phases               | auto-detect |
+| `--agent-quality`  |       | Agent to use for quality checks           | auto-detect |
+| `--no-branch`      |       | Do not create a git branch                | `false`     |
+| `--worktree`       | `-w`  | Create a separate git worktree            | `false`     |
+| `--max-retries`    |       | Maximum quality check retry attempts      | `3`         |
+| `--no-quality`     |       | Skip quality checks entirely              | `false`     |
+| `--no-push`        |       | Don't push after merge                    | `false`     |
+| `--no-delete`      |       | Don't delete task branch after merge      | `false`     |
+| `--no-squash`      |       | Use regular merge instead of squash       | `false`     |
+| `--target`         | `-t`  | Target branch to merge into               | auto-detect |
+| `--quality-target` |       | Make target for quality checks            | `quality`   |
+| `--optimize`       |       | Optimize prompts before sending to agents | `false`     |
 
 ## Examples
 
@@ -180,13 +180,13 @@ AUTO failed at: quality
 
 ## Comparison with Manual Workflow
 
-| Aspect           | Auto       | Manual       |
-| ---------------- | ---------- | ------------ |
-| User interaction | None       | At each step |
-| Agent questions  | Skipped    | Answered     |
-| Quality failures | Auto-retry | Manual fix   |
-| Review specifications     | No         | Yes          |
-| Control          | Less       | Full         |
+| Aspect                | Auto       | Manual       |
+|-----------------------|------------|--------------|
+| User interaction      | None       | At each step |
+| Agent questions       | Skipped    | Answered     |
+| Quality failures      | Auto-retry | Manual fix   |
+| Review specifications | No         | Yes          |
+| Control               | Less       | Full         |
 
 ## See Also
 

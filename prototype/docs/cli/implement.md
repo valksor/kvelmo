@@ -23,14 +23,14 @@ The `implement` command runs the implementation phase where the AI agent:
 
 ## Flags
 
-| Flag                   | Short | Type   | Default | Description                       |
-| ---------------------- | ----- | ------ | ------- | --------------------------------- |
-| `--dry-run`            | `-n`  | bool   | false   | Preview changes without applying  |
-| `--verbose`            | `-v`  | bool   | false   | Show agent output in real-time    |
-| `--agent-implement`    |       | string |         | Override agent for implementation |
-| `--optimize`           |       | bool   | false   | Optimize prompt before sending to agent |
-| `--only`               |       | string |         | Only implement this component (e.g., backend, frontend, tests) |
-| `--parallel`           |       | string |         | Run N agents in parallel, or comma-separated agent list (e.g., "3" or "claude,gemini") |
+| Flag                | Short | Type   | Default | Description                                                                            |
+|---------------------|-------|--------|---------|----------------------------------------------------------------------------------------|
+| `--dry-run`         | `-n`  | bool   | false   | Preview changes without applying                                                       |
+| `--verbose`         | `-v`  | bool   | false   | Show agent output in real-time                                                         |
+| `--agent-implement` |       | string |         | Override agent for implementation                                                      |
+| `--optimize`        |       | bool   | false   | Optimize prompt before sending to agent                                                |
+| `--only`            |       | string |         | Only implement this component (e.g., backend, frontend, tests)                         |
+| `--parallel`        |       | string |         | Run N agents in parallel, or comma-separated agent list (e.g., "3" or "claude,gemini") |
 
 ## Examples
 
