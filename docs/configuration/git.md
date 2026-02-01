@@ -14,14 +14,14 @@ git:
   auto_pop_stash: true
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `auto_commit` | `true` | Auto-commit after operations |
-| `commit_prefix` | `[{key}]` | Commit message prefix template |
-| `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template |
-| `sign_commits` | `false` | GPG-sign commits |
-| `stash_on_start` | `false` | Auto-stash changes before creating task branch |
-| `auto_pop_stash` | `true` | Auto-pop stash after branch creation |
+| Setting          | Default                | Description                                    |
+|------------------|------------------------|------------------------------------------------|
+| `auto_commit`    | `true`                 | Auto-commit after operations                   |
+| `commit_prefix`  | `[{key}]`              | Commit message prefix template                 |
+| `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template                         |
+| `sign_commits`   | `false`                | GPG-sign commits                               |
+| `stash_on_start` | `false`                | Auto-stash changes before creating task branch |
+| `auto_pop_stash` | `true`                 | Auto-pop stash after branch creation           |
 
 ## Stash Behavior
 
@@ -43,12 +43,12 @@ See [`mehr start --stash`](../cli/start.md#start-with-stash-uncommitted-changes)
 
 ## Template Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{key}` | External key (from filename/frontmatter) | `FEATURE-123` |
-| `{task_id}` | Internal task ID | `a1b2c3d4` |
-| `{type}` | Task type from filename prefix | `feature`, `fix` |
-| `{slug}` | URL-safe slugified title | `add-user-auth` |
+| Variable    | Description                              | Example          |
+|-------------|------------------------------------------|------------------|
+| `{key}`     | External key (from filename/frontmatter) | `FEATURE-123`    |
+| `{task_id}` | Internal task ID                         | `a1b2c3d4`       |
+| `{type}`    | Task type from filename prefix           | `feature`, `fix` |
+| `{slug}`    | URL-safe slugified title                 | `add-user-auth`  |
 
 ## See Also
 

@@ -17,17 +17,17 @@ browser:
   cookie_dir: ""                   # Custom cookie directory (default: ~/.valksor/mehrhof/)
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `enabled` | `false` | Enable browser automation |
-| `headless` | `false` | Run browser in headless mode |
-| `port` | `0` | CDP port (0 = random isolated, 9222 = existing Chrome) |
-| `timeout` | `30` | Operation timeout in seconds |
-| `screenshot_dir` | `.mehrhof/screenshots` | Directory for screenshots |
-| `cookie_profile` | `"default"` | Cookie profile name for session persistence |
-| `cookie_auto_load` | `true` | Auto-load cookies on browser connect |
-| `cookie_auto_save` | `true` | Auto-save cookies on browser disconnect |
-| `cookie_dir` | `""` | Custom cookie storage directory (default: `~/.valksor/mehrhof/`) |
+| Setting            | Default                | Description                                                      |
+|--------------------|------------------------|------------------------------------------------------------------|
+| `enabled`          | `false`                | Enable browser automation                                        |
+| `headless`         | `false`                | Run browser in headless mode                                     |
+| `port`             | `0`                    | CDP port (0 = random isolated, 9222 = existing Chrome)           |
+| `timeout`          | `30`                   | Operation timeout in seconds                                     |
+| `screenshot_dir`   | `.mehrhof/screenshots` | Directory for screenshots                                        |
+| `cookie_profile`   | `"default"`            | Cookie profile name for session persistence                      |
+| `cookie_auto_load` | `true`                 | Auto-load cookies on browser connect                             |
+| `cookie_auto_save` | `true`                 | Auto-save cookies on browser disconnect                          |
+| `cookie_dir`       | `""`                   | Custom cookie storage directory (default: `~/.valksor/mehrhof/`) |
 
 ## Session Management
 

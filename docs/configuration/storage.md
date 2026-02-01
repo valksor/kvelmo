@@ -79,12 +79,12 @@ project/
 
 The `<project-id>` is automatically derived from your git remote:
 
-| Git Remote URL | Project ID |
-|----------------|------------|
-| `https://github.com/user/repo` | `github.com-user-repo` |
-| `git@github.com:user/project.git` | `github.com-user-project` |
+| Git Remote URL                              | Project ID                          |
+|---------------------------------------------|-------------------------------------|
+| `https://github.com/user/repo`              | `github.com-user-repo`              |
+| `git@github.com:user/project.git`           | `github.com-user-project`           |
 | `https://gitlab.com/group/subgroup/project` | `gitlab.com-group-subgroup-project` |
-| No remote (local) | `local-<hash>` |
+| No remote (local)                           | `local-<hash>`                      |
 
 ## See Also
 

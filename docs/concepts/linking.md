@@ -30,14 +30,14 @@ References are the fundamental unit of linking. They use the `[[...]]` syntax in
 
 ### Entity Types
 
-| Type | Description | Entity ID Format |
-|------|-------------|------------------|
-| `spec` | Specification | `spec:task-id:N` |
-| `note` | Task notes | `note:task-id:notes` |
-| `session` | Session log | `session:task-id:timestamp` |
-| `decision` | Decision record | `decision:task-id:id` |
-| `solution` | Solution record | `solution:task-id:id` |
-| `error` | Error record | `error:task-id:id` |
+| Type       | Description     | Entity ID Format            |
+|------------|-----------------|-----------------------------|
+| `spec`     | Specification   | `spec:task-id:N`            |
+| `note`     | Task notes      | `note:task-id:notes`        |
+| `session`  | Session log     | `session:task-id:timestamp` |
+| `decision` | Decision record | `decision:task-id:id`       |
+| `solution` | Solution record | `solution:task-id:id`       |
+| `error`    | Error record    | `error:task-id:id`          |
 
 ### Links
 
@@ -61,9 +61,9 @@ Links are created when:
 
 The link index maintains both directions:
 
-| Index Type | Purpose | Example |
-|------------|---------|---------|
-| **Forward** | What entity X references | `spec:task-123:1 → spec:task-123:2` |
+| Index Type   | Purpose                  | Example                                 |
+|--------------|--------------------------|-----------------------------------------|
+| **Forward**  | What entity X references | `spec:task-123:1 → spec:task-123:2`     |
 | **Backward** | What references entity X | `note:task-123:notes → spec:task-123:1` |
 
 This enables efficient queries in both directions:
@@ -76,9 +76,9 @@ This enables efficient queries in both directions:
 
 Links use a hybrid storage approach:
 
-| Storage | Location | Purpose |
-|---------|----------|---------|
-| **JSON Index** | `~/.valksor/mehrhof/workspaces/<project>/links/index.json` | O(1) link lookups |
+| Storage           | Location                                                   | Purpose                 |
+|-------------------|------------------------------------------------------------|-------------------------|
+| **JSON Index**    | `~/.valksor/mehrhof/workspaces/<project>/links/index.json` | O(1) link lookups       |
 | **Name Registry** | `~/.valksor/mehrhof/workspaces/<project>/links/names.json` | Human name → ID mapping |
 
 The index uses atomic writes (temp file + rename) to prevent corruption.
@@ -117,13 +117,13 @@ Resolution order:
 
 Links support structured queries beyond semantic search:
 
-| Query Type | Description | Example |
-|------------|-------------|---------|
-| **FindLinks** | Search with filters | `FindLinks(From("spec:123:1"), OfType("decision"))` |
-| **FindBacklinks** | Reverse direction lookup | `FindBacklinks("spec:123:1")` |
-| **FindOrphans** | Entities with no outgoing links | `FindOrphans()` |
-| **FindPath** | Shortest path between entities | `FindPath("spec:123:1", "decision:456:abc")` |
-| **FindConnectedEntities** | Reachability analysis | `FindConnectedEntities("spec:123:1", 3)` |
+| Query Type                | Description                     | Example                                             |
+|---------------------------|---------------------------------|-----------------------------------------------------|
+| **FindLinks**             | Search with filters             | `FindLinks(From("spec:123:1"), OfType("decision"))` |
+| **FindBacklinks**         | Reverse direction lookup        | `FindBacklinks("spec:123:1")`                       |
+| **FindOrphans**           | Entities with no outgoing links | `FindOrphans()`                                     |
+| **FindPath**              | Shortest path between entities  | `FindPath("spec:123:1", "decision:456:abc")`        |
+| **FindConnectedEntities** | Reachability analysis           | `FindConnectedEntities("spec:123:1", 3)`            |
 
 ## Advanced Features
 
@@ -227,12 +227,12 @@ Rebuilding the index:
 
 ### Query Performance
 
-| Operation | Complexity | Notes |
-|------------|------------|-------|
-| FindLinks | O(L) | L = links from source |
-| FindBacklinks | O(L) | L = links to target |
-| FindPath | O(V+E) | V = entities, E = edges (BFS) |
-| FindOrphans | O(V) | V = entities |
+| Operation     | Complexity | Notes                         |
+|---------------|------------|-------------------------------|
+| FindLinks     | O(L)       | L = links from source         |
+| FindBacklinks | O(L)       | L = links to target           |
+| FindPath      | O(V+E)     | V = entities, E = edges (BFS) |
+| FindOrphans   | O(V)       | V = entities                  |
 
 ## Best Practices
 

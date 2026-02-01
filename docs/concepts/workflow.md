@@ -10,18 +10,18 @@ Mehrhof uses a structured workflow to manage the task lifecycle. Understanding t
 
 ### Primary States
 
-| State            | Description                       | CLI Action | Web UI Action |
-| ---------------- | --------------------------------- | ----------- | ------------ |
-| **idle**         | Task registered, ready for action | `mehr plan` | Click **Plan** button |
-| **planning**     | Creating a structured plan        | Wait | Watch output |
-| **implementing** | Executing the plan to create changes | Wait | Watch output |
-| **reviewing**    | Quality checks in progress        | Wait | Watch output |
-| **done**         | Task completed and merged         | None | None |
+| State            | Description                          | CLI Action  | Web UI Action         |
+|------------------|--------------------------------------|-------------|-----------------------|
+| **idle**         | Task registered, ready for action    | `mehr plan` | Click **Plan** button |
+| **planning**     | Creating a structured plan           | Wait        | Watch output          |
+| **implementing** | Executing the plan to create changes | Wait        | Watch output          |
+| **reviewing**    | Quality checks in progress           | Wait        | Watch output          |
+| **done**         | Task completed and merged            | None        | None                  |
 
 ### Auxiliary States
 
 | State             | Description               |
-| ----------------- | ------------------------- |
+|-------------------|---------------------------|
 | **checkpointing** | Creating checkpoint       |
 | **reverting**     | Undo in progress          |
 | **restoring**     | Redo in progress          |
@@ -121,20 +121,20 @@ What happens:
 
 Guards are conditions that must be met for transitions:
 
-| Guard     | Required For | Condition                       |
-| --------- | ------------ | ------------------------------- |
-| HasSource | start        | Task has valid description      |
-| HasSpecs  | implement    | Plan files exist                |
-| CanUndo   | undo         | Checkpoint history available    |
-| CanRedo   | redo         | Redo stack not empty            |
-| CanFinish | finish       | Task work exists                |
+| Guard     | Required For | Condition                    |
+|-----------|--------------|------------------------------|
+| HasSource | start        | Task has valid description   |
+| HasSpecs  | implement    | Plan files exist             |
+| CanUndo   | undo         | Checkpoint history available |
+| CanRedo   | redo         | Redo stack not empty         |
+| CanFinish | finish       | Task work exists             |
 
 ## Events
 
 Events trigger state transitions:
 
 | Event          | Description             |
-| -------------- | ----------------------- |
+|----------------|-------------------------|
 | EventStart     | Begin task registration |
 | EventPlan      | Enter planning phase    |
 | EventImplement | Enter creation phase    |

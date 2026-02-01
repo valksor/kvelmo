@@ -39,15 +39,15 @@ Each stack has:
 
 Tasks in a stack progress through states:
 
-| State | Description |
-|-------|-------------|
-| `active` | Being worked on |
-| `pending-review` | PR open, awaiting review |
-| `approved` | PR approved, ready to merge |
-| `merged` | PR merged to target |
-| `needs-rebase` | Parent merged, needs rebasing |
-| `conflict` | Rebase failed due to conflicts |
-| `abandoned` | PR closed without merge |
+| State            | Description                    |
+|------------------|--------------------------------|
+| `active`         | Being worked on                |
+| `pending-review` | PR open, awaiting review       |
+| `approved`       | PR approved, ready to merge    |
+| `merged`         | PR merged to target            |
+| `needs-rebase`   | Parent merged, needs rebasing  |
+| `conflict`       | Rebase failed due to conflicts |
+| `abandoned`      | PR closed without merge        |
 
 ### State Transitions
 
@@ -172,10 +172,10 @@ This ensures:
 
 The rebase target is determined by the parent's state:
 
-| Parent State | Rebase Target |
-|--------------|---------------|
-| `merged` | Stack's target branch (e.g., `main`) |
-| `active`, `pending-review`, etc. | Parent's branch |
+| Parent State                     | Rebase Target                        |
+|----------------------------------|--------------------------------------|
+| `merged`                         | Stack's target branch (e.g., `main`) |
+| `active`, `pending-review`, etc. | Parent's branch                      |
 
 ### Atomic Failure
 
@@ -218,10 +218,10 @@ PR status is synced via provider integration:
 
 ### Automatic vs Manual Sync
 
-| Mode | Behavior |
-|------|----------|
-| **Manual** | Run `mehr stack sync` or click "Sync" in Web UI |
-| **Auto** | Polling during `mehr auto` mode (configurable interval) |
+| Mode       | Behavior                                                |
+|------------|---------------------------------------------------------|
+| **Manual** | Run `mehr stack sync` or click "Sync" in Web UI         |
+| **Auto**   | Polling during `mehr auto` mode (configurable interval) |
 
 ## Integration Points
 
@@ -258,10 +258,10 @@ Uses provider capabilities:
 
 Mehrhof has two dependency systems:
 
-| System | Purpose | When Used |
-|--------|---------|-----------|
-| **TaskQueue** | Plans tasks before provider submission | Project planning |
-| **Stack** | Manages features already in progress | Active development |
+| System        | Purpose                                | When Used          |
+|---------------|----------------------------------------|--------------------|
+| **TaskQueue** | Plans tasks before provider submission | Project planning   |
+| **Stack**     | Manages features already in progress   | Active development |
 
 TaskQueue handles "what to do next", Stack handles "what depends on what in git".
 
@@ -269,9 +269,9 @@ TaskQueue handles "what to do next", Stack handles "what depends on what in git"
 
 Links create knowledge connections between entities. Stacks create git branch dependencies:
 
-| System | Connection Type | Example |
-|--------|----------------|---------|
-| **Links** | Knowledge graph | `[[spec:1]]` references `[[spec:2]]` |
+| System    | Connection Type  | Example                               |
+|-----------|------------------|---------------------------------------|
+| **Links** | Knowledge graph  | `[[spec:1]]` references `[[spec:2]]`  |
 | **Stack** | Git dependencies | `feature/b` branches from `feature/a` |
 
 Both can coexist: a task in a stack can have links to other specs.
