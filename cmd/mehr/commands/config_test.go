@@ -4,11 +4,17 @@
 package commands
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/paths"
 )
 
 // Note: TestConfigCommand_Structure is in common_test.go
@@ -320,5 +326,170 @@ func TestApplyProjectCustomizations(t *testing.T) {
 			applyProjectCustomizations(cfg, tt.projectType)
 			tt.checkConfig(t, cfg)
 		})
+	}
+}
+
+func TestRunConfigInit_NewWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	origForce := configInitForce
+	origProject := configInitProject
+
+	defer func() {
+		configInitForce = origForce
+		configInitProject = origProject
+	}()
+
+	configInitForce = false
+	configInitProject = ""
+
+	t.Chdir(tmpDir)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(context.Background())
+
+	err := runConfigInit(cmd, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runConfigInit() error = %v", err)
+	}
+
+	if !strings.Contains(output, "Creating new configuration") {
+		t.Errorf("output missing 'Creating new configuration'\nGot:\n%s", output)
+	}
+
+	if !strings.Contains(output, "Configuration created successfully") {
+		t.Errorf("output missing 'Configuration created successfully'\nGot:\n%s", output)
+	}
+
+	// Verify the config file was created
+	configPath := filepath.Join(tmpDir, ".mehrhof", "config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("config file was not created")
+	}
+}
+
+func TestRunConfigInit_ExistingConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	origForce := configInitForce
+	origProject := configInitProject
+
+	defer func() {
+		configInitForce = origForce
+		configInitProject = origProject
+	}()
+
+	configInitForce = false
+	configInitProject = ""
+
+	// Create workspace with existing config
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+
+	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, cfg)
+	if err != nil {
+		t.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	t.Chdir(tmpDir)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(context.Background())
+
+	runErr := runConfigInit(cmd, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if runErr != nil {
+		t.Fatalf("runConfigInit() error = %v", runErr)
+	}
+
+	if !strings.Contains(output, "WARNING") {
+		t.Errorf("output missing 'WARNING'\nGot:\n%s", output)
+	}
+
+	if !strings.Contains(output, "already exists") {
+		t.Errorf("output missing 'already exists'\nGot:\n%s", output)
+	}
+}
+
+func TestRunConfigInit_WithProjectDetection(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	origForce := configInitForce
+	origProject := configInitProject
+
+	defer func() {
+		configInitForce = origForce
+		configInitProject = origProject
+	}()
+
+	configInitForce = false
+	configInitProject = ""
+
+	// Create a go.mod so detection picks up "go"
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile go.mod: %v", err)
+	}
+
+	t.Chdir(tmpDir)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(context.Background())
+
+	err := runConfigInit(cmd, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runConfigInit() error = %v", err)
+	}
+
+	if !strings.Contains(output, "Detected project type:") {
+		t.Errorf("output missing 'Detected project type:'\nGot:\n%s", output)
 	}
 }
