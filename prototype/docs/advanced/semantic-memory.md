@@ -45,13 +45,13 @@ Embeddings are numerical representations of text that capture semantic meaning:
 
 The memory system stores different document types:
 
-| Type | Description | Content |
-|------|-------------|---------|
-| `code_change` | Git diffs | Unified diff of code changes |
-| `specification` | Implementation plans | Specification file content |
-| `session` | Agent conversations | Full transcript of agent interactions |
-| `solution` | Fixes and corrections | Problem → solution pairs |
-| `decision` | Architectural decisions | Decision records and rationale |
+| Type            | Description             | Content                               |
+|-----------------|-------------------------|---------------------------------------|
+| `code_change`   | Git diffs               | Unified diff of code changes          |
+| `specification` | Implementation plans    | Specification file content            |
+| `session`       | Agent conversations     | Full transcript of agent interactions |
+| `solution`      | Fixes and corrections   | Problem → solution pairs              |
+| `decision`      | Architectural decisions | Decision records and rationale        |
 
 ### Document Structure
 
@@ -246,19 +246,19 @@ memory:
 
 ### Indexing Performance
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Store document | <10ms | Hash-based embedding |
-| Generate embedding | <5ms | SHA256-based |
-| Search (1000 docs) | <50ms | In-memory ChromaDB |
+| Operation          | Time  | Notes                |
+|--------------------|-------|----------------------|
+| Store document     | <10ms | Hash-based embedding |
+| Generate embedding | <5ms  | SHA256-based         |
+| Search (1000 docs) | <50ms | In-memory ChromaDB   |
 
 ### Storage Requirements
 
-| Documents | Storage | Notes |
-|-----------|---------|-------|
-| 100 | ~5MB | Depends on content size |
-| 1000 | ~50MB | Typical project |
-| 10000 | ~500MB | Large project |
+| Documents | Storage | Notes                   |
+|-----------|---------|-------------------------|
+| 100       | ~5MB    | Depends on content size |
+| 1000      | ~50MB   | Typical project         |
+| 10000     | ~500MB  | Large project           |
 
 ### Optimization Tips
 

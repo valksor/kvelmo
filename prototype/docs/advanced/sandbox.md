@@ -14,16 +14,16 @@ Mehrhof supports sandboxing AI agents to prevent unauthorized access to your sys
 
 The sandbox is designed to be permissive enough for agents to do real work while restricting access to sensitive areas:
 
-| Resource | Access | Notes |
-|----------|--------|-------|
-| Project directory | ✅ Read/Write | Primary workspace |
-| `/tmp` | ✅ Read/Write | tmpfs mount |
-| `$HOME/.claude` | ✅ Read/Write | For Claude Code plans |
-| `/dev/null`, `/dev/zero`, `/dev/random`, `/dev/urandom` | ✅ Read | Device access |
-| `/proc` | ✅ Read | Process information |
-| Network | ✅ Full access | Required for LLM APIs |
-| System binaries | ✅ Execute | git, node, python, go, etc. |
-| Shared libraries | ✅ Read | `.so`/`.dylib` files |
+| Resource                                                | Access        | Notes                       |
+|---------------------------------------------------------|---------------|-----------------------------|
+| Project directory                                       | ✅ Read/Write  | Primary workspace           |
+| `/tmp`                                                  | ✅ Read/Write  | tmpfs mount                 |
+| `$HOME/.claude`                                         | ✅ Read/Write  | For Claude Code plans       |
+| `/dev/null`, `/dev/zero`, `/dev/random`, `/dev/urandom` | ✅ Read        | Device access               |
+| `/proc`                                                 | ✅ Read        | Process information         |
+| Network                                                 | ✅ Full access | Required for LLM APIs       |
+| System binaries                                         | ✅ Execute     | git, node, python, go, etc. |
+| Shared libraries                                        | ✅ Read        | `.so`/`.dylib` files        |
 
 **Explicitly Denied:**
 - Access to other directories in `$HOME`
@@ -66,8 +66,8 @@ mehr --sandbox start task.md
 
 Different agents may add sandbox-specific flags:
 
-| Agent | Flag | Purpose |
-|-------|------|---------|
+| Agent | Flag     | Purpose                                      |
+|-------|----------|----------------------------------------------|
 | Codex | `--yolo` | Skip confirmations (can't answer in sandbox) |
 
 ## Platform Details
@@ -81,19 +81,19 @@ Linux sandboxes use **unprivileged user namespaces** - no root required!
 ┌─────────────────────────────────────────────────────┐
 │                    Host System                      │
 ├─────────────────────────────────────────────────────┤
-│  unshare --user --mount --pid --fork               │
-│  ┌─────────────────────────────────────────────┐   │
-│  │          User Namespace (mapped to root)    │   │
-│  │  ┌───────────────────────────────────────┐  │   │
-│  │  │       New Root (pivot_root)          │  │   │
-│  │  │  /tmp        (tmpfs)                 │  │   │
-│  │  │  /workspace   (bind mount → project)  │  │   │
-│  │  │  /dev/*      (device nodes)          │  │   │
-│  │  │  /proc       (procfs)                │  │   │
-│  │  │  /bin, /usr/bin (bind mounts)        │  │   │
-│  │  │  /lib, /usr/lib (bind mounts)        │  │   │
-│  │  └───────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────┘   │
+│  unshare --user --mount --pid --fork                │
+│  ┌─────────────────────────────────────────────┐    │
+│  │          User Namespace (mapped to root)    │    │
+│  │  ┌───────────────────────────────────────┐  │    │
+│  │  │       New Root (pivot_root)           │  │    │
+│  │  │  /tmp        (tmpfs)                  │  │    │
+│  │  │  /workspace   (bind mount → project)  │  │    │
+│  │  │  /dev/*      (device nodes)           │  │    │
+│  │  │  /proc       (procfs)                 │  │    │
+│  │  │  /bin, /usr/bin (bind mounts)         │  │    │
+│  │  │  /lib, /usr/lib (bind mounts)         │  │    │
+│  │  └───────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────┘
 ```
 
