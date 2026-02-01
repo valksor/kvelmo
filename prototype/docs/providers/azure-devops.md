@@ -51,12 +51,12 @@ Required scopes: `Work Items (Read, Write)`, `Code (Read, Write)` for PR creatio
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with ID | `azdo:123` |
-| Short scheme | `azure:456` |
-| Org/project with ID | `azdo:org/project#123` |
-| URL | `azdo:https://dev.azure.com/org/project/_workitems/edit/123` |
+| Format              | Example                                                      |
+|---------------------|--------------------------------------------------------------|
+| Scheme with ID      | `azdo:123`                                                   |
+| Short scheme        | `azure:456`                                                  |
+| Org/project with ID | `azdo:org/project#123`                                       |
+| URL                 | `azdo:https://dev.azure.com/org/project/_workitems/edit/123` |
 
 ## Features
 
@@ -71,22 +71,22 @@ Required scopes: `Work Items (Read, Write)`, `Code (Read, Write)` for PR creatio
 
 ## Status Mapping
 
-| Azure DevOps State | Provider Status |
-|--------------------|-----------------|
-| New, To Do | Open |
-| Active, In Progress, Doing | In Progress |
-| Resolved | Review |
-| Closed, Done | Done |
-| Removed | Closed |
+| Azure DevOps State         | Provider Status |
+|----------------------------|-----------------|
+| New, To Do                 | Open            |
+| Active, In Progress, Doing | In Progress     |
+| Resolved                   | Review          |
+| Closed, Done               | Done            |
+| Removed                    | Closed          |
 
 ## Priority Mapping
 
 | Azure DevOps Priority | Provider Priority |
 |-----------------------|-------------------|
-| 1 | Critical |
-| 2 | High |
-| 3 | Normal |
-| 4 | Low |
+| 1                     | Critical          |
+| 2                     | High              |
+| 3                     | Normal            |
+| 4                     | Low               |
 
 ## Work Item Types
 

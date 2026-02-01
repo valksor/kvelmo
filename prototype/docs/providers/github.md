@@ -78,12 +78,12 @@ The GitHub provider tries token sources in this order:
 
 ## Task Type Label Mapping
 
-| GitHub Label | Task Type |
-|--------------|-----------|
-| `bug`, `bugfix`, `fix` | `fix` |
-| `feature`, `enhancement` | `feature` |
-| `docs`, `documentation` | `docs` |
-| `refactor` | `refactor` |
-| `chore` | `chore` |
-| `test` | `test` |
-| `ci` | `ci` |
+| GitHub Label             | Task Type  |
+|--------------------------|------------|
+| `bug`, `bugfix`, `fix`   | `fix`      |
+| `feature`, `enhancement` | `feature`  |
+| `docs`, `documentation`  | `docs`     |
+| `refactor`               | `refactor` |
+| `chore`                  | `chore`    |
+| `test`                   | `test`     |
+| `ci`                     | `ci`       |

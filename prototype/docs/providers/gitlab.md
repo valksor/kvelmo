@@ -60,12 +60,12 @@ Create a Personal Access Token in GitLab:
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with IID | `gitlab:123` |
-| Short scheme | `gl:456` |
+| Format                | Example                    |
+|-----------------------|----------------------------|
+| Scheme with IID       | `gitlab:123`               |
+| Short scheme          | `gl:456`                   |
 | Explicit project path | `gitlab:group/project#123` |
-| Project ID with IID | `gitlab:12345#678` |
+| Project ID with IID   | `gitlab:12345#678`         |
 
 ## Features
 
@@ -82,28 +82,28 @@ Create a Personal Access Token in GitLab:
 
 ## Task Type Label Mapping
 
-| GitLab Label | Task Type |
-|--------------|-----------|
-| `bug`, `bugfix`, `fix` | `fix` |
-| `feature`, `enhancement` | `feature` |
-| `docs`, `documentation` | `docs` |
-| `refactor` | `refactor` |
-| `chore` | `chore` |
-| `test` | `test` |
-| `ci` | `ci` |
+| GitLab Label             | Task Type  |
+|--------------------------|------------|
+| `bug`, `bugfix`, `fix`   | `fix`      |
+| `feature`, `enhancement` | `feature`  |
+| `docs`, `documentation`  | `docs`     |
+| `refactor`               | `refactor` |
+| `chore`                  | `chore`    |
+| `test`                   | `test`     |
+| `ci`                     | `ci`       |
 
 ## Status Mapping
 
 | GitLab State | Provider Status |
 |--------------|-----------------|
-| `opened` | Open |
-| `closed` | Closed |
+| `opened`     | Open            |
+| `closed`     | Closed          |
 
 ## Priority Label Mapping
 
-| GitLab Label | Provider Priority |
-|--------------|-------------------|
-| `critical`, `urgent` | Critical |
-| `priority:high`, `high-priority` | High |
-| `priority:low`, `low-priority` | Low |
-| *(no match)* | Normal |
+| GitLab Label                     | Provider Priority |
+|----------------------------------|-------------------|
+| `critical`, `urgent`             | Critical          |
+| `priority:high`, `high-priority` | High              |
+| `priority:low`, `low-priority`   | Low               |
+| *(no match)*                     | Normal            |

@@ -40,12 +40,12 @@ youtrack:
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with ID | `youtrack:ABC-123` |
-| Short scheme | `yt:ABC-123` |
-| Bare ID | `ABC-123` (auto-detected) |
-| Issue URL | `https://company.myjetbrains.com/youtrack/issue/ABC-123` |
+| Format         | Example                                                  |
+|----------------|----------------------------------------------------------|
+| Scheme with ID | `youtrack:ABC-123`                                       |
+| Short scheme   | `yt:ABC-123`                                             |
+| Bare ID        | `ABC-123` (auto-detected)                                |
+| Issue URL      | `https://company.myjetbrains.com/youtrack/issue/ABC-123` |
 
 ## Features
 
@@ -60,19 +60,19 @@ youtrack:
 
 ## State Mapping
 
-| Mehrhof Status | YouTrack States |
-|----------------|-----------------|
-| `open` | New, Submitted, To be done |
-| `in_progress` | In Progress, Active |
-| `review` | Code Review, Verification |
-| `done` | Fixed, Done, Completed, Verified, Resolved |
-| `closed` | Closed, Won't fix, Can't reproduce, Duplicate, Obsolete |
+| Mehrhof Status | YouTrack States                                         |
+|----------------|---------------------------------------------------------|
+| `open`         | New, Submitted, To be done                              |
+| `in_progress`  | In Progress, Active                                     |
+| `review`       | Code Review, Verification                               |
+| `done`         | Fixed, Done, Completed, Verified, Resolved              |
+| `closed`       | Closed, Won't fix, Can't reproduce, Duplicate, Obsolete |
 
 ## Priority Mapping
 
-| Mehrhof Priority | YouTrack Priority |
-|------------------|-------------------|
-| `critical` | Critical, Show-stopper, Urgent |
-| `high` | Major, High |
-| `normal` | Normal |
-| `low` | Minor, Low |
+| Mehrhof Priority | YouTrack Priority              |
+|------------------|--------------------------------|
+| `critical`       | Critical, Show-stopper, Urgent |
+| `high`           | Major, High                    |
+| `normal`         | Normal                         |
+| `low`            | Minor, Low                     |

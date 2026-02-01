@@ -43,11 +43,11 @@ mehr project queues
 
 Tasks in queues have priority levels that map to Mehrhof's priority system:
 
-| Queue Priority | Mehrhof Priority |
-|----------------|------------------|
-| 0-1 (High) | High |
-| 2 (Normal) | Normal |
-| 3+ (Low) | Low |
+| Queue Priority   | Mehrhof Priority |
+|------------------|------------------|
+| 0-1 (High)       | High             |
+| 2 (Normal)       | Normal           |
+| 3+ (Low)         | Low              |
 | Invalid/Negative | Normal (default) |
 
 ## Workflow Integration

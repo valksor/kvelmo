@@ -7,52 +7,52 @@ Providers are task sources that Mehrhof can read from and interact with. Each pr
 
 ## Available Providers
 
-| Provider | Schemes | Description |
-|----------|---------|-------------|
-| **Empty** | `empty:` | Create tasks without a source |
-| **File** | `file:` | Local markdown files |
-| **Directory** | `dir:` | Local directories with markdown files |
-| **GitHub** | `github:`, `gh:` | GitHub issues |
-| **GitLab** | `gitlab:`, `gl:` | GitLab issues |
-| **Jira** | `jira:`, `j:` | Jira issues |
-| **Linear** | `linear:`, `ln:` | Linear issues |
-| **Notion** | `notion:`, `nt:` | Notion pages and databases |
-| **Wrike** | `wrike:`, `wk:` | Wrike tasks |
-| **YouTrack** | `youtrack:`, `yt:` | YouTrack issues |
-| **Trello** | `trello:`, `tr:` | Trello cards |
-| **Asana** | `asana:`, `as:` | Asana tasks |
-| **ClickUp** | `clickup:`, `cu:` | ClickUp tasks |
-| **Azure DevOps** | `azdo:`, `azure:` | Azure DevOps work items |
-| **Bitbucket** | `bitbucket:`, `bb:` | Bitbucket issues |
-| **Queue** | `queue:` | Local task queues |
+| Provider         | Schemes             | Description                           |
+|------------------|---------------------|---------------------------------------|
+| **Empty**        | `empty:`            | Create tasks without a source         |
+| **File**         | `file:`             | Local markdown files                  |
+| **Directory**    | `dir:`              | Local directories with markdown files |
+| **GitHub**       | `github:`, `gh:`    | GitHub issues                         |
+| **GitLab**       | `gitlab:`, `gl:`    | GitLab issues                         |
+| **Jira**         | `jira:`, `j:`       | Jira issues                           |
+| **Linear**       | `linear:`, `ln:`    | Linear issues                         |
+| **Notion**       | `notion:`, `nt:`    | Notion pages and databases            |
+| **Wrike**        | `wrike:`, `wk:`     | Wrike tasks                           |
+| **YouTrack**     | `youtrack:`, `yt:`  | YouTrack issues                       |
+| **Trello**       | `trello:`, `tr:`    | Trello cards                          |
+| **Asana**        | `asana:`, `as:`     | Asana tasks                           |
+| **ClickUp**      | `clickup:`, `cu:`   | ClickUp tasks                         |
+| **Azure DevOps** | `azdo:`, `azure:`   | Azure DevOps work items               |
+| **Bitbucket**    | `bitbucket:`, `bb:` | Bitbucket issues                      |
+| **Queue**        | `queue:`            | Local task queues                     |
 
 ## Provider Capabilities
 
-| Capability | Description |
-|------------|-------------|
-| `read` | Fetch individual tasks |
-| `list` | Browse/list multiple tasks |
-| `comment` | Add comments to tasks |
-| `fetch_comments` | Retrieve existing comments |
-| `update_status` | Change task status |
-| `manage_labels` | Add/remove labels |
-| `create_work_unit` | Create new tasks |
-| `create_pr` | Create pull requests |
-| `download_attachment` | Download file attachments |
-| `snapshot` | Capture task content for storage |
-| `fetch_subtasks` | Retrieve subtasks/child items |
+| Capability            | Description                      |
+|-----------------------|----------------------------------|
+| `read`                | Fetch individual tasks           |
+| `list`                | Browse/list multiple tasks       |
+| `comment`             | Add comments to tasks            |
+| `fetch_comments`      | Retrieve existing comments       |
+| `update_status`       | Change task status               |
+| `manage_labels`       | Add/remove labels                |
+| `create_work_unit`    | Create new tasks                 |
+| `create_pr`           | Create pull requests             |
+| `download_attachment` | Download file attachments        |
+| `snapshot`            | Capture task content for storage |
+| `fetch_subtasks`      | Retrieve subtasks/child items    |
 
 ### Subtask Support
 
 Providers implement subtasks differently based on their API:
 
-| Provider | Subtask Source |
-|----------|----------------|
-| Jira, Asana, ClickUp, Wrike, YouTrack | Native subtask API |
-| Linear | Child issues via GraphQL |
-| Azure DevOps | Child work items via relations |
-| Trello | Checklist items converted to subtasks |
-| GitHub, GitLab, Bitbucket | Task lists parsed from markdown (`- [ ]` / `- [x]`) |
+| Provider                              | Subtask Source                                      |
+|---------------------------------------|-----------------------------------------------------|
+| Jira, Asana, ClickUp, Wrike, YouTrack | Native subtask API                                  |
+| Linear                                | Child issues via GraphQL                            |
+| Azure DevOps                          | Child work items via relations                      |
+| Trello                                | Checklist items converted to subtasks               |
+| GitHub, GitLab, Bitbucket             | Task lists parsed from markdown (`- [ ]` / `- [x]`) |
 
 ## Plugin Providers
 
@@ -74,24 +74,24 @@ Provider plugins communicate via JSON-RPC 2.0 over stdin/stdout. See the plugin 
 
 ## Provider Reference Formats
 
-| Provider | Format | Example |
-|----------|--------|---------|
-| Empty | `empty:ID` or `empty:"Description"` | `empty:FEATURE-1`, `empty:"Add authentication"` |
-| File | `file:path/to/file.md` | `file:tasks/auth.md` |
-| Directory | `dir:path/to/directory` | `dir:./tasks` |
-| GitHub | `github:N` or `github:owner/repo#N` | `github:123`, `github:owner/repo#456` |
-| GitLab | `gitlab:N` or `gitlab:group/project#N` | `gitlab:123`, `gitlab:group/project#456` |
-| Jira | `jira:KEY-NUM` or URL | `jira:JIRA-123`, `jira:https://domain.atlassian.net/browse/...` |
-| Linear | `linear:TEAM-NUM` or URL | `linear:ENG-123`, `linear:https://linear.app/...` |
-| Notion | `notion:page-id` or URL | `notion:a1b2c3d4e5f6...`, `notion:https://notion.so/...` |
-| Wrike | `wrike:ID` or permalink | `wrike:IEAGI2D4I4AL7YNL` |
-| YouTrack | `youtrack:ABC-123` or URL | `youtrack:ABC-123`, `youtrack:https://...` |
-| Trello | `trello:ID` or `trello:shortLink` | `trello:507f1f77bcf86cd799439011`, `trello:abc12XYZ` |
-| Asana | `asana:TASK-GID` | `asana:1234567890123456` |
-| ClickUp | `clickup:ID` or `clickup:TASK-ID` | `clickup:abc123xyz`, `clickup:TASK-123` |
-| Azure DevOps | `azdo:ID` or `azdo:org/project#ID` | `azdo:123`, `azdo:org/project#456` |
-| Bitbucket | `bitbucket:ID` or `bb:workspace/repo#ID` | `bb:123`, `bb:workspace/repo#456` |
-| Queue | `queue:queue-id/task-id` | `queue:backlog/fix-auth`, `queue:sprint-1/task-42` |
+| Provider     | Format                                   | Example                                                         |
+|--------------|------------------------------------------|-----------------------------------------------------------------|
+| Empty        | `empty:ID` or `empty:"Description"`      | `empty:FEATURE-1`, `empty:"Add authentication"`                 |
+| File         | `file:path/to/file.md`                   | `file:tasks/auth.md`                                            |
+| Directory    | `dir:path/to/directory`                  | `dir:./tasks`                                                   |
+| GitHub       | `github:N` or `github:owner/repo#N`      | `github:123`, `github:owner/repo#456`                           |
+| GitLab       | `gitlab:N` or `gitlab:group/project#N`   | `gitlab:123`, `gitlab:group/project#456`                        |
+| Jira         | `jira:KEY-NUM` or URL                    | `jira:JIRA-123`, `jira:https://domain.atlassian.net/browse/...` |
+| Linear       | `linear:TEAM-NUM` or URL                 | `linear:ENG-123`, `linear:https://linear.app/...`               |
+| Notion       | `notion:page-id` or URL                  | `notion:a1b2c3d4e5f6...`, `notion:https://notion.so/...`        |
+| Wrike        | `wrike:ID` or permalink                  | `wrike:IEAGI2D4I4AL7YNL`                                        |
+| YouTrack     | `youtrack:ABC-123` or URL                | `youtrack:ABC-123`, `youtrack:https://...`                      |
+| Trello       | `trello:ID` or `trello:shortLink`        | `trello:507f1f77bcf86cd799439011`, `trello:abc12XYZ`            |
+| Asana        | `asana:TASK-GID`                         | `asana:1234567890123456`                                        |
+| ClickUp      | `clickup:ID` or `clickup:TASK-ID`        | `clickup:abc123xyz`, `clickup:TASK-123`                         |
+| Azure DevOps | `azdo:ID` or `azdo:org/project#ID`       | `azdo:123`, `azdo:org/project#456`                              |
+| Bitbucket    | `bitbucket:ID` or `bb:workspace/repo#ID` | `bb:123`, `bb:workspace/repo#456`                               |
+| Queue        | `queue:queue-id/task-id`                 | `queue:backlog/fix-auth`, `queue:sprint-1/task-42`              |
 
 ## Auto-Detection
 

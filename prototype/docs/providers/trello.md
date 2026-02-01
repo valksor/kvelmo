@@ -47,12 +47,12 @@ Generate API credentials at: https://trello.com/app-key
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with card ID | `trello:507f1f77bcf86cd799439011` |
-| Short scheme | `tr:507f1f77bcf86cd799439011` |
-| Short link (8 chars) | `trello:abc12XYZ` |
-| Card URL | `trello:https://trello.com/c/abc12XYZ/card-name` |
+| Format               | Example                                          |
+|----------------------|--------------------------------------------------|
+| Scheme with card ID  | `trello:507f1f77bcf86cd799439011`                |
+| Short scheme         | `tr:507f1f77bcf86cd799439011`                    |
+| Short link (8 chars) | `trello:abc12XYZ`                                |
+| Card URL             | `trello:https://trello.com/c/abc12XYZ/card-name` |
 
 ## Features
 
@@ -68,13 +68,13 @@ Generate API credentials at: https://trello.com/app-key
 
 Status is determined by the card's list name (case-insensitive):
 
-| Trello List | Provider Status |
-|-------------|-----------------|
-| To Do, Backlog, Todo | Open |
-| In Progress, Doing, Started | In Progress |
-| In Review, Review, Reviewing | Review |
-| Done, Complete, Completed, Finished | Done |
-| Archived, Cancelled, Canceled | Closed |
+| Trello List                         | Provider Status |
+|-------------------------------------|-----------------|
+| To Do, Backlog, Todo                | Open            |
+| In Progress, Doing, Started         | In Progress     |
+| In Review, Review, Reviewing        | Review          |
+| Done, Complete, Completed, Finished | Done            |
+| Archived, Cancelled, Canceled       | Closed          |
 
 ## Moving Cards (Status Change)
 

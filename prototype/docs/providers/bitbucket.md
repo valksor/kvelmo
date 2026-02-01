@@ -50,12 +50,12 @@ Required permissions: `Issues: Read, Write`, `Repositories: Read, Write`, `Pull 
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with issue ID | `bitbucket:123` |
-| Short scheme | `bb:456` |
-| Workspace/repo with ID | `bb:workspace/repo#123` |
-| Issue URL | `bb:https://bitbucket.org/workspace/repo/issues/123` |
+| Format                 | Example                                              |
+|------------------------|------------------------------------------------------|
+| Scheme with issue ID   | `bitbucket:123`                                      |
+| Short scheme           | `bb:456`                                             |
+| Workspace/repo with ID | `bb:workspace/repo#123`                              |
+| Issue URL              | `bb:https://bitbucket.org/workspace/repo/issues/123` |
 
 ## Features
 
@@ -69,18 +69,18 @@ Required permissions: `Issues: Read, Write`, `Repositories: Read, Write`, `Pull 
 
 ## Status Mapping
 
-| Bitbucket State | Provider Status |
-|-----------------|-----------------|
-| new, open | Open |
-| on hold | In Progress |
-| resolved | Done |
-| closed, invalid, duplicate, wontfix | Closed |
+| Bitbucket State                     | Provider Status |
+|-------------------------------------|-----------------|
+| new, open                           | Open            |
+| on hold                             | In Progress     |
+| resolved                            | Done            |
+| closed, invalid, duplicate, wontfix | Closed          |
 
 ## Priority Mapping
 
 | Bitbucket Priority | Provider Priority |
 |--------------------|-------------------|
-| critical | Critical |
-| major | High |
-| minor | Normal |
-| trivial | Low |
+| critical           | Critical          |
+| major              | High              |
+| minor              | Normal            |
+| trivial            | Low               |

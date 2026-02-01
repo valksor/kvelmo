@@ -41,11 +41,11 @@ Create an API token at: https://app.clickup.com/settings/apps
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
+| Format              | Example             |
+|---------------------|---------------------|
 | Scheme with task ID | `clickup:abc123xyz` |
-| Short scheme | `cu:abc123xyz` |
-| Custom task ID | `cu:TASK-123` |
+| Short scheme        | `cu:abc123xyz`      |
+| Custom task ID      | `cu:TASK-123`       |
 
 ## Features
 
@@ -59,9 +59,9 @@ Create an API token at: https://app.clickup.com/settings/apps
 
 ## Status Mapping
 
-| ClickUp Status | Provider Status |
-|----------------|-----------------|
-| to do, open | Open |
-| in progress | In Progress |
-| in review | Review |
-| complete, closed | Done |
+| ClickUp Status   | Provider Status |
+|------------------|-----------------|
+| to do, open      | Open            |
+| in progress      | In Progress     |
+| in review        | Review          |
+| complete, closed | Done            |

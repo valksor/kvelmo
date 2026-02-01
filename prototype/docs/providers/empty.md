@@ -51,13 +51,13 @@ Then run 'mehr plan' again.
 
 ## Comparison with File Provider
 
-| Aspect | Empty Provider | File Provider |
-|--------|----------------|---------------|
-| **Task source** | None (in-memory) | Markdown file |
-| **Initial description** | Empty | From file content |
-| **Persistence** | Notes only | File snapshot + notes |
-| **Best for** | Quick, ad-hoc tasks | Documented, reusable tasks |
-| **Git integration** | Full support | Full support |
+| Aspect                  | Empty Provider      | File Provider              |
+|-------------------------|---------------------|----------------------------|
+| **Task source**         | None (in-memory)    | Markdown file              |
+| **Initial description** | Empty               | From file content          |
+| **Persistence**         | Notes only          | File snapshot + notes      |
+| **Best for**            | Quick, ad-hoc tasks | Documented, reusable tasks |
+| **Git integration**     | Full support        | Full support               |
 
 ## Examples
 

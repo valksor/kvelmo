@@ -50,32 +50,32 @@ notion:
 
 ## Status Mapping
 
-| Notion Status | Provider Status |
-|---------------|-----------------|
-| Not Started, Backlog, Todo | Open |
-| In Progress, Started, Doing | In Progress |
-| In Review, Reviewing | Review |
-| Done, Completed, Finished | Done |
-| Cancelled, Archived | Closed |
+| Notion Status               | Provider Status |
+|-----------------------------|-----------------|
+| Not Started, Backlog, Todo  | Open            |
+| In Progress, Started, Doing | In Progress     |
+| In Review, Reviewing        | Review          |
+| Done, Completed, Finished   | Done            |
+| Cancelled, Archived         | Closed          |
 
 ## Reference Formats
 
-| Format | Example |
-|--------|---------|
-| Scheme with page ID | `notion:a1b2c3d4e5f678901234567890abcdef1` |
-| Short scheme | `nt:a1b2c3d4e5f678901234567890abcdef1` |
-| UUID with dashes | `notion:a1b2c3d4-e5f6-7890-1234-567890abcdef1` |
-| Notion URL | `notion:https://www.notion.so/Page-Title-a1b2c3d4e5f6...` |
+| Format              | Example                                                   |
+|---------------------|-----------------------------------------------------------|
+| Scheme with page ID | `notion:a1b2c3d4e5f678901234567890abcdef1`                |
+| Short scheme        | `nt:a1b2c3d4e5f678901234567890abcdef1`                    |
+| UUID with dashes    | `notion:a1b2c3d4-e5f6-7890-1234-567890abcdef1`            |
+| Notion URL          | `notion:https://www.notion.so/Page-Title-a1b2c3d4e5f6...` |
 
 ## Property Configuration
 
 The Notion provider maps Notion properties to work unit fields:
 
-| Provider Field | Default Property Name | Notes |
-|----------------|----------------------|-------|
-| Status | `Status` | Status or select property type |
-| Description | `Description` | Falls back to page content blocks |
-| Labels | `Tags` | Multi-select property type |
-| Assignee | `Assignee` or `Owner` | People property type |
+| Provider Field | Default Property Name | Notes                             |
+|----------------|-----------------------|-----------------------------------|
+| Status         | `Status`              | Status or select property type    |
+| Description    | `Description`         | Falls back to page content blocks |
+| Labels         | `Tags`                | Multi-select property type        |
+| Assignee       | `Assignee` or `Owner` | People property type              |
 
 You can customize these property names in your config.
