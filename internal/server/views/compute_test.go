@@ -169,7 +169,7 @@ func TestComputeStats_WithMonthlyBudget(t *testing.T) {
 
 	// Set monthly budget state
 	state := &storage.MonthlyBudgetState{
-		Month:       "2026-01",
+		Month:       time.Now().Format("2006-01"),
 		Spent:       45.50,
 		WarningSent: false,
 	}
