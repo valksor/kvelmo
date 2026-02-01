@@ -294,7 +294,7 @@ func (e *httpError) HTTPStatusCode() int {
 	return e.code
 }
 
-// Helper function to create a title property.
+// MakeTitleProperty Helper function to create a title property.
 func MakeTitleProperty(text string) Property {
 	return Property{
 		Type: "title",
@@ -313,7 +313,7 @@ func MakeTitleProperty(text string) Property {
 	}
 }
 
-// Helper function to create a rich text property.
+// MakeRichTextProperty Helper function to create a rich text property.
 func MakeRichTextProperty(text string) Property {
 	return Property{
 		Type: "rich_text",
@@ -332,7 +332,7 @@ func MakeRichTextProperty(text string) Property {
 	}
 }
 
-// Helper function to create a status property.
+// MakeStatusProperty Helper function to create a status property.
 func MakeStatusProperty(status string) Property {
 	if status == "" {
 		return Property{
@@ -351,7 +351,7 @@ func MakeStatusProperty(status string) Property {
 	}
 }
 
-// Helper function to create a multi-select property.
+// MakeMultiSelectProperty Helper function to create a multi-select property.
 func MakeMultiSelectProperty(labels []string) Property {
 	options := make([]SelectProp, len(labels))
 	for i, label := range labels {
@@ -368,7 +368,7 @@ func MakeMultiSelectProperty(labels []string) Property {
 	}
 }
 
-// Helper function to extract plain text from a property.
+// ExtractPlainText Helper function to extract plain text from a property.
 func ExtractPlainText(prop Property) string {
 	switch {
 	case prop.Title != nil && len(prop.Title.Title) > 0:
@@ -384,7 +384,7 @@ func ExtractPlainText(prop Property) string {
 	}
 }
 
-// Helper function to extract all labels from a multi-select property.
+// ExtractLabels Helper function to extract all labels from a multi-select property.
 func ExtractLabels(prop Property) []string {
 	if prop.MultiSelect == nil {
 		return []string{}
@@ -397,7 +397,7 @@ func ExtractLabels(prop Property) []string {
 	return labels
 }
 
-// Convert blocks to markdown.
+// BlocksToMarkdown Convert blocks to markdown.
 func BlocksToMarkdown(blocks []Block) string {
 	var md strings.Builder
 
@@ -497,7 +497,7 @@ func BlocksToMarkdown(blocks []Block) string {
 	return md.String()
 }
 
-// Helper to get property by name (case-insensitive).
+// GetProperty Helper to get property by name (case-insensitive).
 func GetProperty(page Page, name string) (Property, bool) {
 	for key, prop := range page.Properties {
 		if strings.EqualFold(key, name) {
@@ -508,7 +508,7 @@ func GetProperty(page Page, name string) (Property, bool) {
 	return Property{}, false
 }
 
-// Helper to get property ID by name (case-insensitive).
+// GetPropertyID Helper to get property ID by name (case-insensitive).
 func GetPropertyID(page Page, name string) (string, bool) {
 	for key, prop := range page.Properties {
 		if strings.EqualFold(key, name) {

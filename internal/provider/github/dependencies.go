@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	github "github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v67/github"
 )
 
 // CreateDependency creates a dependency by updating the issue body to include a task list reference.
