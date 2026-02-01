@@ -46,6 +46,12 @@
                         Sandbox
                     </span>
                 </button>
+                <button data-action="show-section" data-section="automation" id="nav-automation" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-base-content/60 hover:bg-base-200 hover:text-base-content">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Automation
+                    </span>
+                </button>
                 <button data-action="show-section" data-section="security" id="nav-security" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth text-base-content/60 hover:bg-base-200 hover:text-base-content">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -635,6 +641,378 @@
                                 </div>
                             </div>
                             {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Automation Section -->
+                <div id="section-automation" class="settings-section hidden">
+                    <!-- Master Enable -->
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Webhook Automation
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-base-content">Enable Automation</h4>
+                                    <p class="text-sm text-base-content/60">Automatically process GitHub/GitLab webhooks to fix issues and review PRs/MRs</p>
+                                </div>
+                                <input type="checkbox" name="automation.enabled" value="true" id="automation-enabled"
+                                       {{if .Config.Automation.Enabled}}checked{{end}}
+                                       class="toggle toggle-primary toggle-lg">
+                            </div>
+                            <div class="p-4 bg-warning/10 border border-warning/30 rounded-lg mb-4">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 text-warning mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-medium text-warning">Remote Server Required</p>
+                                        <p class="text-sm text-base-content/70 mt-1">Automation only works when the server is publicly accessible from the internet. GitHub/GitLab webhooks cannot reach localhost or private networks. Use a public server, cloud deployment, or a tunneling service (ngrok, cloudflared) for development.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-info/10 border border-info/30 rounded-lg">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 text-info mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-medium text-info">Webhook Setup Required</p>
+                                        <p class="text-sm text-base-content/70 mt-1">Configure webhooks in your GitHub/GitLab repository settings to point to <code class="bg-base-300 px-1 rounded">POST /api/v1/webhooks/{provider}</code></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GitHub Provider -->
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                GitHub
+                            </h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-base-content">Enable GitHub Automation</h4>
+                                    <p class="text-sm text-base-content/60">Process webhooks from GitHub repositories</p>
+                                </div>
+                                <input type="checkbox" name="automation.providers.github.enabled" value="true" id="automation-github-enabled"
+                                       {{if .Config.Automation.Providers.github.Enabled}}checked{{end}}
+                                       class="toggle toggle-primary">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="automation-github-webhook-secret" class="block text-sm font-semibold text-base-content/80 mb-2">Webhook Secret</label>
+                                    <input type="password" name="automation.providers.github.webhook_secret" id="automation-github-webhook-secret"
+                                           value="{{.Config.Automation.Providers.github.WebhookSecret}}"
+                                           placeholder="ghp_xxxx or ${MEHR_GITHUB_WEBHOOK_SECRET}"
+                                           class="input text-sm font-mono">
+                                    <p class="text-xs text-base-content/40 mt-1">Used to verify webhook signatures (X-Hub-Signature-256)</p>
+                                </div>
+                                <div>
+                                    <label for="automation-github-command-prefix" class="block text-sm font-semibold text-base-content/80 mb-2">Command Prefix</label>
+                                    <input type="text" name="automation.providers.github.command_prefix" id="automation-github-command-prefix"
+                                           value="{{if .Config.Automation.Providers.github.CommandPrefix}}{{.Config.Automation.Providers.github.CommandPrefix}}{{else}}@mehrhof{{end}}"
+                                           placeholder="@mehrhof"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Prefix for comment commands (e.g., @mehrhof fix)</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-base-content mb-3">Triggers</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.github.trigger_on.issue_opened" value="true"
+                                               {{if .Config.Automation.Providers.github.TriggerOn.IssueOpened}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Auto-fix on issue opened</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.github.trigger_on.pr_opened" value="true"
+                                               {{if .Config.Automation.Providers.github.TriggerOn.PROpened}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Auto-review on PR opened</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.github.trigger_on.pr_updated" value="true"
+                                               {{if .Config.Automation.Providers.github.TriggerOn.PRUpdated}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Re-review on PR updated</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.github.trigger_on.comment_commands" value="true"
+                                               {{if .Config.Automation.Providers.github.TriggerOn.CommentCommands}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Enable @mehrhof commands</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.providers.github.use_worktrees" value="true"
+                                           {{if .Config.Automation.Providers.github.UseWorktrees}}checked{{end}}
+                                           class="checkbox checkbox-primary checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Use Worktrees</span>
+                                        <p class="text-xs text-base-content/50">Isolate each job in a separate git worktree</p>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.providers.github.dry_run" value="true"
+                                           {{if .Config.Automation.Providers.github.DryRun}}checked{{end}}
+                                           class="checkbox checkbox-warning checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Dry Run Mode</span>
+                                        <p class="text-xs text-base-content/50">Log actions without creating PRs or comments</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GitLab Provider -->
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 01-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 014.82 2a.43.43 0 01.58 0 .42.42 0 01.11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0118.6 2a.43.43 0 01.58 0 .42.42 0 01.11.18l2.44 7.51L23 13.45a.84.84 0 01-.35.94z"/></svg>
+                                GitLab
+                            </h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-base-content">Enable GitLab Automation</h4>
+                                    <p class="text-sm text-base-content/60">Process webhooks from GitLab projects</p>
+                                </div>
+                                <input type="checkbox" name="automation.providers.gitlab.enabled" value="true" id="automation-gitlab-enabled"
+                                       {{if .Config.Automation.Providers.gitlab.Enabled}}checked{{end}}
+                                       class="toggle toggle-primary">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="automation-gitlab-webhook-secret" class="block text-sm font-semibold text-base-content/80 mb-2">Webhook Secret Token</label>
+                                    <input type="password" name="automation.providers.gitlab.webhook_secret" id="automation-gitlab-webhook-secret"
+                                           value="{{.Config.Automation.Providers.gitlab.WebhookSecret}}"
+                                           placeholder="glpat-xxxx or ${MEHR_GITLAB_WEBHOOK_SECRET}"
+                                           class="input text-sm font-mono">
+                                    <p class="text-xs text-base-content/40 mt-1">Used to verify webhook signatures (X-Gitlab-Token)</p>
+                                </div>
+                                <div>
+                                    <label for="automation-gitlab-command-prefix" class="block text-sm font-semibold text-base-content/80 mb-2">Command Prefix</label>
+                                    <input type="text" name="automation.providers.gitlab.command_prefix" id="automation-gitlab-command-prefix"
+                                           value="{{if .Config.Automation.Providers.gitlab.CommandPrefix}}{{.Config.Automation.Providers.gitlab.CommandPrefix}}{{else}}@mehrhof{{end}}"
+                                           placeholder="@mehrhof"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Prefix for comment commands (e.g., @mehrhof fix)</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-base-content mb-3">Triggers</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.gitlab.trigger_on.issue_opened" value="true"
+                                               {{if .Config.Automation.Providers.gitlab.TriggerOn.IssueOpened}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Auto-fix on issue opened</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.gitlab.trigger_on.mr_opened" value="true"
+                                               {{if .Config.Automation.Providers.gitlab.TriggerOn.MROpened}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Auto-review on MR opened</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.gitlab.trigger_on.mr_updated" value="true"
+                                               {{if .Config.Automation.Providers.gitlab.TriggerOn.MRUpdated}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Re-review on MR updated</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="automation.providers.gitlab.trigger_on.comment_commands" value="true"
+                                               {{if .Config.Automation.Providers.gitlab.TriggerOn.CommentCommands}}checked{{end}}
+                                               class="checkbox checkbox-primary checkbox-sm">
+                                        <span class="text-sm">Enable @mehrhof commands</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.providers.gitlab.use_worktrees" value="true"
+                                           {{if .Config.Automation.Providers.gitlab.UseWorktrees}}checked{{end}}
+                                           class="checkbox checkbox-primary checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Use Worktrees</span>
+                                        <p class="text-xs text-base-content/50">Isolate each job in a separate git worktree</p>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.providers.gitlab.dry_run" value="true"
+                                           {{if .Config.Automation.Providers.gitlab.DryRun}}checked{{end}}
+                                           class="checkbox checkbox-warning checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Dry Run Mode</span>
+                                        <p class="text-xs text-base-content/50">Log actions without creating MRs or notes</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Access Control -->
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                Access Control
+                            </h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div>
+                                <label for="automation-access-mode" class="block text-sm font-semibold text-base-content/80 mb-2">Access Mode</label>
+                                <select name="automation.access_control.mode" id="automation-access-mode" class="input text-sm">
+                                    <option value="all" {{if eq .Config.Automation.AccessControl.Mode "all"}}selected{{end}}>Allow All</option>
+                                    <option value="allowlist" {{if eq .Config.Automation.AccessControl.Mode "allowlist"}}selected{{end}}>Allowlist Only</option>
+                                    <option value="blocklist" {{if eq .Config.Automation.AccessControl.Mode "blocklist"}}selected{{end}}>Block Listed</option>
+                                </select>
+                                <p class="text-xs text-base-content/40 mt-1">Control which users/orgs can trigger automation</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="automation-access-allowlist" class="block text-sm font-semibold text-base-content/80 mb-2">Allowlist</label>
+                                    <textarea name="automation.access_control.allowlist" id="automation-access-allowlist"
+                                              placeholder="myorg&#10;trusted-user&#10;another-org"
+                                              rows="4"
+                                              class="input text-sm font-mono resize-y">{{range .Config.Automation.AccessControl.Allowlist}}{{.}}&#10;{{end}}</textarea>
+                                    <p class="text-xs text-base-content/40 mt-1">One user/org per line</p>
+                                </div>
+                                <div>
+                                    <label for="automation-access-blocklist" class="block text-sm font-semibold text-base-content/80 mb-2">Blocklist</label>
+                                    <textarea name="automation.access_control.blocklist" id="automation-access-blocklist"
+                                              placeholder="known-spammer&#10;untrusted-user"
+                                              rows="4"
+                                              class="input text-sm font-mono resize-y">{{range .Config.Automation.AccessControl.Blocklist}}{{.}}&#10;{{end}}</textarea>
+                                    <p class="text-xs text-base-content/40 mt-1">One user/org per line</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.access_control.allow_bots" value="true"
+                                           {{if .Config.Automation.AccessControl.AllowBots}}checked{{end}}
+                                           class="checkbox checkbox-primary checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Allow Bots</span>
+                                        <p class="text-xs text-base-content/50">Process webhooks triggered by bot accounts</p>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="automation.access_control.require_org" value="true"
+                                           {{if .Config.Automation.AccessControl.RequireOrg}}checked{{end}}
+                                           class="checkbox checkbox-primary checkbox-sm">
+                                    <div>
+                                        <span class="text-sm font-medium">Require Org Membership</span>
+                                        <p class="text-xs text-base-content/50">Only allow org members to trigger automation</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Queue Settings -->
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Queue Settings
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="automation-queue-max-concurrent" class="block text-sm font-semibold text-base-content/80 mb-2">Max Concurrent Jobs</label>
+                                    <input type="number" name="automation.queue.max_concurrent" id="automation-queue-max-concurrent" min="1" max="10"
+                                           value="{{if .Config.Automation.Queue.MaxConcurrent}}{{.Config.Automation.Queue.MaxConcurrent}}{{else}}1{{end}}"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Number of jobs to process in parallel (1-10)</p>
+                                </div>
+                                <div>
+                                    <label for="automation-queue-job-timeout" class="block text-sm font-semibold text-base-content/80 mb-2">Job Timeout</label>
+                                    <input type="text" name="automation.queue.job_timeout" id="automation-queue-job-timeout"
+                                           value="{{if .Config.Automation.Queue.JobTimeout}}{{.Config.Automation.Queue.JobTimeout}}{{else}}30m{{end}}"
+                                           placeholder="30m"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Maximum time per job (e.g., 30m, 1h)</p>
+                                </div>
+                                <div>
+                                    <label for="automation-queue-retry-attempts" class="block text-sm font-semibold text-base-content/80 mb-2">Retry Attempts</label>
+                                    <input type="number" name="automation.queue.retry_attempts" id="automation-queue-retry-attempts" min="0" max="5"
+                                           value="{{if .Config.Automation.Queue.RetryAttempts}}{{.Config.Automation.Queue.RetryAttempts}}{{else}}0{{end}}"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Number of retries on failure (0 = no retry)</p>
+                                </div>
+                                <div>
+                                    <label for="automation-queue-retry-delay" class="block text-sm font-semibold text-base-content/80 mb-2">Retry Delay</label>
+                                    <input type="text" name="automation.queue.retry_delay" id="automation-queue-retry-delay"
+                                           value="{{if .Config.Automation.Queue.RetryDelay}}{{.Config.Automation.Queue.RetryDelay}}{{else}}1m{{end}}"
+                                           placeholder="1m"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Delay between retries (e.g., 1m, 5m)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Labels -->
+                    <div class="card">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                Labels
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-sm text-base-content/60 mb-6">Labels applied to issues and PRs/MRs during automation.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="automation-labels-generated" class="block text-sm font-semibold text-base-content/80 mb-2">Generated PR/MR Label</label>
+                                    <input type="text" name="automation.labels.mehr_generated" id="automation-labels-generated"
+                                           value="{{if .Config.Automation.Labels.MehrhofGenerated}}{{.Config.Automation.Labels.MehrhofGenerated}}{{else}}mehrhof-generated{{end}}"
+                                           placeholder="mehrhof-generated"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Applied to PRs/MRs created by automation</p>
+                                </div>
+                                <div>
+                                    <label for="automation-labels-in-progress" class="block text-sm font-semibold text-base-content/80 mb-2">In Progress Label</label>
+                                    <input type="text" name="automation.labels.in_progress" id="automation-labels-in-progress"
+                                           value="{{if .Config.Automation.Labels.InProgress}}{{.Config.Automation.Labels.InProgress}}{{else}}mehrhof-processing{{end}}"
+                                           placeholder="mehrhof-processing"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Applied while processing an issue</p>
+                                </div>
+                                <div>
+                                    <label for="automation-labels-failed" class="block text-sm font-semibold text-base-content/80 mb-2">Failed Label</label>
+                                    <input type="text" name="automation.labels.failed" id="automation-labels-failed"
+                                           value="{{if .Config.Automation.Labels.Failed}}{{.Config.Automation.Labels.Failed}}{{else}}mehrhof-failed{{end}}"
+                                           placeholder="mehrhof-failed"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">Applied when automation fails</p>
+                                </div>
+                                <div>
+                                    <label for="automation-labels-skip-review" class="block text-sm font-semibold text-base-content/80 mb-2">Skip Review Label</label>
+                                    <input type="text" name="automation.labels.skip_review" id="automation-labels-skip-review"
+                                           value="{{if .Config.Automation.Labels.SkipReview}}{{.Config.Automation.Labels.SkipReview}}{{else}}mehrhof-skip-review{{end}}"
+                                           placeholder="mehrhof-skip-review"
+                                           class="input text-sm">
+                                    <p class="text-xs text-base-content/40 mt-1">PRs/MRs with this label skip auto-review</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

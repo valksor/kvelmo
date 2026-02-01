@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -475,6 +476,9 @@ func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSe
 		// Still allow non-sensitive provider settings
 		updateProviderSettingsNonSensitive(cfg, r)
 	}
+
+	// Automation settings
+	updateAutomationSettings(cfg, r, allowSensitive)
 }
 
 // updateProviderSettings updates provider settings including tokens.
@@ -672,6 +676,125 @@ func hasAnyFormValue(r *http.Request, fields ...string) bool {
 	}
 
 	return false
+}
+
+// updateAutomationSettings updates automation settings from form values.
+func updateAutomationSettings(cfg *storage.WorkspaceConfig, r *http.Request, allowSensitive bool) {
+	// Ensure automation is initialized
+	if cfg.Automation == nil {
+		cfg.Automation = &storage.AutomationSettings{
+			Providers: make(map[string]storage.ProviderAutoConfig),
+		}
+	}
+	if cfg.Automation.Providers == nil {
+		cfg.Automation.Providers = make(map[string]storage.ProviderAutoConfig)
+	}
+
+	// Master enable
+	cfg.Automation.Enabled = r.FormValue("automation.enabled") == "true"
+
+	// GitHub provider
+	github := cfg.Automation.Providers["github"]
+	github.Enabled = r.FormValue("automation.providers.github.enabled") == "true"
+	if allowSensitive {
+		if v := r.FormValue("automation.providers.github.webhook_secret"); v != "" {
+			github.WebhookSecret = v
+		}
+	}
+	if v := r.FormValue("automation.providers.github.command_prefix"); v != "" {
+		github.CommandPrefix = v
+	}
+	github.UseWorktrees = r.FormValue("automation.providers.github.use_worktrees") == "true"
+	github.DryRun = r.FormValue("automation.providers.github.dry_run") == "true"
+	github.TriggerOn.IssueOpened = r.FormValue("automation.providers.github.trigger_on.issue_opened") == "true"
+	github.TriggerOn.PROpened = r.FormValue("automation.providers.github.trigger_on.pr_opened") == "true"
+	github.TriggerOn.PRUpdated = r.FormValue("automation.providers.github.trigger_on.pr_updated") == "true"
+	github.TriggerOn.CommentCommands = r.FormValue("automation.providers.github.trigger_on.comment_commands") == "true"
+	cfg.Automation.Providers["github"] = github
+
+	// GitLab provider
+	gitlab := cfg.Automation.Providers["gitlab"]
+	gitlab.Enabled = r.FormValue("automation.providers.gitlab.enabled") == "true"
+	if allowSensitive {
+		if v := r.FormValue("automation.providers.gitlab.webhook_secret"); v != "" {
+			gitlab.WebhookSecret = v
+		}
+	}
+	if v := r.FormValue("automation.providers.gitlab.command_prefix"); v != "" {
+		gitlab.CommandPrefix = v
+	}
+	gitlab.UseWorktrees = r.FormValue("automation.providers.gitlab.use_worktrees") == "true"
+	gitlab.DryRun = r.FormValue("automation.providers.gitlab.dry_run") == "true"
+	gitlab.TriggerOn.IssueOpened = r.FormValue("automation.providers.gitlab.trigger_on.issue_opened") == "true"
+	gitlab.TriggerOn.MROpened = r.FormValue("automation.providers.gitlab.trigger_on.mr_opened") == "true"
+	gitlab.TriggerOn.MRUpdated = r.FormValue("automation.providers.gitlab.trigger_on.mr_updated") == "true"
+	gitlab.TriggerOn.CommentCommands = r.FormValue("automation.providers.gitlab.trigger_on.comment_commands") == "true"
+	cfg.Automation.Providers["gitlab"] = gitlab
+
+	// Access control
+	if v := r.FormValue("automation.access_control.mode"); v != "" {
+		cfg.Automation.AccessControl.Mode = v
+	}
+	cfg.Automation.AccessControl.AllowBots = r.FormValue("automation.access_control.allow_bots") == "true"
+	cfg.Automation.AccessControl.RequireOrg = r.FormValue("automation.access_control.require_org") == "true"
+
+	// Allowlist/blocklist from textarea (newline-separated)
+	if v := r.FormValue("automation.access_control.allowlist"); v != "" {
+		cfg.Automation.AccessControl.Allowlist = parseTextareaLines(v)
+	} else {
+		cfg.Automation.AccessControl.Allowlist = nil
+	}
+	if v := r.FormValue("automation.access_control.blocklist"); v != "" {
+		cfg.Automation.AccessControl.Blocklist = parseTextareaLines(v)
+	} else {
+		cfg.Automation.AccessControl.Blocklist = nil
+	}
+
+	// Queue settings
+	if v := r.FormValue("automation.queue.max_concurrent"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.Automation.Queue.MaxConcurrent = n
+		}
+	}
+	if v := r.FormValue("automation.queue.job_timeout"); v != "" {
+		cfg.Automation.Queue.JobTimeout = v
+	}
+	if v := r.FormValue("automation.queue.retry_attempts"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			cfg.Automation.Queue.RetryAttempts = n
+		}
+	}
+	if v := r.FormValue("automation.queue.retry_delay"); v != "" {
+		cfg.Automation.Queue.RetryDelay = v
+	}
+
+	// Labels
+	if v := r.FormValue("automation.labels.mehr_generated"); v != "" {
+		cfg.Automation.Labels.MehrhofGenerated = v
+	}
+	if v := r.FormValue("automation.labels.in_progress"); v != "" {
+		cfg.Automation.Labels.InProgress = v
+	}
+	if v := r.FormValue("automation.labels.failed"); v != "" {
+		cfg.Automation.Labels.Failed = v
+	}
+	if v := r.FormValue("automation.labels.skip_review"); v != "" {
+		cfg.Automation.Labels.SkipReview = v
+	}
+}
+
+// parseTextareaLines splits textarea content by newlines and trims whitespace.
+func parseTextareaLines(s string) []string {
+	lines := strings.Split(s, "\n")
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			result = append(result, line)
+		}
+	}
+
+	return result
 }
 
 // stripSensitiveFields returns a copy of config with sensitive fields cleared.
