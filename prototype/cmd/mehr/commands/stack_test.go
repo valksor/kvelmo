@@ -1,5 +1,4 @@
 //go:build !testbinary
-// +build !testbinary
 
 package commands
 
@@ -292,6 +291,79 @@ func TestHandleRebaseResult_ErrorWithoutConflict(t *testing.T) {
 
 	if !containsString(output, "task-5") {
 		t.Errorf("output should contain 'task-5', got %q", output)
+	}
+}
+
+func TestStacksToGraph(t *testing.T) {
+	stacks := []*stack.Stack{
+		{
+			ID: "stack-1",
+			Tasks: []stack.StackedTask{
+				{ID: "task-1", Branch: "feature/task-1", State: stack.StateActive},
+				{ID: "task-2", Branch: "feature/task-2", State: stack.StateMerged, DependsOn: "task-1"},
+			},
+		},
+	}
+
+	graph := stacksToGraph(stacks)
+
+	if len(graph.Nodes) != 2 {
+		t.Errorf("expected 2 nodes, got %d", len(graph.Nodes))
+	}
+	if len(graph.Edges) != 1 {
+		t.Errorf("expected 1 edge, got %d", len(graph.Edges))
+	}
+	if graph.Edges[0].From != "task-1" || graph.Edges[0].To != "task-2" {
+		t.Errorf("edge = %v->%v, want task-1->task-2", graph.Edges[0].From, graph.Edges[0].To)
+	}
+	if graph.Nodes[0].Status != "in_progress" {
+		t.Errorf("node 0 status = %q, want 'in_progress'", graph.Nodes[0].Status)
+	}
+	if graph.Nodes[1].Status != "done" {
+		t.Errorf("node 1 status = %q, want 'done'", graph.Nodes[1].Status)
+	}
+}
+
+func TestStacksToGraph_Empty(t *testing.T) {
+	graph := stacksToGraph(nil)
+	if len(graph.Nodes) != 0 {
+		t.Errorf("expected 0 nodes, got %d", len(graph.Nodes))
+	}
+	if len(graph.Edges) != 0 {
+		t.Errorf("expected 0 edges, got %d", len(graph.Edges))
+	}
+}
+
+func TestOutputStackList(t *testing.T) {
+	stacks := []*stack.Stack{
+		{
+			ID: "stack-1",
+			Tasks: []stack.StackedTask{
+				{ID: "task-1", Branch: "feature/task-1", State: stack.StateActive},
+			},
+		},
+	}
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := outputStackList(stacks)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("outputStackList() error = %v", err)
+	}
+	for _, substr := range []string{"stack-1", "task-1", "feature/task-1"} {
+		if !containsString(output, substr) {
+			t.Errorf("output missing %q\nGot:\n%s", substr, output)
+		}
 	}
 }
 

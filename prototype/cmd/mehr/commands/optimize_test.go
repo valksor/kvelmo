@@ -113,3 +113,25 @@ func TestOptimizeCommand_SeeAlsoReferences(t *testing.T) {
 		}
 	}
 }
+
+func TestTruncateText(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		maxLen   int
+		expected string
+	}{
+		{"short text", "hello", 10, "hello"},
+		{"exact length", "hello", 5, "hello"},
+		{"truncated", "hello world!", 8, "hello..."},
+		{"very long", "the quick brown fox jumps over the lazy dog", 20, "the quick brown f..."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateText(tt.text, tt.maxLen)
+			if got != tt.expected {
+				t.Errorf("truncateText(%q, %d) = %q, want %q", tt.text, tt.maxLen, got, tt.expected)
+			}
+		})
+	}
+}
