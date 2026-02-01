@@ -4,6 +4,8 @@
 package commands
 
 import (
+	"bytes"
+	"os"
 	"testing"
 )
 
@@ -109,6 +111,51 @@ func TestWorkflowCommand_NoFlags(t *testing.T) {
 	}
 }
 
-// Note: Tests for actual workflow command execution output are skipped because
-// the command uses fmt.Print() which writes to os.Stdout, not the captured
-// command output. Testing command properties is sufficient for coverage.
+// TestRunWorkflow tests that the workflow diagram is printed correctly.
+func TestRunWorkflow(t *testing.T) {
+	// Capture stdout since runWorkflow uses fmt.Print (not cmd.OutOrStdout)
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runWorkflow(workflowCmd, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	if err != nil {
+		t.Fatalf("runWorkflow() error = %v", err)
+	}
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	// Verify key sections of the workflow diagram are present
+	expectedContent := []string{
+		"MEHRHOF WORKFLOW STATE MACHINE",
+		"idle",
+		"planning",
+		"implementing",
+		"reviewing",
+		"waiting",
+		"checkpoint",
+		"reverting",
+		"restoring",
+		"done",
+		"failed",
+		"COMMANDS BY STATE",
+		"KEY TRANSITIONS",
+		"mehr plan",
+		"mehr implement",
+		"mehr finish",
+		"mehr undo",
+		"mehr redo",
+	}
+
+	for _, expected := range expectedContent {
+		if !containsString(output, expected) {
+			t.Errorf("workflow output does not contain %q", expected)
+		}
+	}
+}

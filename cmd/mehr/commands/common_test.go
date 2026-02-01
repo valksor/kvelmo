@@ -6,6 +6,7 @@ package commands
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -811,6 +812,60 @@ func TestWorkspaceResolution(t *testing.T) {
 		}
 		if res.IsWorktree {
 			t.Error("zero value IsWorktree should be false")
+		}
+	})
+}
+
+// TestIsSandbox tests the IsSandbox function.
+func TestIsSandbox(t *testing.T) {
+	// Save original value
+	originalSandbox := sandbox
+	defer func() { sandbox = originalSandbox }()
+
+	tests := []struct {
+		name       string
+		setSandbox bool
+		want       bool
+	}{
+		{"sandbox mode enabled", true, true},
+		{"sandbox mode disabled", false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sandbox = tt.setSandbox
+			if got := IsSandbox(); got != tt.want {
+				t.Errorf("IsSandbox() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestRunWithSpinner_VerboseMode tests RunWithSpinner in verbose mode.
+func TestRunWithSpinner_VerboseMode(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		called := false
+		err := RunWithSpinner(true, "test", func() error {
+			called = true
+
+			return nil
+		})
+		if err != nil {
+			t.Errorf("RunWithSpinner() error = %v", err)
+		}
+		if !called {
+			t.Error("function was not called")
+		}
+	})
+
+	t.Run("error propagation", func(t *testing.T) {
+		expectedErr := errors.New("test error")
+		err := RunWithSpinner(true, "test", func() error {
+			return expectedErr
+		})
+
+		if !errors.Is(err, expectedErr) {
+			t.Errorf("RunWithSpinner() error = %v, want %v", err, expectedErr)
 		}
 	})
 }
