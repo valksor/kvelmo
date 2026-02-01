@@ -28,11 +28,11 @@ When using other agents:
 
 ## Available Agents
 
-| Agent | Description |
-|-------|-------------|
-| [Claude](claude.md) | Anthropic's Claude AI (Default, Primary) |
-| [Codex](codex.md) | OpenAI's Codex AI (Alternative, experimental - untested implementation) |
-| [Noop](noop.md) | No-operation agent for testing/CI (auto-registered when `MEHR_TEST_MODE=1`) |
+| Agent               | Description                                                                 |
+|---------------------|-----------------------------------------------------------------------------|
+| [Claude](claude.md) | Anthropic's Claude AI (Default, Primary)                                    |
+| [Codex](codex.md)   | OpenAI's Codex AI (Alternative, experimental - untested implementation)     |
+| [Noop](noop.md)     | No-operation agent for testing/CI (auto-registered when `MEHR_TEST_MODE=1`) |
 
 ## Basic Configuration
 
@@ -118,12 +118,12 @@ Different workflow steps can use different agents - use a capable agent for plan
 
 ### Workflow Steps
 
-| Step | Command | Description |
-|------|---------|-------------|
-| `planning` | `mehr plan` | Requirement analysis, specifications |
-| `implementing` | `mehr implement` | Code generation |
-| `reviewing` | `mehr review` | Code review |
-| `checkpointing` | (internal) | Checkpoint summaries |
+| Step            | Command          | Description                          |
+|-----------------|------------------|--------------------------------------|
+| `planning`      | `mehr plan`      | Requirement analysis, specifications |
+| `implementing`  | `mehr implement` | Code generation                      |
+| `reviewing`     | `mehr review`    | Code review                          |
+| `checkpointing` | (internal)       | Checkpoint summaries                 |
 
 ### Workspace Configuration
 

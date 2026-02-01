@@ -20,12 +20,12 @@ This happens automatically in:
 
 ## Behavior
 
-| Method | Behavior |
-|--------|----------|
-| `Available()` | Always returns `nil` (always available) |
-| `Run()` | Returns empty response with "noop agent" message |
-| `RunStream()` | Sends single `EventComplete` event |
-| `RunWithCallback()` | Calls callback once with completion event |
+| Method              | Behavior                                         |
+|---------------------|--------------------------------------------------|
+| `Available()`       | Always returns `nil` (always available)          |
+| `Run()`             | Returns empty response with "noop agent" message |
+| `RunStream()`       | Sends single `EventComplete` event               |
+| `RunWithCallback()` | Calls callback once with completion event        |
 
 ## Why It Exists
 

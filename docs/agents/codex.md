@@ -44,33 +44,33 @@ mehr start --agent codex file:task.md
 
 Mehrhof automatically configures Codex based on the workflow step:
 
-| Step | Args | Description |
-|------|------|-------------|
-| `planning` | `--sandbox read-only` | Read-only analysis, no file modifications |
-| `implementing` | `--full-auto` | Auto-execution with workspace-write sandbox |
-| `reviewing` | `--full-auto` | Auto-execution with workspace-write sandbox |
-| `checkpointing` | (none) | Summary generation only |
+| Step            | Args                  | Description                                 |
+|-----------------|-----------------------|---------------------------------------------|
+| `planning`      | `--sandbox read-only` | Read-only analysis, no file modifications   |
+| `implementing`  | `--full-auto`         | Auto-execution with workspace-write sandbox |
+| `reviewing`     | `--full-auto`         | Auto-execution with workspace-write sandbox |
+| `checkpointing` | (none)                | Summary generation only                     |
 
 **Note**: `--full-auto` is equivalent to `--sandbox workspace-write --ask-for-approval on-failure`.
 
 ## Differences from Claude
 
-| Feature | Claude | Codex |
-|---------|--------|-------|
-| Permission control | `--permission-mode plan/acceptEdits` | `--sandbox` + `--ask-for-approval` |
-| JSON output | `--output-format stream-json` | `--json` |
-| Non-interactive | `--print` | `codex exec` (non-interactive by default) |
-| Subcommand | None (runs directly) | Requires `exec` subcommand |
+| Feature            | Claude                               | Codex                                     |
+|--------------------|--------------------------------------|-------------------------------------------|
+| Permission control | `--permission-mode plan/acceptEdits` | `--sandbox` + `--ask-for-approval`        |
+| JSON output        | `--output-format stream-json`        | `--json`                                  |
+| Non-interactive    | `--print`                            | `codex exec` (non-interactive by default) |
+| Subcommand         | None (runs directly)                 | Requires `exec` subcommand                |
 
 ## Sandbox Modes
 
 Codex uses sandbox policies to control what the agent can do:
 
-| Mode | Description |
-|------|-------------|
-| `read-only` | Cannot modify any files (used for planning) |
-| `workspace-write` | Can write files within the workspace (used for implementing/reviewing) |
-| `danger-full-access` | Can write anywhere (not recommended) |
+| Mode                 | Description                                                            |
+|----------------------|------------------------------------------------------------------------|
+| `read-only`          | Cannot modify any files (used for planning)                            |
+| `workspace-write`    | Can write files within the workspace (used for implementing/reviewing) |
+| `danger-full-access` | Can write anywhere (not recommended)                                   |
 
 ## Agent Aliases
 
