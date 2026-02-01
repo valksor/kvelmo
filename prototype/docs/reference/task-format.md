@@ -1,6 +1,6 @@
 # Task File Format
 
-Task files are markdown documents that describe what you want Mehrhof to accomplish. They support optional YAML frontmatter for metadata.
+Task files are Markdown documents that describe what you want Mehrhof to accomplish. They support optional YAML frontmatter for metadata.
 
 ## Basic Structure
 
@@ -22,18 +22,18 @@ Description of what needs to be done.
 
 ## Frontmatter Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `title` | string | Task title (overrides `# Heading` in body) |
-| `priority` | string | Priority level: `critical`, `high`, `normal`, `low` |
-| `labels` | array | Tags for categorization |
-| `key` | string | External key for branch naming (e.g., `FEAT-123`) |
-| `type` | string | Task type: `feature`, `fix`, `chore`, `refactor`, `docs` |
-| `agent` | string | Agent name or alias to use |
-| `agent_args` | array | CLI arguments for the agent |
-| `agent_env` | object | Environment variables for the agent |
-| `agent_steps` | object | Per-step agent configuration |
-| `budget` | object | Task budget configuration (cost/tokens) |
+| Field         | Type   | Description                                              |
+|---------------|--------|----------------------------------------------------------|
+| `title`       | string | Task title (overrides `# Heading` in body)               |
+| `priority`    | string | Priority level: `critical`, `high`, `normal`, `low`      |
+| `labels`      | array  | Tags for categorization                                  |
+| `key`         | string | External key for branch naming (e.g., `FEAT-123`)        |
+| `type`        | string | Task type: `feature`, `fix`, `chore`, `refactor`, `docs` |
+| `agent`       | string | Agent name or alias to use                               |
+| `agent_args`  | array  | CLI arguments for the agent                              |
+| `agent_env`   | object | Environment variables for the agent                      |
+| `agent_steps` | object | Per-step agent configuration                             |
+| `budget`      | object | Task budget configuration (cost/tokens)                  |
 
 ## Frontmatter Examples
 

@@ -6,12 +6,12 @@ This document tracks implementation status across Mehrhof's interfaces. Use this
 
 Mehrhof has four user interfaces:
 
-| Interface | Entry Point | Purpose |
-|-----------|-------------|---------|
-| **CLI** | `cmd/mehr/commands/` | Full command-line interface |
-| **Interactive CLI** | `mehr interactive` | REPL mode for workflow sessions |
-| **Web UI** | `internal/server/` | Browser interface with dashboard |
-| **Interactive Web** | `/interactive` | Browser REPL with SSE streaming |
+| Interface           | Entry Point          | Purpose                          |
+|---------------------|----------------------|----------------------------------|
+| **CLI**             | `cmd/mehr/commands/` | Full command-line interface      |
+| **Interactive CLI** | `mehr interactive`   | REPL mode for workflow sessions  |
+| **Web UI**          | `internal/server/`   | Browser interface with dashboard |
+| **Interactive Web** | `/interactive`       | Browser REPL with SSE streaming  |
 
 ---
 
@@ -27,7 +27,7 @@ When adding a new feature, complete ALL applicable items:
 - [ ] **Template/View**: Add in `internal/server/templates/` or `internal/server/views/`
 - [ ] **Navigation**: Update menus if user-facing
 - [ ] **SSE Streaming**: Add for long-running operations
-- [ ] **Tests**: Comprehensive tests (see Testing section in CLAUDE.md)
+- [ ] **Tests**: Comprehensive tests (see a Testing section in CLAUDE.md)
 - [ ] **Documentation**: Update `docs/cli/` and/or `docs/web-ui/`
 
 ### Implementation Pattern
@@ -71,45 +71,57 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 ---
 
-## CLI vs Web UI Parity
+## CLI vs. Web UI Parity
 
-| CLI Command | Web UI | Notes |
-|-------------|--------|-------|
-| `start <ref>` | ✅ | Dashboard + project pages |
-| `plan` | ✅ | SSE streaming |
-| `implement` | ✅ | SSE streaming |
-| `review` | ✅ | SSE streaming |
-| `finish` | ✅ | PR creation/merge |
-| `continue` | ✅ | Resume from waiting |
-| `abandon` | ✅ | Discard task |
-| `status` | ✅ | Dashboard display |
-| `note <msg>` | ✅ | Quick note form |
-| `question <msg>` | ✅ | Quick question + SSE |
-| `cost` | ✅ | Detailed breakdown by step |
-| `list` | ✅ | Recent tasks sidebar |
-| `undo/redo` | ✅ | Checkpoint navigation |
-| `links` | ✅ | `/links` page |
-| `find` | ✅ | `/find` page |
-| `browser` | ✅ | `/browser` page |
-| `mcp` | ✅ | MCP server toggle |
-| `scan` | ✅ | `/scan` page with scanner selection |
-| `memory` | ✅ | `/memory` page |
-| `commit` | ✅ | `/commit` page with analyze/preview |
-| `project sync` | ✅ | API + SSE streaming |
-| `stack` | ✅ | `/stack` page |
-| `interactive` | ✅ | `/interactive` page |
-| `budget` | ✅ | API + monthly status/reset |
-| `optimize` | ✅ | Quick task optimization |
-| `export` | ✅ | Quick task export |
-| `serve` | N/A | Self-referential |
-| `config validate` | ✅ | Settings validation |
-| `agents` | ✅ | Settings page |
-| `providers` | ✅ | Settings (login) |
-| `templates` | ✅ | Settings page |
-| `generate-secret` | ❌ | CLI-only utility |
-| `update` | ❌ | CLI-only utility |
-| `hooks/lefthook` | ❌ | CLI-only dev tool |
-| `workflow` | ❌ | CLI-only diagnostic |
+| CLI Command       | Web UI | Notes                               |
+|-------------------|--------|-------------------------------------|
+| `start <ref>`     | ✅      | Dashboard + project pages           |
+| `plan`            | ✅      | SSE streaming                       |
+| `implement`       | ✅      | SSE streaming                       |
+| `review`          | ✅      | SSE streaming                       |
+| `finish`          | ✅      | PR creation/merge                   |
+| `continue`        | ✅      | Resume from waiting                 |
+| `abandon`         | ✅      | Discard task                        |
+| `status`          | ✅      | Dashboard display                   |
+| `note <msg>`      | ✅      | Quick note form                     |
+| `question <msg>`  | ✅      | Quick question + SSE                |
+| `cost`            | ✅      | Detailed breakdown by step          |
+| `list`            | ✅      | Recent tasks sidebar                |
+| `undo/redo`       | ✅      | Checkpoint navigation               |
+| `links`           | ✅      | `/links` page                       |
+| `find`            | ✅      | `/find` page                        |
+| `browser`         | ✅      | `/browser` page                     |
+| `mcp`             | ✅      | MCP server toggle                   |
+| `scan`            | ✅      | `/scan` page with scanner selection |
+| `memory`          | ✅      | `/memory` page                      |
+| `commit`          | ✅      | `/commit` page with analyze/preview |
+| `project sync`    | ✅      | API + SSE streaming                 |
+| `stack`           | ✅      | `/stack` page                       |
+| `interactive`     | ✅      | `/interactive` page                 |
+| `budget`          | ✅      | API + monthly status/reset          |
+| `optimize`        | ✅      | Quick task optimization             |
+| `export`          | ✅      | Quick task export                   |
+| `serve`           | N/A    | Self-referential                    |
+| `config validate` | ✅      | Settings validation                 |
+| `agents`          | ✅      | Settings page                       |
+| `providers`       | ✅      | Settings (login)                    |
+| `templates`       | ✅      | Settings page                       |
+| `simplify`        | ✅      | `/simplify` page                    |
+| `auto`            | ✅      | `/auto` page                        |
+| `reset`           | ✅      | `/api/v1/reset` endpoint            |
+| `quick`           | ✅      | `/quick` page                       |
+| `submit`          | ✅      | Quick task submit                   |
+| `login`           | ✅      | Settings providers page             |
+| `delete`          | ❌      | CLI-only (queue tasks)              |
+| `specification`   | ❌      | CLI-only (view specs)               |
+| `label`           | ❌      | CLI-only task metadata              |
+| `init`            | ❌      | CLI-only setup                      |
+| `license`         | ❌      | CLI-only informational              |
+| `guide`           | ❌      | CLI-only informational              |
+| `generate-secret` | ❌      | CLI-only utility                    |
+| `update`          | ❌      | CLI-only utility                    |
+| `hooks/lefthook`  | ❌      | CLI-only dev tool                   |
+| `workflow`        | ❌      | CLI-only diagnostic                 |
 
 **Legend**: ✅ Full | ⚠️ Partial | ❌ Missing | N/A Not applicable
 
@@ -117,33 +129,33 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 ## Interactive Modes Parity
 
-| Feature | CLI REPL | Web `/interactive` | Notes |
-|---------|----------|-------------------|-------|
-| **Workflow** |
-| `start` | ✅ | ✅ | |
-| `plan` | ✅ | ✅ | |
-| `implement` | ✅ (`impl`) | ✅ | |
-| `review` | ✅ | ✅ | |
-| `finish` | ✅ | ✅ | |
-| `continue` | ✅ (`cont`) | ✅ | |
-| `abandon` | ✅ | ✅ | |
-| **Session** |
-| `status` | ✅ (`st`) | ✅ | |
-| `note` | ✅ | ✅ | |
-| `question`/`ask` | ✅ | ✅ | |
-| `answer` | ✅ (`a`) | ✅ | |
-| `specification` | ✅ (`spec`) | ✅ | |
-| `cost` | ✅ | ✅ | |
-| `list` | ✅ | ✅ | |
-| `quick` | ✅ | ✅ | |
-| **Navigation** |
-| `undo` | ✅ | ✅ | |
-| `redo` | ✅ | ✅ | |
-| `clear` | ✅ | N/A | Web uses UI refresh |
-| `help`/`?` | ✅ | ✅ | |
-| `exit`/`quit` | ✅ | ✅ | Close tab |
-| **Chat** |
-| `chat <msg>` | ✅ | ✅ (main input) | |
+| Feature          | CLI REPL   | Web `/interactive` | Notes               |
+|------------------|------------|--------------------|---------------------|
+| **Workflow**     |
+| `start`          | ✅          | ✅                  |                     |
+| `plan`           | ✅          | ✅                  |                     |
+| `implement`      | ✅ (`impl`) | ✅                  |                     |
+| `review`         | ✅          | ✅                  |                     |
+| `finish`         | ✅          | ✅                  |                     |
+| `continue`       | ✅ (`cont`) | ✅                  |                     |
+| `abandon`        | ✅          | ✅                  |                     |
+| **Session**      |
+| `status`         | ✅ (`st`)   | ✅                  |                     |
+| `note`           | ✅          | ✅                  |                     |
+| `question`/`ask` | ✅          | ✅                  |                     |
+| `answer`         | ✅ (`a`)    | ✅                  |                     |
+| `specification`  | ✅ (`spec`) | ✅                  |                     |
+| `cost`           | ✅          | ✅                  |                     |
+| `list`           | ✅          | ✅                  |                     |
+| `quick`          | ✅          | ✅                  |                     |
+| **Navigation**   |
+| `undo`           | ✅          | ✅                  |                     |
+| `redo`           | ✅          | ✅                  |                     |
+| `clear`          | ✅          | N/A                | Web uses UI refresh |
+| `help`/`?`       | ✅          | ✅                  |                     |
+| `exit`/`quit`    | ✅          | ✅                  | Close tab           |
+| **Chat**         |
+| `chat <msg>`     | ✅          | ✅ (main input)     |                     |
 
 ---
 
