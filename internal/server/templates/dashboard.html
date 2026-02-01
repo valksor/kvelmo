@@ -479,50 +479,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Agent Logs Streaming
-let agentLogsEventSource = null;
-let agentLogsContainer = null;
-let agentLogsContent = null;
-let agentLogsExpanded = true;
+// Agent Logs Streaming (use window. to survive HTMX reloads)
+window.agentLogsEventSource ??= null;
+window.agentLogsContainer ??= null;
+window.agentLogsContent ??= null;
+window.agentLogsExpanded ??= true;
 
 function connectAgentLogs() {
-    if (agentLogsEventSource) {
+    if (window.agentLogsEventSource) {
         return; // Already connected
     }
 
-    agentLogsContainer = document.getElementById('agent-logs-container');
-    agentLogsContent = document.getElementById('agent-logs-content');
+    window.agentLogsContainer = document.getElementById('agent-logs-container');
+    window.agentLogsContent = document.getElementById('agent-logs-content');
 
     // Connect to SSE endpoint
-    agentLogsEventSource = new EventSource('/api/v1/agent/logs/stream');
+    window.agentLogsEventSource = new EventSource('/api/v1/agent/logs/stream');
 
-    agentLogsEventSource.addEventListener('connected', function(e) {
+    window.agentLogsEventSource.addEventListener('connected', function(e) {
         addAgentLogMessage('System: Connected to agent output stream', 'system');
     });
 
-    agentLogsEventSource.addEventListener('state_changed', function(e) {
+    window.agentLogsEventSource.addEventListener('state_changed', function(e) {
         const data = JSON.parse(e.data);
         addAgentLogMessage(`State changed: ${data.from} → ${data.to}`, 'state');
     });
 
-    agentLogsEventSource.addEventListener('progress', function(e) {
+    window.agentLogsEventSource.addEventListener('progress', function(e) {
         const data = JSON.parse(e.data);
         if (data.message) {
             addAgentLogMessage(data.message, 'progress');
         }
     });
 
-    agentLogsEventSource.addEventListener('error', function(e) {
+    window.agentLogsEventSource.addEventListener('error', function(e) {
         console.error('SSE error:', e);
-        agentLogsEventSource.close();
+        window.agentLogsEventSource.close();
     });
 
     // Auto-scroll to bottom
-    agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+    window.agentLogsContainer.scrollTop = window.agentLogsContainer.scrollHeight;
 }
 
 function addAgentLogMessage(message, type = 'info') {
-    if (!agentLogsContent) return;
+    if (!window.agentLogsContent) return;
 
     const timestamp = new Date().toLocaleTimeString();
     const prefix = type !== 'info' ? `[${type.toUpperCase()}] ` : '';
@@ -534,17 +534,17 @@ function addAgentLogMessage(message, type = 'info') {
     if (type === 'state') colorClass = 'text-warning-400';
     if (type === 'system') colorClass = 'text-success-400';
 
-    agentLogsContent.innerHTML += `\n<span class="${colorClass}">${timestamp} ${prefix}${escapeHtml(message)}</span>`;
+    window.agentLogsContent.innerHTML += `\n<span class="${colorClass}">${timestamp} ${prefix}${escapeHtml(message)}</span>`;
 
     // Auto-scroll if expanded
-    if (agentLogsExpanded && agentLogsContainer) {
-        agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+    if (window.agentLogsExpanded && window.agentLogsContainer) {
+        window.agentLogsContainer.scrollTop = window.agentLogsContainer.scrollHeight;
     }
 }
 
 function clearAgentLogs() {
-    if (agentLogsContent) {
-        agentLogsContent.innerHTML = '// Agent output will appear here...';
+    if (window.agentLogsContent) {
+        window.agentLogsContent.innerHTML = '// Agent output will appear here...';
     }
 }
 
@@ -552,14 +552,14 @@ function toggleAgentLogs() {
     const container = document.getElementById('agent-logs-container');
     const btn = document.getElementById('toggle-logs-btn');
 
-    if (agentLogsExpanded) {
+    if (window.agentLogsExpanded) {
         container.style.maxHeight = '60px';
         btn.textContent = '▶';
-        agentLogsExpanded = false;
+        window.agentLogsExpanded = false;
     } else {
         container.style.maxHeight = '400px';
         btn.textContent = '▼';
-        agentLogsExpanded = true;
+        window.agentLogsExpanded = true;
     }
 }
 
@@ -576,9 +576,9 @@ function hideAgentLogs() {
     if (agentLogs) {
         agentLogs.classList.add('hidden');
     }
-    if (agentLogsEventSource) {
-        agentLogsEventSource.close();
-        agentLogsEventSource = null;
+    if (window.agentLogsEventSource) {
+        window.agentLogsEventSource.close();
+        window.agentLogsEventSource = null;
     }
 }
 

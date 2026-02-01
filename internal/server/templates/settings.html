@@ -6,10 +6,10 @@
         <p class="mt-2 text-base-content/60">Configure your workspace and integrations</p>
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-8">
+    <div class="flex flex-col md:flex-row gap-8">
         <!-- Sidebar Navigation (Desktop) -->
-        <aside class="lg:w-64 flex-shrink-0">
-            <nav class="lg:sticky lg:top-24 space-y-1">
+        <aside class="md:w-64 flex-shrink-0">
+            <nav class="md:sticky md:top-24 space-y-1">
                 <button data-action="show-section" data-section="general" id="nav-general" class="nav-section w-full px-4 py-3 text-left rounded-xl font-medium transition-smooth bg-primary/10 text-primary">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -2108,6 +2108,43 @@ function loadAgentsList() {
             contentDiv.classList.remove('hidden');
             console.error('Error fetching agents:', error);
             contentDiv.innerHTML = '<div class="text-center text-error py-8">Failed to load agents. Check the server logs for details.</div>';
+        });
+}
+
+function loadAliasesList() {
+    const aliasesList = document.getElementById('aliases-list');
+    if (!aliasesList) return;
+
+    aliasesList.innerHTML = '<div class="flex items-center justify-center py-4"><div class="animate-spin">&#9696;</div></div>';
+
+    fetch('/api/v1/agents')
+        .then(response => response.json())
+        .then(data => {
+            const aliases = (data.agents || []).filter(a => a.type === 'alias');
+
+            if (aliases.length === 0) {
+                aliasesList.innerHTML = '<div class="text-center text-base-content/60 py-4">No aliases configured. Click "+ Add Alias" to create one.</div>';
+                return;
+            }
+
+            let html = '<div class="space-y-3">';
+            aliases.forEach(alias => {
+                html += `
+                    <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                        <div>
+                            <span class="font-medium text-base-content">${escapeHtml(alias.name)}</span>
+                            ${alias.extends ? `<span class="text-sm text-base-content/60 ml-2">extends ${escapeHtml(alias.extends)}</span>` : ''}
+                        </div>
+                        <span class="text-xs ${alias.available ? 'text-success' : 'text-base-content/40'}">${alias.available ? 'Available' : 'Unavailable'}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            aliasesList.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error fetching aliases:', error);
+            aliasesList.innerHTML = '<div class="text-center text-error py-4">Failed to load aliases</div>';
         });
 }
 
