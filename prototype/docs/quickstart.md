@@ -17,7 +17,7 @@ No prior experience with command-line tools is required if you choose the Web UI
 
 **Git** — Mehrhof uses Git for version control and checkpoints. [Install Git](https://git-scm.com/downloads) if you don't have it.
 
-**Agent CLI** — Mehrhof orchestrates your local agent to handle text transformations. It does not provide AI access—you need an agent CLI installed separately. Claude is the recommended and primary-supported agent.
+**Agent CLI** — Mehrhof orchestrates your local agent to handle text transformations. It does not provide AI access—you need an agent CLI installed separately. Claude is the recommended and primary-supported agent. **Already paying for Claude or another agent? Mehrhof is free—no extra cost.**
 
 ```bash
 # Check if Claude is installed
