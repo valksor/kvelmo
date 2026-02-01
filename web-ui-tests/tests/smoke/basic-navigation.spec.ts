@@ -6,7 +6,7 @@
  * of the smoke test suite.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { startTestServer } from '../../helpers/server';
 
 let server: Awaited<ReturnType<typeof import('../../helpers/server').startTestServer>>;
