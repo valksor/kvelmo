@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const isCoverage = process.env.COVERAGE === 'true';
+
 /**
  * Playwright configuration for mehrhof Web UI testing.
  *
@@ -8,6 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
  * - Single worker to avoid race conditions
  * - Retries in CI for flaky network tests
  * - Video/screenshots on failure only
+ * - V8 coverage collection when COVERAGE=true
  */
 export default defineConfig({
   testDir: './tests',
@@ -15,8 +18,31 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
-  timeout: 30_000, // 30 seconds per test
+  reporter: isCoverage
+    ? [
+        [
+          'monocart-reporter',
+          {
+            name: 'Mehrhof Web UI Coverage',
+            outputFile: './coverage/report.html',
+            coverage: {
+              entryFilter: (entry: { url: string }) => {
+                // Only cover our app's JS, not third-party libs
+                return entry.url.includes('/static/js/') && !entry.url.includes('.min.js');
+              },
+              sourceFilter: (sourcePath: string) => {
+                // Include our source files
+                return sourcePath.includes('/static/js/');
+              },
+              reports: [['lcovonly', { file: 'lcov.info' }], ['text-summary'], ['html']],
+              outputDir: './coverage',
+            },
+          },
+        ],
+        ['list'],
+      ]
+    : [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
+  timeout: 30_000,
   expect: {
     timeout: 5_000,
   },
@@ -36,5 +62,4 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // Only run in Chromium for CI - skip firefox/webkit to reduce overhead
 });

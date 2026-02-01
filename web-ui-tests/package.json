@@ -4,6 +4,7 @@
   "description": "Playwright E2E tests for mehrhof Web UI",
   "scripts": {
     "test": "playwright test",
+    "test:coverage": "COVERAGE=true playwright test",
     "test:smoke": "playwright test tests/smoke",
     "test:ci": "playwright test tests/smoke --reporter github",
     "test:ui": "playwright test --ui",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.1",
+    "monocart-reporter": "^2.9.23",
     "@types/node": "^25.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
