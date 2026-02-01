@@ -4,7 +4,13 @@
 package commands
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/valksor/go-toolkit/paths"
 )
 
 func TestPluginsCommand_Properties(t *testing.T) {
@@ -241,5 +247,74 @@ func TestPluginsValidateCommand_Examples(t *testing.T) {
 		if !containsString(pluginsValidateCmd.Long, example) {
 			t.Errorf("Long description does not contain example %q", example)
 		}
+	}
+}
+
+func TestRunPluginsList_NoPlugins(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+	t.Chdir(tmpDir)
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runPluginsList(nil, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runPluginsList() error = %v", err)
+	}
+
+	if !strings.Contains(output, "No plugins discovered") {
+		t.Errorf("output missing 'No plugins discovered'\nGot:\n%s", output)
+	}
+}
+
+func TestCopyDir(t *testing.T) {
+	srcDir := t.TempDir()
+	dstDir := filepath.Join(t.TempDir(), "dest")
+
+	// Create source files
+	if err := os.MkdirAll(filepath.Join(srcDir, "sub"), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(srcDir, "file1.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(srcDir, "sub", "file2.txt"), []byte("world"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	if err := copyDir(srcDir, dstDir); err != nil {
+		t.Fatalf("copyDir() error = %v", err)
+	}
+
+	// Verify files were copied
+	data, err := os.ReadFile(filepath.Join(dstDir, "file1.txt"))
+	if err != nil {
+		t.Fatalf("ReadFile file1.txt: %v", err)
+	}
+
+	if string(data) != "hello" {
+		t.Errorf("file1.txt content = %q, want 'hello'", string(data))
+	}
+
+	data, err = os.ReadFile(filepath.Join(dstDir, "sub", "file2.txt"))
+	if err != nil {
+		t.Fatalf("ReadFile sub/file2.txt: %v", err)
+	}
+
+	if string(data) != "world" {
+		t.Errorf("sub/file2.txt content = %q, want 'world'", string(data))
 	}
 }

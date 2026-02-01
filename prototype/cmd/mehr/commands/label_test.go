@@ -4,7 +4,16 @@
 package commands
 
 import (
+	"bytes"
+	"context"
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/paths"
 )
 
 func TestLabelCommand_Properties(t *testing.T) {
@@ -276,4 +285,205 @@ func TestLabelCommand_LongDescriptionContains(t *testing.T) {
 			t.Errorf("Long description does not contain %q", substr)
 		}
 	}
+}
+
+func setupLabelWorkspace(t *testing.T) *storage.Workspace {
+	t.Helper()
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, cfg)
+	if err != nil {
+		t.Fatalf("OpenWorkspace: %v", err)
+	}
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+	t.Chdir(tmpDir)
+
+	return ws
+}
+
+func createLabelTestTask(t *testing.T, ws *storage.Workspace) {
+	t.Helper()
+	const taskID = "task-1"
+	const title = "Label Test"
+	activeTask := storage.NewActiveTask(taskID, "file:task.md", ws.WorkPath(taskID))
+	if err := ws.SaveActiveTask(activeTask); err != nil {
+		t.Fatalf("SaveActiveTask: %v", err)
+	}
+	work, err := ws.CreateWork(taskID, storage.SourceInfo{
+		Type: "file", Ref: "task.md", Content: helper_test.SampleTaskContent(title),
+	})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+	work.Metadata.Title = title
+	if err := ws.SaveWork(work); err != nil {
+		t.Fatalf("SaveWork: %v", err)
+	}
+}
+
+func captureLabelStdout(t *testing.T, fn func() error) (string, error) {
+	t.Helper()
+	r, w, pipeErr := os.Pipe()
+	if pipeErr != nil {
+		t.Fatalf("os.Pipe: %v", pipeErr)
+	}
+	oldStdout := os.Stdout
+	os.Stdout = w
+	err := fn()
+	_ = w.Close()
+	os.Stdout = oldStdout
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+
+	return buf.String(), err
+}
+
+func TestRunLabelAdd(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelAdd(cmd, []string{"task-1", "bug", "priority:high"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		if !strings.Contains(output, "Added 2 label(s)") {
+			t.Errorf("output missing 'Added 2 label(s)'\nGot:\n%s", output)
+		}
+		labels, _ := ws.GetLabels("task-1")
+		if len(labels) != 2 {
+			t.Errorf("expected 2 labels, got %d: %v", len(labels), labels)
+		}
+	})
+
+	t.Run("task not found", func(t *testing.T) {
+		_ = setupLabelWorkspace(t)
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+		err := runLabelAdd(cmd, []string{"nonexistent", "bug"})
+		if err == nil || !strings.Contains(err.Error(), "task not found") {
+			t.Errorf("expected 'task not found' error, got %v", err)
+		}
+	})
+}
+
+func TestRunLabelRemove(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		_ = ws.AddLabel("task-1", "bug")
+		_ = ws.AddLabel("task-1", "priority:high")
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelRemove(cmd, []string{"task-1", "bug"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		if !strings.Contains(output, "Removed 1 label(s)") {
+			t.Errorf("output missing 'Removed 1 label(s)'\nGot:\n%s", output)
+		}
+		labels, _ := ws.GetLabels("task-1")
+		if len(labels) != 1 {
+			t.Errorf("expected 1 label, got %d: %v", len(labels), labels)
+		}
+	})
+
+	t.Run("task not found", func(t *testing.T) {
+		_ = setupLabelWorkspace(t)
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+		err := runLabelRemove(cmd, []string{"nonexistent", "bug"})
+		if err == nil || !strings.Contains(err.Error(), "task not found") {
+			t.Errorf("expected 'task not found' error, got %v", err)
+		}
+	})
+}
+
+func TestRunLabelSet(t *testing.T) {
+	t.Run("set labels", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelSet(cmd, []string{"task-1", "new-label", "another"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		if !strings.Contains(output, "Set 2 label(s)") {
+			t.Errorf("output missing 'Set 2 label(s)'\nGot:\n%s", output)
+		}
+	})
+
+	t.Run("clear all", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		_ = ws.AddLabel("task-1", "bug")
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelSet(cmd, []string{"task-1"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		if !strings.Contains(output, "Cleared all labels") {
+			t.Errorf("output missing 'Cleared all labels'\nGot:\n%s", output)
+		}
+	})
+}
+
+func TestRunLabelList(t *testing.T) {
+	t.Run("with labels", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		_ = ws.AddLabel("task-1", "bug")
+		_ = ws.AddLabel("task-1", "priority:high")
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelList(cmd, []string{"task-1"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		for _, substr := range []string{"Labels for", "bug", "priority:high"} {
+			if !strings.Contains(output, substr) {
+				t.Errorf("output missing %q\nGot:\n%s", substr, output)
+			}
+		}
+	})
+
+	t.Run("no labels", func(t *testing.T) {
+		ws := setupLabelWorkspace(t)
+		createLabelTestTask(t, ws)
+		cmd := &cobra.Command{}
+		cmd.SetContext(context.Background())
+
+		output, err := captureLabelStdout(t, func() error {
+			return runLabelList(cmd, []string{"task-1"})
+		})
+		if err != nil {
+			t.Fatalf("error = %v", err)
+		}
+		if !strings.Contains(output, "(no labels)") {
+			t.Errorf("output missing '(no labels)'\nGot:\n%s", output)
+		}
+	})
 }

@@ -4,7 +4,12 @@
 package commands
 
 import (
+	"bytes"
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/valksor/go-toolkit/paths"
 )
 
 // Note: TestPlanCommand_Aliases and TestPlanCommand_StandaloneFlag are in common_test.go
@@ -163,5 +168,99 @@ func TestPlanCommand_Examples(t *testing.T) {
 		if !containsString(planCmd.Long, example) {
 			t.Errorf("Long description does not contain example %q", example)
 		}
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Behavioral tests for runStandalonePlan
+// ─────────────────────────────────────────────────────────────────────────────
+
+// savePlanFlags saves and defers restore of plan-related package vars.
+func savePlanFlags(t *testing.T) {
+	t.Helper()
+	origSeed := planSeed
+	origStandalone := planStandalone
+	t.Cleanup(func() {
+		planSeed = origSeed
+		planStandalone = origStandalone
+	})
+	planSeed = ""
+	planStandalone = false
+}
+
+// runStandalonePlanCapture pipes stdin input and captures stdout.
+func runStandalonePlanCapture(t *testing.T, stdinInput string) (string, error) {
+	t.Helper()
+
+	// Pipe stdin
+	oldStdin := os.Stdin
+	stdinR, stdinW, pipeErr := os.Pipe()
+	if pipeErr != nil {
+		t.Fatalf("os.Pipe (stdin): %v", pipeErr)
+	}
+	os.Stdin = stdinR
+	_, _ = stdinW.WriteString(stdinInput)
+	_ = stdinW.Close()
+	t.Cleanup(func() { os.Stdin = oldStdin })
+
+	// Capture stdout
+	r, w, pipeErr := os.Pipe()
+	if pipeErr != nil {
+		t.Fatalf("os.Pipe (stdout): %v", pipeErr)
+	}
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runStandalonePlan()
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+
+	return buf.String(), err
+}
+
+func TestRunStandalonePlan_WithSeed(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+	t.Chdir(tmpDir)
+	savePlanFlags(t)
+	planSeed = "build a REST API"
+
+	output, err := runStandalonePlanCapture(t, "quit\n")
+	if err != nil {
+		t.Fatalf("runStandalonePlan() error = %v", err)
+	}
+
+	for _, substr := range []string{"planning session started", "Seed topic:", "build a REST API", "Seed recorded:"} {
+		if !strings.Contains(output, substr) {
+			t.Errorf("output missing %q\nGot:\n%s", substr, output)
+		}
+	}
+}
+
+func TestRunStandalonePlan_NoSeed(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+	t.Chdir(tmpDir)
+	savePlanFlags(t)
+
+	output, err := runStandalonePlanCapture(t, "quit\n")
+	if err != nil {
+		t.Fatalf("runStandalonePlan() error = %v", err)
+	}
+
+	if !strings.Contains(output, "planning session started") {
+		t.Errorf("output missing 'planning session started'\nGot:\n%s", output)
+	}
+	if !strings.Contains(output, "Planning session ended") {
+		t.Errorf("output missing 'Planning session ended'\nGot:\n%s", output)
+	}
+	if strings.Contains(output, "Seed topic:") {
+		t.Errorf("output should NOT contain 'Seed topic:' when no seed\nGot:\n%s", output)
 	}
 }
