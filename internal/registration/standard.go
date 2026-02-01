@@ -5,9 +5,11 @@ package registration
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/valksor/go-mehrhof/internal/agent/claude"
 	"github.com/valksor/go-mehrhof/internal/agent/codex"
+	"github.com/valksor/go-mehrhof/internal/agent/noop"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/provider/asana"
 	"github.com/valksor/go-mehrhof/internal/provider/azuredevops"
@@ -52,9 +54,19 @@ func RegisterStandardProviders(cond *conductor.Conductor) {
 // RegisterStandardAgents registers all standard agents with the conductor's agent registry.
 // Continues on error, collecting all errors and returning at the end.
 // Some agents may be available even if others fail to register.
+//
+// When MEHR_TEST_MODE=1 is set, a noop agent is registered that's always available.
+// This allows smoke tests to run in CI without requiring actual AI agents.
 func RegisterStandardAgents(cond *conductor.Conductor) error {
 	registry := cond.GetAgentRegistry()
 	var errs []error
+
+	// Register noop agent first when in test mode (ensures it's available as fallback)
+	if os.Getenv("MEHR_TEST_MODE") == "1" {
+		if err := noop.Register(registry); err != nil {
+			errs = append(errs, fmt.Errorf("register noop agent: %w", err))
+		}
+	}
 
 	if err := claude.Register(registry); err != nil {
 		errs = append(errs, fmt.Errorf("register claude agent: %w", err))
