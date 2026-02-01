@@ -28,7 +28,7 @@ import javax.swing.*
  * Main panel showing task list, current task details, and workflow controls.
  */
 class TaskListPanel(
-    private val project: Project,
+    @Suppress("unused") private val project: Project,
     private val service: MehrhofProjectService
 ) : SimpleToolWindowPanel(true, true),
     MehrhofProjectService.StateListener {

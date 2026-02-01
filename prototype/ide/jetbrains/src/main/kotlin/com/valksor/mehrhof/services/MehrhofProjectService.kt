@@ -1,6 +1,5 @@
 package com.valksor.mehrhof.services
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -36,7 +35,6 @@ class MehrhofProjectService(
 ) : Disposable {
     private val log = Logger.getInstance(MehrhofProjectService::class.java)
     private val settings = MehrhofSettings.getInstance()
-    private val gson = Gson()
 
     // Connection state
     private val connected = AtomicBoolean(false)
@@ -347,7 +345,7 @@ class MehrhofProjectService(
 
         // Check if server is reachable (with retries for startup)
         var reachable = false
-        for (attempt in 1..10) {
+        for (@Suppress("UnusedPrivateProperty") attempt in 1..10) {
             if (client.isReachable()) {
                 reachable = true
                 break
@@ -516,7 +514,6 @@ class MehrhofProjectService(
             client
                 .getTask()
                 .onSuccess { response ->
-                    val oldTask = currentTask
                     currentTask = response.task
                     currentTaskWork = response.work
 

@@ -15,7 +15,7 @@ import javax.swing.SwingUtilities
  * Panel showing agent output and logs.
  */
 class OutputPanel(
-    private val project: Project,
+    @Suppress("unused") private val project: Project,
     private val service: MehrhofProjectService
 ) : JPanel(BorderLayout()),
     MehrhofProjectService.StateListener {
