@@ -4,7 +4,7 @@ Reference for implementation specification files.
 
 ## Overview
 
-Specification files are markdown documents with optional YAML frontmatter. They contain detailed implementation plans generated during `mehr plan`.
+Specification files are Markdown documents with optional YAML frontmatter. They contain detailed implementation plans generated during `mehr plan`.
 
 ## Location
 
@@ -95,7 +95,7 @@ Create `internal/api/health_test.go` with:
 ## Files to Modify
 
 | File                          | Action | Description        |
-| ----------------------------- | ------ | ------------------ |
+|-------------------------------|--------|--------------------|
 | `internal/api/health.go`      | Create | Health handler     |
 | `internal/api/health_test.go` | Create | Handler tests      |
 | `cmd/server/main.go`          | Modify | Route registration |

@@ -83,10 +83,10 @@ started: 2025-01-15T10:30:00Z
 **Fields:**
 
 | Field           | Description                        |
-| --------------- | ---------------------------------- |
+|-----------------|------------------------------------|
 | `id`            | 8-character task identifier        |
 | `ref`           | Source reference (file:, dir:)     |
-| `work_dir`      | Path to work directory (in home)    |
+| `work_dir`      | Path to work directory (in home)   |
 | `state`         | Current workflow state             |
 | `branch`        | Git branch name                    |
 | `use_git`       | Whether git operations are enabled |
@@ -125,7 +125,7 @@ git:
 #### metadata
 
 | Field        | Description              |
-| ------------ | ------------------------ |
+|--------------|--------------------------|
 | `id`         | Task identifier          |
 | `title`      | Task title (from source) |
 | `created_at` | Creation timestamp       |
@@ -133,12 +133,12 @@ git:
 
 #### source
 
-| Field     | Description                        |
-| --------- | ---------------------------------- |
+| Field     | Description                                       |
+|-----------|---------------------------------------------------|
 | `type`    | Source type (file, directory, github, jira, etc.) |
-| `ref`     | Original reference                 |
-| `read_at` | When source was read               |
-| `files`   | Paths to source files in `source/` directory |
+| `ref`     | Original reference                                |
+| `read_at` | When source was read                              |
+| `files`   | Paths to source files in `source/` directory      |
 
 The `source/` directory contains the actual source files:
 
@@ -155,7 +155,7 @@ source/
 #### git
 
 | Field         | Description          |
-| ------------- | -------------------- |
+|---------------|----------------------|
 | `branch`      | Task branch name     |
 | `base_branch` | Branch created from  |
 | `created_at`  | Branch creation time |
@@ -356,7 +356,7 @@ JWT tokens are a good choice...
 ## File Ownership
 
 | File/Directory       | Managed By | Editable    |
-| -------------------- | ---------- | ----------- |
+|----------------------|------------|-------------|
 | config.yaml          | User       | Yes         |
 | .active_task         | Mehrhof    | No          |
 | work.yaml            | Mehrhof    | No          |
