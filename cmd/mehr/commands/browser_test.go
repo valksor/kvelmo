@@ -15,7 +15,7 @@ func TestBrowserCommand_StrictCertsFlag(t *testing.T) {
 		return
 	}
 
-	// Check default value is false (meaning IgnoreCertErrors is true by default)
+	// Check the default value is false (meaning IgnoreCertErrors is true by default)
 	if flag.DefValue != "false" {
 		t.Errorf("strict-certs flag default value = %q, want 'false'", flag.DefValue)
 	}
@@ -65,6 +65,28 @@ func TestBrowserCommand_HeadlessFlag(t *testing.T) {
 
 	if flag.DefValue != "false" {
 		t.Errorf("headless flag default value = %q, want 'false'", flag.DefValue)
+	}
+}
+
+func TestTruncateString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		maxLen   int
+		expected string
+	}{
+		{"short string", "hello", 10, "hello"},
+		{"exact length", "hello", 5, "hello"},
+		{"truncated", "hello world", 8, "hello..."},
+		{"very short max", "hello world", 6, "hel..."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateString(tt.input, tt.maxLen)
+			if got != tt.expected {
+				t.Errorf("truncateString(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.expected)
+			}
+		})
 	}
 }
 

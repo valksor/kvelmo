@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	helper_test "github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/paths"
 )

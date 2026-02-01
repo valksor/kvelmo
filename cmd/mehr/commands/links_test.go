@@ -34,7 +34,7 @@ func TestLinksCommand_Structure(t *testing.T) {
 	expectedSubcommands := []string{"list", "backlinks", "search", "stats", "rebuild"}
 	actualNames := make(map[string]bool)
 	for _, cmd := range subcommands {
-		// Extract just the command name (first word) from Use field
+		// Extract just the command name (first word) from the Use field
 		name := cmd.Use
 		for i, r := range name {
 			if r == ' ' || r == '\t' {

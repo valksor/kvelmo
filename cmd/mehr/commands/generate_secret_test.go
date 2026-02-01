@@ -132,7 +132,7 @@ func TestGenerateSecretCommand(t *testing.T) {
 							}
 						}
 					} else if strings.HasPrefix(line, "MEHRHOF_STATE_SECRET:") {
-						// Extract from CI/CD format
+						// Extract from a CI / CD format
 						parts := strings.SplitN(line, ":", 2)
 						if len(parts) == 2 {
 							secret = strings.TrimSpace(parts[1])

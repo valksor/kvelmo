@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -952,15 +953,15 @@ func TestHandler_ListLabels_Sorting(t *testing.T) {
 	// Create tasks with labels to test sorting
 	ws := cond.GetWorkspace()
 
-	// Add tasks with labels in specific order to verify sorting behavior
+	// Add tasks with labels in a specific order to verify sorting behavior
 	for i := range 5 {
-		taskID := "sort-task-" + string(rune('A'+i))
+		taskID := "sort-task-" + strconv.Itoa(int(rune('A'+i)))
 		work, _ := ws.CreateWork(taskID, storage.SourceInfo{
 			Type:    "file",
 			Ref:     "task.md",
 			Content: "# Task",
 		})
-		work.Metadata.Labels = []string{"label:" + string(rune('E'-i))}
+		work.Metadata.Labels = []string{"label:" + strconv.Itoa(int(rune('E'-i)))}
 		_ = ws.SaveWork(work)
 	}
 

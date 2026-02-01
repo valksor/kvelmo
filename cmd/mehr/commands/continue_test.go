@@ -86,7 +86,7 @@ func TestContinueCommand_LongDescriptionContains(t *testing.T) {
 }
 
 func TestContinueCommand_DocumentsWhenToUse(t *testing.T) {
-	// Should document when to use guide, status, continue
+	// Should document when to use a guide, status, continue
 	comparisons := []string{
 		"guide",
 		"status",

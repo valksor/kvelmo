@@ -206,7 +206,7 @@ func TestGetProviderInfo(t *testing.T) {
 		{
 			name:     "case insensitive - GitHub",
 			provider: "GitHub",
-			wantNil:  true, // getProviderInfo uses lowercase switch, so "GitHub" won't match
+			wantNil:  true, // getProviderInfo uses a lowercase switch, so "GitHub" won't match
 		},
 	}
 
@@ -319,7 +319,7 @@ func TestRunProvidersList(t *testing.T) {
 
 	output := tc.StdoutString()
 
-	// Check for expected providers in output
+	// Check for expected providers in the output
 	expectedProviders := []string{
 		"file", "dir", "github", "gitlab", "jira", "linear", "notion", "wrike", "youtrack",
 	}
@@ -341,7 +341,7 @@ func TestRunProvidersList(t *testing.T) {
 		t.Error("output should contain DESCRIPTION header")
 	}
 
-	// Check for usage section
+	// Check for a usage section
 	if !strings.Contains(output, "Usage:") {
 		t.Error("output should contain usage section")
 	}
@@ -413,7 +413,7 @@ func TestRunProvidersInfo_KnownProvider(t *testing.T) {
 	}
 }
 
-// TestRunProvidersInfo_UnknownProvider tests the runProvidersInfo function with unknown provider.
+// TestRunProvidersInfo_UnknownProvider tests the runProvidersInfo function with an unknown provider.
 func TestRunProvidersInfo_UnknownProvider(t *testing.T) {
 	tc := NewTestContext(t)
 	// Add providersCmd parent first

@@ -195,7 +195,7 @@ func TestConfigCommand_Structure(t *testing.T) {
 }
 
 func TestRootCommand_HasSubcommands(t *testing.T) {
-	// Check that root command has some expected subcommands
+	// Check that the root command has some expected subcommands
 	// Note: Due to init() function ordering, not all commands may be registered
 	// during test execution. This test verifies a subset of known commands.
 
@@ -218,7 +218,7 @@ func TestRootCommand_HasSubcommands(t *testing.T) {
 	}
 
 	if len(missingCommands) > 0 {
-		// Log as warning rather than fail, since init ordering can vary
+		// Log as a warning rather than fail, since init ordering can vary
 		t.Logf("Warning: Some expected subcommands not found: %v", missingCommands)
 		t.Logf("Found subcommands: %v", getCommandNames(t, actualSubcommands))
 	}
@@ -280,7 +280,7 @@ func TestCostCommand_BreakdownFlag(t *testing.T) {
 
 // TestIsQuiet tests the IsQuiet function.
 func TestIsQuiet(t *testing.T) {
-	// Save original value
+	// Save the original value
 	originalQuiet := quiet
 	defer func() { quiet = originalQuiet }()
 
@@ -681,7 +681,7 @@ func TestConfirmAction_WithInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create pipe for mock stdin
+			// Create a pipe for mock stdin
 			r, w, _ := os.Pipe()
 			os.Stdin = r
 
@@ -818,7 +818,7 @@ func TestWorkspaceResolution(t *testing.T) {
 
 // TestIsSandbox tests the IsSandbox function.
 func TestIsSandbox(t *testing.T) {
-	// Save original value
+	// Save the original value
 	originalSandbox := sandbox
 	defer func() { sandbox = originalSandbox }()
 

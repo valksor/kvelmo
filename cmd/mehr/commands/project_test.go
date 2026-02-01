@@ -406,7 +406,7 @@ func TestTruncate(t *testing.T) {
 }
 
 func TestTruncate_Length(t *testing.T) {
-	// Test that truncated result is always <= maxLen + 3 (for "...")
+	// Test that the truncated result is always <= maxLen + 3 (for "...")
 	input := "this is a very long string that needs truncation"
 	maxLen := 20
 	result := truncate(input, maxLen)
@@ -416,7 +416,7 @@ func TestTruncate_Length(t *testing.T) {
 	}
 
 	// Should end with "..." if truncated
-	if len(input) > maxLen && result != "" {
+	if result != "" {
 		if len(result) >= 3 && result[len(result)-3:] != "..." {
 			t.Errorf("truncated string should end with '...', got %q", result)
 		}

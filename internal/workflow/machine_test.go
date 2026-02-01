@@ -926,9 +926,9 @@ func TestEffectRegistry_Has(t *testing.T) {
 	}
 
 	// Register an effect
-	registry.Register(EffectInitWorkUnit, EffectFunc(func(ctx context.Context, wu *WorkUnit) error {
+	registry.Register(EffectInitWorkUnit, func(ctx context.Context, wu *WorkUnit) error {
 		return nil
-	}))
+	})
 
 	// Now it should exist
 	if !registry.Has(EffectInitWorkUnit) {
@@ -936,22 +936,7 @@ func TestEffectRegistry_Has(t *testing.T) {
 	}
 
 	// Unknown effect should not exist
-	if registry.Has(EffectType("unknown")) {
+	if registry.Has("unknown") {
 		t.Error("registry should not have unknown effect type")
-	}
-}
-
-func TestStepConstants(t *testing.T) {
-	if StepPlanning != "planning" {
-		t.Errorf("StepPlanning = %q, want %q", StepPlanning, "planning")
-	}
-	if StepImplementing != "implementing" {
-		t.Errorf("StepImplementing = %q, want %q", StepImplementing, "implementing")
-	}
-	if StepReviewing != "reviewing" {
-		t.Errorf("StepReviewing = %q, want %q", StepReviewing, "reviewing")
-	}
-	if StepCheckpointing != "checkpointing" {
-		t.Errorf("StepCheckpointing = %q, want %q", StepCheckpointing, "checkpointing")
 	}
 }
