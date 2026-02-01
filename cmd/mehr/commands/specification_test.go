@@ -4,7 +4,11 @@
 package commands
 
 import (
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 func TestSpecificationCommand_Properties(t *testing.T) {
@@ -84,5 +88,39 @@ func TestSpecificationCommand_Flags(t *testing.T) {
 			// Note: We can't easily check the actual default value without parsing,
 			// but we can verify the flag exists
 		})
+	}
+}
+
+func TestFormatSpecificationHeader(t *testing.T) {
+	spec := &storage.Specification{
+		Number:    1,
+		Title:     "Implement auth",
+		Status:    "pending",
+		Component: "backend",
+		CreatedAt: time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC),
+	}
+
+	result := formatSpecificationHeader(spec)
+
+	for _, substr := range []string{"Specification 1", "Implement auth", "pending", "backend", "2025-01-15"} {
+		if !strings.Contains(result, substr) {
+			t.Errorf("header missing %q\nGot:\n%s", substr, result)
+		}
+	}
+}
+
+func TestFormatSpecificationHeader_Minimal(t *testing.T) {
+	spec := &storage.Specification{
+		Number: 2,
+		Status: "done",
+	}
+
+	result := formatSpecificationHeader(spec)
+
+	if !strings.Contains(result, "Specification 2") {
+		t.Errorf("header missing 'Specification 2'\nGot:\n%s", result)
+	}
+	if strings.Contains(result, "Component") {
+		t.Errorf("header should NOT contain 'Component' when empty\nGot:\n%s", result)
 	}
 }
