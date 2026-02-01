@@ -35,7 +35,7 @@ func init() {
 func runMCPServer(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Disable logging to stderr - MCP protocol uses stdout for JSON-RPC
+	// Disable logging to stderr - MCP protocol uses stdout for JSON-RPC,
 	// and stderr logging can interfere with client parsing.
 	// Configure both go-toolkit logger and default slog to discard output.
 	log.Configure(log.Options{
@@ -61,9 +61,9 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 		// Note: cancel() is non-blocking (just closes a channel), so this goroutine
 		// will not hang even if the context cancellation takes time to propagate.
 	}()
-	defer wg.Wait() // Wait for signal handler to complete before returning
+	defer wg.Wait() // Wait for the signal handler to complete before returning
 
-	// Create tool registry and register commands
+	// Create a tool registry and register commands
 	toolRegistry := mcp.NewToolRegistry(rootCmd)
 
 	// Register safe commands for agent use
@@ -114,7 +114,7 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create MCP server
+	// Create an MCP server
 	server := mcp.NewServer(toolRegistry, serverOpts...)
 
 	// Start server (blocks until context canceled)
@@ -129,7 +129,7 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 
 // registerSafeCommands registers commands that are safe for AI agents to use.
 func registerSafeCommands(registry *mcp.ToolRegistry) {
-	// Get commands from root command
+	// Get commands from the root command
 	var commandsToRegister []*cobra.Command
 
 	// Status and info commands
@@ -168,6 +168,6 @@ func registerSafeCommands(registry *mcp.ToolRegistry) {
 	commandsToRegister = append(commandsToRegister, scanCmd)
 	commandsToRegister = append(commandsToRegister, findCmd)
 
-	// Register all commands with default arg mapper
+	// Register all commands with the default arg mapper
 	registry.RegisterCommands(commandsToRegister, mcp.DefaultArgMapper)
 }

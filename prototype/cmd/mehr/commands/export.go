@@ -90,7 +90,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("export task: %w", err)
 	}
 
-	// Write to file
+	// Write to a file
 	if err := os.WriteFile(exportOutput, []byte(markdown), 0o644); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}

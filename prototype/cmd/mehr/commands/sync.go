@@ -1,4 +1,4 @@
-// Package commands provides CLI commands for mehr.
+// Package commands provide CLI commands for mehr.
 package commands
 
 import (
@@ -53,7 +53,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Get workspace from conductor
+	// Get workspace from a conductor
 	ws := c.GetWorkspace()
 
 	// Load task work
@@ -69,7 +69,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return errors.New("task directory is empty")
 	}
 
-	// Load source content to reconstruct current work unit
+	// Load source content to reconstruct the current work unit
 	var sourcePath string
 	if len(work.Source.Files) > 0 {
 		sourcePath = work.Source.Files[0]
@@ -99,7 +99,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf(display.Info("→")+" Fetching latest task data from %s...\n", workUnit.Provider)
 
-	// Fetch updated version from provider
+	// Fetch updated version from the provider
 	updated, err := fetchUpdatedFromProvider(ctx, c, workUnit)
 	if err != nil {
 		return fmt.Errorf("fetch updated task: %w", err)
@@ -124,12 +124,12 @@ func runSync(cmd *cobra.Command, args []string) error {
 	// Create delta specification generator
 	gen := workflow.NewGenerator(taskDir)
 
-	// Backup original source file
+	// Back up original source file
 	if err := gen.BackupSourceFile(sourcePath); err != nil {
 		fmt.Printf("%s Warning: could not backup source file: %v\n", display.Warning("→"), err)
 	}
 
-	// Write diff file
+	// Write a diff file
 	if err := gen.WriteDiffFile(changes); err != nil {
 		fmt.Printf("%s Warning: could not write diff file: %v\n", display.Warning("→"), err)
 	}
@@ -169,7 +169,7 @@ func fetchUpdatedFromProvider(ctx context.Context, c *conductor.Conductor, old *
 		return nil, fmt.Errorf("resolve provider: %w", err)
 	}
 
-	// Check if provider supports reading
+	// Check if the provider supports reading
 	reader, ok := providerInstance.(provider.Reader)
 	if !ok {
 		return nil, fmt.Errorf("provider %s does not support reading", old.Provider)

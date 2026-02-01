@@ -119,7 +119,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for active task
+	// Check for an active task
 	activeTask := cond.GetActiveTask()
 	if activeTask == nil {
 		fmt.Print(display.NoActiveTaskError())
@@ -131,7 +131,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return errors.New("no active task")
 	}
 
-	// Handle --force flag to reset stuck state
+	// Handle --force the flag to reset the stuck state
 	if reviewForce {
 		if err := cond.ResetState(ctx); err != nil {
 			return fmt.Errorf("reset state: %w", err)
@@ -145,7 +145,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return errors.New("workspace not available")
 	}
 
-	// Check if review tool is specified
+	// Check if a review tool is specified
 	if reviewTool == "" {
 		// Use agent-based code review when no external tool is specified
 		fmt.Println("Running agent-based code review...")
@@ -153,7 +153,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return cond.RunReview(ctx)
 	}
 
-	// Check if review tool is available
+	// Check if the review tool is available
 	toolPath, err := exec.LookPath(reviewTool)
 	if err != nil {
 		return fmt.Errorf("review tool '%s' not found in PATH\n\nInstall with: npm install -g %s\n\nOr use --tool to specify a different tool:\n  mehr review --tool <tool-name>", reviewTool, reviewTool)
@@ -181,7 +181,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		fmt.Println("Review completed successfully")
 	}
 
-	// Get next review number
+	// Get the next review number
 	reviewNum, err := ws.NextReviewNumber(activeTask.ID)
 	if err != nil {
 		return fmt.Errorf("get next review number: %w", err)
@@ -204,7 +204,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("save review output: %w", err)
 	}
 
-	// Get the path for display (load config for pattern)
+	// Get the path for display (load config for the pattern)
 	cfg, _ := ws.LoadConfig()
 	outputPath := ws.ReviewPath(activeTask.ID, reviewNum, cfg)
 	fmt.Printf("\nReview saved to: %s\n", outputPath)
@@ -235,7 +235,7 @@ func runStandaloneReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Set up progress callback using helper
+	// Set up a progress callback using helper
 	if verbose {
 		SetupVerboseEventHandlers(cond)
 	}
@@ -251,7 +251,7 @@ func runStandaloneReview(cmd *cobra.Command, args []string) error {
 		diffOpts.Range = reviewRange
 	case reviewBranch != "" || cmd.Flags().Changed("branch"):
 		diffOpts.Mode = conductor.DiffModeBranch
-		diffOpts.BaseBranch = reviewBranch // May be empty, will auto-detect
+		diffOpts.BaseBranch = reviewBranch // Maybe empty will auto-detect
 	case len(args) > 0:
 		diffOpts.Mode = conductor.DiffModeFiles
 		diffOpts.Files = args
@@ -270,7 +270,7 @@ func runStandaloneReview(cmd *cobra.Command, args []string) error {
 	// Show what we're reviewing
 	printReviewModeInfo(diffOpts, reviewFix)
 
-	// Run standalone review with spinner in non-verbose mode
+	// Run a standalone review with spinner in non-verbose mode
 	var result *conductor.StandaloneReviewResult
 	var reviewErr error
 	if verbose {

@@ -452,7 +452,7 @@ func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 
 	var tabID string
 	if len(args) > 0 {
-		// Open new tab with URL
+		// Open a new tab with URL
 		tab, err := ctrl.OpenTab(ctx, args[0])
 		if err != nil {
 			return fmt.Errorf("open tab: %w", err)
@@ -464,7 +464,7 @@ func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 			}
 		}()
 	} else {
-		// Use first available tab
+		// Use the first available tab
 		tabs, err := ctrl.ListTabs(ctx)
 		if err != nil {
 			return fmt.Errorf("list tabs: %w", err)
@@ -514,7 +514,7 @@ func runBrowserNavigate(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -585,7 +585,7 @@ func runBrowserReload(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -616,7 +616,7 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -702,7 +702,7 @@ func runBrowserClick(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -734,7 +734,7 @@ func runBrowserType(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -766,7 +766,7 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -799,7 +799,7 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -843,7 +843,7 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use first available tab
+	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
 		return fmt.Errorf("list tabs: %w", err)
@@ -885,7 +885,7 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 
 // setupBrowserController creates and connects a browser controller with the current configuration.
 // It returns the controller and a cleanup function that should be called when done.
-// The cleanup function will handle disconnect or no-op depending on keepAlive setting.
+// The cleanup function will handle disconnect or no-op depending on the keepAlive setting.
 func setupBrowserController(ctx context.Context, timeout time.Duration) (browser.Controller, func(), error) {
 	cfg := browser.Config{
 		Host:             browserHost,
@@ -911,7 +911,7 @@ func setupBrowserController(ctx context.Context, timeout time.Duration) (browser
 	return ctrl, cleanup, nil
 }
 
-// disconnectWrapper wraps disconnect with error logging for use in defer.
+// disconnectWrapper wraps disconnect with error logging.
 func disconnectWrapper(ctrl browser.Controller) {
 	if err := ctrl.Disconnect(); err != nil {
 		fmt.Printf("Warning: disconnect failed: %v\n", err)
@@ -973,13 +973,13 @@ func runBrowserCookiesExport(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Get cookies from browser
+	// Get cookies from the browser
 	cookies, err := ctrl.GetCookies(ctx)
 	if err != nil {
 		return fmt.Errorf("get cookies: %w", err)
 	}
 
-	// Determine output path
+	// Determine the output path
 	outputPath := cookieOutputPath
 	if outputPath == "" {
 		cookiePath, err := browser.CookiePath(profile)
@@ -1012,7 +1012,7 @@ func runBrowserCookiesImport(cmd *cobra.Command, args []string) error {
 		profile = "default"
 	}
 
-	// Determine input path
+	// Determine the input path
 	inputPath := cookieInputPath
 	if inputPath == "" {
 		cookiePath, err := browser.CookiePath(profile)
@@ -1022,7 +1022,7 @@ func runBrowserCookiesImport(cmd *cobra.Command, args []string) error {
 		inputPath = cookiePath
 	}
 
-	// Load cookies from file
+	// Load cookies from a file
 	storage := browser.NewCookieStorage("")
 	cookies, err := storage.Load(profile)
 	if err != nil {
@@ -1035,7 +1035,7 @@ func runBrowserCookiesImport(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Set cookies in browser
+	// Set cookies in a browser
 	if err := ctrl.SetCookies(ctx, cookies); err != nil {
 		return fmt.Errorf("set cookies: %w", err)
 	}

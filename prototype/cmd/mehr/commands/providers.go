@@ -151,7 +151,7 @@ func runProvidersStatus(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 	ctx := context.Background()
 
-	// Initialize conductor to get provider registry
+	// Initialize conductor to get the provider registry
 	cond, err := initializeConductor(ctx)
 	if err != nil {
 		return fmt.Errorf("initialize conductor: %w", err)
@@ -233,7 +233,7 @@ func runProvidersStatus(cmd *cobra.Command, args []string) error {
 			)
 		}
 
-		// Add message if available
+		// Add a message if available
 		if healthInfo.Message != "" {
 			line += "\t" + healthInfo.Message
 		}

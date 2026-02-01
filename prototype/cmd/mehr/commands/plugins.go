@@ -157,7 +157,7 @@ func runPluginsList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Load workspace config to check enabled status
+	// Load workspace config to check the enabled status
 	ws, _ := storage.OpenWorkspace(context.Background(), ".", nil)
 	var cfg *storage.WorkspaceConfig
 	if ws != nil {
@@ -230,7 +230,7 @@ func runPluginsInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create plugins directory: %w", err)
 	}
 
-	// Check if source is a git URL or local path
+	// Check if the source is a git URL or local path
 	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") || strings.HasPrefix(source, "git@") {
 		return installFromGit(source, targetDir)
 	}
@@ -280,7 +280,7 @@ func installFromGit(url, targetDir string) error {
 }
 
 func installFromLocal(sourcePath, targetDir string) error {
-	// Resolve source path
+	// Resolve the source path
 	absSource, err := filepath.Abs(sourcePath)
 	if err != nil {
 		return fmt.Errorf("resolve source path: %w", err)
@@ -541,7 +541,7 @@ func getPluginDiscovery() (*plugin.Discovery, error) {
 		return nil, fmt.Errorf("get global plugins dir: %w", err)
 	}
 
-	// Get current working directory for project plugins
+	// Get the current working directory for project plugins
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("get working directory: %w", err)

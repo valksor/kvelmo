@@ -118,7 +118,7 @@ func init() {
 func runConfigValidate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// Get working directory
+	// Get a working directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -164,7 +164,7 @@ func runConfigValidate(cmd *cobra.Command, args []string) error {
 // It attempts to initialize the conductor to get the full registry,
 // falling back to hardcoded defaults if initialization fails.
 func getBuiltInAgents(ctx context.Context) []string {
-	// Try to get from conductor registry
+	// Try to get from the conductor registry
 	cond, err := initializeConductor(ctx, conductor.WithAutoInit(false))
 	if err == nil {
 		return cond.GetAgentRegistry().List()
@@ -176,13 +176,13 @@ func getBuiltInAgents(ctx context.Context) []string {
 
 // runConfigInit creates a new workspace configuration file.
 func runConfigInit(cmd *cobra.Command, args []string) error {
-	// Get working directory
+	// Get a working directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	// Open workspace to find config path
+	// Open workspace to find a config path
 	ws, err := storage.OpenWorkspace(context.Background(), wd, nil)
 	if err != nil {
 		return fmt.Errorf("open workspace: %w", err)
@@ -228,7 +228,7 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Creating new configuration: %s\n", configPath)
 	}
 
-	// Detect project type if not specified
+	// Detect the project type if not specified
 	projectType := configInitProject
 	if projectType == "" {
 		projectType = detectProjectType(wd)
@@ -377,7 +377,7 @@ func runConfigExplain(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// applyProjectCustomizations customizes the config based on project type.
+// applyProjectCustomizations customizes the config based on the project type.
 func applyProjectCustomizations(cfg *storage.WorkspaceConfig, projectType string) {
 	switch projectType {
 	case "go":

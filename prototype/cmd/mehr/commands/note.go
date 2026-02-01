@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	noteTask    string // Add note to queue task (format: <queue-id>/<task-id>)
-	noteRunning string // Add note to running parallel task (running task ID)
+	noteTask    string // Add a note to queue task (format: <queue-id>/<task-id>)
+	noteRunning string // Add a note to running the parallel task (running task ID)
 )
 
 var noteCmd = &cobra.Command{
@@ -82,17 +82,17 @@ func runNote(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// If --running specified, add note to running parallel task
+	// If --running specified, add a note to running the parallel task
 	if noteRunning != "" {
 		return addNoteToRunningTask(ctx, noteRunning, args)
 	}
 
-	// If --task specified, add note to queue task
+	// If --task specified, add note to a queue task
 	if noteTask != "" {
 		return addNoteToQueueTask(ctx, cond, noteTask, args)
 	}
 
-	// Check for active task
+	// Check for an active task
 	if cond.GetActiveTask() == nil {
 		fmt.Print(display.NoActiveTaskError())
 
@@ -111,7 +111,7 @@ func runNote(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("save answer: %w", err)
 			}
 
-			// Persist answer to latest session for context recovery
+			// Persist answer to the latest session for context recovery
 			latestSessionFile := ws.GetLatestSessionFile(taskID)
 			if latestSessionFile != "" {
 				session, err := ws.LoadSession(taskID, latestSessionFile)
@@ -143,14 +143,14 @@ func runNote(cmd *cobra.Command, args []string) error {
 		return ws.AppendNote(taskID, message, cond.GetActiveTask().State)
 	}
 
-	// If message provided as argument, save it and exit
+	// If a message provided as argument, save it and exit
 	if len(args) > 0 {
 		message := strings.Join(args, " ")
 
 		// Check if answering a question BEFORE saving (saveNote clears the question)
 		hadPendingQuestion := ws.HasPendingQuestion(taskID)
 
-		// Show the question being answered (so user knows what they're responding to)
+		// Show the question being answered (so the user knows what they're responding to)
 		if hadPendingQuestion {
 			q, _ := ws.LoadPendingQuestion(taskID)
 			fmt.Printf("Answering: %s\n", q.Question)
@@ -234,7 +234,7 @@ func runNote(cmd *cobra.Command, args []string) error {
 
 // addNoteToQueueTask adds a note to a queue task without starting it.
 //
-//nolint:unparam // ctx is kept for consistent signature with other command functions
+//nolint:unparam // ctx is kept for a consistent signature with other command functions
 func addNoteToQueueTask(ctx context.Context, cond *conductor.Conductor, taskRef string, args []string) error {
 	// Parse queue task reference
 	queueID, taskID, err := conductor.ParseQueueTaskRef(taskRef)
@@ -276,7 +276,7 @@ func addNoteToQueueTask(ctx context.Context, cond *conductor.Conductor, taskRef 
 		return errors.New("note cannot be empty")
 	}
 
-	// Add note to queue task
+	// Add note to the queue task
 	if err := ws.AppendQueueNote(queueID, taskID, message); err != nil {
 		return fmt.Errorf("save note: %w", err)
 	}
@@ -336,7 +336,7 @@ func addNoteToRunningTask(ctx context.Context, runningID string, args []string) 
 		return errors.New("note cannot be empty")
 	}
 
-	// Send note to running task
+	// Send note to a running task
 	if err := registry.AddNote(ctx, runningID, message); err != nil {
 		return fmt.Errorf("send note: %w", err)
 	}

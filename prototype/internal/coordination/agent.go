@@ -290,7 +290,7 @@ func (r *Resolver) ExplainAgentResolution(ctx context.Context, req ResolveReques
 			Skipped:  skipped,
 		}
 
-		// First non-skipped level is the effective one
+		// The first non-skipped level is the effective one
 		if !skipped && !found {
 			effectiveAgent = agentName
 			effectiveSource = source

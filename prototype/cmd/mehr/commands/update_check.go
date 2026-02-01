@@ -20,7 +20,7 @@ func checkForUpdatesInBackground(ctx context.Context) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	// Get settings to check last update time
+	// Get settings to check the last update time
 	settings, err := config.LoadSettings()
 	if err != nil {
 		return // Silently skip if settings can't be loaded
@@ -42,12 +42,12 @@ func checkForUpdatesInBackground(ctx context.Context) {
 	// Resolve GitHub token
 	token, _ := github.ResolveToken("")
 
-	// Create checker and check for updates
+	// Create a checker and check for updates
 	checker := update.NewChecker(timeoutCtx, token, "valksor", "go-mehrhof")
 
 	opts := update.CheckOptions{
 		CurrentVersion:    Version,
-		IncludePreRelease: false, // Only check for stable releases in background
+		IncludePreRelease: false, // Only check for stable releases in the background
 	}
 
 	status, err := checker.Check(timeoutCtx, opts)
@@ -78,7 +78,7 @@ func saveUpdateCheckTime(settings *config.Settings) error {
 	return settings.Save()
 }
 
-// shouldCheckForUpdates returns true if update checks are enabled and it's time to check again.
+// shouldCheckForUpdates returns true if update checks are enabled, and it's time to check again.
 func shouldCheckForUpdates(settings *config.Settings) bool {
 	// Skip if this is a dev build
 	if Version == "dev" || Version == "none" {

@@ -153,7 +153,6 @@ func (a *WorkflowAdapter) Manifest() *Manifest {
 	return a.manifest
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // BuildPhaseDefinitions converts plugin phase definitions to workflow.PhaseDefinition
 // for use with MachineBuilder.
 func (a *WorkflowAdapter) BuildPhaseDefinitions() []workflow.PhaseDefinition {

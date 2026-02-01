@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	linksListFormat  string // Format for list output: table, json
+	linksListFormat  string // Format for list output: table, JSON
 	linksListVerbose bool   // Show additional context
 )
 

@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	helper_test "github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	toolkit_helper_test "github.com/valksor/go-toolkit/helper_test"
+	toolkithelpertest "github.com/valksor/go-toolkit/helper_test"
 )
 
 // TestContext provides test context for command tests.
@@ -35,7 +35,7 @@ func NewTestContext(t *testing.T) *TestContext {
 	stdoutBuf := &bytes.Buffer{}
 	stderrBuf := &bytes.Buffer{}
 
-	// Set up workspace
+	// Set up a workspace
 	ws := openTestWorkspace(t, tmpDir)
 	if err := ws.EnsureInitialized(); err != nil {
 		t.Fatalf("Ensure initialized: %v", err)
@@ -44,7 +44,7 @@ func NewTestContext(t *testing.T) *TestContext {
 	// Create a test root command
 	rootCmd := createTestRootCommand(stdoutBuf, stderrBuf)
 
-	// Set working directory
+	// Set a working directory
 	t.Chdir(tmpDir)
 
 	return &TestContext{
@@ -92,14 +92,14 @@ func ExecuteCommandWithContext(ctx context.Context, cmd *cobra.Command, args ...
 func SetupTestWorkspace(t *testing.T) string {
 	t.Helper()
 
-	return toolkit_helper_test.CreateTempGitRepo(t)
+	return toolkithelpertest.CreateTempGitRepo(t)
 }
 
 // SetupTestGitRepo creates a test git repository.
 func SetupTestGitRepo(t *testing.T) string {
 	t.Helper()
 
-	return toolkit_helper_test.CreateTempGitRepo(t)
+	return toolkithelpertest.CreateTempGitRepo(t)
 }
 
 // AssertOutputContains fails the test if the output doesn't contain the substring.
@@ -207,7 +207,7 @@ func (tc *TestContext) CreateTaskWork(taskID, title string) *storage.TaskWork {
 
 // WithGit initializes a git repository in the test directory.
 func (tc *TestContext) WithGit() {
-	toolkit_helper_test.CreateTempGitRepoInDir(tc.T, tc.TmpDir)
+	toolkithelpertest.CreateTempGitRepoInDir(tc.T, tc.TmpDir)
 }
 
 // StdoutString returns the stdout buffer as a string.
@@ -241,20 +241,20 @@ func (tc *TestContext) WithRegisteredSubCommands(cmds ...*cobra.Command) {
 // CreateFile creates a file in the test directory.
 func (tc *TestContext) CreateFile(relativePath, content string) {
 	fullPath := filepath.Join(tc.TmpDir, relativePath)
-	toolkit_helper_test.WriteFile(tc.T, fullPath, content)
+	toolkithelpertest.WriteFile(tc.T, fullPath, content)
 }
 
 // AssertFileExists fails if the file doesn't exist.
 func (tc *TestContext) AssertFileExists(relativePath string) {
-	toolkit_helper_test.AssertFileExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
+	toolkithelpertest.AssertFileExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
 }
 
 // AssertFileNotExists fails if the file exists.
 func (tc *TestContext) AssertFileNotExists(relativePath string) {
-	toolkit_helper_test.AssertFileNotExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
+	toolkithelpertest.AssertFileNotExists(tc.T, filepath.Join(tc.TmpDir, relativePath))
 }
 
 // AssertFileContains fails if the file doesn't contain the content.
 func (tc *TestContext) AssertFileContains(relativePath, content string) {
-	toolkit_helper_test.AssertFileContains(tc.T, filepath.Join(tc.TmpDir, relativePath), content)
+	toolkithelpertest.AssertFileContains(tc.T, filepath.Join(tc.TmpDir, relativePath), content)
 }

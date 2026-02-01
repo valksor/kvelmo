@@ -42,9 +42,9 @@ func getDeduplicatingStdout() io.Writer {
 // providers (file, directory) and agents (claude) registered.
 //
 // This is the common initialization sequence used by most commands.
-// Options should be built by the caller to customize behavior per command.
+// The caller should build options to customize behavior per command.
 func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conductor.Conductor, error) {
-	// Create conductor with provided options
+	// Create a conductor with provided options
 	cond, err := conductor.New(opts...)
 	if err != nil {
 		return nil, errors.New(mehrhofdisplay.ConductorError("create", err))
@@ -67,7 +67,7 @@ func initializeConductor(ctx context.Context, opts ...conductor.Option) (*conduc
 }
 
 // confirmAction prompts the user for confirmation unless skipConfirm is true.
-// Returns true if the action should proceed, false if cancelled.
+// Returns true if the action should proceed, false if canceled.
 // The prompt parameter should describe what will happen (e.g., "delete this task").
 func confirmAction(prompt string, skipConfirm bool) (bool, error) {
 	if skipConfirm {
@@ -136,7 +136,7 @@ func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 	}
 
 	if cmdOpts.StepAgent != "" {
-		// Derive step name from the step agent variable name
+		// Derive the step name from the step agent variable name
 		// e.g., "planAgentPlanning" -> "planning"
 		stepName := deriveStepName(cmdOpts.StepAgent)
 		if stepName != "" {
@@ -153,7 +153,7 @@ func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 }
 
 // deriveStepName converts a step agent variable suffix to a step name.
-// For example: "planning" -> "planning", "implementing" -> "implementing"
+// For example, "planning" -> "planning", "implementing" -> "implementing"
 // This is used when the agent name is passed directly without a step prefix.
 func deriveStepName(agentVar string) string {
 	// Map common variable names to step names
@@ -329,7 +329,7 @@ func ResolveWorkspaceRoot(ctx context.Context) (WorkspaceResolution, error) {
 		}, nil
 	}
 
-	// In main git repository
+	// In the main git repository
 	return WorkspaceResolution{
 		Root: git.Root(),
 		Git:  git,
@@ -359,7 +359,7 @@ func printAgentEventTo(w io.Writer, e agent.Event) {
 		}
 	}
 
-	// Fallback: check for result in data
+	// Fallback: check for a result in data
 	if e.Text == "" && e.ToolCall == nil {
 		if result, ok := e.Data["result"].(string); ok {
 			_, err := fmt.Fprint(w, result)

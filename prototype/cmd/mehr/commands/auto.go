@@ -147,7 +147,7 @@ func runAuto(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for existing task
+	// Check for an existing task
 	if cond.GetActiveTask() != nil {
 		return fmt.Errorf("task already active: %s\nUse 'mehr abandon' to clear it first, or 'mehr status' for details", cond.GetActiveTask().ID)
 	}
