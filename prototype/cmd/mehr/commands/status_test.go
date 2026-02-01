@@ -4,6 +4,10 @@
 package commands
 
 import (
+	"bytes"
+	"context"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -180,5 +184,319 @@ func TestStatusCommand_JSONFlagNoShorthand(t *testing.T) {
 	}
 	if flag.Shorthand != "" {
 		t.Errorf("json flag has shorthand %q, expected none", flag.Shorthand)
+	}
+}
+
+// --- Phase 4: Behavioral tests ---
+
+func TestShowActiveTask_NoActiveTask(t *testing.T) {
+	tc := NewTestContext(t)
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = false
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showActiveTask(context.Background(), tc.Workspace, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showActiveTask returned error: %v", err)
+	}
+
+	if !strings.Contains(output, "No active task") {
+		t.Errorf("expected output to contain %q, got:\n%s", "No active task", output)
+	}
+}
+
+func TestShowActiveTask_WithTask(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("test-task-1", "file:test.md")
+	tc.CreateTaskWork("test-task-1", "My Test Task")
+
+	oldJSON := statusJSON
+	oldDiagram := statusDiagram
+
+	defer func() {
+		statusJSON = oldJSON
+		statusDiagram = oldDiagram
+	}()
+
+	statusJSON = false
+	statusDiagram = false
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showActiveTask(context.Background(), tc.Workspace, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showActiveTask returned error: %v", err)
+	}
+
+	expected := []string{
+		"Active Task:",
+		"test-task-1",
+		"My Test Task",
+		"No specifications yet",
+		"mehr plan",
+		"mehr note",
+		"mehr finish",
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+func TestShowActiveTask_JSONOutput(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("test-task-1", "file:test.md")
+	tc.CreateTaskWork("test-task-1", "My Test Task")
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = true
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showActiveTask(context.Background(), tc.Workspace, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showActiveTask returned error: %v", err)
+	}
+
+	expected := []string{
+		`"task_id"`,
+		`"test-task-1"`,
+		`"My Test Task"`,
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected JSON output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+func TestShowAllTasks_Empty(t *testing.T) {
+	tc := NewTestContext(t)
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = false
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showAllTasks(tc.Workspace)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showAllTasks returned error: %v", err)
+	}
+
+	if !strings.Contains(output, "No tasks found") {
+		t.Errorf("expected output to contain %q, got:\n%s", "No tasks found", output)
+	}
+}
+
+func TestShowAllTasks_WithTasks(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("task-1", "file:task1.md")
+	tc.CreateTaskWork("task-1", "First Task")
+	tc.CreateTaskWork("task-2", "Second Task")
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = false
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showAllTasks(tc.Workspace)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showAllTasks returned error: %v", err)
+	}
+
+	expected := []string{
+		"TASK ID",
+		"First Task",
+		"task-2",
+		"Second Task",
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+func TestPrintSpecLegend(t *testing.T) {
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	printSpecLegend()
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	expected := []string{
+		"Draft",
+		"Ready",
+		"Implementing",
+		"Completed",
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected legend output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+// --- Phase 5: Deep behavioral tests ---
+
+func TestShowAllTasks_JSONOutput(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("task-1", "file:task1.md")
+	tc.CreateTaskWork("task-1", "First Task")
+	tc.CreateTaskWork("task-2", "Second Task")
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = true
+
+	// Capture stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showAllTasks(tc.Workspace)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showAllTasks returned error: %v", err)
+	}
+
+	expected := []string{
+		`"tasks"`,
+		`"task_id"`,
+		`"First Task"`,
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected JSON output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+func TestHasImplementedSpecifications_NoSpecs(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("task-1", "file:task1.md")
+	tc.CreateTaskWork("task-1", "Task Without Specs")
+
+	result := hasImplementedSpecifications(tc.Workspace, "task-1")
+	if result {
+		t.Error("hasImplementedSpecifications should return false when task has no specifications")
+	}
+}
+
+func TestBuildJSONStatusTask(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("task-1", "file:task1.md")
+	tc.CreateTaskWork("task-1", "JSON Status Task")
+
+	active, err := tc.Workspace.LoadActiveTask()
+	if err != nil {
+		t.Fatalf("LoadActiveTask: %v", err)
+	}
+
+	work, err := tc.Workspace.LoadWork(active.ID)
+	if err != nil {
+		t.Fatalf("LoadWork: %v", err)
+	}
+
+	result := buildJSONStatusTask(context.Background(), tc.Workspace, nil, active, work, "")
+
+	if result.TaskID != "task-1" {
+		t.Errorf("TaskID = %q, want %q", result.TaskID, "task-1")
+	}
+	if result.Title != "JSON Status Task" {
+		t.Errorf("Title = %q, want %q", result.Title, "JSON Status Task")
+	}
+	if result.State != active.State {
+		t.Errorf("State = %q, want %q", result.State, active.State)
+	}
+	if !result.IsActive {
+		t.Error("IsActive should be true")
 	}
 }
