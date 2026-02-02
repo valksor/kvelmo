@@ -177,6 +177,32 @@ func (m *MockController) GetPort() int {
 	return 9222
 }
 
+func (m *MockController) SetNetworkMonitorOptions(_ browser.NetworkMonitorOptions) {}
+
+func (m *MockController) GetWebSocketFrames(_ context.Context, _ string, _ time.Duration) ([]browser.WebSocketFrame, error) {
+	return nil, nil
+}
+
+func (m *MockController) GetPageSource(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+
+func (m *MockController) GetScriptSources(_ context.Context, _ string) ([]browser.ScriptSource, error) {
+	return nil, nil
+}
+
+func (m *MockController) GetComputedStyles(_ context.Context, _, _ string) ([]browser.ComputedStyle, error) {
+	return nil, nil
+}
+
+func (m *MockController) GetMatchedStyles(_ context.Context, _, _ string) (*browser.MatchedStyles, error) {
+	return &browser.MatchedStyles{}, nil
+}
+
+func (m *MockController) GetCoverage(_ context.Context, _ string, _ time.Duration, _, _ bool) (*browser.CoverageSummary, []browser.JSCoverageEntry, []browser.CSSCoverageEntry, error) {
+	return nil, nil, nil, nil
+}
+
 // TestNewAdapter verifies adapter creation.
 func TestNewAdapter(t *testing.T) {
 	tests := []struct {

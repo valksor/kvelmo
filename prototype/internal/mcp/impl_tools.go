@@ -2,9 +2,9 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -149,12 +149,23 @@ func (r *ToolRegistry) CallTool(ctx context.Context, name string, args map[strin
 
 			return nil, err
 		}
+		cobraSchema := r.buildInputSchema(wrapper.Command)
+		if err := r.validateArgValues(cobraSchema, args); err != nil {
+			slog.Warn("MCP tool value validation failed", "tool", name, "error", err)
+
+			return nil, err
+		}
 	}
 
 	// For direct tools, validate against their schema
 	if wrapper.Executor != nil && wrapper.Tool.InputSchema != nil {
 		if err := r.validateNoExtraArgsForSchema(wrapper.Tool.InputSchema, args); err != nil {
 			slog.Warn("MCP tool validation failed", "tool", name, "error", err)
+
+			return nil, err
+		}
+		if err := r.validateArgValues(wrapper.Tool.InputSchema, args); err != nil {
+			slog.Warn("MCP tool value validation failed", "tool", name, "error", err)
 
 			return nil, err
 		}
@@ -228,18 +239,30 @@ func (r *ToolRegistry) CallTool(ctx context.Context, name string, args map[strin
 			}
 		}()
 
-		// Capture output
+		// Capture all output: both cmd.Printf (via Cobra's SetOut) and
+		// fmt.Printf (via os.Stdout redirect). SetOut/SetErr are inside the
+		// captureStdout callback so they're protected by stdoutCaptureMu,
+		// preventing races if multiple tools share the same root command.
 		output := &strings.Builder{}
-		root.SetOut(output)
-		root.SetErr(output)
+		var execErr error
 
-		// Set args and execute with context from the root
-		root.SetArgs(cliArgs)
-		err := root.ExecuteContext(execCtx)
+		fmtOutput, captureErr := captureStdout(execCtx, func() {
+			root.SetOut(output)
+			root.SetErr(output)
+			root.SetArgs(cliArgs)
+			execErr = root.ExecuteContext(execCtx)
+		})
+		if captureErr != nil {
+			resultCh <- execResult{err: captureErr}
+
+			return
+		}
+
+		output.WriteString(fmtOutput)
 
 		resultCh <- execResult{
 			text: output.String(),
-			err:  err,
+			err:  execErr,
 		}
 	}()
 
@@ -335,6 +358,81 @@ func (r *ToolRegistry) validateNoExtraArgsForSchema(schema map[string]interface{
 	}
 
 	return nil
+}
+
+// validateArgValues checks numeric arguments against minimum/maximum constraints in the schema.
+func (r *ToolRegistry) validateArgValues(schema map[string]interface{}, args map[string]interface{}) error {
+	properties, ok := schema["properties"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	for argName, argVal := range args {
+		propRaw, exists := properties[argName]
+		if !exists {
+			continue
+		}
+		prop, ok := propRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Only validate numeric types.
+		propType, _ := prop["type"].(string)
+		if propType != "integer" && propType != "number" {
+			continue
+		}
+
+		num, ok := toFloat64(argVal)
+		if !ok {
+			return fmt.Errorf("argument '%s': expected number, got %T", argName, argVal)
+		}
+
+		if minVal, ok := toFloat64(prop["minimum"]); ok && num < minVal {
+			return fmt.Errorf("argument '%s': value %v is below minimum %v", argName, num, minVal)
+		}
+		if maxVal, ok := toFloat64(prop["maximum"]); ok && num > maxVal {
+			return fmt.Errorf("argument '%s': value %v is above maximum %v", argName, num, maxVal)
+		}
+	}
+
+	return nil
+}
+
+// toFloat64 converts a numeric value to float64 for range comparisons.
+func toFloat64(v interface{}) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case json.Number:
+		f, err := n.Float64()
+
+		return f, err == nil
+	default:
+		return 0, false
+	}
 }
 
 // buildInputSchema creates a JSON schema for command arguments.
@@ -441,63 +539,4 @@ func (r *ToolRegistry) mapFlagToSchema(flag *pflag.Flag) map[string]interface{} 
 	}
 
 	return schema
-}
-
-// DefaultArgMapper creates a default argument mapper from MCP args to CLI args.
-func DefaultArgMapper(args map[string]interface{}) []string {
-	cliArgs := []string{}
-
-	// Handle positional arg
-	if arg, ok := args["arg"].(string); ok && arg != "" {
-		cliArgs = append(cliArgs, arg)
-	}
-
-	// Handle args array
-	if argsArray, ok := args["args"].([]interface{}); ok {
-		for _, a := range argsArray {
-			if str, ok := a.(string); ok {
-				cliArgs = append(cliArgs, str)
-			}
-		}
-	}
-
-	// Handle flags
-	for key, value := range args {
-		if key == "arg" || key == "args" {
-			continue
-		}
-
-		flagName := "--" + key
-
-		switch v := value.(type) {
-		case bool:
-			if v {
-				cliArgs = append(cliArgs, flagName)
-			}
-		case string:
-			cliArgs = append(cliArgs, flagName, v)
-		case float64: // JSON numbers are float64
-			cliArgs = append(cliArgs, flagName, fmt.Sprintf("%v", v))
-		case int: // Direct int values (not from JSON)
-			cliArgs = append(cliArgs, flagName, strconv.Itoa(v))
-		case int64:
-			cliArgs = append(cliArgs, flagName, strconv.FormatInt(v, 10))
-		case int32:
-			cliArgs = append(cliArgs, flagName, strconv.Itoa(int(v)))
-		case []interface{}:
-			for i, item := range v {
-				if str, ok := item.(string); ok {
-					cliArgs = append(cliArgs, flagName, str)
-				} else if item != nil {
-					slog.Warn("Skipping non-string array element", "index", i, "type", fmt.Sprintf("%T", item))
-				}
-			}
-		case []string: // Handle string arrays directly
-			for _, str := range v {
-				cliArgs = append(cliArgs, flagName, str)
-			}
-		}
-	}
-
-	return cliArgs
 }

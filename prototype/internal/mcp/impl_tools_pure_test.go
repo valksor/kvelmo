@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -96,6 +97,161 @@ func TestValidateNoExtraArgsForSchema(t *testing.T) {
 			err := registry.validateNoExtraArgsForSchema(tt.schema, tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateNoExtraArgsForSchema() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestToFloat64(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  interface{}
+		want   float64
+		wantOK bool
+	}{
+		{"float64", float64(3.14), 3.14, true},
+		{"float32", float32(2.5), 2.5, true},
+		{"int", int(42), 42.0, true},
+		{"int8", int8(127), 127.0, true},
+		{"int16", int16(32000), 32000.0, true},
+		{"int32", int32(100000), 100000.0, true},
+		{"int64", int64(1e12), 1e12, true},
+		{"uint", uint(42), 42.0, true},
+		{"uint8", uint8(255), 255.0, true},
+		{"uint16", uint16(65535), 65535.0, true},
+		{"uint32", uint32(4294967295), 4294967295.0, true},
+		{"uint64", uint64(1e15), 1e15, true},
+		{"json.Number valid", json.Number("3.14"), 3.14, true},
+		{"json.Number invalid", json.Number("not-a-number"), 0, false},
+		{"string is invalid", "hello", 0, false},
+		{"bool is invalid", true, 0, false},
+		{"nil is invalid", nil, 0, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := toFloat64(tt.input)
+			assert.Equal(t, tt.wantOK, ok, "ok mismatch")
+			if tt.wantOK {
+				assert.InDelta(t, tt.want, got, 0.001, "value mismatch")
+			}
+		})
+	}
+}
+
+func TestValidateArgValues(t *testing.T) {
+	tests := []struct {
+		name    string
+		schema  map[string]interface{}
+		args    map[string]interface{}
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "value within range",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"count": map[string]interface{}{
+						"type":    "integer",
+						"minimum": float64(1),
+						"maximum": float64(100),
+					},
+				},
+			},
+			args:    map[string]interface{}{"count": float64(50)},
+			wantErr: false,
+		},
+		{
+			name: "value below minimum",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"count": map[string]interface{}{
+						"type":    "integer",
+						"minimum": float64(1),
+						"maximum": float64(100),
+					},
+				},
+			},
+			args:    map[string]interface{}{"count": float64(0)},
+			wantErr: true,
+			errMsg:  "below minimum",
+		},
+		{
+			name: "value above maximum",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"count": map[string]interface{}{
+						"type":    "integer",
+						"minimum": float64(1),
+						"maximum": float64(100),
+					},
+				},
+			},
+			args:    map[string]interface{}{"count": float64(200)},
+			wantErr: true,
+			errMsg:  "above maximum",
+		},
+		{
+			name: "value at minimum boundary",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"count": map[string]interface{}{
+						"type":    "integer",
+						"minimum": float64(1),
+					},
+				},
+			},
+			args:    map[string]interface{}{"count": float64(1)},
+			wantErr: false,
+		},
+		{
+			name: "non-numeric type skipped",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"name": map[string]interface{}{
+						"type": "string",
+					},
+				},
+			},
+			args:    map[string]interface{}{"name": "hello"},
+			wantErr: false,
+		},
+		{
+			name: "wrong type for numeric field",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"count": map[string]interface{}{
+						"type": "integer",
+					},
+				},
+			},
+			args:    map[string]interface{}{"count": "not a number"},
+			wantErr: true,
+			errMsg:  "expected number",
+		},
+		{
+			name:    "no properties in schema",
+			schema:  map[string]interface{}{"type": "object"},
+			args:    map[string]interface{}{"count": float64(42)},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := &ToolRegistry{tools: make(map[string]*ToolWrapper)}
+			err := registry.validateArgValues(tt.schema, tt.args)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

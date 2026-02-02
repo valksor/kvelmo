@@ -12,10 +12,7 @@ import (
 func Benchmark_BufferPool_Get(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
-		bufPtr, ok := scannerBufferPool.Get().(*[]byte) //nolint:forcetypeassert,nolintlint // benchmark: controlled pool type
-		if !ok {
-			b.Fatal("scanner buffer pool returned wrong type")
-		}
+		bufPtr := scannerBufferPool.Get()
 		scannerBufferPool.Put(bufPtr)
 	}
 }
@@ -25,10 +22,7 @@ func Benchmark_BufferPool_Parallel(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			bufPtr, ok := scannerBufferPool.Get().(*[]byte) //nolint:forcetypeassert,nolintlint // benchmark: controlled pool type
-			if !ok {
-				b.Fatal("scanner buffer pool returned wrong type")
-			}
+			bufPtr := scannerBufferPool.Get()
 			scannerBufferPool.Put(bufPtr)
 		}
 	})

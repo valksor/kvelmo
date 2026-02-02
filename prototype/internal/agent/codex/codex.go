@@ -328,7 +328,7 @@ func (a *Agent) SetParser(p agent.Parser) {
 
 // WithWorkDir sets the working directory.
 // Returns a new Agent instance with the updated config to avoid data races.
-func (a *Agent) WithWorkDir(dir string) *Agent {
+func (a *Agent) WithWorkDir(dir string) agent.Agent {
 	newConfig := a.config
 	newConfig.WorkDir = dir
 

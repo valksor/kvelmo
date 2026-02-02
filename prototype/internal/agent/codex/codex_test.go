@@ -71,7 +71,11 @@ func TestAgentNameConstant(t *testing.T) {
 }
 
 func TestWithWorkDir(t *testing.T) {
-	a := New().WithWorkDir("/custom/path")
+	result := New().WithWorkDir("/custom/path")
+	a, ok := result.(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
 	if a.config.WorkDir != "/custom/path" {
 		t.Errorf("WorkDir = %q, want %q", a.config.WorkDir, "/custom/path")
 	}
@@ -97,9 +101,11 @@ func TestWithEnv(t *testing.T) {
 }
 
 func TestMethodChaining(t *testing.T) {
-	a := New().
-		WithWorkDir("/work").
-		WithTimeout(15 * time.Minute)
+	wdResult, ok := New().WithWorkDir("/work").(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
+	a := wdResult.WithTimeout(15 * time.Minute)
 
 	// WithEnv returns agent.Agent interface, so capture the result
 	aAgent := agent.Agent(a)
@@ -176,7 +182,11 @@ func TestBuildArgs_WithConfigArgs(t *testing.T) {
 
 func TestBuildArgs_AutoSkipGitRepoCheck(t *testing.T) {
 	tmpDir := t.TempDir()
-	a := New().WithWorkDir(tmpDir)
+	wdResult, ok := New().WithWorkDir(tmpDir).(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
+	a := wdResult
 	args := a.buildArgs(context.Background(), "test")
 
 	hasSkip := false
@@ -194,7 +204,11 @@ func TestBuildArgs_AutoSkipGitRepoCheck(t *testing.T) {
 
 func TestBuildArgs_NoDuplicateSkipGitRepoCheck(t *testing.T) {
 	tmpDir := t.TempDir()
-	a := New().WithWorkDir(tmpDir)
+	wdResult, ok := New().WithWorkDir(tmpDir).(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
+	a := wdResult
 	a.config.Args = []string{"--skip-git-repo-check"}
 	args := a.buildArgs(context.Background(), "test")
 

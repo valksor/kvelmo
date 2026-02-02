@@ -166,7 +166,9 @@ func (r *Resolver) tryResolveAtPriority(_ context.Context, req ResolveRequest, p
 			var err error
 			cfg, err = r.workspace.LoadConfig()
 			if err != nil {
-				// No workspace config available, continue to next priority
+				// Log real errors but treat as "no config" for resolution purposes.
+				slog.Debug("workspace config load failed during agent resolution", "error", err)
+
 				return nil, ErrAgentNotFound
 			}
 		}

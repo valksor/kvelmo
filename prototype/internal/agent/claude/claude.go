@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,16 +25,35 @@ const (
 	scannerBufferSize = 1024 * 1024
 )
 
+// typedPool wraps sync.Pool with type safety, removing the need for type
+// assertions at every Get() call site.
+type typedPool[T any] struct {
+	pool sync.Pool
+}
+
+func newTypedPool[T any](newFn func() *T) *typedPool[T] {
+	return &typedPool[T]{
+		pool: sync.Pool{
+			New: func() any { return newFn() },
+		},
+	}
+}
+
+func (p *typedPool[T]) Get() *T {
+	return p.pool.Get().(*T) //nolint:forcetypeassert // Pool.New guarantees *T
+}
+
+func (p *typedPool[T]) Put(v *T) {
+	p.pool.Put(v)
+}
+
 // scannerBufferPool reuses buffers for scanner operations.
 // This significantly reduces GC pressure when making many agent calls.
-// Using *[]byte avoids slice header allocations.
-var scannerBufferPool = sync.Pool{
-	New: func() any {
-		b := make([]byte, scannerBufferSize)
+var scannerBufferPool = newTypedPool(func() *[]byte {
+	b := make([]byte, scannerBufferSize)
 
-		return &b
-	},
-}
+	return &b
+})
 
 // Agent wraps the Claude CLI.
 type Agent struct {
@@ -150,6 +170,47 @@ func (a *Agent) RunWithCallback(ctx context.Context, prompt string, cb agent.Str
 }
 
 func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<- agent.Event) error {
+	retryCount := a.config.RetryCount
+	if retryCount <= 0 {
+		retryCount = 1 // At least one attempt
+	}
+
+	var lastErr error
+	for attempt := range retryCount {
+		lastErr = a.executeStreamOnce(ctx, prompt, eventCh)
+		if lastErr == nil {
+			return nil
+		}
+
+		// Don't retry on context cancellation (user-initiated or parent timeout)
+		if ctx.Err() != nil {
+			return lastErr
+		}
+
+		// Don't retry on the last attempt
+		if attempt >= retryCount-1 {
+			break
+		}
+
+		slog.Warn("agent execution failed, retrying",
+			"attempt", attempt+1,
+			"max_attempts", retryCount,
+			"error", lastErr,
+			"retry_delay", a.config.RetryDelay,
+		)
+
+		// Wait before retrying, respecting context cancellation
+		select {
+		case <-ctx.Done():
+			return lastErr
+		case <-time.After(a.config.RetryDelay):
+		}
+	}
+
+	return lastErr
+}
+
+func (a *Agent) executeStreamOnce(ctx context.Context, prompt string, eventCh chan<- agent.Event) error {
 	// Build command with timeout
 	timeoutCtx, cancel := context.WithTimeout(ctx, a.config.Timeout)
 	defer cancel()
@@ -179,8 +240,11 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 			if err := sb.Prepare(timeoutCtx); err != nil {
 				return fmt.Errorf("sandbox prepare: %w", err)
 			}
-			defer func() { //nolint:contextcheck // cleanup with detached context
-				if cleanupErr := sb.Cleanup(context.Background()); cleanupErr != nil {
+			defer func() { //nolint:contextcheck // cleanup with detached context and bounded timeout
+				cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cleanupCancel()
+
+				if cleanupErr := sb.Cleanup(cleanupCtx); cleanupErr != nil {
 					slog.Warn("sandbox cleanup failed", "error", cleanupErr)
 				}
 			}()
@@ -213,11 +277,8 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 
 	// Read output line by line
 	scanner := bufio.NewScanner(stdout)
-	// Get buffer from pool for large responses, return when done
-	buf, ok := scannerBufferPool.Get().(*[]byte)
-	if !ok {
-		return errors.New("scanner buffer pool returned wrong type")
-	}
+	// Get buffer from pool for large responses, return when done.
+	buf := scannerBufferPool.Get()
 	defer scannerBufferPool.Put(buf)
 	scanner.Buffer(*buf, scannerBufferSize)
 
@@ -237,7 +298,8 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 
 		event, err := a.parser.ParseEvent(line)
 		if err != nil {
-			// Log parse error but continue
+			slog.Debug("agent output parse error", "error", err, "line_length", len(line))
+
 			continue
 		}
 
@@ -253,12 +315,13 @@ func (a *Agent) executeStream(ctx context.Context, prompt string, eventCh chan<-
 		return fmt.Errorf("scanner error: %w", err)
 	}
 
-	// Read any stderr output
-	stderrBytes, err := bufio.NewReader(stderr).ReadString('\n')
-	if err != nil && !errors.Is(err, io.EOF) {
-		// Log but don't fail - stderr may not have content
+	// Read all stderr output (may contain multi-line errors or stack traces).
+	stderrData, err := io.ReadAll(stderr)
+	if err != nil {
 		slog.Debug("error reading stderr", "error", err)
 	}
+
+	stderrBytes := strings.TrimSpace(string(stderrData))
 
 	// Wait for command to finish
 	if err := cmd.Wait(); err != nil {
@@ -311,9 +374,9 @@ func (a *Agent) SetParser(p agent.Parser) {
 	a.parser = p
 }
 
-// WithWorkDir sets the working directory
+// WithWorkDir sets the working directory.
 // Returns a new Agent instance with the updated config to avoid data races.
-func (a *Agent) WithWorkDir(dir string) *Agent {
+func (a *Agent) WithWorkDir(dir string) agent.Agent {
 	newConfig := a.config
 	newConfig.WorkDir = dir
 
