@@ -7,6 +7,7 @@
  */
 
 import { showToast, showBrowserNotification } from './notifications.js';
+import { getCSRFToken } from './csrf.js';
 
 /**
  * Initialize HTMX event handlers and configuration.
@@ -118,6 +119,12 @@ function setupConfigRequest() {
     document.body.addEventListener('htmx:configRequest', (evt) => {
         // Add custom header to identify HTMX requests
         evt.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
+
+        // Inject CSRF token on state-changing requests
+        const csrfToken = getCSRFToken();
+        if (csrfToken) {
+            evt.detail.headers['X-Csrf-Token'] = csrfToken;
+        }
     });
 }
 

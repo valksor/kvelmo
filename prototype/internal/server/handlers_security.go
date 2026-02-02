@@ -93,7 +93,7 @@ func (s *Server) handleSecurityScan(w http.ResponseWriter, r *http.Request) {
 	// Determine scan directory
 	targetDir := req.Dir
 	if targetDir == "" {
-		targetDir = ws.Root()
+		targetDir = ws.CodeRoot()
 	}
 
 	// Create scanner registry
@@ -320,7 +320,7 @@ func (s *Server) handleScanPage(w http.ResponseWriter, r *http.Request) {
 	var projectInfo *views.ProjectInfoData
 	if s.config.Conductor != nil {
 		if ws := s.config.Conductor.GetWorkspace(); ws != nil {
-			info := security.DetectProject(ws.Root())
+			info := security.DetectProject(ws.CodeRoot())
 			projectInfo = &views.ProjectInfoData{
 				HasGoMod:       info.HasGoMod,
 				HasPackageJSON: info.HasPackageJSON,

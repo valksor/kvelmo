@@ -700,8 +700,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// JSON response for API
-	s.writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	// JSON response for API — include CSRF token so clients can send it in X-CSRF-Token header
+	s.writeJSON(w, http.StatusOK, map[string]string{
+		"status":     "ok",
+		"csrf_token": sess.CSRFToken,
+	})
 }
 
 // handleWorkflowResume resumes a task paused due to budget limits.

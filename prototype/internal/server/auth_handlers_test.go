@@ -514,7 +514,13 @@ func TestHandler_UserCanWriteEndpoints(t *testing.T) {
 	body := bytes.NewBufferString(`{"username":"user","password":"userpass"}`)
 	resp, err := doPost(ctx, client, srv.URL()+"/api/v1/auth/login", body)
 	require.NoError(t, err)
+
+	// Parse CSRF token from login response
+	var loginResp map[string]string
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&loginResp))
 	_ = resp.Body.Close()
+	csrfToken := loginResp["csrf_token"]
+	require.NotEmpty(t, csrfToken, "login response should include csrf_token")
 
 	var sessionCookie *http.Cookie
 	for _, c := range resp.Cookies() {
@@ -531,6 +537,7 @@ func TestHandler_UserCanWriteEndpoints(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL()+"/api/v1/workflow/abandon", nil)
 	require.NoError(t, err)
 	req.AddCookie(sessionCookie)
+	req.Header.Set("X-Csrf-Token", csrfToken)
 
 	resp, err = client.Do(req)
 	require.NoError(t, err)

@@ -147,6 +147,101 @@ When accessing an authenticated server:
 - **Session cookies:** HTTP-only and secure (when using HTTPS)
 - **Auto-logout:** Sessions expire after inactivity
 
+## CSRF Protection
+
+When authentication is enabled, Mehrhof uses **CSRF (Cross-Site Request Forgery)** protection to prevent unauthorized actions from malicious websites.
+
+### How It Works
+
+CSRF protection uses the Synchronizer Token Pattern:
+
+1. On login, the server generates a unique CSRF token per session
+2. The token is returned in the login response and available via `GET /api/v1/auth/csrf`
+3. All state-changing requests (POST, PUT, DELETE) must include the token in the `X-Csrf-Token` header
+4. Requests without a valid token receive **HTTP 403 Forbidden**
+
+### When CSRF Is Active
+
+| Server Mode | CSRF Enforced |
+|-------------|---------------|
+| `localhost` (default) | ❌ No — localhost mode skips CSRF |
+| `--host 0.0.0.0` with auth | ✅ Yes — all POST/PUT/DELETE require token |
+
+CSRF is automatically disabled in localhost mode because cross-site attacks cannot target localhost.
+
+### Getting a CSRF Token
+
+#### From Login Response
+
+The login endpoint returns the CSRF token in the JSON response:
+
+```bash
+curl -X POST http://your-server/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "secret"}'
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "csrf_token": "abc123..."
+}
+```
+
+#### From CSRF Endpoint
+
+For existing sessions, fetch a fresh token:
+
+```bash
+curl http://your-server/api/v1/auth/csrf \
+  -H "Cookie: mehr_session=your-session-cookie"
+```
+
+Response:
+```json
+{
+  "csrf_token": "abc123..."
+}
+```
+
+### Using the Token
+
+Include the token in the `X-Csrf-Token` header on all state-changing requests:
+
+```bash
+curl -X POST http://your-server/api/v1/workflow/plan \
+  -H "Cookie: mehr_session=your-session-cookie" \
+  -H "X-Csrf-Token: abc123..." \
+  -H "Content-Type: application/json"
+```
+
+### Web UI Handling
+
+The Web UI handles CSRF automatically:
+
+- **HTMX requests**: Token injected via `htmx:configRequest` event
+- **JavaScript fetch()**: Uses `csrfFetch()` wrapper that adds the header
+- **Token refresh**: Fetched on page load and cached for the session
+
+No manual configuration is needed for Web UI users.
+
+### IDE Plugin Handling
+
+Both the VS Code extension and JetBrains plugin include CSRF infrastructure:
+
+- Session cookies are automatically extracted from responses
+- CSRF tokens are sent via `X-Csrf-Token` header on POST requests
+- In localhost mode (default for IDE plugins), CSRF is not enforced
+
+### Endpoints Exempt from CSRF
+
+| Endpoint | Reason |
+|----------|--------|
+| `GET`, `HEAD`, `OPTIONS` | Safe methods — no state changes |
+| `/api/v1/auth/login` | No session exists yet |
+| `/api/v1/webhooks/*` | Provider-specific authentication (webhook secrets) |
+
 ## Authentication Behavior
 
 ### Public Endpoints
@@ -301,6 +396,19 @@ When using authentication over the internet:
 - Use HTTPS (reverse proxy or Cloudflare Tunnel)
 - Strong passwords become even more important
 - Consider shorter session duration
+
+## Rate Limiting
+
+When authentication is enabled, the server enforces per-IP rate limiting to protect against abuse:
+
+| Endpoint Type | Limit | Window |
+|---------------|-------|--------|
+| General API (`/api/v1/*`) | 120 requests | Per minute |
+| Auth endpoints (`/api/v1/auth/login`) | 10 requests | Per minute |
+
+When rate limited, the server returns **HTTP 429 Too Many Requests**. Wait and retry.
+
+Rate limiting is automatically disabled in localhost mode.
 
 ## Troubleshooting
 
