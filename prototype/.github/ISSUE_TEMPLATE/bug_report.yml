@@ -1,0 +1,96 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in Mehrhof
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Before submitting, please:
+        1. **Check the latest release** — Confirm the bug exists in the latest stable release
+        2. **Check the nightly build** — Test against nightly to see if it's already fixed (`mehr update --nightly`)
+        3. If the bug only exists in the stable release but is fixed in nightly, no need to report it
+
+  - type: input
+    id: mehr-version
+    attributes:
+      label: Mehrhof Version
+      description: "Output of `mehr version`"
+      placeholder: "v0.x.x"
+    validations:
+      required: true
+
+  - type: input
+    id: agent-version
+    attributes:
+      label: Agent CLI Version
+      description: "Output of `claude --version` or your agent's version command"
+      placeholder: "claude 1.x.x"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (AMD64)
+        - Linux (ARM64)
+        - Windows (WSL2)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Interface
+      description: Which interface were you using when the bug occurred?
+      options:
+        - CLI
+        - Web UI
+        - Interactive CLI
+        - Interactive Web
+        - JetBrains Plugin
+        - VS Code Extension
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug
+      placeholder: "Describe what happened..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this?
+      placeholder: |
+        1. Run `mehr start file:task.md`
+        2. Run `mehr plan`
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: "Paste any relevant logs or error output. Run with `--verbose` for more detail."
+      render: shell
+    validations:
+      required: false
