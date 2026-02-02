@@ -66,7 +66,11 @@ func TestAgentNameConstant(t *testing.T) {
 }
 
 func TestWithWorkDir(t *testing.T) {
-	a := New().WithWorkDir("/custom/path")
+	result := New().WithWorkDir("/custom/path")
+	a, ok := result.(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
 	if a.config.WorkDir != "/custom/path" {
 		t.Errorf("WorkDir = %q, want %q", a.config.WorkDir, "/custom/path")
 	}
@@ -92,9 +96,11 @@ func TestWithEnv(t *testing.T) {
 }
 
 func TestMethodChaining(t *testing.T) {
-	a := New().
-		WithWorkDir("/work").
-		WithTimeout(15 * time.Minute)
+	wdResult, ok := New().WithWorkDir("/work").(*Agent)
+	if !ok {
+		t.Fatal("WithWorkDir did not return *Agent")
+	}
+	a := wdResult.WithTimeout(15 * time.Minute)
 
 	// WithEnv returns agent.Agent interface, so capture the result
 	aAgent := agent.Agent(a)

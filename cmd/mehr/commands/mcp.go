@@ -16,7 +16,6 @@ import (
 	"github.com/valksor/go-mehrhof/internal/mcp"
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	"github.com/valksor/go-toolkit/cli"
 	"github.com/valksor/go-toolkit/log"
 )
 
@@ -66,6 +65,9 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 	// Create a tool registry and register commands
 	toolRegistry := mcp.NewToolRegistry(rootCmd)
 
+	// Enable browser session sharing for MCP mode
+	SetBrowserMCPMode(true)
+
 	// Register safe commands for agent use
 	registerSafeCommands(toolRegistry)
 
@@ -112,6 +114,11 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 					"rate", rate, "burst", burst)
 			}
 		}
+		if cfg.MCP != nil && len(cfg.MCP.ToolList) > 0 {
+			toolRegistry.FilterTools(cfg.MCP.ToolList)
+			log.Info("MCP server: filtered tools by allowlist",
+				"allowed", len(cfg.MCP.ToolList))
+		}
 	}
 
 	// Create an MCP server
@@ -119,8 +126,13 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 
 	// Start server (blocks until context canceled)
 	if err := server.Serve(ctx); err != nil {
+		CleanupBrowserMCP()
+
 		return fmt.Errorf("MCP server error: %w", err)
 	}
+
+	// Clean up cached browser controller (releases Chrome resources)
+	CleanupBrowserMCP()
 
 	log.Info("MCP server stopped")
 
@@ -136,7 +148,14 @@ func registerSafeCommands(registry *mcp.ToolRegistry) {
 	commandsToRegister = append(commandsToRegister, statusCmd)
 	commandsToRegister = append(commandsToRegister, listCmd)
 	commandsToRegister = append(commandsToRegister, guideCmd)
-	commandsToRegister = append(commandsToRegister, cli.NewVersionCommand("mehr"))
+	// Use the existing version command from rootCmd (registered in root.go).
+	// Creating a detached cli.NewVersionCommand("mehr") would yield CommandPath()="version"
+	// (1 part), causing RegisterCommand to name it "root" instead of "version".
+	if vCmd, _, _ := rootCmd.Find([]string{"version"}); vCmd != nil && vCmd.Name() == "version" {
+		commandsToRegister = append(commandsToRegister, vCmd)
+	} else {
+		slog.Warn("version command not found on rootCmd, skipping MCP registration")
+	}
 
 	// Browser commands
 	commandsToRegister = append(commandsToRegister, browserCmd)
@@ -154,6 +173,11 @@ func registerSafeCommands(registry *mcp.ToolRegistry) {
 	commandsToRegister = append(commandsToRegister, browserEvalCmd)
 	commandsToRegister = append(commandsToRegister, browserConsoleCmd)
 	commandsToRegister = append(commandsToRegister, browserNetworkCmd)
+	commandsToRegister = append(commandsToRegister, browserSourceCmd)
+	commandsToRegister = append(commandsToRegister, browserScriptsCmd)
+	commandsToRegister = append(commandsToRegister, browserWebSocketCmd)
+	commandsToRegister = append(commandsToRegister, browserCoverageCmd)
+	commandsToRegister = append(commandsToRegister, browserStylesCmd)
 
 	// Config commands (read-only)
 	commandsToRegister = append(commandsToRegister, configCmd)
