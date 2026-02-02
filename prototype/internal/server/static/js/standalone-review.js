@@ -79,7 +79,8 @@
         abortController = new AbortController();
 
         try {
-            const response = await fetch('/api/v1/workflow/review/standalone', {
+            const fetchFn = window.csrfFetch || fetch;
+            const response = await fetchFn('/api/v1/workflow/review/standalone', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

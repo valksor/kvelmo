@@ -36,11 +36,11 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "mehr",
-	Short: "AI-powered task automation",
+	Short: "Structured creation environment",
 	CompletionOptions: cobra.CompletionOptions{
 		DisableDefaultCmd: true,
 	},
-	Long: `Mehrhof is an AI-powered development assistant by Valksor.
+	Long: `Mehrhof is a structured creation environment by Valksor.
 
 It provides both a command-line interface and a Web UI for planning,
 implementing, and reviewing code changes with AI agents.

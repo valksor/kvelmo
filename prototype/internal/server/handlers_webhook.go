@@ -138,8 +138,12 @@ func (s *Server) handleAutomationJobRetry(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Note: Full retry implementation would re-enqueue the job.
-	// For now, indicate the pattern.
+	if err := s.automation.RetryJob(jobID); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to retry job: "+err.Error())
+
+		return
+	}
+
 	s.writeJSON(w, http.StatusOK, map[string]string{
 		"status": "retry_queued",
 		"job_id": jobID,

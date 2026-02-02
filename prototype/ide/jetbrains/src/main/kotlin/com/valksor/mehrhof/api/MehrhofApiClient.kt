@@ -34,6 +34,20 @@ class MehrhofApiClient(
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
+    @Volatile
+    private var sessionCookie: String? = null
+
+    @Volatile
+    private var csrfToken: String? = null
+
+    fun setSessionCookie(cookie: String?) {
+        this.sessionCookie = cookie
+    }
+
+    fun setCsrfToken(token: String?) {
+        this.csrfToken = token
+    }
+
     // ========================================================================
     // Status & Task Endpoints
     // ========================================================================
@@ -230,15 +244,16 @@ class MehrhofApiClient(
     // ========================================================================
 
     private inline fun <reified T> get(path: String): Result<T> {
-        val request =
+        val requestBuilder =
             Request
                 .Builder()
                 .url("$baseUrl$path")
                 .get()
                 .addHeader("Accept", "application/json")
-                .build()
 
-        return executeRequest(request)
+        sessionCookie?.let { requestBuilder.addHeader("Cookie", it) }
+
+        return executeRequest(requestBuilder.build())
     }
 
     private inline fun <reified T> post(
@@ -246,21 +261,24 @@ class MehrhofApiClient(
         body: Any
     ): Result<T> {
         val jsonBody = gson.toJson(body)
-        val request =
+        val requestBuilder =
             Request
                 .Builder()
                 .url("$baseUrl$path")
                 .post(jsonBody.toRequestBody(jsonMediaType))
                 .addHeader("Accept", "application/json")
                 .addHeader("Content-Type", "application/json")
-                .build()
 
-        return executeRequest(request)
+        sessionCookie?.let { requestBuilder.addHeader("Cookie", it) }
+        csrfToken?.let { requestBuilder.addHeader("X-Csrf-Token", it) }
+
+        return executeRequest(requestBuilder.build())
     }
 
     private inline fun <reified T> executeRequest(request: Request): Result<T> =
         try {
             client.newCall(request).execute().use { response ->
+                extractSessionCookie(response)
                 processResponse(response)
             }
         } catch (e: IOException) {
@@ -268,6 +286,12 @@ class MehrhofApiClient(
         } catch (e: Exception) {
             Result.failure(ApiException(0, "Unexpected error: ${e.message}"))
         }
+
+    private fun extractSessionCookie(response: okhttp3.Response) {
+        val setCookie = response.header("Set-Cookie") ?: return
+        val match = Regex("mehr_session=([^;]+)").find(setCookie) ?: return
+        sessionCookie = "mehr_session=${match.groupValues[1]}"
+    }
 
     private inline fun <reified T> processResponse(response: okhttp3.Response): Result<T> {
         val body = response.body?.string()
@@ -308,14 +332,15 @@ class MehrhofApiClient(
      */
     fun isReachable(): Boolean =
         try {
-            val request =
+            val requestBuilder =
                 Request
                     .Builder()
                     .url("$baseUrl/health")
                     .get()
-                    .build()
 
-            client.newCall(request).execute().use { response ->
+            sessionCookie?.let { requestBuilder.addHeader("Cookie", it) }
+
+            client.newCall(requestBuilder.build()).execute().use { response ->
                 response.isSuccessful
             }
         } catch (_: Exception) {

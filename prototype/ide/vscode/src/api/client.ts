@@ -47,6 +47,7 @@ export class MehrhofApiClient {
   private readonly connectTimeout: number;
   private readonly readTimeout: number;
   private sessionCookie?: string;
+  private csrfToken?: string;
 
   constructor(baseUrl: string, options: ClientOptions = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
@@ -56,6 +57,10 @@ export class MehrhofApiClient {
 
   setSessionCookie(cookie: string | undefined): void {
     this.sessionCookie = cookie;
+  }
+
+  setCsrfToken(token: string | undefined): void {
+    this.csrfToken = token;
   }
 
   private async request<T>(
@@ -77,6 +82,11 @@ export class MehrhofApiClient {
 
       if (this.sessionCookie) {
         headers['Cookie'] = this.sessionCookie;
+      }
+
+      // Include CSRF token on state-changing requests
+      if (this.csrfToken && method !== 'GET' && method !== 'HEAD') {
+        headers['X-Csrf-Token'] = this.csrfToken;
       }
 
       const response = await fetch(url, {

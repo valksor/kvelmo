@@ -94,7 +94,7 @@ document.getElementById('scanForm')?.addEventListener('submit', async function(e
 
   try {
     const formData = new FormData(this);
-    const response = await fetch('/api/v1/scan', {
+    const response = await csrfFetch('/api/v1/scan', {
       method: 'POST',
       body: formData,
       headers: { 'Hx-Request': 'true' }

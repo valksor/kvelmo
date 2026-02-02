@@ -46,7 +46,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 				cfg = storage.NewDefaultWorkspaceConfig()
 			}
 			if ws != nil {
-				workspaceRoot = ws.Root()
+				workspaceRoot = ws.CodeRoot()
 			}
 		} else if len(projects) > 0 {
 			// No project selected, show picker with message
@@ -63,7 +63,7 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		if s.config.Conductor != nil {
 			ws := s.config.Conductor.GetWorkspace()
 			if ws != nil {
-				workspaceRoot = ws.Root()
+				workspaceRoot = ws.CodeRoot()
 				var err error
 				cfg, err = ws.LoadConfig()
 				if err != nil {
@@ -322,6 +322,9 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 
 // updateConfigFromForm updates config from form values.
 func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSensitive bool) {
+	// Project settings
+	cfg.Project.CodeDir = r.FormValue("project.code_dir")
+
 	// Git settings
 	cfg.Git.AutoCommit = r.FormValue("git.auto_commit") == "true"
 	cfg.Git.SignCommits = r.FormValue("git.sign_commits") == "true"

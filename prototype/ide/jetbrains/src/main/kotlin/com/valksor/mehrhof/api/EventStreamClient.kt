@@ -37,6 +37,13 @@ class EventStreamClient(
     private val connected = AtomicBoolean(false)
     private val intentionalDisconnect = AtomicBoolean(false)
 
+    @Volatile
+    private var sessionCookie: String? = null
+
+    fun setSessionCookie(cookie: String?) {
+        this.sessionCookie = cookie
+    }
+
     /**
      * Connect to the SSE event stream.
      * Call this from a background thread or use coroutines.
@@ -47,12 +54,15 @@ class EventStreamClient(
         }
 
         val sseUrl = "$baseUrl/api/v1/events"
-        val request =
+        val requestBuilder =
             Request
                 .Builder()
                 .url(sseUrl)
                 .header("Accept", "text/event-stream")
-                .build()
+
+        sessionCookie?.let { requestBuilder.addHeader("Cookie", it) }
+
+        val request = requestBuilder.build()
 
         println("Connecting to SSE: $sseUrl")
 

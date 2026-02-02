@@ -238,7 +238,7 @@ main() {
     echo " | |  | |  __/ | | | |  | | | | (_) |  _|"
     echo " |_|  |_|\\___|_| |_|_|  |_| |_|\\___/|_|  "
     echo ""
-    echo "  AI-Powered Task Automation CLI"
+    echo "  Structured Creation Environment"
     echo ""
 
     check_dependencies

@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/valksor/go-toolkit v0.0.0-20260130204525-33a5da56005a
-	gitlab.com/gitlab-org/api/client-go v1.24.0
+	github.com/valksor/go-toolkit v0.0.0-20260202190551-837849387b81
+	gitlab.com/gitlab-org/api/client-go v1.25.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0

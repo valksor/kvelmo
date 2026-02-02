@@ -1,6 +1,6 @@
 # Mehrhof VS Code Extension
 
-AI-powered task automation for software development, integrated directly into VS Code.
+Structured creation environment for software development, integrated directly into VS Code.
 
 ## Features
 
@@ -77,6 +77,16 @@ All commands are available via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 | `Mehrhof: Redo` | Restore next checkpoint |
 | `Mehrhof: Status` | Show task status |
 | `Mehrhof: Refresh` | Refresh state |
+
+## Authentication & Security
+
+The extension supports authenticated connections to remote Mehrhof servers:
+
+- **Session cookies** are automatically extracted from server responses and sent on subsequent requests
+- **CSRF tokens** are included on state-changing requests (POST/PUT/DELETE) via the `X-Csrf-Token` header
+- **SSE connections** include session cookies for authenticated event streaming
+
+In localhost mode (default), authentication and CSRF are not enforced. When connecting to a remote server with `mehrhof.serverUrl`, you may need to configure authentication via the server's CLI (`mehr serve auth add`).
 
 ## Development
 
