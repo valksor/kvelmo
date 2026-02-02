@@ -20,7 +20,7 @@ jobs:
                         runner: ubuntu-amd
                     -   goos: darwin
                         goarch: arm64
-                        runner: macos-26
+                        runner: macos-arm
 
         runs-on: ${{ matrix.runner }}
 
