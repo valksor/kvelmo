@@ -1,6 +1,6 @@
 # VS Code Extension
 
-The Mehrhof VS Code extension integrates AI-powered task automation directly into your editor.
+The Mehrhof VS Code extension integrates structured creation workflows directly into your editor.
 
 ## Prerequisites
 

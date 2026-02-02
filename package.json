@@ -3,7 +3,7 @@
         "@cloudflare/kv-asset-handler": "^0.4.2",
         "@fontsource/inter": "^5.2.8",
         "@tailwindcss/cli": "^4.1.18",
-        "daisyui": "^5.5.14",
+        "daisyui": "^5.5.16",
         "docsify": "^4.13.1",
         "docsify-copy-code": "^3.0.2",
         "docsify-pagination": "^2.10.1",

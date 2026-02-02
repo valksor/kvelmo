@@ -1,6 +1,6 @@
 # Mehrhof IntelliJ Plugin
 
-JetBrains IDE plugin for [Mehrhof](https://github.com/valksor/go-mehrhof) - AI-powered task automation.
+JetBrains IDE plugin for [Mehrhof](https://github.com/valksor/go-mehrhof) — structured creation environment.
 
 ## Features
 
@@ -135,6 +135,16 @@ The plugin uses the Interactive API endpoints:
 | `/api/v1/interactive/state` | GET | Get current state |
 | `/api/v1/interactive/stop` | POST | Cancel running operation |
 | `/api/v1/events` | GET (SSE) | Real-time event stream |
+
+## Authentication & Security
+
+The plugin supports authenticated connections to remote Mehrhof servers:
+
+- **Session cookies** are automatically extracted from server responses and sent on subsequent requests
+- **CSRF tokens** are included on POST requests via the `X-Csrf-Token` header
+- **SSE connections** include session cookies for authenticated event streaming
+
+In localhost mode (default when using "Start Server"), authentication and CSRF are not enforced. When configuring a manual Server URL in settings, you may need to configure authentication via the server's CLI (`mehr serve auth add`).
 
 ## License
 

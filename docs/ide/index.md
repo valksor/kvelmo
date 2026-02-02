@@ -1,6 +1,6 @@
 # IDE Integrations
 
-Mehrhof provides native IDE plugins that integrate directly with your development environment, giving you access to AI-powered task automation without leaving your editor.
+Mehrhof provides native IDE plugins that integrate directly with your development environment, giving you access to structured creation workflows without leaving your editor.
 
 ## Available Integrations
 

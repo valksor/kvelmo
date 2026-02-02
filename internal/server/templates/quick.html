@@ -196,7 +196,7 @@ if (submitSourceForm) {
         };
 
         try {
-            const resp = await fetch('/api/v1/quick/submit-source', {
+            const resp = await csrfFetch('/api/v1/quick/submit-source', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)

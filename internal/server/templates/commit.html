@@ -101,7 +101,7 @@ document.getElementById('analyzeBtn').addEventListener('click', async function()
 document.getElementById('createCommitsBtn').addEventListener('click', async function() {
   const autoPush = document.getElementById('autoPush').checked;
 
-  const response = await fetch('/api/v1/commit/execute', {
+  const response = await csrfFetch('/api/v1/commit/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ groups: currentGroups, push: autoPush })
