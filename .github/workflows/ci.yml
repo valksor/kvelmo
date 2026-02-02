@@ -17,7 +17,7 @@ jobs:
                 include:
                     -   goos: linux
                         goarch: amd64
-                        runner: ubuntu-latest
+                        runner: ubuntu-amd
                     -   goos: darwin
                         goarch: arm64
                         runner: macos-26
@@ -90,7 +90,7 @@ jobs:
 
     jetbrains:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
 
         env:
             JAVA_VERSION: '22'
@@ -137,7 +137,7 @@ jobs:
 
     vscode:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
 
         env:
             NODE_VERSION: '24'
@@ -193,7 +193,7 @@ jobs:
 
     coverage-finish:
         needs: [test, jetbrains, vscode, web-ui]
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
         if: github.event_name == 'push'
         steps:
             -   name: Finish Coveralls parallel build
@@ -204,7 +204,7 @@ jobs:
                     carryforward: "go-coverage,kotlin-coverage,typescript-coverage,web-ui-coverage"
 
     web-ui:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
         if: "!contains(github.event.head_commit.message, '[skip test]')"
 
         steps:

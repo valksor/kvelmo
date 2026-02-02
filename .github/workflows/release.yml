@@ -18,7 +18,7 @@ env:
 
 jobs:
     jetbrains-plugin:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
         steps:
             -   name: Checkout
                 uses: actions/checkout@v6
@@ -80,7 +80,7 @@ jobs:
                     ./gradlew publishPlugin -PpluginVersion="$VERSION" -PpublishChannel="$PUBLISH_CHANNEL"
 
     vscode-extension:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
         env:
             NODE_VERSION: '24'
         steps:
@@ -133,7 +133,7 @@ jobs:
                         --clobber
 
     release:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-amd
         steps:
             -   name: Checkout
                 uses: actions/checkout@v6
