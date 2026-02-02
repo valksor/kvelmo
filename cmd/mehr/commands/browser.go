@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,7 +22,33 @@ var (
 	browserStrictCerts bool // Enable strict certificate validation
 	browserKeepAlive   bool // Keep browser running after command completes
 	cookieProfile      string
+	browserMCPMode     bool               // Set by MCP server to enable session reuse between tool calls
+	mcpCtrl            browser.Controller // Cached controller for MCP mode (reused across tool calls)
+	mcpCtrlMu          sync.Mutex
 )
+
+// SetBrowserMCPMode enables MCP mode for browser commands.
+// In MCP mode, a single browser controller is cached and reused across
+// sequential MCP tool calls. This prevents WebSocket and goroutine leaks.
+// Headless mode is also enabled since AI agents don't need a visible browser.
+func SetBrowserMCPMode(enabled bool) {
+	browserMCPMode = enabled
+	if enabled {
+		browserHeadless = true
+	}
+}
+
+// CleanupBrowserMCP disconnects the cached MCP browser controller.
+// Called once when the MCP server shuts down to release Chrome resources.
+func CleanupBrowserMCP() {
+	mcpCtrlMu.Lock()
+	defer mcpCtrlMu.Unlock()
+
+	if mcpCtrl != nil {
+		_ = mcpCtrl.Disconnect()
+		mcpCtrl = nil
+	}
+}
 
 var browserCmd = &cobra.Command{
 	Use:   "browser <command>",
@@ -69,6 +96,11 @@ func init() {
 	browserCmd.AddCommand(browserConsoleCmd)
 	browserCmd.AddCommand(browserNetworkCmd)
 	browserCmd.AddCommand(browserCookiesCmd)
+	browserCmd.AddCommand(browserSourceCmd)
+	browserCmd.AddCommand(browserScriptsCmd)
+	browserCmd.AddCommand(browserWebSocketCmd)
+	browserCmd.AddCommand(browserCoverageCmd)
+	browserCmd.AddCommand(browserStylesCmd)
 }
 
 // status command.
@@ -171,6 +203,7 @@ var (
 	domAll      bool
 	domHTML     bool
 	domLimit    int
+	domComputed bool
 )
 
 var browserDOMCmd = &cobra.Command{
@@ -190,6 +223,7 @@ func init() {
 	browserDOMCmd.Flags().BoolVar(&domAll, "all", false, "Return all matching elements")
 	browserDOMCmd.Flags().BoolVar(&domHTML, "html", false, "Include outer HTML")
 	browserDOMCmd.Flags().IntVar(&domLimit, "limit", 20, "Max elements to return")
+	browserDOMCmd.Flags().BoolVar(&domComputed, "computed", false, "Show key computed CSS styles")
 	_ = browserDOMCmd.MarkFlagRequired("selector")
 }
 
@@ -272,8 +306,10 @@ func init() {
 
 // network command.
 var (
-	networkDuration float64
-	networkType     string
+	networkDuration    float64
+	networkType        string
+	networkCaptureBody bool
+	networkMaxBodySize int
 )
 
 var browserNetworkCmd = &cobra.Command{
@@ -281,14 +317,16 @@ var browserNetworkCmd = &cobra.Command{
 	Short: "Capture network requests",
 	Long: `Capture network requests from the current tab for a duration.
 
-Note: Full network monitoring requires complex event handling.
-This implementation currently returns empty results.`,
+Use --body to also capture request and response bodies.
+Bodies are truncated at --max-body-size (default 1MB).`,
 	RunE: runBrowserNetwork,
 }
 
 func init() {
 	browserNetworkCmd.Flags().Float64VarP(&networkDuration, "duration", "d", 3.0, "Capture duration in seconds")
 	browserNetworkCmd.Flags().StringVar(&networkType, "type", "", "Filter by resource type")
+	browserNetworkCmd.Flags().BoolVar(&networkCaptureBody, "body", false, "Capture request and response bodies")
+	browserNetworkCmd.Flags().IntVar(&networkMaxBodySize, "max-body-size", 1024*1024, "Max body size in bytes (default 1MB)")
 }
 
 // cookies command group.
@@ -684,6 +722,10 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 			fmt.Printf("HTML: %s\n", elem.OuterHTML)
 		}
 		fmt.Printf("Visible: %v\n", elem.Visible)
+
+		if domComputed {
+			printKeyComputedStyles(ctx, ctrl, tabs[0].ID, domSelector)
+		}
 	}
 
 	if browserKeepAlive {
@@ -691,6 +733,33 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// printKeyComputedStyles shows a subset of important computed CSS properties.
+func printKeyComputedStyles(ctx context.Context, ctrl browser.Controller, tabID, selector string) {
+	styles, err := ctrl.GetComputedStyles(ctx, tabID, selector)
+	if err != nil {
+		fmt.Printf("Computed styles: error: %v\n", err)
+
+		return
+	}
+
+	// Key properties most useful for quick inspection
+	keyProps := map[string]bool{
+		"display": true, "position": true, "color": true, "background-color": true,
+		"font-size": true, "font-family": true, "font-weight": true,
+		"margin-top": true, "margin-right": true, "margin-bottom": true, "margin-left": true,
+		"padding-top": true, "padding-right": true, "padding-bottom": true, "padding-left": true,
+		"width": true, "height": true, "overflow": true, "z-index": true,
+		"opacity": true, "visibility": true, "box-sizing": true,
+	}
+
+	fmt.Println("Computed styles:")
+	for _, s := range styles {
+		if keyProps[s.Name] && s.Value != "" {
+			fmt.Printf("  %s: %s\n", s.Name, s.Value)
+		}
+	}
 }
 
 func runBrowserClick(cmd *cobra.Command, args []string) error {
@@ -815,9 +884,7 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(messages) == 0 {
-		fmt.Println("No console messages captured")
-		fmt.Println("\nNote: Full console monitoring requires event handling.")
-		fmt.Println("This is a placeholder implementation that returns empty results.")
+		fmt.Println("No console messages captured during the monitoring period")
 
 		return nil
 	}
@@ -843,6 +910,14 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
+	// Configure body capture if requested
+	if networkCaptureBody {
+		ctrl.SetNetworkMonitorOptions(browser.NetworkMonitorOptions{
+			CaptureBody: true,
+			MaxBodySize: networkMaxBodySize,
+		})
+	}
+
 	// Use the first available tab
 	tabs, err := ctrl.ListTabs(ctx)
 	if err != nil {
@@ -859,9 +934,7 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(requests) == 0 {
-		fmt.Println("No network requests captured")
-		fmt.Println("\nNote: Full network monitoring requires event handling.")
-		fmt.Println("This is a placeholder implementation that returns empty results.")
+		fmt.Println("No network requests captured during the monitoring period")
 
 		return nil
 	}
@@ -872,6 +945,15 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 			status = fmt.Sprintf(" -> %d %s", req.Status, req.StatusText)
 		}
 		fmt.Printf("[%s] %s %s%s\n", req.Timestamp.Format("15:04:05.000"), req.Method, req.URL, status)
+
+		if networkCaptureBody {
+			if req.RequestBody != "" {
+				fmt.Printf("  Request Body: %s\n", truncateString(req.RequestBody, 200))
+			}
+			if req.ResponseBody != "" {
+				fmt.Printf("  Response Body: %s\n", truncateString(req.ResponseBody, 200))
+			}
+		}
 	}
 
 	if browserKeepAlive {
@@ -886,7 +968,15 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 // setupBrowserController creates and connects a browser controller with the current configuration.
 // It returns the controller and a cleanup function that should be called when done.
 // The cleanup function will handle disconnect or no-op depending on the keepAlive setting.
+//
+// In MCP mode, a single controller is cached and reused across calls. This prevents
+// WebSocket/goroutine leaks and preserves tab state between sequential tool invocations.
+// Cleanup is handled globally by CleanupBrowserMCP() when the MCP server shuts down.
 func setupBrowserController(ctx context.Context, timeout time.Duration) (browser.Controller, func(), error) {
+	if browserMCPMode {
+		return getOrCreateMCPController(ctx, timeout)
+	}
+
 	cfg := browser.Config{
 		Host:             browserHost,
 		Port:             browserPort,
@@ -905,10 +995,40 @@ func setupBrowserController(ctx context.Context, timeout time.Duration) (browser
 		cleanup = func() { disconnectWrapper(ctrl) }
 	} else {
 		setupKeepAliveSignalHandler(ctx, ctrl)
-		cleanup = func() {} // No cleanup for keep-alive
+		cleanup = func() {}
 	}
 
 	return ctrl, cleanup, nil
+}
+
+// getOrCreateMCPController returns the cached controller or creates one on first use.
+// Uses context.Background() for Connect because Chrome must outlive individual tool calls.
+// exec.CommandContext(ctx) in the session launcher kills Chrome when ctx is canceled,
+// and each tool call's context is canceled after the call returns.
+func getOrCreateMCPController(_ context.Context, timeout time.Duration) (browser.Controller, func(), error) {
+	mcpCtrlMu.Lock()
+	defer mcpCtrlMu.Unlock()
+
+	if mcpCtrl != nil {
+		return mcpCtrl, func() {}, nil
+	}
+
+	cfg := browser.Config{
+		Host:             browserHost,
+		Port:             browserPort,
+		Headless:         browserHeadless,
+		IgnoreCertErrors: !browserStrictCerts,
+		Timeout:          timeout,
+	}
+
+	ctrl := browser.NewController(cfg)
+	if err := ctrl.Connect(context.Background()); err != nil { //nolint:contextcheck // Chrome must outlive individual tool call contexts
+		return nil, nil, fmt.Errorf("connect: %w", err)
+	}
+
+	mcpCtrl = ctrl
+
+	return ctrl, func() {}, nil
 }
 
 // disconnectWrapper wraps disconnect with error logging.

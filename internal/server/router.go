@@ -26,6 +26,7 @@ func (s *Server) setupRouter() http.Handler {
 	// Auth routes (public) - API endpoints always available, web pages only in full mode
 	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
+	mux.HandleFunc("GET /api/v1/auth/csrf", s.handleCSRFToken)
 	if !s.config.APIOnly {
 		mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
 			s.handleLoginPageUI(w, r, "")
@@ -109,6 +110,15 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/browser/dom", s.handleBrowserDOM)
 		mux.HandleFunc("POST /api/v1/browser/reload", s.handleBrowserReload)
 		mux.HandleFunc("POST /api/v1/browser/close", s.handleBrowserClose)
+
+		// Browser DevTools endpoints
+		mux.HandleFunc("POST /api/v1/browser/network", s.handleBrowserNetwork)
+		mux.HandleFunc("POST /api/v1/browser/console", s.handleBrowserConsole)
+		mux.HandleFunc("POST /api/v1/browser/websocket", s.handleBrowserWebSocket)
+		mux.HandleFunc("POST /api/v1/browser/source", s.handleBrowserSource)
+		mux.HandleFunc("POST /api/v1/browser/scripts", s.handleBrowserScripts)
+		mux.HandleFunc("POST /api/v1/browser/styles", s.handleBrowserStyles)
+		mux.HandleFunc("POST /api/v1/browser/coverage", s.handleBrowserCoverage)
 
 		// Security scan endpoint
 		mux.HandleFunc("POST /api/v1/scan", s.handleSecurityScan)
@@ -311,8 +321,14 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /", s.handleDashboard)
 	}
 
-	// Wrap with middleware (logging, then auth)
+	// Wrap with middleware chain (innermost to outermost):
+	// 1. Logging (innermost)
+	// 2. CSRF validation
+	// 3. Rate limiting
+	// 4. Authentication (outermost)
 	handler := s.withMiddleware(mux)
+	handler = s.csrfMiddleware(handler)
+	handler = s.rateLimitMiddleware(handler)
 	handler = s.authMiddleware(handler)
 
 	return handler

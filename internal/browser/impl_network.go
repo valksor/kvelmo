@@ -3,7 +3,9 @@ package browser
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,19 +20,42 @@ type NetworkMonitor struct {
 	cancel   context.CancelFunc
 	done     chan struct{}
 	wg       sync.WaitGroup // Track goroutine
+	opts     NetworkMonitorOptions
+	page     *rod.Page // Stored for CDP calls (body capture)
 }
 
-// NewNetworkMonitor creates a new network monitor.
+// NewNetworkMonitor creates a new network monitor with default options.
 func NewNetworkMonitor() *NetworkMonitor {
 	return &NetworkMonitor{
 		requests: make(map[string]*NetworkRequest),
+		opts:     DefaultNetworkMonitorOptions(),
+	}
+}
+
+// NewNetworkMonitorWithOptions creates a new network monitor with the given options.
+func NewNetworkMonitorWithOptions(opts NetworkMonitorOptions) *NetworkMonitor {
+	if opts.MaxBodySize <= 0 {
+		opts.MaxBodySize = 1024 * 1024 // 1MB default
+	}
+
+	return &NetworkMonitor{
+		requests: make(map[string]*NetworkRequest),
+		opts:     opts,
 	}
 }
 
 // Start begins monitoring network requests for a page.
 func (m *NetworkMonitor) Start(ctx context.Context, page *rod.Page) error {
-	// Enable network events
-	_ = proto.NetworkEnable{}.Call(page)
+	// Enable network events.
+	enableNetwork := proto.NetworkEnable{}
+	if err := enableNetwork.Call(page); err != nil {
+		slog.Warn("CDP NetworkEnable failed for network monitor", "error", err)
+
+		return fmt.Errorf("enable CDP network events: %w", err)
+	}
+
+	// Store page reference for body capture CDP calls
+	m.page = page
 
 	// Create cancelable context for this monitor
 	ctx, cancel := context.WithCancel(ctx)
@@ -86,6 +111,11 @@ func (m *NetworkMonitor) listenForEvents(ctx context.Context, page *rod.Page) {
 				headers[k] = v.String()
 			}
 
+			var requestBody string
+			if m.opts.CaptureBody && e.Request.HasPostData {
+				requestBody = m.fetchRequestBody(e.RequestID)
+			}
+
 			m.AddRequest(&NetworkRequest{
 				ID:           string(e.RequestID),
 				URL:          e.Request.URL,
@@ -93,7 +123,7 @@ func (m *NetworkMonitor) listenForEvents(ctx context.Context, page *rod.Page) {
 				Headers:      headers,
 				ResourceType: string(e.Type),
 				Timestamp:    time.Unix(0, int64(e.Timestamp.Duration())),
-				RequestBody:  "", // Request body would need separate handling
+				RequestBody:  requestBody,
 			})
 		},
 		func(e *proto.NetworkResponseReceived) {
@@ -103,14 +133,66 @@ func (m *NetworkMonitor) listenForEvents(ctx context.Context, page *rod.Page) {
 				req.Status = e.Response.Status
 				req.StatusText = e.Response.StatusText
 				req.MimeType = e.Response.MIMEType
-				// No need to put back - pointer already in map, modifications are in-place
 			}
 			m.mu.Unlock()
+
+			if m.opts.CaptureBody {
+				m.fetchAndStoreResponseBody(e.RequestID)
+			}
 		},
 	)()
 
 	// Wait for context cancellation
 	<-ctx.Done()
+}
+
+// fetchRequestBody retrieves the request POST data via CDP.
+func (m *NetworkMonitor) fetchRequestBody(requestID proto.NetworkRequestID) string {
+	if m.page == nil {
+		return ""
+	}
+	result, err := proto.NetworkGetRequestPostData{RequestID: requestID}.Call(m.page)
+	if err != nil {
+		slog.Debug("failed to get request body", "requestID", requestID, "error", err)
+
+		return ""
+	}
+
+	return m.truncateBody(result.PostData)
+}
+
+// fetchAndStoreResponseBody retrieves and stores the response body via CDP.
+func (m *NetworkMonitor) fetchAndStoreResponseBody(requestID proto.NetworkRequestID) {
+	if m.page == nil {
+		return
+	}
+	result, err := proto.NetworkGetResponseBody{RequestID: requestID}.Call(m.page)
+	if err != nil {
+		// Response body may not be available (e.g., redirects, cancelled requests)
+		slog.Debug("failed to get response body", "requestID", requestID, "error", err)
+
+		return
+	}
+
+	body := result.Body
+	if result.Base64Encoded {
+		body = "[base64 encoded, " + strconv.Itoa(len(body)) + " bytes]"
+	}
+
+	m.mu.Lock()
+	if req, exists := m.requests[string(requestID)]; exists {
+		req.ResponseBody = m.truncateBody(body)
+	}
+	m.mu.Unlock()
+}
+
+// truncateBody truncates a body string to the configured max size.
+func (m *NetworkMonitor) truncateBody(body string) string {
+	if len(body) > m.opts.MaxBodySize {
+		return body[:m.opts.MaxBodySize] + fmt.Sprintf("... [truncated, total %d bytes]", len(body))
+	}
+
+	return body
 }
 
 // GetRequests returns all captured network requests.

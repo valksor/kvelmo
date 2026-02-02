@@ -210,6 +210,156 @@
       </div>
     </div>
   </div>
+
+  <!-- DevTools: Monitoring Section -->
+  <h2 class="text-2xl font-bold text-base-content mt-10 mb-6">DevTools Monitoring</h2>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Network Monitor -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 350ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          Network Monitor
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <form id="network-form" class="flex flex-wrap gap-3 mb-4">
+          <input type="number" id="network-duration" value="5" min="1" max="30" class="input input-bordered w-20 text-sm" placeholder="5s">
+          <label class="flex items-center space-x-2 px-3 py-2 bg-base-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="network-body" class="checkbox checkbox-sm checkbox-secondary">
+            <span class="text-sm">Capture Body</span>
+          </label>
+          <button type="submit" class="btn btn-secondary">Monitor</button>
+        </form>
+        <div id="network-output" class="bg-base-200 p-4 rounded-xl text-sm max-h-64 overflow-y-auto border border-base-300 font-mono">
+          <p class="text-base-content/50">// Network requests will appear here</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console Monitor -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 400ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          Console Logs
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <form id="console-form" class="flex flex-wrap gap-3 mb-4">
+          <input type="number" id="console-duration" value="5" min="1" max="30" class="input input-bordered w-20 text-sm" placeholder="5s">
+          <select id="console-level" class="select select-bordered select-sm">
+            <option value="">All Levels</option>
+            <option value="error">Error</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+            <option value="log">Log</option>
+          </select>
+          <button type="submit" class="btn btn-secondary">Listen</button>
+        </form>
+        <div id="console-monitor-output" class="bg-neutral text-success p-4 rounded-xl font-mono text-sm max-h-64 overflow-y-auto border border-neutral-focus">
+          <p class="text-base-content/50">// Console logs will appear here</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- WebSocket Monitor -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 450ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          WebSocket Monitor
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <form id="websocket-form" class="flex gap-3 mb-4">
+          <input type="number" id="ws-duration" value="5" min="1" max="30" class="input input-bordered w-20 text-sm" placeholder="5s">
+          <button type="submit" class="btn btn-secondary">Monitor</button>
+        </form>
+        <div id="ws-output" class="bg-base-200 p-4 rounded-xl text-sm max-h-64 overflow-y-auto border border-base-300 font-mono">
+          <p class="text-base-content/50">// WebSocket frames will appear here</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page Source -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 500ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          Page Source
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <div class="flex gap-3 mb-4">
+          <button id="view-source-btn" class="btn btn-secondary">View Source</button>
+          <button id="view-scripts-btn" class="btn btn-ghost btn-sm">Scripts</button>
+        </div>
+        <div id="source-output" class="bg-neutral text-neutral-content p-4 rounded-xl font-mono text-xs max-h-64 overflow-y-auto border border-neutral-focus">
+          <p class="text-base-content/50">// Page source will appear here</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- CSS Inspector -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 550ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+          CSS Inspector
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <form id="styles-form" class="flex flex-wrap gap-3 mb-4">
+          <input type="text" id="styles-selector" placeholder="CSS selector" class="input input-bordered flex-1 min-w-[150px] font-mono text-sm">
+          <label class="flex items-center space-x-2 px-3 py-2 bg-base-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="styles-computed" class="checkbox checkbox-sm checkbox-secondary" checked>
+            <span class="text-sm">Computed</span>
+          </label>
+          <label class="flex items-center space-x-2 px-3 py-2 bg-base-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="styles-matched" class="checkbox checkbox-sm checkbox-secondary">
+            <span class="text-sm">Matched</span>
+          </label>
+          <button type="submit" class="btn btn-secondary">Inspect</button>
+        </form>
+        <div id="styles-output" class="bg-base-200 p-4 rounded-xl text-sm max-h-64 overflow-y-auto border border-base-300">
+          <p class="text-base-content/50">// CSS styles will appear here</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coverage -->
+    <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 600ms">
+      <div class="bg-secondary px-6 py-4">
+        <h2 class="text-lg font-semibold text-secondary-content flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          Code Coverage
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <form id="coverage-form" class="flex flex-wrap gap-3 mb-4">
+          <input type="number" id="coverage-duration" value="5" min="1" max="30" class="input input-bordered w-20 text-sm" placeholder="5s">
+          <label class="flex items-center space-x-2 px-3 py-2 bg-base-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="coverage-js" class="checkbox checkbox-sm checkbox-secondary" checked>
+            <span class="text-sm">JS</span>
+          </label>
+          <label class="flex items-center space-x-2 px-3 py-2 bg-base-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="coverage-css" class="checkbox checkbox-sm checkbox-secondary" checked>
+            <span class="text-sm">CSS</span>
+          </label>
+          <button type="submit" class="btn btn-secondary">Measure</button>
+        </form>
+        <div id="coverage-output" class="bg-base-200 p-4 rounded-xl text-sm max-h-64 overflow-y-auto border border-base-300">
+          <p class="text-base-content/50">// Coverage results will appear here</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -351,7 +501,7 @@ async function switchTab(tabId) {
 
 async function closeTab(tabId) {
   try {
-    await fetch('/api/v1/browser/close', {
+    await csrfFetch('/api/v1/browser/close', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tab_id: tabId })
@@ -376,7 +526,7 @@ async function captureScreenshot() {
   container.appendChild(loadingDiv);
 
   try {
-    const response = await fetch('/api/v1/browser/screenshot', {
+    const response = await csrfFetch('/api/v1/browser/screenshot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tab_id: currentTabId, format: 'png' })
@@ -448,7 +598,7 @@ document.getElementById('goto-form').addEventListener('submit', async function(e
   if (!url) return;
 
   try {
-    await fetch('/api/v1/browser/navigate', {
+    await csrfFetch('/api/v1/browser/navigate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, tab_id: currentTabId })
@@ -469,7 +619,7 @@ document.getElementById('nav-forward').addEventListener('click', async () => {
 
 document.getElementById('nav-reload').addEventListener('click', async () => {
   try {
-    await fetch('/api/v1/browser/reload', {
+    await csrfFetch('/api/v1/browser/reload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tab_id: currentTabId })
@@ -481,7 +631,7 @@ document.getElementById('nav-reload').addEventListener('click', async () => {
 
 async function navigateBrowser(direction) {
   try {
-    await fetch('/api/v1/browser/navigate', {
+    await csrfFetch('/api/v1/browser/navigate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ direction, tab_id: currentTabId })
@@ -499,7 +649,7 @@ document.getElementById('eval-form').addEventListener('submit', async function(e
 
   const output = document.getElementById('console-output');
   try {
-    const response = await fetch('/api/v1/browser/eval', {
+    const response = await csrfFetch('/api/v1/browser/eval', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ expression: expr, tab_id: currentTabId })
@@ -532,7 +682,7 @@ document.getElementById('dom-form').addEventListener('submit', async function(e)
   const output = document.getElementById('dom-output');
 
   try {
-    const response = await fetch('/api/v1/browser/dom', {
+    const response = await csrfFetch('/api/v1/browser/dom', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ selector, all, tab_id: currentTabId, html: true })
@@ -598,6 +748,458 @@ document.getElementById('dom-form').addEventListener('submit', async function(e)
     errorP.className = 'text-error';
     errorP.textContent = `Error: ${error.message}`;
     output.appendChild(errorP);
+  }
+});
+
+// --- DevTools: Network Monitor ---
+document.getElementById('network-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const duration = parseInt(document.getElementById('network-duration').value) || 5;
+  const captureBody = document.getElementById('network-body').checked;
+  const output = document.getElementById('network-output');
+
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = `Monitoring network for ${duration}s...`;
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/network', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, duration, capture_body: captureBody })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (!data.success) {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to monitor network';
+      output.appendChild(errP);
+      return;
+    }
+
+    const countP = document.createElement('p');
+    countP.className = 'text-base-content/60 mb-2 font-semibold';
+    countP.textContent = `${data.count} request(s) captured`;
+    output.appendChild(countP);
+
+    (data.requests || []).forEach(req => {
+      const div = document.createElement('div');
+      div.className = 'mb-2 pb-2 border-b border-base-300 last:border-0';
+      const line = document.createElement('p');
+      const method = document.createElement('span');
+      method.className = 'text-primary font-bold';
+      method.textContent = req.method || 'GET';
+      const url = document.createElement('span');
+      url.className = 'text-base-content/80 ml-2';
+      url.textContent = req.url || '';
+      const status = document.createElement('span');
+      status.className = `ml-2 font-semibold ${(req.status >= 200 && req.status < 400) ? 'text-success' : 'text-error'}`;
+      status.textContent = req.status ? ` ${req.status}` : '';
+      line.appendChild(method);
+      line.appendChild(url);
+      line.appendChild(status);
+      div.appendChild(line);
+      if (req.response_body) {
+        const body = document.createElement('pre');
+        body.className = 'text-xs text-base-content/50 mt-1 max-h-20 overflow-y-auto';
+        body.textContent = req.response_body.substring(0, 500);
+        div.appendChild(body);
+      }
+      output.appendChild(div);
+    });
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: Console Monitor ---
+document.getElementById('console-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const duration = parseInt(document.getElementById('console-duration').value) || 5;
+  const level = document.getElementById('console-level').value;
+  const output = document.getElementById('console-monitor-output');
+
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = `Listening for console logs for ${duration}s...`;
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/console', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, duration, level })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (!data.success) {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to monitor console';
+      output.appendChild(errP);
+      return;
+    }
+
+    const countP = document.createElement('p');
+    countP.className = 'text-base-content/50 mb-2';
+    countP.textContent = `${data.count} message(s)`;
+    output.appendChild(countP);
+
+    const levelColors = { error: 'text-error', warning: 'text-warning', warn: 'text-warning', info: 'text-info', log: 'text-success' };
+    (data.messages || []).forEach(msg => {
+      const line = document.createElement('p');
+      line.className = 'mb-1';
+      const tag = document.createElement('span');
+      tag.className = `font-bold ${levelColors[msg.level] || 'text-base-content'}`;
+      tag.textContent = `[${msg.level}]`;
+      const text = document.createElement('span');
+      text.className = 'ml-2';
+      text.textContent = msg.text || msg.message || '';
+      line.appendChild(tag);
+      line.appendChild(text);
+      output.appendChild(line);
+    });
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: WebSocket Monitor ---
+document.getElementById('websocket-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const duration = parseInt(document.getElementById('ws-duration').value) || 5;
+  const output = document.getElementById('ws-output');
+
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = `Monitoring WebSocket frames for ${duration}s...`;
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/websocket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, duration })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (!data.success) {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to monitor WebSocket';
+      output.appendChild(errP);
+      return;
+    }
+
+    const countP = document.createElement('p');
+    countP.className = 'text-base-content/60 mb-2 font-semibold';
+    countP.textContent = `${data.count} frame(s) captured`;
+    output.appendChild(countP);
+
+    (data.frames || []).forEach(frame => {
+      const line = document.createElement('p');
+      line.className = 'mb-1';
+      const dir = document.createElement('span');
+      const isSent = frame.type === 'sent' || frame.direction === 'sent';
+      dir.className = `font-bold ${isSent ? 'text-info' : 'text-success'}`;
+      dir.textContent = isSent ? '→ ' : '← ';
+      const text = document.createElement('span');
+      text.className = 'text-base-content/80';
+      text.textContent = (frame.data || frame.payload || '').substring(0, 200);
+      line.appendChild(dir);
+      line.appendChild(text);
+      output.appendChild(line);
+    });
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: Page Source ---
+document.getElementById('view-source-btn').addEventListener('click', async function() {
+  const output = document.getElementById('source-output');
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = 'Fetching page source...';
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/source', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (data.success) {
+      const sizeP = document.createElement('p');
+      sizeP.className = 'text-base-content/50 mb-2 text-xs';
+      sizeP.textContent = `${data.length} characters`;
+      const pre = document.createElement('pre');
+      pre.className = 'whitespace-pre-wrap break-all';
+      pre.textContent = data.source || '';
+      output.appendChild(sizeP);
+      output.appendChild(pre);
+    } else {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to get page source';
+      output.appendChild(errP);
+    }
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: Scripts ---
+document.getElementById('view-scripts-btn').addEventListener('click', async function() {
+  const output = document.getElementById('source-output');
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = 'Fetching script sources...';
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/scripts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (data.success) {
+      const countP = document.createElement('p');
+      countP.className = 'text-base-content/50 mb-2 font-semibold';
+      countP.textContent = `${data.count} script(s) found`;
+      output.appendChild(countP);
+
+      (data.scripts || []).forEach(script => {
+        const div = document.createElement('div');
+        div.className = 'mb-3 pb-3 border-b border-neutral-focus last:border-0';
+        const urlP = document.createElement('p');
+        urlP.className = 'text-info text-xs mb-1 truncate';
+        urlP.textContent = script.url || '(inline)';
+        div.appendChild(urlP);
+        if (script.source) {
+          const pre = document.createElement('pre');
+          pre.className = 'whitespace-pre-wrap text-xs max-h-32 overflow-y-auto';
+          pre.textContent = script.source.substring(0, 1000);
+          div.appendChild(pre);
+        }
+        output.appendChild(div);
+      });
+    } else {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to get scripts';
+      output.appendChild(errP);
+    }
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: CSS Inspector ---
+document.getElementById('styles-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const selector = document.getElementById('styles-selector').value;
+  if (!selector) return;
+  const computed = document.getElementById('styles-computed').checked;
+  const matched = document.getElementById('styles-matched').checked;
+  const output = document.getElementById('styles-output');
+
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = 'Inspecting styles...';
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/styles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, selector, computed, matched })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (data.success) {
+      if (data.computed) {
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-secondary mb-2';
+        heading.textContent = 'Computed Styles';
+        output.appendChild(heading);
+        const list = document.createElement('div');
+        list.className = 'mb-4';
+        Object.entries(data.computed).forEach(([prop, val]) => {
+          const row = document.createElement('p');
+          row.className = 'text-xs leading-relaxed';
+          const name = document.createElement('span');
+          name.className = 'text-info';
+          name.textContent = prop;
+          const sep = document.createElement('span');
+          sep.className = 'text-base-content/40 mx-1';
+          sep.textContent = ':';
+          const value = document.createElement('span');
+          value.className = 'text-base-content/80';
+          value.textContent = val;
+          row.appendChild(name);
+          row.appendChild(sep);
+          row.appendChild(value);
+          list.appendChild(row);
+        });
+        output.appendChild(list);
+      }
+      if (data.matched) {
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-secondary mb-2';
+        heading.textContent = 'Matched CSS Rules';
+        output.appendChild(heading);
+        const pre = document.createElement('pre');
+        pre.className = 'text-xs whitespace-pre-wrap';
+        pre.textContent = JSON.stringify(data.matched, null, 2);
+        output.appendChild(pre);
+      }
+    } else {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to inspect styles';
+      output.appendChild(errP);
+    }
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
+  }
+});
+
+// --- DevTools: Code Coverage ---
+document.getElementById('coverage-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const duration = parseInt(document.getElementById('coverage-duration').value) || 5;
+  const trackJS = document.getElementById('coverage-js').checked;
+  const trackCSS = document.getElementById('coverage-css').checked;
+  const output = document.getElementById('coverage-output');
+
+  output.replaceChildren();
+  const loadingP = document.createElement('p');
+  loadingP.className = 'text-base-content/50 animate-pulse';
+  loadingP.textContent = `Measuring coverage for ${duration}s...`;
+  output.appendChild(loadingP);
+
+  try {
+    const response = await csrfFetch('/api/v1/browser/coverage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab_id: currentTabId, duration, track_js: trackJS, track_css: trackCSS })
+    });
+    const data = await response.json();
+    output.replaceChildren();
+
+    if (data.success) {
+      if (data.summary) {
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-secondary mb-2';
+        heading.textContent = 'Coverage Summary';
+        output.appendChild(heading);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 gap-3 mb-4';
+        const entries = [
+          ['JS Used', data.summary.js_used_bytes],
+          ['JS Total', data.summary.js_total_bytes],
+          ['CSS Used', data.summary.css_used_bytes],
+          ['CSS Total', data.summary.css_total_bytes]
+        ];
+        entries.forEach(([label, val]) => {
+          if (val !== undefined) {
+            const cell = document.createElement('div');
+            cell.className = 'bg-base-300 rounded-lg p-2 text-center';
+            const labelP = document.createElement('p');
+            labelP.className = 'text-xs text-base-content/50';
+            labelP.textContent = label;
+            const valP = document.createElement('p');
+            valP.className = 'font-semibold text-sm';
+            valP.textContent = formatBytes(val);
+            cell.appendChild(labelP);
+            cell.appendChild(valP);
+            grid.appendChild(cell);
+          }
+        });
+        output.appendChild(grid);
+      }
+
+      if (data.js_entries && data.js_entries.length > 0) {
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-info mb-1 text-xs';
+        heading.textContent = `JS Files (${data.js_entries.length})`;
+        output.appendChild(heading);
+        data.js_entries.forEach(entry => {
+          const p = document.createElement('p');
+          p.className = 'text-xs truncate text-base-content/70';
+          p.textContent = entry.url || entry.script_url || '(inline)';
+          output.appendChild(p);
+        });
+      }
+
+      if (data.css_entries && data.css_entries.length > 0) {
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-info mb-1 mt-3 text-xs';
+        heading.textContent = `CSS Files (${data.css_entries.length})`;
+        output.appendChild(heading);
+        data.css_entries.forEach(entry => {
+          const p = document.createElement('p');
+          p.className = 'text-xs truncate text-base-content/70';
+          p.textContent = entry.url || entry.style_url || '(inline)';
+          output.appendChild(p);
+        });
+      }
+    } else {
+      const errP = document.createElement('p');
+      errP.className = 'text-error';
+      errP.textContent = data.error || 'Failed to measure coverage';
+      output.appendChild(errP);
+    }
+  } catch (error) {
+    output.replaceChildren();
+    const errP = document.createElement('p');
+    errP.className = 'text-error';
+    errP.textContent = `Error: ${error.message}`;
+    output.appendChild(errP);
   }
 });
 
