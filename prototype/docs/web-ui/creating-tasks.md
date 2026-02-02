@@ -195,6 +195,16 @@ Once you create a task:
 └──────────────────────────────────────────────────────────────┘
 ```
 
+### Local Metadata Enrichment
+
+When starting a task from an external provider (GitHub, Jira, Wrike, etc.), Mehrhof automatically searches local queues for a task with a matching external ID. If found, local metadata is merged into the work context:
+
+- **Description**: Local description replaces provider description when it contains richer content
+- **Metadata**: Custom frontmatter fields from local task files fill gaps in provider data (local never overwrites provider)
+- **Source files**: If the local task has a source path, those files are included in the agent's context
+
+This lets you enrich external tasks with local code examples, file references, or implementation notes. See [CLI: start](../cli/start.md#local-metadata-enrichment) for details.
+
 ## Next Steps
 
 After creating your task:

@@ -240,6 +240,10 @@ Submitting a task that was already submitted will:
 - Add a comment if `--comment` is provided
 - Not create a duplicate
 
+## Web UI
+
+Prefer a visual interface? See the Submit feature in [Quick Tasks](../web-ui/quick-tasks.md).
+
 ## See Also
 
 - [quick](quick.md) - Create quick tasks

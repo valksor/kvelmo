@@ -265,6 +265,39 @@ mehr serve register --list
 mehr serve unregister
 ```
 
+## Security Middleware
+
+When authentication is enabled (`--host 0.0.0.0`), the server activates additional security layers:
+
+### CSRF Protection
+
+All state-changing requests (POST, PUT, DELETE) require a valid `X-Csrf-Token` header. The token is:
+
+- Returned in the login response JSON (`csrf_token` field)
+- Available via `GET /api/v1/auth/csrf` for existing sessions
+- Per-session and validated against the server-side session
+
+**Exempt endpoints:** GET/HEAD/OPTIONS methods, `/api/v1/auth/login`, `/api/v1/webhooks/*`.
+
+The Web UI handles CSRF automatically. IDE plugins include CSRF infrastructure for remote server connections.
+
+### Rate Limiting
+
+Per-IP rate limiting protects against brute-force and abuse:
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| General API | 120 req/min |
+| Auth endpoints | 10 req/min |
+
+Exceeding the limit returns **HTTP 429 Too Many Requests**.
+
+### Localhost Mode
+
+Both CSRF and rate limiting are **automatically disabled** when the server runs on localhost (default). This keeps the development experience frictionless while protecting network-accessible deployments.
+
+See [Web UI: Authentication](../web-ui/authentication.md) for full details.
+
 ## Notes
 
 - The server binds to `localhost` by default for security

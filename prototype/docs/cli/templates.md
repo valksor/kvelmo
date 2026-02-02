@@ -237,6 +237,10 @@ agent: claude-sonnet
 ---
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Templates](../web-ui/templates.md).
+
 ## See Also
 
 - [start](start.md) - Start a task with `--template` flag

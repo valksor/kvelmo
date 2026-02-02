@@ -498,6 +498,10 @@ $ mehr review pr --pr-number 123
 ⏭️  Skipped: No new changes since last review
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Reviewing](../web-ui/reviewing.md).
+
 ## See Also
 
 - [implement](cli/implement.md) - Generate code

@@ -93,3 +93,12 @@ The AI reads your existing commit history (`git log -20 --format=%B`) to match:
 - **Tone**: Casual vs formal language
 
 This ensures generated commits blend seamlessly with your repository's style.
+
+## Web UI
+
+Prefer a visual interface? See [Web UI: Smart Commit](../web-ui/commit.md).
+
+## See Also
+
+- [mehr start](start.md) - Start a task
+- [mehr finish](finish.md) - Finish a task and merge

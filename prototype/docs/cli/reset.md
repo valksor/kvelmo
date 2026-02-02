@@ -71,6 +71,10 @@ mehr review --force    # Reset state and start reviewing
 | Agent hung during implementing | `mehr reset --yes` then `mehr implement` |
 | One-step recovery              | `mehr plan --force` (reset + plan)       |
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Reset](../web-ui/reset.md).
+
 ## See Also
 
 - [mehr undo](undo.md) - Revert to previous checkpoint

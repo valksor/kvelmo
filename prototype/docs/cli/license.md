@@ -140,6 +140,10 @@ When distributing software that includes Mehrhof, ensure you:
 
 Use `mehr license info --json` to generate machine-readable attribution data.
 
+## Web UI
+
+Prefer a visual interface? See the License Information section in [Settings](../web-ui/settings.md).
+
 ## See Also
 
 - [Legal Information](../legal/license.md) - Full BSD 3-Clause license text

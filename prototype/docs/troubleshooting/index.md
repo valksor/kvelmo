@@ -14,6 +14,71 @@ Solutions for common issues with Mehrhof.
 | Merge conflict                  | Resolve manually, `git add .`, `git commit`            |
 | Timeout                         | Increase `agent.timeout` in `.mehrhof/config.yaml`     |
 | Start fresh                     | `mehr abandon --yes && mehr start file:task.md`        |
+| Web UI won't load               | Check the URL in terminal output, try `http://127.0.0.1:PORT` |
+| Buttons not responding          | Refresh browser, check server terminal for errors      |
+| Task stuck in state             | Click "Reset State" on dashboard, or `mehr reset`      |
+
+---
+
+## Web UI Issues
+
+### Server Won't Start
+
+**Cause:** Port already in use or configuration error.
+
+Check if another process is using the port:
+
+```bash
+# Check port (default 8080)
+lsof -i :8080
+```
+
+Try a different port:
+
+```bash
+mehr serve --port 9090
+```
+
+### Browser Won't Load the UI
+
+**Possible causes:**
+
+1. **Wrong URL** — Check the terminal output for the correct URL and port
+2. **Server not running** — Ensure `mehr serve` is still running in another terminal
+3. **`--open` didn't work** — Copy the URL from the terminal and paste it manually
+4. **Firewall or proxy** — Try `http://127.0.0.1:PORT` instead of `localhost:PORT`
+
+### Buttons Not Responding / Timeout
+
+**Cause:** The AI agent is still processing, or the SSE connection dropped.
+
+1. **Check server terminal** — Look for error messages or activity
+2. **Refresh the page** — The UI reconnects via SSE automatically
+3. **Use Reset** — If the task is stuck, click "Reset State" on the dashboard (or run `mehr reset`)
+
+### Provider Authentication Failed
+
+**Cause:** Missing or expired tokens for GitHub, Jira, Linear, etc.
+
+1. Check that the required environment variable is set (e.g., `GITHUB_TOKEN`, `JIRA_TOKEN`)
+2. Verify the token has the required permissions (repo access, issue read)
+3. Check `.mehrhof/config.yaml` for provider-specific settings
+
+See [Providers](../providers/index.md) for token setup per provider.
+
+### Remote Access Not Working
+
+**Cause:** Server not bound to accessible address.
+
+```bash
+# Bind to all interfaces (for remote access)
+mehr serve --host 0.0.0.0
+
+# With authentication (required for remote)
+mehr serve --host 0.0.0.0 --auth
+```
+
+See [Remote Access](../web-ui/remote-access.md) for full setup.
 
 ---
 
@@ -92,15 +157,80 @@ mehr update
 
 ### "Rate limited"
 
-**Cause:** Too many API requests.
+**Cause:** Your AI provider (e.g., Anthropic) is throttling requests due to API rate limits. This is not a Mehrhof issue — it comes from the provider's usage tiers.
+
+**Fixes:**
+
+1. **Wait and retry** — Rate limits are temporary. Wait a minute and run the command again:
 
 ```bash
+mehr continue
 ```
+
+2. **Use budget configuration** to pace requests:
+
+```yaml
+# .mehrhof/config.yaml
+budget:
+  warning_at: 0.8
+  on_limit: pause
+```
+
+3. **Check your provider's rate limits** — Anthropic and other providers have usage tiers. Higher tiers allow more requests per minute. See your provider's dashboard for current limits.
+
+### CSRF Token Errors
+
+**Cause:** Making POST/PUT/DELETE requests to an authenticated server without a valid CSRF token.
+
+```
+Error: CSRF token invalid or missing (HTTP 403)
+```
+
+**Fixes:**
+
+1. **Web UI:** Refresh the page — the CSRF token is fetched automatically on load
+2. **API clients:** Obtain the token from the login response (`csrf_token` field) or `GET /api/v1/auth/csrf`, then include it as `X-Csrf-Token` header
+3. **IDE plugins:** Update to latest version — CSRF tokens are handled automatically
+4. **Localhost mode:** CSRF is not enforced on localhost — if you see this error, check your `--host` flag
+
+### Server Rate Limiting (HTTP 429)
+
+**Cause:** Too many requests from your IP address. The server enforces per-IP rate limits when authentication is enabled.
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| General API | 120 req/min |
+| Auth endpoints | 10 req/min |
+
+**Fixes:**
+
+1. **Wait and retry** — Rate limits reset after the time window
+2. **Reduce request frequency** — Space out API calls
+3. **Localhost mode** — Rate limiting is disabled on localhost
+
+> **Note:** This is different from AI provider rate limits (see "Rate limited" below). Server rate limiting protects the Mehrhof server itself.
+
+### Agent Retry Behavior
+
+Agents automatically retry transient failures (network errors, temporary API issues) before reporting a failure. Default: 3 attempts with 5-second delay.
+
+If you see repeated retry warnings in logs:
+
+```
+agent execution failed, retrying (attempt 1/3, retry_delay 5s)
+```
+
+**This is normal** — the agent is recovering from a transient issue. If all retries fail, the operation reports the final error.
+
+**Configure retries** in `.mehrhof/config.yaml`:
 
 ```yaml
 agent:
-  timeout: 600
+  retry_count: 3    # Number of attempts (default: 3)
+  retry_delay: 5s   # Delay between retries (default: 5s)
 ```
+
+Set `retry_count: 1` to disable retries.
 
 ### Slow Response Times
 

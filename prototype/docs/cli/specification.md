@@ -100,6 +100,10 @@ Specification 5 not found. Available specifications:
   🔄 specification-2: API Endpoints [in-progress]
 ```
 
+## Web UI
+
+Prefer a visual interface? See the Specifications section in [Planning](../web-ui/planning.md).
+
 ## See Also
 
 - [plan](plan.md) - Create specifications

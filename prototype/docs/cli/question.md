@@ -313,6 +313,10 @@ mehr finish
 4. **Check understanding** - Verify assumptions before continuing
 5. **Document decisions** - Important Q&A is saved to sessions
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Quick Question](../web-ui/questions.md).
+
 ## See Also
 
 - [note](note.md) - Add notes without AI response

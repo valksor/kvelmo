@@ -115,6 +115,10 @@ providers:
     token: YOUR_GITHUB_TOKEN
 ```
 
+## Web UI
+
+Prefer a visual interface? See the Sync from Provider feature in [Project Planning](../web-ui/project-planning.md).
+
 ## See Also
 
 - [mehr start](start.md) - Create a new task

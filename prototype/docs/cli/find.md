@@ -141,6 +141,10 @@ The agent follows this approach:
 
 If the agent doesn't return structured results, the command falls back to extracting `file:line` patterns from the response.
 
+## Web UI
+
+Prefer a visual interface? See the search and filter features in [Task History](../web-ui/task-history.md).
+
 ## See Also
 
 - [status](status.md) - Task status and workspace information

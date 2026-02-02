@@ -125,6 +125,10 @@ git checkout abc1234 -- path/to/file.go
 git reset --hard abc1234
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Undo & Redo](../web-ui/undo-redo.md).
+
 ## See Also
 
 - [redo](redo.md) - Restore after undo

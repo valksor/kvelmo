@@ -154,22 +154,14 @@ mehrhof (idle) > plan   # Retry is safe
 Chat history is automatically saved to `~/.valksor/.mehr_history` for command history navigation.
 Session transcripts are preserved in the workspace for context continuity.
 
-## Related Commands
+## Web UI
 
-- `mehr start <ref>` - Start a task (one-time, non-interactive)
-- `mehr plan` - Enter planning phase (one-time)
-- `mehr implement` - Execute specifications (one-time)
-- `mehr review` - Review code (one-time)
-- `mehr status` - Show task status
+Prefer a visual interface? See [Web UI: Interactive Mode](../web-ui/interactive.md).
 
-## Web UI Equivalent
+## See Also
 
-Interactive mode is also available in the Web UI at `/interactive` when running `mehr serve`.
-
-The Web UI provides:
-- Chat interface with real-time streaming
-- Command buttons for workflow actions
-- State indicators
-- Side panel with quick actions
-
-See [Web UI: Interactive Mode](../web-ui/interactive.md) for details.
+- [mehr start](start.md) - Start a task (one-time, non-interactive)
+- [mehr plan](plan.md) - Enter planning phase (one-time)
+- [mehr implement](implement.md) - Execute specifications (one-time)
+- [mehr review](review.md) - Review code (one-time)
+- [mehr status](status.md) - Show task status

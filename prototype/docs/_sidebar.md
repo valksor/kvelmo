@@ -1,6 +1,7 @@
 - **Get Started**
   - [Home](README.md)
   - [Quickstart](quickstart.md)
+  - [FAQ](faq.md)
   - [Glossary](glossary.md)
   - [Web UI vs CLI](guides/web-ui-vs-cli.md)
 
@@ -10,6 +11,10 @@
   - [Iterative Workflow](guides/iterative-workflow.md)
   - [Recovery & Undo](guides/recovery.md)
   - [PR Review State Management](guides/pr-review-state.md)
+  - **Workflow Guides**
+    - [GitHub Issue to PR](guides/python-django.md)
+    - [Multi-Task Planning](guides/php-symfony.md)
+    - [Stacked Features](guides/react-frontend.md)
 
 - **Web UI**
   - [Overview](web-ui/index.md)
@@ -24,6 +29,9 @@
     - [Continuing](web-ui/continuing.md)
     - [Auto Mode](web-ui/auto.md)
     - [Undo & Redo](web-ui/undo-redo.md)
+    - [Reset](web-ui/reset.md)
+    - [Stacked Features](web-ui/stack.md)
+    - [Parallel Tasks](web-ui/parallel-tasks.md)
   - **Quick Tasks**
     - [Quick Tasks](web-ui/quick-tasks.md)
   - **Project Planning**
@@ -35,12 +43,18 @@
     - [Security & Quality](web-ui/security-quality.md)
     - [Memory](web-ui/memory.md)
     - [Templates](web-ui/templates.md)
+    - [Links](web-ui/links.md)
   - **Settings**
     - [Settings](web-ui/settings.md)
     - [Authentication](web-ui/authentication.md)
   - **Tools**
     - [Browser Control](web-ui/browser.md)
     - [Remote Access](web-ui/remote-access.md)
+    - [Interactive Mode](web-ui/interactive.md)
+    - [Smart Commit](web-ui/commit.md)
+    - [Standalone Review](web-ui/standalone-review.md)
+    - [Standalone Simplify](web-ui/standalone-simplify.md)
+    - [Automation](web-ui/automation.md)
   - **API Reference**
     - [REST API](web-ui/api.md)
 
@@ -62,6 +76,8 @@
     - [auto](cli/auto.md)
     - [undo](cli/undo.md)
     - [redo](cli/redo.md)
+    - [stack](cli/stack.md)
+    - [reset](cli/reset.md)
   - **Task Management**
     - [status](cli/status.md)
     - [continue](cli/continue.md)
@@ -71,6 +87,9 @@
     - [delete](cli/delete.md)
     - [sync](cli/sync.md)
     - [abandon](cli/abandon.md)
+    - [label](cli/label.md)
+    - [find](cli/find.md)
+    - [links](cli/links.md)
   - **Quick Tasks**
     - [quick](cli/quick.md)
     - [optimize](cli/optimize.md)
@@ -78,10 +97,14 @@
     - [submit](cli/submit.md)
   - **Project Planning**
     - [project](cli/project.md)
+    - [project-sync](cli/project-sync.md)
   - **Utility**
     - [init](cli/init.md)
     - [guide](cli/guide.md)
     - [cost](cli/cost.md)
+    - [budget](cli/budget.md)
+    - [specification](cli/specification.md)
+    - [commit](cli/commit.md)
     - [agents](cli/agents.md)
     - [providers](cli/providers.md)
     - [plugins](cli/plugins.md)
@@ -99,11 +122,14 @@
   - **Server**
     - [serve](cli/serve.md)
     - [register](cli/register.md)
+    - [interactive](cli/interactive.md)
+    - [automation](cli/automation.md)
 
 - **Concepts**
   - [Workflow](concepts/workflow.md)
   - [Tasks](concepts/tasks.md)
   - [Checkpoints](concepts/checkpoints.md)
+  - [Stacked Features](concepts/stacked-features.md)
   - [Plugins](concepts/plugins.md)
   - [Linking](concepts/linking.md)
 
@@ -111,6 +137,7 @@
   - [Overview & Config](agents/index.md)
   - [Claude](agents/claude.md)
   - [Codex](agents/codex.md)
+  - [Noop](agents/noop.md)
 
 - **Task Providers**
   - [Overview](providers/index.md)
@@ -136,6 +163,7 @@
   - [Git](configuration/git.md)
   - [Browser](configuration/browser.md)
   - [Storage](configuration/storage.md)
+  - [Context](configuration/context.md)
 
 - **Advanced**
   - [Performance & Cost](advanced/optimization.md)

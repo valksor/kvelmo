@@ -524,6 +524,10 @@ agent:
   timeout: 600  # 10 minutes for large scans
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Security & Quality](../web-ui/security-quality.md).
+
 ## See Also
 
 - [Configuration Guide](../configuration/index.md) - Security settings in config.yaml

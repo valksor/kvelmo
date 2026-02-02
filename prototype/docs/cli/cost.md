@@ -190,6 +190,10 @@ Costs are calculated based on the agent's model pricing. For Claude models via C
 
 Note: Cached tokens are billed at 90% discount compared to standard input tokens.
 
+## Web UI
+
+Prefer a visual interface? See the Costs section in [Dashboard](../web-ui/dashboard.md).
+
 ## See Also
 
 - [status](status.md) - View task status including token summary

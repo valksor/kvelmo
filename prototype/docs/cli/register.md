@@ -144,6 +144,10 @@ mehr serve unregister old-project-id
 - Registration is opt-in for future remote access features
 - The registry persists across sessions
 
+## Web UI
+
+Prefer a visual interface? See the remote access setup in [Remote Access](../web-ui/remote-access.md).
+
 ## See Also
 
 - [serve](serve.md) - Start web UI server (parent command)

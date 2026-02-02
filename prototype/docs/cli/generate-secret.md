@@ -150,6 +150,10 @@ EOF
 source ~/.bashrc
 ```
 
+## Web UI
+
+Prefer a visual interface? See the authentication setup in [Authentication](../web-ui/authentication.md).
+
 ## See Also
 
 - [PR Review State Management](../guides/pr-review-state.md) - How state signing works

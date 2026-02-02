@@ -118,14 +118,9 @@ Labels are free-form, but common conventions include:
 
 ## Web UI
 
-Labels appear as colored badges on task cards. Use the **+ Add** button to:
-- Add new labels (with autocomplete)
-- Remove labels (click × on badge)
-
-Colors are hash-based (consistent per label name).
+Prefer a visual interface? See the Labels section in [Dashboard](../web-ui/dashboard.md).
 
 ## See Also
 
 - [list](list.md) - List and filter tasks
 - [status](status.md) - View task details
-- [Web UI: Dashboard](../web-ui/dashboard.md#labels)

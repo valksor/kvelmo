@@ -294,17 +294,9 @@ mehr links search "authentication"
 mehr links list spec:abc123:1
 ```
 
-## Web UI Equivalent
+## Web UI
 
-See [Links in the Web UI](../web-ui/links.md).
-
-| CLI Command                 | Web UI Action            |
-|-----------------------------|--------------------------|
-| `mehr links list`           | Links → Browse entities  |
-| `mehr links backlinks <id>` | Links → Entity details   |
-| `mehr links search <name>`  | Links → Search           |
-| `mehr links stats`          | Links → Statistics panel |
-| `mehr links rebuild`        | Links → Rebuild button   |
+Prefer a visual interface? See [Web UI: Links](../web-ui/links.md).
 
 ## See Also
 

@@ -461,6 +461,20 @@ This is useful when:
 - You want to revisit a previously completed task
 - You need to continue work on a task that was finished but not merged
 
+## Local Metadata Enrichment
+
+When starting a task with an external provider reference (e.g., `mehr start wrike:123`), Mehrhof automatically searches local queues for a task with a matching external ID. If found, local metadata is merged into the work context:
+
+- **Description**: Local description replaces provider description when it's longer (richer content)
+- **Metadata**: Custom frontmatter fields from local task files fill gaps in provider data (local never overwrites provider)
+- **Source files**: If the local task has a source path, those files are included in the agent's context
+
+This lets you enrich external tasks with local code examples, file references, or implementation notes that the agent can use during planning and implementation.
+
+## Web UI
+
+Prefer a visual interface? See [Web UI: Creating Tasks](../web-ui/creating-tasks.md).
+
 ## See Also
 
 - [plan](cli/plan.md) - Create specifications

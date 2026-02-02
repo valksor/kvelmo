@@ -101,6 +101,10 @@ Example output:
 Queue created: auth-user-authentication-20250129-143052
 ```
 
+## Web UI
+
+Prefer a visual interface? See the Sync from Provider feature in [Project Planning](../web-ui/project-planning.md).
+
 ## See Also
 
 - [`mehr project plan`](./project-plan.md) - Create a project plan from scratch

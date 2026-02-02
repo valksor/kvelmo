@@ -208,6 +208,10 @@ mehr implement
 mehr finish
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Quick Tasks](../web-ui/quick-tasks.md).
+
 ## See Also
 
 - [optimize](optimize.md) - AI optimize a task

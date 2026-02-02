@@ -163,7 +163,7 @@ When working on a subtask (e.g., a GitHub issue that's a child of another issue)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  👤 Parent Task                                              │
+│  👤 Parent Task                                               │
 ├──────────────────────────────────────────────────────────────┤
 │  Implement User Authentication System                        │
 │                                                              │
@@ -340,13 +340,13 @@ When specifications exist, shows them with status:
 │  Specifications (2 files)                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  📄 specification-1.md                                       │
+│  📄 specification-1.md                                        │
 │     ✓ OAuth Provider Setup                                   │
 │     ✓ Database Schema for Sessions                           │
 │     ✓ Login/Logout Endpoints                                 │
 │     [View Full Content]                                      │
 │                                                              │
-│  📄 specification-2.md                                       │
+│  📄 specification-2.md                                        │
 │     ✓ Token Validation Middleware                            │
 │     ✓ Session Management                                     │
 │     ✓ Security Considerations                                │

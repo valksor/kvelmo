@@ -257,6 +257,10 @@ For provider tokens and credentials, the resolution priority is:
 2. `<PROVIDER>_TOKEN` environment variable
 3. `.mehrhof/config.yaml` provider configuration (lowest)
 
+## Web UI
+
+Prefer a visual interface? See the Integrations section in [Settings](../web-ui/settings.md).
+
 ## See Also
 
 - [start](start.md) - Start a task from a provider

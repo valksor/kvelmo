@@ -207,3 +207,12 @@ Visit: https://dev.azure.com/_usersSettings/tokens
 - User Settings → Personal access tokens → New Token
 - Required scopes: Work Items read/write, Code read
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Authentication](../web-ui/authentication.md).
+
+## See Also
+
+- [mehr config](config.md) - Manage configuration files
+- [Configuration Guide](../configuration/index.md) - Token storage and environment variables
+

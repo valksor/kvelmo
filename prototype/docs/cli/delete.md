@@ -68,6 +68,10 @@ Next steps:
 - The task entry from the queue file
 - The task's notes file (if any)
 
+## Web UI
+
+Prefer a visual interface? See the Delete action in [Task History](../web-ui/task-history.md).
+
 ## See Also
 
 - [quick](quick.md) - Create a quick task
