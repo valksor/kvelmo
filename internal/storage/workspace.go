@@ -38,7 +38,8 @@ type usageBuffer struct {
 
 // Workspace manages task storage within a repository.
 type Workspace struct {
-	root          string // Repository root
+	root          string // Repository root (project hub)
+	codeRoot      string // Code target directory (defaults to root if code_dir not set)
 	taskRoot      string // .mehrhof directory in project (config, .env)
 	workspaceRoot string // ~/.valksor/mehrhof/workspaces/<project-id>/ (work/, .active_task)
 	workRoot      string // ~/.valksor/mehrhof/workspaces/<project-id>/work/
@@ -86,8 +87,30 @@ func OpenWorkspace(ctx context.Context, repoRoot string, cfg *WorkspaceConfig) (
 	// Work directory is relative to workspaceRoot (in home directory)
 	workRoot := filepath.Join(workspaceRoot, workDir)
 
+	// Resolve code directory from config (defaults to project root)
+	codeRoot := absRoot
+	if cfg != nil && cfg.Project.CodeDir != "" {
+		codeDir := cfg.Project.CodeDir
+		if !filepath.IsAbs(codeDir) {
+			codeDir = filepath.Join(absRoot, codeDir)
+		}
+		resolved, err := filepath.Abs(codeDir)
+		if err != nil {
+			return nil, fmt.Errorf("resolve code_dir: %w", err)
+		}
+		info, err := os.Stat(resolved)
+		if err != nil {
+			return nil, fmt.Errorf("code_dir %q does not exist — create the directory or update project.code_dir in .mehrhof/config.yaml: %w", cfg.Project.CodeDir, err)
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("code_dir %q is not a directory — update project.code_dir in .mehrhof/config.yaml to point to a directory", cfg.Project.CodeDir)
+		}
+		codeRoot = resolved
+	}
+
 	return &Workspace{
-		root:          absRoot,       // Repository root (for git operations)
+		root:          absRoot,       // Repository/project hub root (config, tasks, .mehrhof/)
+		codeRoot:      codeRoot,      // Code target directory (where agents edit code)
 		taskRoot:      taskRoot,      // .mehrhof in project (config, .env)
 		workspaceRoot: workspaceRoot, // ~/.mehrhof/workspaces/<project-id>/ (work/, .active_task)
 		workRoot:      workRoot,      // ~/.mehrhof/workspaces/<project-id>/work/
@@ -96,9 +119,16 @@ func OpenWorkspace(ctx context.Context, repoRoot string, cfg *WorkspaceConfig) (
 	}, nil
 }
 
-// Root returns the repository root path.
+// Root returns the repository root path (project hub).
 func (w *Workspace) Root() string {
 	return w.root
+}
+
+// CodeRoot returns the code target directory.
+// This is where AI agents edit code, run git operations, and execute linters.
+// Defaults to Root() when project.code_dir is not configured.
+func (w *Workspace) CodeRoot() string {
+	return w.codeRoot
 }
 
 // TaskRoot returns the .mehrhof directory path (in project, for config/.env).
@@ -276,21 +306,21 @@ func (w *Workspace) ProjectRoot() string {
 	return w.root
 }
 
-// AbsolutePath returns an absolute path for a potentially workspace-relative path.
+// CodeAbsolutePath returns an absolute path for a potentially workspace-relative path.
 // If the path is already absolute, it is returned as-is.
-// Otherwise, it is joined with the project root.
-func (w *Workspace) AbsolutePath(path string) string {
+// Otherwise, it is joined with the code root (where agents work on code).
+func (w *Workspace) CodeAbsolutePath(path string) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
 
-	return filepath.Join(w.root, path)
+	return filepath.Join(w.codeRoot, path)
 }
 
 // SaveFile writes data to a file at the specified path.
 // The path can be absolute or relative to the project root.
 func (w *Workspace) SaveFile(path string, data []byte) error {
-	absPath := w.AbsolutePath(path)
+	absPath := w.CodeAbsolutePath(path)
 
 	return os.WriteFile(absPath, data, 0o644)
 }
@@ -298,7 +328,7 @@ func (w *Workspace) SaveFile(path string, data []byte) error {
 // DeleteFile removes a file at the specified path.
 // The path can be absolute or relative to the project root.
 func (w *Workspace) DeleteFile(path string) error {
-	absPath := w.AbsolutePath(path)
+	absPath := w.CodeAbsolutePath(path)
 
 	return os.Remove(absPath)
 }

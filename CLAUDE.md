@@ -6,7 +6,7 @@ Guidance for Claude Code when working with go-mehrhof.
 
 ## Project Overview
 
-Mehrhof is a **Go CLI + Web UI** for AI-powered task automation. It orchestrates AI agents to perform planning, implementation, and code review workflows with checkpointing, parallel tasks, and multi-provider integrations.
+Mehrhof is a **Go CLI + Web UI** structured creation environment. It orchestrates AI agents to perform planning, implementation, and code review workflows with checkpointing, parallel tasks, and multi-provider integrations.
 
 **Key constraint**: ALL features require BOTH CLI and Web UI implementations unless explicitly CLI-only.
 
@@ -130,6 +130,38 @@ handlers_review.go    // Review handlers
 
 **Exceptions**: Generated code, single-responsibility modules, large templates.
 
+### 9. Git Command Policy
+
+All git commands are classified into three tiers. **No exceptions, no force flags, no overrides.** Tier 2 and 3 commands are never used autonomously — the agent must have explicit user instruction before running any write operation on the repository.
+
+**Before any Tier 2 command**, run `date +"%u %H"` to check day-of-week (1=Mon, 7=Sun) and hour. If day is 1–5 AND hour is >= 09 and < 19, **refuse the operation** and inform the user:
+
+> "Git write operations are blocked during working hours (Mon–Fri 09:00–19:00). Current time: DAY HH:MM. Please retry after 19:00 or on the weekend."
+
+#### Tier 1 — Always Allowed
+
+Safe read-only commands, available anytime:
+
+`git status`, `git diff`, `git log`, `git show`, `git blame`, `git grep`, `git branch` (read-only), `git remote -v` (read-only), `git fetch`, `git reflog`, `git shortlog`, `git describe`, `git checkout`, `git switch`, `git restore`
+
+#### Tier 2 — User-Requested, Outside Work Hours Only
+
+**Only use when the user explicitly asks.** Never run these commands autonomously — not for convenience, not as part of a workflow, not "to be helpful." If the task seems to need one of these commands but the user hasn't asked, ask first.
+
+Additionally blocked Mon–Fri 09:00–19:00. Allowed only on evenings, nights, and weekends (Sat–Sun), and only when the user explicitly requests the operation:
+
+`git add`, `git commit`, `git rm`, `git mv`, `git apply`, `git am`
+
+#### Tier 3 — Always Blocked
+
+**NEVER use these commands.** No time window, no override, no exceptions:
+
+`git push`, `git pull`, `git merge`, `git rebase`, `git reset`, `git revert`, `git cherry-pick`, `git tag`, `git stash` (all subcommands), `git worktree` (all subcommands), `git clean`, `git bisect`, `git notes`, `git submodule` (write operations)
+
+Do not suggest, recommend, or implement workflows that rely on any Tier 3 command. If a task seems to need one, use a Tier 1 or Tier 2 alternative, or ask the user to perform the operation manually.
+
+**⛔ `git worktree` — absolute prohibition.** No `git worktree add`, `remove`, `list`, `prune`, or any other worktree subcommand. Do not suggest, recommend, or implement any workflow that involves worktrees. No force flag, no override, no exceptions — ever. If a task seems to benefit from worktrees, use separate clones or branches instead.
+
 ---
 
 ## Commands
@@ -190,13 +222,13 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/agent/claude/` | Claude CLI wrapper agent |
 | `internal/coordination/` | Agent resolution - 7-level priority system |
 | `internal/provider/` | Task sources: file, github, gitlab, jira, linear, notion, etc. |
-| `internal/storage/` | Split storage: `.mehrhof/` (project) + `~/.valksor/mehrhof/` (workspaces) |
+| `internal/storage/` | Split storage: `.mehrhof/` (project) + `~/.valksor/mehrhof/` (workspaces). `Root()` = project hub, `CodeRoot()` = code target |
 | `internal/vcs/` | Git: branches, worktrees, checkpoints (undo/redo) |
 | `internal/events/` | Pub/sub event bus |
 | `internal/browser/` | Chrome automation (CDP) |
 | `internal/mcp/` | Model Context Protocol server |
 | `internal/memory/` | Semantic memory with vector embeddings |
-| `internal/server/` | Web UI: REST API, SSE, authentication |
+| `internal/server/` | Web UI: REST API, SSE, authentication, CSRF protection, rate limiting |
 | `internal/automation/` | Webhook automation: GitHub/GitLab webhooks, job queue, access control |
 | `ide/jetbrains/` | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE |
 | `ide/vscode/` | VS Code extension - TypeScript, webview-based UI via REST API + SSE |
@@ -220,6 +252,16 @@ mehr agents | providers | templates | update | generate-secret
 
 **Plugin System**: JSON-RPC over stdio, configured via `plugin.yaml`.
 
+**Directory Model** (`internal/storage/`):
+- `Root()` = project hub (`.mehrhof/`, config, tasks, queues)
+- `CodeRoot()` = code target (where agents edit code, git operates, linters run); defaults to `Root()` when `project.code_dir` is not set
+- Use `CodeRoot()` / `Conductor.CodeDir()` for anything that touches source code files
+
+**Security Middleware** (`internal/server/middleware.go`):
+- CSRF protection via `X-Csrf-Token` header (Synchronizer Token Pattern). Enforced on POST/PUT/DELETE when auth is enabled. Skipped in localhost mode.
+- Per-IP rate limiting: 120 req/min general API, 10 req/min auth endpoints. Returns HTTP 429 when exceeded.
+- Both are automatically disabled in localhost mode (`AuthStore == nil`).
+
 ### Agent Configuration
 
 Priority resolution (highest to lowest):
@@ -235,6 +277,8 @@ Priority resolution (highest to lowest):
 # .mehrhof/config.yaml
 agent:
   default: claude
+  retry_count: 3       # Retry transient agent failures (default: 3)
+  retry_delay: 5s      # Delay between retries (default: 5s)
   steps:
     planning: { name: claude }
     implementing: { name: claude-sonnet }
@@ -244,6 +288,10 @@ agents:
   opus:
     extends: claude
     args: ["--model", "claude-opus-4"]
+
+# Project layout (separate hub from code target)
+project:
+  code_dir: "../reporting-engine"  # relative or absolute; empty = hub is code target
 ```
 
 ### Workflow States
@@ -293,6 +341,7 @@ agents:
 
 ## See Also
 
+- [REFERENCE.md](REFERENCE.md) - Complete command, API, and package reference for LLMs
 - [README.md](README.md) - Installation, quick start
 - [docs/reference/feature-parity.md](docs/reference/feature-parity.md) - Interface parity tables
 - [docs/cli/automation.md](docs/cli/automation.md) - Webhook automation (GitHub/GitLab)

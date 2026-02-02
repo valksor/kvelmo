@@ -51,14 +51,14 @@ func (c *Conductor) HasQualityTarget(ctx context.Context) bool {
 		return false
 	}
 
-	makefilePath := filepath.Join(c.workspace.Root(), "Makefile")
+	makefilePath := filepath.Join(c.CodeDir(), "Makefile")
 	if _, err := os.Stat(makefilePath); os.IsNotExist(err) {
 		return false
 	}
 
 	// Check if quality target exists using make -q
 	cmd := exec.CommandContext(ctx, "make", "-q", "quality")
-	cmd.Dir = c.workspace.Root()
+	cmd.Dir = c.CodeDir()
 	err := cmd.Run()
 
 	var exitErr *exec.ExitError
@@ -95,7 +95,7 @@ func (c *Conductor) RunQuality(ctx context.Context, opts QualityOptions) (*Quali
 	// Run make quality
 	result.Ran = true
 	cmd := exec.CommandContext(ctx, "make", target)
-	cmd.Dir = c.workspace.Root()
+	cmd.Dir = c.CodeDir()
 
 	output, err := cmd.CombinedOutput()
 	result.Output = string(output)

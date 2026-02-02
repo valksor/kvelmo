@@ -78,10 +78,7 @@ func normalizeAgentPath(agentPath, root string) string {
 
 // applyFiles writes agent file changes to disk.
 func applyFiles(_ context.Context, c *Conductor, files []agent.FileChange) error {
-	root := c.opts.WorkDir
-	if c.git != nil {
-		root = c.git.Root()
-	}
+	root := c.CodeDir()
 
 	// Resolve symlinks in root path for accurate validation (handles macOS /var -> /private/var symlinks)
 	resolvedRoot := root

@@ -502,7 +502,7 @@ func (s *Server) handleQuickTaskExportWithID(w http.ResponseWriter, r *http.Requ
 	// If output specified, save to file
 	if req.Output != "" {
 		ws := s.config.Conductor.GetWorkspace()
-		outputPath := ws.AbsolutePath(req.Output)
+		outputPath := ws.CodeAbsolutePath(req.Output)
 		if err := ws.SaveFile(outputPath, []byte(markdown)); err != nil {
 			s.writeError(w, http.StatusInternalServerError, "failed to save file: "+err.Error())
 

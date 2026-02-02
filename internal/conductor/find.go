@@ -56,10 +56,7 @@ func (c *Conductor) Find(ctx context.Context, opts FindOptions) (<-chan FindResu
 	}
 
 	// Determine working directory
-	workingDir := c.opts.WorkDir
-	if c.git != nil {
-		workingDir = c.git.Root()
-	}
+	workingDir := c.CodeDir()
 
 	// Build the focused search prompt
 	prompt := buildFindPrompt(opts.Query, workingDir, c.workspace, opts)
@@ -245,10 +242,7 @@ func (c *Conductor) FindInFiles(ctx context.Context, opts FindOptions) ([]FindRe
 	}
 
 	// Determine search path
-	searchPath := c.opts.WorkDir
-	if c.git != nil {
-		searchPath = c.git.Root()
-	}
+	searchPath := c.CodeDir()
 	if opts.Path != "" {
 		searchPath = filepath.Join(searchPath, opts.Path)
 	}

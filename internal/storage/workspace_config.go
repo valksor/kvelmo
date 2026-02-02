@@ -47,6 +47,7 @@ type WorkspaceConfig struct {
 	Links         *LinksSettings              `yaml:"links,omitempty"`
 	Context       *ContextSettings            `yaml:"context,omitempty"`
 	Automation    *AutomationSettings         `yaml:"automation,omitempty"`
+	Project       ProjectSettings             `yaml:"project,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -473,6 +474,11 @@ type StorageSettings struct {
 	WorkDir string `yaml:"work_dir,omitempty"` // Path to work directory (relative to project root)
 }
 
+// ProjectSettings holds project-level settings for decoupled hub/code workflows.
+type ProjectSettings struct {
+	CodeDir string `yaml:"code_dir,omitempty"` // Separate code directory (relative to project root or absolute)
+}
+
 // SpecificationSettings holds specification-related configuration.
 type SpecificationSettings struct {
 	SaveInProject   bool   `yaml:"save_in_project"`  // Save specs in project directory (default: false)
@@ -763,6 +769,19 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 #             project: "PROJ"
 #         youtrack:
 #             url: "https://youtrack.company.com"
+`
+	}
+
+	// Add project section comment if code_dir is empty (default)
+	if cfg.Project.CodeDir == "" {
+		content += `
+# Project settings
+# Decouple the project hub (tasks, specs, config) from the code target directory
+# Useful when tasks/research live separately from the implementation codebase
+# Example:
+# project:
+#     code_dir: "../reporting-engine"   # Relative to project root, or absolute path
+#     code_dir: "/workspace/my-code"    # Absolute path to code directory
 `
 	}
 
@@ -1294,6 +1313,9 @@ func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 
 	// Expand memory settings
 	cfg.Memory = expandEnvInMemorySettings(cfg.Memory)
+
+	// Expand project settings
+	cfg.Project.CodeDir = expandEnvInString(cfg.Project.CodeDir)
 
 	// Expand agent aliases
 	if cfg.Agents != nil {
