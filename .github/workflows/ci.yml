@@ -2,8 +2,9 @@ name: CI
 
 on:
     pull_request:
-    push:
-        branches: [ master ]
+    workflow_run:
+        workflows: [Release]
+        types: [completed]
 
 concurrency:
     group: ci-${{ github.ref }}
@@ -75,11 +76,11 @@ jobs:
                 run: go test -v -race ./...
 
             -   name: Generate coverage
-                if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+                if: github.event_name != 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 run: make coverage
 
             -   name: Upload Go coverage to Coveralls
-                if: github.event_name == 'push' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+                if: github.event_name != 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +133,7 @@ jobs:
                 run: ./gradlew test jacocoTestReport
 
             -   name: Upload Kotlin coverage to Coveralls
-                if: github.event_name == 'push'
+                if: github.event_name != 'pull_request'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -195,7 +196,7 @@ jobs:
                 run: xvfb-run -a bun run test:coverage
 
             -   name: Upload TypeScript coverage to Coveralls
-                if: github.event_name == 'push'
+                if: github.event_name != 'pull_request'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -216,7 +217,7 @@ jobs:
     coverage-finish:
         needs: [test, jetbrains, vscode, web-ui]
         runs-on: ubuntu-amd
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         steps:
             -   name: Finish Coveralls parallel build
                 uses: coverallsapp/github-action@v2
@@ -268,11 +269,11 @@ jobs:
                 run: make web-ui-test-smoke
 
             -   name: Run Web UI full tests (coverage)
-                if: github.event_name == 'push'
+                if: github.event_name != 'pull_request'
                 run: cd web-ui-tests && bun run test:coverage
 
             -   name: Upload Web UI coverage to Coveralls
-                if: github.event_name == 'push'
+                if: github.event_name != 'pull_request'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
