@@ -169,6 +169,10 @@ Error: Cannot delete branch 'main'
 This appears to be a protected branch.
 ```
 
+## Web UI
+
+Prefer a visual interface? See the Abandon action in [Dashboard](../web-ui/dashboard.md).
+
 ## See Also
 
 - [finish](cli/finish.md) - Complete with merge

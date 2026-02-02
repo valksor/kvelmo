@@ -221,6 +221,10 @@ Check that `learning.auto_store: true` in config. Manually index with:
 mehr memory index --task <id>
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Memory](../web-ui/memory.md).
+
 ## See Also
 
 - [Configuration Guide](../configuration/index.md) - Memory settings in config.yaml

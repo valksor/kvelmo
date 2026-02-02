@@ -2,8 +2,6 @@
 
 Manage cost and token budgets.
 
-> **Note:** This is a CLI-only feature. No web UI equivalent exists. Budget management is configured through the CLI.
-
 ## Synopsis
 
 ```bash
@@ -101,6 +99,10 @@ mehr budget reset --month
 | Flag      | Description                   |
 |-----------|-------------------------------|
 | `--month` | Reset monthly budget tracking |
+
+## Web UI
+
+Prefer a visual interface? See the Budget display in [Dashboard](../web-ui/dashboard.md).
 
 ## See Also
 

@@ -128,6 +128,23 @@ agent:
   default: work-account # Use alias as default
 ```
 
+## Retry Configuration
+
+Agents automatically retry on transient failures (network errors, temporary API outages). Configure retry behavior in `.mehrhof/config.yaml`:
+
+```yaml
+agent:
+  retry_count: 3    # Number of attempts before giving up (default: 3)
+  retry_delay: 5s   # Delay between retry attempts (default: 5s)
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `retry_count` | `3` | Total attempts per agent invocation. Set to `1` to disable retries |
+| `retry_delay` | `5s` | Wait time between retries. Applies between each attempt |
+
+Retries are context-aware: if the user cancels an operation (Ctrl+C), retries stop immediately.
+
 ## Common Patterns
 
 ### Multiple API Keys
@@ -222,6 +239,10 @@ If an alias shows `AVAILABLE: no`, check that:
 ```bash
 claude --version
 ```
+
+## Web UI
+
+Prefer a visual interface? See the Agent Settings section in [Settings](../web-ui/settings.md).
 
 ## See Also
 

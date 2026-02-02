@@ -188,6 +188,10 @@ AUTO failed at: quality
 | Review specifications | No         | Yes          |
 | Control               | Less       | Full         |
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Auto Mode](../web-ui/auto.md).
+
 ## See Also
 
 - [mehr start](start.md) - Start a task manually

@@ -223,6 +223,10 @@ It always shows all tasks in the workspace.
 - [start](cli/start.md) - Start a new task (with `--worktree` for parallel)
 - [finish](cli/finish.md) - Complete a task and clean up worktree
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Task History](../web-ui/task-history.md).
+
 ## See Also
 
 - [Parallel Tasks](../README.md#parallel-tasks) - Overview of parallel task workflow

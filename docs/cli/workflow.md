@@ -113,6 +113,10 @@ For a deeper understanding of the workflow state machine, guards, and lifecycle,
 | idle         | done         | `mehr finish`                  | Quality checks pass       |
 | paused       | idle         | `mehr budget resume --confirm` | Resume after budget pause |
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Overview](../web-ui/index.md).
+
 ## See Also
 
 - [Workflow Concepts](../concepts/workflow.md) - Detailed state machine explanation

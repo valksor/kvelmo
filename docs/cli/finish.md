@@ -305,6 +305,10 @@ git merge --abort
 git checkout task/a1b2c3d4
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Finishing](../web-ui/finishing.md).
+
 ## See Also
 
 - [abandon](./abandon.md) - Abandon without merging

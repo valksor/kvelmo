@@ -399,6 +399,10 @@ git:
   default_branch: develop  # Used when --branch is specified without a value
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Standalone Simplify](../web-ui/standalone-simplify.md).
+
 ## See Also
 
 - [plan](plan.md) - Create specifications

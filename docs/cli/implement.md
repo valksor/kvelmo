@@ -212,6 +212,10 @@ If not:
 mehr undo
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Implementing](../web-ui/implementing.md).
+
 ## See Also
 
 - [plan](cli/plan.md) - Create specifications first

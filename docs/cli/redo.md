@@ -133,6 +133,10 @@ mehr implement
 mehr redo
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Undo & Redo](../web-ui/undo-redo.md).
+
 ## See Also
 
 - [undo](undo.md) - Revert to previous checkpoint

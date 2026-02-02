@@ -214,9 +214,12 @@ Stack tracking is stored in workspace data:
 ~/.valksor/mehrhof/workspaces/<project>/stacks/index.yaml
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Stacked Features](../web-ui/stack.md).
+
 ## See Also
 
 - [mehr start](start.md) - Create a new task (use `--depends-on` for stacked features)
 - [mehr sync](sync.md) - Sync task data from provider
 - [Stacked Features Concept](../concepts/stacked-features.md) - Architecture and design
-- [Web UI: Stack](../web-ui/stack.md) - Web UI for stacks

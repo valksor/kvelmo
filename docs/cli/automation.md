@@ -79,6 +79,15 @@ export MEHR_GITHUB_WEBHOOK_SECRET="your-github-webhook-secret"
 export MEHR_GITLAB_WEBHOOK_SECRET="your-gitlab-webhook-secret"
 ```
 
+## Webhook Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max payload size | 10 MB | Webhook requests exceeding this size are rejected with HTTP 413 |
+| Rate limiting | Per-IP | When auth is enabled, standard rate limits apply to webhook endpoints |
+
+Webhook endpoints use provider-specific authentication (webhook secrets) and are exempt from CSRF validation.
+
 ## Webhook Setup
 
 ### GitHub
@@ -290,8 +299,11 @@ automation:
 
 PRs with the `mehrhof-generated` label are automatically skipped to prevent self-review loops.
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Automation](../web-ui/automation.md).
+
 ## See Also
 
-- [docs/web-ui/automation.md](../web-ui/automation.md) - Web UI automation features
 - [docs/cli/serve.md](serve.md) - Server configuration
 - [docs/concepts/workflows.md](../concepts/workflows.md) - Workflow architecture

@@ -139,9 +139,9 @@ Workflow State: implementing
     └───┬────┘
         │
         ▼
-  ┌─────────┐
-  │ planning│
-  └────┬────┘
+  ┌───────────┐
+  │ planning  │
+  └────┬──────┘
        │
        ▼
 ┌───────────────┐
@@ -264,6 +264,10 @@ Start a new task:
 Or switch to an existing task branch:
   git checkout task/<id>
 ```
+
+## Web UI
+
+Prefer a visual interface? See [Web UI: Dashboard](../web-ui/dashboard.md).
 
 ---
 

@@ -540,6 +540,10 @@ A: Press `Ctrl+C` in the terminal where `mehr serve` is running.
 
 ---
 
+## CLI Equivalent
+
+For the full CLI workflow, see [Getting Started with the CLI](../guides/first-task.md).
+
 ## Next Steps
 
 Now that you've completed your first task:

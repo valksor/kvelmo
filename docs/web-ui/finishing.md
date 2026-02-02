@@ -22,7 +22,7 @@ When you're satisfied with the implementation, click **"Finish"** button:
 ├──────────────────────────────────────────────────────────────┤
 │  State: ● Idle                                               │
 │  Changes: 5 files modified                                   │
-│  Tests: ✅ All passing                                       │
+│  Tests: ✅ All passing                                        │
 │                                                              │
 │  Actions:                                                    │
 │    [Plan] [Implement] [Review] [Finish] [Continue]           │

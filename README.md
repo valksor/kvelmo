@@ -73,6 +73,7 @@ Mehrhof is built on principles that keep you in control:
 - **Transparent process** — You can see what's happening at each stage; no black boxes
 - **Configurable guardrails** — Match your company's policies, guidelines, and approval workflows
 - **Undo/redo support** — Made a mistake? Roll back to any checkpoint
+- **Security by default** — CSRF protection, per-IP rate limiting, and session-based authentication for network-accessible deployments
 
 We believe AI is a useful support tool for routine work and exploration, but critical decisions require human understanding and oversight. Mehrhof is designed to help, not replace, your judgment.
 

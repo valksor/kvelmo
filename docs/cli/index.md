@@ -1,6 +1,6 @@
 # CLI Overview
 
-Mehrhof provides a command-line interface for AI-powered task automation.
+Mehrhof provides a command-line interface for structured creation and review.
 
 ## Basic Usage
 

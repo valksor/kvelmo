@@ -73,6 +73,10 @@ agents:
   #   env:
   #     ANTHROPIC_API_KEY: "${WORK_API_KEY}"
 
+# Project layout (separate hub from code target)
+project:
+  code_dir: "../reporting-engine"  # relative or absolute; empty = hub is code target
+
 # Plugins
 plugins:
   enabled: []
@@ -111,6 +115,22 @@ mehr config validate [flags]
 |------|-------------------------------------|
 | 0    | Configuration is valid              |
 | 1    | One or more validation errors found |
+
+### Project Settings
+
+| Setting            | Type   | Description                                                          | Default |
+|--------------------|--------|----------------------------------------------------------------------|---------|
+| `project.code_dir` | string | Path to code target directory (relative to project root or absolute) | `""`    |
+
+When `code_dir` is set, the project hub (`.mehrhof/`, tasks, queues) stays in the current directory while agents edit code, run git operations, and execute linters in the code target directory. Supports environment variables (`${HOME}/code`).
+
+**Example:**
+
+```yaml
+# .mehrhof/config.yaml
+project:
+  code_dir: "../reporting-engine"
+```
 
 ### mehr config explain
 
@@ -366,6 +386,10 @@ agents:
 ```
 
 Fix by setting the environment variable or using a literal value.
+
+## Web UI
+
+Prefer a visual interface? See [Web UI: Settings](../web-ui/settings.md).
 
 ## See Also
 

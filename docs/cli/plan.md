@@ -207,6 +207,10 @@ If changes needed, add notes:
 mehr note "Simplify the authentication flow"
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Planning](../web-ui/planning.md).
+
 ## See Also
 
 - [implement](cli/implement.md) - Implement specifications

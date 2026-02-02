@@ -192,6 +192,10 @@ mehr note "Include unit tests for all new code"
 mehr plan
 ```
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Notes](../web-ui/notes.md).
+
 ## See Also
 
 - [plan](plan.md) - Create specifications (agent runs here)

@@ -189,6 +189,10 @@ For cost-sensitive workflows, consider:
 - Using a faster/cheaper model for optimization
 - Manually editing exported markdown files
 
+## Web UI
+
+Prefer a visual interface? See the Optimize feature in [Quick Tasks](../web-ui/quick-tasks.md).
+
 ## See Also
 
 - [quick](quick.md) - Create quick tasks

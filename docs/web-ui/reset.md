@@ -55,6 +55,14 @@ Use the reset function when:
 - Workflow state (set to "idle")
 - State machine position
 
+## CLI Equivalent
+
+```bash
+mehr reset
+```
+
+See [CLI: reset](../cli/reset.md) for all options.
+
 ## See Also
 
 - [CLI: mehr reset](../cli/reset.md) - Command line equivalent

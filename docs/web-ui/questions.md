@@ -21,14 +21,14 @@ Ask why the agent chose a particular approach:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
 │  State: ● Planning                                           │
 │                                                              │
 │  Quick Question                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Why did you choose GraphQL over REST?              │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Why did you choose GraphQL over REST?              │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                         [Ask Question]       │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -39,17 +39,17 @@ Get clarification on implementation choices:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                          │
+│  Agent Output (Live)                                         │
 ├──────────────────────────────────────────────────────────────┤
-│  → Creating internal/auth/middleware.go                     │
+│  → Creating internal/auth/middleware.go                      │
 │    • Added AuthMiddleware function                           │
-│  ✓ Created successfully                                       │
+│  ✓ Created successfully                                      │
 │                                                              │
 │  [Pause]                                                     │
 │                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ What's the reason for using channels here?          │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ What's the reason for using channels here?         │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                         [Ask Question]       │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -64,9 +64,9 @@ Understand review findings:
 ├──────────────────────────────────────────────────────────────┤
 │  ⚠️ Medium: Missing error handling in auth flow              │
 │                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Can you explain this issue in more detail?          │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Can you explain this issue in more detail?         │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                         [Ask Question]       │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -80,14 +80,14 @@ The Quick Question input appears in the **Active Task** card when the state is:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
+│  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
 │  State: ● Implementing                                       │
 │                                                              │
 │  Quick Question                              [↓ Show Notes]  │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Ask a question about the current work...           │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Ask a question about the current work...           │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                         [Ask Question]       │
 │                                                              │
 │  Agent Output                                                │
@@ -106,9 +106,9 @@ Type your question in the Quick Question input and click **"Ask Question"**:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  Quick Question                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Why use PostgreSQL instead of MySQL?               │     │
-│  └────────────────────────────────────────────────────┘     │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │ Why use PostgreSQL instead of MySQL?               │      │
+│  └────────────────────────────────────────────────────┘      │
 │                                         [Ask Question]       │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -135,7 +135,7 @@ The agent's response streams in real-time:
 │     - internal/session/postgres.go                           │
 │                                                              │
 │  3. **Transactional DDL**                                    │
-│     Schema migrations are safer with transactional DDL        │
+│     Schema migrations are safer with transactional DDL       │
 │                                                              │
 │  Would you like me to reconsider this choice?                │
 │                                                              │
@@ -214,7 +214,7 @@ A: The approach includes:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Quick Question                            [+ Add Note]       │
+│  Quick Question                            [+ Add Note]      │
 ├──────────────────────────────────────────────────────────────┤
 │  Use this to:                          Use this to:          │
 │  • Ask why a choice was made             • Add requirements  │

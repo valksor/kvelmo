@@ -79,12 +79,12 @@ After planning completes, review the generated specifications:
 │  Specifications (2 files)                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  📄 specification-1.md                                       │
+│  📄 specification-1.md                                        │
 │     ✓ OAuth Provider Setup                                   │
 │     ✓ Database Schema for Sessions                           │
 │     ✓ Login/Logout Endpoints                                 │
 │                                                              │
-│  📄 specification-2.md                                       │
+│  📄 specification-2.md                                        │
 │     ✓ Token Validation Middleware                            │
 │     ✓ Session Management                                     │
 │     ✓ Security Considerations                                │

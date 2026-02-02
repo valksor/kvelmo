@@ -140,6 +140,10 @@ The suggested actions depend on the current task state:
 
 Use `guide` for quick suggestions. Use `status` for full details. Use `continue` when resuming work with optional auto-execution.
 
+## Web UI
+
+Prefer a visual interface? See [Web UI: Continuing](../web-ui/continuing.md).
+
 ## See Also
 
 - [status](cli/status.md) - Detailed task status

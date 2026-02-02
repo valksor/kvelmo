@@ -11,7 +11,7 @@ Click the **Settings** icon (gear) in the top-right of the dashboard, or navigat
 │  Workspace Settings                                          │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  [Git] [Agent] [Workflow] [Browser] [Providers]              │
+│  [General] [Project] [Git] [Agent] [Workflow] [Browser] ...  │
 │  ─────────────────────────────────────────────────────────   │
 │                                                              │
 │  Settings apply to: current-project                          │
@@ -21,6 +21,34 @@ Click the **Settings** icon (gear) in the top-right of the dashboard, or navigat
 ```
 
 ## Settings Sections
+
+### Project Settings
+
+Configure the project layout when your task hub and code target are in different directories:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Project Settings                                            │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Code Directory                                              │
+│  [../reporting-engine ]                                      │
+│                                                              │
+│  Path to code target directory (relative or absolute).       │
+│  Leave empty if the project hub is the code target.          │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Setting            | Description                                                          | Default |
+|--------------------|----------------------------------------------------------------------|---------|
+| **Code Directory** | Path to the code target directory (relative to project root or absolute) | `""`    |
+
+When set, the project hub (`.mehrhof/`, tasks, queues) stays in the current directory while agents edit code, run git operations, and execute linters in the specified code directory. Supports relative paths and environment variables (`${HOME}/code`).
+
+**Example use case:** You have a Mehrhof hub in `/projects/task-hub/` but the actual code lives in `/projects/reporting-engine/`. Set **Code Directory** to `../reporting-engine` so agents operate on the correct codebase.
+
+**CLI equivalent:** `project.code_dir` in `.mehrhof/config.yaml`. See [CLI: config](../cli/config.md#project-settings).
 
 ### Git Settings
 
@@ -410,6 +438,9 @@ Monitor connection status and rate limits for configured providers:
 All settings are stored in `.mehrhof/config.yaml`:
 
 ```yaml
+project:
+  code_dir: ""  # Path to code target (relative or absolute); empty = hub is code target
+
 git:
   auto_commit: true
   sign_commits: false

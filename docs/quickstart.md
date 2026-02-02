@@ -115,8 +115,12 @@ Your browser opens automatically. Click **"Create Task"** to begin.
 
 The CLI is ideal if you prefer text-based workflows, want to script automation, or work in CI/CD pipelines.
 
+**Try it in 60 seconds:**
+
 ```bash
-# Create a task file
+cd /path/to/your/project
+mehr init
+
 cat > task.md << 'EOF'
 ---
 title: Add user authentication
@@ -124,27 +128,19 @@ title: Add user authentication
 Add login and signup pages with JWT tokens.
 EOF
 
-# Run the workflow
-mehr start task.md   # Begin task
-mehr plan            # Generate plan
-mehr implement       # Create changes
-mehr finish          # Complete and merge
+mehr start task.md
+mehr plan
+mehr implement
+mehr finish
 ```
+
+Want a pre-built task file? Grab one from the [examples directory on GitHub](https://github.com/valksor/go-mehrhof/tree/master/examples) — ready-to-use templates for features, bug fixes, and docs updates.
 
 **[Full CLI Tutorial](guides/first-task.md)** — Step-by-step command-line guide
 
 ---
 
-## Which Should I Choose?
-
-| Choose Web UI if you...                 | Choose CLI if you...          |
-|-----------------------------------------|-------------------------------|
-| Prefer visual interfaces                | Love terminal workflows       |
-| Are new to development tools            | Want to script automation     |
-| Want to see everything at once          | Work in CI/CD pipelines       |
-| Share work with non-technical teammates | Use keyboard-driven workflows |
-
-You can switch between them at any time. Both use the same underlying engine and configuration.
+You can switch between Web UI and CLI at any time — both use the same engine and configuration. For a detailed comparison, see [Web UI vs CLI](guides/web-ui-vs-cli.md).
 
 ---
 

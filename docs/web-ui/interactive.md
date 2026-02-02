@@ -152,6 +152,14 @@ Use cancellation when:
 
 For CLI interactive mode, see [`mehr interactive`](../cli/interactive.md).
 
+## CLI Equivalent
+
+```bash
+mehr interactive
+```
+
+See [CLI: interactive](../cli/interactive.md) for all options.
+
 ## See Also
 
 - [Web UI Overview](index.md)
