@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://valksor.com/docs/mehrhof/nightly
+    about: Check the documentation for answers to common questions
+  - name: FAQ
+    url: https://valksor.com/docs/mehrhof/nightly/#/faq
+    about: Frequently asked questions about Mehrhof
+  - name: Troubleshooting
+    url: https://valksor.com/docs/mehrhof/nightly/#/troubleshooting/index
+    about: Solutions for common issues
