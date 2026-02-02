@@ -87,6 +87,9 @@ type Conductor struct {
 	taskAgentConfig *provider.AgentConfig // Agent config from task source (if any)
 	agentOverride   string                // Temporary agent override (for Web UI API)
 
+	// Last PR creation result, accessible after Finish().
+	lastPRResult *provider.PullRequest
+
 	// Session tracking (for conversation history and token usage)
 	currentSession     *storage.Session
 	currentSessionFile string
@@ -150,6 +153,19 @@ func (c *Conductor) GetGit() *vcs.Git {
 	defer c.mu.RUnlock()
 
 	return c.git
+}
+
+// CodeDir returns the directory where code lives (for agents, linters, git operations).
+// Uses workspace.CodeRoot() when available, falls back to git root, then opts.WorkDir.
+func (c *Conductor) CodeDir() string {
+	if c.workspace != nil {
+		return c.workspace.CodeRoot()
+	}
+	if c.git != nil {
+		return c.git.Root()
+	}
+
+	return c.opts.WorkDir
 }
 
 // GetActiveTask returns the current active task.
@@ -309,6 +325,19 @@ func (c *Conductor) GetWorktreePath() string {
 	}
 
 	return c.activeTask.WorktreePath
+}
+
+// LastPRResult returns the number and URL of the last PR created by Finish().
+// Returns (0, "") if no PR was created.
+func (c *Conductor) LastPRResult() (int, string) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.lastPRResult != nil {
+		return c.lastPRResult.Number, c.lastPRResult.URL
+	}
+
+	return 0, ""
 }
 
 // Close performs cleanup for the conductor.

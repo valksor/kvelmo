@@ -3368,3 +3368,183 @@ func TestAgentAliasConfig_ComponentsField(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenWorkspace_CodeDir(t *testing.T) {
+	tests := []struct {
+		name         string
+		setupCodeDir func(t *testing.T, projectRoot string) string // returns code_dir value
+		wantErr      bool
+		errContains  string
+		checkRoot    func(t *testing.T, ws *Workspace, projectRoot string)
+	}{
+		{
+			name: "empty code_dir defaults to project root",
+			setupCodeDir: func(t *testing.T, projectRoot string) string {
+				t.Helper()
+
+				return ""
+			},
+			checkRoot: func(t *testing.T, ws *Workspace, projectRoot string) {
+				t.Helper()
+				if ws.CodeRoot() != projectRoot {
+					t.Errorf("CodeRoot() = %q, want %q (same as Root)", ws.CodeRoot(), projectRoot)
+				}
+				if ws.CodeRoot() != ws.Root() {
+					t.Error("CodeRoot() should equal Root() when code_dir is empty")
+				}
+			},
+		},
+		{
+			name: "absolute code_dir path",
+			setupCodeDir: func(t *testing.T, projectRoot string) string {
+				t.Helper()
+				codeDir := t.TempDir()
+
+				return codeDir
+			},
+			checkRoot: func(t *testing.T, ws *Workspace, projectRoot string) {
+				t.Helper()
+				if ws.CodeRoot() == projectRoot {
+					t.Error("CodeRoot() should differ from Root() when code_dir is set")
+				}
+			},
+		},
+		{
+			name: "relative code_dir path",
+			setupCodeDir: func(t *testing.T, projectRoot string) string {
+				t.Helper()
+				// Create a sibling directory
+				codeDir := filepath.Join(filepath.Dir(projectRoot), "code-target")
+				if err := os.MkdirAll(codeDir, 0o755); err != nil {
+					t.Fatalf("MkdirAll: %v", err)
+				}
+				// Relative path from project root to sibling
+				rel, err := filepath.Rel(projectRoot, codeDir)
+				if err != nil {
+					t.Fatalf("Rel: %v", err)
+				}
+
+				return rel
+			},
+			checkRoot: func(t *testing.T, ws *Workspace, projectRoot string) {
+				t.Helper()
+				if ws.CodeRoot() == projectRoot {
+					t.Error("CodeRoot() should differ from Root()")
+				}
+				// Should end with code-target
+				if !strings.HasSuffix(ws.CodeRoot(), "code-target") {
+					t.Errorf("CodeRoot() = %q, want suffix 'code-target'", ws.CodeRoot())
+				}
+			},
+		},
+		{
+			name: "nonexistent code_dir returns error",
+			setupCodeDir: func(t *testing.T, projectRoot string) string {
+				t.Helper()
+
+				return "/nonexistent/path/that/does/not/exist"
+			},
+			wantErr:     true,
+			errContains: "code_dir",
+		},
+		{
+			name: "code_dir is a file not a directory",
+			setupCodeDir: func(t *testing.T, projectRoot string) string {
+				t.Helper()
+				filePath := filepath.Join(t.TempDir(), "not-a-dir.txt")
+				if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+
+				return filePath
+			},
+			wantErr:     true,
+			errContains: "not a directory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projectRoot := t.TempDir()
+			homeDir := t.TempDir()
+
+			cfg := NewDefaultWorkspaceConfig()
+			cfg.Storage.HomeDir = homeDir
+			cfg.Project.CodeDir = tt.setupCodeDir(t, projectRoot)
+
+			ws, err := OpenWorkspace(context.Background(), projectRoot, cfg)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			tt.checkRoot(t, ws, projectRoot)
+		})
+	}
+}
+
+func TestWorkspace_CodeAbsolutePath_UsesCodeRoot(t *testing.T) {
+	projectRoot := t.TempDir()
+	codeDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	cfg := NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+	cfg.Project.CodeDir = codeDir
+
+	ws, err := OpenWorkspace(context.Background(), projectRoot, cfg)
+	if err != nil {
+		t.Fatalf("OpenWorkspace: %v", err)
+	}
+
+	// Relative paths should resolve against codeRoot
+	result := ws.CodeAbsolutePath("src/main.go")
+	expected := filepath.Join(codeDir, "src/main.go")
+	if result != expected {
+		t.Errorf("CodeAbsolutePath(relative) = %q, want %q", result, expected)
+	}
+
+	// Absolute paths should be returned as-is
+	absPath := "/some/absolute/path"
+	if ws.CodeAbsolutePath(absPath) != absPath {
+		t.Errorf("CodeAbsolutePath(absolute) = %q, want %q", ws.CodeAbsolutePath(absPath), absPath)
+	}
+}
+
+func TestProjectSettings_EnvExpansion(t *testing.T) {
+	projectRoot := t.TempDir()
+	codeDir := t.TempDir()
+
+	// Set env var
+	t.Setenv("TEST_CODE_DIR", codeDir)
+
+	// Create config with env var reference
+	ws := openTestWorkspace(t, projectRoot)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	cfg := NewDefaultWorkspaceConfig()
+	cfg.Project.CodeDir = "${TEST_CODE_DIR}"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	loaded, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if loaded.Project.CodeDir != codeDir {
+		t.Errorf("Project.CodeDir = %q, want %q (expanded from env)", loaded.Project.CodeDir, codeDir)
+	}
+}

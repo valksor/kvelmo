@@ -11,10 +11,7 @@ import (
 // runLinters executes available linters for the project and returns formatted results.
 // Returns empty string if no linters are available or all pass with no issues.
 func (c *Conductor) runLinters(ctx context.Context) string {
-	workDir := c.opts.WorkDir
-	if c.git != nil {
-		workDir = c.git.Root()
-	}
+	workDir := c.CodeDir()
 
 	// Load workspace config for quality settings
 	workspaceCfg, _ := c.workspace.LoadConfig()
