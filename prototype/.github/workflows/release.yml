@@ -30,7 +30,7 @@ jobs:
                     java-version: '22'
 
             -   name: Setup Gradle
-                uses: gradle/actions/setup-gradle@v4
+                uses: gradle/actions/setup-gradle@v5
 
             -   name: Build Plugin
                 working-directory: ide/jetbrains
@@ -78,6 +78,13 @@ jobs:
                     fi
 
                     ./gradlew publishPlugin -PpluginVersion="$VERSION" -PpublishChannel="$PUBLISH_CHANNEL"
+
+            -   name: Cleanup Gradle Cache
+                if: always()
+                run: |
+                    rm -rf ~/.gradle/caches/build-cache-*
+                    rm -rf ~/.gradle/caches/*/
+                    rm -rf ~/.gradle/wrapper/
 
     vscode-extension:
         runs-on: ubuntu-amd
@@ -251,3 +258,10 @@ jobs:
                         dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
                         --clobber
+
+            -   name: Cleanup Caches
+                if: always()
+                run: |
+                    go clean -cache
+                    rm -rf dist/
+                    sudo rm -rf /var/cache/apt/archives/
