@@ -89,13 +89,6 @@ jobs:
                     parallel: true
                     flag-name: go-coverage
 
-            -   name: Cleanup Caches
-                if: always()
-                run: |
-                    go clean -cache -testcache
-                    rm -rf ~/.cache/chromium/
-                    rm -rf .coverage covprofile
-
     jetbrains:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
         runs-on: ubuntu-amd
@@ -142,13 +135,6 @@ jobs:
                     parallel: true
                     flag-name: kotlin-coverage
                     base-path: ide/jetbrains
-
-            -   name: Cleanup Gradle Cache
-                if: always()
-                run: |
-                    rm -rf ~/.gradle/caches/build-cache-*
-                    rm -rf ~/.gradle/caches/*/
-                    rm -rf ~/.gradle/wrapper/
 
     vscode:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
@@ -205,14 +191,6 @@ jobs:
                     parallel: true
                     flag-name: typescript-coverage
                     base-path: ide/vscode
-
-            -   name: Cleanup Caches
-                if: always()
-                run: |
-                    rm -rf ~/.bun/install/cache/
-                    rm -rf ~/.npm/
-                    rm -rf ide/vscode/node_modules/
-                    rm -rf ide/vscode/coverage/
 
     coverage-finish:
         needs: [test, jetbrains, vscode, web-ui]
@@ -288,10 +266,51 @@ jobs:
                     path: web-ui-tests/playwright-report/
                     retention-days: 7
 
-            -   name: Cleanup Caches
-                if: always()
+    cleanup:
+        needs: [test, jetbrains, vscode, web-ui, coverage-finish]
+        if: always()
+        strategy:
+            matrix:
+                include:
+                    -   runner: ubuntu-amd
+                    -   runner: macos-arm
+        runs-on: ${{ matrix.runner }}
+
+        steps:
+            -   name: Cleanup Go caches
                 run: |
-                    go clean -cache -testcache
+                    go clean -cache -testcache || true
+                    rm -rf .coverage covprofile
+
+            -   name: Cleanup Gradle caches
+                if: matrix.runner == 'ubuntu-amd'
+                run: |
+                    rm -rf ~/.gradle/caches/build-cache-*
+                    rm -rf ~/.gradle/caches/*/
+                    rm -rf ~/.gradle/wrapper/
+
+            -   name: Cleanup Node and Bun caches
+                if: matrix.runner == 'ubuntu-amd'
+                run: |
+                    rm -rf ~/.bun/install/cache/
+                    rm -rf ~/.npm/
+                    rm -rf ide/vscode/node_modules/ || true
+                    rm -rf ide/vscode/coverage/ || true
+
+            -   name: Cleanup browser caches
+                run: |
+                    rm -rf ~/.cache/chromium/
                     rm -rf ~/.cache/ms-playwright/
-                    rm -rf web-ui-tests/playwright-report/ web-ui-tests/test-results/
+
+            -   name: Cleanup test artifacts
+                if: matrix.runner == 'ubuntu-amd'
+                run: |
+                    rm -rf web-ui-tests/playwright-report/
+                    rm -rf web-ui-tests/test-results/
                     rm -rf web-ui-tests/coverage/
+
+            -   name: Cleanup release artifacts
+                if: matrix.runner == 'ubuntu-amd'
+                run: |
+                    rm -rf dist/
+                    sudo rm -rf /var/cache/apt/archives/
