@@ -112,6 +112,17 @@ func (c *Conductor) resolveAgentForTask() (agent.Agent, string, error) {
 		}
 	}
 
+	// Set agent working directory to code target (may differ from project hub).
+	// Safe: called under c.mu.Lock via Start/ContinueWithExisting/registerTask;
+	// CodeDir reads c.workspace which is immutable after Initialize.
+	if codeDir := c.CodeDir(); codeDir != "" {
+		if wdAgent, ok := agentInst.(interface {
+			WithWorkDir(dir string) agent.Agent
+		}); ok {
+			agentInst = wdAgent.WithWorkDir(codeDir)
+		}
+	}
+
 	return agentInst, source, nil
 }
 
@@ -220,6 +231,16 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 					}
 				}
 
+				// Set agent working directory to code target.
+				// Safe: CodeDir reads immutable c.workspace set during Initialize.
+				if codeDir := c.CodeDir(); codeDir != "" {
+					if wdAgent, ok := agentInst.(interface {
+						WithWorkDir(dir string) agent.Agent
+					}); ok {
+						agentInst = wdAgent.WithWorkDir(codeDir)
+					}
+				}
+
 				return agentInst, nil
 			}
 			// Fall through to re-resolve if stored agent not found
@@ -264,6 +285,16 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 			}); ok {
 				agentInst = sbAgent.WithSandbox(sbCfg)
 			}
+		}
+	}
+
+	// Set agent working directory to code target (may differ from project hub).
+	// Safe: CodeDir reads immutable c.workspace set during Initialize.
+	if codeDir := c.CodeDir(); codeDir != "" {
+		if wdAgent, ok := agentInst.(interface {
+			WithWorkDir(dir string) agent.Agent
+		}); ok {
+			agentInst = wdAgent.WithWorkDir(codeDir)
 		}
 	}
 

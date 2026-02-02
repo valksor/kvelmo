@@ -167,6 +167,10 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 				WarningAt: parsed.Frontmatter.Budget.WarningAt,
 			}
 		}
+		// Preserve extra frontmatter fields as metadata
+		for k, v := range parsed.Frontmatter.Extra {
+			wu.Metadata[k] = v
+		}
 	}
 
 	return wu, nil

@@ -46,6 +46,10 @@ type Frontmatter struct {
 
 	// Budget configuration
 	Budget *BudgetFrontmatter `yaml:"budget,omitempty"`
+
+	// Extra holds custom frontmatter fields not mapped to struct fields.
+	// Populated by a second parse pass to preserve arbitrary user metadata.
+	Extra map[string]any `yaml:"-"`
 }
 
 // ParsedMarkdown contains parsed markdown file content.
@@ -76,6 +80,11 @@ func ParseMarkdown(content, fallbackTitle string) (*ParsedMarkdown, error) {
 		if found {
 			var fm Frontmatter
 			if err := yaml.Unmarshal([]byte(before), &fm); err == nil {
+				// Second pass: capture all fields as map to find extras
+				var allFields map[string]any
+				if err := yaml.Unmarshal([]byte(before), &allFields); err == nil {
+					fm.Extra = extractExtraFrontmatter(allFields)
+				}
 				result.Frontmatter = &fm
 				content = strings.TrimPrefix(after, "\n")
 			}
@@ -115,4 +124,27 @@ func ParseMarkdown(content, fallbackTitle string) (*ParsedMarkdown, error) {
 	}
 
 	return result, nil
+}
+
+// knownFrontmatterKeys lists all YAML keys that map to typed Frontmatter struct fields.
+var knownFrontmatterKeys = map[string]bool{
+	"title": true, "description": true, "status": true, "priority": true,
+	"labels": true, "assignees": true, "key": true, "type": true, "slug": true,
+	"agent": true, "agent_env": true, "agent_args": true, "agent_steps": true,
+	"budget": true,
+}
+
+// extractExtraFrontmatter returns frontmatter fields not mapped to the typed struct.
+func extractExtraFrontmatter(allFields map[string]any) map[string]any {
+	extra := make(map[string]any)
+	for k, v := range allFields {
+		if !knownFrontmatterKeys[k] {
+			extra[k] = v
+		}
+	}
+	if len(extra) == 0 {
+		return nil
+	}
+
+	return extra
 }

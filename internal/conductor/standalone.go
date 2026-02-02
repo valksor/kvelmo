@@ -168,10 +168,7 @@ func (c *Conductor) ReviewStandalone(ctx context.Context, opts StandaloneReviewO
 	}
 
 	// Determine working directory
-	workingDir := c.opts.WorkDir
-	if c.git != nil {
-		workingDir = c.git.Root()
-	}
+	workingDir := c.CodeDir()
 
 	// Build review prompt (different prompt if applying fixes)
 	workspaceCfg, _ := c.workspace.LoadConfig()
@@ -279,10 +276,7 @@ func (c *Conductor) SimplifyStandalone(ctx context.Context, opts StandaloneSimpl
 	}
 
 	// Determine working directory
-	workingDir := c.opts.WorkDir
-	if c.git != nil {
-		workingDir = c.git.Root()
-	}
+	workingDir := c.CodeDir()
 
 	// Build simplify prompt
 	workspaceCfg, _ := c.workspace.LoadConfig()

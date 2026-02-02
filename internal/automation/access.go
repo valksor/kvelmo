@@ -1,6 +1,7 @@
 package automation
 
 import (
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -196,5 +197,13 @@ func (f *AccessFilter) isOrgMember(user *UserInfo, repo *RepositoryInfo) bool {
 	// Simple check: user login matches repo owner.
 	// This covers personal repos and org repos where user is the owner.
 	// Full org membership would require GitHub/GitLab API verification.
-	return strings.EqualFold(user.Login, repo.Owner)
+	isOwner := strings.EqualFold(user.Login, repo.Owner)
+	if !isOwner {
+		slog.Debug("org membership check is approximate (owner-only match)",
+			"user", user.Login,
+			"repo_owner", repo.Owner,
+		)
+	}
+
+	return isOwner
 }

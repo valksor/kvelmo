@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -183,6 +184,9 @@ func (a *Automation) HandleWebhook(w http.ResponseWriter, r *http.Request, provi
 
 		return
 	}
+
+	// Limit request body to 10MB to prevent OOM from oversized payloads.
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 
 	// Read body for signature validation and parsing.
 	body, err := io.ReadAll(r.Body)
@@ -386,18 +390,27 @@ func (a *Automation) CancelJob(id string) error {
 	return a.queue.CancelJob(id)
 }
 
+// RetryJob resets a failed job and re-enqueues it for processing.
+func (a *Automation) RetryJob(id string) error {
+	return a.queue.RetryJob(id)
+}
+
 // writeJSON writes a JSON response.
 func (a *Automation) writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_, _ = fmt.Fprintf(w, `{"status":%q}`, data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		slog.Error("failed to encode JSON response", "error", err)
+	}
 }
 
 // writeError writes an error response.
 func (a *Automation) writeError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_, _ = fmt.Fprintf(w, `{"error":%q}`, err.Error())
+	if encErr := json.NewEncoder(w).Encode(map[string]string{"error": err.Error()}); encErr != nil {
+		slog.Error("failed to encode error response", "error", encErr)
+	}
 }
 
 // ValidateGitHubSignature validates a GitHub webhook signature.

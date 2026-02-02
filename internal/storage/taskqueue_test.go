@@ -480,6 +480,164 @@ func TestTaskQueue_ComputeSubtaskRelations(t *testing.T) {
 	}
 }
 
+func TestWorkspace_FindQueueTaskByExternalID(t *testing.T) {
+	tests := []struct {
+		name       string
+		externalID string
+		setup      func(ws *Workspace)
+		wantTitle  string
+		wantNil    bool
+		wantErr    bool
+	}{
+		{
+			name:       "empty external ID returns nil",
+			externalID: "",
+			setup:      func(ws *Workspace) {},
+			wantNil:    true,
+		},
+		{
+			name:       "no queues returns nil",
+			externalID: "wrike-123",
+			setup:      func(ws *Workspace) {},
+			wantNil:    true,
+		},
+		{
+			name:       "found in first queue",
+			externalID: "wrike-456",
+			setup: func(ws *Workspace) {
+				q := NewTaskQueue("queue-1", "Queue 1", "")
+				q.path = ws.QueuePath("queue-1")
+				q.AddTask(&QueuedTask{ID: "task-1", Title: "Match", ExternalID: "wrike-456"})
+				_ = q.Save()
+			},
+			wantTitle: "Match",
+		},
+		{
+			name:       "found in second queue",
+			externalID: "gh-789",
+			setup: func(ws *Workspace) {
+				q1 := NewTaskQueue("queue-1", "Queue 1", "")
+				q1.path = ws.QueuePath("queue-1")
+				q1.AddTask(&QueuedTask{ID: "task-1", Title: "No match", ExternalID: "other-id"})
+				_ = q1.Save()
+
+				q2 := NewTaskQueue("queue-2", "Queue 2", "")
+				q2.path = ws.QueuePath("queue-2")
+				q2.AddTask(&QueuedTask{ID: "task-2", Title: "Found it", ExternalID: "gh-789"})
+				_ = q2.Save()
+			},
+			wantTitle: "Found it",
+		},
+		{
+			name:       "not found in any queue",
+			externalID: "nonexistent-999",
+			setup: func(ws *Workspace) {
+				q := NewTaskQueue("queue-1", "Queue 1", "")
+				q.path = ws.QueuePath("queue-1")
+				q.AddTask(&QueuedTask{ID: "task-1", Title: "Other task", ExternalID: "other-id"})
+				_ = q.Save()
+			},
+			wantNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws := &Workspace{workspaceRoot: t.TempDir()}
+			tt.setup(ws)
+
+			task, err := ws.FindQueueTaskByExternalID(tt.externalID)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.wantNil {
+				if task != nil {
+					t.Errorf("expected nil, got task %q", task.Title)
+				}
+
+				return
+			}
+
+			if task == nil {
+				t.Fatal("expected task, got nil")
+			}
+			if task.Title != tt.wantTitle {
+				t.Errorf("Title = %q, want %q", task.Title, tt.wantTitle)
+			}
+		})
+	}
+}
+
+func TestQueuedTask_MetadataPersistence(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := &Workspace{workspaceRoot: tmpDir}
+
+	// Create queue with metadata-rich tasks
+	queue := NewTaskQueue("meta-test", "Metadata Test", "")
+	queue.path = ws.QueuePath("meta-test")
+	queue.AddTask(&QueuedTask{
+		ID:         "task-1",
+		Title:      "Task with metadata",
+		Status:     TaskStatusReady,
+		SourcePath: "/projects/tasks/feature-auth.md",
+		Metadata: map[string]any{
+			"code_example":   "func Login() error { ... }",
+			"reference_file": "internal/auth/handler.go",
+			"priority_score": 42,
+		},
+	})
+	queue.AddTask(&QueuedTask{
+		ID:     "task-2",
+		Title:  "Task without metadata",
+		Status: TaskStatusReady,
+	})
+
+	if err := queue.Save(); err != nil {
+		t.Fatalf("Save error: %v", err)
+	}
+
+	// Load and verify
+	loaded, err := LoadTaskQueue(ws, "meta-test")
+	if err != nil {
+		t.Fatalf("LoadTaskQueue error: %v", err)
+	}
+
+	task1 := loaded.GetTask("task-1")
+	if task1.SourcePath != "/projects/tasks/feature-auth.md" {
+		t.Errorf("SourcePath = %q, want %q", task1.SourcePath, "/projects/tasks/feature-auth.md")
+	}
+	if task1.Metadata == nil {
+		t.Fatal("Metadata is nil after load")
+	}
+	if task1.Metadata["code_example"] != "func Login() error { ... }" {
+		t.Errorf("Metadata[code_example] = %v", task1.Metadata["code_example"])
+	}
+	if task1.Metadata["reference_file"] != "internal/auth/handler.go" {
+		t.Errorf("Metadata[reference_file] = %v", task1.Metadata["reference_file"])
+	}
+	// YAML deserializes numbers as int
+	if task1.Metadata["priority_score"] != 42 {
+		t.Errorf("Metadata[priority_score] = %v (type %T)", task1.Metadata["priority_score"], task1.Metadata["priority_score"])
+	}
+
+	// task-2 should have nil metadata
+	task2 := loaded.GetTask("task-2")
+	if task2.SourcePath != "" {
+		t.Errorf("SourcePath = %q, want empty", task2.SourcePath)
+	}
+	if task2.Metadata != nil {
+		t.Errorf("Metadata = %v, want nil", task2.Metadata)
+	}
+}
+
 func TestTaskQueue_ParentIDPersistence(t *testing.T) {
 	// Create temp directory
 	tmpDir := t.TempDir()

@@ -1680,6 +1680,21 @@ func (c *Conductor) projectTaskToQueued(pt *provider.ProjectTask, queue *storage
 	var labels []string
 	labels = append(labels, pt.Labels...)
 
+	// Preserve source path from provider reference
+	var sourcePath string
+	if pt.WorkUnit != nil && pt.Source.Reference != "" {
+		sourcePath = pt.Source.Reference
+	}
+
+	// Preserve metadata from provider (custom frontmatter, readme paths, etc.)
+	var metadata map[string]any
+	if pt.WorkUnit != nil && len(pt.Metadata) > 0 {
+		metadata = make(map[string]any, len(pt.Metadata))
+		for k, v := range pt.Metadata {
+			metadata[k] = v
+		}
+	}
+
 	return &storage.QueuedTask{
 		ID:          taskID,
 		Title:       pt.Title,
@@ -1690,5 +1705,7 @@ func (c *Conductor) projectTaskToQueued(pt *provider.ProjectTask, queue *storage
 		Labels:      labels,
 		ExternalID:  pt.ExternalID,
 		ExternalURL: extractWorkUnitURL(pt.WorkUnit),
+		SourcePath:  sourcePath,
+		Metadata:    metadata,
 	}
 }

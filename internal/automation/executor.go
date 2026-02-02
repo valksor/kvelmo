@@ -287,20 +287,22 @@ func (e *Executor) executePRReview(ctx context.Context, job *WebhookJob) error {
 
 	// Submit review to the provider if available.
 	commentsPosted := 0
+	var submissionError string
 	if e.providerGetter != nil {
 		submission, submitErr := e.submitReviewToProvider(ctx, job, result)
 		if submitErr != nil {
 			slog.Warn("failed to submit review to provider", "error", submitErr)
-			// Continue - review was completed, just couldn't post results.
+			submissionError = submitErr.Error()
 		} else if submission != nil {
 			commentsPosted = submission.CommentsPosted
 		}
 	}
 
 	job.Result = &JobResult{
-		Success:        true,
-		PRNumber:       job.Event.PullRequest.Number,
-		CommentsPosted: commentsPosted,
+		Success:         true,
+		PRNumber:        job.Event.PullRequest.Number,
+		CommentsPosted:  commentsPosted,
+		SubmissionError: submissionError,
 	}
 
 	return nil
@@ -308,6 +310,10 @@ func (e *Executor) executePRReview(ctx context.Context, job *WebhookJob) error {
 
 // submitReviewToProvider submits review results to the provider.
 func (e *Executor) submitReviewToProvider(ctx context.Context, job *WebhookJob, result *conductor.StandaloneReviewResult) (*ReviewSubmission, error) {
+	if job.Event.PullRequest == nil {
+		return nil, errors.New("no pull request associated with job for review submission")
+	}
+
 	p, err := e.providerGetter(job.Event.Provider)
 	if err != nil {
 		return nil, err
@@ -573,12 +579,46 @@ func (e *Executor) handlePlanFailure(ctx context.Context, job *WebhookJob, _ *co
 	return errors.Join(ErrWorkflowFailed, planErr)
 }
 
-// isPlanInvalid checks if the plan indicates an invalid issue.
+// isPlanInvalid checks if the plan indicates an invalid issue by examining
+// the generated specifications for rejection signals from the AI agent.
 func (e *Executor) isPlanInvalid(cond *conductor.Conductor) bool {
-	// Check specifications for indicators of invalid issue.
-	// This would examine the generated specifications for keywords
-	// like "invalid", "duplicate", "won't fix", etc.
-	// For now, return false and let the workflow continue.
+	ws := cond.GetWorkspace()
+	activeTask := cond.GetActiveTask()
+	if ws == nil || activeTask == nil {
+		return false
+	}
+
+	content, err := ws.GatherSpecificationsContent(activeTask.ID)
+	if err != nil || content == "" {
+		return false
+	}
+
+	lower := strings.ToLower(content)
+
+	// Rejection phrases that indicate the issue should not be implemented.
+	rejectionPhrases := []string{
+		"this issue is invalid",
+		"this issue is a duplicate",
+		"cannot be implemented",
+		"should not be implemented",
+		"won't fix",
+		"wont fix",
+		"not actionable",
+		"insufficient information to proceed",
+		"duplicate of #",
+		"this is not a valid issue",
+		"no changes required",
+		"no implementation needed",
+	}
+
+	for _, phrase := range rejectionPhrases {
+		if strings.Contains(lower, phrase) {
+			slog.Info("plan determined issue is invalid", "phrase", phrase, "task_id", activeTask.ID)
+
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -605,7 +645,7 @@ func (e *Executor) postIssueComment(ctx context.Context, job *WebhookJob, body s
 
 	p, err := e.providerGetter(job.Event.Provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("get provider %s: %w", job.Event.Provider, err)
 	}
 
 	commenter, ok := p.(ResultCommenter)
@@ -613,10 +653,24 @@ func (e *Executor) postIssueComment(ctx context.Context, job *WebhookJob, body s
 		return errors.New("provider does not support commenting")
 	}
 
+	if job.Event.Issue == nil {
+		return errors.New("no issue associated with job for posting comment")
+	}
+
 	issueID := strconv.Itoa(job.Event.Issue.Number)
 	_, err = commenter.AddComment(ctx, issueID, body)
+	if err != nil {
+		slog.Warn("failed to post issue comment",
+			"job_id", job.ID,
+			"issue", issueID,
+			"provider", job.Event.Provider,
+			"error", err,
+		)
 
-	return err
+		return fmt.Errorf("post issue comment: %w", err)
+	}
+
+	return nil
 }
 
 // postStatusComment posts a status comment.
@@ -641,14 +695,16 @@ func (e *Executor) postHelpComment(ctx context.Context, job *WebhookJob) error {
 	return e.postIssueComment(ctx, job, help)
 }
 
-// getPRNumber extracts PR number from conductor state.
+// getPRNumber extracts PR number from conductor's last finish result.
 func (e *Executor) getPRNumber(cond *conductor.Conductor) int {
-	// Would extract from conductor's finish result.
-	return 0
+	n, _ := cond.LastPRResult()
+
+	return n
 }
 
-// getPRURL extracts PR URL from conductor state.
+// getPRURL extracts PR URL from conductor's last finish result.
 func (e *Executor) getPRURL(cond *conductor.Conductor) string {
-	// Would extract from conductor's finish result.
-	return ""
+	_, u := cond.LastPRResult()
+
+	return u
 }

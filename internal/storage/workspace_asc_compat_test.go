@@ -8,7 +8,7 @@ import (
 )
 
 // TestASCCompatibility tests that mehrhof can be configured to match
-// the aerones-super-code (ASC) Python tool's file structure exactly.
+// (ASC) Python tool's file structure exactly.
 //
 // ASC patterns:
 // - Branch: asc/<ticket-id>

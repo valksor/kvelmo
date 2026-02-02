@@ -58,10 +58,16 @@ var TransitionTable = map[TransitionKey][]Transition{
 	{StateWaiting, EventPause}: {
 		{From: StateWaiting, Event: EventPause, To: StatePaused},
 	},
+	{StateWaiting, EventError}: {
+		{From: StateWaiting, Event: EventError, To: StateIdle},
+	},
 
 	// === Paused (budget limits) ===
 	{StatePaused, EventResume}: {
 		{From: StatePaused, Event: EventResume, To: StateIdle},
+	},
+	{StatePaused, EventError}: {
+		{From: StatePaused, Event: EventError, To: StateIdle},
 	},
 
 	// === Implementation Phase ===
@@ -124,15 +130,50 @@ var TransitionTable = map[TransitionKey][]Transition{
 	{StateReverting, EventUndoDone}: {
 		{From: StateReverting, Event: EventUndoDone, To: StateIdle},
 	},
+	{StateReverting, EventError}: {
+		{From: StateReverting, Event: EventError, To: StateIdle},
+	},
 	{StateRestoring, EventRedoDone}: {
 		{From: StateRestoring, Event: EventRedoDone, To: StateIdle},
+	},
+	{StateRestoring, EventError}: {
+		{From: StateRestoring, Event: EventError, To: StateIdle},
+	},
+
+	// === Abort (explicit per-state, excludes terminal StateDone and StateFailed) ===
+	{StateIdle, EventAbort}: {
+		{From: StateIdle, Event: EventAbort, To: StateFailed},
+	},
+	{StatePlanning, EventAbort}: {
+		{From: StatePlanning, Event: EventAbort, To: StateFailed},
+	},
+	{StateImplementing, EventAbort}: {
+		{From: StateImplementing, Event: EventAbort, To: StateFailed},
+	},
+	{StateReviewing, EventAbort}: {
+		{From: StateReviewing, Event: EventAbort, To: StateFailed},
+	},
+	{StateWaiting, EventAbort}: {
+		{From: StateWaiting, Event: EventAbort, To: StateFailed},
+	},
+	{StatePaused, EventAbort}: {
+		{From: StatePaused, Event: EventAbort, To: StateFailed},
+	},
+	{StateCheckpointing, EventAbort}: {
+		{From: StateCheckpointing, Event: EventAbort, To: StateFailed},
+	},
+	{StateReverting, EventAbort}: {
+		{From: StateReverting, Event: EventAbort, To: StateFailed},
+	},
+	{StateRestoring, EventAbort}: {
+		{From: StateRestoring, Event: EventAbort, To: StateFailed},
 	},
 }
 
 // GlobalTransitions apply from any state.
-var GlobalTransitions = map[Event]State{
-	EventAbort: StateFailed,
-}
+// EventAbort was moved to explicit per-state entries to prevent aborting from
+// terminal states (StateDone, StateFailed).
+var GlobalTransitions = map[Event]State{}
 
 // GetTransitions returns possible transitions for a state/event pair.
 func GetTransitions(from State, event Event) []Transition {

@@ -112,10 +112,10 @@ func TestDispatch_GlobalTransition(t *testing.T) {
 	_ = m.Dispatch(context.Background(), EventStart)
 	_ = m.Dispatch(context.Background(), EventPlan)
 
-	// Global abort event should work from any state
+	// Abort should work from non-terminal states.
 	err := m.Dispatch(context.Background(), EventAbort)
 	if err != nil {
-		t.Fatalf("global transition failed: %v", err)
+		t.Fatalf("abort transition failed: %v", err)
 	}
 
 	if m.State() != StateFailed {
@@ -444,7 +444,7 @@ func TestTransitions(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "global abort transition",
+			name:      "abort transition from planning",
 			fromState: StatePlanning,
 			event:     EventAbort,
 			wantState: StateFailed,
@@ -854,8 +854,8 @@ func TestGetGlobalTransition(t *testing.T) {
 		{
 			name:   "abort event",
 			event:  EventAbort,
-			want:   StateFailed,
-			wantOK: true,
+			want:   "",
+			wantOK: false, // EventAbort moved to explicit per-state transitions
 		},
 		{
 			name:   "non-global event",
@@ -901,8 +901,8 @@ func TestCanTransition(t *testing.T) {
 		{"implementing error", StateImplementing, EventError, true},
 		{"reviewing done", StateReviewing, EventReviewDone, true},
 		{"reviewing error", StateReviewing, EventError, true},
-		{"global abort from any state", StateIdle, EventAbort, true},
-		{"global abort from planning", StatePlanning, EventAbort, true},
+		{"abort from idle", StateIdle, EventAbort, true},
+		{"abort from planning", StatePlanning, EventAbort, true},
 		{"invalid transition", StatePlanning, EventImplement, false},
 		{"invalid event", StateIdle, Event("unknown"), false},
 	}
