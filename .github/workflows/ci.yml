@@ -88,6 +88,13 @@ jobs:
                     parallel: true
                     flag-name: go-coverage
 
+            -   name: Cleanup Caches
+                if: always()
+                run: |
+                    go clean -cache -testcache
+                    rm -rf ~/.cache/chromium/
+                    rm -rf .coverage covprofile
+
     jetbrains:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
         runs-on: ubuntu-amd
@@ -134,6 +141,13 @@ jobs:
                     parallel: true
                     flag-name: kotlin-coverage
                     base-path: ide/jetbrains
+
+            -   name: Cleanup Gradle Cache
+                if: always()
+                run: |
+                    rm -rf ~/.gradle/caches/build-cache-*
+                    rm -rf ~/.gradle/caches/*/
+                    rm -rf ~/.gradle/wrapper/
 
     vscode:
         if: "!contains(github.event.head_commit.message, '[skip test]')"
@@ -190,6 +204,14 @@ jobs:
                     parallel: true
                     flag-name: typescript-coverage
                     base-path: ide/vscode
+
+            -   name: Cleanup Caches
+                if: always()
+                run: |
+                    rm -rf ~/.bun/install/cache/
+                    rm -rf ~/.npm/
+                    rm -rf ide/vscode/node_modules/
+                    rm -rf ide/vscode/coverage/
 
     coverage-finish:
         needs: [test, jetbrains, vscode, web-ui]
@@ -264,3 +286,11 @@ jobs:
                     name: playwright-report
                     path: web-ui-tests/playwright-report/
                     retention-days: 7
+
+            -   name: Cleanup Caches
+                if: always()
+                run: |
+                    go clean -cache -testcache
+                    rm -rf ~/.cache/ms-playwright/
+                    rm -rf web-ui-tests/playwright-report/ web-ui-tests/test-results/
+                    rm -rf web-ui-tests/coverage/
