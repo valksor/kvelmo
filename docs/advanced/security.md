@@ -19,7 +19,7 @@ Scanners are **auto-detected** based on project marker files:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Project Detection                             │
+│                    Project Detection                            │
 │  go.mod? package.json? requirements.txt? pyproject.toml?        │
 └─────────────────────────────────┬───────────────────────────────┘
                                   │
@@ -203,10 +203,10 @@ security:
 └──────┬───────┘
        │
        ▼
-┌──────────────────┐
-│ Security Scanners│
+┌───────────────────┐
+│ Security Scanners │
 │ (if implementing) │
-└──────┬───────────┘
+└──────┬────────────┘
        │
        ▼
 ┌──────────────────┐

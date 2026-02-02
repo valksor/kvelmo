@@ -14,6 +14,7 @@ import { initSSE, updateConnectionStatus } from './sse-manager.js';
 import { initDropdowns, initMoreMenu, initMobileMenu } from './components/dropdowns.js';
 import { getSelectedProject, setSelectedProject, clearSelectedProject } from './storage.js';
 import { initActions } from './actions.js';
+import { fetchCSRFToken, csrfFetch } from './csrf.js';
 
 // Application state
 const state = {
@@ -38,6 +39,9 @@ function init() {
     initHTMX();
     initSSE();
     initActions();
+
+    // Fetch CSRF token for authenticated sessions (non-blocking)
+    fetchCSRFToken();
 
     // Initialize UI components
     initDropdowns();
@@ -84,3 +88,4 @@ document.body.addEventListener('htmx:afterSwap', reinitAfterSwap);
 window.getSelectedProject = getSelectedProject;
 window.setSelectedProject = setSelectedProject;
 window.clearSelectedProject = clearSelectedProject;
+window.csrfFetch = csrfFetch;

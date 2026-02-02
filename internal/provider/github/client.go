@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -92,10 +93,11 @@ func (c *Client) GetIssue(ctx context.Context, number int) (*github.Issue, error
 	}
 
 	// Cache miss or disabled, fetch from API
-	issue, _, err := c.gh.Issues.Get(ctx, c.owner, c.repo, number)
+	issue, resp, err := c.gh.Issues.Get(ctx, c.owner, c.repo, number)
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	// Store in cache
 	if c.cache != nil && c.cache.Enabled() {
@@ -123,17 +125,34 @@ func (c *Client) GetIssueComments(ctx context.Context, number int) ([]*github.Is
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
+	const maxPages = 100
+
 	var allComments []*github.IssueComment
-	for {
+	truncated := true
+	for range maxPages {
 		comments, resp, err := c.gh.Issues.ListComments(ctx, c.owner, c.repo, number, opts)
 		if err != nil {
 			return nil, wrapAPIError(err)
 		}
+
+		checkRateLimit(resp)
 		allComments = append(allComments, comments...)
+
 		if resp.NextPage == 0 {
+			truncated = false
+
 			break
 		}
 		opts.Page = resp.NextPage
+	}
+
+	// Warn if we exhausted maxPages without reaching the last page.
+	if truncated && len(allComments) > 0 {
+		slog.Warn("GitHub comments truncated at max pages",
+			"issue", number,
+			"pages_fetched", maxPages,
+			"comments_fetched", len(allComments),
+		)
 	}
 
 	// Store in cache
@@ -146,12 +165,13 @@ func (c *Client) GetIssueComments(ctx context.Context, number int) ([]*github.Is
 
 // AddComment adds a comment to an issue.
 func (c *Client) AddComment(ctx context.Context, number int, body string) (*github.IssueComment, error) {
-	comment, _, err := c.gh.Issues.CreateComment(ctx, c.owner, c.repo, number, &github.IssueComment{
+	comment, resp, err := c.gh.Issues.CreateComment(ctx, c.owner, c.repo, number, &github.IssueComment{
 		Body: ptr(body),
 	})
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	// Invalidate comments cache for this issue
 	if c.cache != nil {
@@ -164,7 +184,7 @@ func (c *Client) AddComment(ctx context.Context, number int, body string) (*gith
 
 // CreatePullRequest creates a new pull request.
 func (c *Client) CreatePullRequest(ctx context.Context, title, body, head, base string, draft bool) (*github.PullRequest, error) {
-	pr, _, err := c.gh.PullRequests.Create(ctx, c.owner, c.repo, &github.NewPullRequest{
+	pr, resp, err := c.gh.PullRequests.Create(ctx, c.owner, c.repo, &github.NewPullRequest{
 		Title: ptr(title),
 		Body:  ptr(body),
 		Head:  ptr(head),
@@ -174,6 +194,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, title, body, head, base 
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	return pr, nil
 }
@@ -192,10 +213,11 @@ func (c *Client) GetDefaultBranch(ctx context.Context) (string, error) {
 	}
 
 	// Cache miss or disabled, fetch from API
-	repo, _, err := c.gh.Repositories.Get(ctx, c.owner, c.repo)
+	repo, resp, err := c.gh.Repositories.Get(ctx, c.owner, c.repo)
 	if err != nil {
 		return "", wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 	branch := repo.GetDefaultBranch()
 
 	// Store in cache
@@ -209,10 +231,11 @@ func (c *Client) GetDefaultBranch(ctx context.Context) (string, error) {
 // DownloadFile downloads a file from the repository.
 func (c *Client) DownloadFile(ctx context.Context, path, ref string) ([]byte, error) {
 	opts := &github.RepositoryContentGetOptions{Ref: ref}
-	content, _, _, err := c.gh.Repositories.GetContents(ctx, c.owner, c.repo, path, opts)
+	content, _, resp, err := c.gh.Repositories.GetContents(ctx, c.owner, c.repo, path, opts)
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	decoded, err := content.GetContent()
 	if err != nil {
@@ -224,10 +247,11 @@ func (c *Client) DownloadFile(ctx context.Context, path, ref string) ([]byte, er
 
 // GetPullRequest fetches a pull request by number.
 func (c *Client) GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error) {
-	pr, _, err := c.gh.PullRequests.Get(ctx, c.owner, c.repo, number)
+	pr, resp, err := c.gh.PullRequests.Get(ctx, c.owner, c.repo, number)
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	return pr, nil
 }
@@ -245,6 +269,7 @@ func (c *Client) GetPullRequestDiff(ctx context.Context, number int) (string, []
 		if err != nil {
 			return "", nil, 0, 0, wrapAPIError(err)
 		}
+		checkRateLimit(resp)
 
 		for _, f := range files {
 			totalAdditions += f.GetAdditions()
@@ -259,22 +284,24 @@ func (c *Client) GetPullRequestDiff(ctx context.Context, number int) (string, []
 	}
 
 	// Get raw diff
-	diff, _, err := c.gh.PullRequests.GetRaw(ctx, c.owner, c.repo, number, github.RawOptions{Type: github.Diff})
+	diff, rawResp, err := c.gh.PullRequests.GetRaw(ctx, c.owner, c.repo, number, github.RawOptions{Type: github.Diff})
 	if err != nil {
 		return "", nil, 0, 0, wrapAPIError(err)
 	}
+	checkRateLimit(rawResp)
 
 	return diff, allFiles, totalAdditions, totalDeletions, nil
 }
 
 // CreatePullRequestComment adds a comment to a pull request (issue comment in GitHub).
 func (c *Client) CreatePullRequestComment(ctx context.Context, number int, body string) (*github.IssueComment, error) {
-	comment, _, err := c.gh.Issues.CreateComment(ctx, c.owner, c.repo, number, &github.IssueComment{
+	comment, resp, err := c.gh.Issues.CreateComment(ctx, c.owner, c.repo, number, &github.IssueComment{
 		Body: ptr(body),
 	})
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	// Invalidate comments cache for this PR
 	if c.cache != nil {
@@ -287,12 +314,13 @@ func (c *Client) CreatePullRequestComment(ctx context.Context, number int, body 
 
 // UpdatePullRequestComment updates an existing comment on a pull request.
 func (c *Client) UpdatePullRequestComment(ctx context.Context, number int, commentID int64, body string) (*github.IssueComment, error) {
-	comment, _, err := c.gh.Issues.EditComment(ctx, c.owner, c.repo, commentID, &github.IssueComment{
+	comment, resp, err := c.gh.Issues.EditComment(ctx, c.owner, c.repo, commentID, &github.IssueComment{
 		Body: ptr(body),
 	})
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	// Invalidate comments cache for this PR
 	if c.cache != nil {
@@ -324,10 +352,11 @@ func (c *Client) CreateReview(ctx context.Context, number int, event, body strin
 		review.Comments = comments
 	}
 
-	result, _, err := c.gh.PullRequests.CreateReview(ctx, c.owner, c.repo, number, review)
+	result, resp, err := c.gh.PullRequests.CreateReview(ctx, c.owner, c.repo, number, review)
 	if err != nil {
 		return nil, wrapAPIError(err)
 	}
+	checkRateLimit(resp)
 
 	return result, nil
 }
@@ -346,4 +375,19 @@ func (c *Client) Owner() string {
 // Repo returns the current repo.
 func (c *Client) Repo() string {
 	return c.repo
+}
+
+// checkRateLimit logs a warning when the GitHub API rate limit is running low.
+func checkRateLimit(resp *github.Response) {
+	if resp == nil {
+		return
+	}
+
+	if resp.Rate.Remaining < 10 {
+		slog.Warn("GitHub API rate limit low",
+			"remaining", resp.Rate.Remaining,
+			"limit", resp.Rate.Limit,
+			"reset", resp.Rate.Reset.Format(time.RFC3339),
+		)
+	}
 }

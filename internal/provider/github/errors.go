@@ -30,6 +30,20 @@ func wrapAPIError(err error) error {
 	var ghErr *github.ErrorResponse
 	if errors.As(err, &ghErr) {
 		switch ghErr.Response.StatusCode {
+		case http.StatusTooManyRequests:
+			retryAfter := ghErr.Response.Header.Get("Retry-After")
+
+			return &provider.DiagnosticError{
+				Provider: "github",
+				Message:  "secondary rate limit exceeded",
+				Cause:    fmt.Sprintf("%s (retry after: %s)", ghErr.Message, retryAfter),
+				Suggestions: append(provider.CommonHints.RateLimited,
+					"GitHub secondary rate limits apply to concurrent requests",
+					"Wait briefly and retry",
+				),
+				DocsURL: "https://docs.github.com/en/rest/overview/rate-limits-for-the-rest-api#about-secondary-rate-limits",
+				Err:     err,
+			}
 		case http.StatusUnauthorized:
 			return &provider.DiagnosticError{
 				Provider: "github",
