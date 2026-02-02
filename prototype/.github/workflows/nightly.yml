@@ -11,7 +11,7 @@ permissions:
 
 jobs:
     manage-nightly:
-        runs-on: ubuntu-slim
+        runs-on: ubuntu-amd
         steps:
             -   name: Checkout code
                 uses: actions/checkout@v6
