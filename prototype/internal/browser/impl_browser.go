@@ -46,9 +46,11 @@ type controller struct {
 	tabs          map[string]*rod.Page
 	networkMon    map[string]*NetworkMonitor
 	consoleMon    map[string]*ConsoleMonitor
-	cleanupCancel context.CancelFunc // Function to stop cleanup goroutine
-	cookieStorage *CookieStorage     // Cookie storage manager
-	cookieProfile string             // Current cookie profile
+	wsMon         map[string]*WebSocketMonitor // TabID -> WebSocket Monitor
+	cleanupCancel context.CancelFunc           // Function to stop cleanup goroutine
+	cookieStorage *CookieStorage               // Cookie storage manager
+	cookieProfile string                       // Current cookie profile
+	networkOpts   NetworkMonitorOptions        // Options for new network monitors
 }
 
 // NewController creates a new browser controller.
@@ -58,6 +60,7 @@ func NewController(config Config) Controller {
 		tabs:       make(map[string]*rod.Page),
 		networkMon: make(map[string]*NetworkMonitor),
 		consoleMon: make(map[string]*ConsoleMonitor),
+		wsMon:      make(map[string]*WebSocketMonitor),
 	}
 }
 
@@ -606,7 +609,7 @@ func (c *controller) Reload(ctx context.Context, tabID string, hard bool) error 
 		return err
 	}
 
-	if err := page.Reload(); err != nil {
+	if err := page.Context(ctx).Reload(); err != nil {
 		return errNavigate(err)
 	}
 
@@ -625,13 +628,14 @@ func (c *controller) Screenshot(ctx context.Context, tabID string, opts Screensh
 
 	var data []byte
 	quality := opts.Quality
+	ctxPage := page.Context(ctx)
 	if opts.FullPage {
-		data, err = page.Screenshot(true, &proto.PageCaptureScreenshot{
+		data, err = ctxPage.Screenshot(true, &proto.PageCaptureScreenshot{
 			Format:  proto.PageCaptureScreenshotFormat(opts.Format),
 			Quality: &quality,
 		})
 	} else {
-		data, err = page.Screenshot(false, &proto.PageCaptureScreenshot{
+		data, err = ctxPage.Screenshot(false, &proto.PageCaptureScreenshot{
 			Format:  proto.PageCaptureScreenshotFormat(opts.Format),
 			Quality: &quality,
 		})
@@ -654,7 +658,7 @@ func (c *controller) QuerySelector(ctx context.Context, tabID, selector string) 
 		return nil, err
 	}
 
-	elem, err := page.Element(selector)
+	elem, err := page.Context(ctx).Element(selector)
 	if err != nil {
 		return nil, errQuerySelector(err)
 	}
@@ -672,7 +676,7 @@ func (c *controller) QuerySelectorAll(ctx context.Context, tabID, selector strin
 		return nil, err
 	}
 
-	elems, err := page.Elements(selector)
+	elems, err := page.Context(ctx).Elements(selector)
 	if err != nil {
 		return nil, errQuerySelector(err)
 	}
@@ -776,7 +780,7 @@ func (c *controller) Eval(ctx context.Context, tabID, expression string) (any, e
 		Expression:    expression,
 		ReturnByValue: true,
 		AwaitPromise:  true,
-	}.Call(page)
+	}.Call(page.Context(ctx))
 	if err != nil {
 		return nil, errEval(err)
 	}
@@ -856,7 +860,7 @@ func (c *controller) getOrCreateNetworkMonitor(ctx context.Context, tabID string
 
 	// Create and start new monitor while holding lock
 	// This prevents race where multiple goroutines create monitors
-	newMon := NewNetworkMonitor()
+	newMon := NewNetworkMonitorWithOptions(c.networkOpts)
 	if err := newMon.Start(ctx, page); err != nil {
 		return nil, fmt.Errorf("start network monitor: %w", err)
 	}
@@ -883,6 +887,82 @@ func (c *controller) GetNetworkRequests(ctx context.Context, tabID string, durat
 	}
 
 	return mon.GetRequests(), nil
+}
+
+// SetNetworkMonitorOptions configures options for new network monitors.
+// Existing monitors are not affected — call before GetNetworkRequests.
+func (c *controller) SetNetworkMonitorOptions(opts NetworkMonitorOptions) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.networkOpts = opts
+}
+
+// getOrCreateWebSocketMonitor returns an existing WebSocket monitor or creates a new one.
+func (c *controller) getOrCreateWebSocketMonitor(ctx context.Context, tabID string) (*WebSocketMonitor, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if mon, exists := c.wsMon[tabID]; exists {
+		return mon, nil
+	}
+
+	page, err := c.getPage(tabID)
+	if err != nil {
+		return nil, err
+	}
+
+	newMon := NewWebSocketMonitor()
+	if err := newMon.Start(ctx, page); err != nil {
+		return nil, fmt.Errorf("start websocket monitor: %w", err)
+	}
+
+	c.wsMon[tabID] = newMon
+
+	return newMon, nil
+}
+
+// GetWebSocketFrames captures WebSocket frames using the WebSocket monitor.
+func (c *controller) GetWebSocketFrames(ctx context.Context, tabID string, duration time.Duration) ([]WebSocketFrame, error) {
+	mon, err := c.getOrCreateWebSocketMonitor(ctx, tabID)
+	if err != nil {
+		return nil, err
+	}
+
+	if duration > 0 {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(duration):
+		}
+	}
+
+	return mon.GetFrames(), nil
+}
+
+// GetCoverage runs coverage tracking for the specified duration and returns results.
+func (c *controller) GetCoverage(ctx context.Context, tabID string, duration time.Duration, trackJS, trackCSS bool) (*CoverageSummary, []JSCoverageEntry, []CSSCoverageEntry, error) {
+	c.mu.RLock()
+	page, err := c.getPage(tabID)
+	c.mu.RUnlock()
+	if err != nil {
+		return nil, nil, nil, errNotFound("tab " + tabID)
+	}
+
+	mon := NewCoverageMonitor(trackJS, trackCSS)
+	if err := mon.Start(ctx, page); err != nil {
+		return nil, nil, nil, fmt.Errorf("start coverage: %w", err)
+	}
+
+	// Wait for duration to let page execute
+	if duration > 0 {
+		select {
+		case <-ctx.Done():
+			return nil, nil, nil, ctx.Err()
+		case <-time.After(duration):
+		}
+	}
+
+	return mon.Collect(ctx)
 }
 
 // Helper methods
@@ -975,6 +1055,14 @@ func (c *controller) cleanupStaleMonitors() {
 				_ = mon.Stop()
 			}
 			delete(c.networkMon, tabID)
+		}
+	}
+	for tabID := range c.wsMon {
+		if !activeTabs[tabID] {
+			if mon := c.wsMon[tabID]; mon != nil {
+				_ = mon.Stop()
+			}
+			delete(c.wsMon, tabID)
 		}
 	}
 }

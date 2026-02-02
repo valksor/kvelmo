@@ -97,6 +97,24 @@ type DOMElement struct {
 	X, Y        float64 // Element position for clicking
 }
 
+// NetworkMonitorOptions configures network request monitoring behavior.
+type NetworkMonitorOptions struct {
+	// CaptureBody enables capturing request and response bodies.
+	// Disabled by default since bodies can be large.
+	CaptureBody bool
+	// MaxBodySize is the maximum body size to capture in bytes (default: 1MB).
+	// Bodies larger than this are truncated.
+	MaxBodySize int
+}
+
+// DefaultNetworkMonitorOptions returns options with body capture disabled.
+func DefaultNetworkMonitorOptions() NetworkMonitorOptions {
+	return NetworkMonitorOptions{
+		CaptureBody: false,
+		MaxBodySize: 1024 * 1024, // 1MB
+	}
+}
+
 // NetworkRequest represents an HTTP request.
 type NetworkRequest struct {
 	ID           string
@@ -137,9 +155,115 @@ type AuthRequirement struct {
 	Hint     string // User-friendly hint
 }
 
+// ScriptSource represents a JavaScript source loaded in the page.
+type ScriptSource struct {
+	ScriptID string
+	URL      string
+	Source   string
+	Length   int
+}
+
+// WebSocketConnection represents an active WebSocket connection.
+type WebSocketConnection struct {
+	ID        string
+	URL       string
+	Status    string // "connecting", "open", "closed", "error"
+	CreatedAt time.Time
+	ClosedAt  time.Time
+}
+
+// WebSocketFrame represents a single WebSocket message frame.
+type WebSocketFrame struct {
+	ConnectionID string
+	Direction    string // "sent" or "received"
+	Data         string
+	Opcode       int
+	Timestamp    time.Time
+	Error        string // Non-empty if error frame
+}
+
+// ComputedStyle is a single resolved CSS property for an element.
+type ComputedStyle struct {
+	Name  string
+	Value string
+}
+
+// MatchedStyles contains the full cascade information for an element.
+type MatchedStyles struct {
+	InlineStyles    []CSSProperty
+	MatchedRules    []MatchedRule
+	InheritedStyles []InheritedStyleEntry
+	PseudoElements  []PseudoElementStyles
+}
+
+// CSSProperty is a single CSS property declaration.
+type CSSProperty struct {
+	Name      string
+	Value     string
+	Important bool
+}
+
+// MatchedRule is a CSS rule that matched the element.
+type MatchedRule struct {
+	Selector   string
+	Origin     string // "author", "user-agent", "injected"
+	SourceURL  string
+	Properties []CSSProperty
+}
+
+// InheritedStyleEntry contains styles inherited from a single ancestor.
+type InheritedStyleEntry struct {
+	MatchedRules []MatchedRule
+	InlineStyles []CSSProperty
+}
+
+// PseudoElementStyles contains styles for a pseudo-element.
+type PseudoElementStyles struct {
+	PseudoType   string // "before", "after", "first-line", etc.
+	MatchedRules []MatchedRule
+}
+
+// JSCoverageEntry represents code coverage for a single script.
+type JSCoverageEntry struct {
+	ScriptID   string
+	URL        string
+	Ranges     []CoverageRange
+	UsedBytes  int
+	TotalBytes int
+}
+
+// CSSCoverageEntry represents code coverage for a single stylesheet.
+type CSSCoverageEntry struct {
+	StyleSheetID string
+	URL          string
+	Ranges       []CoverageRange
+	UsedBytes    int
+	TotalBytes   int
+}
+
+// CoverageRange represents a used byte range within a source.
+type CoverageRange struct {
+	StartOffset int
+	EndOffset   int
+	Count       int // JS only — how many times executed
+}
+
+// CoverageSummary provides aggregate coverage statistics.
+type CoverageSummary struct {
+	JSUsedBytes     int
+	JSTotalBytes    int
+	JSPercentage    float64
+	CSSUsedBytes    int
+	CSSTotalBytes   int
+	CSSPercentage   float64
+	TotalUsed       int
+	TotalSize       int
+	TotalPercentage float64
+}
+
 // Controller provides high-level browser operations.
 //
-//nolint:interfacebloat // Controller interface requires 20 methods for comprehensive browser automation
+//nolint:interfacebloat // Controller interface requires many methods for comprehensive browser automation
 type Controller interface {
 	// Connection management
 	Connect(ctx context.Context) error
@@ -166,6 +290,19 @@ type Controller interface {
 	// Monitoring
 	GetConsoleLogs(ctx context.Context, tabID string, duration time.Duration) ([]ConsoleMessage, error)
 	GetNetworkRequests(ctx context.Context, tabID string, duration time.Duration) ([]NetworkRequest, error)
+	SetNetworkMonitorOptions(opts NetworkMonitorOptions)
+	GetWebSocketFrames(ctx context.Context, tabID string, duration time.Duration) ([]WebSocketFrame, error)
+
+	// Source inspection
+	GetPageSource(ctx context.Context, tabID string) (string, error)
+	GetScriptSources(ctx context.Context, tabID string) ([]ScriptSource, error)
+
+	// CSS inspection
+	GetComputedStyles(ctx context.Context, tabID, selector string) ([]ComputedStyle, error)
+	GetMatchedStyles(ctx context.Context, tabID, selector string) (*MatchedStyles, error)
+
+	// Coverage
+	GetCoverage(ctx context.Context, tabID string, duration time.Duration, trackJS, trackCSS bool) (*CoverageSummary, []JSCoverageEntry, []CSSCoverageEntry, error)
 
 	// Authentication
 	DetectAuth(ctx context.Context, tabID string) (*AuthRequirement, error)

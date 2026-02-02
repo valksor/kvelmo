@@ -222,11 +222,13 @@ Listening to console logs for 5 seconds...
 Monitor network requests for a duration:
 
 ```bash
-mehr browser network [--duration=5]
+mehr browser network [--duration=5] [--body] [--max-body-size=1048576]
 ```
 
 Flags:
 - `--duration` - Listen duration in seconds (default: 5)
+- `--body` - Capture request and response bodies (default: false)
+- `--max-body-size` - Maximum body size to capture in bytes (default: 1048576 / 1MB)
 
 Example output:
 ```
@@ -235,6 +237,183 @@ Listening to network requests for 5 seconds...
 [POST] https://example.com/api/login - 201 Created
 [GET] https://example.com/favicon.ico - 404 Not Found
 ```
+
+With `--body`:
+```
+[POST] https://example.com/api/login - 201 Created
+  Request body: {"username":"john","password":"***"}
+  Response body: {"token":"eyJ...","expires":3600}
+```
+
+### browser source
+
+Retrieve the full HTML source of the current page:
+
+```bash
+mehr browser source [--output=file]
+```
+
+Flags:
+- `--output` - Write HTML to file instead of stdout
+
+Examples:
+```bash
+# Print page source to stdout
+mehr browser source
+
+# Save source to file
+mehr browser source --output page.html
+```
+
+### browser scripts
+
+List all JavaScript sources loaded in the page:
+
+```bash
+mehr browser scripts [--url=pattern]
+```
+
+Flags:
+- `--url` - Filter scripts by URL pattern
+
+Examples:
+```bash
+# List all loaded scripts
+mehr browser scripts
+
+# Filter by URL pattern
+mehr browser scripts --url "main"
+```
+
+Example output:
+```
+Loaded scripts:
+  [1] https://example.com/main.js (45,230 bytes)
+  [2] https://example.com/vendor.js (215,500 bytes)
+  [3] https://cdn.example.com/analytics.js (12,100 bytes)
+```
+
+### browser websocket
+
+Monitor WebSocket connections and frames:
+
+```bash
+mehr browser websocket [--duration=5] [--url=pattern]
+```
+
+Flags:
+- `--duration` - Listen duration in seconds (default: 5)
+- `--url` - Filter by WebSocket URL pattern
+
+Example output:
+```
+Monitoring WebSocket frames for 5 seconds...
+[→ sent]    ws://localhost:8080/chat  {"type":"ping"}
+[← recv]    ws://localhost:8080/chat  {"type":"pong"}
+[→ sent]    ws://localhost:8080/chat  {"type":"message","text":"hello"}
+[← recv]    ws://localhost:8080/chat  {"type":"message","text":"world"}
+
+Connections:
+  ws-1  ws://localhost:8080/chat  open  (3 frames)
+```
+
+### browser coverage
+
+Measure JavaScript and CSS code coverage:
+
+```bash
+mehr browser coverage [--duration=5] [--js] [--css] [--detail]
+```
+
+Flags:
+- `--duration` - Time to let page run in seconds (default: 5)
+- `--js` - Track JavaScript coverage (default: true)
+- `--css` - Track CSS coverage (default: true)
+- `--detail` - Show per-file breakdown
+
+Example output:
+```
+Coverage Summary:
+  JS:    45.2% used (123,456 / 273,000 bytes)
+  CSS:   32.1% used (15,200 / 47,400 bytes)
+  Total: 43.3% used
+```
+
+With `--detail`:
+```
+JS Coverage:
+  https://example.com/main.js       78.3% (45,000 / 57,500 bytes)
+  https://example.com/vendor.js     12.1% (26,000 / 215,500 bytes)
+
+CSS Coverage:
+  https://example.com/styles.css    45.0% (9,000 / 20,000 bytes)
+  https://example.com/vendor.css    22.6% (6,200 / 27,400 bytes)
+```
+
+### browser styles
+
+Inspect CSS styles for an element:
+
+```bash
+mehr browser styles --selector <selector> [--computed] [--matched] [--inherited] [--filter=pattern]
+```
+
+Flags:
+- `--selector` - CSS selector to find the element (required)
+- `--computed` - Show computed style properties (default)
+- `--matched` - Show matched CSS rules with selectors and source URLs
+- `--inherited` - Show inherited styles from ancestors
+- `--filter` - Filter properties by name pattern
+
+Examples:
+```bash
+# Show computed styles for an element
+mehr browser styles --selector "h1"
+
+# Show matched CSS rules
+mehr browser styles --selector ".my-class" --matched
+
+# Show inherited styles
+mehr browser styles --selector ".my-class" --inherited
+
+# Filter by property name
+mehr browser styles --selector "h1" --filter "font"
+```
+
+Example output for `--computed`:
+```
+Computed styles for "h1":
+  display: block
+  color: rgb(51, 51, 51)
+  font-size: 32px
+  font-weight: 700
+  margin: 21.44px 0px
+  ... (245 properties total, use --filter to narrow)
+```
+
+Example output for `--matched`:
+```
+Matched CSS rules for ".my-class":
+  1. .my-class (styles.css)
+     display: flex
+     color: #333
+     padding: 8px 16px
+  2. body .my-class (theme.css)
+     font-size: 16px !important
+  3. * (user-agent)
+     display: block
+     margin: 0px
+```
+
+### browser dom (extended)
+
+The `browser dom` command now supports a `--computed` flag to show key computed styles alongside element info:
+
+```bash
+mehr browser dom --selector "h1" --computed
+```
+
+This prints the element's DOM information followed by key CSS properties (display, color, font-size, margin, padding, etc.) for quick inspection.
 
 ### browser cookies export
 
@@ -473,6 +652,10 @@ rm .mehrhof/browser.json
 ```
 
 The next browser command will launch a fresh Chrome instance.
+
+## Web UI
+
+Prefer a visual interface? See [Web UI: Browser Control](../web-ui/browser.md).
 
 ## See Also
 

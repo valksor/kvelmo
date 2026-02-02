@@ -14,9 +14,9 @@ Navigate to `/browser` or click **"Browser"** in the navigation.
 │                                                              │
 │  Open Tabs:                                                  │
 │  ┌────────────────────────────────────────────────────┐      │
-│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]   │      │
-│  │ 🌐 Localhost:8080 - Health Endpoint                │      │
-│  │ 🌐 Google - "How to implement OAuth"               │      │
+│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]    │      │
+│  │ 🌐 Localhost:8080 - Health Endpoint                 │      │
+│  │ 🌐 Google - "How to implement OAuth"                │      │
 │  └────────────────────────────────────────────────────┘      │
 │                                                              │
 │  Controls:                                                   │
@@ -152,6 +152,139 @@ Click elements and type text:
 └──────────────────────────────────────────────────────────────┘
 ```
 
+## DevTools Monitoring
+
+The Browser Control Panel includes deep DevTools inspection panels for monitoring network traffic, console logs, WebSocket frames, page source, CSS styles, and code coverage.
+
+### Network Monitor
+
+Capture HTTP requests and responses over a configurable duration:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Network Monitor                                             │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Duration: [5__]s  ☑ Capture Body  [Monitor]                 │
+│                                                              │
+│  3 request(s) captured                                       │
+│  GET /api/users                                  200         │
+│  POST /api/login                                 401         │
+│  GET /static/logo.png                            304         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Duration**: How long to monitor (1–30 seconds)
+- **Capture Body**: Include request/response bodies (up to 1MB default)
+
+### Console Logs
+
+Listen for browser console messages with optional level filtering:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Console Logs                                                │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Duration: [5__]s  Level: [All ▼]  [Listen]                  │
+│                                                              │
+│  [error]   Uncaught TypeError: Cannot read property          │
+│  [warning] Deprecated API usage detected                     │
+│  [log]     Page loaded successfully                          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Level filter**: All, Error, Warning, Info, or Log
+- Messages are color-coded by severity
+
+### WebSocket Monitor
+
+Monitor WebSocket frames sent and received:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  WebSocket Monitor                                           │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Duration: [5__]s  [Monitor]                                 │
+│                                                              │
+│  → {"type":"subscribe","channel":"updates"}                  │
+│  ← {"type":"ack","status":"subscribed"}                      │
+│  ← {"type":"data","payload":{...}}                           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **→** indicates sent frames, **←** indicates received frames
+
+### Page Source
+
+View the full HTML source or loaded JavaScript files:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Page Source                                                 │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  [View Source]  [Scripts]                                    │
+│                                                              │
+│  <!DOCTYPE html>                                             │
+│  <html lang="en">                                            │
+│    <head>...</head>                                          │
+│    <body>...</body>                                          │
+│  </html>                                                     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **View Source**: Full HTML of the current page
+- **Scripts**: Lists all loaded JavaScript files with their source code
+
+### CSS Inspector
+
+Inspect computed and matched CSS styles for any element:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  CSS Inspector                                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Selector: [h1.title_____________]                           │
+│  ☑ Computed  ☐ Matched  [Inspect]                            │
+│                                                              │
+│  Computed Styles                                             │
+│  color: rgb(0, 0, 0)                                         │
+│  font-size: 24px                                             │
+│  font-weight: 700                                            │
+│  margin-bottom: 16px                                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Computed**: Final resolved CSS property values
+- **Matched**: CSS rules that matched the element (with selectors and origins)
+
+### Code Coverage
+
+Measure JavaScript and CSS code coverage:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Code Coverage                                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Duration: [5__]s  ☑ JS  ☑ CSS  [Measure]                    │
+│                                                              │
+│  Coverage Summary                                            │
+│  ┌──────────┐  ┌──────────┐                                  │
+│  │ JS Used  │  │ JS Total │                                  │
+│  │  45 KB   │  │  120 KB  │                                  │
+│  └──────────┘  └──────────┘                                  │
+│  JS Files (3): main.js, vendor.js, analytics.js              │
+│  CSS Files (2): styles.css, theme.css                        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Duration**: How long to collect coverage data
+- **JS/CSS**: Toggle which types to track
+
 ## Use Cases
 
 ### Testing Endpoints
@@ -240,6 +373,27 @@ mehr browser type #email-input "user@example.com"
 
 # Query DOM
 mehr browser dom "a[href]"
+
+# Monitor network traffic
+mehr browser network --duration 5 --capture-body
+
+# Listen for console logs
+mehr browser console --duration 5 --level error
+
+# Monitor WebSocket frames
+mehr browser websocket --duration 5
+
+# Get page source
+mehr browser source
+
+# List loaded scripts
+mehr browser scripts
+
+# Inspect CSS styles
+mehr browser styles "h1" --computed --matched
+
+# Measure code coverage
+mehr browser coverage --duration 5 --js --css
 ```
 
 See [CLI: browser](../cli/browser.md) for all options.

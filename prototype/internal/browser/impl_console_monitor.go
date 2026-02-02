@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -40,8 +41,13 @@ func NewConsoleMonitorAll() *ConsoleMonitor {
 
 // Start begins monitoring console messages for a page.
 func (m *ConsoleMonitor) Start(ctx context.Context, page *rod.Page) error {
-	// Enable runtime events (for console messages)
-	_ = proto.RuntimeEnable{}.Call(page)
+	// Enable runtime events (for console messages).
+	enableRuntime := proto.RuntimeEnable{}
+	if err := enableRuntime.Call(page); err != nil {
+		slog.Warn("CDP RuntimeEnable failed for console monitor", "error", err)
+
+		return fmt.Errorf("enable CDP runtime events: %w", err)
+	}
 
 	// Create cancelable context for this monitor
 	ctx, cancel := context.WithCancel(ctx)
