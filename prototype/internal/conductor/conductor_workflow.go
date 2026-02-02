@@ -32,13 +32,7 @@ func (c *Conductor) Plan(ctx context.Context) error {
 		}
 	}
 
-	// Update state
-	c.activeTask.State = "planning"
-	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-		return fmt.Errorf("save active task: %w", err)
-	}
-
-	// Dispatch planning event
+	// Dispatch planning event first to validate the transition before persisting.
 	if err := c.machine.Dispatch(ctx, workflow.EventPlan); err != nil {
 		if strings.Contains(err.Error(), "guards not satisfied") {
 			return errors.New("cannot plan: task has no description\n\n" +
@@ -48,6 +42,12 @@ func (c *Conductor) Plan(ctx context.Context) error {
 		}
 
 		return fmt.Errorf("enter planning: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
 	}
 
 	return nil
@@ -90,15 +90,15 @@ func (c *Conductor) Implement(ctx context.Context) error {
 		}
 	}
 
-	// Update state
-	c.activeTask.State = "implementing"
-	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-		return fmt.Errorf("save active task: %w", err)
-	}
-
-	// Dispatch implement event
+	// Dispatch implement event first to validate the transition before persisting.
 	if err := c.machine.Dispatch(ctx, workflow.EventImplement); err != nil {
 		return fmt.Errorf("enter implementation: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
 	}
 
 	return nil
@@ -113,15 +113,15 @@ func (c *Conductor) Review(ctx context.Context) error {
 		return errors.New("no active task")
 	}
 
-	// Update state
-	c.activeTask.State = "reviewing"
-	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-		return fmt.Errorf("save active task: %w", err)
-	}
-
-	// Dispatch review event
+	// Dispatch review event first to validate the transition before persisting.
 	if err := c.machine.Dispatch(ctx, workflow.EventReview); err != nil {
 		return fmt.Errorf("enter review: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
 	}
 
 	return nil
@@ -139,12 +139,15 @@ func (c *Conductor) ResumePaused(ctx context.Context) error {
 		return fmt.Errorf("task is not paused (current state: %s)", c.activeTask.State)
 	}
 
-	c.activeTask.State = "idle"
-	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-		return fmt.Errorf("save active task: %w", err)
-	}
+	// Dispatch first to validate the transition before persisting.
 	if err := c.machine.Dispatch(ctx, workflow.EventResume); err != nil {
 		return fmt.Errorf("resume workflow: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
 	}
 
 	return nil
@@ -218,8 +221,10 @@ func (c *Conductor) Undo(ctx context.Context) error {
 		},
 	})
 
-	// Complete undo
-	_ = c.machine.Dispatch(ctx, workflow.EventUndoDone)
+	// Complete undo transition.
+	if err := c.machine.Dispatch(ctx, workflow.EventUndoDone); err != nil {
+		return fmt.Errorf("complete undo transition: %w", err)
+	}
 
 	return nil
 }
@@ -269,8 +274,10 @@ func (c *Conductor) Redo(ctx context.Context) error {
 		},
 	})
 
-	// Complete redo
-	_ = c.machine.Dispatch(ctx, workflow.EventRedoDone)
+	// Complete redo transition.
+	if err := c.machine.Dispatch(ctx, workflow.EventRedoDone); err != nil {
+		return fmt.Errorf("complete redo transition: %w", err)
+	}
 
 	return nil
 }
@@ -397,9 +404,17 @@ func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
 	// Build prompt
 	prompt := buildQuestionPrompt(title, question, specificationContent, sessionHistory)
 
-	// Record user question in session (re-acquire lock)
+	// Record user question in session (re-acquire lock).
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Re-validate: activeTask may have been cleared while lock was released.
+	if c.activeTask == nil {
+		return errors.New("task was cleared while resolving agent")
+	}
+	if c.activeTask.ID != taskID {
+		return errors.New("active task changed while resolving agent")
+	}
 
 	if c.currentSession != nil {
 		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
@@ -485,8 +500,9 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 		if err != nil {
 			return err
 		}
-		// Store PR info for later reference
+		// Store PR info for later reference.
 		if prResult != nil {
+			c.lastPRResult = prResult
 			c.logVerbosef("Created PR #%d: %s", prResult.Number, prResult.URL)
 		}
 	} else if c.git != nil && c.activeTask.UseGit && c.activeTask.Branch != "" {
@@ -508,21 +524,21 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 		c.logVerbosef("No git branch associated, marking task as done")
 	}
 
-	// Update state
-	c.activeTask.State = "done"
+	// Dispatch finish event first to validate the transition before persisting.
+	if err := c.machine.Dispatch(ctx, workflow.EventFinish); err != nil {
+		return fmt.Errorf("finish workflow: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
 	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-		c.logError(fmt.Errorf("save active task: %w", err))
+		return fmt.Errorf("save active task: %w", err)
 	}
 
 	// Index completed task into memory (if enabled)
 	if err := c.IndexCompletedTask(ctx); err != nil {
 		// Memory indexing is non-critical, log error but don't fail
 		c.logError(fmt.Errorf("index completed task (non-fatal): %w", err))
-	}
-
-	// Dispatch finish event
-	if err := c.machine.Dispatch(ctx, workflow.EventFinish); err != nil {
-		return fmt.Errorf("finish workflow: %w", err)
 	}
 
 	// Clear active task

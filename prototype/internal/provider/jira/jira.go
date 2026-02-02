@@ -82,16 +82,11 @@ func (p *Provider) Match(input string) bool {
 }
 
 // Parse extracts the issue key from input.
+// Note: URL detection is deferred to Fetch() to keep Parse() side-effect-free.
 func (p *Provider) Parse(input string) (string, error) {
 	ref, err := ParseReference(input)
 	if err != nil {
 		return "", err
-	}
-
-	// Update provider's base URL if detected from reference
-	if ref.BaseURL != "" && p.baseURL == "" {
-		p.baseURL = ref.BaseURL
-		p.client.SetBaseURL(ref.BaseURL)
 	}
 
 	return ref.IssueKey, nil

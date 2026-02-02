@@ -163,12 +163,13 @@ func itoa(n int) string {
 
 // JobResult contains the outcome of a completed job.
 type JobResult struct {
-	Success        bool          `json:"success"`
-	PRNumber       int           `json:"pr_number,omitempty"`
-	PRURL          string        `json:"pr_url,omitempty"`
-	CommentsPosted int           `json:"comments_posted"`
-	ErrorMessage   string        `json:"error_message,omitempty"`
-	Duration       time.Duration `json:"duration"`
+	Success         bool          `json:"success"`
+	PRNumber        int           `json:"pr_number,omitempty"`
+	PRURL           string        `json:"pr_url,omitempty"`
+	CommentsPosted  int           `json:"comments_posted"`
+	ErrorMessage    string        `json:"error_message,omitempty"`
+	SubmissionError string        `json:"submission_error,omitempty"`
+	Duration        time.Duration `json:"duration"`
 }
 
 // WebhookJob represents a queued automation job.
@@ -190,6 +191,9 @@ type WebhookJob struct {
 	MaxAttempts  int       `json:"max_attempts"`
 	WorktreePath string    `json:"worktree_path,omitempty"`
 	Error        string    `json:"error,omitempty"`
+
+	// Retry scheduling.
+	RetryAfter time.Time `json:"retry_after,omitempty"` // Earliest time this job can be dispatched
 
 	// Timestamps.
 	CreatedAt   time.Time  `json:"created_at"`

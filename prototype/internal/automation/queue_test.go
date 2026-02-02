@@ -286,6 +286,134 @@ func TestJobQueue_StartStop(t *testing.T) {
 	}
 }
 
+func TestJobQueue_ExponentialBackoff(t *testing.T) {
+	tests := []struct {
+		name       string
+		attempts   int
+		wantMin    time.Duration
+		wantMax    time.Duration
+		wantCapped bool
+	}{
+		{
+			name:     "first failure (attempt 1)",
+			attempts: 1,
+			wantMin:  30 * time.Second,
+			wantMax:  30 * time.Second,
+		},
+		{
+			name:     "second failure (attempt 2)",
+			attempts: 2,
+			wantMin:  60 * time.Second,
+			wantMax:  60 * time.Second,
+		},
+		{
+			name:     "third failure (attempt 3)",
+			attempts: 3,
+			wantMin:  120 * time.Second,
+			wantMax:  120 * time.Second,
+		},
+		{
+			name:       "high attempt count caps at 10 minutes",
+			attempts:   10,
+			wantCapped: true,
+		},
+		{
+			name:       "very high attempt count does not overflow",
+			attempts:   100,
+			wantCapped: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reproduce the backoff calculation from processJob().
+			exp := min(max(tt.attempts-1, 0), 20)
+			backoff := time.Duration(1<<uint(exp)) * 30 * time.Second //nolint:gosec // test mirrors production code
+			if backoff > 10*time.Minute {
+				backoff = 10 * time.Minute
+			}
+
+			if backoff <= 0 {
+				t.Errorf("backoff must be positive, got %v (attempts=%d)", backoff, tt.attempts)
+			}
+
+			if tt.wantCapped {
+				if backoff != 10*time.Minute {
+					t.Errorf("expected capped at 10m, got %v", backoff)
+				}
+			} else {
+				if backoff < tt.wantMin || backoff > tt.wantMax {
+					t.Errorf("backoff = %v, want [%v, %v]", backoff, tt.wantMin, tt.wantMax)
+				}
+			}
+		})
+	}
+}
+
+func TestJobQueue_RetryJob_ClearsRetryAfter(t *testing.T) {
+	cfg := QueueConfig{
+		MaxWorkers: 1,
+		JobTimeout: 1 * time.Minute,
+	}
+
+	q := NewJobQueue(cfg)
+
+	event := &WebhookEvent{
+		ID:       "test-retry",
+		Provider: "github",
+		Type:     EventTypeIssueOpened,
+	}
+	job := &WebhookJob{
+		Event:        event,
+		WorkflowType: WorkflowTypeIssueFix,
+		MaxAttempts:  3,
+	}
+
+	err := q.Enqueue(job)
+	if err != nil {
+		t.Fatalf("Enqueue failed: %v", err)
+	}
+
+	// Simulate a failed job with RetryAfter set in the future.
+	q.mu.Lock()
+	job.Status = JobStatusFailed
+	job.Attempts = 2
+	job.Error = "transient error"
+	job.RetryAfter = time.Now().Add(1 * time.Hour) // Far in the future
+	now := time.Now()
+	job.CompletedAt = &now
+	q.stats.PendingJobs--
+	q.stats.FailedJobs++
+	// Remove from pending since it "failed".
+	q.pending = nil
+	q.mu.Unlock()
+
+	// Retry the job.
+	err = q.RetryJob(job.ID)
+	if err != nil {
+		t.Fatalf("RetryJob failed: %v", err)
+	}
+
+	// Verify job state was fully reset.
+	retrieved, ok := q.GetJob(job.ID)
+	if !ok {
+		t.Fatal("Expected job to be found")
+	}
+
+	if retrieved.Status != JobStatusPending {
+		t.Errorf("Expected status %v, got %v", JobStatusPending, retrieved.Status)
+	}
+	if retrieved.Attempts != 0 {
+		t.Errorf("Expected 0 attempts, got %d", retrieved.Attempts)
+	}
+	if !retrieved.RetryAfter.IsZero() {
+		t.Errorf("Expected RetryAfter to be zero, got %v", retrieved.RetryAfter)
+	}
+	if retrieved.CompletedAt != nil {
+		t.Errorf("Expected CompletedAt to be nil, got %v", retrieved.CompletedAt)
+	}
+}
+
 func TestJobQueue_DefaultConfig(t *testing.T) {
 	// Test with zero config values.
 	cfg := QueueConfig{}

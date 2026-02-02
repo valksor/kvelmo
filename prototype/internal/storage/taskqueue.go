@@ -48,19 +48,21 @@ const (
 
 // QueuedTask represents a single task within a queue.
 type QueuedTask struct {
-	ID          string     `yaml:"id"`                     // Local ID (task-1, task-2, etc.)
-	Title       string     `yaml:"title"`                  // Task title
-	Description string     `yaml:"description,omitempty"`  // Detailed description
-	Status      TaskStatus `yaml:"status"`                 // pending, ready, blocked, submitted
-	Priority    int        `yaml:"priority"`               // 1 = highest priority
-	ParentID    string     `yaml:"parent_id,omitempty"`    // Local parent task ID (makes this a subtask)
-	Subtasks    []string   `yaml:"subtasks,omitempty"`     // Child task IDs (computed from ParentID)
-	DependsOn   []string   `yaml:"depends_on,omitempty"`   // Task IDs this depends on (execution order)
-	Blocks      []string   `yaml:"blocks,omitempty"`       // Task IDs this blocks (computed)
-	Labels      []string   `yaml:"labels,omitempty"`       // Labels/tags
-	Assignee    string     `yaml:"assignee,omitempty"`     // Assignee identifier
-	ExternalID  string     `yaml:"external_id,omitempty"`  // Provider ID after submission
-	ExternalURL string     `yaml:"external_url,omitempty"` // Provider URL after submission
+	ID          string         `yaml:"id"`                     // Local ID (task-1, task-2, etc.)
+	Title       string         `yaml:"title"`                  // Task title
+	Description string         `yaml:"description,omitempty"`  // Detailed description
+	Status      TaskStatus     `yaml:"status"`                 // pending, ready, blocked, submitted
+	Priority    int            `yaml:"priority"`               // 1 = highest priority
+	ParentID    string         `yaml:"parent_id,omitempty"`    // Local parent task ID (makes this a subtask)
+	Subtasks    []string       `yaml:"subtasks,omitempty"`     // Child task IDs (computed from ParentID)
+	DependsOn   []string       `yaml:"depends_on,omitempty"`   // Task IDs this depends on (execution order)
+	Blocks      []string       `yaml:"blocks,omitempty"`       // Task IDs this blocks (computed)
+	Labels      []string       `yaml:"labels,omitempty"`       // Labels/tags
+	Assignee    string         `yaml:"assignee,omitempty"`     // Assignee identifier
+	ExternalID  string         `yaml:"external_id,omitempty"`  // Provider ID after submission
+	ExternalURL string         `yaml:"external_url,omitempty"` // Provider URL after submission
+	SourcePath  string         `yaml:"source_path,omitempty"`  // Original local file/directory path
+	Metadata    map[string]any `yaml:"metadata,omitempty"`     // Arbitrary frontmatter data from local task files
 }
 
 // TaskStatus represents the state of a single task.
@@ -443,6 +445,34 @@ func (ws *Workspace) DeleteQueue(queueID string) error {
 	queueDir := filepath.Join(ws.workspaceRoot, QueuesDir, queueID)
 
 	return os.RemoveAll(queueDir)
+}
+
+// FindQueueTaskByExternalID searches all queues for a task with the given external ID.
+// Returns nil, nil if no matching task is found.
+func (ws *Workspace) FindQueueTaskByExternalID(externalID string) (*QueuedTask, error) {
+	if externalID == "" {
+		return nil, nil //nolint:nilnil // Empty ID is a no-op, not an error
+	}
+
+	queueIDs, err := ws.ListQueues()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, qid := range queueIDs {
+		q, err := LoadTaskQueue(ws, qid)
+		if err != nil {
+			continue
+		}
+
+		for _, task := range q.Tasks {
+			if task.ExternalID == externalID {
+				return task, nil
+			}
+		}
+	}
+
+	return nil, nil //nolint:nilnil // No task found is not an error
 }
 
 // QueueExists checks if a queue exists.

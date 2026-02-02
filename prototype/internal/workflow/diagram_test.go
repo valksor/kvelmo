@@ -431,27 +431,11 @@ func TestTransitionEdgeFields(t *testing.T) {
 		}
 	}
 
-	// Find a global edge and verify it's marked as global
-	var globalEdge *TransitionEdge
+	// GlobalTransitions is now empty (EventAbort moved to explicit per-state entries).
+	// Verify no global edges exist.
 	for i := range diagram.Edges {
 		if diagram.Edges[i].IsGlobal {
-			globalEdge = &diagram.Edges[i]
-
-			break
-		}
-	}
-
-	if globalEdge == nil {
-		t.Error("Should have at least one global transition")
-	} else {
-		// Global edge should be marked
-		if !globalEdge.IsGlobal {
-			t.Error("Global transition should have IsGlobal = true")
-		}
-
-		// Global edge should have empty From (from any state)
-		if globalEdge.From != "" {
-			t.Errorf("TransitionEdge.From for global edge should be empty, got %q", globalEdge.From)
+			t.Errorf("Expected no global transition edges, found one: %+v", diagram.Edges[i])
 		}
 	}
 }

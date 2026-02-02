@@ -99,10 +99,7 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	historicalContext := c.buildHistoricalContext(taskID, c.opts.IncludeFullContext)
 
 	// Determine the working directory for path context in prompts
-	workingDir := c.opts.WorkDir
-	if c.git != nil {
-		workingDir = c.git.Root()
-	}
+	workingDir := c.CodeDir()
 
 	// Build planning prompt with custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()
@@ -368,10 +365,7 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	notes, _ := c.workspace.ReadNotes(taskID)
 
 	// Determine the working directory for path context in prompts
-	workingDir := c.opts.WorkDir
-	if c.git != nil {
-		workingDir = c.git.Root()
-	}
+	workingDir := c.CodeDir()
 
 	// Build implementation prompt with latest spec and custom instructions
 	workspaceCfg, _ := c.workspace.LoadConfig()

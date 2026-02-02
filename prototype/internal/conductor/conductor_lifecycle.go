@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,16 +22,52 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Early config load to detect code_dir before git init.
+	// This allows git to be initialized from the code target directory
+	// when the project hub is separate from the codebase.
+	var earlyCfg *storage.WorkspaceConfig
+	earlyConfigPath := filepath.Join(c.opts.WorkDir, ".mehrhof", "config.yaml")
+	if data, err := os.ReadFile(earlyConfigPath); err == nil {
+		earlyCfg = storage.NewDefaultWorkspaceConfig()
+		if err := yaml.Unmarshal(data, earlyCfg); err != nil {
+			return fmt.Errorf("parse config file: %w", err)
+		}
+	}
+
+	// Determine git init directory: use code_dir if configured, otherwise opts.WorkDir
+	gitInitDir := c.opts.WorkDir
+	if earlyCfg != nil && earlyCfg.Project.CodeDir != "" {
+		codeDir := os.ExpandEnv(earlyCfg.Project.CodeDir)
+		if !filepath.IsAbs(codeDir) {
+			codeDir = filepath.Join(c.opts.WorkDir, codeDir)
+		}
+		resolved, err := filepath.Abs(codeDir)
+		if err != nil {
+			slog.Warn("code_dir configured but not accessible, falling back to project root",
+				"code_dir", earlyCfg.Project.CodeDir, "error", err)
+		} else if info, statErr := os.Stat(resolved); statErr != nil {
+			slog.Warn("code_dir configured but not accessible, falling back to project root",
+				"code_dir", earlyCfg.Project.CodeDir, "resolved", resolved, "error", statErr)
+		} else if !info.IsDir() {
+			slog.Warn("code_dir configured but not a directory, falling back to project root",
+				"code_dir", earlyCfg.Project.CodeDir, "resolved", resolved)
+		} else {
+			gitInitDir = resolved
+		}
+	}
+
 	// Initialize git (optional - might not be in a git repo)
-	git, err := vcs.New(ctx, c.opts.WorkDir)
+	git, err := vcs.New(ctx, gitInitDir)
 	if err == nil {
 		c.git = git
 	}
 
-	// Determine workspace root
-	// If we're in a worktree, use the main repo for storage
+	// Determine workspace root (project hub, where .mehrhof/ config lives)
+	// When code_dir is set, the hub stays at opts.WorkDir regardless of git root.
+	// When code_dir is NOT set, use git root as the hub (existing behavior).
 	root := c.opts.WorkDir
-	if c.git != nil {
+	hasCodeDir := earlyCfg != nil && earlyCfg.Project.CodeDir != ""
+	if !hasCodeDir && c.git != nil {
 		if c.git.IsWorktree() {
 			// Get main repo path for shared storage
 			mainRepo, err := c.git.GetMainWorktreePath(ctx)
@@ -43,7 +80,7 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 		}
 	}
 
-	// Load workspace config to get work directory setting
+	// Load workspace config from the determined root
 	var cfg *storage.WorkspaceConfig
 	configPath := filepath.Join(root, ".mehrhof", "config.yaml")
 	if data, err := os.ReadFile(configPath); err == nil {
@@ -216,6 +253,21 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 		return err
 	}
 
+	// Check if there's a local queue task with matching external ID.
+	// This merges local metadata (code examples, file references, custom frontmatter)
+	// into the provider work unit so the agent sees both provider data and local enrichments.
+	var localQueueTask *storage.QueuedTask
+	if workUnit.ExternalID != "" && c.workspace != nil {
+		var queueErr error
+		localQueueTask, queueErr = c.workspace.FindQueueTaskByExternalID(workUnit.ExternalID)
+		if queueErr != nil {
+			slog.Warn("search local queues for metadata enrichment", "external_id", workUnit.ExternalID, "error", queueErr)
+		}
+		if localQueueTask != nil {
+			c.mergeLocalMetadata(workUnit, localQueueTask)
+		}
+	}
+
 	// Capture task agent config from workUnit (if specified in task frontmatter)
 	c.taskAgentConfig = workUnit.AgentConfig
 
@@ -233,6 +285,12 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 
 	// Snapshot the source (read-only copy)
 	snapshot := c.snapshotSource(ctx, p, reference, workUnit)
+
+	// Merge local source files into snapshot if a matching queue task was found.
+	// This ensures the agent sees both the provider content and local file content.
+	if localQueueTask != nil && localQueueTask.SourcePath != "" {
+		c.mergeLocalSourceIntoSnapshot(snapshot, localQueueTask.SourcePath)
+	}
 
 	// Register the task with workspace (writes source files)
 	if err := c.registerTask(taskID, reference, workUnit, snapshot, gitInfo, namingInfo); err != nil {
@@ -262,6 +320,19 @@ func (c *Conductor) ContinueWithExisting(ctx context.Context, reference string, 
 		return fmt.Errorf("fetch updated work unit: %w", err)
 	}
 
+	// Merge local metadata if a matching queue task exists
+	var localQueueTask *storage.QueuedTask
+	if workUnit.ExternalID != "" && c.workspace != nil {
+		var queueErr error
+		localQueueTask, queueErr = c.workspace.FindQueueTaskByExternalID(workUnit.ExternalID)
+		if queueErr != nil {
+			slog.Warn("search local queues for metadata enrichment", "external_id", workUnit.ExternalID, "error", queueErr)
+		}
+		if localQueueTask != nil {
+			c.mergeLocalMetadata(workUnit, localQueueTask)
+		}
+	}
+
 	// Capture task agent config from workUnit
 	c.taskAgentConfig = workUnit.AgentConfig
 
@@ -273,6 +344,11 @@ func (c *Conductor) ContinueWithExisting(ctx context.Context, reference string, 
 
 	// Snapshot the updated source
 	snapshot := c.snapshotSource(ctx, p, reference, workUnit)
+
+	// Merge local source files into snapshot if available
+	if localQueueTask != nil && localQueueTask.SourcePath != "" {
+		c.mergeLocalSourceIntoSnapshot(snapshot, localQueueTask.SourcePath)
+	}
 
 	// Write updated source files to existing directory
 	if err := c.writeSourceFiles(existingTaskID, snapshot); err != nil {
@@ -375,6 +451,122 @@ func (c *Conductor) prepareWorkspace(ctx context.Context) error {
 	}
 
 	return errors.New("workspace has uncommitted changes\nPlease commit or stash your changes, or use --no-branch to work on the current branch")
+}
+
+// mergeLocalMetadata merges metadata from a local queue task into a provider work unit.
+// Local data fills gaps in provider data — it does not overwrite existing provider fields.
+// This enables enriching external provider tasks (e.g., Wrike, GitHub) with local context
+// such as code examples, file references, and custom frontmatter from local task files.
+func (c *Conductor) mergeLocalMetadata(workUnit *provider.WorkUnit, local *storage.QueuedTask) {
+	// Merge local description if provider description is shorter or empty
+	if local.Description != "" && len(local.Description) > len(workUnit.Description) {
+		slog.Debug("local description overrides provider",
+			"local_len", len(local.Description), "provider_len", len(workUnit.Description))
+		workUnit.Description = local.Description
+	}
+
+	// Merge local metadata (arbitrary frontmatter fields)
+	if len(local.Metadata) > 0 {
+		if workUnit.Metadata == nil {
+			workUnit.Metadata = make(map[string]any)
+		}
+		for k, v := range local.Metadata {
+			// Local fills gaps — doesn't overwrite provider data
+			if _, exists := workUnit.Metadata[k]; !exists {
+				slog.Debug("local metadata fills gap", "key", k)
+				workUnit.Metadata[k] = v
+			}
+		}
+	}
+
+	// Store source path in metadata for the agent prompt
+	if local.SourcePath != "" {
+		if workUnit.Metadata == nil {
+			workUnit.Metadata = make(map[string]any)
+		}
+		workUnit.Metadata["source_path"] = local.SourcePath
+	}
+}
+
+// mergeLocalSourceIntoSnapshot reads local source files and appends them to the snapshot.
+// This ensures the agent sees both provider content and local file content (code examples, etc.).
+func (c *Conductor) mergeLocalSourceIntoSnapshot(snapshot *provider.Snapshot, sourcePath string) {
+	if snapshot == nil || sourcePath == "" {
+		return
+	}
+
+	info, err := os.Stat(sourcePath)
+	if err != nil {
+		// File doesn't exist — merge metadata only, skip snapshot
+		return
+	}
+
+	if !info.IsDir() {
+		// Single file: read and append
+		content, err := os.ReadFile(sourcePath)
+		if err != nil {
+			c.logError(fmt.Errorf("read local source %s (non-fatal): %w", sourcePath, err))
+
+			return
+		}
+		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+			Path:    "local/" + filepath.Base(sourcePath),
+			Content: string(content),
+		})
+
+		return
+	}
+
+	// Directory: walk and append all files (skip hidden dirs, limit per-file and total size)
+	const maxMergeBytes int64 = 10 << 20 // 10MB total cap
+	var accumulated int64
+	_ = filepath.WalkDir(sourcePath, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return nil //nolint:nilerr // WalkDir: skip inaccessible entries, continue walking
+		}
+		if d.IsDir() {
+			base := filepath.Base(path)
+			if strings.HasPrefix(base, ".") || base == "node_modules" || base == "vendor" {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		fi, err := d.Info()
+		if err != nil {
+			return nil //nolint:nilerr // WalkDir: skip entries with stat errors
+		}
+
+		// Skip large files (>100KB)
+		if fi.Size() > 100*1024 {
+			slog.Debug("skipping large local source file", "path", path, "size", fi.Size())
+
+			return nil
+		}
+
+		// Stop walking if total size limit exceeded
+		if accumulated+fi.Size() > maxMergeBytes {
+			slog.Warn("local source merge size limit reached, skipping remaining files",
+				"accumulated", accumulated, "limit", maxMergeBytes)
+
+			return filepath.SkipAll
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil //nolint:nilerr // WalkDir: skip unreadable files, continue walking
+		}
+
+		accumulated += int64(len(content))
+		relPath, _ := filepath.Rel(sourcePath, path)
+		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+			Path:    "local/" + relPath,
+			Content: string(content),
+		})
+
+		return nil
+	})
 }
 
 // fetchWorkUnit resolves the provider and fetches the work unit.
