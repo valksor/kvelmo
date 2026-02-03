@@ -57,17 +57,75 @@ Write tests FIRST (TDD). Use table-driven tests. Run targeted tests during devel
 
 ### 4. Docs by Interface Type
 
-Documentation is organized by interface:
+Documentation is organized by interface with specific tone and content rules:
 
-| Directory | Content |
-|-----------|---------|
-| `docs/cli/` | CLI commands only |
-| `docs/web-ui/` | Web UI features only |
-| `docs/ide/` | IDE integrations (JetBrains, etc.) |
-| `docs/concepts/` | Interface-agnostic architecture |
-| `docs/reference/` | Technical reference, parity tables |
+| Directory | Audience | Tone |
+|-----------|----------|------|
+| `docs/web-ui/` | Non-technical users | Professional, accessible, corporate |
+| `docs/cli/` | CLI-savvy developers | Technical, concise |
+| `docs/ide/` | IDE users | Visual, task-oriented |
+| `docs/concepts/` | All users | Accessible without being condescending |
+| `docs/reference/` | Developers/integrators | Technical, comprehensive |
 
-**Rule**: One interface per document. Cross-reference between CLI and Web UI docs.
+#### Web UI Docs (`docs/web-ui/`)
+
+- **Tone**: Professional and corporate, but accessible to non-technical users
+- **Content**: UI instructions, screenshots, button names, visual workflows
+- **NO**: Bash commands, code blocks showing CLI usage, terminal instructions
+- **Cross-reference**: Brief table linking to CLI docs (see pattern below)
+
+#### CLI Docs (`docs/cli/`)
+
+- **Tone**: Concise, assumes CLI familiarity
+- **Content**: Command syntax, flags, examples, exit codes
+- **Cross-reference**: One-liner linking to Web UI equivalent
+
+#### Shared Docs (`docs/concepts/`, `docs/guides/`)
+
+- **Tone**: Accessible to non-technical readers without being condescending to developers
+- **Content**: Architecture, workflows, concepts that apply to all interfaces
+- **NO**: Interface-specific instructions (those go in web-ui/ or cli/)
+
+#### Cross-Reference Patterns
+
+**In Web UI docs** — use command table, not bash blocks:
+
+```markdown
+---
+
+## Also Available via CLI
+
+[Brief intro about when CLI is useful]
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr note "msg"` | Add a single note |
+| `mehr note` | Interactive mode |
+
+See [CLI: note](/cli/note.md) for all options and flags.
+```
+
+**In CLI docs** — brief one-liner:
+
+```markdown
+## Web UI
+
+Prefer a visual interface? See [Web UI: Notes](/web-ui/notes.md).
+```
+
+#### Link Format
+
+**Always use absolute paths** — Docsify hash routing breaks relative links:
+
+```markdown
+# ✅ GOOD - Absolute path
+See [CLI: note](/cli/note.md) for details.
+
+# ❌ BAD - Relative path (breaks in Docsify)
+See [CLI: note](../cli/note.md) for details.
+```
+
+**Rule**: One interface per document. Every CLI command must have a matching Web UI doc reference.
 
 ### 5. Quality Checks by Scope
 
