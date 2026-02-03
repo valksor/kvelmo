@@ -10,8 +10,8 @@ import (
 // Note: TestImplementCommand_Aliases is in common_test.go
 
 func TestImplementCommand_Properties(t *testing.T) {
-	if implementCmd.Use != "implement" {
-		t.Errorf("Use = %q, want %q", implementCmd.Use, "implement")
+	if implementCmd.Use != "implement [review <number>]" {
+		t.Errorf("Use = %q, want %q", implementCmd.Use, "implement [review <number>]")
 	}
 
 	if implementCmd.Short == "" {
@@ -109,7 +109,7 @@ func TestImplementCommand_NoAliases(t *testing.T) {
 func TestImplementCommand_RegisteredInRoot(t *testing.T) {
 	found := false
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "implement" {
+		if cmd.Use == "implement [review <number>]" {
 			found = true
 
 			break

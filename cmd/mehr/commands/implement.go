@@ -22,6 +22,7 @@ var (
 	implementOnly              string
 	implementParallel          string
 	implementForce             bool // Force reset state before implementing
+	implementLibrary           bool // Auto-include library documentation
 
 	// Hierarchical context flags (override workspace config).
 	implementWithParent      bool // Include parent task context
@@ -32,7 +33,7 @@ var (
 )
 
 var implementCmd = &cobra.Command{
-	Use:   "implement",
+	Use:   "implement [review <number>]",
 	Short: "Implement the specifications for the active task",
 	Long: `Run the implementation phase to generate code based on specifications.
 
@@ -44,12 +45,32 @@ Requires at least one specification file to exist (run 'mehr plan' first).
 Examples:
   mehr implement                # Implement the specifications
   mehr implement --dry-run      # Preview without making changes
-  mehr implement --verbose      # Show agent output`,
+  mehr implement --verbose      # Show agent output
+  mehr implement review 1       # Implement fixes from review 1`,
 	RunE: runImplement,
+}
+
+var implementReviewCmd = &cobra.Command{
+	Use:   "review <number>",
+	Short: "Implement fixes from a specific code review",
+	Long: `Implement code fixes based on review feedback.
+
+Unlike regular implementation which follows specifications, this command
+focuses specifically on addressing issues identified in a code review.
+
+The agent will read the review content and implement fixes for each issue
+mentioned. A checkpoint is created before changes are applied.
+
+Examples:
+  mehr implement review 1       # Implement fixes from review 1
+  mehr implement review 2 --dry-run  # Preview fixes without applying`,
+	Args: cobra.ExactArgs(1),
+	RunE: runImplementReview,
 }
 
 func init() {
 	rootCmd.AddCommand(implementCmd)
+	implementCmd.AddCommand(implementReviewCmd)
 
 	implementCmd.Flags().BoolVarP(&implementDryRun, "dry-run", "n", false, "Don't apply file changes (preview only)")
 	implementCmd.Flags().StringVar(&implementAgentImplementing, "agent-implement", "", "Agent for implementation step")
@@ -57,6 +78,7 @@ func init() {
 	implementCmd.Flags().StringVar(&implementOnly, "only", "", "Only implement this component (e.g., backend, frontend, tests)")
 	implementCmd.Flags().StringVar(&implementParallel, "parallel", "", "Run N agents in parallel, or comma-separated agent list")
 	implementCmd.Flags().BoolVar(&implementForce, "force", false, "Reset workflow state and retry (use after hung agent)")
+	implementCmd.Flags().BoolVar(&implementLibrary, "library", false, "Auto-include relevant library documentation based on working directory")
 
 	// Hierarchical context flags (override workspace config)
 	implementCmd.Flags().BoolVar(&implementWithParent, "with-parent", false, "Include parent task context (overrides config)")
@@ -93,6 +115,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	// Parallel execution
 	if implementParallel != "" {
 		opts = append(opts, conductor.WithParallel(implementParallel))
+	}
+
+	// Library auto-include
+	if implementLibrary {
+		opts = append(opts, conductor.WithLibraryAutoInclude(true))
 	}
 
 	// Use deduplicating stdout in verbose mode to suppress duplicate lines
@@ -235,6 +262,127 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  %s - View task status\n", tkdisplay.Cyan("mehr status"))
 	fmt.Printf("  %s - Run code review\n", tkdisplay.Cyan("mehr review"))
 	fmt.Printf("  %s - Revert last changes\n", tkdisplay.Cyan("mehr undo"))
+	fmt.Printf("  %s - Complete the task\n", tkdisplay.Cyan("mehr finish"))
+
+	return nil
+}
+
+func runImplementReview(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	// Parse review number
+	reviewNumber, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("invalid review number %q: must be an integer", args[0])
+	}
+	if reviewNumber <= 0 {
+		return fmt.Errorf("review number must be positive, got %d", reviewNumber)
+	}
+
+	// Build conductor options
+	opts := []conductor.Option{
+		conductor.WithVerbose(verbose),
+		conductor.WithDryRun(implementDryRun),
+	}
+
+	// Per-step agent override
+	if implementAgentImplementing != "" {
+		opts = append(opts, conductor.WithStepAgent("implementing", implementAgentImplementing))
+	}
+
+	// Prompt optimization
+	if implementOptimize {
+		opts = append(opts, conductor.WithOptimizePrompts(true))
+	}
+
+	// Use deduplicating stdout in verbose mode
+	if verbose {
+		opts = append(opts, conductor.WithStdout(getDeduplicatingStdout()))
+	}
+
+	// Initialize conductor
+	cond, err := initializeConductor(ctx, opts...)
+	if err != nil {
+		return err
+	}
+
+	// Check for an active task
+	if cond.GetActiveTask() == nil {
+		fmt.Print(display.NoActiveTaskError())
+
+		return errors.New("no active task")
+	}
+
+	// Handle --force flag to reset stuck state
+	if implementForce {
+		if err := cond.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		fmt.Println(tkdisplay.InfoMsg("State reset to idle"))
+	}
+
+	// Enter implementation state for review fixes
+	if err := cond.ImplementReview(ctx, reviewNumber); err != nil {
+		return fmt.Errorf("implement review: %w", err)
+	}
+
+	// Run review implementation with spinner in non-verbose mode
+	var implErr error
+	spinnerMsg := fmt.Sprintf("Implementing fixes from review %d...", reviewNumber)
+	if implementDryRun {
+		spinnerMsg = fmt.Sprintf("Implementing fixes from review %d (dry-run)...", reviewNumber)
+	}
+
+	if verbose {
+		if implementDryRun {
+			fmt.Println(tkdisplay.InfoMsg("%s", fmt.Sprintf("Implementing fixes from review %d (dry-run)...", reviewNumber)))
+		} else {
+			fmt.Println(tkdisplay.InfoMsg("%s", fmt.Sprintf("Implementing fixes from review %d...", reviewNumber)))
+		}
+		implErr = cond.RunReviewImplementation(ctx, reviewNumber)
+	} else {
+		spinner := tkdisplay.NewSpinner(spinnerMsg)
+		spinner.Start()
+		implErr = cond.RunReviewImplementation(ctx, reviewNumber)
+		if implErr != nil {
+			spinner.StopWithError("Review fix implementation failed")
+		} else {
+			if implementDryRun {
+				spinner.StopWithSuccess("Review fix preview complete")
+			} else {
+				spinner.StopWithSuccess("Review fixes applied")
+			}
+		}
+	}
+
+	if implErr != nil {
+		return fmt.Errorf("run review implementation: %w", implErr)
+	}
+
+	// Get status
+	status, err := cond.Status(ctx)
+	if err != nil {
+		return err
+	}
+
+	if verbose {
+		fmt.Println()
+		if implementDryRun {
+			fmt.Println(tkdisplay.SuccessMsg("%s", fmt.Sprintf("Review %d fix preview finished", reviewNumber)))
+		} else {
+			fmt.Println(tkdisplay.SuccessMsg("%s", fmt.Sprintf("Review %d fixes applied!", reviewNumber)))
+		}
+	}
+	fmt.Printf("  Checkpoints: %s\n", tkdisplay.Bold(strconv.Itoa(status.Checkpoints)))
+	if implementDryRun {
+		fmt.Println()
+		fmt.Println(tkdisplay.Muted("  (Dry-run mode - no files were modified)"))
+	}
+	fmt.Println()
+	fmt.Println(tkdisplay.Muted("Next steps:"))
+	fmt.Printf("  %s - Run another review to verify fixes\n", tkdisplay.Cyan("mehr review"))
+	fmt.Printf("  %s - View task status\n", tkdisplay.Cyan("mehr status"))
+	fmt.Printf("  %s - Revert changes if needed\n", tkdisplay.Cyan("mehr undo"))
 	fmt.Printf("  %s - Complete the task\n", tkdisplay.Cyan("mehr finish"))
 
 	return nil
