@@ -359,3 +359,126 @@ func (r *Rebaser) getStackTargetBranch(s *Stack) string {
 	// Default fallback
 	return "main"
 }
+
+// RebasePreview contains the result of previewing a rebase operation.
+// Preview checks for conflicts without actually executing the rebase.
+type RebasePreview struct {
+	Tasks             []TaskPreview // All tasks in rebase order with conflict status
+	HasConflicts      bool          // True if any task would have conflicts
+	SafeCount         int           // Number of tasks that can be safely rebased
+	ConflictCount     int           // Number of tasks with conflicts
+	Unavailable       bool          // True if conflict detection is unavailable (Git too old)
+	UnavailableReason string        // Reason why conflict detection is unavailable
+}
+
+// TaskPreview contains conflict preview information for a single task.
+type TaskPreview struct {
+	TaskID           string   // Task identifier
+	Branch           string   // Branch name
+	OntoBase         string   // Target branch for rebase
+	WouldConflict    bool     // True if rebase would result in conflicts
+	ConflictingFiles []string // Files that would have conflicts
+	Unavailable      bool     // True if conflict check unavailable for this task
+}
+
+// PreviewRebase checks all tasks in the stack for potential conflicts without executing.
+// Returns a preview showing which tasks can be safely rebased and which have conflicts.
+func (r *Rebaser) PreviewRebase(ctx context.Context, stackID string) (*RebasePreview, error) {
+	if err := r.storage.Load(); err != nil {
+		return nil, fmt.Errorf("load stacks: %w", err)
+	}
+
+	s := r.storage.GetStack(stackID)
+	if s == nil {
+		return nil, fmt.Errorf("stack not found: %s", stackID)
+	}
+
+	preview := &RebasePreview{
+		Tasks: make([]TaskPreview, 0),
+	}
+
+	// Get tasks in dependency order (parents first)
+	tasksToRebase := r.getTasksInRebaseOrder(s)
+	if len(tasksToRebase) == 0 {
+		return preview, nil
+	}
+
+	for _, task := range tasksToRebase {
+		taskPreview, err := r.previewTask(ctx, s, task)
+		if err != nil {
+			return nil, fmt.Errorf("preview task %s: %w", task.ID, err)
+		}
+
+		preview.Tasks = append(preview.Tasks, *taskPreview)
+
+		if taskPreview.Unavailable {
+			preview.Unavailable = true
+			if preview.UnavailableReason == "" {
+				preview.UnavailableReason = "conflict detection unavailable for some tasks"
+			}
+		} else if taskPreview.WouldConflict {
+			preview.HasConflicts = true
+			preview.ConflictCount++
+		} else {
+			preview.SafeCount++
+		}
+	}
+
+	return preview, nil
+}
+
+// PreviewTask checks a single task for potential conflicts.
+func (r *Rebaser) PreviewTask(ctx context.Context, taskID string) (*TaskPreview, error) {
+	if err := r.storage.Load(); err != nil {
+		return nil, fmt.Errorf("load stacks: %w", err)
+	}
+
+	s := r.storage.GetStackByTask(taskID)
+	if s == nil {
+		return nil, fmt.Errorf("task not in any stack: %s", taskID)
+	}
+
+	task := s.GetTask(taskID)
+	if task == nil {
+		return nil, fmt.Errorf("task not found: %s", taskID)
+	}
+
+	return r.previewTask(ctx, s, *task)
+}
+
+// previewTask checks a single task for potential rebase conflicts.
+func (r *Rebaser) previewTask(ctx context.Context, s *Stack, task StackedTask) (*TaskPreview, error) {
+	// Determine rebase target
+	target := r.getRebaseTarget(s, task)
+	if target == "" {
+		return nil, fmt.Errorf("cannot determine rebase target for task %s", task.ID)
+	}
+
+	preview := &TaskPreview{
+		TaskID:   task.ID,
+		Branch:   task.Branch,
+		OntoBase: target,
+	}
+
+	// Verify branch exists
+	if !r.git.BranchExists(ctx, task.Branch) {
+		return nil, fmt.Errorf("branch %s does not exist", task.Branch)
+	}
+
+	// Check for conflicts using merge-tree (doesn't modify working directory)
+	conflictInfo, err := r.git.CheckRebaseConflicts(ctx, task.Branch, target)
+	if err != nil {
+		return nil, fmt.Errorf("check conflicts: %w", err)
+	}
+
+	if conflictInfo.Unavailable {
+		preview.Unavailable = true
+
+		return preview, nil
+	}
+
+	preview.WouldConflict = conflictInfo.HasConflicts
+	preview.ConflictingFiles = conflictInfo.ConflictingFiles
+
+	return preview, nil
+}
