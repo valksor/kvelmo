@@ -31,6 +31,7 @@ specification files are saved to `~/.valksor/mehrhof/workspaces/<project-id>/wor
 | `--agent-plan`   |       | string |         | Override agent for planning step           |
 | `--full-context` |       | bool   | false   | Load full transcripts instead of summaries |
 | `--optimize`     |       | bool   | false   | Optimize prompt before sending to agent    |
+| `--library`      |       | bool   | false   | Include relevant library docs in prompts   |
 
 **Note:** For standalone mode, you can also provide the seed topic as a positional argument:
 ```bash

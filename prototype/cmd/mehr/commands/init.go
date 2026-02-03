@@ -247,9 +247,8 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace, envPath string)
 func applyASCConfig(cfg *storage.WorkspaceConfig) {
 	cfg.Git.BranchPattern = "asc/{key}"
 	cfg.Git.CommitPrefix = "[{key}]"
-	cfg.Specification.SaveInProject = true
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
-	cfg.Review.SaveInProject = true
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
 }

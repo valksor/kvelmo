@@ -6,15 +6,13 @@ Controls where task data and caches are stored.
 
 ```yaml
 storage:
-  work_dir: work  # Relative to workspace data directory
+  save_in_project: false          # Store work in project (default: false = global)
+  project_dir: ""                 # Project directory (default: ".mehrhof/work" when save_in_project=true)
 
 specification:
-  save_in_project: false          # Save specifications to project directory (for version control)
-  project_dir: ""                 # Project directory name (e.g., "tickets")
   filename_pattern: "specification-{n}.md"  # Filename template ({n} = spec number)
 
 review:
-  save_in_project: false          # Save reviews to project directory
   filename_pattern: "review-{n}.txt"        # Filename template ({n} = review number)
 
 cache:
@@ -25,34 +23,39 @@ github:
     disabled: false  # Provider-specific override
 ```
 
-## Specification Storage
+## Work Storage Location
 
-By default, specifications are stored only in the home directory (`~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/specifications/`).
+By default, all work files (specs, reviews, sessions) are stored in the home directory (`~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/`).
 
-To save specifications in your project directory (for version control):
+To store work in your project directory (for version control):
+
+```yaml
+storage:
+  save_in_project: true
+  project_dir: "tickets"          # Creates tickets/<task-id>/
+```
+
+**Storage locations:**
+
+| Config | Work Location |
+|--------|---------------|
+| `save_in_project: false` | `~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/...` |
+| `save_in_project: true` | `.mehrhof/work/<taskid>/...` |
+| `save_in_project: true` + `project_dir: "tickets"` | `tickets/<taskid>/...` |
+
+## Filename Patterns
+
+Customize filenames for specs and reviews (location is controlled by `storage.save_in_project`):
 
 ```yaml
 specification:
-  save_in_project: true
-  project_dir: "tickets"          # Creates tickets/<task-id>/
-  filename_pattern: "SPEC-{n}.md" # Creates SPEC-1.md, SPEC-2.md, etc.
-```
+  filename_pattern: "SPEC-{n}.md"         # Creates SPEC-1.md, SPEC-2.md, etc.
 
-This creates a dual-storage system:
-- **Internal storage** (home directory) - Always maintained as authoritative copy
-- **Project storage** (e.g., `tickets/`) - Copy that can be committed to your repo
-
-## Review Storage
-
-Reviews follow the same pattern as specifications:
-
-```yaml
 review:
-  save_in_project: true
   filename_pattern: "CODERABBIT-{n}.txt"  # Creates CODERABBIT-1.txt, etc.
 ```
 
-Reviews are stored in the same project directory as specifications (uses `specification.project_dir`).
+Both specs and reviews are stored in the same task directory.
 
 ## Storage Structure
 

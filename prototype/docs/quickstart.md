@@ -26,6 +26,8 @@ claude --version
 
 If you don't have Claude, follow the [Claude setup guide](https://claude.ai/code). For other agents, see [AI Agents](agents/index.md).
 
+> **Starting from scratch?** See the complete [Installation Guide](../INSTALL.md) for step-by-step instructions covering WSL, Git, Go, and agent CLI setup for all platforms.
+
 ---
 
 ## Install Mehrhof

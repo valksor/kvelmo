@@ -220,14 +220,14 @@ Files are plain text with review findings.
 
 ## Project-Local Storage (Optional)
 
-When `specification.save_in_project` or `review.save_in_project` is enabled, files are also saved to your project directory for version control:
+When `storage.save_in_project` is enabled, all work files (specs, reviews) are stored in your project directory instead of the home directory:
 
 ```
 project/
 ├── .mehrhof/
 │   ├── config.yaml
 │   └── .env
-└── tickets/                    # specification.project_dir
+└── tickets/                    # storage.project_dir
     └── A-123/                  # task ID
         ├── SPEC-1.md           # specification.filename_pattern
         ├── SPEC-2.md
@@ -238,17 +238,24 @@ project/
 **Configuration example:**
 
 ```yaml
+storage:
+  save_in_project: true         # Store work in project (default: false = global)
+  project_dir: "tickets"        # Directory for work (default: ".mehrhof/work")
+
 specification:
-  save_in_project: true
-  project_dir: "tickets"
   filename_pattern: "SPEC-{n}.md"
 
 review:
-  save_in_project: true
   filename_pattern: "CODERABBIT-{n}.txt"
 ```
 
-The home directory storage remains authoritative; project storage is a copy for committing to your repository.
+**Storage locations:**
+
+| Config | Work Location |
+|--------|---------------|
+| `save_in_project: false` | `~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/...` |
+| `save_in_project: true` | `.mehrhof/work/<taskid>/...` |
+| `save_in_project: true` + `project_dir: "tickets"` | `tickets/<taskid>/...` |
 
 ### sessions/ Directory
 

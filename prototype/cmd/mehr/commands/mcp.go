@@ -74,6 +74,9 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 	// Register workspace data access tools
 	mcp.RegisterWorkspaceTools(toolRegistry)
 
+	// Register library documentation tools
+	mcp.RegisterLibraryTools(toolRegistry)
+
 	// Initialize conductor for registry tools
 	// Note: We need a minimal conductor setup just to get registries
 	// Don't call Initialize() to avoid loading workspace state
