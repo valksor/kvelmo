@@ -296,6 +296,10 @@ func parseBlockers(content string) []string {
 
 // extractSection extracts content from a markdown section.
 func extractSection(content string, sectionHeader string) string {
+	// Normalize content: ensure ## headers are on their own lines
+	// This handles AI output like "question?## Tasks" (missing newline)
+	content = normalizeMarkdownHeaders(content)
+
 	// Try to find ## Section header
 	pattern := regexp.MustCompile(`(?m)^##\s+` + regexp.QuoteMeta(sectionHeader) + `\s*$`)
 	loc := pattern.FindStringIndex(content)
@@ -317,6 +321,18 @@ func extractSection(content string, sectionHeader string) string {
 	}
 
 	return strings.TrimSpace(content[sectionStart:end])
+}
+
+// normalizeMarkdownHeaders ensures all ## headers start on their own line.
+// AI sometimes outputs "text## Header" without a newline separator.
+func normalizeMarkdownHeaders(content string) string {
+	// Add newline before ## that isn't at the start of a line and isn't part of ###
+	// Match any non-newline, non-space, non-# character immediately followed by ##
+	// This handles cases like "question?## Tasks" -> "question?\n## Tasks"
+	// But preserves ### task headers
+	pattern := regexp.MustCompile(`([^\n\s#])(##\s+)`)
+
+	return pattern.ReplaceAllString(content, "$1\n$2")
 }
 
 // ParseTaskOrder parses AI output to extract the recommended task order and reasoning.

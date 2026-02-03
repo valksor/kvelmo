@@ -8,6 +8,10 @@ const (
 	StepPlanning Step = "planning"
 	// StepImplementing is the implementation phase where code is written.
 	StepImplementing Step = "implementing"
+	// StepReviewImplementing is the phase where review fixes are implemented.
+	// This is distinct from StepImplementing to allow separate agent configuration
+	// and tracking when implementing fixes from code review feedback.
+	StepReviewImplementing Step = "review_implementing"
 	// StepReviewing is the review phase where code is reviewed.
 	StepReviewing Step = "reviewing"
 	// StepCheckpointing is the checkpointing phase for git operations.
@@ -27,6 +31,7 @@ func AllSteps() []Step {
 	return []Step{
 		StepPlanning,
 		StepImplementing,
+		StepReviewImplementing,
 		StepReviewing,
 		StepCheckpointing,
 		StepSimplifying,

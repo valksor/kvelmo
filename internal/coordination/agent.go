@@ -71,13 +71,35 @@ type ResolveRequest struct {
 // 5. Workspace config step-specific (agent.steps.planning.name)
 // 6. Workspace config default (agent.default)
 // 7. Auto-detect.
+//
+// For StepReviewImplementing, if no specific agent is configured, falls back to
+// StepImplementing configuration at each priority level.
 func (r *Resolver) ResolveForStep(ctx context.Context, req ResolveRequest) (*Resolution, error) {
 	stepStr := req.Step.String()
+
+	// Define fallback step for review_implementing -> implementing
+	fallbackStepStr := ""
+	if req.Step == workflow.StepReviewImplementing {
+		fallbackStepStr = workflow.StepImplementing.String()
+	}
 
 	// Try each priority level
 	for priority := 1; priority <= 7; priority++ {
 		resolution, err := r.tryResolveAtPriority(ctx, req, priority, stepStr)
 		if errors.Is(err, ErrAgentNotFound) {
+			// Try fallback step if available (for review_implementing -> implementing)
+			if fallbackStepStr != "" {
+				resolution, err = r.tryResolveAtPriority(ctx, req, priority, fallbackStepStr)
+				if err == nil && resolution != nil {
+					// Update resolution to reflect original step
+					resolution.StepName = stepStr
+
+					return resolution, nil
+				}
+				if err != nil && !errors.Is(err, ErrAgentNotFound) {
+					return nil, err
+				}
+			}
 			// No agent at this priority, try next one
 			continue
 		}
