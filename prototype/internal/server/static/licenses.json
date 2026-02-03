@@ -57,13 +57,13 @@
     },
     {
       "path": "github.com/agnivade/levenshtein",
-      "license": "Unknown",
-      "unknown": true
+      "license": "MIT",
+      "unknown": false
     },
     {
       "path": "github.com/andybalholm/cascadia",
-      "license": "Unknown",
-      "unknown": true
+      "license": "Apache-2.0",
+      "unknown": false
     },
     {
       "path": "github.com/antlr4-go/antlr/v4",
@@ -72,8 +72,8 @@
     },
     {
       "path": "github.com/aymanbagabas/go-osc52/v2",
-      "license": "Unknown",
-      "unknown": true
+      "license": "MIT",
+      "unknown": false
     },
     {
       "path": "github.com/bahlo/generic-list-go",
@@ -82,8 +82,8 @@
     },
     {
       "path": "github.com/bmatcuk/doublestar/v4",
-      "license": "Unknown",
-      "unknown": true
+      "license": "MIT",
+      "unknown": false
     },
     {
       "path": "github.com/buger/jsonparser",
@@ -252,8 +252,8 @@
     },
     {
       "path": "github.com/lucasb-eyer/go-colorful",
-      "license": "Unknown",
-      "unknown": true
+      "license": "Apache-2.0",
+      "unknown": false
     },
     {
       "path": "github.com/mailru/easyjson",
@@ -282,8 +282,8 @@
     },
     {
       "path": "github.com/muesli/termenv",
-      "license": "Unknown",
-      "unknown": true
+      "license": "MIT",
+      "unknown": false
     },
     {
       "path": "github.com/pelletier/go-toml",
@@ -302,8 +302,8 @@
     },
     {
       "path": "github.com/rivo/uniseg",
-      "license": "Unknown",
-      "unknown": true
+      "license": "MIT",
+      "unknown": false
     },
     {
       "path": "github.com/rogpeppe/go-internal",
