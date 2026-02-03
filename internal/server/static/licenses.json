@@ -36,6 +36,16 @@
       "unknown": false
     },
     {
+      "path": "github.com/JohannesKaufmann/dom",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
+      "path": "github.com/JohannesKaufmann/html-to-markdown/v2",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
       "path": "github.com/MakeNowJust/heredoc/v2",
       "license": "MIT",
       "unknown": false
@@ -46,14 +56,34 @@
       "unknown": false
     },
     {
+      "path": "github.com/agnivade/levenshtein",
+      "license": "Unknown",
+      "unknown": true
+    },
+    {
+      "path": "github.com/andybalholm/cascadia",
+      "license": "Unknown",
+      "unknown": true
+    },
+    {
       "path": "github.com/antlr4-go/antlr/v4",
       "license": "Apache-2.0",
       "unknown": false
     },
     {
+      "path": "github.com/aymanbagabas/go-osc52/v2",
+      "license": "Unknown",
+      "unknown": true
+    },
+    {
       "path": "github.com/bahlo/generic-list-go",
       "license": "Apache-2.0",
       "unknown": false
+    },
+    {
+      "path": "github.com/bmatcuk/doublestar/v4",
+      "license": "Unknown",
+      "unknown": true
     },
     {
       "path": "github.com/buger/jsonparser",
@@ -221,6 +251,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/lucasb-eyer/go-colorful",
+      "license": "Unknown",
+      "unknown": true
+    },
+    {
       "path": "github.com/mailru/easyjson",
       "license": "Apache-2.0",
       "unknown": false
@@ -246,6 +281,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/muesli/termenv",
+      "license": "Unknown",
+      "unknown": true
+    },
+    {
       "path": "github.com/pelletier/go-toml",
       "license": "Apache-2.0",
       "unknown": false
@@ -259,6 +299,11 @@
       "path": "github.com/pmezard/go-difflib",
       "license": "Apache-2.0",
       "unknown": false
+    },
+    {
+      "path": "github.com/rivo/uniseg",
+      "license": "Unknown",
+      "unknown": true
     },
     {
       "path": "github.com/rogpeppe/go-internal",
@@ -276,6 +321,16 @@
       "unknown": false
     },
     {
+      "path": "github.com/sebdah/goldie/v2",
+      "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
+      "path": "github.com/sergi/go-diff",
+      "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
       "path": "github.com/spf13/cast",
       "license": "MIT",
       "unknown": false
@@ -288,11 +343,6 @@
     {
       "path": "github.com/spf13/pflag",
       "license": "Apache-2.0",
-      "unknown": false
-    },
-    {
-      "path": "github.com/stoewer/go-strcase",
-      "license": "MIT",
       "unknown": false
     },
     {
@@ -323,6 +373,11 @@
     {
       "path": "github.com/tdewolff/test",
       "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
+      "path": "github.com/temoto/robotstxt",
+      "license": "MIT",
       "unknown": false
     },
     {
@@ -501,5 +556,5 @@
       "unknown": false
     }
   ],
-  "count": 100
+  "count": 111
 }

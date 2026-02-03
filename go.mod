@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
 	github.com/chzyer/readline v1.5.1
 	github.com/fatih/color v1.18.0
 	github.com/go-rod/rod v0.116.2
@@ -15,10 +16,12 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
+	github.com/temoto/robotstxt v1.1.2
 	github.com/valksor/go-toolkit v0.0.0-20260202190551-837849387b81
 	gitlab.com/gitlab-org/api/client-go v1.25.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
+	golang.org/x/net v0.49.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sys v0.40.0
 	golang.org/x/term v0.39.0
@@ -28,6 +31,7 @@ require (
 )
 
 require (
+	github.com/JohannesKaufmann/dom v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
