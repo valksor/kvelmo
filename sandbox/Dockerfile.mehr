@@ -1,0 +1,89 @@
+# Mehrhof Sandbox Template
+# Based on Docker's official Claude Code template
+#
+# Usage:
+#   docker build -f sandbox/Dockerfile.mehr -t mehr-sandbox:v1 .
+#   docker sandbox run --load-local-template -t mehr-sandbox:v1 ~/my-project
+#
+# Architecture:
+#   Docker Sandbox (microVM) -> mehr (coordinator) -> Claude/Codex (AI agents)
+
+FROM docker/sandbox-templates:claude-code
+
+LABEL org.opencontainers.image.title="Mehrhof Sandbox"
+LABEL org.opencontainers.image.description="Mehrhof AI workflow orchestrator in Docker Sandbox"
+LABEL org.opencontainers.image.vendor="Valksor"
+LABEL org.opencontainers.image.source="https://github.com/valksor/go-mehrhof"
+
+USER root
+
+# Install Go 1.24+ (mehrhof requires modern Go)
+ARG GO_VERSION=1.24.0
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf - && \
+    echo 'export PATH=$PATH:/usr/local/go/bin:/home/agent/go/bin' >> /etc/profile.d/go.sh
+
+# Option 1: Install from release (default - faster)
+ARG MEHR_VERSION=latest
+RUN if [ "${MEHR_VERSION}" != "local" ]; then \
+        curl -fsSL "https://github.com/valksor/go-mehrhof/releases/download/${MEHR_VERSION}/mehr_linux_amd64.tar.gz" | \
+        tar -xzf - -C /usr/local/bin mehr && \
+        chmod +x /usr/local/bin/mehr; \
+    fi
+
+# Option 2: Build from local binary (use MEHR_VERSION=local)
+# The Makefile copies the pre-built binary to sandbox/mehr-local before building
+COPY sandbox/mehr-local* /tmp/
+RUN if [ "${MEHR_VERSION}" = "local" ] && [ -f /tmp/mehr-local ]; then \
+        mv /tmp/mehr-local /usr/local/bin/mehr && \
+        chmod +x /usr/local/bin/mehr; \
+    fi
+
+# Install Go development tools (for quality checks inside sandbox)
+# Note: Using full paths here since ENV isn't available until after this layer
+RUN /usr/local/go/bin/go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    /usr/local/go/bin/go install golang.org/x/vuln/cmd/govulncheck@latest && \
+    /usr/local/go/bin/go install mvdan.cc/gofumpt@latest && \
+    /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest
+
+# Create mehrhof directories
+RUN mkdir -p /home/agent/.valksor/mehrhof /home/agent/.mehrhof && \
+    chown -R agent:agent /home/agent/.valksor /home/agent/.mehrhof
+
+# Copy default config (if provided during build)
+COPY --chown=agent:agent sandbox/config.yaml.template /home/agent/.mehrhof/config.yaml
+
+USER agent
+
+# Shell aliases for convenience
+RUN echo '' >> ~/.bashrc && \
+    echo '# Mehrhof aliases' >> ~/.bashrc && \
+    echo 'alias m="mehr"' >> ~/.bashrc && \
+    echo 'alias ms="mehr status"' >> ~/.bashrc && \
+    echo 'alias mp="mehr plan"' >> ~/.bashrc && \
+    echo 'alias mi="mehr implement"' >> ~/.bashrc && \
+    echo 'alias mr="mehr review"' >> ~/.bashrc && \
+    echo 'alias mf="mehr finish"' >> ~/.bashrc && \
+    echo 'alias mu="mehr undo"' >> ~/.bashrc && \
+    echo 'alias mg="mehr guide"' >> ~/.bashrc
+
+# Environment for Go tools
+ENV PATH="${PATH}:/usr/local/go/bin:/home/agent/go/bin"
+ENV GOPATH="/home/agent/go"
+
+# Working directory is the synced workspace
+WORKDIR /workspace
+
+# DEFAULT: bash shell for maximum flexibility
+# - cagent can call `mehr` commands via script_shell
+# - User has full shell access for debugging
+# - Can manually run `mehr interactive` or `mehr serve` when needed
+ENTRYPOINT ["/bin/bash"]
+
+# ALTERNATIVE: For mehr-as-the-conversation-agent (replaces Claude Code REPL)
+# Uncomment to make mehr interactive the default:
+# ENTRYPOINT ["mehr", "interactive"]
+
+# ALTERNATIVE: For Web UI mode (browser-based interface)
+# Uncomment for web UI access:
+# ENTRYPOINT ["mehr", "serve", "--host", "0.0.0.0", "--port", "8080"]
+# EXPOSE 8080
