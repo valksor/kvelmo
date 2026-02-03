@@ -1165,3 +1165,192 @@ func (a *mockAgent) WithEnv(key, value string) agent.Agent {
 func (a *mockAgent) WithArgs(args ...string) agent.Agent {
 	return a
 }
+
+// TestImplementReview_NoActiveTask tests that implementing review fixes fails without an active task.
+func TestImplementReview_NoActiveTask(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := New()
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	err = c.ImplementReview(ctx, 1)
+	if err == nil {
+		t.Error("ImplementReview should fail when no active task")
+	}
+	if err.Error() != "no active task" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestImplementReview_NoReviews tests that implementing review fixes fails when no reviews exist.
+func TestImplementReview_NoReviews(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	c, err := New(WithWorkDir(tmpDir))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	// Set up workspace and active task
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	c.workspace = ws
+	c.activeTask = &storage.ActiveTask{
+		ID:      "test-task",
+		State:   "reviewing",
+		Started: time.Now(),
+	}
+
+	// Create empty work directory for this task (no reviews)
+	work, err := ws.CreateWork("test-task", storage.SourceInfo{
+		Type: "test",
+		Ref:  "test",
+	})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+	c.taskWork = work
+
+	// Try to implement a review that doesn't exist
+	err = c.ImplementReview(ctx, 1)
+	if err == nil {
+		t.Error("ImplementReview should fail when review doesn't exist")
+	}
+	// The error should mention the review number
+	if !contains(err.Error(), "review") && !contains(err.Error(), "1") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestImplementReview_WithReview tests that implementing review fixes works when a review exists.
+func TestImplementReview_WithReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	c, err := New(WithWorkDir(tmpDir))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	// Set up workspace and active task
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	c.workspace = ws
+	c.activeTask = &storage.ActiveTask{
+		ID:      "test-task",
+		State:   "idle",
+		Started: time.Now(),
+	}
+
+	// Create work directory with a review
+	work, err := ws.CreateWork("test-task", storage.SourceInfo{
+		Type: "test",
+		Ref:  "test",
+	})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+	c.taskWork = work
+
+	// Save a specification (required for the workflow guard)
+	if err := ws.SaveSpecification("test-task", 1, "# Specification\n\nImplement foo"); err != nil {
+		t.Fatalf("SaveSpecification: %v", err)
+	}
+
+	// Save a review
+	if err := ws.SaveReview("test-task", 1, "# Review\n\n- Fix the bug in line 10\n- Add tests"); err != nil {
+		t.Fatalf("SaveReview: %v", err)
+	}
+
+	// Restore the workflow state machine to have the work unit
+	c.machine.SetWorkUnit(c.buildWorkUnit())
+
+	// ImplementReview should succeed now (enters the implementing state)
+	err = c.ImplementReview(ctx, 1)
+	if err != nil {
+		t.Fatalf("ImplementReview failed: %v", err)
+	}
+
+	// Verify state changed to implementing
+	if c.activeTask.State != string(workflow.StateImplementing) {
+		t.Errorf("State = %q, want %q", c.activeTask.State, string(workflow.StateImplementing))
+	}
+}
+
+// TestListReviews_Empty tests listing reviews when none exist.
+func TestListReviews_Empty(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create work directory without reviews
+	if _, err := ws.CreateWork("test-task", storage.SourceInfo{
+		Type: "test",
+		Ref:  "test",
+	}); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	reviews, err := ws.ListReviews("test-task")
+	if err != nil {
+		t.Fatalf("ListReviews: %v", err)
+	}
+	if len(reviews) != 0 {
+		t.Errorf("ListReviews returned %d reviews, want 0", len(reviews))
+	}
+}
+
+// TestListReviews_WithReviews tests listing reviews when they exist.
+func TestListReviews_WithReviews(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create work directory with multiple reviews
+	if _, err := ws.CreateWork("test-task", storage.SourceInfo{
+		Type: "test",
+		Ref:  "test",
+	}); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Save multiple reviews
+	if err := ws.SaveReview("test-task", 1, "# Review 1"); err != nil {
+		t.Fatalf("SaveReview 1: %v", err)
+	}
+	if err := ws.SaveReview("test-task", 2, "# Review 2"); err != nil {
+		t.Fatalf("SaveReview 2: %v", err)
+	}
+	if err := ws.SaveReview("test-task", 3, "# Review 3"); err != nil {
+		t.Fatalf("SaveReview 3: %v", err)
+	}
+
+	reviews, err := ws.ListReviews("test-task")
+	if err != nil {
+		t.Fatalf("ListReviews: %v", err)
+	}
+	if len(reviews) != 3 {
+		t.Errorf("ListReviews returned %d reviews, want 3", len(reviews))
+	}
+	// Verify they're sorted
+	for i, num := range reviews {
+		if num != i+1 {
+			t.Errorf("reviews[%d] = %d, want %d", i, num, i+1)
+		}
+	}
+}

@@ -64,6 +64,9 @@ type Options struct {
 	WithSiblings *bool // Include sibling subtask context (nil = use config)
 	MaxSiblings  *int  // Maximum sibling tasks to include (nil = use config)
 
+	// Library documentation auto-include
+	LibraryAutoInclude bool // Automatically include relevant library docs based on file paths
+
 	// Naming overrides (CLI flags)
 	ExternalKey           string // Override external key (e.g., "FEATURE-123")
 	TitleOverride         string // Override task title
@@ -381,6 +384,14 @@ func WithoutSiblings() Option {
 func WithMaxSiblings(maxSiblings int) Option {
 	return func(o *Options) {
 		o.MaxSiblings = &maxSiblings
+	}
+}
+
+// WithLibraryAutoInclude enables automatic inclusion of relevant library documentation.
+// When enabled, library docs matching the current file paths are automatically added to prompts.
+func WithLibraryAutoInclude(enabled bool) Option {
+	return func(o *Options) {
+		o.LibraryAutoInclude = enabled
 	}
 }
 

@@ -214,10 +214,10 @@ func TestBuildProjectPlanningPrompt(t *testing.T) {
 		"User login",
 		"## Custom Instructions",
 		"Focus on security",
-		"## Output Format",
-		"### task-N: Task Title",
-		"**Priority**: N",
-		"**Status**: ready OR blocked",
+		"## Required Output Format",
+		"### task-1: First Task Title",
+		"- **Priority**: 1",
+		"- **Status**: ready",
 	}
 
 	for _, expected := range expectedContents {
@@ -871,10 +871,10 @@ func TestValidateSubmitSelection_ParentAlreadySubmitted(t *testing.T) {
 func TestBuildProjectPlanningPrompt_IncludesParentField(t *testing.T) {
 	result := buildProjectPlanningPrompt("Test", "content", "")
 
+	// Verify the prompt documents both Parent and Depends on usage
 	expectedContents := []string{
-		"**Parent**: task-X (if this is a subtask)",
-		"**Parent**: Hierarchical grouping",
-		"**Depends on**: Execution ordering",
+		`"Depends on" for blocking dependencies`,
+		`"Parent" for hierarchical grouping`,
 	}
 
 	for _, expected := range expectedContents {

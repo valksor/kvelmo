@@ -97,7 +97,10 @@ func TestRunLintersWithConfigDisabled(t *testing.T) {
 	}
 
 	// Create a mock workspace with quality disabled
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +144,10 @@ func TestRunLintersWithLinterDisabled(t *testing.T) {
 	}
 
 	// Create a mock workspace with golangci-lint explicitly disabled
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +194,10 @@ func TestRunLintersWithCustomLinter(t *testing.T) {
 	}
 
 	// Create a mock workspace
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +282,10 @@ func TestRunLintersWithUseDefaultsFalse(t *testing.T) {
 	}
 
 	// Create a mock workspace with UseDefaults=false
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +335,10 @@ func TestRunLintersWithUseDefaultsTrue(t *testing.T) {
 	}
 
 	// Create a mock workspace with UseDefaults=true
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +392,10 @@ func TestRunLintersWithExplicitConfigAndUseDefaultsFalse(t *testing.T) {
 	}
 
 	// Create a mock workspace
-	ws, err := storage.OpenWorkspace(context.Background(), workDir, storage.NewDefaultWorkspaceConfig())
+	homeDir := t.TempDir()
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(context.Background(), workDir, wsCfg)
 	if err != nil {
 		t.Fatal(err)
 	}

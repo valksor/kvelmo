@@ -55,6 +55,7 @@ func TestCodeDir_WithWorkspace(t *testing.T) {
 			// Create config with code_dir and open workspace with it
 			ctx := context.Background()
 			cfg := storage.NewDefaultWorkspaceConfig()
+			cfg.Storage.HomeDir = t.TempDir()
 			cfg.Project.CodeDir = tt.codeDir
 
 			ws, err := storage.OpenWorkspace(ctx, tmpDir, cfg)

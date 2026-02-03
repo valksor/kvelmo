@@ -72,6 +72,10 @@ type Conductor struct {
 	// ML system (initialized if enabled)
 	ml *MLSystem
 
+	// Library system (documentation collections)
+	library        *LibrarySystem
+	libraryInitErr error // Stored initialization error for better UX
+
 	// Workflow plugin adapters (for lifecycle management)
 	workflowAdapters []*plugin.WorkflowAdapter
 

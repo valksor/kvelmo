@@ -391,6 +391,82 @@ Your response MUST include:
 	return prompt
 }
 
+// buildReviewFixPrompt creates the prompt for implementing fixes from a code review.
+// This is a focused prompt that tells the agent to address specific review feedback
+// rather than implementing specifications.
+func buildReviewFixPrompt(workspace *storage.Workspace, workingDir, title, sourceContent, reviewContent, notes, customInstructions string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are an expert software engineer. Your task is to fix the issues identified in the following code review.
+
+Current timestamp: %s
+Working directory: %s
+
+## Task
+%s
+
+## Original Requirements
+%s
+
+## Review Feedback to Address
+%s
+`, currentTime, workingDir, title, sourceContent, reviewContent)
+
+	if notes != "" {
+		prompt += fmt.Sprintf(`
+## Additional Notes
+%s
+`, notes)
+	}
+
+	if customInstructions != "" {
+		prompt += fmt.Sprintf(`
+## Custom Instructions
+%s
+`, customInstructions)
+	}
+
+	prompt += `
+## Constraints
+- Focus ONLY on fixing the issues identified in the review
+- Do not make unrelated changes or "improvements" outside the review feedback
+- Follow existing code patterns in the codebase
+- Address each review item explicitly
+- If a review comment is unclear, make your best interpretation and document your reasoning
+
+## Instructions
+For each fix you implement:
+1. Use yaml:file blocks with path, operation (create/update/delete), and content
+2. File paths must be relative to the working directory
+3. Follow existing code style and patterns
+4. Include necessary imports
+5. Add appropriate error handling
+
+Output each file change in a yaml:file block.
+
+## Example Output
+` + "```yaml:file\n" + `path: internal/api/handler.go
+operation: update
+content: |
+  package api
+
+  // ... fixed code addressing review feedback ...
+` + "```" + `
+
+## Required Output Format
+Your response MUST include:
+1. Brief explanation of what you're fixing and why
+2. yaml:file blocks for each file modified to address the review feedback
+`
+
+	// Browser tools (optional)
+	if browserSection := buildBrowserToolsSectionForStep(workspace, "implementing"); browserSection != "" {
+		prompt += browserSection
+	}
+
+	return prompt
+}
+
 // buildReviewPrompt creates the prompt for code review.
 // Note: workspace parameter kept for API consistency with other prompt builders,
 // even though tests pass nil (production code uses buildReviewPromptWithLint directly).
