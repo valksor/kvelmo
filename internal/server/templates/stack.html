@@ -54,18 +54,18 @@
                     </span>
                     {{end}}
                     {{if .HasRebase}}
-                    <button hx-post="/api/v1/stack/rebase"
-                            hx-vals='{"stack_id": "{{.ID}}"}'
-                            hx-target="#stack-{{.ID}}"
-                            hx-swap="outerHTML"
-                            hx-indicator="#rebase-indicator-{{.ID}}"
+                    <button hx-get="/api/v1/stack/rebase-preview?stack_id={{.ID}}"
+                            hx-target="#rebase-preview-{{.ID}}"
+                            hx-swap="innerHTML"
+                            hx-indicator="#preview-indicator-{{.ID}}"
+                            onclick="document.getElementById('rebase-modal-{{.ID}}').classList.remove('hidden')"
                             class="btn btn-sm btn-primary">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                        Rebase All
+                        Preview Rebase
                     </button>
-                    <div id="rebase-indicator-{{.ID}}" class="htmx-indicator">
+                    <div id="preview-indicator-{{.ID}}" class="htmx-indicator">
                         <div class="animate-spin text-primary text-sm">&#9696;</div>
                     </div>
                     {{end}}
@@ -164,6 +164,45 @@
             <div class="px-6 py-3 border-t border-base-300 text-xs text-base-content/60 flex items-center justify-between">
                 <span>Created {{.CreatedAt}}</span>
                 <span>Updated {{.UpdatedAt}}</span>
+            </div>
+        </div>
+
+        <!-- Rebase Preview Modal -->
+        <div id="rebase-modal-{{.ID}}" class="hidden fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <!-- Backdrop -->
+                <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('rebase-modal-{{.ID}}').classList.add('hidden')"></div>
+
+                <!-- Modal Content -->
+                <div class="card relative z-10 w-full max-w-lg">
+                    <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-base-content">Rebase Preview</h3>
+                        <button onclick="document.getElementById('rebase-modal-{{.ID}}').classList.add('hidden')" class="btn btn-ghost btn-sm btn-square">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6" id="rebase-preview-{{.ID}}">
+                        <div class="flex items-center justify-center py-8">
+                            <div class="animate-spin text-primary text-2xl">&#9696;</div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 border-t border-base-300 flex justify-end gap-3">
+                        <button onclick="document.getElementById('rebase-modal-{{.ID}}').classList.add('hidden')" class="btn btn-ghost">
+                            Cancel
+                        </button>
+                        <button id="rebase-btn-{{.ID}}"
+                                hx-post="/api/v1/stack/rebase"
+                                hx-vals='{"stack_id": "{{.ID}}"}'
+                                hx-target="#stack-{{.ID}}"
+                                hx-swap="outerHTML"
+                                onclick="document.getElementById('rebase-modal-{{.ID}}').classList.add('hidden')"
+                                class="btn btn-primary">
+                            Rebase Now
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         {{end}}
