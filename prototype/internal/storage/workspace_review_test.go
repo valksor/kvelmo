@@ -40,14 +40,14 @@ func TestProjectReviewPath(t *testing.T) {
 	ws := openTestWorkspace(t, tmpDir)
 	cfg := NewDefaultWorkspaceConfig()
 
-	// Default: reviews go alongside specs in .mehrhof/<task-id>/
+	// Default: reviews go alongside specs in .mehrhof/work/<task-id>/
 	path := ws.ProjectReviewPath("test123", 1, cfg)
-	if !strings.HasSuffix(path, ".mehrhof/test123/review-1.txt") {
-		t.Errorf("ProjectReviewPath() = %q, want suffix .mehrhof/test123/review-1.txt", path)
+	if !strings.HasSuffix(path, ".mehrhof/work/test123/review-1.txt") {
+		t.Errorf("ProjectReviewPath() = %q, want suffix .mehrhof/work/test123/review-1.txt", path)
 	}
 
 	// Custom ProjectDir: tickets/
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
 	path = ws.ProjectReviewPath("test123", 1, cfg)
 	if !strings.HasSuffix(path, "tickets/test123/CODERABBIT-1.txt") {
@@ -160,14 +160,14 @@ func TestSaveReviewInProject(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Enable project-local saving with custom settings
+	// Enable project-local saving (mutually exclusive - project ONLY)
 	cfg, err := ws.LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	cfg.Review.SaveInProject = true
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
-	cfg.Specification.ProjectDir = "tickets"
 	if err := ws.SaveConfig(cfg); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
 	}
@@ -185,16 +185,16 @@ func TestSaveReviewInProject(t *testing.T) {
 	// Reload config
 	cfg, _ = ws.LoadConfig()
 
-	// Verify internal storage exists
-	internalPath := ws.ReviewPath("test123", 1, cfg)
-	if _, err := os.Stat(internalPath); err != nil {
-		t.Errorf("Internal review not found: %s, error: %v", internalPath, err)
-	}
-
-	// Verify project-local storage exists
+	// Verify project-local storage exists (mutually exclusive: project ONLY)
 	projectPath := ws.ProjectReviewPath("test123", 1, cfg)
 	if _, err := os.Stat(projectPath); err != nil {
 		t.Errorf("Project-local review not found: %s, error: %v", projectPath, err)
+	}
+
+	// Verify internal storage does NOT exist (mutually exclusive)
+	internalPath := ws.ReviewPath("test123", 1, cfg)
+	if _, err := os.Stat(internalPath); err == nil {
+		t.Errorf("Internal review should NOT exist when save_in_project=true: %s", internalPath)
 	}
 
 	// Verify it's in tickets/<task-id>/CODERABBIT-1.txt
@@ -209,6 +209,15 @@ func TestSaveReviewInProject(t *testing.T) {
 	}
 	if string(loaded) != content {
 		t.Errorf("Project review content mismatch, got %q, want %q", string(loaded), content)
+	}
+
+	// Verify LoadReview returns correct content
+	loadedViaAPI, err := ws.LoadReview("test123", 1)
+	if err != nil {
+		t.Fatalf("LoadReview failed: %v", err)
+	}
+	if loadedViaAPI != content {
+		t.Errorf("LoadReview content mismatch, got %q, want %q", loadedViaAPI, content)
 	}
 }
 

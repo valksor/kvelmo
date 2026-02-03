@@ -1,21 +1,16 @@
 package storage
 
 import (
-	"context"
 	"testing"
 )
 
 func TestAddLabel(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ws := openTestWorkspace(t, tmpDir)
 
 	taskID := "test-task-001"
 	// CreateWork sets up the directory structure
-	_, err = ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
+	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,9 +33,8 @@ func TestAddLabel(t *testing.T) {
 }
 
 func TestAddLabel_Duplicate(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-dup"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -63,9 +57,8 @@ func TestAddLabel_Duplicate(t *testing.T) {
 }
 
 func TestRemoveLabel(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-002"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -93,9 +86,8 @@ func TestRemoveLabel(t *testing.T) {
 }
 
 func TestRemoveLabel_NonExistent(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-remove-non"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -118,9 +110,8 @@ func TestRemoveLabel_NonExistent(t *testing.T) {
 }
 
 func TestSetLabels(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-003"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -139,9 +130,8 @@ func TestSetLabels(t *testing.T) {
 }
 
 func TestSetLabels_Clear(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-clear"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -167,9 +157,8 @@ func TestSetLabels_Clear(t *testing.T) {
 }
 
 func TestGetLabels(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-get"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {
@@ -194,9 +183,8 @@ func TestGetLabels(t *testing.T) {
 }
 
 func TestGetLabels_Empty(t *testing.T) {
-	ctx := context.Background()
 	tmpDir := t.TempDir()
-	ws, _ := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{})
+	ws := openTestWorkspace(t, tmpDir)
 	taskID := "test-task-empty"
 	_, err := ws.CreateWork(taskID, SourceInfo{Type: "file", Ref: "test.md"})
 	if err != nil {

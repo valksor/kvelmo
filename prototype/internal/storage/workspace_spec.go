@@ -44,14 +44,16 @@ func (w *Workspace) SpecificationPath(taskID string, number int, cfg *WorkspaceC
 }
 
 // ProjectSpecificationsDir returns the project-local specifications directory path.
-// If ProjectDir is set (e.g., "tickets"), returns <root>/tickets/<task-id>/
-// If ProjectDir is empty, returns .mehrhof/<task-id>/ (no /specifications/ subdirectory).
+// Uses storage.project_dir from config (e.g., "tickets" → <root>/tickets/<task-id>/)
+// If project_dir is empty, returns .mehrhof/work/<task-id>/.
+// Note: Project-local storage is flat (no /specifications/ subdirectory).
 func (w *Workspace) ProjectSpecificationsDir(taskID string, cfg *WorkspaceConfig) string {
-	if cfg != nil && cfg.Specification.ProjectDir != "" {
-		return filepath.Join(w.root, cfg.Specification.ProjectDir, taskID)
+	projectDir := ".mehrhof/work"
+	if cfg != nil && cfg.Storage.ProjectDir != "" {
+		projectDir = cfg.Storage.ProjectDir
 	}
 
-	return filepath.Join(w.taskRoot, taskID)
+	return filepath.Join(w.root, projectDir, taskID)
 }
 
 // ProjectSpecificationPath returns the project-local path for a specification file.
@@ -62,6 +64,26 @@ func (w *Workspace) ProjectSpecificationPath(taskID string, number int, cfg *Wor
 	}
 
 	return filepath.Join(w.ProjectSpecificationsDir(taskID, cfg), resolveFilenamePattern(pattern, number))
+}
+
+// EffectiveSpecificationsDir returns the specifications directory based on storage config.
+// If storage.save_in_project is true, returns project-local path; otherwise returns global storage path.
+func (w *Workspace) EffectiveSpecificationsDir(taskID string, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		return w.ProjectSpecificationsDir(taskID, cfg)
+	}
+
+	return w.SpecificationsDir(taskID)
+}
+
+// EffectiveSpecificationPath returns the specification path based on storage config.
+// If storage.save_in_project is true, returns project-local path; otherwise returns global storage path.
+func (w *Workspace) EffectiveSpecificationPath(taskID string, number int, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		return w.ProjectSpecificationPath(taskID, number, cfg)
+	}
+
+	return w.SpecificationPath(taskID, number, cfg)
 }
 
 // isValidTaskID validates that a taskID is safe to use as a directory name.
@@ -80,47 +102,17 @@ func isValidTaskID(taskID string) bool {
 	return validTaskIDRegex.MatchString(taskID)
 }
 
-// syncFile flushes file contents to stable storage. On Unix systems, this
-// calls fsync to ensure data is written to disk before proceeding. On other
-// systems, it returns nil as the guarantee may not be available.
-func syncFile(path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		// Close error is less critical than sync error, and we already
-		// have the sync result to return.
-		_ = f.Close()
-	}()
-
-	return f.Sync()
-}
-
 // SaveSpecification saves a specification file (markdown).
 //
-// The specification is always saved to internal storage
-// (~/.mehrhof/workspaces/<project-id>/work/). If the workspace config has
-// specification.save_in_project enabled, it is also saved to project-local
-// storage (.mehrhof/<task-id>/specifications/).
-//
-// Guarantees:
-//   - If nil is returned, the specification was successfully saved to internal storage
-//   - If an error is returned, no specification was written to any location
-//   - Project-local save failures are logged but do not cause error returns
-//
-// Error handling:
-//   - Invalid taskID: returns error (fails before any writes)
-//   - Internal storage write failure: returns error (authoritative storage)
-//   - Config load failure: logs warning, skips project-local write, returns nil
-//   - Project-local write failure: logs error, returns nil (internal spec exists)
+// Storage location is determined by storage config:
+//   - storage.save_in_project: false → ~/.valksor/mehrhof/workspaces/<name>/work/<task-id>/specifications/
+//   - storage.save_in_project: true → .mehrhof/work/<task-id>/
+//   - storage.save_in_project: true + project_dir: "tickets" → tickets/<task-id>/
 func (w *Workspace) SaveSpecification(taskID string, number int, content string) error {
-	// Validate taskID before any operations (fail fast)
 	if !isValidTaskID(taskID) {
 		return fmt.Errorf("invalid task ID %q: must contain only alphanumeric characters, hyphens, and underscores", taskID)
 	}
 
-	// Load config first - needed for filename pattern
 	cfg, err := w.LoadConfig()
 	if err != nil {
 		slog.Warn("failed to load workspace config, using defaults",
@@ -131,77 +123,15 @@ func (w *Workspace) SaveSpecification(taskID string, number int, content string)
 		cfg = NewDefaultWorkspaceConfig()
 	}
 
-	// Step 1: Always save to internal storage (authoritative location)
-	specPath := w.SpecificationPath(taskID, number, cfg)
+	// Single storage location based on config
+	specPath := w.EffectiveSpecificationPath(taskID, number, cfg)
 	specDir := filepath.Dir(specPath)
+
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		return fmt.Errorf("create specifications directory: %w", err)
 	}
 	if err := os.WriteFile(specPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("save internal specification: %w", err)
-	}
-
-	// Step 2: Save to project-local storage if enabled (non-fatal on failure)
-	if cfg.Specification.SaveInProject {
-		projectSpecPath := w.ProjectSpecificationPath(taskID, number, cfg)
-		projectDir := filepath.Dir(projectSpecPath)
-
-		// Ensure directory exists
-		if err := os.MkdirAll(projectDir, 0o755); err != nil {
-			slog.Error("failed to create project specifications directory",
-				"task_id", taskID,
-				"spec_number", number,
-				"path", projectDir,
-				"error", err,
-			)
-			// Don't fail - internal spec is authoritative
-			return nil
-		}
-
-		// Atomic write: write to unique temp file, sync, then rename.
-		// Using timestamp suffix ensures concurrent writes don't race.
-		tmpPath := projectSpecPath + ".tmp." + strconv.FormatInt(time.Now().UnixNano(), 36)
-
-		// Write to temp file
-		if err := os.WriteFile(tmpPath, []byte(content), 0o644); err != nil {
-			slog.Error("failed to write project-local specification (temp file)",
-				"task_id", taskID,
-				"spec_number", number,
-				"path", tmpPath,
-				"error", err,
-			)
-			// Don't fail - internal spec is authoritative
-
-			return nil
-		}
-
-		// Sync to disk before rename to prevent data loss on crash
-		if err := syncFile(tmpPath); err != nil {
-			slog.Error("failed to sync project-local specification before rename",
-				"task_id", taskID,
-				"spec_number", number,
-				"path", tmpPath,
-				"error", err,
-			)
-			// Clean up temp file and don't fail - internal spec is authoritative
-			_ = os.Remove(tmpPath)
-
-			return nil
-		}
-
-		// Atomic rename (replaces existing file atomically on POSIX systems)
-		if err := os.Rename(tmpPath, projectSpecPath); err != nil {
-			// Clean up temp file
-			_ = os.Remove(tmpPath)
-			slog.Error("failed to finalize project-local specification (rename)",
-				"task_id", taskID,
-				"spec_number", number,
-				"error", err,
-			)
-			// Don't fail - internal spec is authoritative and was saved successfully
-
-			return nil
-		}
+		return fmt.Errorf("save specification: %w", err)
 	}
 
 	return nil
@@ -210,7 +140,7 @@ func (w *Workspace) SaveSpecification(taskID string, number int, content string)
 // LoadSpecification loads a specification file content.
 func (w *Workspace) LoadSpecification(taskID string, number int) (string, error) {
 	cfg, _ := w.LoadConfig() // ignore error, will use defaults
-	specPath := w.SpecificationPath(taskID, number, cfg)
+	specPath := w.EffectiveSpecificationPath(taskID, number, cfg)
 	data, err := os.ReadFile(specPath)
 	if err != nil {
 		return "", err
@@ -236,7 +166,7 @@ func buildSpecPatternRegex(pattern string) *regexp.Regexp {
 // ListSpecifications returns all specification numbers for a task.
 func (w *Workspace) ListSpecifications(taskID string) ([]int, error) {
 	cfg, _ := w.LoadConfig() // ignore error, will use defaults
-	specsDir := w.SpecificationsDir(taskID)
+	specsDir := w.EffectiveSpecificationsDir(taskID, cfg)
 
 	entries, err := os.ReadDir(specsDir)
 	if err != nil {

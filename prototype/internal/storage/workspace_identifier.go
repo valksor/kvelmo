@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -88,17 +89,54 @@ func urlToProjectID(url string) string {
 
 // hashPathToFallbackID creates a project ID from a filesystem path.
 // Used for local repos without git remotes.
+// Format: "{dirname}-{hash6}" e.g., "my-app-a3d4f2".
 func hashPathToFallbackID(path string) string {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		absPath = path
 	}
 
-	// Hash the path
-	hash := sha256.Sum256([]byte(absPath))
+	// Extract directory name and sanitize for filesystem
+	dirName := sanitizeForPath(filepath.Base(absPath))
 
-	// Return "local-" prefix + first 16 hex chars
-	return fmt.Sprintf("local-%x", hash)[:16]
+	// Hash the full path for uniqueness (6 hex chars = 16.7M combinations)
+	hash := sha256.Sum256([]byte(absPath))
+	hashStr := hex.EncodeToString(hash[:3]) // 3 bytes = 6 hex chars
+
+	return fmt.Sprintf("%s-%s", dirName, hashStr)
+}
+
+// sanitizeForPath makes a string safe for use in filesystem paths.
+// Converts to lowercase, replaces unsafe characters with dashes, and collapses multiple dashes.
+func sanitizeForPath(s string) string {
+	s = strings.ToLower(s)
+
+	// Replace unsafe characters
+	s = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		if r == ' ' || r == '.' {
+			return '-'
+		}
+
+		return -1 // Remove other characters
+	}, s)
+
+	// Collapse multiple dashes
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+
+	// Trim leading/trailing dashes
+	s = strings.Trim(s, "-")
+
+	// Fallback if empty after sanitization
+	if s == "" {
+		s = "workspace"
+	}
+
+	return s
 }
 
 // GetMehrhofHomeDir returns the mehrhof home directory path.
