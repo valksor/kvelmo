@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -38,8 +40,14 @@ var stackRebaseCmd = &cobra.Command{
 If no task-id is provided, rebases all tasks marked as 'needs-rebase'.
 Aborts entirely on conflict, leaving the repository in a clean state.
 
+Use --preview to check for conflicts before rebasing. By default, you will
+be prompted for confirmation before rebasing (unless --yes is specified).
+
 Examples:
-  mehr stack rebase              # Rebase all tasks needing it
+  mehr stack rebase              # Preview, confirm, then rebase all tasks
+  mehr stack rebase --preview    # Show what would happen (no rebase)
+  mehr stack rebase --dry-run    # Alias for --preview
+  mehr stack rebase --yes        # Skip confirmation (for scripts)
   mehr stack rebase issue-101    # Rebase specific task`,
 	RunE: runStackRebase,
 }
@@ -62,6 +70,11 @@ Examples:
 var (
 	stackGraph   bool
 	stackMermaid bool
+
+	// Rebase flags.
+	stackRebasePreview bool
+	stackRebaseDryRun  bool
+	stackRebaseYes     bool
 )
 
 func init() {
@@ -71,6 +84,12 @@ func init() {
 
 	stackCmd.Flags().BoolVar(&stackGraph, "graph", false, "Show ASCII graph visualization")
 	stackCmd.Flags().BoolVar(&stackMermaid, "mermaid", false, "Output Mermaid diagram format")
+
+	// Rebase command flags
+	stackRebaseCmd.Flags().BoolVar(&stackRebasePreview, "preview", false, "Preview what would happen (check for conflicts)")
+	stackRebaseCmd.Flags().BoolVar(&stackRebaseDryRun, "dry-run", false, "Alias for --preview")
+	stackRebaseCmd.Flags().BoolVar(&stackRebaseYes, "yes", false, "Skip confirmation prompt (for scripts)")
+	stackRebaseCmd.Flags().BoolVarP(&stackRebaseYes, "y", "y", false, "Short form for --yes")
 }
 
 func runStack(cmd *cobra.Command, args []string) error {
@@ -211,6 +230,9 @@ func stateToGraphStatus(state stack.StackState) string {
 func runStackRebase(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	// Treat --dry-run as --preview
+	previewOnly := stackRebasePreview || stackRebaseDryRun
+
 	res, err := ResolveWorkspaceRoot(ctx)
 	if err != nil {
 		return err
@@ -234,11 +256,43 @@ func runStackRebase(cmd *cobra.Command, args []string) error {
 	// Create rebaser
 	rebaser := stack.NewRebaser(stackStorage, res.Git)
 
+	// Handle single task rebase
 	if len(args) > 0 {
-		// Rebase specific task
 		taskID := args[0]
-		fmt.Printf("Rebasing task %s...\n", taskID)
 
+		// Preview single task
+		if previewOnly {
+			return runStackRebasePreviewTask(ctx, rebaser, taskID)
+		}
+
+		// Regular single task rebase (with confirmation)
+		preview, err := rebaser.PreviewTask(ctx, taskID)
+		if err != nil {
+			return fmt.Errorf("preview task: %w", err)
+		}
+
+		// Display preview
+		displayTaskPreview(preview)
+
+		// Check for conflicts
+		if preview.WouldConflict {
+			return fmt.Errorf("cannot rebase %s: conflicts detected in %d file(s)", taskID, len(preview.ConflictingFiles))
+		}
+
+		if preview.Unavailable {
+			fmt.Println("⚠ Warning: Conflict detection unavailable (Git 2.38+ required).")
+			fmt.Println("  Proceeding WITHOUT conflict checking. Rebase may fail if conflicts exist.")
+			fmt.Println("  To abort, answer 'n' at the confirmation prompt.")
+		}
+
+		// Prompt for confirmation unless --yes
+		if !stackRebaseYes && !confirmRebase(1) {
+			fmt.Println("Rebase cancelled.")
+
+			return nil
+		}
+
+		fmt.Printf("Rebasing task %s...\n", taskID)
 		result, err := rebaser.RebaseTask(ctx, taskID)
 
 		return handleRebaseResult(result, err)
@@ -259,7 +313,51 @@ func runStackRebase(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Rebase each stack
+	// Preview all stacks first
+	var totalSafe, totalConflict int
+	for _, s := range stacksWithRebase {
+		preview, err := rebaser.PreviewRebase(ctx, s.ID)
+		if err != nil {
+			return fmt.Errorf("preview stack %s: %w", s.ID, err)
+		}
+
+		// Display preview
+		displayStackPreview(s.ID, preview)
+
+		totalSafe += preview.SafeCount
+		totalConflict += preview.ConflictCount
+	}
+
+	// Preview only mode - stop here
+	if previewOnly {
+		if totalConflict > 0 {
+			fmt.Printf("\n⚠ %d task(s) have conflicts. Resolve manually before rebasing.\n", totalConflict)
+		} else {
+			fmt.Printf("\n✓ %d task(s) can be safely rebased.\n", totalSafe)
+		}
+
+		return nil
+	}
+
+	// Block if conflicts detected
+	if totalConflict > 0 {
+		return fmt.Errorf("cannot rebase: %d task(s) have conflicts; resolve conflicts manually, then retry", totalConflict)
+	}
+
+	if totalSafe == 0 {
+		fmt.Println("No tasks can be rebased.")
+
+		return nil
+	}
+
+	// Prompt for confirmation unless --yes
+	if !stackRebaseYes && !confirmRebase(totalSafe) {
+		fmt.Println("Rebase cancelled.")
+
+		return nil
+	}
+
+	// Execute rebase for each stack
 	var totalRebased int
 	for _, s := range stacksWithRebase {
 		tasks := s.GetTasksNeedingRebase()
@@ -283,6 +381,85 @@ func runStackRebase(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// runStackRebasePreviewTask previews a single task rebase.
+func runStackRebasePreviewTask(ctx context.Context, rebaser *stack.Rebaser, taskID string) error {
+	preview, err := rebaser.PreviewTask(ctx, taskID)
+	if err != nil {
+		return fmt.Errorf("preview task: %w", err)
+	}
+
+	displayTaskPreview(preview)
+
+	if preview.WouldConflict {
+		fmt.Printf("\n⚠ Task %s has conflicts. Resolve manually before rebasing.\n", taskID)
+	} else if preview.Unavailable {
+		fmt.Printf("\n⚠ Conflict status unknown for %s (Git 2.38+ required).\n", taskID)
+		fmt.Println("  Rebase will proceed without conflict detection if you continue.")
+	} else {
+		fmt.Printf("\n✓ Task %s can be safely rebased.\n", taskID)
+	}
+
+	return nil
+}
+
+// displayTaskPreview shows preview for a single task.
+func displayTaskPreview(preview *stack.TaskPreview) {
+	status := "✓ Safe"
+	if preview.Unavailable {
+		status = "? Unknown"
+	} else if preview.WouldConflict {
+		status = "✗ CONFLICT"
+	}
+
+	fmt.Printf("\n%-12s → %-12s  %s\n", preview.Branch, preview.OntoBase, status)
+
+	if preview.WouldConflict && len(preview.ConflictingFiles) > 0 {
+		fmt.Println("  Conflicting files:")
+		for _, file := range preview.ConflictingFiles {
+			fmt.Printf("    - %s\n", file)
+		}
+	}
+}
+
+// displayStackPreview shows preview for an entire stack.
+func displayStackPreview(stackID string, preview *stack.RebasePreview) {
+	fmt.Printf("\nStack: %s\n", stackID)
+	fmt.Println("┌──────────────────────────────────────────────────────┐")
+
+	for _, task := range preview.Tasks {
+		status := "✓ Safe"
+		if task.Unavailable {
+			status = "? Unknown"
+		} else if task.WouldConflict {
+			status = "✗ CONFLICT"
+		}
+
+		fmt.Printf("│ %-12s → %-12s  %s\n", task.Branch, task.OntoBase, status)
+
+		// Show conflicting files if any
+		if task.WouldConflict && len(task.ConflictingFiles) > 0 {
+			for _, file := range task.ConflictingFiles {
+				fmt.Printf("│   └─ %s\n", file)
+			}
+		}
+	}
+
+	fmt.Println("└──────────────────────────────────────────────────────┘")
+}
+
+// confirmRebase prompts user for confirmation.
+func confirmRebase(taskCount int) bool {
+	var response string
+	fmt.Printf("\nRebase %d task(s)? [y/N] ", taskCount)
+	if _, err := fmt.Scanln(&response); err != nil {
+		return false
+	}
+
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	return response == "y" || response == "yes"
 }
 
 func handleRebaseResult(result *stack.RebaseResult, err error) error {
