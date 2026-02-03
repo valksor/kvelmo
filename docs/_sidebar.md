@@ -55,8 +55,8 @@
     - [Standalone Review](web-ui/standalone-review.md)
     - [Standalone Simplify](web-ui/standalone-simplify.md)
     - [Automation](web-ui/automation.md)
-  - **API Reference**
-    - [REST API](web-ui/api.md)
+- **Reference**
+  - [REST API](reference/rest-api.md)
 
 - **IDE Integrations**
   - [Overview](ide/index.md)

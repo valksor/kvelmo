@@ -1292,6 +1292,6 @@ Error responses:
 
 ## Next Steps
 
-- [**CLI: serve**](../cli/serve.md) - Server command options
+- [**CLI: serve**](/cli/serve.md) - Server command options
 - [**Authentication**](authentication.md) - Setup for remote access
 - [**Dashboard**](dashboard.md) - Web UI interface
