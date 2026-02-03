@@ -552,6 +552,14 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 		if prResult != nil {
 			c.lastPRResult = prResult
 			c.logVerbosef("Created PR #%d: %s", prResult.Number, prResult.URL)
+
+			// Try auto-rebase for stacked features (after PR creation)
+			// This is non-blocking: failures are logged but don't fail the finish operation
+			taskID := c.activeTask.ID
+			rebaseResult := c.tryAutoRebase(ctx, taskID, opts)
+			if rebaseResult != nil && rebaseResult.Executed {
+				c.logVerbosef("Auto-rebased %d task(s)", len(rebaseResult.Result.RebasedTasks))
+			}
 		}
 	} else if c.git != nil && c.activeTask.UseGit && c.activeTask.Branch != "" {
 		// Provider doesn't support PR, ask user what to do
