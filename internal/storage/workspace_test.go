@@ -110,6 +110,17 @@ func TestNewDefaultWorkspaceConfig(t *testing.T) {
 	if cfg.Env == nil {
 		t.Error("Env is nil, want initialized map")
 	}
+
+	// Stack settings defaults
+	if cfg.Stack == nil {
+		t.Fatal("Stack is nil, want initialized")
+	}
+	if cfg.Stack.AutoRebase != "disabled" {
+		t.Errorf("Stack.AutoRebase = %q, want %q", cfg.Stack.AutoRebase, "disabled")
+	}
+	if cfg.Stack.BlockOnConflicts != true {
+		t.Errorf("Stack.BlockOnConflicts = %v, want true", cfg.Stack.BlockOnConflicts)
+	}
 }
 
 func TestSaveAndLoadConfig(t *testing.T) {
@@ -3708,5 +3719,83 @@ func TestProjectSettings_EnvExpansion(t *testing.T) {
 
 	if loaded.Project.CodeDir != codeDir {
 		t.Errorf("Project.CodeDir = %q, want %q (expanded from env)", loaded.Project.CodeDir, codeDir)
+	}
+}
+
+func TestStackSettingsConfig(t *testing.T) {
+	tests := []struct {
+		name             string
+		yaml             string
+		wantAutoRebase   string
+		wantBlockOnConfl bool
+	}{
+		{
+			name: "default values",
+			yaml: `
+agent:
+  default: claude
+`,
+			wantAutoRebase:   "disabled", // from NewDefaultWorkspaceConfig
+			wantBlockOnConfl: true,
+		},
+		{
+			name: "auto_rebase on_finish",
+			yaml: `
+stack:
+  auto_rebase: on_finish
+`,
+			wantAutoRebase:   "on_finish",
+			wantBlockOnConfl: true, // default
+		},
+		{
+			name: "block_on_conflicts false",
+			yaml: `
+stack:
+  auto_rebase: on_finish
+  block_on_conflicts: false
+`,
+			wantAutoRebase:   "on_finish",
+			wantBlockOnConfl: false,
+		},
+		{
+			name: "stack disabled explicitly",
+			yaml: `
+stack:
+  auto_rebase: disabled
+  block_on_conflicts: true
+`,
+			wantAutoRebase:   "disabled",
+			wantBlockOnConfl: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			ws := openTestWorkspace(t, tmpDir)
+			if err := ws.EnsureInitialized(); err != nil {
+				t.Fatalf("EnsureInitialized: %v", err)
+			}
+
+			// Write YAML config directly
+			if err := os.WriteFile(ws.ConfigPath(), []byte(tt.yaml), 0o644); err != nil {
+				t.Fatalf("WriteFile: %v", err)
+			}
+
+			cfg, err := ws.LoadConfig()
+			if err != nil {
+				t.Fatalf("LoadConfig: %v", err)
+			}
+
+			if cfg.Stack == nil {
+				t.Fatal("Stack is nil")
+			}
+			if cfg.Stack.AutoRebase != tt.wantAutoRebase {
+				t.Errorf("Stack.AutoRebase = %q, want %q", cfg.Stack.AutoRebase, tt.wantAutoRebase)
+			}
+			if cfg.Stack.BlockOnConflicts != tt.wantBlockOnConfl {
+				t.Errorf("Stack.BlockOnConflicts = %v, want %v", cfg.Stack.BlockOnConflicts, tt.wantBlockOnConfl)
+			}
+		})
 	}
 }
