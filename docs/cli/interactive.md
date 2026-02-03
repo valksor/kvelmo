@@ -20,23 +20,26 @@ mehr interactive
 
 ### Chat
 
-| Command         | Aliases    | Description                    |
-|-----------------|------------|--------------------------------|
-| `chat <msg>`    | `ask`, `c` | Chat with the agent            |
-| `answer <resp>` | `a`        | Answer agent's question        |
-| `note <msg>`    | -          | Add a note to the current task |
+| Command          | Aliases    | Description                    |
+|------------------|------------|--------------------------------|
+| `chat <msg>`     | `ask`, `c` | Chat with the agent            |
+| `question <msg>` | -          | Ask the agent a question       |
+| `answer <resp>`  | `a`        | Answer agent's question        |
+| `note <msg>`     | -          | Add a note to the current task |
 
 ### Workflow
 
-| Command         | Aliases | Description                     |
-|-----------------|---------|---------------------------------|
-| `start <ref>`   | -       | Start a new task from reference |
-| `plan [prompt]` | -       | Enter planning phase            |
-| `implement`     | `impl`  | Execute specifications          |
-| `review`        | -       | Review code                     |
-| `continue`      | `cont`  | Resume from waiting/paused      |
-| `finish`        | -       | Complete the task               |
-| `abandon`       | -       | Discard the task                |
+| Command                | Aliases | Description                     |
+|------------------------|---------|---------------------------------|
+| `start <ref>`          | -       | Start a new task from reference |
+| `plan [prompt]`        | -       | Enter planning phase            |
+| `implement`            | `impl`  | Execute specifications          |
+| `implement review <n>` | -       | Implement fixes from review     |
+| `review`               | -       | Review code                     |
+| `review <n>`           | -       | View review content             |
+| `continue`             | `cont`  | Resume from waiting/paused      |
+| `finish`               | -       | Complete the task               |
+| `abandon`              | -       | Discard the task                |
 
 ### Info
 

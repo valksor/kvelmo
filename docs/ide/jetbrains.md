@@ -68,7 +68,15 @@ Type these in the input field:
 | `answer <resp>` | Answer agent question                                         |
 | `note <msg>`    | Add a note to task                                            |
 | `find <query>`  | AI-powered code search                                        |
+| `memory <query>`| Semantic memory search                                        |
+| `library [cmd]` | Manage documentation library                                  |
 | `list`          | List all tasks                                                |
+| `specification` | View specifications (alias: `spec`)                           |
+| `question <msg>`| Ask the agent a question                                      |
+| `quick <desc>`  | Create a quick task                                           |
+| `simplify`      | Simplify code                                                 |
+| `label add/rm`  | Manage task labels                                            |
+| `budget`        | Show budget status                                            |
 | `help`          | Show available commands                                       |
 | `clear`         | Clear messages                                                |
 

@@ -147,7 +147,10 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
       'spec',
       'find',
       'memory',
+      'library',
       'simplify',
+      'question',
+      'answer',
     ];
     const firstWord = input.split(/\s+/)[0].toLowerCase();
     return commands.includes(firstWord);
@@ -211,6 +214,7 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
   }
 
   private async handleAction(action: string): Promise<void> {
+    // Actions that map directly to VS Code commands
     const commandMap: Record<string, string> = {
       startTask: 'mehrhof.startTask',
       plan: 'mehrhof.plan',
@@ -221,12 +225,48 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
       abandon: 'mehrhof.abandon',
       undo: 'mehrhof.undo',
       redo: 'mehrhof.redo',
-      status: 'mehrhof.status',
     };
 
     const command = commandMap[action];
     if (command) {
       await this.executeCommand(command);
+      return;
+    }
+
+    // Actions that need prompts or direct interactive commands
+    switch (action) {
+      case 'status':
+      case 'cost':
+      case 'budget':
+      case 'specification':
+      case 'simplify':
+        await this.executeInteractiveCommand(action);
+        break;
+      case 'find':
+        await this.promptAndExecute('Enter search query:', 'find');
+        break;
+      case 'memory':
+        await this.promptAndExecute('Enter search query:', 'memory');
+        break;
+      case 'library':
+        await this.executeInteractiveCommand('library');
+        break;
+      case 'quick':
+        await this.promptAndExecute('Enter task description:', 'quick');
+        break;
+      case 'note':
+        await this.promptAndExecute('Enter note:', 'note');
+        break;
+      case 'list':
+        await this.executeInteractiveCommand('list');
+        break;
+    }
+  }
+
+  private async promptAndExecute(prompt: string, command: string): Promise<void> {
+    const input = await vscode.window.showInputBox({ prompt });
+    if (input) {
+      await this.executeInteractiveCommand(`${command} ${input}`);
     }
   }
 
@@ -479,6 +519,19 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
       <button data-action="abandon" class="secondary" disabled>Abandon</button>
       <button data-action="undo" class="secondary" disabled>Undo</button>
       <button data-action="redo" class="secondary" disabled>Redo</button>
+    </div>
+    <div class="actions" style="margin-top: 4px;">
+      <button data-action="status" class="secondary" disabled>Status</button>
+      <button data-action="cost" class="secondary" disabled>Cost</button>
+      <button data-action="budget" class="secondary" disabled>Budget</button>
+      <button data-action="specification" class="secondary" disabled>Specs</button>
+      <button data-action="find" class="secondary" disabled>Find</button>
+      <button data-action="memory" class="secondary" disabled>Memory</button>
+      <button data-action="library" class="secondary" disabled>Library</button>
+      <button data-action="quick" class="secondary" disabled>Quick Task</button>
+      <button data-action="simplify" class="secondary" disabled>Simplify</button>
+      <button data-action="note" class="secondary" disabled>Add Note</button>
+      <button data-action="list" class="secondary" disabled>List Tasks</button>
     </div>
   </div>
 
