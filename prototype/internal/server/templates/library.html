@@ -1,0 +1,217 @@
+{{define "content"}}
+<div class="space-y-8">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-base-content">Library</h1>
+            <p class="text-base-content/60 mt-1">Manage documentation collections for AI context</p>
+        </div>
+        {{if .Enabled}}
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-success-500"></span>
+                <span class="text-sm text-base-content/60">{{.TotalCollections}} {{pluralize .TotalCollections "collection" "collections"}}</span>
+            </div>
+        </div>
+        {{else}}
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-base-200"></span>
+            <span class="text-sm text-base-content/60">Library system unavailable</span>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Section (2/3 width) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Pull Form -->
+            <div class="card">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Pull Documentation
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <form hx-post="/api/v1/library/pull" hx-target="#pull-result" hx-indicator="#pull-indicator" class="space-y-4">
+                        <div>
+                            <label for="library-source" class="block text-sm font-semibold text-base-content/80 mb-2">Source</label>
+                            <div class="relative">
+                                <input type="text" name="source" id="library-source"
+                                       placeholder="https://docs.example.com/ or /path/to/docs or git@github.com:org/repo.git"
+                                       class="input pr-10"
+                                       required>
+                                <div id="pull-indicator" class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2">
+                                    <div class="animate-spin text-primary">&#9696;</div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-base-content/40 mt-1">URL, local path, or git repository</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="library-name" class="block text-sm font-semibold text-base-content/80 mb-2">Name (optional)</label>
+                                <input type="text" name="name" id="library-name"
+                                       placeholder="Auto-detected from source"
+                                       class="input text-sm">
+                            </div>
+                            <div>
+                                <label for="library-mode" class="block text-sm font-semibold text-base-content/80 mb-2">Include Mode</label>
+                                <select name="mode" id="library-mode" class="input text-sm">
+                                    <option value="auto">Auto (match file paths)</option>
+                                    <option value="explicit">Explicit (--library flag)</option>
+                                    <option value="always">Always include</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="library-paths" class="block text-sm font-semibold text-base-content/80 mb-2">Path Patterns (optional)</label>
+                                <input type="text" name="paths" id="library-paths"
+                                       placeholder="src/**/*.ts, internal/**/*.go"
+                                       class="input text-sm">
+                                <p class="text-xs text-base-content/40 mt-1">Comma-separated glob patterns for auto-include</p>
+                            </div>
+                            <div>
+                                <label for="library-tags" class="block text-sm font-semibold text-base-content/80 mb-2">Tags (optional)</label>
+                                <input type="text" name="tags" id="library-tags"
+                                       placeholder="react, typescript, api"
+                                       class="input text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="library-max-depth" class="block text-sm font-semibold text-base-content/80 mb-2">Max Crawl Depth</label>
+                                <input type="number" name="max_depth" id="library-max-depth" value="3" min="1" max="10"
+                                       class="input text-sm">
+                            </div>
+                            <div>
+                                <label for="library-max-pages" class="block text-sm font-semibold text-base-content/80 mb-2">Max Pages</label>
+                                <input type="number" name="max_pages" id="library-max-pages" value="100" min="1" max="500"
+                                       class="input text-sm">
+                            </div>
+                            <div class="flex items-end gap-4">
+                                <label class="inline-flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="shared" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Shared (global)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Crawl Filtering Options -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="library-domain-scope" class="block text-sm font-semibold text-base-content/80 mb-2">Domain Scope</label>
+                                <select name="domain_scope" id="library-domain-scope" class="input text-sm">
+                                    <option value="">Same host (default)</option>
+                                    <option value="same-domain">Same domain (all subdomains)</option>
+                                </select>
+                                <p class="text-xs text-base-content/40 mt-1">'Same host' = exact match (docs.example.com only). 'Same domain' = all subdomains (*.example.com)</p>
+                            </div>
+                            <div>
+                                <label for="library-version" class="block text-sm font-semibold text-base-content/80 mb-2">Version Filter</label>
+                                <input type="text" name="version" id="library-version"
+                                       placeholder="v24, v1.2.3"
+                                       class="input text-sm">
+                                <p class="text-xs text-base-content/40 mt-1">Only crawl pages with this version in the path. Takes precedence over auto-detect</p>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="inline-flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="version_filter" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm text-base-content/80">Auto-detect version</span>
+                                </label>
+                                <p class="text-xs text-base-content/40">Extract version from source URL path (e.g., /v24/, /v1.2.3/)</p>
+                            </div>
+                        </div>
+
+                        <div id="pull-result" class="hidden"></div>
+
+                        <div class="flex justify-end gap-3">
+                            <button type="button" hx-post="/api/v1/library/pull/preview" hx-target="#pull-result" hx-include="closest form" class="btn btn-secondary">
+                                Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                Pull
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Collections List -->
+            <div id="library-collections" hx-get="/api/v1/library" hx-trigger="load" hx-swap="innerHTML">
+                <div class="card">
+                    <div class="text-center py-12">
+                        <div class="animate-spin text-xl text-primary">&#9696;</div>
+                        <span class="ml-3 text-sm text-base-content/60">Loading collections...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar (1/3 width) -->
+        <div class="space-y-6">
+            <!-- Stats -->
+            <div class="card">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Statistics
+                    </h2>
+                </div>
+                <div id="library-stats" class="p-6" hx-get="/api/v1/library/stats" hx-trigger="load" hx-swap="innerHTML">
+                    <div class="flex items-center justify-center py-8">
+                        <div class="animate-spin text-xl text-primary">&#9696;</div>
+                        <span class="ml-3 text-sm text-base-content/60">Loading stats...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="card">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-bold text-base-content flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        About Library
+                    </h2>
+                </div>
+                <div class="p-6 space-y-3 text-sm text-base-content/60">
+                    <p>
+                        <strong class="text-base-content/80">Documentation Collections:</strong>
+                        Pull documentation from URLs, local files, or git repositories to provide context for AI agents.
+                    </p>
+                    <p>
+                        <strong class="text-base-content/80">Include Modes:</strong>
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Auto:</strong> Include when file paths match patterns</li>
+                        <li><strong>Explicit:</strong> Include only with <code class="text-xs bg-base-200 px-1 rounded">--library</code> flag</li>
+                        <li><strong>Always:</strong> Always include in prompts</li>
+                    </ul>
+                    <p>
+                        <strong class="text-base-content/80">Storage:</strong>
+                        Collections can be stored per-project or shared globally across all projects.
+                    </p>
+                    <p>
+                        <strong class="text-base-content/80">CLI Usage:</strong>
+                    </p>
+                    <pre class="text-xs bg-base-200 p-2 rounded mt-1 overflow-x-auto">mehr library pull https://docs.example.com/
+mehr library list
+mehr implement --library react-docs</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
