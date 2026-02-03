@@ -962,3 +962,301 @@ func TestGetCommentsPagination(t *testing.T) {
 		}
 	})
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GetTasks tests (multiple task IDs)
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestGetTasks(t *testing.T) {
+	t.Run("success with multiple IDs", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify comma-separated IDs in path are NOT URL-encoded
+			// The path should be /tasks/ID1,ID2,ID3 (not /tasks/ID1%2CID2%2CID3)
+			expectedPath := "/tasks/IEAAJTASK1,IEAAJTASK2,IEAAJTASK3"
+			if r.URL.Path != expectedPath {
+				t.Errorf("unexpected path: %q, want %q", r.URL.Path, expectedPath)
+			}
+
+			response := taskResponse{
+				Data: []Task{
+					{ID: "IEAAJTASK1", Title: "Task 1", Status: "Active"},
+					{ID: "IEAAJTASK2", Title: "Task 2", Status: "Completed"},
+					{ID: "IEAAJTASK3", Title: "Task 3", Status: "Active"},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		tasks, err := client.GetTasks(context.Background(), []string{"IEAAJTASK1", "IEAAJTASK2", "IEAAJTASK3"})
+		if err != nil {
+			t.Fatalf("GetTasks error = %v", err)
+		}
+		if len(tasks) != 3 {
+			t.Errorf("got %d tasks, want 3", len(tasks))
+		}
+	})
+
+	t.Run("IDs with special characters", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// IDs like MAAAAAED-KwL have dashes and underscores
+			// These should be escaped individually, but comma should remain literal
+			if !strings.Contains(r.URL.Path, ",") {
+				t.Errorf("path should contain literal comma: %s", r.URL.Path)
+			}
+
+			response := taskResponse{
+				Data: []Task{
+					{ID: "MAAAAAED-KwL", Title: "Subtask 1", Status: "Active"},
+					{ID: "MAAAAAED-K_R", Title: "Subtask 2", Status: "Active"},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		tasks, err := client.GetTasks(context.Background(), []string{"MAAAAAED-KwL", "MAAAAAED-K_R"})
+		if err != nil {
+			t.Fatalf("GetTasks error = %v", err)
+		}
+		if len(tasks) != 2 {
+			t.Errorf("got %d tasks, want 2", len(tasks))
+		}
+	})
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GetTaskByPermalinkParam tests (two-step resolution)
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestGetTaskByPermalinkParam(t *testing.T) {
+	t.Run("two-step resolution: permalink -> API ID -> full task", func(t *testing.T) {
+		callCount := 0
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount++
+			if callCount == 1 {
+				// First call: permalink resolution (minimal data)
+				if !strings.Contains(r.URL.RawQuery, "permalink=") {
+					t.Errorf("first call should use permalink query: %s", r.URL.RawQuery)
+				}
+
+				response := taskResponse{
+					Data: []Task{
+						{
+							ID:        "IEAAJAPIID",
+							Title:     "Minimal Task", // Minimal data from permalink endpoint
+							Status:    "Active",
+							Permalink: "https://www.wrike.com/open.htm?id=1234567890",
+							// Note: No SubTaskIDs, Description, etc.
+						},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(response)
+			} else {
+				// Second call: direct task fetch (full data)
+				if r.URL.Path != "/tasks/IEAAJAPIID" {
+					t.Errorf("second call should fetch by API ID: %s", r.URL.Path)
+				}
+
+				response := taskResponse{
+					Data: []Task{
+						{
+							ID:          "IEAAJAPIID",
+							Title:       "Full Task",
+							Description: "Full description",
+							Status:      "Active",
+							Permalink:   "https://www.wrike.com/open.htm?id=1234567890",
+							SubTaskIDs:  []string{"SUB1", "SUB2", "SUB3"},
+							ParentIDs:   []string{"PARENT1"},
+							AuthorIDs:   []string{"AUTHOR1"},
+						},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(response)
+			}
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		task, err := client.GetTaskByPermalinkParam(context.Background(), "https://www.wrike.com/open.htm?id=1234567890")
+		if err != nil {
+			t.Fatalf("GetTaskByPermalinkParam error = %v", err)
+		}
+
+		// Verify two calls were made
+		if callCount != 2 {
+			t.Errorf("expected 2 API calls (permalink + direct), got %d", callCount)
+		}
+
+		// Verify full task data is returned
+		if task.Description != "Full description" {
+			t.Errorf("task.Description = %q, want %q", task.Description, "Full description")
+		}
+		if len(task.SubTaskIDs) != 3 {
+			t.Errorf("task.SubTaskIDs length = %d, want 3", len(task.SubTaskIDs))
+		}
+		if len(task.ParentIDs) != 1 {
+			t.Errorf("task.ParentIDs length = %d, want 1", len(task.ParentIDs))
+		}
+	})
+
+	t.Run("permalink not found", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := taskResponse{Data: []Task{}}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		_, err := client.GetTaskByPermalinkParam(context.Background(), "https://www.wrike.com/open.htm?id=9999999999")
+		if !errors.Is(err, ErrTaskNotFound) {
+			t.Errorf("error = %v, want %v", err, ErrTaskNotFound)
+		}
+	})
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Task struct with optional fields tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GetCustomFields tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestGetCustomFields(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/customfields" {
+				t.Errorf("unexpected path: %s", r.URL.Path)
+			}
+
+			response := customFieldsResponse{
+				Data: []CustomFieldDefinition{
+					{ID: "IEAAJCF1", Title: "Days since creation", Type: "Duration"},
+					{ID: "IEAAJCF2", Title: "Story Points", Type: "Numeric"},
+					{ID: "IEAAJCF3", Title: "Sprint", Type: "DropDown"},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		fields, err := client.GetCustomFields(context.Background())
+		if err != nil {
+			t.Fatalf("GetCustomFields error = %v", err)
+		}
+		if len(fields) != 3 {
+			t.Errorf("got %d fields, want 3", len(fields))
+		}
+		if fields[0].Title != "Days since creation" {
+			t.Errorf("fields[0].Title = %q, want %q", fields[0].Title, "Days since creation")
+		}
+	})
+}
+
+func TestTaskStructOptionalFields(t *testing.T) {
+	t.Run("parse all optional fields", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := taskResponse{
+				Data: []Task{
+					{
+						ID:               "IEAAJTASKID",
+						Title:            "Task with all fields",
+						Description:      "Full description",
+						BriefDescription: "Brief...",
+						Status:           "Active",
+						Priority:         "High",
+						Permalink:        "https://www.wrike.com/open.htm?id=1234567890",
+						SubTaskIDs:       []string{"SUB1", "SUB2"},
+						ParentIDs:        []string{"PARENT1"},
+						SuperParentIDs:   []string{"SUPER1"},
+						SuperTaskIDs:     []string{"SUPERTASK1"},
+						DependencyIDs:    []string{"DEP1"},
+						ResponsibleIDs:   []string{"USER1", "USER2"},
+						AuthorIDs:        []string{"AUTHOR1"},
+						SharedIDs:        []string{"SHARED1"},
+						AttachmentCount:  5,
+						HasAttachments:   true,
+						Recurrent:        false,
+						CustomFields: []CustomField{
+							{ID: "CF1", Value: "custom value"},
+						},
+						Metadata: []MetadataItem{
+							{Key: "key1", Value: "value1"},
+						},
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		})
+
+		client, cleanup := setupMockServer(t, handler)
+		defer cleanup()
+
+		task, err := client.GetTask(context.Background(), "IEAAJTASKID")
+		if err != nil {
+			t.Fatalf("GetTask error = %v", err)
+		}
+
+		// Verify all optional fields are parsed
+		if task.Description != "Full description" {
+			t.Errorf("task.Description = %q, want %q", task.Description, "Full description")
+		}
+		if task.BriefDescription != "Brief..." {
+			t.Errorf("task.BriefDescription = %q, want %q", task.BriefDescription, "Brief...")
+		}
+		if len(task.SubTaskIDs) != 2 {
+			t.Errorf("task.SubTaskIDs length = %d, want 2", len(task.SubTaskIDs))
+		}
+		if len(task.ParentIDs) != 1 {
+			t.Errorf("task.ParentIDs length = %d, want 1", len(task.ParentIDs))
+		}
+		if len(task.SuperParentIDs) != 1 {
+			t.Errorf("task.SuperParentIDs length = %d, want 1", len(task.SuperParentIDs))
+		}
+		if len(task.SuperTaskIDs) != 1 {
+			t.Errorf("task.SuperTaskIDs length = %d, want 1", len(task.SuperTaskIDs))
+		}
+		if len(task.DependencyIDs) != 1 {
+			t.Errorf("task.DependencyIDs length = %d, want 1", len(task.DependencyIDs))
+		}
+		if len(task.ResponsibleIDs) != 2 {
+			t.Errorf("task.ResponsibleIDs length = %d, want 2", len(task.ResponsibleIDs))
+		}
+		if len(task.AuthorIDs) != 1 {
+			t.Errorf("task.AuthorIDs length = %d, want 1", len(task.AuthorIDs))
+		}
+		if len(task.SharedIDs) != 1 {
+			t.Errorf("task.SharedIDs length = %d, want 1", len(task.SharedIDs))
+		}
+		if task.AttachmentCount != 5 {
+			t.Errorf("task.AttachmentCount = %d, want 5", task.AttachmentCount)
+		}
+		if !task.HasAttachments {
+			t.Error("task.HasAttachments should be true")
+		}
+		if task.Recurrent {
+			t.Error("task.Recurrent should be false")
+		}
+		if len(task.CustomFields) != 1 {
+			t.Errorf("task.CustomFields length = %d, want 1", len(task.CustomFields))
+		}
+		if task.CustomFields[0].Value != "custom value" {
+			t.Errorf("task.CustomFields[0].Value = %q, want %q", task.CustomFields[0].Value, "custom value")
+		}
+		if len(task.Metadata) != 1 {
+			t.Errorf("task.Metadata length = %d, want 1", len(task.Metadata))
+		}
+		if task.Metadata[0].Key != "key1" {
+			t.Errorf("task.Metadata[0].Key = %q, want %q", task.Metadata[0].Key, "key1")
+		}
+	})
+}

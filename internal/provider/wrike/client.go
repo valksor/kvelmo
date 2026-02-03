@@ -126,9 +126,13 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 }
 
 // GetTask fetches a task by ID.
+// The /tasks/{id} endpoint returns all fields by default including subTaskIds,
+// description, customFields, metadata, etc.
 func (c *Client) GetTask(ctx context.Context, taskID string) (*Task, error) {
+	path := "/tasks/" + url.PathEscape(taskID)
+
 	var response taskResponse
-	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/tasks/"+url.PathEscape(taskID), nil, &response); err != nil {
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return nil, err
 	}
 
@@ -154,9 +158,9 @@ func (c *Client) GetTaskByPermalink(ctx context.Context, permalink string) (*Tas
 }
 
 // GetTaskByPermalinkParam fetches a task by permalink URL using query parameter.
-// Uses GET /tasks?permalink=... which is the official Wrike API method.
+// Uses GET /tasks?permalink=... to resolve API ID, then fetches full task with all fields.
 func (c *Client) GetTaskByPermalinkParam(ctx context.Context, permalink string) (*Task, error) {
-	// Build query string with permalink parameter
+	// First, resolve permalink to API ID (permalink endpoint has limited parameter support)
 	path := "/tasks?permalink=" + url.QueryEscape(permalink)
 
 	var response taskResponse
@@ -168,7 +172,8 @@ func (c *Client) GetTaskByPermalinkParam(ctx context.Context, permalink string) 
 		return nil, ErrTaskNotFound
 	}
 
-	return &response.Data[0], nil
+	// Now fetch full task with all optional fields using the resolved API ID
+	return c.GetTask(ctx, response.Data[0].ID)
 }
 
 // GetFolderByPermalink resolves a numeric folder/project ID to its API ID.
@@ -191,9 +196,17 @@ func (c *Client) GetFolderByPermalink(ctx context.Context, numericID string) (*F
 }
 
 // GetTasks fetches multiple tasks by IDs.
+// The /tasks/{ids} endpoint returns all fields by default including subTaskIds.
 func (c *Client) GetTasks(ctx context.Context, taskIDs []string) ([]Task, error) {
+	// Escape each ID individually, then join with comma (don't escape the comma itself)
+	escapedIDs := make([]string, len(taskIDs))
+	for i, id := range taskIDs {
+		escapedIDs[i] = url.PathEscape(id)
+	}
+	path := "/tasks/" + strings.Join(escapedIDs, ",")
+
 	var response taskResponse
-	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/tasks/"+url.PathEscape(strings.Join(taskIDs, ",")), nil, &response); err != nil {
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return nil, err
 	}
 
@@ -201,9 +214,12 @@ func (c *Client) GetTasks(ctx context.Context, taskIDs []string) ([]Task, error)
 }
 
 // GetTasksInFolder fetches all tasks in a folder.
+// Returns basic task info; use GetTask for full details including subtasks.
 func (c *Client) GetTasksInFolder(ctx context.Context, folderID string) ([]Task, error) {
+	path := "/folders/" + url.PathEscape(folderID) + "/tasks"
+
 	var response taskResponse
-	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/folders/"+url.PathEscape(folderID)+"/tasks", nil, &response); err != nil {
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return nil, err
 	}
 
@@ -211,9 +227,12 @@ func (c *Client) GetTasksInFolder(ctx context.Context, folderID string) ([]Task,
 }
 
 // GetTasksInSpace fetches all tasks in a space.
+// Returns basic task info; use GetTask for full details including subtasks.
 func (c *Client) GetTasksInSpace(ctx context.Context, spaceID string) ([]Task, error) {
+	path := "/spaces/" + url.PathEscape(spaceID) + "/tasks"
+
 	var response taskResponse
-	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/spaces/"+url.PathEscape(spaceID)+"/tasks", nil, &response); err != nil {
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return nil, err
 	}
 
@@ -251,6 +270,17 @@ func (c *Client) GetComments(ctx context.Context, taskID string) ([]Comment, err
 func (c *Client) GetAttachments(ctx context.Context, taskID string) ([]Attachment, error) {
 	var response attachmentsResponse
 	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/tasks/"+url.PathEscape(taskID)+"/attachments", nil, &response); err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+// GetCustomFields fetches all custom field definitions for the account.
+// These contain the field names/titles that correspond to CustomField IDs on tasks.
+func (c *Client) GetCustomFields(ctx context.Context) ([]CustomFieldDefinition, error) {
+	var response customFieldsResponse
+	if err := c.doRequestWithRetry(ctx, http.MethodGet, "/customfields", nil, &response); err != nil {
 		return nil, err
 	}
 
@@ -454,18 +484,55 @@ func (c *Client) GetTaskDependencies(ctx context.Context, taskID string) ([]Depe
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Task represents a Wrike task.
+// Task represents a Wrike task with all optional fields.
 type Task struct {
-	CreatedDate   time.Time `json:"createdDate"`
-	UpdatedDate   time.Time `json:"updatedDate"`
-	ID            string    `json:"id"`
-	Title         string    `json:"title"`
-	Description   string    `json:"description"`
-	Status        string    `json:"status"`
-	Priority      string    `json:"priority"`
-	Permalink     string    `json:"permalink"`
-	SubTaskIDs    []string  `json:"subTaskIds"`
-	Tags          []string  `json:"tags"`
-	DependencyIDs []string  `json:"dependencyIds,omitempty"` // Task IDs this task depends on
+	// Core fields (always returned)
+	CreatedDate time.Time `json:"createdDate"`
+	UpdatedDate time.Time `json:"updatedDate"`
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Status      string    `json:"status"`
+	Permalink   string    `json:"permalink"`
+	Tags        []string  `json:"tags"`
+
+	// Optional fields (requested via fields parameter)
+	Description      string         `json:"description,omitempty"`
+	BriefDescription string         `json:"briefDescription,omitempty"`
+	Priority         string         `json:"priority,omitempty"`
+	ParentIDs        []string       `json:"parentIds,omitempty"`
+	SuperParentIDs   []string       `json:"superParentIds,omitempty"`
+	SuperTaskIDs     []string       `json:"superTaskIds,omitempty"`
+	DependencyIDs    []string       `json:"dependencyIds,omitempty"`
+	ResponsibleIDs   []string       `json:"responsibleIds,omitempty"`
+	AuthorIDs        []string       `json:"authorIds,omitempty"`
+	SharedIDs        []string       `json:"sharedIds,omitempty"`
+	CustomFields     []CustomField  `json:"customFields,omitempty"`
+	Metadata         []MetadataItem `json:"metadata,omitempty"`
+	AttachmentCount  int            `json:"attachmentCount,omitempty"`
+	HasAttachments   bool           `json:"hasAttachments,omitempty"`
+	Recurrent        bool           `json:"recurrent,omitempty"`
+
+	// SubTaskIDs is populated when subTasks=true query parameter is used
+	SubTaskIDs []string `json:"subTaskIds,omitempty"`
+}
+
+// CustomField represents a Wrike custom field value on a task.
+type CustomField struct {
+	ID    string `json:"id"`
+	Value string `json:"value"`
+}
+
+// CustomFieldDefinition represents a Wrike custom field definition.
+type CustomFieldDefinition struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Type  string `json:"type"`
+}
+
+// MetadataItem represents a Wrike metadata key-value pair.
+type MetadataItem struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // Comment represents a Wrike comment.
@@ -502,6 +569,10 @@ type commentResponse struct {
 
 type attachmentsResponse struct {
 	Data []Attachment `json:"data"`
+}
+
+type customFieldsResponse struct {
+	Data []CustomFieldDefinition `json:"data"`
 }
 
 // Folder represents a Wrike folder or project.

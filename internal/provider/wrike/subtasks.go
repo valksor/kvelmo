@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -15,27 +16,33 @@ var ErrNotASubtask = errors.New("not a subtask")
 
 // SubtaskInfo holds summary information about a subtask.
 type SubtaskInfo struct {
-	ID     string
-	Title  string
-	Status string
+	ID          string
+	Title       string
+	Status      string
+	Description string
+}
+
+// ParentTaskInfo holds summary information about a parent task.
+// Intentionally excludes SubTaskIDs to avoid showing sibling subtasks.
+type ParentTaskInfo struct {
+	ID          string
+	Title       string
+	Status      string
+	Description string
+	Permalink   string
 }
 
 // FetchParent implements the provider.ParentFetcher interface.
 // It retrieves the parent task for a given subtask.
 //
-// In Wrike, the parent-child relationship is stored in the parent's subTaskIds array.
-// When a subtask is fetched via FetchSubtasks, the parent_id is stored in metadata.
-// This function uses that metadata to fetch the parent task.
-//
-// If the task is not a subtask (no parent_id in metadata), returns nil, nil.
+// Uses SuperTaskIDs from the Wrike API to identify and fetch the parent task.
+// If the task is not a subtask (no SuperTaskIDs), returns ErrNotASubtask.
 func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
 	}
 
-	// First, fetch the task to check if it has a parent_id in metadata
-	// This is the most reliable way since Wrike API doesn't provide a direct parent field
 	var task *Task
 
 	switch {
@@ -54,30 +61,25 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 		return nil, fmt.Errorf("fetch task: %w", err)
 	}
 
-	// For tasks fetched directly (not as subtasks), we need to check if this is actually a subtask
-	// Wrike doesn't provide a direct parent_id field in the API response
-	// The metadata will only have parent_id if this was fetched via FetchSubtasks
-	//
-	// If the task was fetched directly, we don't have a way to get the parent without
-	// searching through all parent tasks, which is not practical.
-	//
-	// Users should fetch subtasks via the parent's FetchSubtasks method to get
-	// the parent_id metadata populated.
-
-	// If this task has subtasks, it might be a parent, not a subtask
-	if len(task.SubTaskIDs) > 0 {
-		// This task has children - it's likely a parent, not a subtask
-		// Return sentinel error to indicate no parent
+	// Check if task has SuperTaskIDs (is a subtask)
+	if len(task.SuperTaskIDs) == 0 {
 		return nil, ErrNotASubtask
 	}
 
-	// For a true subtask without subTaskIDs, we don't have a reliable way to find its parent
-	// through the Wrike API without additional context.
-	//
-	// The parent_id would have been set in metadata if this was fetched via FetchSubtasks.
-	// Since we fetched this directly, we don't have that context.
+	parentID := task.SuperTaskIDs[0]
 
-	return nil, ErrNotASubtask
+	// Guard against circular reference (malformed API data)
+	if parentID == "" || parentID == task.ID {
+		return nil, ErrNotASubtask
+	}
+
+	// Fetch first parent (typically there's only one)
+	parentTask, err := p.client.GetTask(ctx, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch parent task: %w", err)
+	}
+
+	return p.taskToWorkUnit(parentTask), nil
 }
 
 // FetchSubtasks implements the provider.SubtaskFetcher interface.
@@ -166,6 +168,42 @@ func (p *Provider) subtaskToWorkUnit(task *Task, parentID string) *provider.Work
 	}
 }
 
+// fetchParentTask fetches parent task info for a subtask (internal helper for Snapshot).
+// Returns nil, nil if no parent exists or on circular reference.
+// Intentionally excludes sibling subtasks per user requirement.
+func (p *Provider) fetchParentTask(ctx context.Context, taskID string, superTaskIDs []string) (*ParentTaskInfo, error) {
+	if len(superTaskIDs) == 0 {
+		return nil, nil //nolint:nilnil // No parent exists (not an error)
+	}
+
+	parentID := superTaskIDs[0]
+
+	// Guard against circular reference (malformed API data)
+	if parentID == "" || parentID == taskID {
+		return nil, nil //nolint:nilnil // Circular reference treated as no parent (not an error)
+	}
+
+	// Log if multiple parents exist (unusual but possible)
+	if len(superTaskIDs) > 1 {
+		slog.Debug("task has multiple parents, using first", "task_id", taskID, "parent_count", len(superTaskIDs))
+	}
+
+	// Fetch first parent only - Wrike typically has single parent
+	// NOTE: Intentionally excludes sibling subtasks per user requirement
+	parentTask, err := p.client.GetTask(ctx, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch parent task %s: %w", parentID, err)
+	}
+
+	return &ParentTaskInfo{
+		ID:          parentTask.ID,
+		Title:       parentTask.Title,
+		Status:      parentTask.Status,
+		Description: parentTask.Description,
+		Permalink:   parentTask.Permalink,
+	}, nil
+}
+
 // fetchSubtasks recursively fetches all subtasks for a task (internal helper)
 // Returns a list of subtask info.
 func (p *Provider) fetchSubtasks(ctx context.Context, subtaskIDs []string, depth int) ([]SubtaskInfo, error) {
@@ -189,9 +227,10 @@ func (p *Provider) fetchSubtasks(ctx context.Context, subtaskIDs []string, depth
 
 	for _, task := range tasks {
 		info := SubtaskInfo{
-			ID:     task.ID,
-			Title:  task.Title,
-			Status: task.Status,
+			ID:          task.ID,
+			Title:       task.Title,
+			Status:      task.Status,
+			Description: task.Description,
 		}
 		infos = append(infos, info)
 
