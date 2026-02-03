@@ -699,6 +699,27 @@ type StackTaskView struct {
 	PRURL     string
 }
 
+// RebasePreviewData contains data for the rebase preview partial.
+type RebasePreviewData struct {
+	Tasks             []RebaseTaskPreview
+	HasConflicts      bool
+	SafeCount         int
+	ConflictCount     int
+	Unavailable       bool
+	UnavailableReason string
+}
+
+// RebaseTaskPreview represents a single task in the rebase preview.
+type RebaseTaskPreview struct {
+	TaskID           string
+	Branch           string
+	OntoBase         string
+	Safe             bool
+	WouldConflict    bool
+	ConflictingFiles []string
+	Unavailable      bool
+}
+
 // GuideData contains data for guide/help content.
 type GuideData struct {
 	HasTask         bool

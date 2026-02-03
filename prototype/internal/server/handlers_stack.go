@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/valksor/go-mehrhof/internal/server/api"
 	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/stack"
 )
@@ -77,6 +78,27 @@ type failedRebaseInfo struct {
 	OntoBase     string `json:"onto_base"`
 	IsConflict   bool   `json:"is_conflict"`
 	ConflictHint string `json:"conflict_hint,omitempty"`
+}
+
+// Preview response types.
+
+type rebasePreviewResponse struct {
+	Tasks             []taskPreview `json:"tasks"`
+	HasConflicts      bool          `json:"has_conflicts"`
+	SafeCount         int           `json:"safe_count"`
+	ConflictCount     int           `json:"conflict_count"`
+	Unavailable       bool          `json:"unavailable"`
+	UnavailableReason string        `json:"unavailable_reason,omitempty"`
+}
+
+type taskPreview struct {
+	TaskID           string   `json:"task_id"`
+	Branch           string   `json:"branch"`
+	OntoBase         string   `json:"onto_base"`
+	Safe             bool     `json:"safe"`
+	WouldConflict    bool     `json:"would_conflict,omitempty"`
+	ConflictingFiles []string `json:"conflicting_files,omitempty"`
+	Unavailable      bool     `json:"unavailable,omitempty"`
 }
 
 // handleStacksUI renders the stacks management page.
@@ -378,6 +400,222 @@ func (s *Server) handleStackRebase(w http.ResponseWriter, r *http.Request) {
 	slog.Info("stack rebase completed", "rebased", len(result.RebasedTasks))
 
 	s.writeJSON(w, http.StatusOK, response)
+}
+
+// handleStackRebasePreview returns a preview of what would happen during rebase.
+// GET /api/v1/stack/rebase-preview
+// GET /api/v1/stack/{id}/rebase-preview.
+func (s *Server) handleStackRebasePreview(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	git := s.config.Conductor.GetGit()
+	if git == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "git not initialized")
+
+		return
+	}
+
+	// Get stack ID from query parameter or path
+	stackID := r.URL.Query().Get("stack_id")
+	taskID := r.URL.Query().Get("task_id")
+
+	storage := stack.NewStorage(ws.DataRoot())
+	if err := storage.Load(); err != nil {
+		// No stacks yet
+		s.writeJSON(w, http.StatusOK, rebasePreviewResponse{
+			Tasks: []taskPreview{},
+		})
+
+		return
+	}
+
+	rebaser := stack.NewRebaser(storage, git)
+
+	// Preview single task
+	if taskID != "" {
+		preview, err := rebaser.PreviewTask(r.Context(), taskID)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, "preview task: "+err.Error())
+
+			return
+		}
+
+		response := rebasePreviewResponse{
+			Tasks: []taskPreview{
+				{
+					TaskID:           preview.TaskID,
+					Branch:           preview.Branch,
+					OntoBase:         preview.OntoBase,
+					Safe:             !preview.WouldConflict && !preview.Unavailable,
+					WouldConflict:    preview.WouldConflict,
+					ConflictingFiles: preview.ConflictingFiles,
+					Unavailable:      preview.Unavailable,
+				},
+			},
+			HasConflicts:  preview.WouldConflict,
+			SafeCount:     boolToInt(!preview.WouldConflict && !preview.Unavailable),
+			ConflictCount: boolToInt(preview.WouldConflict),
+			Unavailable:   preview.Unavailable,
+		}
+
+		s.writeJSON(w, http.StatusOK, response)
+
+		return
+	}
+
+	// Preview specific stack
+	if stackID != "" {
+		preview, err := rebaser.PreviewRebase(r.Context(), stackID)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, "preview rebase: "+err.Error())
+
+			return
+		}
+
+		response := convertPreviewToResponse(preview)
+
+		// Return HTML for HTMX requests
+		if api.IsHTMXRequest(r) {
+			s.renderRebasePreviewHTML(w, response)
+
+			return
+		}
+
+		s.writeJSON(w, http.StatusOK, response)
+
+		return
+	}
+
+	// Preview all stacks
+	allTasks := make([]taskPreview, 0)
+	var totalSafe, totalConflict int
+	var unavailable bool
+	var unavailableReason string
+
+	for _, st := range storage.ListStacks() {
+		if len(st.GetTasksNeedingRebase()) == 0 {
+			continue
+		}
+
+		preview, err := rebaser.PreviewRebase(r.Context(), st.ID)
+		if err != nil {
+			slog.Warn("failed to preview stack", "stack_id", st.ID, "error", err)
+
+			continue
+		}
+
+		for _, task := range preview.Tasks {
+			allTasks = append(allTasks, taskPreview{
+				TaskID:           task.TaskID,
+				Branch:           task.Branch,
+				OntoBase:         task.OntoBase,
+				Safe:             !task.WouldConflict && !task.Unavailable,
+				WouldConflict:    task.WouldConflict,
+				ConflictingFiles: task.ConflictingFiles,
+				Unavailable:      task.Unavailable,
+			})
+		}
+
+		totalSafe += preview.SafeCount
+		totalConflict += preview.ConflictCount
+		if preview.Unavailable {
+			unavailable = true
+			if unavailableReason == "" {
+				unavailableReason = preview.UnavailableReason
+			}
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, rebasePreviewResponse{
+		Tasks:             allTasks,
+		HasConflicts:      totalConflict > 0,
+		SafeCount:         totalSafe,
+		ConflictCount:     totalConflict,
+		Unavailable:       unavailable,
+		UnavailableReason: unavailableReason,
+	})
+}
+
+// convertPreviewToResponse converts a stack.RebasePreview to API response.
+func convertPreviewToResponse(preview *stack.RebasePreview) rebasePreviewResponse {
+	tasks := make([]taskPreview, 0, len(preview.Tasks))
+	for _, task := range preview.Tasks {
+		tasks = append(tasks, taskPreview{
+			TaskID:           task.TaskID,
+			Branch:           task.Branch,
+			OntoBase:         task.OntoBase,
+			Safe:             !task.WouldConflict && !task.Unavailable,
+			WouldConflict:    task.WouldConflict,
+			ConflictingFiles: task.ConflictingFiles,
+			Unavailable:      task.Unavailable,
+		})
+	}
+
+	return rebasePreviewResponse{
+		Tasks:             tasks,
+		HasConflicts:      preview.HasConflicts,
+		SafeCount:         preview.SafeCount,
+		ConflictCount:     preview.ConflictCount,
+		Unavailable:       preview.Unavailable,
+		UnavailableReason: preview.UnavailableReason,
+	}
+}
+
+// boolToInt converts a boolean to 0 or 1.
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+
+	return 0
+}
+
+// renderRebasePreviewHTML renders the preview as HTML for HTMX requests.
+func (s *Server) renderRebasePreviewHTML(w http.ResponseWriter, preview rebasePreviewResponse) {
+	if s.renderer == nil {
+		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
+
+		return
+	}
+
+	// Convert to view data
+	data := views.RebasePreviewData{
+		Tasks:             make([]views.RebaseTaskPreview, 0, len(preview.Tasks)),
+		HasConflicts:      preview.HasConflicts,
+		SafeCount:         preview.SafeCount,
+		ConflictCount:     preview.ConflictCount,
+		Unavailable:       preview.Unavailable,
+		UnavailableReason: preview.UnavailableReason,
+	}
+
+	for _, task := range preview.Tasks {
+		data.Tasks = append(data.Tasks, views.RebaseTaskPreview{
+			TaskID:           task.TaskID,
+			Branch:           task.Branch,
+			OntoBase:         task.OntoBase,
+			Safe:             task.Safe,
+			WouldConflict:    task.WouldConflict,
+			ConflictingFiles: task.ConflictingFiles,
+			Unavailable:      task.Unavailable,
+		})
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderer.RenderRebasePreview(w, data); err != nil {
+		slog.Error("failed to render rebase preview", "error", err)
+		http.Error(w, "render error: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // getStackStateIcon returns the icon for a stack state.
