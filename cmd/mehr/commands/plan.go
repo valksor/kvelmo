@@ -24,6 +24,7 @@ var (
 	planAutoApprove   bool   // Auto-approve defaults without asking user
 	planOptimize      bool   // Optimize prompt before sending to agent
 	planForce         bool   // Force reset state before planning
+	planLibrary       bool   // Auto-include library documentation
 
 	// Hierarchical context flags (override workspace config).
 	planWithParent      bool // Include parent task context
@@ -78,6 +79,7 @@ func init() {
 	planCmd.Flags().BoolVar(&planAutoApprove, "auto-approve", false, "Auto-approve defaults without asking user")
 	planCmd.Flags().BoolVar(&planOptimize, "optimize", false, "Optimize prompt before sending to agent")
 	planCmd.Flags().BoolVar(&planForce, "force", false, "Reset workflow state and retry (use after hung agent)")
+	planCmd.Flags().BoolVar(&planLibrary, "library", false, "Auto-include relevant library documentation based on working directory")
 
 	// Hierarchical context flags (override workspace config)
 	planCmd.Flags().BoolVar(&planWithParent, "with-parent", false, "Include parent task context (overrides config)")
@@ -106,6 +108,7 @@ func runPlan(cmd *cobra.Command, args []string) error {
 		FullContext:     planFullContext,
 		OptimizePrompts: planOptimize,
 		Sandbox:         sandbox,
+		LibraryInclude:  planLibrary,
 	})
 
 	// Add --auto-approve flag for planning

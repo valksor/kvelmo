@@ -334,6 +334,13 @@ func runProjectPlan(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  %d blockers noted\n", len(result.Blockers))
 	}
 
+	// Warn if no tasks were extracted
+	if len(result.Tasks) == 0 {
+		fmt.Printf("\n⚠️  Warning: No tasks were extracted from the AI response.\n")
+		fmt.Printf("    Raw AI output saved to: %s\n", result.RawOutputPath)
+		fmt.Printf("    Try: cat %s\n", result.RawOutputPath)
+	}
+
 	return nil
 }
 

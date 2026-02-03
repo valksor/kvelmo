@@ -131,13 +131,23 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 		return output.WriteJSON(buildJSONStatusTask(ctx, ws, git, active, work, git.Root()))
 	}
 
+	// Load specifications and reviews for progress-aware state display
+	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
+	reviews, _ := ws.ListReviews(active.ID)
+	hasSpecs := len(specifications) > 0
+	hasImpl := hasImplementedSpecifications(ws, active.ID)
+	hasReviews := len(reviews) > 0
+	phase := display.DetectProgressPhase(hasSpecs, hasImpl, hasReviews)
+
+	// Detect optional modifiers from session history
+	mods := detectOptionalModifiers(ws, active.ID)
+
 	fmt.Printf("Worktree Task: %s\n", tkdisplay.Bold(active.ID))
 	fmt.Printf("  Title:    %s\n", work.Metadata.Title)
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:      %s\n", work.Metadata.ExternalKey)
 	}
-	hasImpl := hasImplementedSpecifications(ws, active.ID)
-	fmt.Printf("  State:    %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescriptionWithContext(workflow.State(active.State), hasImpl)))
+	fmt.Printf("  State:    %s - %s\n", display.FormatStateColoredWithProgressAndModifiers(workflow.State(active.State), phase, mods), tkdisplay.Muted(display.GetStateDescriptionWithProgress(workflow.State(active.State), phase)))
 	fmt.Printf("  Source:   %s\n", active.Ref)
 	fmt.Printf("  Worktree: %s\n", git.Root())
 	fmt.Printf("  Started:  %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -153,8 +163,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 		fmt.Printf("  Branch:   %s\n", active.Branch)
 	}
 
-	// Show specifications with status
-	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
+	// Show specifications with status (already loaded above)
 	if len(specifications) > 0 {
 		fmt.Printf("\nSpecifications: %d\n", len(specifications))
 		for _, specification := range specifications {
@@ -241,13 +250,23 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 		return output.WriteJSON(buildJSONStatusTask(ctx, ws, git, active, work, ""))
 	}
 
+	// Load specifications and reviews for progress-aware state display
+	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
+	reviews, _ := ws.ListReviews(active.ID)
+	hasSpecs := len(specifications) > 0
+	hasImpl := hasImplementedSpecifications(ws, active.ID)
+	hasReviews := len(reviews) > 0
+	phase := display.DetectProgressPhase(hasSpecs, hasImpl, hasReviews)
+
+	// Detect optional modifiers from session history
+	mods := detectOptionalModifiers(ws, active.ID)
+
 	fmt.Printf("Active Task: %s\n", tkdisplay.Bold(active.ID))
 	fmt.Printf("  Title:   %s\n", work.Metadata.Title)
 	if work.Metadata.ExternalKey != "" {
 		fmt.Printf("  Key:     %s\n", work.Metadata.ExternalKey)
 	}
-	hasImpl := hasImplementedSpecifications(ws, active.ID)
-	fmt.Printf("  State:   %s - %s\n", display.FormatStateStringColored(active.State), tkdisplay.Muted(display.GetStateDescriptionWithContext(workflow.State(active.State), hasImpl)))
+	fmt.Printf("  State:   %s - %s\n", display.FormatStateColoredWithProgressAndModifiers(workflow.State(active.State), phase, mods), tkdisplay.Muted(display.GetStateDescriptionWithProgress(workflow.State(active.State), phase)))
 	fmt.Printf("  Source:  %s\n", active.Ref)
 	fmt.Printf("  WorkDir: %s\n", active.WorkDir)
 	fmt.Printf("  Started: %s\n", active.Started.Format("2006-01-02 15:04:05"))
@@ -263,8 +282,7 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 		fmt.Printf("  Branch:  %s\n", active.Branch)
 	}
 
-	// Show specifications with status
-	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
+	// Show specifications with status (already loaded above)
 	if len(specifications) > 0 {
 		fmt.Printf("\nSpecifications: %d\n", len(specifications))
 		for _, specification := range specifications {
@@ -595,4 +613,26 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 	}
 
 	return task
+}
+
+// detectOptionalModifiers scans session history to detect optional workflow phases.
+func detectOptionalModifiers(ws *storage.Workspace, taskID string) display.OptionalModifiers {
+	var mods display.OptionalModifiers
+
+	sessions, err := ws.ListSessions(taskID)
+	if err != nil {
+		return mods
+	}
+
+	for _, session := range sessions {
+		sessionType := strings.ToLower(session.Metadata.Type)
+		if strings.Contains(sessionType, "optimiz") {
+			mods.Optimized = true
+		}
+		if strings.Contains(sessionType, "simplif") {
+			mods.Simplified = true
+		}
+	}
+
+	return mods
 }

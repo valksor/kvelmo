@@ -4,14 +4,18 @@ This document tracks implementation status across Mehrhof's interfaces. Use this
 
 ## Interface Overview
 
-Mehrhof has four user interfaces:
+Mehrhof has six user interfaces:
 
-| Interface           | Entry Point          | Purpose                          |
-|---------------------|----------------------|----------------------------------|
-| **CLI**             | `cmd/mehr/commands/` | Full command-line interface      |
-| **Interactive CLI** | `mehr interactive`   | REPL mode for workflow sessions  |
-| **Web UI**          | `internal/server/`   | Browser interface with dashboard |
-| **Interactive Web** | `/interactive`       | Browser REPL with SSE streaming  |
+| Interface              | Entry Point              | Purpose                          |
+|------------------------|--------------------------|----------------------------------|
+| **CLI**                | `cmd/mehr/commands/`     | Full command-line interface      |
+| **Interactive CLI**    | `mehr interactive`       | REPL mode for workflow sessions  |
+| **Web UI**             | `internal/server/`       | Browser interface with dashboard |
+| **Interactive Web**    | `/interactive`           | Browser REPL with SSE streaming  |
+| **JetBrains Plugin**   | `ide/jetbrains/`         | IntelliJ/GoLand/WebStorm native  |
+| **VS Code Extension**  | `ide/vscode/`            | VS Code sidebar integration      |
+
+**Parity Goal**: CLI Interactive == Web Interactive == JetBrains == VS Code
 
 ---
 
@@ -22,12 +26,14 @@ When adding a new feature, complete ALL applicable items:
 - [ ] **CLI Command**: Add in `cmd/mehr/commands/*.go` using Cobra
 - [ ] **Interactive CLI**: Add to `interactive` allowed commands if workflow-relevant
 - [ ] **Web UI Handler**: Add in `internal/server/handlers*.go` or `internal/server/api/`
-- [ ] **Interactive Web**: Add to `/interactive` command parser if workflow-relevant
+- [ ] **Interactive Web**: Add to `handlers_interactive.go` command handler if workflow-relevant
+- [ ] **JetBrains Plugin**: Add to `InteractivePanel.kt` help text and action buttons
+- [ ] **VS Code Extension**: Add to `interactivePanel.ts` commands and action buttons
 - [ ] **Router Registration**: Update `internal/server/router.go`
 - [ ] **Template/View**: Add in `internal/server/templates/` or `internal/server/views/`
 - [ ] **Navigation**: Update menus if user-facing
 - [ ] **SSE Streaming**: Add for long-running operations
-- [ ] **Tests**: Comprehensive tests (see a Testing section in CLAUDE.md)
+- [ ] **Tests**: Comprehensive tests (see Testing section in CLAUDE.md)
 - [ ] **Documentation**: Update `docs/cli/` and/or `docs/web-ui/`
 
 ### Implementation Pattern
@@ -94,6 +100,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `mcp`             | ✅      | MCP server toggle                   |
 | `scan`            | ✅      | `/scan` page with scanner selection |
 | `memory`          | ✅      | `/memory` page                      |
+| `library`         | ✅      | `/library` page with pull/list/show |
 | `commit`          | ✅      | `/commit` page with analyze/preview |
 | `project sync`    | ✅      | API + SSE streaming                 |
 | `stack`           | ✅      | `/stack` page                       |
@@ -129,33 +136,41 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 ## Interactive Modes Parity
 
-| Feature          | CLI REPL   | Web `/interactive` | Notes               |
-|------------------|------------|--------------------|---------------------|
+| Feature          | CLI REPL   | Web `/interactive` | JetBrains | VS Code | Notes               |
+|------------------|------------|--------------------|-----------|---------|--------------------|
 | **Workflow**     |
-| `start`          | ✅          | ✅                  |                     |
-| `plan`           | ✅          | ✅                  |                     |
-| `implement`      | ✅ (`impl`) | ✅                  |                     |
-| `review`         | ✅          | ✅                  |                     |
-| `finish`         | ✅          | ✅                  |                     |
-| `continue`       | ✅ (`cont`) | ✅                  |                     |
-| `abandon`        | ✅          | ✅                  |                     |
+| `start`          | ✅          | ✅                  | ✅         | ✅       |                     |
+| `plan`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `implement`      | ✅ (`impl`) | ✅                  | ✅         | ✅       |                     |
+| `review`         | ✅          | ✅                  | ✅         | ✅       |                     |
+| `finish`         | ✅          | ✅                  | ✅         | ✅       |                     |
+| `continue`       | ✅ (`cont`) | ✅                  | ✅         | ✅       |                     |
+| `abandon`        | ✅          | ✅                  | ✅         | ✅       |                     |
 | **Session**      |
-| `status`         | ✅ (`st`)   | ✅                  |                     |
-| `note`           | ✅          | ✅                  |                     |
-| `question`/`ask` | ✅          | ✅                  |                     |
-| `answer`         | ✅ (`a`)    | ✅                  |                     |
-| `specification`  | ✅ (`spec`) | ✅                  |                     |
-| `cost`           | ✅          | ✅                  |                     |
-| `list`           | ✅          | ✅                  |                     |
-| `quick`          | ✅          | ✅                  |                     |
+| `status`         | ✅ (`st`)   | ✅                  | ✅         | ✅       |                     |
+| `note`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `question`       | ✅          | ✅                  | ✅         | ✅       |                     |
+| `answer`         | ✅ (`a`)    | ✅                  | ✅         | ✅       |                     |
+| `specification`  | ✅ (`spec`) | ✅                  | ✅         | ✅       |                     |
+| `cost`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `list`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `quick`          | ✅          | ✅                  | ✅         | ✅       |                     |
+| `budget`         | ✅          | ✅                  | ✅         | ✅       |                     |
+| **Search**       |
+| `find`           | ✅          | ✅                  | ✅         | ✅       | AI code search      |
+| `memory`         | ✅          | ✅                  | ✅         | ✅       | Semantic search     |
+| `library`        | ✅          | ✅                  | ✅         | ✅       | Doc library mgmt    |
+| **Tools**        |
+| `simplify`       | ✅          | ✅                  | ✅         | ✅       | Code simplification |
+| `label`          | ✅          | ✅                  | ✅         | ✅       | Task labels         |
 | **Navigation**   |
-| `undo`           | ✅          | ✅                  |                     |
-| `redo`           | ✅          | ✅                  |                     |
-| `clear`          | ✅          | N/A                | Web uses UI refresh |
-| `help`/`?`       | ✅          | ✅                  |                     |
-| `exit`/`quit`    | ✅          | ✅                  | Close tab           |
+| `undo`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `redo`           | ✅          | ✅                  | ✅         | ✅       |                     |
+| `clear`          | ✅          | N/A                | N/A       | N/A     | Web uses UI refresh |
+| `help`/`?`       | ✅          | ✅                  | ✅         | ✅       |                     |
+| `exit`/`quit`    | ✅          | ✅                  | N/A       | N/A     | Close tab/panel     |
 | **Chat**         |
-| `chat <msg>`     | ✅          | ✅ (main input)     |                     |
+| `chat <msg>`     | ✅          | ✅ (main input)     | ✅         | ✅       |                     |
 
 ---
 

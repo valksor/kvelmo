@@ -100,6 +100,7 @@ type CommandOptions struct {
 	FullContext     bool
 	OptimizePrompts bool // Optimize prompts before sending to agents
 	Sandbox         bool // Enable sandboxing for agent execution
+	LibraryInclude  bool // Auto-include library documentation
 }
 
 // IsQuiet returns true if quiet mode is enabled.
@@ -133,6 +134,10 @@ func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 
 	if cmdOpts.Sandbox {
 		opts = append(opts, conductor.WithSandbox(true))
+	}
+
+	if cmdOpts.LibraryInclude {
+		opts = append(opts, conductor.WithLibraryAutoInclude(true))
 	}
 
 	if cmdOpts.StepAgent != "" {

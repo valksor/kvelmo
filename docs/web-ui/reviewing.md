@@ -214,11 +214,77 @@ After review completes:
 - [**Implementing**](implementing.md) - Fix issues and implement again
 - [**Undo & Redo**](undo-redo.md) - Navigate checkpoints if needed
 
+## Viewing Previous Reviews
+
+After running reviews, you can view previous review results:
+
+### In Interactive Mode
+
+In the Interactive panel, type:
+```
+review 1       # View review #1
+review 2       # View review #2
+```
+
+### From the Reviews Panel
+
+The dashboard shows a **Reviews** section after you run your first review:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Reviews                                          2 review(s) │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ⚠️ Review #1                              [ISSUES]          │
+│      Found 3 issues requiring attention                      │
+│      [View] [Implement Fixes]                                │
+│                                                              │
+│  ✅ Review #2                              [PASSED]          │
+│      No issues found                                         │
+│      [View]                                                  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Click **"View"** to see the full review content.
+
+## Implementing Review Fixes
+
+To implement fixes from a specific review:
+
+### In Interactive Mode
+
+Type in the Interactive panel:
+```
+implement review 1    # Implement fixes from review #1
+```
+
+### From the Reviews Panel
+
+Click **"Implement Fixes"** next to the review you want to address.
+
+The agent will focus specifically on fixing the issues identified in that review,
+rather than implementing from specifications.
+
+### Typical Fix Workflow
+
+1. Run `implement` to generate initial code
+2. Run `review` to check for issues (creates review #1)
+3. Click **"Implement Fixes"** for review #1
+4. Run `review` again to verify fixes (creates review #2)
+5. Click **"Finish"** when review passes
+
 ## CLI Equivalent
 
 ```bash
 # Run review
 mehr review
+
+# View review content
+mehr review view 1
+
+# Implement fixes from review
+mehr implement review 1
 
 # View review output
 mehr review --verbose
