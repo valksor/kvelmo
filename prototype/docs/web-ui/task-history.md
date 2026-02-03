@@ -231,23 +231,19 @@ The task history shows all tasks in your workspace, making it easy to:
 
 - [**Dashboard**](dashboard.md) - Return to main view
 - [**Creating Tasks**](creating-tasks.md) - Start a new task
-- [**CLI: list**](../cli/list.md) - List tasks from command line
+- [**CLI: list**](/cli/list.md) - List tasks from command line
 
-## CLI Equivalent
+---
 
-```bash
-# List all tasks
-mehr list
+## Also Available via CLI
 
-# List with details
-mehr list --verbose
+Browse and search tasks from the command line.
 
-# List by state
-mehr list --state done
-mehr list --state active
+| Command | What It Does |
+|---------|--------------|
+| `mehr list` | List all tasks |
+| `mehr list --state done` | Filter by task state |
+| `mehr list --search oauth` | Search tasks by keyword |
+| `mehr list --verbose` | Show detailed task information |
 
-# Search tasks
-mehr list --search oauth
-```
-
-See [CLI: list](../cli/list.md) for all options.
+See [CLI: list](/cli/list.md) for all filters and options.

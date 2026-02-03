@@ -234,20 +234,16 @@ After adding notes:
 - [**Implementing**](implementing.md) - Implement with notes
 - [**Dashboard**](dashboard.md) - Return to main view
 
-## CLI Equivalent
+---
 
-```bash
-# Add a single note
-mehr note "Use PostgreSQL for sessions"
+## Also Available via CLI
 
-# Interactive mode (multiple notes)
-mehr note
+Add notes from the command line when working in a terminal or automating workflows.
 
-# Answer a question
-mehr answer "Use golang.org/x/oauth2"
+| Command | What It Does |
+|---------|--------------|
+| `mehr note "message"` | Add a single note |
+| `mehr note` | Interactive mode for multiple notes |
+| `mehr answer "response"` | Answer a pending agent question |
 
-# View notes
-cat ~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/notes.md
-```
-
-See [CLI: note](../cli/note.md) for details.
+See [CLI: note](/cli/note.md) for flags, interactive mode, and advanced options.

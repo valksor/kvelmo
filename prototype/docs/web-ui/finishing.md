@@ -213,20 +213,17 @@ After finishing:
 - [**Task History**](task-history.md) - View completed tasks
 - [**Dashboard**](dashboard.md) - Return to main dashboard
 
-## CLI Equivalent
+---
 
-```bash
-# Finish task
-mehr finish
+## Also Available via CLI
 
-# Finish without quality checks
-mehr finish --no-quality
+Complete tasks from the command line for terminal-based workflows or automation.
 
-# Keep work directory
-mehr finish --keep-work
+| Command | What It Does |
+|---------|--------------|
+| `mehr finish` | Complete and merge the task |
+| `mehr finish --no-quality` | Skip quality checks |
+| `mehr finish --keep-work` | Preserve work directory after merge |
+| `mehr finish --target develop` | Merge to a specific branch |
 
-# Specify target branch
-mehr finish --target develop
-```
-
-See [CLI: finish](../cli/finish.md) for all options.
+See [CLI: finish](/cli/finish.md) for all flags and options.

@@ -265,7 +265,22 @@ Documentation collections are automatically used in AI workflows:
 
 Enable auto-include via `--library` flag in CLI commands or configure collections with path patterns.
 
+---
+
+## Also Available via CLI
+
+Manage documentation collections from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr library` | List all collections |
+| `mehr library pull <source>` | Pull documentation from URL, file, or git |
+| `mehr library show <name>` | View collection details and pages |
+| `mehr library remove <name>` | Delete a collection |
+| `mehr library stats` | View library statistics |
+
+See [CLI: library](/cli/library.md) for all pull options, filtering, and batch operations.
+
 ## See Also
 
-- [CLI documentation](cli/library.md)
-- [Configuration](../reference/storage.md#library-settings)
+- [Configuration](/reference/storage.md#library-settings)

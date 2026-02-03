@@ -215,19 +215,23 @@ curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
 }
 ```
 
-## CLI Equivalent
+---
 
-```bash
-mehr review --standalone
-mehr review --standalone --branch main
-mehr review --standalone --range HEAD~5..HEAD
-mehr review --standalone src/handler.go src/validation.go
-```
+## Also Available via CLI
 
-See [CLI: review](../cli/review.md) for the command-line interface.
+Run standalone code reviews from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr review --standalone` | Review uncommitted changes |
+| `mehr review --standalone --branch main` | Review current branch vs main |
+| `mehr review --standalone --range HEAD~5..HEAD` | Review a commit range |
+| `mehr review --standalone <files>` | Review specific files |
+
+See [CLI: review](/cli/review.md) for all review modes, fix application, and output options.
 
 ## See Also
 
 - [Reviewing](reviewing.md) - Task-based review in Web UI
-- [CLI: review](../cli/review.md) - Command-line review
+- [CLI: review](/cli/review.md) - Command-line review
 - [Standalone Simplify](standalone-simplify.md) - Standalone code simplification

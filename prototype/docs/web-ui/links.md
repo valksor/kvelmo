@@ -177,17 +177,21 @@ Useful for:
 2. Browse results to find related entities
 3. Check link counts to find highly-connected content
 
-## CLI Equivalent
+---
 
-See [`mehr links`](../cli/links.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                     | Web UI Action          |
-|---------------------------------|------------------------|
-| `mehr links list [entity]`      | Browse/search entities |
-| `mehr links backlinks <entity>` | View entity details    |
-| `mehr links search <name>`      | Search box             |
-| `mehr links stats`              | Statistics panel       |
-| `mehr links rebuild`            | Rebuild button         |
+Manage links from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr links list [entity]` | Browse entities or list links for a specific entity |
+| `mehr links backlinks <entity>` | View what references a specific entity |
+| `mehr links search <name>` | Search for entities by name |
+| `mehr links stats` | View graph statistics |
+| `mehr links rebuild` | Rebuild the link index from source content |
+
+See [CLI: links](/cli/links.md) for all options and output formats.
 
 ## Link Storage
 

@@ -70,7 +70,8 @@ See individual workflow pages for details:
 - **Task History** - Search, filter, and resume past tasks
 - **Notes** - Add context at any point in the workflow
 - **[Parallel Tasks](parallel-tasks.md)** - Run and monitor multiple tasks simultaneously
-- [REST API](api.md) - Programmatic access to all features
+
+> **For developers:** Programmatic access to all features is available via the [REST API](/reference/rest-api.md).
 
 ## Remote Access
 
@@ -90,7 +91,7 @@ Both interfaces provide the same core functionality. The choice depends on your 
 | Automation        | Not available     | Scriptable         |
 | Learning curve    | Lower             | Higher             |
 
-For a detailed comparison, see [Web UI vs CLI](../guides/web-ui-vs-cli.md).
+For a detailed comparison, see [Web UI vs CLI](/guides/web-ui-vs-cli.md).
 
 ## Starting the Server
 
@@ -108,7 +109,7 @@ mehr serve --port 3000
 mehr serve --global
 ```
 
-See [CLI: serve](../cli/serve.md) for all server options.
+See [CLI: serve](/cli/serve.md) for all server options.
 
 ## Next Steps
 

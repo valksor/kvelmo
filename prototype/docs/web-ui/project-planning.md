@@ -277,21 +277,23 @@ Use `--status` to override:
 5. Submit highest priority tasks to Jira
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr project`](../cli/project.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                                                 | Web UI Action                 |
-|-------------------------------------------------------------|-------------------------------|
-| `mehr project plan dir:./specs`                             | Create breakdown              |
-| `mehr project plan dir:./specs --use-schema=false`          | Create breakdown (regex-only) |
-| `mehr project sync wrike:123456`                            | Sync from provider            |
-| `mehr project tasks`                                        | View queue                    |
-| `mehr project edit task-1`                                  | Edit task                     |
-| `mehr project reorder --auto`                               | AI reorder                    |
-| `mehr project submit --provider wrike`                      | Submit all to provider        |
-| `mehr project submit --provider wrike --task task-1,task-2` | Selective submit              |
-| `mehr project start`                                        | Start task                    |
+Manage project planning from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr project plan dir:./specs` | Create task breakdown from a directory |
+| `mehr project sync wrike:123456` | Sync project structure from external provider |
+| `mehr project tasks` | View the task queue |
+| `mehr project edit <task-id>` | Edit a task's properties |
+| `mehr project reorder --auto` | Let AI optimize task order |
+| `mehr project submit --provider <name>` | Submit tasks to external provider |
+| `mehr project start` | Start the next ready task |
+
+See [CLI: project](/cli/project.md) for all options, selective submission, and provider-specific features.
 
 ## Project Queue Storage
 

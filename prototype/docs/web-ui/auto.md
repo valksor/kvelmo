@@ -115,7 +115,7 @@ agent:
       name: claude-opus  # Use a specific agent for quality checks
 ```
 
-For CLI usage with explicit agent override, see [CLI auto documentation](../cli/auto.md) (`--agent-quality` flag).
+For CLI usage with explicit agent override, see [CLI auto documentation](/cli/auto.md) (`--agent-quality` flag).
 
 ### Agent Question Handling
 
@@ -193,20 +193,19 @@ AUTO failed at: quality
 | Review specifications | No         | Yes          |
 | Control               | Less       | Full         |
 
-## CLI Equivalent
+---
 
-See [`mehr auto`](../cli/auto.md) for CLI usage.
+## Also Available via CLI
 
-```bash
-# CLI equivalent of clicking Auto
-mehr auto task.md
+Run automated workflows from the command line for scripting or CI/CD integration.
 
-# With quality retry limit
-mehr auto --max-retries 5 task.md
+| Command | What It Does |
+|---------|--------------|
+| `mehr auto task.md` | Run full workflow automatically |
+| `mehr auto --max-retries 5 task.md` | Set quality check retry limit |
+| `mehr auto --no-quality task.md` | Skip quality checks |
 
-# Skip quality checks entirely
-mehr auto --no-quality task.md
-```
+See [CLI: auto](/cli/auto.md) for all flags and CI/CD examples.
 
 ## Common Workflows
 

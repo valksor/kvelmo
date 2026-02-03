@@ -48,7 +48,7 @@ When set, the project hub (`.mehrhof/`, tasks, queues) stays in the current dire
 
 **Example use case:** You have a Mehrhof hub in `/projects/task-hub/` but the actual code lives in `/projects/reporting-engine/`. Set **Code Directory** to `../reporting-engine` so agents operate on the correct codebase.
 
-**CLI equivalent:** `project.code_dir` in `.mehrhof/config.yaml`. See [CLI: config](../cli/config.md#project-settings).
+**CLI equivalent:** `project.code_dir` in `.mehrhof/config.yaml`. See [CLI: config](/cli/config.md#project-settings).
 
 ### Git Settings
 
@@ -485,5 +485,5 @@ browser:
 ## Next Steps
 
 - [**Dashboard**](dashboard.md) - Return to main view
-- [**CLI: config**](../cli/config.md) - Manage config from CLI
-- [**Configuration**](../configuration/index.md) - Advanced configuration guide
+- [**CLI: config**](/cli/config.md) - Manage config from CLI
+- [**Configuration**](/configuration/index.md) - Advanced configuration guide

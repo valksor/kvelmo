@@ -188,16 +188,20 @@ This helps the AI apply lessons learned from previous work.
 4. Agent uses memory context in planning
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr memory`](../cli/memory.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                       | Web UI Action       |
-|-----------------------------------|---------------------|
-| `mehr memory search "query"`      | Search memory       |
-| `mehr memory stats`               | View statistics     |
-| `mehr memory index --task abc123` | Manually index task |
-| `mehr memory clear`               | Clear all memory    |
+Search and manage semantic memory from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr memory search "query"` | Search memory for similar content |
+| `mehr memory stats` | View memory statistics |
+| `mehr memory index --task <id>` | Manually index a specific task |
+| `mehr memory clear` | Clear all stored memory |
+
+See [CLI: memory](/cli/memory.md) for all search options, filters, and output formats.
 
 ## Memory Storage
 
@@ -218,10 +222,7 @@ If searches return no results:
 
 ### Memory Not Auto-Indexing
 
-Check that `auto_store: true` in settings. Manually index from CLI:
-```bash
-mehr memory index --task <id>
-```
+Check that `auto_store: true` in settings. You can manually index tasks from the CLI if needed.
 
 ### Similar Suggestions Not Appearing
 

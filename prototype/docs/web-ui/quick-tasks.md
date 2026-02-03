@@ -101,7 +101,7 @@ agent:
       name: claude-opus  # Use a specific agent for task optimization
 ```
 
-For CLI usage with explicit agent override, see [CLI optimize documentation](../cli/optimize.md).
+For CLI usage with explicit agent override, see [CLI optimize documentation](/cli/optimize.md).
 
 ### Exporting to Markdown
 
@@ -192,18 +192,22 @@ The default queue ID is `quick-tasks`. You can create multiple queues for differ
 5. Track in external system
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr quick`](../cli/quick.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                   | Web UI Action      |
-|-------------------------------|--------------------|
-| `mehr quick "description"`    | Create task        |
-| `mehr note --task=... "text"` | Add note           |
-| `mehr optimize --task=...`    | Optimize task      |
-| `mehr export --task=...`      | Export to markdown |
-| `mehr submit --task=...`      | Submit to provider |
-| `mehr start queue:...`        | Start task         |
+Capture and manage quick tasks from the command line for rapid entry or scripting.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr quick "description"` | Create a new quick task |
+| `mehr note --task=<id> "text"` | Add a note to a task |
+| `mehr optimize --task=<id>` | Let AI refine the task |
+| `mehr export --task=<id>` | Export task to markdown file |
+| `mehr submit --task=<id>` | Submit task to external provider |
+| `mehr start queue:<id>` | Start the standard workflow for a task |
+
+See [CLI: quick](/cli/quick.md) for all options, queue management, and batch operations.
 
 ## Managing Multiple Queues
 

@@ -441,28 +441,10 @@ mehr serve auth pass admin newpassword
 ## Next Steps
 
 - [**Remote Access**](remote-access.md) - Set up remote access
-- [**CLI: serve**](../cli/serve.md) - Server command options
+- [**CLI: serve**](/cli/serve.md) - Server command options
 
-## CLI Equivalent
+---
 
-```bash
-# Add user (default: user role)
-mehr serve auth add admin password
+## Also Available via CLI
 
-# Add viewer
-mehr serve auth add stakeholder viewpass --role viewer
-
-# List users
-mehr serve auth list
-
-# Change password
-mehr serve auth passwd admin newpass
-
-# Change role
-mehr serve auth role stakeholder user
-
-# Remove user
-mehr serve auth remove admin
-```
-
-See [CLI: serve](../cli/serve.md) for all options.
+All authentication management commands are covered above since user setup requires the command line. For the complete CLI reference including additional flags and options, see [CLI: serve](/cli/serve.md).

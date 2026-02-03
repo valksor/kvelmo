@@ -267,16 +267,20 @@ agent: claude
 4. Consistent security workflow
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr templates`](../cli/templates.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                                  | Web UI Action         |
-|----------------------------------------------|-----------------------|
-| `mehr templates`                             | List templates        |
-| `mehr templates show bug-fix`                | Show template details |
-| `mehr templates apply bug-fix task.md`       | Apply to file         |
-| `mehr start --template bug-fix file:task.md` | Create with template  |
+Manage and apply templates from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr templates` | List all available templates |
+| `mehr templates show <name>` | Show template configuration details |
+| `mehr templates apply <name> <file>` | Apply a template to a task file |
+| `mehr start --template <name> <ref>` | Create a task with a template applied |
+
+See [CLI: templates](/cli/templates.md) for creating custom templates and all options.
 
 ## Template Storage
 

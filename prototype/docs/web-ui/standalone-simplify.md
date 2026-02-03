@@ -191,15 +191,7 @@ To skip checkpoint creation (not recommended):
 
 ### Recovery
 
-If simplification produces unwanted results:
-
-```bash
-# Using git
-git checkout .
-
-# Using mehr CLI
-mehr undo
-```
+If simplification produces unwanted results, you can recover using git to discard changes or the Mehrhof undo feature to restore from a checkpoint.
 
 ## Error Response
 
@@ -210,20 +202,24 @@ mehr undo
 }
 ```
 
-## CLI Equivalent
+---
 
-```bash
-mehr simplify --standalone
-mehr simplify --standalone --branch main
-mehr simplify --standalone --range HEAD~5..HEAD
-mehr simplify --standalone src/handler.go src/validation.go
-mehr simplify --standalone --no-checkpoint
-```
+## Also Available via CLI
 
-See [CLI: simplify](../cli/simplify.md) for the command-line interface.
+Run standalone code simplification from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr simplify --standalone` | Simplify uncommitted changes |
+| `mehr simplify --standalone --branch main` | Simplify current branch vs main |
+| `mehr simplify --standalone --range HEAD~5..HEAD` | Simplify a commit range |
+| `mehr simplify --standalone <files>` | Simplify specific files |
+| `mehr simplify --standalone --no-checkpoint` | Skip checkpoint creation |
+
+See [CLI: simplify](/cli/simplify.md) for all modes, agent selection, and output options.
 
 ## See Also
 
-- [CLI: simplify](../cli/simplify.md) - Command-line simplification
+- [CLI: simplify](/cli/simplify.md) - Command-line simplification
 - [Standalone Review](standalone-review.md) - Standalone code review
 - [Undo & Redo](undo-redo.md) - Recovering from changes

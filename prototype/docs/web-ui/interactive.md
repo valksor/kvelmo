@@ -150,18 +150,20 @@ Use cancellation when:
 | Remote access   | Any browser                     | SSH required       |
 | Cancellation    | POST `/api/v1/interactive/stop` | Ctrl+C             |
 
-For CLI interactive mode, see [`mehr interactive`](../cli/interactive.md).
+For CLI interactive mode, see [`mehr interactive`](/cli/interactive.md).
 
-## CLI Equivalent
+---
 
-```bash
-mehr interactive
-```
+## Also Available via CLI
 
-See [CLI: interactive](../cli/interactive.md) for all options.
+| Command | What It Does |
+|---------|--------------|
+| `mehr interactive` | Enter REPL mode for chat and workflow control |
+
+See [CLI: interactive](/cli/interactive.md) for keyboard shortcuts and commands.
 
 ## See Also
 
 - [Web UI Overview](index.md)
-- [CLI: Interactive Mode](../cli/interactive.md)
-- [REST API](api.md)
+- [CLI: Interactive Mode](/cli/interactive.md)
+- [REST API Reference](/reference/rest-api.md)

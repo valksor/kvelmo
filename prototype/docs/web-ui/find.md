@@ -151,17 +151,21 @@ internal/models/user.go:25
    → Model definition for user data
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr find`](../cli/find.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                          | Web UI Action                   |
-|--------------------------------------|---------------------------------|
-| `mehr find "query"`                  | Enter query and click Find      |
-| `mehr find "query" --path ./src`     | Enter query, set Path field     |
-| `mehr find "query" --pattern "*.go"` | Enter query, set File Pattern   |
-| `mehr find "query" --context 5`      | Enter query, select 5 lines     |
-| `mehr find "query" --stream`         | Check "Stream results"          |
+Search code from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr find "query"` | Search with AI-powered code search |
+| `mehr find "query" --path ./src` | Limit search to a directory |
+| `mehr find "query" --pattern "*.go"` | Filter to specific file patterns |
+| `mehr find "query" --context 5` | Include more context lines |
+| `mehr find "query" --stream` | Stream results as they're found |
+
+See [CLI: find](/cli/find.md) for all search options and output formats.
 
 ## API Endpoints
 
@@ -204,6 +208,6 @@ If results don't match your intent:
 
 ## See Also
 
-- [CLI: mehr find](../cli/find.md) - Command-line code search
+- [CLI: mehr find](/cli/find.md) - Command-line code search
 - [Memory](memory.md) - Semantic search across past tasks
 - [Task History](task-history.md) - Search and filter past tasks
