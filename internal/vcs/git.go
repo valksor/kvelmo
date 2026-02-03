@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 )
 
 // Git porcelain v1 format constants
@@ -46,6 +47,11 @@ const (
 // Git provides git operations for a repository.
 type Git struct {
 	repoRoot string
+
+	// Version cache (per-instance to support multi-repo server environments)
+	versionOnce   sync.Once
+	versionCached *GitVersion
+	versionErr    error
 }
 
 // New creates a Git instance for the given path.

@@ -1,9 +1,13 @@
 package vcs
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -269,4 +273,174 @@ func (g *Git) ForcePushBranch(ctx context.Context, branch, remote string) error 
 	_, err := g.run(ctx, "push", "--force-with-lease", remote, branch)
 
 	return err
+}
+
+// GitVersion holds parsed git version information.
+type GitVersion struct {
+	Major int
+	Minor int
+	Patch int
+	Raw   string
+}
+
+// versionRegex matches git version strings like "git version 2.43.0" or "git version 2.43.0.windows.1".
+var versionRegex = regexp.MustCompile(`^git version (\d+)\.(\d+)\.(\d+)`)
+
+// GetGitVersion returns the installed git version (cached per Git instance).
+// Caching is per-instance to support multi-repo server environments where
+// different repositories may have different Git versions available.
+func (g *Git) GetGitVersion(ctx context.Context) (*GitVersion, error) {
+	g.versionOnce.Do(func() {
+		out, err := g.run(ctx, "version")
+		if err != nil {
+			g.versionErr = fmt.Errorf("get git version: %w", err)
+
+			return
+		}
+
+		g.versionCached, g.versionErr = parseGitVersion(strings.TrimSpace(out))
+	})
+
+	return g.versionCached, g.versionErr
+}
+
+// parseGitVersion parses a git version string like "git version 2.43.0".
+func parseGitVersion(raw string) (*GitVersion, error) {
+	matches := versionRegex.FindStringSubmatch(raw)
+	if matches == nil {
+		return nil, fmt.Errorf("cannot parse git version: %q", raw)
+	}
+
+	major, _ := strconv.Atoi(matches[1])
+	minor, _ := strconv.Atoi(matches[2])
+	patch, _ := strconv.Atoi(matches[3])
+
+	return &GitVersion{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+		Raw:   raw,
+	}, nil
+}
+
+// AtLeast returns true if the git version is at least major.minor.patch.
+func (v *GitVersion) AtLeast(major, minor, patch int) bool {
+	if v.Major != major {
+		return v.Major > major
+	}
+	if v.Minor != minor {
+		return v.Minor > minor
+	}
+
+	return v.Patch >= patch
+}
+
+// ConflictInfo holds details about potential rebase conflicts.
+type ConflictInfo struct {
+	HasConflicts      bool     // true if conflicts were detected
+	ConflictingFiles  []string // list of files with conflicts
+	Unavailable       bool     // true if conflict detection is unavailable (Git too old)
+	UnavailableReason string   // reason why detection is unavailable
+}
+
+// CheckRebaseConflicts detects if rebasing branch onto target would result in conflicts.
+// Uses git merge-tree which doesn't modify the working directory.
+// Requires Git 2.38+; returns Unavailable=true on older versions.
+func (g *Git) CheckRebaseConflicts(ctx context.Context, branch, onto string) (*ConflictInfo, error) {
+	// Check git version (merge-tree --write-tree requires 2.38+)
+	version, err := g.GetGitVersion(ctx)
+	if err != nil {
+		return &ConflictInfo{
+			Unavailable:       true,
+			UnavailableReason: fmt.Sprintf("cannot determine git version: %v", err),
+		}, nil
+	}
+
+	if !version.AtLeast(2, 38, 0) {
+		return &ConflictInfo{
+			Unavailable:       true,
+			UnavailableReason: fmt.Sprintf("git %d.%d.%d is too old; merge-tree --write-tree requires Git 2.38+", version.Major, version.Minor, version.Patch),
+		}, nil
+	}
+
+	// Run git merge-tree --write-tree <onto> <branch>
+	// With --write-tree, git calculates the merge-base automatically
+	// This simulates merging 'branch' into 'onto'
+	// Exit code 0 = no conflicts, exit code 1 = conflicts found
+	// Note: We need the output even on non-zero exit, so we use runMergeTree
+	out, exitCode, err := g.runMergeTree(ctx, onto, branch)
+	if err != nil {
+		// Unexpected error (not exit code related)
+		return nil, fmt.Errorf("merge-tree: %w", err)
+	}
+
+	if exitCode == 0 {
+		// No conflicts - output is just the tree hash
+		return &ConflictInfo{
+			HasConflicts:     false,
+			ConflictingFiles: nil,
+		}, nil
+	}
+
+	// Exit code 1 indicates conflicts - parse the output for details
+	// merge-tree outputs "CONFLICT (content): Merge conflict in <file>" markers
+	conflictingFiles := parseConflictingFiles(out)
+
+	return &ConflictInfo{
+		HasConflicts:     true,
+		ConflictingFiles: conflictingFiles,
+	}, nil
+}
+
+// runMergeTree executes git merge-tree and returns stdout even on non-zero exit.
+// Returns (stdout, exitCode, error). Error is only set for actual execution failures.
+func (g *Git) runMergeTree(ctx context.Context, onto, branch string) (string, int, error) {
+	cmd := exec.CommandContext(ctx, "git", "merge-tree", "--write-tree", onto, branch)
+	cmd.Dir = g.repoRoot
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// Get exit code
+	exitCode := 0
+	if err != nil {
+		exitErr := &exec.ExitError{}
+		if errors.As(err, &exitErr) {
+			exitCode = exitErr.ExitCode()
+		} else {
+			// Actual execution error (not exit code related)
+			return "", 0, err
+		}
+	}
+
+	// Combine stdout and stderr for full output (merge-tree outputs to both)
+	output := stdout.String() + stderr.String()
+
+	return output, exitCode, nil
+}
+
+// parseConflictingFiles extracts conflicting file paths from git merge-tree output.
+func parseConflictingFiles(output string) []string {
+	var files []string
+	seen := make(map[string]bool)
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		// Look for lines like "CONFLICT (content): Merge conflict in path/to/file"
+		if strings.HasPrefix(line, "CONFLICT") {
+			// Extract file path after "Merge conflict in " or "merge conflict in "
+			if idx := strings.Index(strings.ToLower(line), "merge conflict in "); idx != -1 {
+				file := strings.TrimSpace(line[idx+len("merge conflict in "):])
+				if file != "" && !seen[file] {
+					files = append(files, file)
+					seen[file] = true
+				}
+			}
+		}
+	}
+
+	return files
 }
