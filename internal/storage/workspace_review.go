@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const reviewsDirName = "reviews"
@@ -39,14 +38,34 @@ func (w *Workspace) ReviewPath(taskID string, number int, cfg *WorkspaceConfig) 
 }
 
 // ProjectReviewPath returns the project-local path for a review file.
-// Reviews are stored alongside specs in the same project directory.
+// Reviews are stored in the same project directory as specs.
 func (w *Workspace) ProjectReviewPath(taskID string, number int, cfg *WorkspaceConfig) string {
 	pattern := "review-{n}.txt"
 	if cfg != nil && cfg.Review.FilenamePattern != "" {
 		pattern = cfg.Review.FilenamePattern
 	}
-	// Reviews go in the same directory as specs (uses spec's ProjectDir setting)
+	// Reviews go in the same directory as specs (uses storage.ProjectDir setting)
 	return filepath.Join(w.ProjectSpecificationsDir(taskID, cfg), resolveReviewFilenamePattern(pattern, number))
+}
+
+// EffectiveReviewsDir returns the reviews directory based on storage config.
+// If storage.save_in_project is true, returns project-local path (same as specs); otherwise returns global storage path.
+func (w *Workspace) EffectiveReviewsDir(taskID string, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		return w.ProjectSpecificationsDir(taskID, cfg) // Reviews share spec's project dir
+	}
+
+	return w.ReviewsDir(taskID)
+}
+
+// EffectiveReviewPath returns the review path based on storage config.
+// If storage.save_in_project is true, returns project-local path; otherwise returns global storage path.
+func (w *Workspace) EffectiveReviewPath(taskID string, number int, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		return w.ProjectReviewPath(taskID, number, cfg)
+	}
+
+	return w.ReviewPath(taskID, number, cfg)
 }
 
 // buildReviewPatternRegex builds a regex to match filenames based on the config pattern.
@@ -60,8 +79,11 @@ func buildReviewPatternRegex(pattern string) *regexp.Regexp {
 	return regexp.MustCompile(`^` + regexStr + `$`)
 }
 
-// SaveReview saves a review file with atomic write.
-// Saves to internal storage, optionally to project-local.
+// SaveReview saves a review file.
+//
+// Storage location is determined by storage config:
+//   - storage.save_in_project: false → ~/.valksor/mehrhof/workspaces/<name>/work/<task-id>/reviews/
+//   - storage.save_in_project: true → same directory as specs (project-local)
 func (w *Workspace) SaveReview(taskID string, number int, content string) error {
 	if !isValidTaskID(taskID) {
 		return fmt.Errorf("invalid task ID %q: must contain only alphanumeric characters, hyphens, and underscores", taskID)
@@ -77,67 +99,15 @@ func (w *Workspace) SaveReview(taskID string, number int, content string) error 
 		cfg = NewDefaultWorkspaceConfig()
 	}
 
-	// Step 1: Always save to internal storage
-	reviewPath := w.ReviewPath(taskID, number, cfg)
+	// Single storage location based on config
+	reviewPath := w.EffectiveReviewPath(taskID, number, cfg)
 	reviewDir := filepath.Dir(reviewPath)
+
 	if err := os.MkdirAll(reviewDir, 0o755); err != nil {
 		return fmt.Errorf("create reviews directory: %w", err)
 	}
 	if err := os.WriteFile(reviewPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("save internal review: %w", err)
-	}
-
-	// Step 2: Save to project-local storage if enabled
-	if cfg.Review.SaveInProject {
-		projectReviewPath := w.ProjectReviewPath(taskID, number, cfg)
-		projectDir := filepath.Dir(projectReviewPath)
-
-		if err := os.MkdirAll(projectDir, 0o755); err != nil {
-			slog.Error("failed to create project reviews directory",
-				"task_id", taskID,
-				"review_number", number,
-				"path", projectDir,
-				"error", err,
-			)
-
-			return nil
-		}
-
-		// Atomic write
-		tmpPath := projectReviewPath + ".tmp." + strconv.FormatInt(time.Now().UnixNano(), 36)
-		if err := os.WriteFile(tmpPath, []byte(content), 0o644); err != nil {
-			slog.Error("failed to write project-local review (temp file)",
-				"task_id", taskID,
-				"review_number", number,
-				"path", tmpPath,
-				"error", err,
-			)
-
-			return nil
-		}
-
-		if err := syncFile(tmpPath); err != nil {
-			slog.Error("failed to sync project-local review before rename",
-				"task_id", taskID,
-				"review_number", number,
-				"path", tmpPath,
-				"error", err,
-			)
-			_ = os.Remove(tmpPath)
-
-			return nil
-		}
-
-		if err := os.Rename(tmpPath, projectReviewPath); err != nil {
-			_ = os.Remove(tmpPath)
-			slog.Error("failed to finalize project-local review (rename)",
-				"task_id", taskID,
-				"review_number", number,
-				"error", err,
-			)
-
-			return nil
-		}
+		return fmt.Errorf("save review: %w", err)
 	}
 
 	return nil
@@ -146,7 +116,7 @@ func (w *Workspace) SaveReview(taskID string, number int, content string) error 
 // LoadReview loads a review file content.
 func (w *Workspace) LoadReview(taskID string, number int) (string, error) {
 	cfg, _ := w.LoadConfig()
-	reviewPath := w.ReviewPath(taskID, number, cfg)
+	reviewPath := w.EffectiveReviewPath(taskID, number, cfg)
 	data, err := os.ReadFile(reviewPath)
 	if err != nil {
 		return "", err
@@ -158,7 +128,7 @@ func (w *Workspace) LoadReview(taskID string, number int) (string, error) {
 // ListReviews returns all review numbers for a task.
 func (w *Workspace) ListReviews(taskID string) ([]int, error) {
 	cfg, _ := w.LoadConfig()
-	reviewsDir := w.ReviewsDir(taskID)
+	reviewsDir := w.EffectiveReviewsDir(taskID, cfg)
 
 	entries, err := os.ReadDir(reviewsDir)
 	if err != nil {

@@ -14,14 +14,38 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// WorkPath returns the path for a specific task's work directory.
+// WorkPath returns the path for a specific task's work directory (global storage).
 func (w *Workspace) WorkPath(taskID string) string {
 	return filepath.Join(w.workRoot, taskID)
 }
 
+// EffectiveWorkDir returns the work directory based on storage config.
+// Storage locations:
+//   - save_in_project=false → ~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/
+//   - save_in_project=true, no project_dir → .mehrhof/work/<taskid>/
+//   - save_in_project=true, project_dir="tickets" → tickets/<taskid>/
+func (w *Workspace) EffectiveWorkDir(taskID string, cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		projectDir := cfg.Storage.ProjectDir
+		if projectDir == "" {
+			projectDir = ".mehrhof/work"
+		}
+
+		return filepath.Join(w.root, projectDir, taskID)
+	}
+
+	return w.WorkPath(taskID) // Global storage
+}
+
 // WorkExists checks if a work directory exists.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) WorkExists(taskID string) bool {
-	workPath := w.WorkPath(taskID)
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	workPath := w.EffectiveWorkDir(taskID, cfg)
 	info, err := os.Stat(workPath)
 
 	return err == nil && info.IsDir()
@@ -38,8 +62,15 @@ func GenerateTaskID() string {
 }
 
 // CreateWork creates a new work directory with initial structure.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) CreateWork(taskID string, source SourceInfo) (*TaskWork, error) {
-	workPath := w.WorkPath(taskID)
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		slog.Warn("failed to load workspace config, using defaults", "task_id", taskID)
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	workPath := w.EffectiveWorkDir(taskID, cfg)
 
 	// Create work directory structure
 	dirs := []string{
@@ -72,8 +103,14 @@ func (w *Workspace) CreateWork(taskID string, source SourceInfo) (*TaskWork, err
 }
 
 // LoadWork loads a task's work metadata.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) LoadWork(taskID string) (*TaskWork, error) {
-	workFile := filepath.Join(w.WorkPath(taskID), workFileName)
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	workFile := filepath.Join(w.EffectiveWorkDir(taskID, cfg), workFileName)
 
 	data, err := os.ReadFile(workFile)
 	if err != nil {
@@ -89,10 +126,16 @@ func (w *Workspace) LoadWork(taskID string) (*TaskWork, error) {
 }
 
 // SaveWork saves a task's work metadata using atomic write pattern.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) SaveWork(work *TaskWork) error {
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
 	work.Metadata.UpdatedAt = time.Now()
 
-	workFile := filepath.Join(w.WorkPath(work.Metadata.ID), workFileName)
+	workFile := filepath.Join(w.EffectiveWorkDir(work.Metadata.ID, cfg), workFileName)
 
 	data, err := yaml.Marshal(work)
 	if err != nil {
@@ -253,19 +296,41 @@ func (w *Workspace) flushTaskUsageLocked(taskID string) error {
 }
 
 // DeleteWork removes a work directory.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) DeleteWork(taskID string) error {
-	workPath := w.WorkPath(taskID)
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	workPath := w.EffectiveWorkDir(taskID, cfg)
 
 	return os.RemoveAll(workPath)
 }
 
 // ListWorks returns all task IDs in the work directory.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) ListWorks() ([]string, error) {
-	if _, err := os.Stat(w.workRoot); os.IsNotExist(err) {
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	// Determine the effective work root based on config
+	workRoot := w.workRoot // Global storage default
+	if cfg.Storage.SaveInProject {
+		projectDir := cfg.Storage.ProjectDir
+		if projectDir == "" {
+			projectDir = ".mehrhof/work"
+		}
+		workRoot = filepath.Join(w.root, projectDir)
+	}
+
+	if _, err := os.Stat(workRoot); os.IsNotExist(err) {
 		return []string{}, nil
 	}
 
-	entries, err := os.ReadDir(w.workRoot)
+	entries, err := os.ReadDir(workRoot)
 	if err != nil {
 		return nil, fmt.Errorf("read work directory: %w", err)
 	}
@@ -274,7 +339,7 @@ func (w *Workspace) ListWorks() ([]string, error) {
 	for _, entry := range entries {
 		if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
 			// Check if it has a work.yaml
-			workFile := filepath.Join(w.workRoot, entry.Name(), workFileName)
+			workFile := filepath.Join(workRoot, entry.Name(), workFileName)
 			if _, err := os.Stat(workFile); err == nil {
 				taskIDs = append(taskIDs, entry.Name())
 			}
@@ -285,8 +350,14 @@ func (w *Workspace) ListWorks() ([]string, error) {
 }
 
 // ArchiveWorkDir moves a work directory to archive.
+// Uses storage config to determine the effective work directory location.
 func (w *Workspace) ArchiveWorkDir(taskID string) error {
-	workPath := w.WorkPath(taskID)
+	cfg, err := w.LoadConfig()
+	if err != nil {
+		cfg = NewDefaultWorkspaceConfig()
+	}
+
+	workPath := w.EffectiveWorkDir(taskID, cfg)
 
 	// Create archive directory in workspace root
 	archiveRoot := filepath.Join(w.workspaceRoot, "archive")

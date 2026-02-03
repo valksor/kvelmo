@@ -21,8 +21,8 @@ func TestASCCompatibility_SpecPath(t *testing.T) {
 
 	// Configure to match ASC
 	cfg := NewDefaultWorkspaceConfig()
-	cfg.Specification.SaveInProject = true
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
 
 	// Test spec paths match ASC: tickets/<task-id>/SPEC-N.md
@@ -51,8 +51,8 @@ func TestASCCompatibility_ReviewPath(t *testing.T) {
 
 	// Configure to match ASC
 	cfg := NewDefaultWorkspaceConfig()
-	cfg.Specification.ProjectDir = "tickets" // Reviews use same ProjectDir
-	cfg.Review.SaveInProject = true
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
 
 	// Test review paths match ASC: tickets/<task-id>/CODERABBIT-N.txt
@@ -89,10 +89,9 @@ func TestASCCompatibility_FullWorkflow(t *testing.T) {
 	}
 	cfg.Git.BranchPattern = "asc/{key}"
 	cfg.Git.CommitPrefix = "[{key}]"
-	cfg.Specification.SaveInProject = true
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
-	cfg.Review.SaveInProject = true
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
 	if err := ws.SaveConfig(cfg); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
@@ -125,6 +124,24 @@ func TestASCCompatibility_FullWorkflow(t *testing.T) {
 		if err := ws.SaveReview(taskID, i+1, content); err != nil {
 			t.Fatalf("SaveReview(%d): %v", i+1, err)
 		}
+	}
+
+	// Verify work directory was created in project (not global storage)
+	workDir := filepath.Join(tmpDir, "tickets/A-123")
+	if _, err := os.Stat(workDir); err != nil {
+		t.Fatalf("Work directory not created in project: %s (error: %v)", workDir, err)
+	}
+
+	// Verify work.yaml exists in project location
+	workYaml := filepath.Join(workDir, "work.yaml")
+	if _, err := os.Stat(workYaml); err != nil {
+		t.Errorf("work.yaml not found in project: %s (error: %v)", workYaml, err)
+	}
+
+	// Verify notes.md exists in project location
+	notesMd := filepath.Join(workDir, "notes.md")
+	if _, err := os.Stat(notesMd); err != nil {
+		t.Errorf("notes.md not found in project: %s (error: %v)", notesMd, err)
 	}
 
 	// Verify ASC-compatible file structure exists in project

@@ -556,6 +556,204 @@ func TestListWorks(t *testing.T) {
 	}
 }
 
+// TestCreateWork_SaveInProject verifies that CreateWork respects save_in_project config.
+func TestCreateWork_SaveInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Configure to save in project
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("TASK-123", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Verify work directory created in project, not global storage
+	projectWorkDir := filepath.Join(tmpDir, "tickets", "TASK-123")
+	if _, err := os.Stat(projectWorkDir); err != nil {
+		t.Errorf("Work directory not created in project: %s (error: %v)", projectWorkDir, err)
+	}
+
+	// Verify work.yaml exists in project location
+	workYaml := filepath.Join(projectWorkDir, "work.yaml")
+	if _, err := os.Stat(workYaml); err != nil {
+		t.Errorf("work.yaml not found in project: %s (error: %v)", workYaml, err)
+	}
+
+	// Verify notes.md exists in project location
+	notesMd := filepath.Join(projectWorkDir, "notes.md")
+	if _, err := os.Stat(notesMd); err != nil {
+		t.Errorf("notes.md not found in project: %s (error: %v)", notesMd, err)
+	}
+}
+
+// TestLoadSaveWork_SaveInProject verifies LoadWork and SaveWork respect save_in_project config.
+func TestLoadSaveWork_SaveInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Configure to save in project
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Create and modify work
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	work, err := ws.CreateWork("TASK-456", source)
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+	work.Metadata.Title = "Updated Title"
+	if err := ws.SaveWork(work); err != nil {
+		t.Fatalf("SaveWork: %v", err)
+	}
+
+	// Load and verify
+	loaded, err := ws.LoadWork("TASK-456")
+	if err != nil {
+		t.Fatalf("LoadWork: %v", err)
+	}
+	if loaded.Metadata.Title != "Updated Title" {
+		t.Errorf("Title = %q, want %q", loaded.Metadata.Title, "Updated Title")
+	}
+}
+
+// TestListWorks_SaveInProject verifies ListWorks returns tasks from project location.
+func TestListWorks_SaveInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Configure to save in project
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Create tasks
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("TASK-1", source); err != nil {
+		t.Fatalf("CreateWork(TASK-1): %v", err)
+	}
+	if _, err := ws.CreateWork("TASK-2", source); err != nil {
+		t.Fatalf("CreateWork(TASK-2): %v", err)
+	}
+
+	// List and verify
+	works, err := ws.ListWorks()
+	if err != nil {
+		t.Fatalf("ListWorks: %v", err)
+	}
+	if len(works) != 2 {
+		t.Errorf("ListWorks returned %d tasks, want 2", len(works))
+	}
+}
+
+// TestDeleteWork_SaveInProject verifies DeleteWork removes from project location.
+func TestDeleteWork_SaveInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Configure to save in project
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Create and delete work
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("TASK-789", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	if err := ws.DeleteWork("TASK-789"); err != nil {
+		t.Fatalf("DeleteWork: %v", err)
+	}
+
+	// Verify deleted from project location
+	projectWorkDir := filepath.Join(tmpDir, "tickets", "TASK-789")
+	if _, err := os.Stat(projectWorkDir); !os.IsNotExist(err) {
+		t.Errorf("Work directory still exists: %s", projectWorkDir)
+	}
+
+	// Verify WorkExists returns false
+	if ws.WorkExists("TASK-789") {
+		t.Error("WorkExists returned true after delete")
+	}
+}
+
+// TestWorkExists_SaveInProject verifies WorkExists checks project location.
+func TestWorkExists_SaveInProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Configure to save in project
+	cfg, err := ws.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	cfg.Storage.SaveInProject = true
+	cfg.Storage.ProjectDir = "tickets"
+	if err := ws.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Initially doesn't exist
+	if ws.WorkExists("TASK-ABC") {
+		t.Error("WorkExists returned true before create")
+	}
+
+	// Create work
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("TASK-ABC", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Now exists
+	if !ws.WorkExists("TASK-ABC") {
+		t.Error("WorkExists returned false after create")
+	}
+}
+
 func TestNotesPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)
@@ -752,12 +950,12 @@ func TestProjectSpecsDir(t *testing.T) {
 
 	// Default: ProjectSpecificationsDir is in the project .mehrhof directory (no /specifications/ subdir)
 	path := ws.ProjectSpecificationsDir("test123", cfg)
-	if !strings.HasSuffix(path, ".mehrhof/test123") {
-		t.Errorf("ProjectSpecificationsDir() = %q, want suffix .mehrhof/test123", path)
+	if !strings.HasSuffix(path, ".mehrhof/work/test123") {
+		t.Errorf("ProjectSpecificationsDir() = %q, want suffix .mehrhof/work/test123", path)
 	}
 
 	// Custom ProjectDir: should use that directory
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.ProjectDir = "tickets"
 	path = ws.ProjectSpecificationsDir("test123", cfg)
 	if !strings.HasSuffix(path, "tickets/test123") {
 		t.Errorf("ProjectSpecificationsDir(tickets) = %q, want suffix tickets/test123", path)
@@ -771,13 +969,13 @@ func TestProjectSpecPath(t *testing.T) {
 
 	// Default pattern: specification-{n}.md
 	path := ws.ProjectSpecificationPath("test123", 1, cfg)
-	if !strings.HasSuffix(path, ".mehrhof/test123/specification-1.md") {
-		t.Errorf("ProjectSpecificationPath() = %q, want suffix .mehrhof/test123/specification-1.md", path)
+	if !strings.HasSuffix(path, ".mehrhof/work/test123/specification-1.md") {
+		t.Errorf("ProjectSpecificationPath() = %q, want suffix .mehrhof/work/test123/specification-1.md", path)
 	}
 
 	// Custom pattern: SPEC-{n}.md
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
-	cfg.Specification.ProjectDir = "tickets"
+	cfg.Storage.ProjectDir = "tickets"
 	path = ws.ProjectSpecificationPath("test123", 1, cfg)
 	if !strings.HasSuffix(path, "tickets/test123/SPEC-1.md") {
 		t.Errorf("ProjectSpecificationPath(SPEC) = %q, want suffix tickets/test123/SPEC-1.md", path)
@@ -791,12 +989,12 @@ func TestSaveSpecificationInProject(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Enable project-local saving
+	// Enable project-local saving (mutually exclusive - saves to project ONLY)
 	cfg, err := ws.LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	cfg.Specification.SaveInProject = true
+	cfg.Storage.SaveInProject = true
 	if err := ws.SaveConfig(cfg); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
 	}
@@ -817,16 +1015,16 @@ func TestSaveSpecificationInProject(t *testing.T) {
 		t.Fatalf("LoadConfig after save: %v", err)
 	}
 
-	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1, cfg)
-	if _, err := os.Stat(internalPath); err != nil {
-		t.Errorf("Internal spec not found: %s, error: %v", internalPath, err)
-	}
-
-	// Verify project-local storage exists
+	// Verify project-local storage exists (mutually exclusive: project ONLY)
 	projectPath := ws.ProjectSpecificationPath("test123", 1, cfg)
 	if _, err := os.Stat(projectPath); err != nil {
 		t.Errorf("Project-local spec not found: %s, error: %v", projectPath, err)
+	}
+
+	// Verify internal storage does NOT exist (mutually exclusive)
+	internalPath := ws.SpecificationPath("test123", 1, cfg)
+	if _, err := os.Stat(internalPath); err == nil {
+		t.Errorf("Internal spec should NOT exist when save_in_project=true: %s", internalPath)
 	}
 
 	// Verify content matches
@@ -836,6 +1034,15 @@ func TestSaveSpecificationInProject(t *testing.T) {
 	}
 	if string(loaded) != content {
 		t.Errorf("Project spec content mismatch, got %q, want %q", string(loaded), content)
+	}
+
+	// Verify LoadSpecification returns correct content
+	loadedViaAPI, err := ws.LoadSpecification("test123", 1)
+	if err != nil {
+		t.Fatalf("LoadSpecification failed: %v", err)
+	}
+	if loadedViaAPI != content {
+		t.Errorf("LoadSpecification content mismatch, got %q, want %q", loadedViaAPI, content)
 	}
 }
 
@@ -851,7 +1058,7 @@ func TestSaveSpecificationNotInProject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	if cfg.Specification.SaveInProject {
+	if cfg.Storage.SaveInProject {
 		t.Skip("SaveInProject should be false by default")
 	}
 	if err := ws.SaveConfig(cfg); err != nil {
@@ -893,7 +1100,7 @@ func TestSaveSpecificationConfigLoadFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	cfg.Specification.SaveInProject = true
+	cfg.Storage.SaveInProject = true
 	if err := ws.SaveConfig(cfg); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
 	}
@@ -945,12 +1152,12 @@ func TestSaveSpecificationProjectWriteFails(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Enable project-local saving
+	// Enable project-local saving (mutually exclusive - project is ONLY storage)
 	cfg, err := ws.LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	cfg.Specification.SaveInProject = true
+	cfg.Storage.SaveInProject = true
 	if err := ws.SaveConfig(cfg); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
 	}
@@ -961,7 +1168,8 @@ func TestSaveSpecificationProjectWriteFails(t *testing.T) {
 	}
 
 	// Make the project directory read-only to simulate a write failure
-	projectDir := filepath.Join(ws.TaskRoot(), "test123")
+	// (default project_dir is .mehrhof/work when save_in_project=true)
+	projectDir := filepath.Join(ws.Root(), ".mehrhof", "work", "test123")
 	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		t.Fatalf("Failed to create project dir: %v", err)
 	}
@@ -974,37 +1182,11 @@ func TestSaveSpecificationProjectWriteFails(t *testing.T) {
 		_ = os.Chmod(projectDir, 0o755)
 	}()
 
-	// SaveSpecification should still succeed (internal spec is saved)
-	// but should log an error when project write fails
+	// With mutually exclusive storage, when save_in_project=true and project write fails,
+	// the operation should fail (project is the ONLY storage location)
 	content := "# Spec 1\n\nThis is the first spec."
-	if err := ws.SaveSpecification("test123", 1, content); err != nil {
-		t.Errorf("SaveSpecification should succeed even when project write fails, got: %v", err)
-	}
-
-	// Restore permissions for verification
-	if err := os.Chmod(projectDir, 0o755); err != nil {
-		t.Fatalf("Failed to restore permissions: %v", err)
-	}
-
-	// Verify internal storage exists
-	internalPath := ws.SpecificationPath("test123", 1, cfg)
-	if _, err := os.Stat(internalPath); err != nil {
-		t.Errorf("Internal spec should exist even when project write fails: %v", err)
-	}
-
-	// Verify content is correct
-	loaded, err := os.ReadFile(internalPath)
-	if err != nil {
-		t.Fatalf("ReadFile(internalPath) failed: %v", err)
-	}
-	if string(loaded) != content {
-		t.Errorf("Internal spec content mismatch, got %q, want %q", string(loaded), content)
-	}
-
-	// Verify project-local storage does NOT exist (write failed)
-	projectSpecPath := ws.ProjectSpecificationPath("test123", 1, cfg)
-	if _, err := os.Stat(projectSpecPath); !os.IsNotExist(err) {
-		t.Errorf("Project spec should not exist when write fails, path: %s", projectSpecPath)
+	if err := ws.SaveSpecification("test123", 1, content); err == nil {
+		t.Errorf("SaveSpecification should fail when project write fails and save_in_project=true")
 	}
 }
 
@@ -2444,7 +2626,7 @@ func TestAgentInfoStruct(t *testing.T) {
 
 // Tests for custom work directory configuration
 
-func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
+func TestOpenWorkspace_WorkRoot(t *testing.T) {
 	homeDir := t.TempDir()
 
 	tests := []struct {
@@ -2458,29 +2640,9 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 			wantWorkRootSfx: "/work",
 		},
 		{
-			name:            "empty work_dir uses default",
+			name:            "empty storage uses default",
 			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir}},
 			wantWorkRootSfx: "/work",
-		},
-		{
-			name:            "explicit default path",
-			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: ".mehrhof/work"}},
-			wantWorkRootSfx: "/work",
-		},
-		{
-			name:            "custom nested path",
-			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: "tasks/work"}},
-			wantWorkRootSfx: "/tasks/work",
-		},
-		{
-			name:            "simple path",
-			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: "work"}},
-			wantWorkRootSfx: "/work",
-		},
-		{
-			name:            "hidden directory",
-			cfg:             &WorkspaceConfig{Storage: StorageSettings{HomeDir: homeDir, WorkDir: ".task-work"}},
-			wantWorkRootSfx: "/.task-work",
 		},
 	}
 
@@ -2493,7 +2655,7 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 				t.Fatalf("OpenWorkspace: %v", err)
 			}
 
-			// WorkRoot is in ~/.valksor/mehrhof/workspaces/<project-id>/<workDir>
+			// WorkRoot is in ~/.valksor/mehrhof/workspaces/<project-id>/work (fixed path)
 			if !strings.HasSuffix(ws.WorkRoot(), tt.wantWorkRootSfx) {
 				t.Errorf("WorkRoot() = %q, want suffix %q", ws.WorkRoot(), tt.wantWorkRootSfx)
 			}
@@ -2507,12 +2669,12 @@ func TestOpenWorkspace_CustomWorkDir(t *testing.T) {
 	}
 }
 
-func TestCreateWork_CustomWorkDir(t *testing.T) {
+func TestCreateWork_WorkPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{HomeDir: homeDir, WorkDir: "custom/tasks"},
+		Storage: StorageSettings{HomeDir: homeDir},
 	}
 
 	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
@@ -2530,15 +2692,15 @@ func TestCreateWork_CustomWorkDir(t *testing.T) {
 		t.Fatalf("CreateWork: %v", err)
 	}
 
-	// Verify work was created in custom location within workspace data dir
+	// Verify work was created in fixed location within workspace data dir
 	workPath := ws.WorkPath("task123")
-	if !strings.HasSuffix(workPath, "/custom/tasks/task123") {
-		t.Errorf("WorkPath() = %q, want suffix /custom/tasks/task123", workPath)
+	if !strings.HasSuffix(workPath, "/work/task123") {
+		t.Errorf("WorkPath() = %q, want suffix /work/task123", workPath)
 	}
 
 	// Verify work directory actually exists
 	if _, err := os.Stat(workPath); os.IsNotExist(err) {
-		t.Error("work directory was not created at custom path")
+		t.Error("work directory was not created")
 	}
 
 	// Verify we can load the work back
@@ -2551,12 +2713,12 @@ func TestCreateWork_CustomWorkDir(t *testing.T) {
 	}
 }
 
-func TestEnsureInitialized_CustomWorkDir(t *testing.T) {
+func TestEnsureInitialized_WorkDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{HomeDir: homeDir, WorkDir: "deeply/nested/tasks/work"},
+		Storage: StorageSettings{HomeDir: homeDir},
 	}
 
 	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
@@ -2568,21 +2730,21 @@ func TestEnsureInitialized_CustomWorkDir(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Verify custom work directory was created within workspace data dir
+	// Verify work directory was created within workspace data dir
 	workRoot := ws.WorkRoot()
 	if _, err := os.Stat(workRoot); os.IsNotExist(err) {
-		t.Error("custom work directory was not created")
+		t.Error("work directory was not created")
 	}
-	if !strings.HasSuffix(workRoot, "/deeply/nested/tasks/work") {
-		t.Errorf("WorkRoot() = %q, want suffix /deeply/nested/tasks/work", workRoot)
+	if !strings.HasSuffix(workRoot, "/work") {
+		t.Errorf("WorkRoot() = %q, want suffix /work", workRoot)
 	}
 }
 
-func TestListWorks_CustomWorkDir(t *testing.T) {
+func TestListWorks_WorkDir(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{WorkDir: "my-tasks"},
+		Storage: StorageSettings{},
 	}
 
 	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)
@@ -2612,11 +2774,11 @@ func TestListWorks_CustomWorkDir(t *testing.T) {
 	}
 }
 
-func TestDeleteWork_CustomWorkDir(t *testing.T) {
+func TestDeleteWork_WorkDir(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &WorkspaceConfig{
-		Storage: StorageSettings{WorkDir: "my-work"},
+		Storage: StorageSettings{},
 	}
 
 	ws, err := OpenWorkspace(context.Background(), tmpDir, cfg)

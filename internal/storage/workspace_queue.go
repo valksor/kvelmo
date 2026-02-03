@@ -26,6 +26,28 @@ func (ws *Workspace) QueueNotePath(queueID, taskID string) string {
 	return filepath.Join(ws.QueueNotesPath(queueID), taskID+".md")
 }
 
+// PlanOutputPath returns the path to the plan output file for a queue.
+func (ws *Workspace) PlanOutputPath(queueID string) string {
+	return filepath.Join(ws.workspaceRoot, QueuesDir, queueID, "plan.md")
+}
+
+// SavePlanOutput saves the raw AI planning output for debugging.
+// This is written alongside queue.yaml so users can inspect what the AI returned.
+func (ws *Workspace) SavePlanOutput(queueID, content string) error {
+	planPath := ws.PlanOutputPath(queueID)
+	dir := filepath.Dir(planPath)
+
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create queue directory: %w", err)
+	}
+
+	if err := os.WriteFile(planPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("write plan output: %w", err)
+	}
+
+	return nil
+}
+
 // LoadQueueNotes loads notes for a specific task.
 // Returns notes in chronological order (oldest first).
 func (ws *Workspace) LoadQueueNotes(queueID, taskID string) ([]QueueNote, error) {

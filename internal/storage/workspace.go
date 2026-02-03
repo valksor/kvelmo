@@ -77,15 +77,9 @@ func OpenWorkspace(ctx context.Context, repoRoot string, cfg *WorkspaceConfig) (
 		return nil, fmt.Errorf("get workspace data directory: %w", err)
 	}
 
-	// Determine work directory path from config or default
-	workDir := "work" // default - relative to workspaceRoot
-	if cfg != nil && cfg.Storage.WorkDir != "" {
-		workDir = cfg.Storage.WorkDir
-		// If workDir starts with ".mehrhof/", make it relative to new location
-		workDir = strings.TrimPrefix(workDir, ".mehrhof/")
-	}
 	// Work directory is relative to workspaceRoot (in home directory)
-	workRoot := filepath.Join(workspaceRoot, workDir)
+	// Fixed path: ~/.valksor/mehrhof/workspaces/<project-id>/work/
+	workRoot := filepath.Join(workspaceRoot, "work")
 
 	// Resolve code directory from config (defaults to project root)
 	codeRoot := absRoot

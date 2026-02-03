@@ -39,6 +39,7 @@ type WorkspaceConfig struct {
 	Review        ReviewSettings              `yaml:"review,omitempty"`
 	Security      *SecuritySettings           `yaml:"security,omitempty"`
 	Memory        *MemorySettings             `yaml:"memory,omitempty"`
+	Library       *LibrarySettings            `yaml:"library,omitempty"`
 	Orchestration *OrchestrationSettings      `yaml:"orchestration,omitempty"`
 	ML            *MLSettings                 `yaml:"ml,omitempty"`
 	Sandbox       *SandboxSettings            `yaml:"sandbox,omitempty"`
@@ -315,6 +316,22 @@ type MemoryLearningConfig struct {
 	SuggestSimilar       bool `yaml:"suggest_similar,omitempty"`        // Auto-suggest similar tasks (default: true)
 }
 
+// LibrarySettings holds library documentation collection configuration.
+type LibrarySettings struct {
+	AutoIncludeMax    int    `yaml:"auto_include_max,omitempty"`     // Max collections to auto-include (default: 3)
+	MaxPagesPerPrompt int    `yaml:"max_pages_per_prompt,omitempty"` // Max pages from a single collection (default: 20)
+	MaxCrawlPages     int    `yaml:"max_crawl_pages,omitempty"`      // Default max pages per crawl (default: 100)
+	MaxCrawlDepth     int    `yaml:"max_crawl_depth,omitempty"`      // Default max crawl depth (default: 3)
+	MaxPageSizeBytes  int64  `yaml:"max_page_size_bytes,omitempty"`  // Max size per page (default: 1MB)
+	LockTimeout       string `yaml:"lock_timeout,omitempty"`         // File lock timeout (default: "10s")
+	MaxTokenBudget    int    `yaml:"max_token_budget,omitempty"`     // Total token budget for library context (default: 8000)
+
+	// Crawl filtering options
+	DomainScope   string `yaml:"domain_scope,omitempty"`   // "same-host" (default) or "same-domain"
+	VersionFilter bool   `yaml:"version_filter,omitempty"` // Auto-detect version from URL path
+	VersionPath   string `yaml:"version_path,omitempty"`   // Explicit version path segment (e.g., "v24", "v1.2.3")
+}
+
 // OrchestrationSettings holds multi-agent orchestration configuration.
 type OrchestrationSettings struct {
 	Enabled bool                              `yaml:"enabled,omitempty"` // Enable multi-agent orchestration (default: false)
@@ -470,8 +487,9 @@ type UpdateSettings struct {
 
 // StorageSettings holds storage-related configuration.
 type StorageSettings struct {
-	HomeDir string `yaml:"home_dir,omitempty"` // Override for mehrhof home directory (default: ~/.mehrhof)
-	WorkDir string `yaml:"work_dir,omitempty"` // Path to work directory (relative to project root)
+	HomeDir       string `yaml:"home_dir,omitempty"`        // Override for mehrhof home directory (default: ~/.mehrhof)
+	SaveInProject bool   `yaml:"save_in_project,omitempty"` // Store work in project directory (default: false = global)
+	ProjectDir    string `yaml:"project_dir,omitempty"`     // Project dir for work (default: ".mehrhof/work" when save_in_project=true)
 }
 
 // ProjectSettings holds project-level settings for decoupled hub/code workflows.
@@ -481,14 +499,11 @@ type ProjectSettings struct {
 
 // SpecificationSettings holds specification-related configuration.
 type SpecificationSettings struct {
-	SaveInProject   bool   `yaml:"save_in_project"`  // Save specs in project directory (default: false)
-	ProjectDir      string `yaml:"project_dir"`      // Project directory for specs (default: ".mehrhof", can be "tickets")
 	FilenamePattern string `yaml:"filename_pattern"` // Spec filename pattern (default: "specification-{n}.md")
 }
 
 // ReviewSettings holds code review output configuration.
 type ReviewSettings struct {
-	SaveInProject   bool   `yaml:"save_in_project"`  // Save reviews alongside specs in project (default: false)
 	FilenamePattern string `yaml:"filename_pattern"` // Review filename pattern (default: "review-{n}.txt")
 }
 
@@ -578,15 +593,13 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			CheckInterval: 24,
 		},
 		Storage: StorageSettings{
-			WorkDir: "work", // Default: work/ (relative to global workspace location)
+			SaveInProject: false, // Default: global storage (~/.valksor/mehrhof/workspaces/<name>/work/)
+			ProjectDir:    "",    // Default: ".mehrhof/work" when save_in_project=true
 		},
 		Specification: SpecificationSettings{
-			SaveInProject:   false,                  // Default: disabled (specs stored in ~/.mehrhof only)
-			ProjectDir:      "",                     // Default: empty means use .mehrhof/<task-id>/
 			FilenamePattern: "specification-{n}.md", // Default: specification-1.md, specification-2.md, etc.
 		},
 		Review: ReviewSettings{
-			SaveInProject:   false,            // Default: disabled (reviews stored in work dir only)
 			FilenamePattern: "review-{n}.txt", // Default: review-1.txt, review-2.txt, etc.
 		},
 		Labels: &LabelSettings{
@@ -785,16 +798,16 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 `
 	}
 
-	// Add storage section comment if storage work_dir is default/empty
-	if cfg.Storage.WorkDir == "" || cfg.Storage.WorkDir == "work" {
+	// Add storage section comment if storage save_in_project is disabled (default)
+	if !cfg.Storage.SaveInProject {
 		content += `
 # Storage settings
-# Workspace is stored in: ~/.mehrhof/workspaces/<project-id>/
-# Work directories are stored in: ~/.mehrhof/workspaces/<project-id>/work/
-# You can customize the work directory path (relative to workspace):
+# Control where work files (specs, reviews) are stored
+# Example:
 # storage:
-#     work_dir: work    # Default location
-#     work_dir: tasks   # Alternative: store in tasks/ subdirectory
+#     save_in_project: false   # Default: global (~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/)
+#     save_in_project: true    # Project: .mehrhof/work/<taskid>/
+#     project_dir: "tickets"   # Custom: tickets/<taskid>/
 `
 	}
 
@@ -962,27 +975,24 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 `
 	}
 
-	// Add specification section comment if save_in_project is disabled (default)
-	if !cfg.Specification.SaveInProject {
+	// Add specification section comment if using default pattern
+	if cfg.Specification.FilenamePattern == "" || cfg.Specification.FilenamePattern == "specification-{n}.md" {
 		content += `
 # Specification settings
-# Control where specifications are stored
+# Customize specification filenames (location controlled by storage.save_in_project)
 # Example:
 # specification:
-#     save_in_project: true            # Save specs in project directory (default: false)
-#     project_dir: "tickets"           # Directory for specs (default: ".mehrhof")
 #     filename_pattern: "SPEC-{n}.md"  # Filename pattern (default: "specification-{n}.md")
 `
 	}
 
-	// Add review section comment if save_in_project is disabled (default)
-	if !cfg.Review.SaveInProject {
+	// Add review section comment if using default pattern
+	if cfg.Review.FilenamePattern == "" || cfg.Review.FilenamePattern == "review-{n}.txt" {
 		content += `
 # Review settings
-# Control where code review outputs are stored
+# Customize review filenames (location controlled by storage.save_in_project)
 # Example:
 # review:
-#     save_in_project: true                 # Save reviews alongside specs (default: false)
 #     filename_pattern: "CODERABBIT-{n}.txt" # Filename pattern (default: "review-{n}.txt")
 `
 	}

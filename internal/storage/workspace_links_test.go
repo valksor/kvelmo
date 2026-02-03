@@ -132,6 +132,7 @@ func TestLinkManager_GetLinksConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			tt.config.Storage.HomeDir = t.TempDir()
 			ws, err := OpenWorkspace(ctx, tmpDir, tt.config)
 			require.NoError(t, err)
 
@@ -511,7 +512,8 @@ func TestIndexSpecification(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 	ws, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{
-		Links: &LinksSettings{Enabled: true, AutoIndex: true},
+		Links:   &LinksSettings{Enabled: true, AutoIndex: true},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	})
 	require.NoError(t, err)
 
@@ -564,7 +566,8 @@ func TestIndexNote(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 	ws, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{
-		Links: &LinksSettings{Enabled: true, AutoIndex: true},
+		Links:   &LinksSettings{Enabled: true, AutoIndex: true},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	})
 	require.NoError(t, err)
 
@@ -608,7 +611,8 @@ func TestIndexSession(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 	ws, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{
-		Links: &LinksSettings{Enabled: true, AutoIndex: true},
+		Links:   &LinksSettings{Enabled: true, AutoIndex: true},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	})
 	require.NoError(t, err)
 
@@ -755,6 +759,7 @@ func TestGetLinkManager(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.config.Storage.HomeDir = t.TempDir()
 			ws, err := OpenWorkspace(ctx, tmpDir, tt.config)
 			require.NoError(t, err)
 
@@ -776,6 +781,7 @@ func TestLinkManager_Integration(t *testing.T) {
 			CaseSensitive:    false,
 			MaxContextLength: 200,
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	}
 	ws, err := OpenWorkspace(ctx, tmpDir, config)
 	require.NoError(t, err)
@@ -829,6 +835,7 @@ func TestLinkManager_ContextExtraction(t *testing.T) {
 			AutoIndex:        true,
 			MaxContextLength: 100, // Enough to include full link + surrounding text
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	}
 	ws, err := OpenWorkspace(ctx, tmpDir, config)
 	require.NoError(t, err)
@@ -871,6 +878,7 @@ func TestLinkManager_TaskScopedReferences(t *testing.T) {
 			Enabled:   true,
 			AutoIndex: true,
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	}
 	ws, err := OpenWorkspace(ctx, tmpDir, config)
 	require.NoError(t, err)
@@ -909,6 +917,7 @@ func TestLinkManager_NameBasedReferences(t *testing.T) {
 			Enabled:   true,
 			AutoIndex: true,
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	}
 	ws, err := OpenWorkspace(ctx, tmpDir, config)
 	require.NoError(t, err)
@@ -953,6 +962,7 @@ func TestLinkManager_UpdateReindex(t *testing.T) {
 			Enabled:   true,
 			AutoIndex: true,
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	}
 	ws, err := OpenWorkspace(ctx, tmpDir, config)
 	require.NoError(t, err)
@@ -1000,10 +1010,12 @@ func TestLinkManager_UpdateReindex(t *testing.T) {
 func TestLinkManager_Persistence(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 
 	// Create first manager and add data
 	ws1, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{
-		Links: &LinksSettings{Enabled: true},
+		Links:   &LinksSettings{Enabled: true},
+		Storage: StorageSettings{HomeDir: homeDir},
 	})
 	require.NoError(t, err)
 
@@ -1021,7 +1033,8 @@ func TestLinkManager_Persistence(t *testing.T) {
 
 	// Create a new manager for the same workspace
 	ws2, err := OpenWorkspace(ctx, tmpDir, &WorkspaceConfig{
-		Links: &LinksSettings{Enabled: true},
+		Links:   &LinksSettings{Enabled: true},
+		Storage: StorageSettings{HomeDir: homeDir},
 	})
 	require.NoError(t, err)
 
@@ -1119,6 +1132,7 @@ func TestLinkManager_ConcurrentIndexing(t *testing.T) {
 			Enabled:   true,
 			AutoIndex: true,
 		},
+		Storage: StorageSettings{HomeDir: t.TempDir()},
 	})
 	require.NoError(t, err)
 
