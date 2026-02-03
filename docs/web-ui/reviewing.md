@@ -274,23 +274,17 @@ rather than implementing from specifications.
 4. Run `review` again to verify fixes (creates review #2)
 5. Click **"Finish"** when review passes
 
-## CLI Equivalent
+---
 
-```bash
-# Run review
-mehr review
+## Also Available via CLI
 
-# View review content
-mehr review view 1
+Run code review from the command line for terminal-based workflows or CI/CD integration.
 
-# Implement fixes from review
-mehr implement review 1
+| Command | What It Does |
+|---------|--------------|
+| `mehr review` | Run automated code review |
+| `mehr review view 1` | View the content of review #1 |
+| `mehr implement review 1` | Implement fixes from review #1 |
+| `mehr review --standalone` | Review without an active task |
 
-# View review output
-mehr review --verbose
-
-# Continue after review
-mehr continue
-```
-
-See [CLI: review](../cli/review.md) for all options.
+See [CLI: review](/cli/review.md) for all flags and options.

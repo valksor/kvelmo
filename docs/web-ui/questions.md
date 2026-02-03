@@ -378,22 +378,19 @@ POST /api/v1/workflow/question
 
 **Response:** SSE stream with agent response
 
-## CLI Equivalent
+---
 
-```bash
-# Ask a question
-mehr question "Why this approach?"
-mehr ask "Why this approach?"
-mehr q "Why this approach?"
+## Also Available via CLI
 
-# Interactive mode
-mehr question
+Ask questions from the command line when working in a terminal.
 
-# Add a note instead (no AI response)
-mehr note "Use PostgreSQL for sessions"
-```
+| Command | What It Does |
+|---------|--------------|
+| `mehr question "query"` | Ask the agent a question |
+| `mehr q "query"` | Short alias for question |
+| `mehr question` | Interactive mode for follow-up questions |
 
-See [CLI: question](../cli/question.md) for details.
+See [CLI: question](/cli/question.md) for all flags and options.
 
 ## Next Steps
 

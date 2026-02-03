@@ -189,21 +189,16 @@ After implementation completes:
 - [**Undo & Redo**](undo-redo.md) - Navigate checkpoints if needed
 - [**Notes**](notes.md) - Add feedback for next iteration
 
-## CLI Equivalent
+---
 
-```bash
-# Run implementation
-mehr implement
+## Also Available via CLI
 
-# Add a note first
-mehr note "Use PostgreSQL, not Redis"
-mehr implement
+Run implementation from the command line for terminal-based workflows or automation.
 
-# Dry run to see what would happen
-mehr implement --dry-run
+| Command | What It Does |
+|---------|--------------|
+| `mehr implement` | Execute specifications and generate code |
+| `mehr implement --dry-run` | Preview what would be implemented |
+| `mehr implement review 1` | Implement fixes from a specific review |
 
-# Continue after review
-mehr continue
-```
-
-See [CLI: implement](../cli/implement.md) for all options.
+See [CLI: implement](/cli/implement.md) for all flags and options.

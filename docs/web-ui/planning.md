@@ -218,19 +218,15 @@ After planning completes:
 - [**Notes**](notes.md) - Add more context before implementation
 - [**Undo**](undo-redo.md) - Revert planning if needed
 
-## CLI Equivalent
+---
 
-```bash
-# Run planning
-mehr plan
+## Also Available via CLI
 
-# Add notes first
-mehr note "Use PostgreSQL, not Redis"
-mehr plan
+Run planning from the command line for terminal-based workflows or automation.
 
-# Answer a question and continue
-mehr answer "Use go-oauth2/oauth2"
-mehr plan
-```
+| Command | What It Does |
+|---------|--------------|
+| `mehr plan` | Generate specifications from task description |
+| `mehr plan --force` | Re-run planning even if specs exist |
 
-See [CLI: plan](../cli/plan.md) for all options.
+See [CLI: plan](/cli/plan.md) for all flags and options.

@@ -243,59 +243,6 @@ curl -X POST http://localhost:8080/api/v1/notes \
 mehr note --running=abc123 "Consider edge case X"
 ```
 
-## Architecture
-
-### How Parallel Execution Works
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Web Server                           │
-│                                                             │
-│  ┌─────────────────┐                                        │
-│  │ Task Registry   │  In-memory tracking of running tasks   │
-│  └────────┬────────┘                                        │
-│           │                                                 │
-│  ┌────────▼────────┐                                        │
-│  │  Task Runner    │  Worker pool with semaphore            │
-│  └────────┬────────┘                                        │
-│           │                                                 │
-│  ┌────────▼────────────────────────────────────────┐        │
-│  │              Goroutine Pool                      │        │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐       │        │
-│  │  │ Worker 1 │  │ Worker 2 │  │ Worker 3 │       │        │
-│  │  │ (Task A) │  │ (Task B) │  │ (Task C) │       │        │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘       │        │
-│  │       │             │             │             │        │
-│  │       ▼             ▼             ▼             │        │
-│  │  ┌─────────┐   ┌─────────┐   ┌─────────┐       │        │
-│  │  │Conductor│   │Conductor│   │Conductor│       │        │
-│  │  └─────────┘   └─────────┘   └─────────┘       │        │
-│  └─────────────────────────────────────────────────┘        │
-│                                                             │
-│  ┌─────────────────────────────────────────────────┐        │
-│  │           Git Worktrees (Isolation)              │        │
-│  │  ../worktrees/abc123/  ../worktrees/def456/  ...│        │
-│  └─────────────────────────────────────────────────┘        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Components:**
-
-| Component     | Description                                    |
-|---------------|------------------------------------------------|
-| Task Registry | Thread-safe map tracking all running tasks     |
-| Task Runner   | Worker pool with configurable parallelism      |
-| Conductor     | Per-task orchestrator (AI agent, storage, VCS) |
-| Git Worktrees | Isolated working directories per task          |
-
-### Thread Safety
-
-The registry uses `sync.RWMutex` to ensure thread-safe access:
-
-- Multiple readers can access task state simultaneously
-- Writers get exclusive access for state updates
-- Event bus notifies subscribers of state changes
-
 ## Best Practices
 
 ### When to Use Parallel Execution
@@ -325,10 +272,27 @@ The registry uses `sync.RWMutex` to ensure thread-safe access:
 3. **Use per-task streams** to debug issues
 4. **Cancel unresponsive tasks** rather than waiting indefinitely
 
+---
+
+## Also Available via CLI
+
+Manage parallel task execution from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr start <refs> --parallel=N` | Start multiple tasks in parallel with N workers |
+| `mehr start <refs> --parallel=N --worktree` | Use isolated git worktrees per task |
+| `mehr list --running` | List currently running parallel tasks |
+| `mehr note --running=<id> "message"` | Send a note to a specific running task |
+| `mehr project start --parallel=N` | Start project queue tasks in parallel |
+
+See [CLI: start](/cli/start.md) for parallel execution options, and [CLI: list](/cli/list.md) for monitoring running tasks.
+
 ## Related Documentation
 
-- [CLI: start --parallel](../cli/start.md#start-multiple-tasks-in-parallel)
-- [CLI: list --running](../cli/list.md#list-running-parallel-tasks)
-- [CLI: note --running](../cli/note.md#send-note-to-running-parallel-task)
-- [CLI: project start --parallel](../cli/project.md#start)
+- [Parallel Execution Architecture](/concepts/parallel-execution.md) - Technical architecture and internals
+- [CLI: start --parallel](/cli/start.md#start-multiple-tasks-in-parallel)
+- [CLI: list --running](/cli/list.md#list-running-parallel-tasks)
+- [CLI: note --running](/cli/note.md#send-note-to-running-parallel-task)
+- [CLI: project start --parallel](/cli/project.md#start)
 - [Dashboard](dashboard.md) - Main Web UI interface

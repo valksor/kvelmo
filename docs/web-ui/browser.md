@@ -351,49 +351,27 @@ browser:
 ## Next Steps
 
 - [**Settings**](settings.md) - Configure browser options
-- [**CLI: browser**](../cli/browser.md) - CLI browser commands
+- [**CLI: browser**](/cli/browser.md) - CLI browser commands
 
-## CLI Equivalent
+---
 
-```bash
-# Check browser status
-mehr browser status
+## Also Available via CLI
 
-# Navigate to URL
-mehr browser goto https://example.com
+Control Chrome automation from the command line for scripting or terminal workflows.
 
-# Take screenshot
-mehr browser screenshot --full-page
+| Command | What It Does |
+|---------|--------------|
+| `mehr browser status` | Check browser connection status |
+| `mehr browser goto <url>` | Navigate to a URL |
+| `mehr browser screenshot` | Capture page screenshot |
+| `mehr browser click <selector>` | Click an element |
+| `mehr browser type <selector> <text>` | Type text into an element |
+| `mehr browser dom <selector>` | Query DOM elements |
+| `mehr browser network` | Monitor network traffic |
+| `mehr browser console` | Listen for console logs |
+| `mehr browser websocket` | Monitor WebSocket frames |
+| `mehr browser source` | Get page HTML source |
+| `mehr browser styles <selector>` | Inspect CSS styles |
+| `mehr browser coverage` | Measure code coverage |
 
-# Click element
-mehr browser click #submit-button
-
-# Type text
-mehr browser type #email-input "user@example.com"
-
-# Query DOM
-mehr browser dom "a[href]"
-
-# Monitor network traffic
-mehr browser network --duration 5 --capture-body
-
-# Listen for console logs
-mehr browser console --duration 5 --level error
-
-# Monitor WebSocket frames
-mehr browser websocket --duration 5
-
-# Get page source
-mehr browser source
-
-# List loaded scripts
-mehr browser scripts
-
-# Inspect CSS styles
-mehr browser styles "h1" --computed --matched
-
-# Measure code coverage
-mehr browser coverage --duration 5 --js --css
-```
-
-See [CLI: browser](../cli/browser.md) for all options.
+See [CLI: browser](/cli/browser.md) for all options and DevTools monitoring commands.

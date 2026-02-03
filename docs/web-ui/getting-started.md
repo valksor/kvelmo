@@ -12,9 +12,9 @@ By the end of this guide, you'll be able to:
 
 ## Prerequisites
 
-- Mehrhof installed ([Quickstart](../quickstart.md) if needed)
+- Mehrhof installed ([Quickstart](/quickstart.md) if needed)
 - A project directory (can be empty or an existing codebase)
-- An agent CLI configured (Claude recommended, see [AI Agents](../agents/index.md))
+- An agent CLI configured (Claude recommended, see [AI Agents](/agents/index.md))
 
 > **Don't have a project?** You can start with an empty directory. Mehrhof will create everything it needs.
 
@@ -542,7 +542,7 @@ A: Press `Ctrl+C` in the terminal where `mehr serve` is running.
 
 ## CLI Equivalent
 
-For the full CLI workflow, see [Getting Started with the CLI](../guides/first-task.md).
+For the full CLI workflow, see [Getting Started with the CLI](/guides/first-task.md).
 
 ## Next Steps
 
@@ -552,5 +552,5 @@ Now that you've completed your first task:
 - [**Planning**](planning.md) - Deep dive into the planning phase
 - [**Implementing**](implementing.md) - Understanding code generation
 - [**Settings**](settings.md) - Configure agents, providers, and workflow
-- [**Web UI vs CLI**](../guides/web-ui-vs-cli.md) - Understand when to use each interface
-- [**Task Providers**](../providers/index.md) - Connect to GitHub, Jira, Linear, and more
+- [**Web UI vs CLI**](/guides/web-ui-vs-cli.md) - Understand when to use each interface
+- [**Task Providers**](/providers/index.md) - Connect to GitHub, Jira, Linear, and more

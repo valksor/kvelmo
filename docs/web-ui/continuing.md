@@ -184,19 +184,15 @@ After using Continue:
 - [**Reviewing**](reviewing.md) - Run quality checks
 - [**Finishing**](finishing.md) - Complete the task
 
-## CLI Equivalent
+---
 
-```bash
-# See suggestions (no auto-execute)
-mehr continue
+## Also Available via CLI
 
-# Auto-execute next step
-mehr continue --auto
+Resume tasks from the command line when returning to work or automating workflows.
 
-# Continue after a break
-cd project
-git checkout task/abc123
-mehr continue
-```
+| Command | What It Does |
+|---------|--------------|
+| `mehr continue` | See suggested next action |
+| `mehr continue --auto` | Automatically execute the next step |
 
-See [CLI: continue](../cli/continue.md) for all options.
+See [CLI: continue](/cli/continue.md) for all flags and options.

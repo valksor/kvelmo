@@ -243,29 +243,24 @@ The stack page uses these API endpoints:
 | POST   | `/api/v1/stack/sync`   | Sync PR status      |
 | POST   | `/api/v1/stack/rebase` | Rebase stacks/tasks |
 
-## CLI Equivalent
+---
 
-```bash
-# List stacks
-mehr stack
+## Also Available via CLI
 
-# Sync PR status
-mehr stack sync
+Manage stacked features from the command line for scripting or terminal workflows.
 
-# Rebase all stacks
-mehr stack rebase
+| Command | What It Does |
+|---------|--------------|
+| `mehr stack` | List all stacks and their tasks |
+| `mehr stack sync` | Sync PR status from providers |
+| `mehr stack rebase` | Rebase all stacks needing updates |
+| `mehr stack rebase --stack <id>` | Rebase a specific stack |
+| `mehr stack rebase --task <id>` | Rebase a specific task |
 
-# Rebase specific stack
-mehr stack rebase --stack stack-abc123
-
-# Rebase specific task
-mehr stack rebase --task issue-101
-```
-
-See [CLI: stack](../cli/stack.md) for all options.
+See [CLI: stack](/cli/stack.md) for visualization options (`--graph`, `--mermaid`) and all flags.
 
 ## See Also
 
-- [Stacked Features Concept](../concepts/stacked-features.md) - Architecture and design
-- [CLI: stack](../cli/stack.md) - CLI equivalent
+- [Stacked Features Concept](/concepts/stacked-features.md) - Architecture and design
+- [CLI: stack](/cli/stack.md) - CLI equivalent
 - [Settings](settings.md) - Configure stack behavior

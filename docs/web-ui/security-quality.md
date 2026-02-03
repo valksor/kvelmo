@@ -155,12 +155,7 @@ func GetToken(user User) (string, error) {
 
 ### Safety
 
-Simplification creates a **git checkpoint** before modifying files, so you can always undo:
-
-```bash
-# If something goes wrong
-mehr undo
-```
+Simplification creates a **git checkpoint** before modifying files, so you can always undo changes using the dashboard's Undo button or the CLI.
 
 ## Configuration
 
@@ -266,15 +261,19 @@ curl -X POST http://localhost:8080/api/v1/scan \
   -d '{"directory": "./src", "format": "sarif"}'
 ```
 
-## CLI Equivalent
+---
 
-See [`mehr scan`](../cli/scan.md) and [`mehr simplify`](../cli/simplify.md) for CLI usage.
+## Also Available via CLI
 
-| CLI Command                              | Web UI Action           |
-|------------------------------------------|-------------------------|
-| `mehr scan`                              | Run scan from dashboard |
-| `mehr simplify`                          | Simplify from dashboard |
-| `mehr scan --sarif --output report.json` | Generate SARIF report   |
+Run security scans and code simplification from the command line for scripting or CI/CD integration.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr scan` | Run all enabled security scanners |
+| `mehr scan --sarif` | Generate SARIF format report |
+| `mehr simplify` | Simplify code based on workflow state |
+
+See [CLI: scan](/cli/scan.md) for scanner selection and output options, and [CLI: simplify](/cli/simplify.md) for simplification modes.
 
 ## Troubleshooting
 
@@ -283,11 +282,7 @@ See [`mehr scan`](../cli/scan.md) and [`mehr simplify`](../cli/simplify.md) for 
 By default, Mehrhof auto-downloads tools. If download fails:
 
 1. Check network connectivity
-2. Install manually:
-   ```bash
-   go install github.com/securego/gosec/v2/cmd/gosec@latest
-   go install github.com/zricethezav/gitleaks/v8/cmd/gitleaks@latest
-   ```
+2. Install manually using `go install` for the relevant tool
 3. Add to PATH
 
 ### Too Many Findings

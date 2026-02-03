@@ -141,7 +141,7 @@ Pull tasks directly from external project management tools.
 | Asana    | `mehr asana configure`   |
 | ClickUp  | `mehr clickup configure` |
 
-See [Providers](../providers/index.md) for complete setup instructions.
+See [Providers](/providers/index.md) for complete setup instructions.
 
 ### GitHub Example
 
@@ -203,7 +203,7 @@ When starting a task from an external provider (GitHub, Jira, Wrike, etc.), Mehr
 - **Metadata**: Custom frontmatter fields from local task files fill gaps in provider data (local never overwrites provider)
 - **Source files**: If the local task has a source path, those files are included in the agent's context
 
-This lets you enrich external tasks with local code examples, file references, or implementation notes. See [CLI: start](../cli/start.md#local-metadata-enrichment) for details.
+This lets you enrich external tasks with local code examples, file references, or implementation notes. See [CLI: start](/cli/start.md#local-metadata-enrichment) for details.
 
 ## Next Steps
 
@@ -213,20 +213,17 @@ After creating your task:
 - [**Notes**](notes.md) - Add context before planning
 - [**Dashboard**](dashboard.md) - Understand the full interface
 
-## CLI Equivalent
+---
 
-```bash
-# Write task from file
-mehr start task.md
+## Also Available via CLI
 
-# From GitHub issue
-mehr start github:123
+Create tasks from the command line for terminal-based workflows or scripting.
 
-# From directory
-mehr start dir:./tasks/
+| Command | What It Does |
+|---------|--------------|
+| `mehr start task.md` | Create task from a file |
+| `mehr start github:123` | Create task from a GitHub issue |
+| `mehr start jira:PROJ-456` | Create task from Jira |
+| `mehr start dir:./tasks/` | Create tasks from a directory |
 
-# With custom key
-mehr start --key JIRA-456 task.md
-```
-
-See [CLI: start](../cli/start.md) for all options.
+See [CLI: start](/cli/start.md) for all providers and options.

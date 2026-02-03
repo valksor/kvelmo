@@ -192,20 +192,16 @@ After using Undo/Redo:
 - [**Implementing**](implementing.md) - Try implementation again
 - [**Notes**](notes.md) - Add context for next attempt
 
-## CLI Equivalent
+---
 
-```bash
-# Undo last checkpoint
-mehr undo
+## Also Available via CLI
 
-# Redo undone checkpoint
-mehr redo
+Navigate checkpoints from the command line.
 
-# View checkpoint history
-mehr status
+| Command | What It Does |
+|---------|--------------|
+| `mehr undo` | Revert to previous checkpoint |
+| `mehr redo` | Restore an undone checkpoint |
+| `mehr undo --steps 2` | Undo multiple checkpoints at once |
 
-# Undo multiple steps
-mehr undo --steps 2
-```
-
-See [CLI: undo](../cli/undo.md) and [CLI: redo](../cli/redo.md) for details.
+See [CLI: undo](/cli/undo.md) and [CLI: redo](/cli/redo.md) for all options.

@@ -105,7 +105,7 @@ Automation settings are displayed read-only in the UI. To modify:
 1. Edit `.mehrhof/config.yaml`
 2. Restart the server
 
-See [docs/cli/automation.md](../cli/automation.md) for configuration options.
+See [docs/cli/automation.md](/cli/automation.md) for configuration options.
 
 ## API Access
 
@@ -163,6 +163,6 @@ These labels are visible in both the provider UI and Mehrhof Web UI.
 
 ## See Also
 
-- [docs/cli/automation.md](../cli/automation.md) - CLI configuration and setup
+- [docs/cli/automation.md](/cli/automation.md) - CLI configuration and setup
 - [docs/web-ui/dashboard.md](dashboard.md) - Dashboard overview
-- [docs/web-ui/api.md](api.md) - REST API reference
+- [REST API Reference](/reference/rest-api.md) - Programmatic API access

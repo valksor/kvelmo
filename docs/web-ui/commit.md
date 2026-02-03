@@ -35,7 +35,7 @@ agent:
       name: claude-opus  # Use a specific agent for commit operations
 ```
 
-For CLI usage with explicit agent override, see [CLI commit documentation](../cli/commit.md).
+For CLI usage with explicit agent override, see [CLI commit documentation](/cli/commit.md).
 
 ## API Endpoints
 
@@ -89,3 +89,18 @@ Creates commits for the provided groups.
   ]
 }
 ```
+
+---
+
+## Also Available via CLI
+
+Create logically grouped commits from the command line for scripting or terminal workflows.
+
+| Command | What It Does |
+|---------|--------------|
+| `mehr commit` | Analyze and create grouped commits interactively |
+| `mehr commit --all` | Include unstaged changes |
+| `mehr commit --push` | Push commits after creating |
+| `mehr commit --dry-run` | Preview commit groups without creating |
+
+See [CLI: commit](/cli/commit.md) for all options, agent configuration, and non-interactive modes.

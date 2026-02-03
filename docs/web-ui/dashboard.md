@@ -197,7 +197,7 @@ This context helps you understand:
 - What related work is being done by others (siblings)
 - How your subtask fits into the overall plan
 
-See [Context Configuration](../configuration/context.md) to customize hierarchical context inclusion.
+See [Context Configuration](/configuration/context.md) to customize hierarchical context inclusion.
 
 ## Quick Actions
 
@@ -329,7 +329,7 @@ curl http://localhost:8080/api/v1/costs
 curl http://localhost:8080/api/v1/tasks/{id}/costs
 ```
 
-For more detailed cost analysis, see [`mehr cost`](../cli/cost.md) in the CLI reference.
+For more detailed cost analysis, see [`mehr cost`](/cli/cost.md) in the CLI reference.
 
 ## Specifications Section
 
@@ -410,5 +410,5 @@ Stay informed with:
 - [**Getting Started**](getting-started.md) - First time walkthrough
 - [**Creating Tasks**](creating-tasks.md) - Create your first task
 - [**Settings**](settings.md) - Configure workspace
-- [**Context Configuration**](../configuration/context.md) - Hierarchical task context settings
-- [**CLI: serve**](../cli/serve.md) - Server command options
+- [**Context Configuration**](/configuration/context.md) - Hierarchical task context settings
+- [**CLI: serve**](/cli/serve.md) - Server command options

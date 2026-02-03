@@ -236,20 +236,20 @@ cloudflared tunnel --url http://localhost:3000
 ## Next Steps
 
 - [**Authentication**](authentication.md) - Set up users and security
-- [**CLI: serve**](../cli/serve.md) - Server command options
+- [**CLI: serve**](/cli/serve.md) - Server command options
 - [**Settings**](settings.md) - Configure workspace
 
-## CLI Equivalent
+---
 
-```bash
-# Show tunnel info
-mehr serve --tunnel-info
+## Also Available via CLI
 
-# Add user for remote access
-mehr serve auth add admin password
+Configure and start the server from the command line for scripting or remote deployment.
 
-# Start with network binding
-mehr serve --host 0.0.0.0 --port 3000
-```
+| Command | What It Does |
+|---------|--------------|
+| `mehr serve --tunnel-info` | Show SSH tunnel instructions |
+| `mehr serve auth add <user> <pass>` | Add a user for authentication |
+| `mehr serve --host 0.0.0.0` | Bind to all network interfaces |
+| `mehr serve --port <port>` | Specify the server port |
 
-See [CLI: serve](../cli/serve.md) for all options.
+See [CLI: serve](/cli/serve.md) for all server options and authentication commands.
