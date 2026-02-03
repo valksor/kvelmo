@@ -54,14 +54,39 @@ Fetches latest PR status from the provider (GitHub, GitLab, etc.):
 ### Rebase Stack
 
 ```bash
-# Rebase all stacks that need it
+# Preview what would happen (check for conflicts)
+mehr stack rebase --preview
+
+# Dry run (alias for --preview)
+mehr stack rebase --dry-run
+
+# Rebase all stacks that need it (prompts for confirmation)
 mehr stack rebase
+
+# Skip confirmation (for scripts/automation)
+mehr stack rebase --yes
 
 # Rebase specific stack
 mehr stack rebase --stack stack-abc123
 
 # Rebase specific task
 mehr stack rebase --task issue-101
+```
+
+The rebase command always checks for conflicts before executing. If conflicts are detected, the rebase is blocked with clear instructions for manual resolution.
+
+**Preview output:**
+
+```
+Stack: auth-system
+┌──────────────────────────────────────────────────────┐
+│ feature/auth-oauth    → main           ✓ Safe
+│ feature/auth-google   → auth-oauth     ✗ CONFLICT
+│   └─ internal/auth/oauth.go
+│   └─ internal/auth/handler.go
+└──────────────────────────────────────────────────────┘
+
+⚠ 1 task(s) have conflicts. Resolve manually before rebasing.
 ```
 
 Rebases dependent features in topological order (parents before children):
@@ -198,13 +223,27 @@ mehr stack rebase
 
 ## Flags
 
+### List Flags
+
 | Flag           | Description                    |
 |----------------|--------------------------------|
 | `--graph`      | Show ASCII graph visualization |
 | `--mermaid`    | Show Mermaid diagram           |
-| `--stack <id>` | Target specific stack          |
-| `--task <id>`  | Target specific task           |
 | `--json`       | Output as JSON                 |
+
+### Rebase Flags
+
+| Flag           | Description                                      |
+|----------------|--------------------------------------------------|
+| `--preview`    | Preview what would happen (check for conflicts)  |
+| `--dry-run`    | Alias for `--preview`                            |
+| `--yes`, `-y`  | Skip confirmation prompt (for scripts)           |
+
+### Rebase Arguments
+
+| Argument       | Description                                      |
+|----------------|--------------------------------------------------|
+| `[task-id]`    | Optional: rebase a specific task only            |
 
 ## Configuration
 
@@ -213,6 +252,29 @@ Stack tracking is stored in workspace data:
 ```
 ~/.valksor/mehrhof/workspaces/<project>/stacks/index.yaml
 ```
+
+### Auto-Rebase on Finish
+
+Configure automatic rebase when finishing a parent task:
+
+```yaml
+# .mehrhof/config.yaml
+stack:
+  auto_rebase: on_finish    # "disabled" (default) | "on_finish"
+  block_on_conflicts: true  # Always block if conflicts detected (default)
+```
+
+When enabled, `mehr finish` will:
+1. Create the PR for the finished task
+2. Preview rebase for any dependent tasks
+3. If no conflicts: prompt for confirmation
+4. If conflicts: warn and skip (manual resolution required)
+
+**Requirements:**
+- Git 2.38+ for conflict detection (`git merge-tree --write-tree`)
+- Interactive mode (auto-rebase requires user confirmation per Tier 3 policy)
+
+If Git is older than 2.38, conflict detection will be unavailable but manual rebase still works.
 
 ## Web UI
 
