@@ -18,8 +18,30 @@ var undoCmd = &cobra.Command{
 	Short: "Revert to the previous checkpoint",
 	Long: `Revert the current task to its previous checkpoint.
 
-This undoes the last set of changes by resetting to the previous git checkpoint.
-Use 'mehr redo' to restore undone changes.
+CHECKPOINT SYSTEM:
+  Mehrhof automatically creates git checkpoints during workflow operations:
+  - After each plan/implement/review step completes
+  - Before standalone simplify/review operations modify files
+  - When explicitly requested via commands
+
+  Each checkpoint is a git commit tagged with the task ID. Undo/redo
+  navigates between these checkpoints without losing work.
+
+HOW UNDO WORKS:
+  • Moves HEAD to the previous checkpoint for the current task
+  • Preserves redo history - you can redo to restore changes
+  • Only affects the current task's checkpoints
+  • Safe operation - no data is permanently lost
+
+HISTORY DEPTH:
+  All checkpoints created during a task are preserved. You can undo
+  multiple times to go back through the history. Use 'mehr status'
+  to see the current checkpoint number.
+
+RELATED COMMANDS:
+  mehr redo     - Restore undone changes (move forward in history)
+  mehr reset    - Reset workflow state to idle (keeps code changes)
+  mehr status   - Show current task state and checkpoint info
 
 Examples:
   mehr undo                    # Undo last changes (with confirmation)
