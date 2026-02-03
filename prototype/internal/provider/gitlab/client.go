@@ -30,7 +30,7 @@ type Client struct {
 }
 
 // NewClient creates a new GitLab API client.
-func NewClient(token, host, projectPath string, projectID int64) *Client {
+func NewClient(token, host, projectPath string, projectID int64) (*Client, error) {
 	var options []gl.ClientOptionFunc
 
 	// For self-hosted GitLab, set the base URL
@@ -41,7 +41,7 @@ func NewClient(token, host, projectPath string, projectID int64) *Client {
 
 	client, err := gl.NewClient(token, options...)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create GitLab client: %v", err))
+		return nil, fmt.Errorf("create GitLab client: %w", err)
 	}
 
 	return &Client{
@@ -51,7 +51,7 @@ func NewClient(token, host, projectPath string, projectID int64) *Client {
 		projectPath: projectPath,
 		projectID:   projectID,
 		host:        host,
-	}
+	}, nil
 }
 
 // ResolveToken resolves the GitLab API token.
