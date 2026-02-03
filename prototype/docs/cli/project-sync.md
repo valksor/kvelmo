@@ -103,7 +103,7 @@ Queue created: auth-user-authentication-20250129-143052
 
 ## Web UI
 
-Prefer a visual interface? See the Sync from Provider feature in [Project Planning](../web-ui/project-planning.md).
+Prefer a visual interface? See the Sync from Provider feature in [Project Planning](/web-ui/project-planning.md).
 
 ## See Also
 

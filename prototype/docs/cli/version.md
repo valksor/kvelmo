@@ -74,5 +74,5 @@ make install
 
 ## See Also
 
-- [Quickstart](../quickstart.md) - Installing Mehrhof
+- [Quickstart](/quickstart.md) - Installing Mehrhof
 - [CLI Overview](index.md) - All available commands

@@ -146,7 +146,7 @@ mehr serve unregister old-project-id
 
 ## Web UI
 
-Prefer a visual interface? See the remote access setup in [Remote Access](../web-ui/remote-access.md).
+Prefer a visual interface? See the remote access setup in [Remote Access](/web-ui/remote-access.md).
 
 ## See Also
 

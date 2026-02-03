@@ -102,7 +102,7 @@ Specification 5 not found. Available specifications:
 
 ## Web UI
 
-Prefer a visual interface? See the Specifications section in [Planning](../web-ui/planning.md).
+Prefer a visual interface? See the Specifications section in [Planning](/web-ui/planning.md).
 
 ## See Also
 

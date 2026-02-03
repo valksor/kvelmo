@@ -135,10 +135,10 @@ mehr redo
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Undo & Redo](../web-ui/undo-redo.md).
+Prefer a visual interface? See [Web UI: Undo & Redo](/web-ui/undo-redo.md).
 
 ## See Also
 
 - [undo](undo.md) - Revert to previous checkpoint
-- [Checkpoints](../concepts/checkpoints.md) - How checkpoints work
+- [Checkpoints](/concepts/checkpoints.md) - How checkpoints work
 - [implement](implement.md) - Generate code

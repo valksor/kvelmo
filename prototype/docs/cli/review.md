@@ -65,7 +65,7 @@ quality:
 
 > **Note:** With `use_defaults: false` (default), built-in linters will NOT run unless explicitly enabled. This prevents unintended code modifications (e.g., php-cs-fixer on Symfony projects with custom config paths).
 
-See [Configuration Guide](../configuration/index.md#quality) for full details.
+See [Configuration Guide](/configuration/index.md#quality) for full details.
 
 ### AI Code Review
 
@@ -517,10 +517,10 @@ In interactive mode:
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Reviewing](../web-ui/reviewing.md).
+Prefer a visual interface? See [Web UI: Reviewing](/web-ui/reviewing.md).
 
 ## See Also
 
 - [implement](cli/implement.md) - Generate code
 - [finish](cli/finish.md) - Complete task
-- [Workflow](../concepts/workflow.md) - Review phase
+- [Workflow](/concepts/workflow.md) - Review phase

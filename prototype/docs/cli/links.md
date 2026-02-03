@@ -296,10 +296,10 @@ mehr links list spec:abc123:1
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Links](../web-ui/links.md).
+Prefer a visual interface? See [Web UI: Links](/web-ui/links.md).
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - Links settings in config.yaml
-- [Linking Concepts](../concepts/linking.md) - Deep dive on linking architecture
-- [CLI Reference](../cli/index.md) - All CLI commands
+- [Configuration Guide](/configuration/index.md) - Links settings in config.yaml
+- [Linking Concepts](/concepts/linking.md) - Deep dive on linking architecture
+- [CLI Reference](/cli/index.md) - All CLI commands

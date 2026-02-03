@@ -301,9 +301,9 @@ PRs with the `mehrhof-generated` label are automatically skipped to prevent self
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Automation](../web-ui/automation.md).
+Prefer a visual interface? See [Web UI: Automation](/web-ui/automation.md).
 
 ## See Also
 
 - [docs/cli/serve.md](serve.md) - Server configuration
-- [docs/concepts/workflows.md](../concepts/workflows.md) - Workflow architecture
+- [docs/concepts/workflows.md](/concepts/workflows.md) - Workflow architecture

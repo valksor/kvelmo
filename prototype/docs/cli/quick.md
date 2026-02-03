@@ -180,7 +180,7 @@ mehr project tasks --queue-id=quick-tasks
 
 ### Delete Tasks
 
-Tasks can be deleted via the Web UI or API. See [REST API](../web-ui/api.md#quick-tasks) for details.
+Tasks can be deleted via the Web UI or API. See [REST API Reference](/reference/rest-api.md#quick-tasks) for details.
 
 ## Task Priority Levels
 
@@ -210,7 +210,7 @@ mehr finish
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Quick Tasks](../web-ui/quick-tasks.md).
+Prefer a visual interface? See [Web UI: Quick Tasks](/web-ui/quick-tasks.md).
 
 ## See Also
 
@@ -219,4 +219,4 @@ Prefer a visual interface? See [Web UI: Quick Tasks](../web-ui/quick-tasks.md).
 - [export](export.md) - Export to markdown
 - [submit](submit.md) - Submit to provider
 - [start](start.md) - Start from queue reference
-- [Queue Provider](../providers/queue.md) - Queue provider documentation
+- [Queue Provider](/providers/queue.md) - Queue provider documentation

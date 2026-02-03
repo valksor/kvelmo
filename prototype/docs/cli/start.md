@@ -80,7 +80,7 @@ When working on a subtask (e.g., a GitHub issue that's a child of another issue)
 | `--without-siblings` | bool | config  | Exclude sibling subtask context from prompts |
 | `--max-siblings`     | int  | config  | Maximum number of sibling tasks to include   |
 
-**Note:** These flags override the `context` section in `.mehrhof/config.yaml`. See [Context Configuration](../configuration/context.md) for details.
+**Note:** These flags override the `context` section in `.mehrhof/config.yaml`. See [Context Configuration](/configuration/context.md) for details.
 
 #### Example: Working on Subtasks
 
@@ -346,7 +346,7 @@ mehr start --agent-plan claude-opus --agent-implement claude task.md
 mehr start --agent-plan work-account task.md
 ```
 
-See [AI Agents](../agents/index.md#per-step-agent-configuration) for details.
+See [AI Agents](/agents/index.md#per-step-agent-configuration) for details.
 
 ## Task File Format
 
@@ -473,10 +473,10 @@ This lets you enrich external tasks with local code examples, file references, o
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Creating Tasks](../web-ui/creating-tasks.md).
+Prefer a visual interface? See [Web UI: Creating Tasks](/web-ui/creating-tasks.md).
 
 ## See Also
 
 - [plan](cli/plan.md) - Create specifications
 - [status](cli/status.md) - View task status
-- [Tasks Concept](../concepts/tasks.md) - Understanding tasks
+- [Tasks Concept](/concepts/tasks.md) - Understanding tasks

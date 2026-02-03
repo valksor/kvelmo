@@ -225,8 +225,8 @@ It always shows all tasks in the workspace.
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Task History](../web-ui/task-history.md).
+Prefer a visual interface? See [Web UI: Task History](/web-ui/task-history.md).
 
 ## See Also
 
-- [Parallel Tasks](../README.md#parallel-tasks) - Overview of parallel task workflow
+- [Parallel Tasks](/README.md#parallel-tasks) - Overview of parallel task workflow

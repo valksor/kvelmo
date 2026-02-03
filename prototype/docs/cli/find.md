@@ -143,10 +143,10 @@ If the agent doesn't return structured results, the command falls back to extrac
 
 ## Web UI
 
-Prefer a visual interface? See the search and filter features in [Task History](../web-ui/task-history.md).
+Prefer a visual interface? See the search and filter features in [Task History](/web-ui/task-history.md).
 
 ## See Also
 
 - [status](status.md) - Task status and workspace information
 - [memory](memory.md) - Semantic search across past tasks
-- [CLI Reference](../reference/cli.md) - All commands
+- [CLI Reference](/reference/cli.md) - All commands

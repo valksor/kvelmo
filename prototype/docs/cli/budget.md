@@ -102,9 +102,9 @@ mehr budget reset --month
 
 ## Web UI
 
-Prefer a visual interface? See the Budget display in [Dashboard](../web-ui/dashboard.md).
+Prefer a visual interface? See the Budget display in [Dashboard](/web-ui/dashboard.md).
 
 ## See Also
 
 - [cost](cost.md) - View token usage and costs
-- [Configuration Guide](../configuration/index.md) - Budget settings in `config.yaml`
+- [Configuration Guide](/configuration/index.md) - Budget settings in `config.yaml`

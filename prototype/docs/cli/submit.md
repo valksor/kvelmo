@@ -211,7 +211,7 @@ mehr jira login
 mehr wrike login
 ```
 
-See [provider documentation](../providers/index.md) for provider-specific setup.
+See [provider documentation](/providers/index.md) for provider-specific setup.
 
 ## Label Mapping
 
@@ -242,7 +242,7 @@ Submitting a task that was already submitted will:
 
 ## Web UI
 
-Prefer a visual interface? See the Submit feature in [Quick Tasks](../web-ui/quick-tasks.md).
+Prefer a visual interface? See the Submit feature in [Quick Tasks](/web-ui/quick-tasks.md).
 
 ## See Also
 
@@ -250,4 +250,4 @@ Prefer a visual interface? See the Submit feature in [Quick Tasks](../web-ui/qui
 - [optimize](optimize.md) - AI optimize before submitting
 - [export](export.md) - Export to file instead
 - [login](login.md) - Provider authentication
-- [Providers](../providers/index.md) - Provider documentation
+- [Providers](/providers/index.md) - Provider documentation

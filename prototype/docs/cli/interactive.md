@@ -159,7 +159,7 @@ Session transcripts are preserved in the workspace for context continuity.
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Interactive Mode](../web-ui/interactive.md).
+Prefer a visual interface? See [Web UI: Interactive Mode](/web-ui/interactive.md).
 
 ## See Also
 

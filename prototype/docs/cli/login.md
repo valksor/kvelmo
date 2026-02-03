@@ -209,10 +209,10 @@ Visit: https://dev.azure.com/_usersSettings/tokens
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Authentication](../web-ui/authentication.md).
+Prefer a visual interface? See [Web UI: Authentication](/web-ui/authentication.md).
 
 ## See Also
 
 - [mehr config](config.md) - Manage configuration files
-- [Configuration Guide](../configuration/index.md) - Token storage and environment variables
+- [Configuration Guide](/configuration/index.md) - Token storage and environment variables
 

@@ -246,5 +246,5 @@ plugins:
 
 ## See Also
 
-- [Plugins Concept](../concepts/plugins.md) - Understanding the plugin system
-- [Configuration Guide](../configuration/index.md) - Config file reference
+- [Plugins Concept](/concepts/plugins.md) - Understanding the plugin system
+- [Configuration Guide](/configuration/index.md) - Config file reference

@@ -196,4 +196,4 @@ No workspace parameter is needed in tool arguments.
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
 - [Browser Automation](browser.md)
-- [Configuration](../configuration/index.md)
+- [Configuration](/configuration/index.md)

@@ -394,4 +394,4 @@ Starting task: EXT-101 "Set up JWT authentication"
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Project Planning](../web-ui/project-planning.md).
+Prefer a visual interface? See [Web UI: Project Planning](/web-ui/project-planning.md).

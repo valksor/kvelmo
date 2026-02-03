@@ -190,7 +190,7 @@ AUTO failed at: quality
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Auto Mode](../web-ui/auto.md).
+Prefer a visual interface? See [Web UI: Auto Mode](/web-ui/auto.md).
 
 ## See Also
 

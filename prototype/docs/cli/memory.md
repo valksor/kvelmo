@@ -223,10 +223,10 @@ mehr memory index --task <id>
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Memory](../web-ui/memory.md).
+Prefer a visual interface? See [Web UI: Memory](/web-ui/memory.md).
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - Memory settings in config.yaml
-- [Advanced: Semantic Memory](../advanced/semantic-memory.md) - Deep dive on memory architecture
-- [storage Reference](../reference/storage.md) - Where memory data is stored
+- [Configuration Guide](/configuration/index.md) - Memory settings in config.yaml
+- [Advanced: Semantic Memory](/advanced/semantic-memory.md) - Deep dive on memory architecture
+- [storage Reference](/reference/storage.md) - Where memory data is stored

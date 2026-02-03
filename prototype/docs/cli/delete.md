@@ -70,7 +70,7 @@ Next steps:
 
 ## Web UI
 
-Prefer a visual interface? See the Delete action in [Task History](../web-ui/task-history.md).
+Prefer a visual interface? See the Delete action in [Task History](/web-ui/task-history.md).
 
 ## See Also
 
