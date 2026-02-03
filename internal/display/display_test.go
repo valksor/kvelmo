@@ -612,3 +612,268 @@ func TestPrintNextSteps(t *testing.T) {
 		})
 	}
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Progress Phase tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestDetectProgressPhase(t *testing.T) {
+	tests := []struct {
+		name                string
+		hasSpecs            bool
+		hasImplementedFiles bool
+		hasReviews          bool
+		want                ProgressPhase
+	}{
+		{"no work done", false, false, false, PhaseStarted},
+		{"has specs only", true, false, false, PhasePlanned},
+		{"has implemented files", true, true, false, PhaseImplemented},
+		{"has reviews", true, true, true, PhaseReviewed},
+		{"reviews without implemented (edge case)", false, false, true, PhaseReviewed},
+		{"implemented without specs (edge case)", false, true, false, PhaseImplemented},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DetectProgressPhase(tt.hasSpecs, tt.hasImplementedFiles, tt.hasReviews)
+			if got != tt.want {
+				t.Errorf("DetectProgressPhase(%v, %v, %v) = %v, want %v",
+					tt.hasSpecs, tt.hasImplementedFiles, tt.hasReviews, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatIdleStateWithProgress(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase ProgressPhase
+		want  string
+	}{
+		{"started", PhaseStarted, "Started"},
+		{"planned", PhasePlanned, "Planned"},
+		{"implemented", PhaseImplemented, "Implemented"},
+		{"reviewed", PhaseReviewed, "Reviewed"},
+		{"unknown phase", ProgressPhase("unknown"), "Started"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatIdleStateWithProgress(tt.phase)
+			if got != tt.want {
+				t.Errorf("FormatIdleStateWithProgress(%v) = %v, want %v", tt.phase, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetIdleStateDescription(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase ProgressPhase
+		want  string
+	}{
+		{"started", PhaseStarted, "Run 'mehr plan' to create specifications"},
+		{"planned", PhasePlanned, "Run 'mehr implement' to generate code"},
+		{"implemented", PhaseImplemented, "Run 'mehr review' or 'mehr finish'"},
+		{"reviewed", PhaseReviewed, "Run 'mehr finish' to complete"},
+		{"unknown phase", ProgressPhase("unknown"), "Run 'mehr plan' to create specifications"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetIdleStateDescription(tt.phase)
+			if got != tt.want {
+				t.Errorf("GetIdleStateDescription(%v) = %v, want %v", tt.phase, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatStateWithProgress(t *testing.T) {
+	tests := []struct {
+		name  string
+		state workflow.State
+		phase ProgressPhase
+		want  string
+	}{
+		{"idle started", workflow.StateIdle, PhaseStarted, "Started"},
+		{"idle planned", workflow.StateIdle, PhasePlanned, "Planned"},
+		{"idle implemented", workflow.StateIdle, PhaseImplemented, "Implemented"},
+		{"idle reviewed", workflow.StateIdle, PhaseReviewed, "Reviewed"},
+		{"planning ignores phase", workflow.StatePlanning, PhaseImplemented, "Planning"},
+		{"implementing ignores phase", workflow.StateImplementing, PhaseReviewed, "Implementing"},
+		{"done ignores phase", workflow.StateDone, PhaseStarted, "Completed"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatStateWithProgress(tt.state, tt.phase)
+			if got != tt.want {
+				t.Errorf("FormatStateWithProgress(%v, %v) = %v, want %v", tt.state, tt.phase, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetStateDescriptionWithProgress(t *testing.T) {
+	tests := []struct {
+		name  string
+		state workflow.State
+		phase ProgressPhase
+		want  string
+	}{
+		{"idle started", workflow.StateIdle, PhaseStarted, "Run 'mehr plan' to create specifications"},
+		{"idle planned", workflow.StateIdle, PhasePlanned, "Run 'mehr implement' to generate code"},
+		{"idle implemented", workflow.StateIdle, PhaseImplemented, "Run 'mehr review' or 'mehr finish'"},
+		{"idle reviewed", workflow.StateIdle, PhaseReviewed, "Run 'mehr finish' to complete"},
+		{"planning ignores phase", workflow.StatePlanning, PhaseImplemented, "AI is creating specifications"},
+		{"done ignores phase", workflow.StateDone, PhaseStarted, "Task completed successfully"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetStateDescriptionWithProgress(tt.state, tt.phase)
+			if got != tt.want {
+				t.Errorf("GetStateDescriptionWithProgress(%v, %v) = %v, want %v", tt.state, tt.phase, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProgressPhaseMapsCompleteness(t *testing.T) {
+	// Verify all progress phases have display names and descriptions
+	phases := []ProgressPhase{
+		PhaseStarted,
+		PhasePlanned,
+		PhaseImplemented,
+		PhaseReviewed,
+	}
+
+	for _, phase := range phases {
+		t.Run(string(phase), func(t *testing.T) {
+			if got := FormatIdleStateWithProgress(phase); got == "" {
+				t.Errorf("IdlePhaseDisplay missing entry for %v", phase)
+			}
+			if got := GetIdleStateDescription(phase); got == "" {
+				t.Errorf("IdlePhaseDescription missing entry for %v", phase)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Optional Modifiers tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestFormatOptionalModifiers(t *testing.T) {
+	tests := []struct {
+		name string
+		mods OptionalModifiers
+		want string
+	}{
+		{"no modifiers", OptionalModifiers{}, ""},
+		{"optimized only", OptionalModifiers{Optimized: true}, " • Optimized"},
+		{"simplified only", OptionalModifiers{Simplified: true}, " • Simplified"},
+		{"both modifiers", OptionalModifiers{Optimized: true, Simplified: true}, " • Optimized • Simplified"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatOptionalModifiers(tt.mods)
+			if got != tt.want {
+				t.Errorf("FormatOptionalModifiers(%+v) = %q, want %q", tt.mods, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatStateWithProgressAndModifiers(t *testing.T) {
+	tests := []struct {
+		name  string
+		state workflow.State
+		phase ProgressPhase
+		mods  OptionalModifiers
+		want  string
+	}{
+		{
+			"idle planned no modifiers",
+			workflow.StateIdle, PhasePlanned,
+			OptionalModifiers{},
+			"Planned",
+		},
+		{
+			"idle planned optimized",
+			workflow.StateIdle, PhasePlanned,
+			OptionalModifiers{Optimized: true},
+			"Planned • Optimized",
+		},
+		{
+			"idle implemented simplified",
+			workflow.StateIdle, PhaseImplemented,
+			OptionalModifiers{Simplified: true},
+			"Implemented • Simplified",
+		},
+		{
+			"idle implemented both",
+			workflow.StateIdle, PhaseImplemented,
+			OptionalModifiers{Optimized: true, Simplified: true},
+			"Implemented • Optimized • Simplified",
+		},
+		{
+			"planning ignores modifiers display",
+			workflow.StatePlanning, PhaseStarted,
+			OptionalModifiers{Optimized: true},
+			"Planning • Optimized",
+		},
+		{
+			"done with modifiers",
+			workflow.StateDone, PhaseReviewed,
+			OptionalModifiers{Simplified: true},
+			"Completed • Simplified",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatStateWithProgressAndModifiers(tt.state, tt.phase, tt.mods)
+			if got != tt.want {
+				t.Errorf("FormatStateWithProgressAndModifiers(%v, %v, %+v) = %q, want %q",
+					tt.state, tt.phase, tt.mods, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatStateColoredWithProgressAndModifiers(t *testing.T) {
+	// Verify the colored version doesn't crash and returns content
+	tests := []struct {
+		name  string
+		state workflow.State
+		phase ProgressPhase
+		mods  OptionalModifiers
+	}{
+		{"idle started no mods", workflow.StateIdle, PhaseStarted, OptionalModifiers{}},
+		{"idle planned optimized", workflow.StateIdle, PhasePlanned, OptionalModifiers{Optimized: true}},
+		{"idle implemented simplified", workflow.StateIdle, PhaseImplemented, OptionalModifiers{Simplified: true}},
+		{"idle implemented both", workflow.StateIdle, PhaseImplemented, OptionalModifiers{Optimized: true, Simplified: true}},
+		{"planning with mods", workflow.StatePlanning, PhaseStarted, OptionalModifiers{Optimized: true}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatStateColoredWithProgressAndModifiers(tt.state, tt.phase, tt.mods)
+			if got == "" {
+				t.Error("FormatStateColoredWithProgressAndModifiers() returned empty string")
+			}
+			// Should contain the state display text
+			expectedBase := FormatStateWithProgressAndModifiers(tt.state, tt.phase, tt.mods)
+			// The colored version wraps the text, so we can't check exact match
+			// but it should at least not be empty
+			if len(got) < len(expectedBase) {
+				t.Errorf("FormatStateColoredWithProgressAndModifiers() result too short: %q, expected at least %q",
+					got, expectedBase)
+			}
+		})
+	}
+}
