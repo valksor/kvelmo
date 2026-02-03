@@ -20,6 +20,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	mehrhofdisplay "github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
+	"github.com/valksor/go-mehrhof/internal/library"
 	"github.com/valksor/go-mehrhof/internal/memory"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
@@ -62,6 +63,7 @@ Commands:
   simplify [files] Simplify code based on state
   label add|rm|set|list  Manage labels
   memory <query>  Search semantic memory
+  library [cmd]   Manage documentation library
   undo            Undo to previous checkpoint
   redo            Redo to next checkpoint
   clear           Clear screen
@@ -302,9 +304,37 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 		return s.handlePlan(ctx, strings.Join(args, " "))
 
 	case "implement":
+		// Handle "implement review <n>" subcommand
+		if len(args) > 0 && args[0] == "review" {
+			if len(args) < 2 {
+				return errors.New("usage: implement review <number>")
+			}
+			reviewNum, err := strconv.Atoi(args[1])
+			if err != nil {
+				return errors.New("review number must be an integer")
+			}
+			if reviewNum <= 0 {
+				return fmt.Errorf("review number must be positive, got %d", reviewNum)
+			}
+
+			return s.handleImplementReview(ctx, reviewNum)
+		}
+
 		return s.handleImplement(ctx)
 
 	case "review":
+		// Handle "review <n>" for viewing reviews, "review" alone runs review workflow
+		if len(args) > 0 {
+			// If first arg is a number, view that review
+			if _, err := strconv.Atoi(args[0]); err == nil {
+				return s.handleReviewView(ctx, args)
+			}
+			// "review view <n>" subcommand
+			if args[0] == "view" {
+				return s.handleReviewView(ctx, args[1:])
+			}
+		}
+		// No args or unrecognized args - run review workflow
 		return s.handleReview(ctx)
 
 	case "continue":
@@ -358,6 +388,9 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 	case "memory":
 		return s.handleMemory(ctx, args)
 
+	case "library":
+		return s.handleLibrary(ctx, args)
+
 	case "budget":
 		return s.handleBudget(ctx)
 
@@ -382,7 +415,9 @@ func (s *InteractiveSession) printHelp() {
 	s.printf(true, "  start <reference>   Start a new task from reference\n")
 	s.printf(true, "  plan [prompt]       Enter planning phase\n")
 	s.printf(true, "  implement           Execute specifications (alias: impl)\n")
-	s.printf(true, "  review              Review code\n")
+	s.printf(true, "  implement review <n> Fix issues from review\n")
+	s.printf(true, "  review              Run code review\n")
+	s.printf(true, "  review <n>          View review content\n")
 	s.printf(true, "  continue            Resume from waiting/paused (alias: cont)\n")
 	s.printf(true, "  finish              Complete the task\n")
 	s.printf(true, "  abandon             Discard the task\n")
@@ -395,6 +430,7 @@ func (s *InteractiveSession) printHelp() {
 	s.printf(true, "\n%s\n", display.Bold("Search:"))
 	s.printf(true, "  find <query>        AI-powered code search\n")
 	s.printf(true, "  memory <query>      Search semantic memory\n")
+	s.printf(true, "  library [cmd]       Manage documentation library\n")
 
 	s.printf(true, "\n%s\n", display.Bold("Task:"))
 	s.printf(true, "  simplify [files]    Simplify code based on state\n")
@@ -408,7 +444,7 @@ func (s *InteractiveSession) printHelp() {
 	s.printf(true, "  cost                Show token usage and costs\n")
 	s.printf(true, "  budget              Show token budget status\n")
 	s.printf(true, "  list                List all tasks\n")
-	s.printf(true, "  specification <n>  View specification (alias: spec)\n")
+	s.printf(true, "  specification <n>   View specification (alias: spec)\n")
 	s.printf(true, "  quick <desc>        Create a quick task\n")
 
 	s.printf(true, "\n%s\n", display.Bold("Session:"))
@@ -511,6 +547,64 @@ func (s *InteractiveSession) handleImplement(ctx context.Context) error {
 
 	s.state = workflow.StateImplementing
 	s.printf(true, "%s Implementation phase started\n", display.SuccessMsg("✓"))
+
+	return nil
+}
+
+// handleImplementReview implements fixes from a specific review.
+func (s *InteractiveSession) handleImplementReview(ctx context.Context, reviewNumber int) error {
+	task := s.cond.GetActiveTask()
+	if task == nil {
+		return errors.New("no active task")
+	}
+
+	// Pre-validate review availability before changing state
+	ws := s.cond.GetWorkspace()
+	reviews, err := ws.ListReviews(task.ID)
+	if err != nil {
+		return fmt.Errorf("list reviews: %w", err)
+	}
+	if len(reviews) == 0 {
+		return errors.New("no reviews found - run 'review' first to generate code review")
+	}
+	// Check if the requested review exists
+	reviewExists := false
+	for _, r := range reviews {
+		if r == reviewNumber {
+			reviewExists = true
+
+			break
+		}
+	}
+	if !reviewExists {
+		if len(reviews) == 1 {
+			return fmt.Errorf("review %d not found - only review %d exists", reviewNumber, reviews[0])
+		}
+
+		return fmt.Errorf("review %d not found - available reviews: %v", reviewNumber, reviews)
+	}
+
+	s.printf(true, "Implementing fixes from review %d...\n", reviewNumber)
+
+	// Enter implementation state for review fixes
+	if err := s.cond.ImplementReview(ctx, reviewNumber); err != nil {
+		return err
+	}
+
+	s.state = workflow.StateImplementing
+
+	// Run the review implementation - reset state on error
+	runErr := s.cond.RunReviewImplementation(ctx, reviewNumber)
+	if runErr != nil {
+		// Reset to idle on failure to avoid stuck state
+		s.state = workflow.StateIdle
+
+		return runErr
+	}
+
+	s.state = workflow.StateIdle
+	s.printf(true, "%s Review %d fixes applied\n", display.SuccessMsg("✓"), reviewNumber)
+	s.printf(true, "Next: Use %s to verify the fixes\n", display.Cyan("review"))
 
 	return nil
 }
@@ -982,6 +1076,79 @@ func (s *InteractiveSession) handleSpecification(ctx context.Context, args []str
 	return nil
 }
 
+// handleReviewView views or lists reviews.
+//
+//nolint:unparam // ctx is kept for consistent signature with other handlers
+func (s *InteractiveSession) handleReviewView(ctx context.Context, args []string) error {
+	task := s.cond.GetActiveTask()
+	if task == nil {
+		return errors.New("no active task")
+	}
+
+	ws := s.cond.GetWorkspace()
+
+	// Get all reviews
+	reviews, err := ws.ListReviews(task.ID)
+	if err != nil {
+		return fmt.Errorf("list reviews: %w", err)
+	}
+
+	// If no args, list all reviews
+	if len(args) == 0 {
+		if len(reviews) == 0 {
+			s.printf(true, "\nNo reviews yet. Use 'review' (with no args when no reviews exist) to run one.\n\n")
+
+			return nil
+		}
+
+		s.printf(true, "\n%s\n", display.Bold("Reviews:"))
+		for _, num := range reviews {
+			s.printf(true, "  review-%d\n", num)
+		}
+		s.printf(true, "\n")
+		s.printf(true, "Use 'review <number>' to view a specific review\n")
+		s.printf(true, "Use 'implement review <number>' to fix issues from a review\n\n")
+
+		return nil
+	}
+
+	// View specific review
+	num, err := strconv.Atoi(args[0])
+	if err != nil {
+		return errors.New("usage: review <number>")
+	}
+
+	// Check if review exists
+	found := false
+	for _, r := range reviews {
+		if r == num {
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		s.printf(true, "\nReview %d not found. Available reviews:\n", num)
+		for _, r := range reviews {
+			s.printf(true, "  review-%d\n", r)
+		}
+		s.printf(true, "\n")
+
+		return fmt.Errorf("review %d not found", num)
+	}
+
+	content, err := ws.LoadReview(task.ID, num)
+	if err != nil {
+		return fmt.Errorf("load review: %w", err)
+	}
+
+	s.printf(true, "\n%s\n", display.Bold(fmt.Sprintf("Review %d:", num)))
+	s.printf(true, "\n%s\n\n", content)
+
+	return nil
+}
+
 // handleFind performs AI-powered code search.
 func (s *InteractiveSession) handleFind(ctx context.Context, args []string) error {
 	if len(args) == 0 {
@@ -1219,6 +1386,175 @@ func (s *InteractiveSession) handleMemory(ctx context.Context, args []string) er
 	return nil
 }
 
+// handleLibrary manages the documentation library.
+func (s *InteractiveSession) handleLibrary(ctx context.Context, args []string) error {
+	lib := s.cond.GetLibrary()
+	if lib == nil {
+		// Check if there was an initialization error
+		if initErr := s.cond.GetLibraryError(); initErr != nil {
+			return initErr
+		}
+
+		return errors.New("library system is not enabled. Enable in .mehrhof/config.yaml under 'library:'")
+	}
+
+	// Default to list if no subcommand
+	subcommand := "list"
+	if len(args) > 0 {
+		subcommand = args[0]
+		args = args[1:]
+	}
+
+	switch subcommand {
+	case "list", "ls":
+		return s.handleLibraryList(ctx, lib)
+	case "show":
+		if len(args) == 0 {
+			return errors.New("usage: library show <name>")
+		}
+
+		return s.handleLibraryShow(ctx, lib, args[0])
+	case "search":
+		if len(args) == 0 {
+			return errors.New("usage: library search <query>")
+		}
+
+		return s.handleLibrarySearch(ctx, lib, strings.Join(args, " "))
+	default:
+		// Treat unknown subcommand as collection name for show
+		return s.handleLibraryShow(ctx, lib, subcommand)
+	}
+}
+
+// handleLibraryList lists all library collections.
+func (s *InteractiveSession) handleLibraryList(ctx context.Context, lib *library.Manager) error {
+	collections, err := lib.List(ctx, &library.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("list collections: %w", err)
+	}
+
+	if len(collections) == 0 {
+		s.printf(true, "No library collections. Use 'mehr library pull <source>' to add documentation.\n")
+
+		return nil
+	}
+
+	s.printf(true, "\n%s\n", display.Bold(fmt.Sprintf("%d Collection(s):", len(collections))))
+	for _, c := range collections {
+		mode := string(c.IncludeMode)
+		location := c.Location
+		s.printf(true, "  %s [%s, %s]\n", display.Cyan(c.Name), mode, location)
+		s.printf(true, "    Source: %s\n", display.Muted(c.Source))
+		s.printf(true, "    Pages: %d  Size: %s\n", c.PageCount, formatSize(c.TotalSize))
+	}
+	s.printf(true, "\n")
+
+	return nil
+}
+
+// handleLibraryShow shows details of a collection.
+func (s *InteractiveSession) handleLibraryShow(ctx context.Context, lib *library.Manager, name string) error {
+	coll, err := lib.Show(ctx, name)
+	if err != nil {
+		return fmt.Errorf("show collection: %w", err)
+	}
+
+	s.printf(true, "\n%s\n", display.Bold("Collection: "+coll.Name))
+	s.printf(true, "  ID:          %s\n", coll.ID)
+	s.printf(true, "  Source:      %s\n", coll.Source)
+	s.printf(true, "  Type:        %s\n", coll.SourceType)
+	s.printf(true, "  Mode:        %s\n", coll.IncludeMode)
+	s.printf(true, "  Location:    %s\n", coll.Location)
+	s.printf(true, "  Pages:       %d\n", coll.PageCount)
+	s.printf(true, "  Total Size:  %s\n", formatSize(coll.TotalSize))
+
+	if len(coll.Paths) > 0 {
+		s.printf(true, "  Paths:       %s\n", strings.Join(coll.Paths, ", "))
+	}
+	if len(coll.Tags) > 0 {
+		s.printf(true, "  Tags:        %s\n", strings.Join(coll.Tags, ", "))
+	}
+
+	// List pages
+	pages, err := lib.ListPages(ctx, coll.ID)
+	if err == nil && len(pages) > 0 {
+		s.printf(true, "\n%s\n", display.Bold("Pages:"))
+		limit := 10
+		for i, page := range pages {
+			if i >= limit {
+				s.printf(true, "  ... and %d more\n", len(pages)-limit)
+
+				break
+			}
+			s.printf(true, "  - %s\n", page)
+		}
+	}
+	s.printf(true, "\n")
+
+	return nil
+}
+
+// handleLibrarySearch searches library documentation.
+func (s *InteractiveSession) handleLibrarySearch(ctx context.Context, lib *library.Manager, query string) error {
+	s.printf(true, "Searching library for: %s\n", display.Cyan(query))
+
+	// Use the library context search
+	docCtx, err := lib.GetDocsForQuery(ctx, query, 10000)
+	if err != nil {
+		return fmt.Errorf("search library: %w", err)
+	}
+
+	if docCtx == nil || len(docCtx.Pages) == 0 {
+		s.printf(true, "No matching documentation found.\n")
+
+		return nil
+	}
+
+	// Extract unique collection names from pages
+	collectionSet := make(map[string]bool)
+	for _, p := range docCtx.Pages {
+		collectionSet[p.CollectionName] = true
+	}
+	var collNames []string
+	for name := range collectionSet {
+		collNames = append(collNames, name)
+	}
+
+	s.printf(true, "\n%s\n", display.Bold(fmt.Sprintf("Found %d page(s) from %d collection(s):", len(docCtx.Pages), len(collNames))))
+	for _, name := range collNames {
+		s.printf(true, "  - %s\n", display.Cyan(name))
+	}
+
+	// Show preview of first page
+	if len(docCtx.Pages) > 0 {
+		page := docCtx.Pages[0]
+		s.printf(true, "\n%s\n", display.Bold("First match: "+page.Title))
+		preview := page.Content
+		if len(preview) > 500 {
+			preview = preview[:500] + "\n... (truncated)"
+		}
+		s.printf(true, "%s\n", display.Muted(preview))
+	}
+	s.printf(true, "\n")
+
+	return nil
+}
+
+// formatSize formats bytes as human-readable string.
+func formatSize(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
 // handleBudget displays budget status.
 func (s *InteractiveSession) handleBudget(context.Context) error {
 	task := s.cond.GetActiveTask()
@@ -1416,6 +1752,11 @@ func (s *InteractiveSession) getCompleter() *readline.PrefixCompleter {
 		readline.PcItem("simplify"),
 		readline.PcItem("label"),
 		readline.PcItem("memory"),
+		readline.PcItem("library",
+			readline.PcItem("list"),
+			readline.PcItem("show"),
+			readline.PcItem("search"),
+		),
 		readline.PcItem("budget"),
 	)
 }

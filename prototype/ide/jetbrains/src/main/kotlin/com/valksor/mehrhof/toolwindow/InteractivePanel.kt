@@ -415,16 +415,27 @@ class InteractivePanel(
             - start <ref> - Start a task (e.g., start github:123)
             - plan - Run planning phase
             - implement - Run implementation phase
+            - implement review <n> - Fix issues from review
             - review - Run code review
+            - review <n> - View review content
             - continue - Resume from waiting
             - finish - Complete the task
             - abandon - Discard the task
             - undo/redo - Navigate checkpoints
             - status - Show task status
             - cost - Show token usage
+            - budget - Show budget status
             - chat <msg> - Chat with agent
+            - question <msg> - Ask agent a question
             - answer <resp> - Answer agent question
             - note <msg> - Add a note
+            - find <query> - AI-powered code search
+            - memory <query> - Search similar tasks
+            - library [cmd] - Manage documentation library
+            - specification [n] - View specifications
+            - quick <desc> - Create quick task
+            - simplify - Simplify code
+            - label [add|rm] <labels> - Manage labels
             - clear - Clear messages
             - help - Show this help
             """.trimIndent()
@@ -602,10 +613,9 @@ private class ActionsPanel(
             }
 
         // Actions section
-        content.add(createSectionLabel("Actions"))
+        content.add(createSectionLabel("Workflow"))
         content.add(Box.createVerticalStrut(8))
         content.add(createButton("Start Task...", "start"))
-        content.add(createButton("Status", "status"))
         content.add(createButton("Plan", "plan"))
         content.add(createButton("Implement", "implement"))
         content.add(createButton("Review", "review"))
@@ -625,8 +635,22 @@ private class ActionsPanel(
         // Info section
         content.add(createSectionLabel("Info"))
         content.add(Box.createVerticalStrut(8))
+        content.add(createButton("Status", "status"))
         content.add(createButton("Cost", "cost"))
+        content.add(createButton("Budget", "budget"))
         content.add(createButton("List Tasks", "list"))
+        content.add(createButton("Specifications", "specification"))
+        content.add(Box.createVerticalStrut(16))
+
+        // Tools section
+        content.add(createSectionLabel("Tools"))
+        content.add(Box.createVerticalStrut(8))
+        content.add(createButton("Find Code...", "find"))
+        content.add(createButton("Search Memory...", "memory"))
+        content.add(createButton("Library", "library"))
+        content.add(createButton("Quick Task...", "quick"))
+        content.add(createButton("Simplify", "simplify"))
+        content.add(createButton("Add Note...", "note"))
 
         content.add(Box.createVerticalGlue())
 
@@ -648,41 +672,40 @@ private class ActionsPanel(
             alignmentX = Component.LEFT_ALIGNMENT
             maximumSize = Dimension(Int.MAX_VALUE, preferredSize.height)
             color?.let { foreground = it }
-
-            addActionListener {
-                if (command == "start") {
-                    // Show input dialog for task reference
-                    val ref =
-                        JOptionPane.showInputDialog(
-                            this@ActionsPanel,
-                            "Enter task reference (e.g., github:123, file:task.md):",
-                            "Start Task",
-                            JOptionPane.PLAIN_MESSAGE
-                        )
-                    if (!ref.isNullOrBlank()) {
-                        onCommand(command, listOf(ref))
-                    }
-                } else if (command in listOf("finish", "abandon")) {
-                    // Confirm destructive actions
-                    val message =
-                        if (command == "finish") {
-                            "Complete this task?"
-                        } else {
-                            "Discard this task? This will delete the branch and work directory!"
-                        }
-                    val result =
-                        JOptionPane.showConfirmDialog(
-                            this@ActionsPanel,
-                            message,
-                            "Confirm",
-                            JOptionPane.YES_NO_OPTION
-                        )
-                    if (result == JOptionPane.YES_OPTION) {
-                        onCommand(command, emptyList())
-                    }
-                } else {
-                    onCommand(command, emptyList())
-                }
-            }
+            addActionListener { handleCommand(command) }
         }
+
+    private fun handleCommand(command: String) {
+        when (command) {
+            "start" -> promptAndExecute("Enter task reference (e.g., github:123):", "Start Task", command)
+            "find" -> promptAndExecute("Enter search query:", "Find Code", command)
+            "memory" -> promptAndExecute("Enter search query:", "Search Memory", command)
+            "quick" -> promptAndExecute("Enter task description:", "Create Quick Task", command)
+            "note" -> promptAndExecute("Enter note:", "Add Note", command)
+            "finish" -> confirmAndExecute("Complete this task?", command)
+            "abandon" -> confirmAndExecute("Discard this task? This will delete the branch!", command)
+            else -> onCommand(command, emptyList())
+        }
+    }
+
+    private fun promptAndExecute(
+        prompt: String,
+        title: String,
+        command: String
+    ) {
+        val input = JOptionPane.showInputDialog(this, prompt, title, JOptionPane.PLAIN_MESSAGE)
+        if (!input.isNullOrBlank()) {
+            onCommand(command, listOf(input))
+        }
+    }
+
+    private fun confirmAndExecute(
+        message: String,
+        command: String
+    ) {
+        val result = JOptionPane.showConfirmDialog(this, message, "Confirm", JOptionPane.YES_NO_OPTION)
+        if (result == JOptionPane.YES_OPTION) {
+            onCommand(command, emptyList())
+        }
+    }
 }

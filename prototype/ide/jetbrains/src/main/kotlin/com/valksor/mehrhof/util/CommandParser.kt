@@ -74,6 +74,7 @@ object CommandParser {
             "note",
             "find",
             "memory",
+            "library",
             "simplify",
             "spec",
             "specification",

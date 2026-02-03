@@ -67,15 +67,33 @@ The main interface for interacting with Mehrhof. Located in the sidebar.
 - **Action Buttons**: Quick access to workflow commands
 
 **Commands:**
-- `start <ref>` - Start a new task
-- `plan` - Execute planning phase
-- `implement` - Execute implementation phase
-- `review` - Execute code review
-- `finish` - Complete the task
-- `abandon` - Abandon the task
-- `undo` / `redo` - Navigate checkpoints
-- `status` - Show task status
-- `cost` - Show token usage
+
+| Command          | Description                         |
+|------------------|-------------------------------------|
+| `start <ref>`    | Start a new task                    |
+| `plan`           | Execute planning phase              |
+| `implement`      | Execute implementation phase        |
+| `review`         | Execute code review                 |
+| `continue`       | Resume from waiting state           |
+| `finish`         | Complete the task                   |
+| `abandon`        | Abandon the task                    |
+| `undo` / `redo`  | Navigate checkpoints                |
+| `status`         | Show task status                    |
+| `cost`           | Show token usage                    |
+| `budget`         | Show budget status                  |
+| `list`           | List all tasks                      |
+| `specification`  | View specifications (alias: `spec`) |
+| `chat <msg>`     | Chat with agent                     |
+| `question <msg>` | Ask the agent a question            |
+| `answer <resp>`  | Answer agent's question             |
+| `note <msg>`     | Add a note to task                  |
+| `find <query>`   | AI-powered code search              |
+| `memory <query>` | Semantic memory search              |
+| `library [cmd]`  | Manage documentation library        |
+| `quick <desc>`   | Create a quick task                 |
+| `simplify`       | Simplify code                       |
+| `label add/rm`   | Manage task labels                  |
+| `help`           | Show available commands             |
 
 **Chat:**
 Type any message that's not a command to chat with the agent.
