@@ -18,7 +18,8 @@ const (
 
 // Provider implements the Wrike task provider.
 type Provider struct {
-	client *Client
+	client       *Client
+	customFields map[string]string // Cache: custom field ID -> title
 }
 
 // New creates a new Wrike provider instance.
@@ -103,6 +104,36 @@ func isNumericID(id string) bool {
 	return numericIDPattern.MatchString(id)
 }
 
+// getCustomFieldName returns the human-readable name for a custom field ID.
+// Falls back to the ID if the name cannot be resolved.
+func (p *Provider) getCustomFieldName(ctx context.Context, fieldID string) string {
+	// Check cache first
+	if p.customFields != nil {
+		if name, ok := p.customFields[fieldID]; ok {
+			return name
+		}
+	}
+
+	// Fetch definitions if not cached
+	if p.customFields == nil {
+		p.customFields = make(map[string]string)
+		defs, err := p.client.GetCustomFields(ctx)
+		if err == nil {
+			for _, def := range defs {
+				p.customFields[def.ID] = def.Title
+			}
+		}
+	}
+
+	// Look up from cache
+	if name, ok := p.customFields[fieldID]; ok {
+		return name
+	}
+
+	// Fall back to ID if name not found
+	return fieldID
+}
+
 // Match checks if the input matches a Wrike reference.
 func (p *Provider) Match(input string) bool {
 	input = strings.TrimSpace(input)
@@ -122,8 +153,8 @@ func (p *Provider) Parse(input string) (string, error) {
 	schemeStripped := strings.TrimPrefix(input, "wrike:")
 	schemeStripped = strings.TrimPrefix(schemeStripped, "wk:")
 
-	// Check for permalink - extract numeric ID
-	if matches := permalinkPattern.FindStringSubmatch(input); matches != nil {
+	// Check for permalink - extract numeric ID (use schemeStripped to handle wrike:https://... format)
+	if matches := permalinkPattern.FindStringSubmatch(schemeStripped); matches != nil {
 		return matches[1], nil
 	}
 
@@ -190,6 +221,14 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		_ = err // Subtasks are optional, ignore fetch errors
 	}
 
+	// Fetch parent task content if this is a subtask
+	var parentInfo *ParentTaskInfo
+	if len(task.SuperTaskIDs) > 0 {
+		var err error
+		parentInfo, err = p.fetchParentTask(ctx, task.ID, task.SuperTaskIDs)
+		_ = err // Parent is optional, ignore fetch errors
+	}
+
 	// Extract numeric ID from permalink for ExternalKey
 	numericID := ExtractNumericID(task.Permalink)
 	if numericID == "" {
@@ -223,33 +262,54 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Slug:        slug.Slugify(task.Title, 50),
 	}
 
+	// Add parent task content to metadata if available
+	if parentInfo != nil {
+		wu.Metadata["parent_task"] = map[string]any{
+			"title":       parentInfo.Title,
+			"description": parentInfo.Description,
+			"status":      parentInfo.Status,
+			"permalink":   parentInfo.Permalink,
+		}
+	}
+
 	return wu, nil
 }
 
 // Snapshot captures the task content from Wrike.
 func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+	slog.Debug("wrike snapshot called", "id", id)
+
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
 	}
 
+	slog.Debug("wrike snapshot parsed reference", "taskID", ref.TaskID, "permalink", ref.Permalink)
+
 	var task *Task
 
 	switch {
 	case ref.Permalink != "":
+		slog.Debug("wrike snapshot using permalink param")
 		task, err = p.client.GetTaskByPermalinkParam(ctx, ref.Permalink)
 	case apiIDPattern.MatchString(ref.TaskID):
+		slog.Debug("wrike snapshot using API ID")
 		task, err = p.client.GetTask(ctx, ref.TaskID)
 	case numericIDPattern.MatchString(ref.TaskID):
 		permalink := BuildPermalinkURL(ref.TaskID)
+		slog.Debug("wrike snapshot using numeric ID -> permalink", "permalink", permalink)
 		task, err = p.client.GetTaskByPermalinkParam(ctx, permalink)
 	default:
 		return nil, fmt.Errorf("%w: unrecognized task ID format: %s", ErrInvalidReference, ref.TaskID)
 	}
 
 	if err != nil {
+		slog.Error("wrike snapshot fetch failed", "error", err)
+
 		return nil, fmt.Errorf("fetch task for snapshot: %w", err)
 	}
+
+	slog.Debug("wrike snapshot got task", "title", task.Title, "subTaskCount", len(task.SubTaskIDs))
 
 	comments, _ := p.client.GetComments(ctx, task.ID)
 
@@ -257,12 +317,50 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	content.WriteString(fmt.Sprintf("# %s\n\n", task.Title))
 	content.WriteString(fmt.Sprintf("**Status:** %s\n", task.Status))
 	content.WriteString(fmt.Sprintf("**Priority:** %s\n", task.Priority))
-	content.WriteString(fmt.Sprintf("**Permalink:** %s\n\n", task.Permalink))
+	content.WriteString(fmt.Sprintf("**Permalink:** %s\n", task.Permalink))
+
+	// Add custom fields if present (often contain useful metadata like estimates)
+	if len(task.CustomFields) > 0 {
+		for _, cf := range task.CustomFields {
+			fieldName := p.getCustomFieldName(ctx, cf.ID)
+			content.WriteString(fmt.Sprintf("**%s:** %s\n", fieldName, cf.Value))
+		}
+	}
+	content.WriteString("\n")
+
+	// Fetch and include parent task (if this is a subtask)
+	if len(task.SuperTaskIDs) > 0 {
+		parentInfo, fetchErr := p.fetchParentTask(ctx, task.ID, task.SuperTaskIDs)
+		if fetchErr != nil {
+			// Log error but continue - parent context is optional
+			slog.Warn("failed to fetch parent task", "error", fetchErr)
+			content.WriteString("## Parent Task\n\n")
+			content.WriteString("*(Parent task information unavailable)*\n\n")
+		} else if parentInfo != nil {
+			content.WriteString("## Parent Task\n\n")
+			content.WriteString(fmt.Sprintf("**[%s](%s)**\n\n", parentInfo.Title, parentInfo.Permalink))
+			content.WriteString(fmt.Sprintf("**Status:** %s\n\n", parentInfo.Status))
+			if parentInfo.Description != "" {
+				content.WriteString(parentInfo.Description)
+				content.WriteString("\n\n")
+			}
+		}
+	}
 
 	if task.Description != "" {
 		content.WriteString("## Description\n\n")
 		content.WriteString(task.Description)
 		content.WriteString("\n\n")
+	}
+
+	// Add dependencies if present
+	if len(task.DependencyIDs) > 0 {
+		content.WriteString("## Dependencies\n\n")
+		content.WriteString("This task depends on:\n")
+		for _, depID := range task.DependencyIDs {
+			content.WriteString(fmt.Sprintf("- %s\n", depID))
+		}
+		content.WriteString("\n")
 	}
 
 	if len(comments) > 0 {
@@ -271,6 +369,22 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 			content.WriteString(fmt.Sprintf("### %s - %s\n\n", c.AuthorName, c.CreatedDate.Format(time.RFC3339)))
 			content.WriteString(c.Text)
 			content.WriteString("\n\n")
+		}
+	}
+
+	// Fetch and include subtasks
+	if len(task.SubTaskIDs) > 0 {
+		subtaskInfos, fetchErr := p.fetchSubtasks(ctx, task.SubTaskIDs, 0)
+		if fetchErr == nil && len(subtaskInfos) > 0 {
+			content.WriteString("## Subtasks\n\n")
+			for i, st := range subtaskInfos {
+				content.WriteString(fmt.Sprintf("### %d. %s\n\n", i+1, st.Title))
+				content.WriteString(fmt.Sprintf("**Status:** %s\n\n", st.Status))
+				if st.Description != "" {
+					content.WriteString(st.Description)
+					content.WriteString("\n\n")
+				}
+			}
 		}
 	}
 
@@ -373,16 +487,85 @@ func mapComments(comments []Comment) []provider.Comment {
 }
 
 // buildMetadata creates metadata map from task and subtasks.
+// Includes all optional fields returned by the Wrike API.
 func buildMetadata(task *Task, subtasks []SubtaskInfo) map[string]any {
 	metadata := make(map[string]any)
 
+	// Core identifiers
 	metadata["permalink"] = task.Permalink
 	metadata["api_id"] = task.ID
 	metadata["wrike_status"] = task.Status
 	metadata["wrike_priority"] = task.Priority
 
+	// Brief description (truncated version)
+	if task.BriefDescription != "" {
+		metadata["brief_description"] = task.BriefDescription
+	}
+
+	// Hierarchy relationships
+	if len(task.ParentIDs) > 0 {
+		metadata["parent_ids"] = task.ParentIDs
+	}
+	if len(task.SuperParentIDs) > 0 {
+		metadata["super_parent_ids"] = task.SuperParentIDs
+	}
+	if len(task.SuperTaskIDs) > 0 {
+		metadata["super_task_ids"] = task.SuperTaskIDs
+		metadata["is_subtask"] = true
+		metadata["parent_task_ids"] = task.SuperTaskIDs
+	}
+
+	// Dependencies
+	if len(task.DependencyIDs) > 0 {
+		metadata["dependency_ids"] = task.DependencyIDs
+	}
+
+	// People
+	if len(task.ResponsibleIDs) > 0 {
+		metadata["responsible_ids"] = task.ResponsibleIDs
+	}
+	if len(task.AuthorIDs) > 0 {
+		metadata["author_ids"] = task.AuthorIDs
+	}
+	if len(task.SharedIDs) > 0 {
+		metadata["shared_ids"] = task.SharedIDs
+	}
+
+	// Attachments
+	if task.AttachmentCount > 0 {
+		metadata["attachment_count"] = task.AttachmentCount
+	}
+	metadata["has_attachments"] = task.HasAttachments
+
+	// Recurrence
+	metadata["recurrent"] = task.Recurrent
+
+	// Custom fields
+	if len(task.CustomFields) > 0 {
+		cfList := make([]map[string]string, 0, len(task.CustomFields))
+		for _, cf := range task.CustomFields {
+			cfList = append(cfList, map[string]string{
+				"id":    cf.ID,
+				"value": cf.Value,
+			})
+		}
+		metadata["custom_fields"] = cfList
+	}
+
+	// Metadata key-value pairs
+	if len(task.Metadata) > 0 {
+		mdList := make([]map[string]string, 0, len(task.Metadata))
+		for _, md := range task.Metadata {
+			mdList = append(mdList, map[string]string{
+				"key":   md.Key,
+				"value": md.Value,
+			})
+		}
+		metadata["wrike_metadata"] = mdList
+	}
+
+	// Subtasks (if provided)
 	if len(subtasks) > 0 {
-		// Convert subtasks to a simpler format for JSON serialization
 		subtaskList := make([]map[string]string, 0, len(subtasks))
 		for _, st := range subtasks {
 			subtaskList = append(subtaskList, map[string]string{

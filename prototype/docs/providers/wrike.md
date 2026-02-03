@@ -84,7 +84,33 @@ Example: From `https://www.wrike.com/workspace.htm#/folder/4352950154/tableV2?sp
 
 - **Task Fetching**: Retrieves title, description, status, priority, permalink
 - **Subtasks**: Recursively fetches nested subtasks (max depth: 5)
+- **Parent Task Context**: When starting a subtask, automatically fetches and includes the parent task's title, status, and description
 - **Comments**: Fetches all comments with automatic pagination support
 - **Attachments**: Lists and downloads file attachments
 - **Retry Logic**: Automatic exponential backoff for rate limit errors (429)
 - **Multiple ID Formats**: Supports numeric IDs, API IDs (`IEAAJ...`), and permalink URLs
+
+### Subtask Hierarchy
+
+When you start a task that is a subtask in Wrike, the snapshot automatically includes a "Parent Task" section:
+
+```markdown
+# Implement login form
+
+**Status:** Active
+**Permalink:** https://www.wrike.com/open.htm?id=123456
+
+## Parent Task
+
+**[User Authentication Feature](https://www.wrike.com/open.htm?id=123000)**
+
+**Status:** Active
+
+Implement complete user authentication flow...
+
+## Description
+
+Create the login form component...
+```
+
+This helps agents understand the broader context of what they're working on. The parent task's sibling subtasks are intentionally excluded to keep focus on the current task.

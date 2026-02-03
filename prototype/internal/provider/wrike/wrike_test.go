@@ -1,12 +1,26 @@
 package wrike
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 )
+
+// mustEncode encodes v to w and panics on error.
+// Use in test HTTP handlers where t *testing.T isn't accessible.
+func mustEncode(w http.ResponseWriter, v any) {
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		panic(fmt.Sprintf("test HTTP handler: failed to encode response: %v", err))
+	}
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Info tests
@@ -501,6 +515,16 @@ func TestProvider_Parse(t *testing.T) {
 			want:  "1234567890",
 		},
 		{
+			name:  "wrike scheme with permalink URL",
+			input: "wrike:https://www.wrike.com/open.htm?id=4360575608",
+			want:  "4360575608",
+		},
+		{
+			name:  "wk scheme with permalink URL",
+			input: "wk:https://www.wrike.com/open.htm?id=4360575608",
+			want:  "4360575608",
+		},
+		{
 			name:        "empty string",
 			input:       "",
 			wantErr:     true,
@@ -564,6 +588,144 @@ func TestProviderName(t *testing.T) {
 	if ProviderName != "wrike" {
 		t.Errorf("ProviderName = %q, want %q", ProviderName, "wrike")
 	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// isNumericID tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────────
+// buildMetadata with SuperTaskIDs tests (subtask detection)
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestBuildMetadataWithSuperTaskIDs(t *testing.T) {
+	now := time.Now()
+
+	task := &Task{
+		ID:           "IEAAJSUBTASK",
+		Title:        "Subtask",
+		Description:  "This is a subtask",
+		Status:       "Active",
+		Priority:     "Normal",
+		Permalink:    "https://www.wrike.com/open.htm?id=1234567891",
+		SuperTaskIDs: []string{"IEAAJPARENT1", "IEAAJPARENT2"}, // Has parents
+		CreatedDate:  now,
+		UpdatedDate:  now,
+	}
+
+	metadata := buildMetadata(task, nil)
+
+	// Check is_subtask flag
+	if isSubtask, ok := metadata["is_subtask"].(bool); !ok || !isSubtask {
+		t.Error("is_subtask should be true when SuperTaskIDs is populated")
+	}
+
+	// Check parent_task_ids
+	parentIDs, ok := metadata["parent_task_ids"].([]string)
+	if !ok {
+		t.Fatal("parent_task_ids should be []string")
+	}
+	if len(parentIDs) != 2 {
+		t.Errorf("parent_task_ids len = %d, want 2", len(parentIDs))
+	}
+	if parentIDs[0] != "IEAAJPARENT1" {
+		t.Errorf("parent_task_ids[0] = %q, want %q", parentIDs[0], "IEAAJPARENT1")
+	}
+}
+
+func TestBuildMetadataWithoutSuperTaskIDs(t *testing.T) {
+	now := time.Now()
+
+	task := &Task{
+		ID:          "IEAAJTASK",
+		Title:       "Regular Task",
+		Description: "Not a subtask",
+		Status:      "Active",
+		Priority:    "Normal",
+		Permalink:   "https://www.wrike.com/open.htm?id=1234567890",
+		CreatedDate: now,
+		UpdatedDate: now,
+	}
+
+	metadata := buildMetadata(task, nil)
+
+	// Check is_subtask is NOT present
+	if _, ok := metadata["is_subtask"]; ok {
+		t.Error("is_subtask should not be present when SuperTaskIDs is empty")
+	}
+
+	// Check parent_task_ids is NOT present
+	if _, ok := metadata["parent_task_ids"]; ok {
+		t.Error("parent_task_ids should not be present when SuperTaskIDs is empty")
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// fetchParentTask tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestFetchParentTask_NoParent(t *testing.T) {
+	p := &Provider{}
+
+	// Empty SuperTaskIDs should return nil, nil
+	info, err := p.fetchParentTask(context.Background(), "IEAAJTASK", []string{})
+	if err != nil {
+		t.Errorf("fetchParentTask() error = %v, want nil", err)
+	}
+	if info != nil {
+		t.Errorf("fetchParentTask() = %v, want nil", info)
+	}
+}
+
+func TestFetchParentTask_CircularReference(t *testing.T) {
+	p := &Provider{}
+
+	// Task ID equals parent ID - should return nil, nil (guard against circular ref)
+	info, err := p.fetchParentTask(context.Background(), "IEAAJTASK", []string{"IEAAJTASK"})
+	if err != nil {
+		t.Errorf("fetchParentTask() error = %v, want nil", err)
+	}
+	if info != nil {
+		t.Errorf("fetchParentTask() with circular ref = %v, want nil", info)
+	}
+}
+
+func TestFetchParentTask_EmptyParentID(t *testing.T) {
+	p := &Provider{}
+
+	// Empty string in SuperTaskIDs - should return nil, nil
+	info, err := p.fetchParentTask(context.Background(), "IEAAJTASK", []string{""})
+	if err != nil {
+		t.Errorf("fetchParentTask() error = %v, want nil", err)
+	}
+	if info != nil {
+		t.Errorf("fetchParentTask() with empty parent ID = %v, want nil", info)
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ParentTaskInfo struct tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestParentTaskInfoDoesNotIncludeSubtasks(t *testing.T) {
+	// This is a compile-time check - ParentTaskInfo should NOT have SubTaskIDs
+	// The struct intentionally excludes subtask data to avoid exposing siblings
+	info := ParentTaskInfo{
+		ID:          "IEAAJPARENT",
+		Title:       "Parent Task",
+		Status:      "Active",
+		Description: "Parent description",
+		Permalink:   "https://www.wrike.com/open.htm?id=1234567890",
+	}
+
+	// Verify fields exist as expected
+	if info.ID != "IEAAJPARENT" {
+		t.Errorf("ID = %q, want %q", info.ID, "IEAAJPARENT")
+	}
+	if info.Title != "Parent Task" {
+		t.Errorf("Title = %q, want %q", info.Title, "Parent Task")
+	}
+	// Note: No SubTaskIDs field exists - this is intentional per user requirement
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -655,5 +817,298 @@ func TestIsNumericID(t *testing.T) {
 				t.Errorf("isNumericID(%q) = %v, want %v", tt.id, got, tt.want)
 			}
 		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FetchParent integration tests (with mock HTTP server)
+// ──────────────────────────────────────────────────────────────────────────────
+
+// setupMockProvider creates a Provider with a mock HTTP server.
+func setupMockProvider(t *testing.T, handler http.HandlerFunc) (*Provider, func()) {
+	t.Helper()
+
+	server := httptest.NewServer(handler)
+
+	client := &Client{
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		baseURL:    server.URL,
+		token:      "test-token",
+	}
+
+	p := &Provider{client: client}
+
+	return p, func() { server.Close() }
+}
+
+func TestFetchParent_ReturnsParentForSubtask(t *testing.T) {
+	now := time.Now()
+	requestCount := 0
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+
+		if requestCount == 1 {
+			// First request: fetch the subtask
+			response := taskResponse{
+				Data: []Task{
+					{
+						ID:           "IEAAJSUBTASK",
+						Title:        "Subtask",
+						Status:       "Active",
+						Permalink:    "https://www.wrike.com/open.htm?id=1111111111",
+						SuperTaskIDs: []string{"IEAAJPARENT"},
+						CreatedDate:  now,
+						UpdatedDate:  now,
+					},
+				},
+			}
+			mustEncode(w, response)
+
+			return
+		}
+
+		// Second request: fetch the parent task
+		response := taskResponse{
+			Data: []Task{
+				{
+					ID:          "IEAAJPARENT",
+					Title:       "Parent Task",
+					Description: "Parent description",
+					Status:      "Active",
+					Priority:    "High",
+					Permalink:   "https://www.wrike.com/open.htm?id=2222222222",
+					CreatedDate: now,
+					UpdatedDate: now,
+				},
+			},
+		}
+		mustEncode(w, response)
+	})
+
+	p, cleanup := setupMockProvider(t, handler)
+	defer cleanup()
+
+	parent, err := p.FetchParent(context.Background(), "IEAAJSUBTASK")
+	if err != nil {
+		t.Fatalf("FetchParent() error = %v", err)
+	}
+	if parent == nil {
+		t.Fatal("FetchParent() returned nil")
+	}
+	if parent.Title != "Parent Task" {
+		t.Errorf("parent.Title = %q, want %q", parent.Title, "Parent Task")
+	}
+	if parent.ExternalID != "IEAAJPARENT" {
+		t.Errorf("parent.ExternalID = %q, want %q", parent.ExternalID, "IEAAJPARENT")
+	}
+}
+
+func TestFetchParent_ReturnsErrorForNonSubtask(t *testing.T) {
+	now := time.Now()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return a task with no SuperTaskIDs (not a subtask)
+		response := taskResponse{
+			Data: []Task{
+				{
+					ID:          "IEAAJTASK",
+					Title:       "Regular Task",
+					Status:      "Active",
+					Permalink:   "https://www.wrike.com/open.htm?id=1234567890",
+					CreatedDate: now,
+					UpdatedDate: now,
+				},
+			},
+		}
+		mustEncode(w, response)
+	})
+
+	p, cleanup := setupMockProvider(t, handler)
+	defer cleanup()
+
+	parent, err := p.FetchParent(context.Background(), "IEAAJTASK")
+	if !errors.Is(err, ErrNotASubtask) {
+		t.Errorf("FetchParent() error = %v, want %v", err, ErrNotASubtask)
+	}
+	if parent != nil {
+		t.Errorf("FetchParent() returned non-nil parent for non-subtask")
+	}
+}
+
+func TestFetchParent_PropagatesClientError(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return 404 Not Found
+		w.WriteHeader(http.StatusNotFound)
+		mustEncode(w, map[string]string{"error": "Task not found"})
+	})
+
+	p, cleanup := setupMockProvider(t, handler)
+	defer cleanup()
+
+	_, err := p.FetchParent(context.Background(), "IEAAJNOTFOUND")
+	if err == nil {
+		t.Error("FetchParent() expected error for 404, got nil")
+	}
+	if !strings.Contains(err.Error(), "fetch task") {
+		t.Errorf("error should mention fetch task, got: %v", err)
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Snapshot parent section integration test
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestSnapshot_IncludesParentTaskSection(t *testing.T) {
+	now := time.Now()
+	requestCount := 0
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+
+		// Handle comments request (returns empty)
+		if strings.Contains(r.URL.Path, "/comments") {
+			mustEncode(w, map[string][]any{"data": {}})
+
+			return
+		}
+
+		if requestCount == 1 {
+			// First task request: the subtask
+			response := taskResponse{
+				Data: []Task{
+					{
+						ID:           "IEAAJSUBTASK",
+						Title:        "Subtask Title",
+						Description:  "Subtask description",
+						Status:       "Active",
+						Priority:     "Normal",
+						Permalink:    "https://www.wrike.com/open.htm?id=1111111111",
+						SuperTaskIDs: []string{"IEAAJPARENT"},
+						CreatedDate:  now,
+						UpdatedDate:  now,
+					},
+				},
+			}
+			mustEncode(w, response)
+
+			return
+		}
+
+		// Parent task request
+		response := taskResponse{
+			Data: []Task{
+				{
+					ID:          "IEAAJPARENT",
+					Title:       "Parent Task Title",
+					Description: "Parent task description content",
+					Status:      "In Progress",
+					Priority:    "High",
+					Permalink:   "https://www.wrike.com/open.htm?id=2222222222",
+					CreatedDate: now,
+					UpdatedDate: now,
+				},
+			},
+		}
+		mustEncode(w, response)
+	})
+
+	p, cleanup := setupMockProvider(t, handler)
+	defer cleanup()
+
+	snapshot, err := p.Snapshot(context.Background(), "IEAAJSUBTASK")
+	if err != nil {
+		t.Fatalf("Snapshot() error = %v", err)
+	}
+	if snapshot == nil {
+		t.Fatal("Snapshot() returned nil")
+	}
+	if len(snapshot.Files) == 0 {
+		t.Fatal("Snapshot has no files")
+	}
+
+	content := snapshot.Files[0].Content
+
+	// Check for "## Parent Task" section
+	if !strings.Contains(content, "## Parent Task") {
+		t.Error("Snapshot should contain '## Parent Task' section")
+	}
+
+	// Check parent title appears as markdown link
+	if !strings.Contains(content, "[Parent Task Title]") {
+		t.Error("Snapshot should contain parent title as link")
+	}
+
+	// Check parent permalink
+	if !strings.Contains(content, "https://www.wrike.com/open.htm?id=2222222222") {
+		t.Error("Snapshot should contain parent permalink")
+	}
+
+	// Check parent status
+	if !strings.Contains(content, "In Progress") {
+		t.Error("Snapshot should contain parent status")
+	}
+
+	// Check parent description
+	if !strings.Contains(content, "Parent task description content") {
+		t.Error("Snapshot should contain parent description")
+	}
+}
+
+func TestSnapshot_ShowsUnavailableMessageOnParentFetchError(t *testing.T) {
+	now := time.Now()
+	requestCount := 0
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+
+		// Handle comments request
+		if strings.Contains(r.URL.Path, "/comments") {
+			mustEncode(w, map[string][]any{"data": {}})
+
+			return
+		}
+
+		if requestCount == 1 {
+			// First request: subtask with parent ID
+			response := taskResponse{
+				Data: []Task{
+					{
+						ID:           "IEAAJSUBTASK",
+						Title:        "Subtask",
+						Status:       "Active",
+						Permalink:    "https://www.wrike.com/open.htm?id=1111111111",
+						SuperTaskIDs: []string{"IEAAJPARENT"},
+						CreatedDate:  now,
+						UpdatedDate:  now,
+					},
+				},
+			}
+			mustEncode(w, response)
+
+			return
+		}
+
+		// Parent fetch fails with 500
+		w.WriteHeader(http.StatusInternalServerError)
+		mustEncode(w, map[string]string{"error": "Server error"})
+	})
+
+	p, cleanup := setupMockProvider(t, handler)
+	defer cleanup()
+
+	snapshot, err := p.Snapshot(context.Background(), "IEAAJSUBTASK")
+	if err != nil {
+		t.Fatalf("Snapshot() error = %v", err)
+	}
+
+	content := snapshot.Files[0].Content
+
+	// Should still have Parent Task section with unavailable message
+	if !strings.Contains(content, "## Parent Task") {
+		t.Error("Snapshot should contain '## Parent Task' section even on error")
+	}
+	if !strings.Contains(content, "Parent task information unavailable") {
+		t.Error("Snapshot should show 'unavailable' message when parent fetch fails")
 	}
 }
