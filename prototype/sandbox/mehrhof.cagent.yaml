@@ -1,0 +1,405 @@
+# Mehrhof cagent Configuration
+#
+# This defines a cagent that wraps the mehr CLI, allowing conversational
+# interaction with mehrhof workflows inside Docker Sandbox.
+#
+# Usage:
+#   docker sandbox run cagent ~/my-project
+#   cagent run sandbox/mehrhof.cagent.yaml
+#
+# Architecture:
+#   cagent (conversation) -> mehr (coordinator) -> Claude/Codex (AI agents)
+#   cagent doesn't do AI work - it just helps users run mehr CLI commands.
+#   The actual AI work happens when mehr spawns Claude/Codex internally.
+
+agents:
+  root:
+    model: anthropic/claude-sonnet-4-5
+    description: Helps users run mehrhof workflow commands
+    instruction: |
+      You help users interact with mehrhof (mehr), a CLI tool that orchestrates
+      AI agents for software development workflows.
+
+      ## What mehr does
+      mehr is a COORDINATOR, not an AI agent itself. When you call mehr commands:
+      - mehr manages workflow state (idle -> planning -> implementing -> reviewing -> done)
+      - mehr spawns Claude/Codex agents to do the actual AI work
+      - You wait for each command to complete before proceeding
+
+      ## Your job
+      1. Understand what the user wants to accomplish
+      2. Call the appropriate mehr commands in sequence
+      3. Check mehr_status after each step to see the result
+      4. Report back to the user what happened
+
+      ## Typical sequence
+      ```
+      mehr_start <task>     -> starts a task
+      mehr_status           -> check state
+      mehr_plan             -> mehr calls Claude to generate specs
+      mehr_status           -> check state
+      mehr_implement        -> mehr calls Claude to write code
+      mehr_status           -> check state
+      mehr_review           -> mehr calls Claude to review
+      mehr_finish           -> completes the workflow
+      ```
+
+      ## Important
+      - Each mehr command may take time as it runs AI agents internally
+      - Always check mehr_status to see current state before next command
+      - Use mehr_note to add context that gets passed to the AI agents
+      - Use mehr_undo/mehr_redo for checkpoint navigation
+      - Use mehr_guide if unsure what to do next
+
+    add_date: true
+    add_environment_info: true
+
+    toolsets:
+      # File operations for examining code (cagent's own capability)
+      - type: filesystem
+        tools: [read_file, list_directory, search_files]
+
+      # Mehrhof CLI commands via script_shell
+      - type: script_shell
+        tools:
+          # ═══════════════════════════════════════════════════════════
+          # CORE WORKFLOW
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_start:
+            cmd: mehr start
+            description: |
+              Start a new task from file, directory, URL, or provider.
+              Examples: mehr start task.md, mehr start https://github.com/org/repo/issues/123
+            args:
+              task_ref:
+                type: string
+                description: Task reference - file path, URL, or provider ID
+              agent:
+                type: string
+                description: Override default agent
+            required: [task_ref]
+
+          mehr_plan:
+            cmd: mehr plan
+            description: |
+              AI creates implementation specifications. Analyzes codebase,
+              generates step-by-step plan, identifies files to modify.
+            args:
+              force:
+                type: boolean
+                description: Force re-planning even if plan exists
+              agent:
+                type: string
+                description: Override planning agent
+
+          mehr_implement:
+            cmd: mehr implement
+            description: |
+              AI implements the specifications. Executes the plan with
+              checkpointing for undo/redo support.
+            args:
+              force:
+                type: boolean
+                description: Force re-implementation
+              agent:
+                type: string
+                description: Override implementation agent
+
+          mehr_review:
+            cmd: mehr review
+            description: |
+              Run AI code review on current changes. Checks against specs,
+              finds bugs, suggests improvements.
+            args:
+              force:
+                type: boolean
+                description: Force re-review
+              agent:
+                type: string
+                description: Override review agent
+
+          mehr_finish:
+            cmd: mehr finish
+            description: |
+              Complete the task - creates PR (for supported providers),
+              merges branch, or marks done based on config.
+
+          mehr_abandon:
+            cmd: mehr abandon
+            description: Abandon current task without merging, preserves work
+
+          mehr_continue:
+            cmd: mehr continue
+            description: Resume work on active task after interruption
+
+          # ═══════════════════════════════════════════════════════════
+          # NAVIGATION & STATE
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_status:
+            cmd: mehr status
+            description: Show full task details - state, files, progress, costs
+
+          mehr_guide:
+            cmd: mehr guide
+            description: |
+              "What should I do next?" - AI analyzes current state and
+              recommends the next action.
+
+          mehr_undo:
+            cmd: mehr undo
+            description: Revert to previous checkpoint (git-based)
+
+          mehr_redo:
+            cmd: mehr redo
+            description: Restore next checkpoint after undo
+
+          mehr_reset:
+            cmd: mehr reset
+            description: Reset workflow to idle state without losing work
+
+          mehr_cost:
+            cmd: mehr cost
+            description: Show token usage and costs for current task
+
+          # ═══════════════════════════════════════════════════════════
+          # CONTEXT & COMMUNICATION
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_note:
+            cmd: mehr note
+            description: |
+              Add context notes to the task. These are passed to AI agents
+              during planning/implementation.
+            args:
+              message:
+                type: string
+                description: Note content
+            required: [message]
+
+          mehr_question:
+            cmd: mehr question
+            description: |
+              Ask the active agent a question during implementation.
+              Agent can clarify or provide guidance.
+            args:
+              message:
+                type: string
+                description: Your question
+            required: [message]
+
+          mehr_memory:
+            cmd: mehr memory
+            description: |
+              Manage semantic memory of past tasks. AI uses this for context
+              in future tasks. Subcommands: list, search, forget.
+            args:
+              subcommand:
+                type: string
+                description: list, search <query>, or forget <id>
+
+          mehr_links:
+            cmd: mehr links
+            description: |
+              Manage bidirectional links between specs, notes, sessions.
+              Logseq-style [[reference]] syntax.
+            args:
+              subcommand:
+                type: string
+                description: list, find <pattern>, or graph
+
+          # ═══════════════════════════════════════════════════════════
+          # PROJECT MANAGEMENT
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_list:
+            cmd: mehr list
+            description: List all tasks in workspace with status
+
+          mehr_project:
+            cmd: mehr project
+            description: |
+              Project planning and task management.
+              Subcommands: plan, submit, start, sync
+            args:
+              subcommand:
+                type: string
+                description: plan, submit, start, or sync
+
+          mehr_stack:
+            cmd: mehr stack
+            description: |
+              Manage stacked features (dependent tasks). Create task chains
+              that build on each other.
+            args:
+              subcommand:
+                type: string
+                description: list, add, remove, reorder
+
+          mehr_sync:
+            cmd: mehr sync
+            description: |
+              Sync task from provider. If remote changed, generates delta
+              specification automatically.
+
+          mehr_submit:
+            cmd: mehr submit
+            description: Submit task to external provider (GitHub, Linear, etc.)
+
+          mehr_export:
+            cmd: mehr export
+            description: Export queue task to markdown file
+            args:
+              task_id:
+                type: string
+                description: Task ID to export
+
+          mehr_delete:
+            cmd: mehr delete
+            description: Delete a queue task
+            args:
+              task_id:
+                type: string
+                description: Task ID to delete
+
+          # ═══════════════════════════════════════════════════════════
+          # CODE QUALITY & ANALYSIS
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_scan:
+            cmd: mehr scan
+            description: |
+              Run security scans on codebase - SAST (gosec), secrets (gitleaks),
+              vulnerabilities (govulncheck).
+            args:
+              type:
+                type: string
+                description: all, sast, secrets, or vulns
+
+          mehr_find:
+            cmd: mehr find
+            description: |
+              AI-powered code search with focused results. Understands code
+              semantics, not just text matching.
+            args:
+              query:
+                type: string
+                description: What to find
+            required: [query]
+
+          mehr_optimize:
+            cmd: mehr optimize
+            description: AI optimizes a task based on its notes and context
+
+          mehr_simplify:
+            cmd: mehr simplify
+            description: Simplify content based on current workflow state
+
+          mehr_commit:
+            cmd: mehr commit
+            description: |
+              Create logical commits from uncommitted changes. AI groups
+              changes into meaningful commits.
+
+          # ═══════════════════════════════════════════════════════════
+          # CONFIGURATION & META
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_agents:
+            cmd: mehr agents
+            description: List and manage available agents
+
+          mehr_providers:
+            cmd: mehr providers
+            description: List and manage task providers (GitHub, Linear, Jira, etc.)
+
+          mehr_config:
+            cmd: mehr config
+            description: |
+              Manage configuration. Subcommands: show, set, validate
+            args:
+              subcommand:
+                type: string
+                description: show, set <key> <value>, or validate
+
+          mehr_templates:
+            cmd: mehr templates
+            description: Manage task templates
+
+          mehr_plugins:
+            cmd: mehr plugins
+            description: Manage plugins (external agent/provider extensions)
+
+          mehr_init:
+            cmd: mehr init
+            description: Initialize the task workspace in current directory
+
+          # ═══════════════════════════════════════════════════════════
+          # SERVICES
+          # ═══════════════════════════════════════════════════════════
+
+          mehr_browser:
+            cmd: mehr browser
+            description: |
+              Control Chrome browser for automation (CDP-based).
+              Useful for web scraping, testing, screenshots.
+
+          mehr_workflow:
+            cmd: mehr workflow
+            description: Show the workflow state machine diagram
+
+      # Task tracking for multi-step workflows
+      - type: todo
+
+# Model configurations
+models:
+  claude:
+    provider: anthropic
+    model: claude-sonnet-4-5
+    max_tokens: 16384
+    temperature: 0.7
+
+  claude-haiku:
+    provider: anthropic
+    model: claude-haiku-4-5
+    max_tokens: 4096
+
+# Metadata for sharing via Docker Hub
+metadata:
+  author: Valksor
+  license: MIT
+  readme: |
+    # Mehrhof cagent
+
+    Conversational wrapper for mehrhof workflow orchestration.
+
+    ## Usage
+
+    ```bash
+    # In Docker Sandbox
+    docker sandbox run cagent ~/my-project
+    cagent run sandbox/mehrhof.cagent.yaml
+
+    # Direct execution (outside sandbox)
+    cagent run sandbox/mehrhof.cagent.yaml
+
+    # As MCP server (for Claude Code integration)
+    cagent mcp sandbox/mehrhof.cagent.yaml
+    ```
+
+    ## Architecture
+
+    cagent (conversation) -> mehr (coordinator) -> Claude/Codex (AI agents)
+
+    cagent doesn't do AI work - it helps users run mehr commands.
+    The actual AI work happens when mehr spawns Claude/Codex.
+
+    ## Workflow
+
+    1. `mehr_start` - Begin with a task reference
+    2. `mehr_status` - Check current state
+    3. `mehr_plan` - Generate implementation plan (spawns Claude)
+    4. `mehr_implement` - Execute with AI agents (spawns Claude)
+    5. `mehr_review` - Code review (spawns Claude)
+    6. `mehr_finish` - Complete

@@ -2,6 +2,8 @@
 
 Isolate AI agent execution using platform-specific sandboxing for enhanced security.
 
+> **Note**: This page covers mehr's built-in `--sandbox` flag for OS-level isolation. For Docker Sandbox (microVM-based isolation), see [Docker Sandbox Integration](/advanced/docker-sandbox.md).
+
 ## Overview
 
 Mehrhof supports sandboxing AI agents to prevent unauthorized access to your system while still allowing them to perform useful work.

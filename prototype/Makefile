@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check web-ui-test web-ui-test-smoke web-ui-test-ui test-all vscode-quality jetbrains-quality webui-quality ide-quality quality-all
+.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check web-ui-test web-ui-test-smoke web-ui-test-ui test-all vscode-quality jetbrains-quality webui-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -166,3 +166,54 @@ web-ui-test-ui: build
 
 ## Run all tests (Go + Web UI smoke)
 test-all: test web-ui-test-smoke
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Docker Sandbox
+# ──────────────────────────────────────────────────────────────────────────────
+
+SANDBOX_IMAGE := mehr-sandbox
+SANDBOX_TAG := v1
+SANDBOX_REGISTRY := valksor
+
+## Build Docker Sandbox template with mehr pre-installed
+sandbox-build:
+	@echo "Building Docker Sandbox template..."
+	docker build -f sandbox/Dockerfile.mehr -t $(SANDBOX_IMAGE):$(SANDBOX_TAG) .
+	@echo "Built $(SANDBOX_IMAGE):$(SANDBOX_TAG)"
+
+## Build sandbox from local source (for development)
+## Note: Requires uncommenting local build section in Dockerfile.mehr
+sandbox-build-dev: build
+	@echo "Building Docker Sandbox template from local source..."
+	@cp $(BUILD_DIR)/$(BINARY_NAME) sandbox/mehr-local
+	docker build -f sandbox/Dockerfile.mehr \
+		--build-arg MEHR_VERSION=local \
+		-t $(SANDBOX_IMAGE):dev .
+	@rm -f sandbox/mehr-local
+	@echo "Built $(SANDBOX_IMAGE):dev"
+
+## Run mehr in Docker Sandbox (current directory)
+sandbox-run:
+	@echo "Starting Docker Sandbox with mehr..."
+	docker sandbox run --load-local-template -t $(SANDBOX_IMAGE):$(SANDBOX_TAG) $(PWD)
+
+## Run sandbox in interactive mehr mode
+sandbox-interactive:
+	@echo "Starting Docker Sandbox with mehr interactive..."
+	docker sandbox run --load-local-template -t $(SANDBOX_IMAGE):$(SANDBOX_TAG) $(PWD) -- mehr interactive
+
+## Push sandbox template to Docker Hub
+sandbox-push:
+	docker tag $(SANDBOX_IMAGE):$(SANDBOX_TAG) $(SANDBOX_REGISTRY)/$(SANDBOX_IMAGE):$(SANDBOX_TAG)
+	docker push $(SANDBOX_REGISTRY)/$(SANDBOX_IMAGE):$(SANDBOX_TAG)
+	@echo "Pushed $(SANDBOX_REGISTRY)/$(SANDBOX_IMAGE):$(SANDBOX_TAG)"
+
+## List running sandboxes
+sandbox-ls:
+	docker sandbox ls
+
+## Clean up sandbox (removes the sandbox VM)
+sandbox-clean:
+	@echo "Removing sandbox..."
+	-docker sandbox rm $(shell docker sandbox ls -q 2>/dev/null | head -1) 2>/dev/null || true
+	@echo "Sandbox removed"

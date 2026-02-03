@@ -170,6 +170,7 @@
   - [Multi-Agent Orchestration](advanced/multi-agent.md)
   - [Semantic Memory](advanced/semantic-memory.md)
   - [Agent Sandboxing](advanced/sandbox.md)
+  - [Docker Sandbox](advanced/docker-sandbox.md)
   - [Security Scanning](advanced/security.md)
   - [ML Predictions](advanced/predictions.md)
   - [E2E Testing](advanced/e2e.md)

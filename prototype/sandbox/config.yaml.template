@@ -1,0 +1,51 @@
+# Mehrhof Sandbox Configuration
+# This is the default config used when running mehr inside Docker Sandbox.
+#
+# Architecture:
+#   mehr (coordinator) -> Claude/Codex (AI agents)
+#   mehr is NOT an agent - it spawns Claude/Codex to do the actual AI work.
+
+# Agent configuration - which AI agents mehr spawns for each workflow phase
+agent:
+  default: claude
+  retry_count: 3
+  retry_delay: 5s
+
+  # Per-step agent configuration
+  steps:
+    planning:
+      name: claude
+    implementing:
+      name: claude-sonnet
+    reviewing:
+      name: claude
+
+# Available agents (mehr spawns these, they're the actual AI)
+agents:
+  claude:
+    extends: claude
+    # Default Claude configuration
+
+  claude-sonnet:
+    extends: claude
+    args: ["--model", "claude-sonnet-4-5"]
+
+  claude-opus:
+    extends: claude
+    args: ["--model", "claude-opus-4"]
+
+# Project layout
+# In sandbox, the workspace is synced to the same absolute path as host
+project:
+  code_dir: ""  # Empty = current directory is both hub and code target
+
+# Automation settings (for webhook-driven workflows)
+automation:
+  enabled: false
+  # Configure in production environments
+
+# Security settings
+security:
+  # Sandbox provides isolation, so we can be more permissive
+  allow_shell: true
+  allow_file_write: true
