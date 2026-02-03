@@ -175,6 +175,14 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 				// Don't fail initialization since ML is optional
 				c.logError(fmt.Errorf("initialize ML (non-fatal): %w", err))
 			}
+
+			// Initialize library system
+			if err := c.InitializeLibrary(ctx); err != nil {
+				// Library is optional, but store error for better UX when user tries to use it
+				// Don't fail initialization since library is optional
+				c.libraryInitErr = err
+				c.logError(fmt.Errorf("initialize library (non-fatal): %w", err))
+			}
 		}
 	}
 
@@ -272,8 +280,15 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 	// Capture task agent config from workUnit (if specified in task frontmatter)
 	c.taskAgentConfig = workUnit.AgentConfig
 
-	// Generate task ID first (needed for branch name)
-	taskID := storage.GenerateTaskID()
+	// Determine task ID: use external key with timestamp suffix to prevent collisions on restart.
+	// The timestamp ensures uniqueness if the same external task is started multiple times
+	// (e.g., after abandon/finish) while preserving human-readable provider ID prefix.
+	taskID := workUnit.ExternalKey
+	if taskID != "" {
+		taskID = fmt.Sprintf("%s-%d", workUnit.ExternalKey, time.Now().UnixNano())
+	} else {
+		taskID = storage.GenerateTaskID()
+	}
 
 	// Resolve naming (external key, branch pattern, commit prefix)
 	namingInfo := c.resolveNaming(workUnit, taskID)
@@ -386,7 +401,11 @@ func (c *Conductor) ContinueWithExisting(ctx context.Context, reference string, 
 	}
 
 	// Create active task reference with state="idle"
-	active := storage.NewActiveTask(existingTaskID, reference, c.workspace.WorkPath(existingTaskID))
+	cfg, _ := c.workspace.LoadConfig()
+	if cfg == nil {
+		cfg = storage.NewDefaultWorkspaceConfig()
+	}
+	active := storage.NewActiveTask(existingTaskID, reference, c.workspace.EffectiveWorkDir(existingTaskID, cfg))
 
 	// Preserve git info if it exists
 	if c.git != nil {
@@ -656,7 +675,11 @@ func (c *Conductor) writeSourceFiles(taskID string, snapshot *provider.Snapshot)
 		return nil
 	}
 
-	workPath := c.workspace.WorkPath(taskID)
+	cfg, _ := c.workspace.LoadConfig()
+	if cfg == nil {
+		cfg = storage.NewDefaultWorkspaceConfig()
+	}
+	workPath := c.workspace.EffectiveWorkDir(taskID, cfg)
 	sourceDir := filepath.Join(workPath, "source")
 
 	// Create source directory if it doesn't exist
@@ -760,7 +783,11 @@ func (c *Conductor) registerTask(taskID, reference string, workUnit *provider.Wo
 	}
 
 	// Create active task reference
-	active := storage.NewActiveTask(taskID, reference, c.workspace.WorkPath(taskID))
+	cfg, _ := c.workspace.LoadConfig()
+	if cfg == nil {
+		cfg = storage.NewDefaultWorkspaceConfig()
+	}
+	active := storage.NewActiveTask(taskID, reference, c.workspace.EffectiveWorkDir(taskID, cfg))
 
 	// Set git info on active task
 	if c.git != nil {
@@ -907,8 +934,6 @@ func (c *Conductor) Status(ctx context.Context) (*TaskStatus, error) {
 
 	status := &TaskStatus{
 		TaskID:         c.activeTask.ID,
-		Title:          c.taskWork.Metadata.Title,
-		ExternalKey:    c.taskWork.Metadata.ExternalKey,
 		State:          c.activeTask.State,
 		Ref:            c.activeTask.Ref,
 		Branch:         c.activeTask.Branch,
@@ -916,6 +941,12 @@ func (c *Conductor) Status(ctx context.Context) (*TaskStatus, error) {
 		Specifications: len(specifications),
 		Checkpoints:    c.countCheckpoints(ctx),
 		Started:        c.activeTask.Started,
+	}
+
+	// Add work metadata if available (may be nil if work directory is missing)
+	if c.taskWork != nil {
+		status.Title = c.taskWork.Metadata.Title
+		status.ExternalKey = c.taskWork.Metadata.ExternalKey
 	}
 
 	// Add agent info

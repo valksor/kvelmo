@@ -47,8 +47,8 @@ func (c *Conductor) RunSecurityScan(ctx context.Context) error {
 		return nil
 	}
 
-	// Get work directory
-	workDir := c.workspace.WorkPath(c.activeTask.ID)
+	// Get work directory (respects save_in_project config)
+	workDir := c.workspace.EffectiveWorkDir(c.activeTask.ID, cfg)
 
 	// Create scanner registry
 	registry := security.NewScannerRegistry()

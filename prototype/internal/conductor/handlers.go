@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"math/rand"
 	"os"
@@ -51,6 +52,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get planning agent: %w", err)
 	}
+
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
 
 	// Create session for this planning run
 	session, filename, err := c.workspace.CreateSession(taskID, "planning", planningAgent.Name(), c.activeTask.State)
@@ -133,6 +137,18 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	}
 
 	prompt := buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults, hierarchy)
+
+	// Inject library context if auto-include is enabled
+	if c.opts.LibraryAutoInclude {
+		libContext, libErr := c.getLibraryContextForWorkingDir(ctx, workingDir)
+		if libErr != nil {
+			// Log warning for actual errors (not "no docs found")
+			slog.Warn("library context injection failed", "error", libErr)
+		} else if libContext != "" {
+			prompt += "\n\n" + libContext
+		}
+	}
+
 	if pendingContext != "" {
 		prompt += "\n\n## Previous Analysis (before question)\nThe following is context from your previous planning session. Use this to avoid re-exploring:\n\n" + pendingContext
 	}
@@ -334,6 +350,9 @@ func (c *Conductor) RunImplementation(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get implementing agent: %w", err)
 	}
+
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
 
 	// Create session for this implementation run
 	session, filename, err := c.workspace.CreateSession(taskID, "implementation", implementingAgent.Name(), c.activeTask.State)
@@ -654,6 +673,250 @@ Please retry the implementation, taking into account this error.
 	return nil
 }
 
+// RunReviewImplementation executes implementation of fixes from a specific review.
+// Unlike RunImplementation which uses specifications, this uses review feedback as the guide.
+func (c *Conductor) RunReviewImplementation(ctx context.Context, reviewNumber int) error {
+	c.publishProgress(fmt.Sprintf("Starting review fix implementation (review %d)...", reviewNumber), 0)
+
+	taskID := c.activeTask.ID
+
+	// Create progress tracker for this phase
+	var statusLine *progress.StatusLine
+	if !c.opts.DryRun {
+		statusLine = progress.NewStatusLine("Implementing review fixes")
+		defer statusLine.Done()
+	}
+
+	// Get agent for review implementing step (falls back to implementing if not configured)
+	implementingAgent, err := c.GetAgentForStep(ctx, workflow.StepReviewImplementing)
+	if err != nil {
+		return fmt.Errorf("get implementing agent: %w", err)
+	}
+
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
+
+	// Create session for this review implementation run
+	session, filename, err := c.workspace.CreateSession(taskID, "review-implementation", implementingAgent.Name(), c.activeTask.State)
+	if err != nil {
+		c.logError(fmt.Errorf("create session: %w", err))
+	} else {
+		c.currentSession = session
+		c.currentSessionFile = filename
+	}
+
+	// Load the review content
+	reviewContent, err := c.workspace.LoadReview(taskID, reviewNumber)
+	if err != nil {
+		return fmt.Errorf("load review %d: %w", reviewNumber, err)
+	}
+	if strings.TrimSpace(reviewContent) == "" {
+		return fmt.Errorf("review %d is empty, nothing to implement", reviewNumber)
+	}
+
+	c.publishProgress(fmt.Sprintf("Loaded review %d content...", reviewNumber), 5)
+
+	// Get source content for context
+	sourceContent, err := c.workspace.GetSourceContent(taskID)
+	if err != nil {
+		return fmt.Errorf("get source content: %w", err)
+	}
+
+	// Get notes (missing notes is acceptable, returns empty string)
+	notes, _ := c.workspace.ReadNotes(taskID)
+
+	// Determine the working directory for path context in prompts
+	workingDir := c.CodeDir()
+
+	// Build review fix prompt
+	workspaceCfg, _ := c.workspace.LoadConfig()
+	customInstructions := buildCombinedInstructions(workspaceCfg, "implementing")
+
+	prompt := buildReviewFixPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, reviewContent, notes, customInstructions)
+
+	// Optimize prompt if enabled
+	shouldOptimize := c.opts.OptimizePrompts || shouldOptimizePrompt(workspaceCfg, "implementing")
+	if shouldOptimize {
+		prompt = c.optimizePrompt(ctx, "implementing", prompt)
+	}
+
+	// Run agent with streaming, accumulate output for transcript
+	c.publishProgress("Agent implementing review fixes...", 20)
+	var transcriptBuilder strings.Builder
+
+	// Retry loop for recoverable errors (same pattern as RunImplementation)
+	var response *agent.Response
+
+	// Store original prompt to avoid accumulation on retries
+	originalPrompt := prompt
+	var lastErr error
+
+	for attempt := range maxRetries {
+		// Check for context cancellation before retry
+		if ctx.Err() != nil {
+			return fmt.Errorf("review implementation cancelled: %w", ctx.Err())
+		}
+
+		// Use original prompt + latest error (not accumulated)
+		currentPrompt := originalPrompt
+		if lastErr != nil {
+			currentPrompt = fmt.Sprintf(`%s
+
+## Previous Error
+The previous review implementation attempt failed with: %v
+
+Please retry the implementation, taking into account this error.
+`, originalPrompt, lastErr)
+		}
+
+		response, err = implementingAgent.RunWithCallback(ctx, currentPrompt, func(event agent.Event) error {
+			// Always publish to event bus
+			c.eventBus.PublishRaw(eventbus.Event{
+				Type: events.TypeAgentMessage,
+				Data: map[string]any{"event": event},
+			})
+			// Also track progress if not dry-run
+			if statusLine != nil {
+				_ = statusLine.OnEvent(event)
+			}
+			// Accumulate content for transcript archive
+			if event.Text != "" {
+				transcriptBuilder.WriteString(event.Text)
+			}
+
+			return nil
+		})
+
+		// If successful or not a recoverable error, break the loop
+		if err == nil || !isRecoverableError(err) {
+			break
+		}
+
+		// Store error for next retry
+		lastErr = err
+
+		// Recoverable error - retry with exponential backoff
+		if attempt < maxRetries-1 {
+			// Calculate exponential backoff with jitter
+			backoff := time.Duration(float64(initialBackoffDelay) * math.Pow(backoffMultiplier, float64(attempt)))
+			if backoff > maxBackoffDelay {
+				backoff = maxBackoffDelay
+			}
+
+			// Add jitter (±20%)
+			// #nosec G404 - math/rand is sufficient for non-critical jitter
+			jitter := time.Duration(float64(backoff) * 0.2 * (2.0*rand.Float64() - 1.0))
+			backoff = backoff + jitter
+
+			c.publishProgress(fmt.Sprintf("Recoverable error, retrying in %.1fs (attempt %d/%d)...",
+				backoff.Seconds(), attempt+2, maxRetries), 20)
+
+			// Wait before retry (check ctx cancellation)
+			select {
+			case <-time.After(backoff):
+				// Proceed with retry
+			case <-ctx.Done():
+				return fmt.Errorf("review implementation cancelled during backoff: %w", ctx.Err())
+			}
+
+			// Clear transcript builder for retry
+			transcriptBuilder.Reset()
+		}
+	}
+
+	if err != nil {
+		if statusLine != nil {
+			statusLine.Done()
+		}
+		c.activeTask.State = "idle"
+		if saveErr := c.workspace.SaveActiveTask(c.activeTask); saveErr != nil {
+			c.logError(fmt.Errorf("save active task after implementation error: %w", saveErr))
+		}
+		_ = c.machine.Dispatch(ctx, workflow.EventError)
+
+		return fmt.Errorf("agent review implementation: %w", err)
+	}
+
+	// Record usage stats
+	if response.Usage != nil {
+		if err := c.workspace.AddUsage(taskID, "review-implementing",
+			response.Usage.InputTokens,
+			response.Usage.OutputTokens,
+			response.Usage.CachedTokens,
+			response.Usage.CostUSD,
+		); err != nil {
+			c.logError(fmt.Errorf("record review implementation usage: %w", err))
+		}
+		if err := c.checkBudgets(ctx, "implementing"); err != nil {
+			return err
+		}
+	}
+
+	// Save full transcript for archive
+	if transcript := transcriptBuilder.String(); transcript != "" {
+		transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-review-implementation.log"
+		if err := c.workspace.SaveTranscript(taskID, transcriptFile, transcript); err != nil {
+			c.logError(fmt.Errorf("save review implementation transcript: %w", err))
+		}
+	}
+
+	// Record exchanges to session
+	if c.currentSession != nil {
+		now := time.Now()
+		promptSummary := prompt
+		if len(promptSummary) > 500 {
+			promptSummary = promptSummary[:500] + "..."
+		}
+		c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+			Role:      "user",
+			Content:   promptSummary,
+			Timestamp: now,
+		})
+		if len(response.Files) > 0 {
+			var fileList []string
+			for _, f := range response.Files {
+				fileList = append(fileList, f.Path)
+			}
+			c.currentSession.Exchanges = append(c.currentSession.Exchanges, storage.Exchange{
+				Role:      "agent",
+				Content:   fmt.Sprintf("Modified %d files to fix review issues: %s", len(response.Files), strings.Join(fileList, ", ")),
+				Timestamp: now,
+			})
+		}
+	}
+
+	c.publishProgress("Applying review fixes...", 70)
+
+	// Apply file changes
+	if !c.opts.DryRun && len(response.Files) > 0 {
+		if err := applyFiles(ctx, c, response.Files); err != nil {
+			return fmt.Errorf("apply files: %w", err)
+		}
+	}
+
+	// Create checkpoint if git is available
+	commitMsg := c.generateCommitMessage(ctx, fmt.Sprintf("review-%d-fixes", reviewNumber))
+	if event := c.createCheckpointIfNeeded(ctx, taskID, commitMsg); event != nil {
+		c.eventBus.PublishRaw(*event)
+	}
+
+	// Update state back to idle
+	c.activeTask.State = "idle"
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		c.logError(fmt.Errorf("save active task: %w", err))
+	}
+
+	// Dispatch completion
+	_ = c.machine.Dispatch(ctx, workflow.EventImplementDone)
+
+	// Save session with completion time
+	c.saveCurrentSession(taskID)
+
+	c.publishProgress(fmt.Sprintf("Review %d fixes complete", reviewNumber), 100)
+
+	return nil
+}
+
 // RunReview executes the review phase.
 func (c *Conductor) RunReview(ctx context.Context) error {
 	c.publishProgress("Starting review phase...", 0)
@@ -672,6 +935,9 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get review agent: %w", err)
 	}
+
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
 
 	// Create session for this review run
 	session, filename, err := c.workspace.CreateSession(taskID, "review", reviewAgent.Name(), c.activeTask.State)
@@ -1232,6 +1498,9 @@ func (c *Conductor) simplifyPlanning(ctx context.Context, taskID string) error {
 		return fmt.Errorf("get simplification agent: %w", err)
 	}
 
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
+
 	session, filename, err := c.workspace.CreateSession(taskID, "simplification-planning", simplifyingAgent.Name(), c.activeTask.State)
 	if err != nil {
 		c.logError(fmt.Errorf("create session: %w", err))
@@ -1331,6 +1600,9 @@ func (c *Conductor) simplifyImplementing(ctx context.Context, taskID string) err
 	if err != nil {
 		return fmt.Errorf("get simplification agent: %w", err)
 	}
+
+	// Ensure any existing session is saved before creating a new one
+	c.ensureSessionSaved(taskID)
 
 	session, filename, err := c.workspace.CreateSession(taskID, "simplification-implementing", simplifyingAgent.Name(), c.activeTask.State)
 	if err != nil {

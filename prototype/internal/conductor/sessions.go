@@ -71,3 +71,11 @@ func (c *Conductor) saveCurrentSession(taskID string) {
 	c.currentSession = nil
 	c.currentSessionFile = ""
 }
+
+// ensureSessionSaved saves any existing session before starting a new one.
+// This prevents data loss when switching between workflow phases.
+func (c *Conductor) ensureSessionSaved(taskID string) {
+	if c.currentSession != nil {
+		c.saveCurrentSession(taskID)
+	}
+}

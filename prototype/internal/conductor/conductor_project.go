@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,10 +25,11 @@ type ProjectPlanOptions struct {
 
 // ProjectPlanResult holds the result of creating a project plan.
 type ProjectPlanResult struct {
-	Queue     *storage.TaskQueue
-	Tasks     []*storage.QueuedTask
-	Questions []string
-	Blockers  []string
+	Queue         *storage.TaskQueue
+	Tasks         []*storage.QueuedTask
+	Questions     []string
+	Blockers      []string
+	RawOutputPath string // Path to saved raw AI response (plan.md)
 }
 
 // ResearchManifest holds metadata about a research source directory.
@@ -91,6 +93,13 @@ func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts P
 		return nil, fmt.Errorf("get agent: %w", err)
 	}
 
+	if c.opts.Verbose {
+		slog.Debug("executing project plan prompt",
+			"prompt_length", len(prompt),
+			"agent", ag.Name(),
+		)
+	}
+
 	// Execute the planning prompt
 	resp, err := ag.Run(ctx, prompt)
 	if err != nil {
@@ -100,6 +109,22 @@ func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts P
 	response := resp.Summary
 	if response == "" && len(resp.Messages) > 0 {
 		response = strings.Join(resp.Messages, "\n")
+	}
+
+	if c.opts.Verbose {
+		preview := response
+		if len(preview) > 500 {
+			preview = preview[:500] + "..."
+		}
+		slog.Debug("received agent response",
+			"response_length", len(response),
+			"response_preview", preview,
+		)
+	}
+
+	// Save raw AI response for debugging (before parsing)
+	if err := c.workspace.SavePlanOutput(queueID, response); err != nil {
+		slog.Warn("failed to save raw plan output", "error", err)
 	}
 
 	c.publishProgress("Parsing task breakdown...", 60)
@@ -137,10 +162,11 @@ func (c *Conductor) CreateProjectPlan(ctx context.Context, source string, opts P
 	c.publishProgress("Project plan created", 100)
 
 	return &ProjectPlanResult{
-		Queue:     queue,
-		Tasks:     queue.Tasks,
-		Questions: queue.Questions,
-		Blockers:  queue.Blockers,
+		Queue:         queue,
+		Tasks:         queue.Tasks,
+		Questions:     queue.Questions,
+		Blockers:      queue.Blockers,
+		RawOutputPath: c.workspace.PlanOutputPath(queue.ID),
 	}, nil
 }
 
@@ -1337,9 +1363,11 @@ func generateQueueID(title, source string) string {
 func buildProjectPlanningPrompt(title, sourceContent, customInstructions string) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 
-	prompt := fmt.Sprintf(`You are an expert project manager and software architect. Your task is to analyze the provided content and create a structured task breakdown.
+	prompt := fmt.Sprintf(`You are an expert project manager and software architect.
 
-Current timestamp: %s
+CRITICAL: Your response MUST start with "## Tasks" and follow the EXACT format below.
+Do NOT include any preamble, explanation, or conversational text.
+Do NOT ask questions in prose - put them in the "## Questions" section.
 
 ## Project
 %s
@@ -1347,7 +1375,9 @@ Current timestamp: %s
 ## Source Content
 %s
 
-`, currentTime, title, sourceContent)
+Current timestamp: %s
+
+`, title, sourceContent, currentTime)
 
 	if customInstructions != "" {
 		prompt += fmt.Sprintf(`## Custom Instructions
@@ -1356,47 +1386,47 @@ Current timestamp: %s
 `, customInstructions)
 	}
 
-	prompt += `## Output Format
+	prompt += `## Required Output Format
 
-Create a structured task breakdown in the following format:
+Your response MUST begin with "## Tasks" and use EXACTLY this structure:
 
 ## Tasks
 
-For each task, use this format:
+### task-1: First Task Title
+- **Priority**: 1
+- **Status**: ready
+- **Labels**: backend, setup
+- **Description**: What needs to be done
 
-### task-N: Task Title
-- **Priority**: N (1 = highest)
-- **Status**: ready OR blocked
-- **Parent**: task-X (if this is a subtask)
-- **Labels**: comma, separated, labels
-- **Depends on**: task-X, task-Y (if blocked)
-- **Description**: Detailed description of what needs to be done
+### task-2: Second Task Title
+- **Priority**: 2
+- **Status**: blocked
+- **Depends on**: task-1
+- **Labels**: backend
+- **Description**: What needs to be done
+
+(continue for all tasks...)
 
 ## Questions
-List any questions that need to be resolved before implementation:
-1. Question one?
-2. Question two?
+1. Any clarifying question goes here
+2. Another question
 
 ## Blockers
-List any blockers that prevent progress:
-- Blocker description
+- Any external blockers go here
 
-## Guidelines
+## Rules
 
-1. Break down the work into atomic, implementable tasks
-2. Each task should be completable in 1-4 hours of work
-3. Use **Parent** vs **Depends on** appropriately:
-   - **Parent**: Hierarchical grouping (organizational structure). Use when a task is logically part of a larger task.
-   - **Depends on**: Execution ordering. Use when a task cannot start until another task completes.
-   - A task can have BOTH a parent AND dependencies (different concepts)
-4. Identify dependencies clearly - if task B needs task A, mark B as blocked
-5. Tasks without dependencies should be marked as "ready"
-6. Prioritize tasks: core functionality first, then enhancements
-7. Include labels for categorization (e.g., backend, frontend, testing, docs)
-8. If requirements are unclear, add specific questions
-9. If there are external blockers, list them
+1. ALWAYS output "## Tasks" first - no preamble or explanation
+2. Each task: "### task-N: Title" format (N starts at 1)
+3. Each task MUST have: Priority, Status, Labels, Description
+4. Status is ONLY "ready" or "blocked"
+5. Use "Depends on" for blocking dependencies
+6. Use "Parent" for hierarchical grouping (subtasks)
+7. Tasks should be 1-4 hours of work each
+8. Put questions in "## Questions" section, not as prose
+9. If no questions/blockers, omit those sections
 
-Do not include any other text or explanation. Only output the structured task breakdown.
+BEGIN YOUR RESPONSE WITH "## Tasks" NOW:
 `
 
 	return prompt

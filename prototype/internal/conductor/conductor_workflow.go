@@ -127,6 +127,54 @@ func (c *Conductor) Review(ctx context.Context) error {
 	return nil
 }
 
+// ImplementReview enters the implementation phase to fix issues from a review.
+// Unlike Implement(), this doesn't require specifications - it uses review feedback.
+func (c *Conductor) ImplementReview(ctx context.Context, reviewNumber int) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	// Verify the review exists
+	reviews, err := c.workspace.ListReviews(c.activeTask.ID)
+	if err != nil {
+		return fmt.Errorf("list reviews: %w", err)
+	}
+
+	found := false
+	for _, r := range reviews {
+		if r == reviewNumber {
+			found = true
+
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("review %d not found", reviewNumber)
+	}
+
+	// Verify the review is loadable before transitioning state
+	// (prevents stuck state if file is corrupted or unreadable)
+	if _, err := c.workspace.LoadReview(c.activeTask.ID, reviewNumber); err != nil {
+		return fmt.Errorf("load review %d: %w", reviewNumber, err)
+	}
+
+	// Dispatch implement event to enter the implementing state.
+	if err := c.machine.Dispatch(ctx, workflow.EventImplement); err != nil {
+		return fmt.Errorf("enter implementation: %w", err)
+	}
+
+	// Machine transitioned successfully — now persist state to match.
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		return fmt.Errorf("save active task: %w", err)
+	}
+
+	return nil
+}
+
 // ResumePaused resumes a task that was paused due to budget limits.
 func (c *Conductor) ResumePaused(ctx context.Context) error {
 	c.mu.Lock()
