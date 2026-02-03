@@ -386,6 +386,18 @@ func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSe
 		}
 	}
 
+	// Stack settings
+	if cfg.Stack == nil {
+		cfg.Stack = &storage.StackSettings{
+			AutoRebase:       "disabled",
+			BlockOnConflicts: true,
+		}
+	}
+	if v := r.FormValue("stack.auto_rebase"); v != "" {
+		cfg.Stack.AutoRebase = v
+	}
+	cfg.Stack.BlockOnConflicts = r.FormValue("stack.block_on_conflicts") == "true"
+
 	// Storage location settings (unified for all work files)
 	cfg.Storage.SaveInProject = r.FormValue("storage.save_in_project") == "true"
 	if v := r.FormValue("storage.project_dir"); v != "" {
