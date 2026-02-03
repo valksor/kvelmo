@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/paths"
 )
 
 func TestWorkspaceGetSpecifications(t *testing.T) {
@@ -104,9 +105,15 @@ func TestWorkspaceGetSpecifications(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			homeDir := t.TempDir()
 			ctx := context.Background()
 
-			ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+			// Set global home dir override so MCP tools find the same workspace
+			t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+			wsCfg := storage.NewDefaultWorkspaceConfig()
+			wsCfg.Storage.HomeDir = homeDir
+			ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 			if err != nil {
 				t.Fatalf("Failed to open workspace: %v", err)
 			}
@@ -287,9 +294,15 @@ func TestWorkspaceGetSessions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			homeDir := t.TempDir()
 			ctx := context.Background()
 
-			ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+			// Set global home dir override so MCP tools find the same workspace
+			t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+			wsCfg := storage.NewDefaultWorkspaceConfig()
+			wsCfg.Storage.HomeDir = homeDir
+			ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 			if err != nil {
 				t.Fatalf("Failed to open workspace: %v", err)
 			}
@@ -349,9 +362,15 @@ func TestWorkspaceGetSessions(t *testing.T) {
 
 func TestWorkspaceGetActiveTaskWithData(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	// Set global home dir override so MCP tools find the same workspace
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	if err != nil {
 		t.Fatalf("Failed to open workspace: %v", err)
 	}
@@ -397,9 +416,15 @@ func TestWorkspaceGetActiveTaskWithData(t *testing.T) {
 
 func TestWorkspaceListTasksWithData(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	// Set global home dir override so MCP tools find the same workspace
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	if err != nil {
 		t.Fatalf("Failed to open workspace: %v", err)
 	}

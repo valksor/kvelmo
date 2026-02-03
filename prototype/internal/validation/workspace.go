@@ -126,27 +126,27 @@ func validateWorkflowSettings(workflow storage.WorkflowSettings, configPath stri
 
 // validateStorageSettings validates storage-related configuration.
 func validateStorageSettings(storage storage.StorageSettings, configPath string, result *validate.Result) {
-	if storage.WorkDir == "" {
-		return // Empty is fine, will use default
+	if storage.ProjectDir == "" {
+		return // Empty is fine, will use default (.mehrhof/work)
 	}
 
 	// Check for absolute paths
-	if strings.HasPrefix(storage.WorkDir, "/") || strings.HasPrefix(storage.WorkDir, "\\") {
-		result.AddError(CodeInvalidPath, "Work directory must be relative to project root, not absolute", "storage.work_dir", configPath)
+	if strings.HasPrefix(storage.ProjectDir, "/") || strings.HasPrefix(storage.ProjectDir, "\\") {
+		result.AddError(CodeInvalidPath, "Project directory must be relative to project root, not absolute", "storage.project_dir", configPath)
 
 		return
 	}
 
 	// Check for home directory expansion
-	if strings.HasPrefix(storage.WorkDir, "~") {
-		result.AddError(CodeInvalidPath, "Work directory cannot use home directory (~) expansion", "storage.work_dir", configPath)
+	if strings.HasPrefix(storage.ProjectDir, "~") {
+		result.AddError(CodeInvalidPath, "Project directory cannot use home directory (~) expansion", "storage.project_dir", configPath)
 
 		return
 	}
 
 	// Check for path traversal attempts
-	if strings.Contains(storage.WorkDir, "..") {
-		result.AddError(CodeInvalidPath, "Work directory cannot contain '..' (would escape project root)", "storage.work_dir", configPath)
+	if strings.Contains(storage.ProjectDir, "..") {
+		result.AddError(CodeInvalidPath, "Project directory cannot contain '..' (would escape project root)", "storage.project_dir", configPath)
 
 		return
 	}
@@ -154,8 +154,8 @@ func validateStorageSettings(storage storage.StorageSettings, configPath string,
 	// Check for invalid characters (basic sanity check)
 	// Valid: alphanumeric, hyphen, underscore, dot, forward slash
 	validPathPattern := regexp.MustCompile(`^[a-zA-Z0-9._/-]+$`)
-	if !validPathPattern.MatchString(storage.WorkDir) {
-		result.AddError(CodeInvalidPath, "Work directory contains invalid characters", "storage.work_dir", configPath)
+	if !validPathPattern.MatchString(storage.ProjectDir) {
+		result.AddError(CodeInvalidPath, "Project directory contains invalid characters", "storage.project_dir", configPath)
 	}
 }
 

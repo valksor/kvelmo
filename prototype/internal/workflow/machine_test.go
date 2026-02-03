@@ -719,6 +719,7 @@ func TestAllSteps(t *testing.T) {
 	expectedSteps := []Step{
 		StepPlanning,
 		StepImplementing,
+		StepReviewImplementing,
 		StepReviewing,
 		StepCheckpointing,
 		StepSimplifying,
@@ -746,6 +747,7 @@ func TestIsValidStep(t *testing.T) {
 	}{
 		{"planning", "planning", true},
 		{"implementing", "implementing", true},
+		{"review_implementing", "review_implementing", true},
 		{"reviewing", "reviewing", true},
 		{"checkpointing", "checkpointing", true},
 		{"simplifying", "simplifying", true},

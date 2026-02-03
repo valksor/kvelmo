@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/paths"
 )
 
 func TestResolveWorkspaceRoot(t *testing.T) {
@@ -60,7 +61,9 @@ func TestWorkspaceGetActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	_, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	_, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	if err != nil {
 		t.Fatalf("Failed to open workspace: %v", err)
 	}
@@ -91,7 +94,9 @@ func TestWorkspaceListTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	_, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	_, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	if err != nil {
 		t.Fatalf("Failed to open workspace: %v", err)
 	}
@@ -119,9 +124,15 @@ func TestWorkspaceListTasks(t *testing.T) {
 
 func TestWorkspaceGetNotes(t *testing.T) {
 	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	// Set global home dir override so MCP tools find the same workspace
+	t.Cleanup(paths.SetHomeDirForTesting(homeDir))
+
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = homeDir
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	if err != nil {
 		t.Fatalf("Failed to open workspace: %v", err)
 	}

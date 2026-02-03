@@ -749,7 +749,7 @@ func TestValidateStorageSettings_ValidPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := validate.NewResult()
-			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
+			storageSettings := storage.StorageSettings{ProjectDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
 			if !result.Valid {
@@ -772,7 +772,7 @@ func TestValidateStorageSettings_AbsolutePaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := validate.NewResult()
-			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
+			storageSettings := storage.StorageSettings{ProjectDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
 			if result.Valid {
@@ -802,7 +802,7 @@ func TestValidateStorageSettings_HomeExpansion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := validate.NewResult()
-			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
+			storageSettings := storage.StorageSettings{ProjectDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
 			if result.Valid {
@@ -831,7 +831,7 @@ func TestValidateStorageSettings_PathTraversal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := validate.NewResult()
-			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
+			storageSettings := storage.StorageSettings{ProjectDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
 			if result.Valid {
@@ -871,7 +871,7 @@ func TestValidateStorageSettings_InvalidCharacters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := validate.NewResult()
-			storageSettings := storage.StorageSettings{WorkDir: tt.workDir}
+			storageSettings := storage.StorageSettings{ProjectDir: tt.workDir}
 			validateStorageSettings(storageSettings, "config.yaml", result)
 
 			if result.Valid {
@@ -899,17 +899,17 @@ func TestValidateWorkspaceConfig_WithStorageSettings(t *testing.T) {
 		},
 		{
 			name:      "custom valid path",
-			storage:   storage.StorageSettings{WorkDir: "custom/work"},
+			storage:   storage.StorageSettings{ProjectDir: "custom/work"},
 			wantValid: true,
 		},
 		{
 			name:      "invalid absolute path",
-			storage:   storage.StorageSettings{WorkDir: "/absolute"},
+			storage:   storage.StorageSettings{ProjectDir: "/absolute"},
 			wantValid: false,
 		},
 		{
 			name:      "invalid path traversal",
-			storage:   storage.StorageSettings{WorkDir: "../escape"},
+			storage:   storage.StorageSettings{ProjectDir: "../escape"},
 			wantValid: false,
 		},
 	}
