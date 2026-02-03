@@ -283,6 +283,6 @@ Detected via: `FindCircularPaths()`
 
 ## See Also
 
-- [CLI: links command](../cli/links.md) - CLI usage
-- [Web UI: Links](../web-ui/links.md) - Web UI usage
-- [Configuration](../configuration/index.md) - Links settings
+- [CLI: links command](/cli/links.md) - CLI usage
+- [Web UI: Links](/web-ui/links.md) - Web UI usage
+- [Configuration](/configuration/index.md) - Links settings

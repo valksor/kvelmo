@@ -360,6 +360,6 @@ Increase timeout or reduce number of agents in consensus.
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - Orchestration settings
-- [Agent Documentation](../agents/index.md) - Available agents
-- [Workflow Concepts](../concepts/workflow.md) - How orchestration fits in workflow
+- [Configuration Guide](/configuration/index.md) - Orchestration settings
+- [Agent Documentation](/agents/index.md) - Available agents
+- [Workflow Concepts](/concepts/workflow.md) - How orchestration fits in workflow

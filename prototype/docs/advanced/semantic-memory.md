@@ -300,6 +300,6 @@ memory:
 
 ## See Also
 
-- [CLI: memory](../cli/memory.md) - Memory commands reference
-- [Configuration Guide](../configuration/index.md) - Memory settings
+- [CLI: memory](/cli/memory.md) - Memory commands reference
+- [Configuration Guide](/configuration/index.md) - Memory settings
 - [Vector Databases](https://en.wikipedia.org/wiki/Vector_database) - General concepts

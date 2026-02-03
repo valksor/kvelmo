@@ -186,7 +186,7 @@ mehr implement
 mehr simplify
 ```
 
-See [simplify command](../cli/simplify.md) for details.
+See [simplify command](/cli/simplify.md) for details.
 
 ## Tips for Effective Iteration
 
@@ -269,4 +269,4 @@ Consider this when:
 
 - [Recovery & Undo](recovery.md) - Deep dive on undo/redo
 - [Your First Task](first-task.md) - Basic workflow
-- [note command](../cli/note.md) - Add notes to the task
+- [note command](/cli/note.md) - Add notes to the task

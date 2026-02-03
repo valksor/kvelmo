@@ -74,5 +74,5 @@ Queue storage is managed through the workspace. Queues are persisted in `.mehrho
 
 ## See Also
 
-- [Project Command](../cli/project.md) - Queue management commands
+- [Project Command](/cli/project.md) - Queue management commands
 - [Providers Overview](index.md) - All available providers

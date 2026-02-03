@@ -39,7 +39,7 @@ git:
   # Set to false to preserve stash for manual restoration
 ```
 
-See [`mehr start --stash`](../cli/start.md#start-with-stash-uncommitted-changes) for CLI usage.
+See [`mehr start --stash`](/cli/start.md#start-with-stash-uncommitted-changes) for CLI usage.
 
 ## Template Variables
 
@@ -52,5 +52,5 @@ See [`mehr start --stash`](../cli/start.md#start-with-stash-uncommitted-changes)
 
 ## See Also
 
-- [Checkpoints](../concepts/checkpoints.md) - How commits are created
+- [Checkpoints](/concepts/checkpoints.md) - How commits are created
 - [Configuration Overview](index.md) - All configuration options

@@ -474,6 +474,6 @@ Planned improvements:
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - ML settings
-- [Telemetry Storage](../reference/storage.md) - Where telemetry is stored
+- [Configuration Guide](/configuration/index.md) - ML settings
+- [Telemetry Storage](/reference/storage.md) - Where telemetry is stored
 - [Machine Learning Best Practices](https://mlbook.org/) - General ML concepts

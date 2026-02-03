@@ -296,5 +296,5 @@ mehr implement --verbose
 
 ## See Also
 
-- [mehr agents](../cli/agents.md) - CLI reference
-- [Configuration Guide](../configuration/index.md) - Full config options
+- [mehr agents](/cli/agents.md) - CLI reference
+- [Configuration Guide](/configuration/index.md) - Full config options

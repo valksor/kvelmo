@@ -254,6 +254,6 @@ The cache is in-memory and clears automatically on process exit. No manual clean
 
 ## See Also
 
-- [Agent Configuration](../agents/index.md)
-- [Configuration Guide](../configuration/index.md)
-- [Tasks - Worktrees](../concepts/tasks.md#parallel-tasks-with-worktrees)
+- [Agent Configuration](/agents/index.md)
+- [Configuration Guide](/configuration/index.md)
+- [Tasks - Worktrees](/concepts/tasks.md#parallel-tasks-with-worktrees)

@@ -64,7 +64,7 @@ mehr serve --port 9090
 2. Verify the token has the required permissions (repo access, issue read)
 3. Check `.mehrhof/config.yaml` for provider-specific settings
 
-See [Providers](../providers/index.md) for token setup per provider.
+See [Providers](/providers/index.md) for token setup per provider.
 
 ### Remote Access Not Working
 
@@ -78,7 +78,7 @@ mehr serve --host 0.0.0.0
 mehr serve --host 0.0.0.0 --auth
 ```
 
-See [Remote Access](../web-ui/remote-access.md) for full setup.
+See [Remote Access](/web-ui/remote-access.md) for full setup.
 
 ---
 

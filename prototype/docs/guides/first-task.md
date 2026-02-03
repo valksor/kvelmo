@@ -1,6 +1,6 @@
 # Getting Started with the CLI
 
-Learn Mehrhof by building a complete feature from start to finish. This guide assumes you've completed the [Quickstart](../quickstart.md) and have Mehrhof installed.
+Learn Mehrhof by building a complete feature from start to finish. This guide assumes you've completed the [Quickstart](/quickstart.md) and have Mehrhof installed.
 
 ## What We'll Build
 
@@ -12,7 +12,7 @@ A simple HTTP health check endpoint that returns:
 
 ## Prerequisites
 
-- Mehrhof installed ([Quickstart](../quickstart.md) if not yet installed)
+- Mehrhof installed ([Quickstart](/quickstart.md) if not yet installed)
 - An agent CLI configured (Claude recommended: `claude --version`)
 - A project to work in (Go, Python, JavaScript, etc.)
 
@@ -265,4 +265,4 @@ Task completed!
 
 - [Iterative Workflow](iterative-workflow.md) - Refine with notes
 - [Recovery & Undo](recovery.md) - Master undo/redo
-- [CLI Reference](../cli/index.md) - All commands
+- [CLI Reference](/cli/index.md) - All commands

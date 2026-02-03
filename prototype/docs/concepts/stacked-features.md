@@ -350,6 +350,6 @@ If PR number doesn't match:
 
 ## See Also
 
-- [CLI: stack](../cli/stack.md) - CLI commands
-- [Web UI: Stack](../web-ui/stack.md) - Web UI usage
-- [Configuration](../configuration/index.md) - Stack settings
+- [CLI: stack](/cli/stack.md) - CLI commands
+- [Web UI: Stack](/web-ui/stack.md) - Web UI usage
+- [Configuration](/configuration/index.md) - Stack settings

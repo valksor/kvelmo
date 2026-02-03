@@ -200,7 +200,7 @@ Each task creates its own branch, implements the feature, runs quality checks, a
 
 ## See Also
 
-- [project command](../cli/project.md) — Full project command reference
-- [quick command](../cli/quick.md) — Quick task creation
-- [optimize command](../cli/optimize.md) — AI task refinement
-- [Directory Provider](../providers/directory.md) — Using directory-based task sources
+- [project command](/cli/project.md) — Full project command reference
+- [quick command](/cli/quick.md) — Quick task creation
+- [optimize command](/cli/optimize.md) — AI task refinement
+- [Directory Provider](/providers/directory.md) — Using directory-based task sources

@@ -204,12 +204,12 @@ Users can override team settings locally:
 - Use SSH tunnels for secure remote access
 - Restrict who can run certain commands
 
-See [Authentication](../web-ui/authentication.md) for Web UI access control.
+See [Authentication](/web-ui/authentication.md) for Web UI access control.
 
 ---
 
 ## Next Steps
 
-- [Configuration Reference](../configuration/index.md) — All configuration options
-- [Providers](../providers/index.md) — Connect to issue trackers
-- [Web UI: Settings](../web-ui/settings.md) — Configure via browser
+- [Configuration Reference](/configuration/index.md) — All configuration options
+- [Providers](/providers/index.md) — Connect to issue trackers
+- [Web UI: Settings](/web-ui/settings.md) — Configure via browser

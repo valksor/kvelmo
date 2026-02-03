@@ -233,7 +233,7 @@ For feature requests, please:
 
 - **GitHub Issues**: For bugs and feature requests
 - **GitHub Discussions**: For questions and general discussion
-- **Documentation**: See the [docs/](../) directory for detailed guides
+- **Documentation**: See the [docs/](/) directory for detailed guides
 
 ## Documentation
 
@@ -254,7 +254,7 @@ EOF
 **Reference in markdown:**
 
 ```markdown
-![Diagram Title](../_media/img/diagram.png)
+![Diagram Title](/_media/img/diagram.png)
 ```
 
 **Why PNG instead of SVG?**

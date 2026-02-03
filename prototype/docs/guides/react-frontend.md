@@ -225,7 +225,7 @@ mehr stack --graph
 
 ## See Also
 
-- [stack command](../cli/stack.md) — Full stack management reference
-- [auto command](../cli/auto.md) — Automated workflow details
-- [simplify command](../cli/simplify.md) — Standalone and in-workflow simplification
-- [Stacked Features](../concepts/stacked-features.md) — Concept explanation
+- [stack command](/cli/stack.md) — Full stack management reference
+- [auto command](/cli/auto.md) — Automated workflow details
+- [simplify command](/cli/simplify.md) — Standalone and in-workflow simplification
+- [Stacked Features](/concepts/stacked-features.md) — Concept explanation
