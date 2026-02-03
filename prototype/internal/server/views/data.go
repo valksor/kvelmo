@@ -62,6 +62,7 @@ type DashboardData struct {
 	ActiveWork     *ActiveWorkData
 	Actions        []ActionData
 	Specifications *SpecificationsData
+	Reviews        *ReviewsData
 	Question       *QuestionData
 	Costs          *CostsData
 	RecentTasks    []RecentTaskData
@@ -98,6 +99,10 @@ type ActiveWorkData struct {
 	SandboxActive bool // Only for tasks
 	HasQuestion   bool
 	HasSpecs      bool
+
+	// Optional modifiers (detected from session history)
+	IsOptimized  bool
+	IsSimplified bool
 
 	// Hierarchical context
 	Hierarchy *HierarchyData `json:"hierarchy,omitempty"`
@@ -175,6 +180,26 @@ type SpecItemData struct {
 	StatusColor string
 	IsCompleted bool
 	IsActive    bool
+}
+
+// ReviewsData contains review list information for the dashboard.
+type ReviewsData struct {
+	Items []ReviewItem
+	Total int
+}
+
+// ReviewItem represents a single code review.
+type ReviewItem struct {
+	Number     int
+	Status     string // "PASSED", "ISSUES", "PENDING"
+	Summary    string
+	CreatedAt  string
+	IssueCount int
+
+	// Pre-computed display
+	StatusIcon  string
+	StatusClass string // Tailwind badge class
+	HasIssues   bool
 }
 
 // QuestionData contains pending agent question information.
@@ -761,6 +786,53 @@ type LinkData struct {
 type HierarchyData struct {
 	Parent   *ParentTaskData    `json:"parent,omitempty"`
 	Siblings []*SiblingTaskData `json:"siblings,omitempty"`
+}
+
+// LibraryData contains all data for the library page.
+type LibraryData struct {
+	PageData
+
+	// Collections (populated via HTMX)
+	Collections []LibraryCollectionData
+	Query       string
+
+	// Stats
+	TotalCollections int
+	TotalPages       int
+	TotalSize        string // Pre-formatted size
+
+	// Whether library system is available
+	Enabled bool
+}
+
+// LibraryCollectionData represents a documentation collection.
+type LibraryCollectionData struct {
+	ID          string
+	Name        string
+	Source      string
+	SourceType  string // "url", "file", "git"
+	IncludeMode string // "auto", "explicit", "always"
+	PageCount   int
+	TotalSize   string // Pre-formatted size
+	Location    string // "project" or "shared"
+	PulledAt    string // Pre-formatted time ago
+	Tags        []string
+	Paths       []string
+
+	// Pre-computed display
+	SourceIcon  string
+	ModeIcon    string
+	ModeBadge   string
+	ModeColor   string
+	LocationTag string
+}
+
+// LibraryPageData represents a page within a collection.
+type LibraryPageData struct {
+	Path    string
+	Title   string
+	Size    string // Pre-formatted size
+	Snippet string // Preview snippet
 }
 
 // ParentTaskData represents the parent task.

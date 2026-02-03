@@ -128,6 +128,14 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/memory/index", s.handleMemoryIndex)
 		mux.HandleFunc("GET /api/v1/memory/stats", s.handleMemoryStats)
 
+		// Library endpoints
+		mux.HandleFunc("GET /api/v1/library", s.handleLibraryList)
+		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
+		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
+		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
+		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
+		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
+
 		// Links endpoints
 		mux.HandleFunc("GET /api/v1/links", s.handleListLinks)
 		mux.HandleFunc("GET /api/v1/links/", s.handleGetEntityLinks)
@@ -197,6 +205,9 @@ func (s *Server) setupRouter() http.Handler {
 
 			// Memory UI
 			mux.HandleFunc("GET /memory", s.handleMemoryUI)
+
+			// Library UI
+			mux.HandleFunc("GET /library", s.handleLibraryUI)
 
 			// Links UI
 			mux.HandleFunc("GET /links", s.handleLinksUI)
@@ -282,6 +293,19 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
 		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
 		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
+
+		// Library endpoints (shared collections available without project)
+		mux.HandleFunc("GET /api/v1/library", s.handleLibraryList)
+		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
+		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
+		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
+		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
+		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
+
+		// Library UI (show shared collections)
+		if !s.config.APIOnly {
+			mux.HandleFunc("GET /library", s.handleLibraryUI)
+		}
 	}
 
 	// Switch project route (available when started in global mode)
@@ -311,6 +335,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
 		mux.HandleFunc("GET /ui/partials/actions", s.handleActionsPartial)
 		mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
+		mux.HandleFunc("GET /ui/partials/reviews", s.handleReviewsPartial)
 		mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
 		mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
 		mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)

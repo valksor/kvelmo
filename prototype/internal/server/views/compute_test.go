@@ -109,7 +109,9 @@ func TestComputeStats_WithTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 	require.NoError(t, ws.EnsureInitialized())
 
@@ -157,7 +159,9 @@ func TestComputeStats_WithMonthlyBudget(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 	require.NoError(t, ws.EnsureInitialized())
 
@@ -210,7 +214,9 @@ func TestComputeActiveWork_NoActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 
 	c := helper_test.NewTestConductor(t,
@@ -350,7 +356,9 @@ func TestComputeRecentTasks_WithTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 	require.NoError(t, ws.EnsureInitialized())
 
@@ -398,7 +406,9 @@ func TestComputeRecentTasks_WithLimit(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 	require.NoError(t, ws.EnsureInitialized())
 
@@ -425,7 +435,9 @@ func TestComputeRecentTasks_SortsByUpdateTime(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 	require.NoError(t, ws.EnsureInitialized())
 
@@ -513,7 +525,9 @@ func TestComputeQuestion_NoPendingQuestion(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 
 	result := ComputeQuestion(ws, "task-1")
@@ -531,7 +545,9 @@ func TestComputeCosts_NoWork(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 
 	result := ComputeCosts(ws, "task-1")
@@ -560,7 +576,9 @@ func TestComputeDashboard_ProjectMode(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 
 	c := helper_test.NewTestConductor(t,
@@ -595,7 +613,9 @@ func TestComputeGuide_NoActiveTask(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	ws, err := storage.OpenWorkspace(ctx, tmpDir, nil)
+	wsCfg := storage.NewDefaultWorkspaceConfig()
+	wsCfg.Storage.HomeDir = t.TempDir()
+	ws, err := storage.OpenWorkspace(ctx, tmpDir, wsCfg)
 	require.NoError(t, err)
 
 	c := helper_test.NewTestConductor(t,

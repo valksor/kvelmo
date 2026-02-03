@@ -2,9 +2,11 @@ package views
 
 import (
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/security"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -43,6 +45,7 @@ func ComputeDashboard(c *conductor.Conductor, ws *storage.Workspace, pageData Pa
 
 	if data.ActiveWork != nil {
 		data.Specifications = ComputeSpecifications(ws, data.ActiveWork.ID)
+		data.Reviews = ComputeReviews(ws, data.ActiveWork.ID)
 		data.Question = ComputeQuestion(ws, data.ActiveWork.ID)
 		data.Costs = ComputeCosts(ws, data.ActiveWork.ID)
 	}
@@ -66,20 +69,54 @@ func ComputeActiveWork(c *conductor.Conductor, ws *storage.Workspace) *ActiveWor
 
 	work := c.GetTaskWork()
 
-	display := GetStateDisplay(activeTask.State)
+	// Compute progress phase for context-aware state display
+	hasSpecs := false
+	hasImplementedFiles := false
+	hasReviews := false
+	var isOptimized, isSimplified bool
+
+	if ws != nil {
+		// Check for specifications
+		if specs, err := ws.ListSpecifications(activeTask.ID); err == nil && len(specs) > 0 {
+			hasSpecs = true
+			// Check for implemented files in any specification
+			for _, specNum := range specs {
+				if spec, err := ws.ParseSpecification(activeTask.ID, specNum); err == nil {
+					if len(spec.ImplementedFiles) > 0 {
+						hasImplementedFiles = true
+
+						break
+					}
+				}
+			}
+		}
+		// Check for reviews
+		if reviews, err := ws.ListReviews(activeTask.ID); err == nil && len(reviews) > 0 {
+			hasReviews = true
+		}
+		// Detect optional modifiers from session history
+		isOptimized, isSimplified = detectOptionalModifiersFromSessions(ws, activeTask.ID)
+	}
+
+	phase := display.DetectProgressPhase(hasSpecs, hasImplementedFiles, hasReviews)
+	stateDisplay := GetStateDisplayWithProgressAndModifiers(activeTask.State, phase, isOptimized, isSimplified)
+
 	active := &ActiveWorkData{
-		Type:       WorkTypeTask,
-		ID:         activeTask.ID,
-		Ref:        activeTask.Ref,
-		State:      activeTask.State,
-		Branch:     activeTask.Branch,
-		Worktree:   activeTask.WorktreePath,
-		StartedAt:  activeTask.Started,
-		Started:    FormatTimeAgo(activeTask.Started),
-		StateIcon:  display.Icon,
-		StateBadge: display.Badge,
-		StateColor: display.Color,
-		BarColor:   display.BarColor,
+		Type:         WorkTypeTask,
+		ID:           activeTask.ID,
+		Ref:          activeTask.Ref,
+		State:        activeTask.State,
+		Branch:       activeTask.Branch,
+		Worktree:     activeTask.WorktreePath,
+		StartedAt:    activeTask.Started,
+		Started:      FormatTimeAgo(activeTask.Started),
+		StateIcon:    stateDisplay.Icon,
+		StateBadge:   stateDisplay.Badge,
+		StateColor:   stateDisplay.Color,
+		BarColor:     stateDisplay.BarColor,
+		HasSpecs:     hasSpecs,
+		IsOptimized:  isOptimized,
+		IsSimplified: isSimplified,
 	}
 
 	if work != nil {
@@ -91,13 +128,6 @@ func ComputeActiveWork(c *conductor.Conductor, ws *storage.Workspace) *ActiveWor
 	// Check for pending question
 	if ws != nil && ws.HasPendingQuestion(activeTask.ID) {
 		active.HasQuestion = true
-	}
-
-	// Check for specs
-	if ws != nil {
-		if specs, err := ws.ListSpecifications(activeTask.ID); err == nil && len(specs) > 0 {
-			active.HasSpecs = true
-		}
 	}
 
 	// Compute hierarchical context
@@ -361,6 +391,107 @@ func ComputeStats(ws *storage.Workspace) *StatsData {
 	}
 
 	return stats
+}
+
+// ComputeReviews builds the reviews data for the dashboard.
+func ComputeReviews(ws *storage.Workspace, taskID string) *ReviewsData {
+	if ws == nil {
+		return nil
+	}
+
+	reviewList, err := ws.ListReviews(taskID)
+	if err != nil || len(reviewList) == 0 {
+		return nil
+	}
+
+	reviews := &ReviewsData{
+		Items: make([]ReviewItem, 0, len(reviewList)),
+		Total: len(reviewList),
+	}
+
+	for _, num := range reviewList {
+		content, err := ws.LoadReview(taskID, num)
+		if err != nil {
+			continue
+		}
+
+		item := parseReviewContent(num, content)
+		reviews.Items = append(reviews.Items, item)
+	}
+
+	return reviews
+}
+
+// parseReviewContent extracts status and summary from review content.
+func parseReviewContent(number int, content string) ReviewItem {
+	item := ReviewItem{
+		Number: number,
+		Status: "PENDING",
+	}
+
+	contentLower := strings.ToLower(content)
+
+	// Count issues by looking for common patterns
+	issueCount := 0
+	issuePatterns := []string{
+		"- [critical]", "- [high]", "- [medium]", "- [low]",
+		"**critical**", "**high**", "**medium**", "**low**",
+		"[critical]", "[high]", "[medium]", "[low]",
+	}
+	for _, pattern := range issuePatterns {
+		issueCount += strings.Count(contentLower, pattern)
+	}
+
+	// Determine status based on content
+	if strings.Contains(contentLower, "no issues") ||
+		strings.Contains(contentLower, "approved") ||
+		strings.Contains(contentLower, "lgtm") ||
+		strings.Contains(contentLower, "looks good") {
+		item.Status = "PASSED"
+	} else if issueCount > 0 ||
+		strings.Contains(contentLower, "issue") ||
+		strings.Contains(contentLower, "problem") ||
+		strings.Contains(contentLower, "error") ||
+		strings.Contains(contentLower, "bug") {
+		item.Status = "ISSUES"
+		item.HasIssues = true
+	}
+
+	item.IssueCount = issueCount
+
+	// Extract summary (first non-empty line or ## Summary section)
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Skip markdown heading prefixes
+		if strings.HasPrefix(strings.ToLower(line), "## summary") {
+			continue
+		}
+		item.Summary = line
+		if len(item.Summary) > 200 {
+			item.Summary = item.Summary[:197] + "..."
+		}
+
+		break
+	}
+
+	// Set display properties
+	switch item.Status {
+	case "PASSED":
+		item.StatusIcon = "✅"
+		item.StatusClass = "bg-success/20 text-success"
+	case "ISSUES":
+		item.StatusIcon = "⚠️"
+		item.StatusClass = "bg-warning/20 text-warning"
+	default:
+		item.StatusIcon = "⏳"
+		item.StatusClass = "bg-base-300 text-base-content/60"
+	}
+
+	return item
 }
 
 // ComputeSpecifications builds the specifications data for a task.
@@ -788,4 +919,26 @@ func ComputeHierarchyContext(c *conductor.Conductor, ws *storage.Workspace, task
 	}
 
 	return hierarchy
+}
+
+// detectOptionalModifiersFromSessions scans session history to detect optional workflow phases.
+func detectOptionalModifiersFromSessions(ws *storage.Workspace, taskID string) (bool, bool) {
+	sessions, err := ws.ListSessions(taskID)
+	if err != nil {
+		return false, false
+	}
+
+	var hasOptimized, hasSimplified bool
+
+	for _, session := range sessions {
+		sessionType := strings.ToLower(session.Metadata.Type)
+		if strings.Contains(sessionType, "optimiz") {
+			hasOptimized = true
+		}
+		if strings.Contains(sessionType, "simplif") {
+			hasSimplified = true
+		}
+	}
+
+	return hasOptimized, hasSimplified
 }

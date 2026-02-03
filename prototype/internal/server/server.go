@@ -13,6 +13,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/automation"
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/library"
 	"github.com/valksor/go-mehrhof/internal/registration"
 	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
@@ -81,6 +82,9 @@ type Server struct {
 	// Automation for webhook processing
 	automation       *automation.Automation
 	automationConfig *storage.AutomationSettings
+
+	// Shared-only library for global mode (when no project selected)
+	sharedLibrary *library.Manager
 }
 
 // New creates a new server with the given configuration.
@@ -105,6 +109,17 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("load templates: %w", err)
 	}
 	s.renderer = renderer
+
+	// Initialize shared-only library for global mode (allows accessing shared collections
+	// even when no project is selected and conductor is nil)
+	if cfg.Mode == ModeGlobal {
+		sharedLib, err := library.NewManager(context.Background(), "")
+		if err != nil {
+			slog.Warn("failed to initialize shared library", "error", err)
+		} else {
+			s.sharedLibrary = sharedLib
+		}
+	}
 
 	// Create router
 	s.router = s.setupRouter()

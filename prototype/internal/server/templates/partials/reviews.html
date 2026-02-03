@@ -1,0 +1,77 @@
+{{/* Reviews partial - displays the list of code reviews */}}
+{{define "reviews"}}
+<div class="card p-6" id="reviews-section">
+    <div class="flex items-center justify-between pb-4 border-b border-base-200">
+        <h3 class="text-xl font-bold text-base-content">Reviews</h3>
+        {{if .}}
+        <span class="text-sm text-base-content/60">
+            {{.Total}} review(s)
+        </span>
+        {{end}}
+    </div>
+
+    {{if .}}
+    {{/* Review list */}}
+    {{if .Items}}
+    <div class="space-y-4 mt-4">
+        {{range .Items}}
+        <div class="p-4 rounded-xl bg-base-100 border border-base-200">
+            {{/* Header */}}
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">{{.StatusIcon}}</span>
+                    <h4 class="font-semibold text-base-content">Review #{{.Number}}</h4>
+                </div>
+                <span class="px-2 py-1 text-xs font-medium rounded-full {{.StatusClass}}">
+                    {{.Status}}
+                </span>
+            </div>
+
+            {{/* Summary */}}
+            {{if .Summary}}
+            <div class="text-sm text-base-content/60 whitespace-pre-wrap mb-2">
+                {{.Summary}}
+            </div>
+            {{end}}
+
+            {{/* Issue count */}}
+            {{if .HasIssues}}
+            <div class="text-xs text-warning mb-2">
+                {{.IssueCount}} issue(s) found
+            </div>
+            {{end}}
+
+            {{/* Actions */}}
+            <div class="flex gap-2 mt-3 pt-3 border-t border-base-200">
+                <button
+                    hx-post="/api/v1/interactive/command"
+                    hx-vals='{"command":"review","args":["{{.Number}}"]}'
+                    hx-target="#interactive-output"
+                    hx-swap="beforeend"
+                    class="btn btn-xs btn-secondary">
+                    View
+                </button>
+                {{if .HasIssues}}
+                <button
+                    hx-post="/api/v1/interactive/command"
+                    hx-vals='{"command":"implement","args":["review","{{.Number}}"]}'
+                    hx-target="#interactive-output"
+                    hx-swap="beforeend"
+                    class="btn btn-xs btn-primary">
+                    Implement Fixes
+                </button>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="text-base-content/60 text-center py-8">No reviews yet</p>
+    {{end}}
+    {{else}}
+    <p class="mt-4 text-base-content/60 text-center py-8">
+        No reviews yet. Run <code class="px-2 py-1 bg-base-200 rounded">review</code> after implementation.
+    </p>
+    {{end}}
+</div>
+{{end}}

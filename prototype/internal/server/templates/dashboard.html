@@ -140,6 +140,13 @@
 </div>
 {{end}}
 
+<!-- Reviews -->
+{{if .Reviews}}
+<div id="reviews" hx-get="/ui/partials/reviews" hx-trigger="every 30s" hx-swap="outerHTML">
+    {{template "reviews" .Reviews}}
+</div>
+{{end}}
+
 <!-- Costs -->
 {{if .Costs}}
 <div id="costs" hx-get="/ui/partials/costs" hx-trigger="sse:{{eventCostsUpdated}}, every 60s" hx-swap="outerHTML">

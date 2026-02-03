@@ -2,6 +2,8 @@
 // for the web UI, following the principle "templates render, handlers decide."
 package views
 
+import "github.com/valksor/go-mehrhof/internal/display"
+
 // Workflow states - canonical state names used throughout the UI.
 const (
 	StateIdle         = "idle"
@@ -128,6 +130,41 @@ func GetStateDisplay(state string) StateDisplayInfo {
 		Color:    "text-base-content/60",
 		BarColor: "bg-base-300",
 	}
+}
+
+// GetStateDisplayWithProgress returns display info for idle state with progress awareness.
+// For idle state, shows context-aware badge (Started/Planned/Implemented/Reviewed).
+// For other states, returns the standard display.
+func GetStateDisplayWithProgress(state string, phase display.ProgressPhase) StateDisplayInfo {
+	if state == StateIdle {
+		badge := display.FormatIdleStateWithProgress(phase)
+
+		return StateDisplayInfo{
+			Icon:     "○",
+			Badge:    badge,
+			Color:    "text-base-content/60",
+			BarColor: "bg-base-300",
+		}
+	}
+
+	return GetStateDisplay(state)
+}
+
+// GetStateDisplayWithProgressAndModifiers returns display info with progress and optional modifiers.
+// For idle state, shows context-aware badge with modifiers (e.g., "Implemented • Simplified").
+// For other states, returns the standard display.
+func GetStateDisplayWithProgressAndModifiers(state string, phase display.ProgressPhase, optimized, simplified bool) StateDisplayInfo {
+	info := GetStateDisplayWithProgress(state, phase)
+
+	// Add modifier suffixes to badge
+	if optimized {
+		info.Badge += " • Optimized"
+	}
+	if simplified {
+		info.Badge += " • Simplified"
+	}
+
+	return info
 }
 
 // SpecStatus constants for specification states.
