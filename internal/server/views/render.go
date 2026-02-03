@@ -45,6 +45,7 @@ func defaultFuncMap() template.FuncMap {
 		// Formatting
 		"formatCost":     FormatCost,
 		"formatNumber":   FormatNumber,
+		"formatBytes":    FormatBytes,
 		"formatPercent":  FormatPercent,
 		"formatPct":      FormatPercent, // Alias for backward compatibility
 		"timeAgo":        FormatTimeAgo,
@@ -109,6 +110,7 @@ func (r *Renderer) loadTemplates() error {
 		"stack",
 		"scan",
 		"automation",
+		"library",
 	}
 
 	for _, page := range pages {
@@ -139,6 +141,7 @@ func (r *Renderer) loadTemplates() error {
 		"actions",
 		"specification",
 		"specifications",
+		"reviews",
 		"question",
 		"costs",
 		"stats",
@@ -148,6 +151,8 @@ func (r *Renderer) loadTemplates() error {
 		"modal",
 		"memory_results",
 		"memory_stats",
+		"library_collections",
+		"library_detail",
 	}
 
 	for _, name := range partials {
@@ -169,6 +174,7 @@ func (r *Renderer) loadTemplates() error {
 		"no_stats",
 		"no_project",
 		"no_recent_tasks",
+		"no_library",
 	}
 
 	for _, name := range emptyStates {
@@ -290,6 +296,11 @@ func (r *Renderer) RenderFind(w io.Writer, data interface{}) error {
 // RenderStack renders the stack management page.
 func (r *Renderer) RenderStack(w io.Writer, data StackData) error {
 	return r.Render(w, "stack", data)
+}
+
+// RenderLibrary renders the library documentation page.
+func (r *Renderer) RenderLibrary(w io.Writer, data LibraryData) error {
+	return r.Render(w, "library", data)
 }
 
 // TemplateNotFoundError is returned when a template is not found.

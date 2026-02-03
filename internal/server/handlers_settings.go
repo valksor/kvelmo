@@ -386,17 +386,18 @@ func updateConfigFromForm(cfg *storage.WorkspaceConfig, r *http.Request, allowSe
 		}
 	}
 
-	// Specification storage settings
-	cfg.Specification.SaveInProject = r.FormValue("specification.save_in_project") == "true"
-	if v := r.FormValue("specification.project_dir"); v != "" {
-		cfg.Specification.ProjectDir = v
+	// Storage location settings (unified for all work files)
+	cfg.Storage.SaveInProject = r.FormValue("storage.save_in_project") == "true"
+	if v := r.FormValue("storage.project_dir"); v != "" {
+		cfg.Storage.ProjectDir = v
 	}
+
+	// Specification filename pattern
 	if v := r.FormValue("specification.filename_pattern"); v != "" {
 		cfg.Specification.FilenamePattern = v
 	}
 
-	// Review storage settings
-	cfg.Review.SaveInProject = r.FormValue("review.save_in_project") == "true"
+	// Review filename pattern
 	if v := r.FormValue("review.filename_pattern"); v != "" {
 		cfg.Review.FilenamePattern = v
 	}

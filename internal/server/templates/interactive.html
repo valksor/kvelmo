@@ -63,7 +63,7 @@
                     </div>
                 </form>
                 <div class="px-4 pb-3 text-xs text-base-content/60">
-                    Tip: Type commands directly (finish, abandon, plan, implement, review, note, find, simplify, label, cost, budget, list, spec, help)
+                    Tip: Type commands or chat naturally (start, plan, implement, review, continue, finish, question, answer, find, memory, help)
                 </div>
             </div>
             <script>
@@ -183,6 +183,7 @@
                         <span class="font-medium text-base-content/80">Chat:</span>
                         <div class="mt-1 ml-2">
                             <div><code class="text-primary">chat &lt;msg&gt;</code> - Chat with agent</div>
+                            <div><code class="text-primary">question &lt;msg&gt;</code> - Ask agent</div>
                             <div><code class="text-primary">answer &lt;resp&gt;</code> - Answer question</div>
                             <div><code class="text-primary">note &lt;msg&gt;</code> - Add note</div>
                         </div>
@@ -193,7 +194,9 @@
                             <div><code class="text-primary">start &lt;ref&gt;</code> - Start task</div>
                             <div><code class="text-primary">plan</code> - Enter planning</div>
                             <div><code class="text-primary">implement</code> - Execute specs</div>
+                            <div><code class="text-primary">implement review &lt;n&gt;</code> - Fix review issues</div>
                             <div><code class="text-primary">review</code> - Review code</div>
+                            <div><code class="text-primary">review &lt;n&gt;</code> - View review content</div>
                             <div><code class="text-primary">continue</code> - Resume</div>
                             <div><code class="text-primary">finish</code> - Complete task</div>
                             <div><code class="text-primary">abandon</code> - Discard task</div>

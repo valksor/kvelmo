@@ -43,6 +43,24 @@ func FormatNumber(n int) string {
 	return fmt.Sprintf("%.1fB", float64(n)/1_000_000_000)
 }
 
+// FormatBytes formats a byte count with KB/MB/GB suffixes for readability.
+func FormatBytes(bytes int64) string {
+	if bytes < 0 {
+		return "-" + FormatBytes(-bytes)
+	}
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(bytes)/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
+	}
+
+	return fmt.Sprintf("%.1f GB", float64(bytes)/(1024*1024*1024))
+}
+
 // FormatPercent formats a percentage value.
 func FormatPercent(pct float64) string {
 	if pct <= 0 {

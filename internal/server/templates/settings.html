@@ -501,27 +501,35 @@
                 <div id="section-storage" class="settings-section hidden">
                     <div class="card mb-6">
                         <div class="px-6 py-4 border-b border-base-300">
-                            <h3 class="text-lg font-bold text-base-content">Specification Storage</h3>
-                            <p class="text-sm text-base-content/60 mt-1">Configure where specifications are saved</p>
+                            <h3 class="text-lg font-bold text-base-content">Work Storage Location</h3>
+                            <p class="text-sm text-base-content/60 mt-1">Configure where all work files (specs, reviews) are saved</p>
                         </div>
                         <div class="p-6 space-y-6">
                             <div class="flex items-start gap-3">
-                                <input type="checkbox" name="specification.save_in_project" value="true" id="spec-save-in-project"
-                                       {{if .Config.Specification.SaveInProject}}checked{{end}}
+                                <input type="checkbox" name="storage.save_in_project" value="true" id="storage-save-in-project"
+                                       {{if .Config.Storage.SaveInProject}}checked{{end}}
                                        class="mt-1 h-5 w-5 rounded checkbox checkbox-primary">
                                 <div>
-                                    <label for="spec-save-in-project" class="font-semibold text-base-content cursor-pointer">Save in project</label>
-                                    <p class="text-sm text-base-content/60 mt-1">Also save specifications to project directory for version control</p>
+                                    <label for="storage-save-in-project" class="font-semibold text-base-content cursor-pointer">Save in project</label>
+                                    <p class="text-sm text-base-content/60 mt-1">Save work files to project directory instead of global storage (~/.valksor/mehrhof/)</p>
                                 </div>
                             </div>
                             <div>
-                                <label for="spec-project-dir" class="block text-sm font-semibold text-base-content/80 mb-2">Project Directory</label>
-                                <input type="text" name="specification.project_dir" id="spec-project-dir"
-                                       value="{{.Config.Specification.ProjectDir}}"
-                                       placeholder="tickets"
+                                <label for="storage-project-dir" class="block text-sm font-semibold text-base-content/80 mb-2">Project Directory</label>
+                                <input type="text" name="storage.project_dir" id="storage-project-dir"
+                                       value="{{.Config.Storage.ProjectDir}}"
+                                       placeholder=".mehrhof/work"
                                        class="input text-sm">
-                                <p class="text-xs text-base-content/40 mt-2">Directory name in project root (e.g., "tickets" creates tickets/&lt;task-id&gt;/)</p>
+                                <p class="text-xs text-base-content/40 mt-2">Directory for work files (e.g., "tickets" → tickets/&lt;task-id&gt;/, empty → .mehrhof/work/&lt;task-id&gt;/)</p>
                             </div>
+                        </div>
+                    </div>
+                    <div class="card mb-6">
+                        <div class="px-6 py-4 border-b border-base-300">
+                            <h3 class="text-lg font-bold text-base-content">Specification Filenames</h3>
+                            <p class="text-sm text-base-content/60 mt-1">Customize specification file naming</p>
+                        </div>
+                        <div class="p-6">
                             <div>
                                 <label for="spec-filename-pattern" class="block text-sm font-semibold text-base-content/80 mb-2">Filename Pattern</label>
                                 <input type="text" name="specification.filename_pattern" id="spec-filename-pattern"
@@ -534,19 +542,10 @@
                     </div>
                     <div class="card">
                         <div class="px-6 py-4 border-b border-base-300">
-                            <h3 class="text-lg font-bold text-base-content">Review Storage</h3>
-                            <p class="text-sm text-base-content/60 mt-1">Configure where code reviews are saved</p>
+                            <h3 class="text-lg font-bold text-base-content">Review Filenames</h3>
+                            <p class="text-sm text-base-content/60 mt-1">Customize review file naming</p>
                         </div>
-                        <div class="p-6 space-y-6">
-                            <div class="flex items-start gap-3">
-                                <input type="checkbox" name="review.save_in_project" value="true" id="review-save-in-project"
-                                       {{if .Config.Review.SaveInProject}}checked{{end}}
-                                       class="mt-1 h-5 w-5 rounded checkbox checkbox-primary">
-                                <div>
-                                    <label for="review-save-in-project" class="font-semibold text-base-content cursor-pointer">Save in project</label>
-                                    <p class="text-sm text-base-content/60 mt-1">Also save reviews alongside specifications in project directory</p>
-                                </div>
-                            </div>
+                        <div class="p-6">
                             <div>
                                 <label for="review-filename-pattern" class="block text-sm font-semibold text-base-content/80 mb-2">Filename Pattern</label>
                                 <input type="text" name="review.filename_pattern" id="review-filename-pattern"

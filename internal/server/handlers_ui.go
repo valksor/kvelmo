@@ -102,6 +102,35 @@ func (s *Server) handleSpecificationPartial(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// handleReviewsPartial renders the reviews partial.
+func (s *Server) handleReviewsPartial(w http.ResponseWriter, r *http.Request) {
+	if s.renderer == nil || s.config.Conductor == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	activeTask := s.config.Conductor.GetActiveTask()
+	if activeTask == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	ws := s.getWorkspace()
+	data := views.ComputeReviews(ws, activeTask.ID)
+	if data == nil {
+		w.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderer.RenderPartial(w, "reviews", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // handleQuestionPartial renders the pending question partial.
 func (s *Server) handleQuestionPartial(w http.ResponseWriter, r *http.Request) {
 	if s.renderer == nil || s.config.Conductor == nil {
