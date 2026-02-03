@@ -68,7 +68,10 @@ func TestProviderDownloadAttachment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create provider
-			client := NewClient("", "", "", 0)
+			client, err := NewClient("", "", "", 0)
+			if err != nil {
+				t.Fatalf("NewClient() error = %v", err)
+			}
 
 			provider := &Provider{
 				client: client,
@@ -106,8 +109,13 @@ func TestProviderDownloadAttachment(t *testing.T) {
 
 // Test error handling helpers.
 func TestProviderDownloadAttachmentErrors(t *testing.T) {
+	client, err := NewClient("", "", "", 0)
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
 	provider := &Provider{
-		client: NewClient("", "", "", 0),
+		client: client,
 		config: &Config{},
 	}
 

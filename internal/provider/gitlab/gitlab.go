@@ -122,8 +122,13 @@ func New(ctx context.Context, cfg provider.Config) (any, error) {
 		RemoveSourceBranch: removeSourceBranch,
 	}
 
+	client, err := NewClient(resolvedToken, host, projectPath, 0)
+	if err != nil {
+		return nil, fmt.Errorf("create GitLab client: %w", err)
+	}
+
 	return &Provider{
-		client: NewClient(resolvedToken, host, projectPath, 0),
+		client: client,
 		config: config,
 	}, nil
 }
