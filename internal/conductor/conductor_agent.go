@@ -16,14 +16,6 @@ import (
 	"github.com/valksor/go-toolkit/env"
 )
 
-// applyAgentEnv applies environment variables to an agent instance.
-// It resolves any ${VAR} references in the env map and applies each key-value pair.
-//
-// Deprecated: Use coordination.ApplyEnvs instead.
-func applyAgentEnv(agentInst agent.Agent, env map[string]string) agent.Agent {
-	return coordination.ApplyEnvs(agentInst, env)
-}
-
 // applyStepArgs applies step-specific CLI args from the agent if it implements StepArgsProvider.
 // This allows agents like Claude to customize their behavior per workflow step
 // (e.g., using --permission-mode acceptEdits for implementing/reviewing steps).
@@ -76,7 +68,7 @@ func (c *Conductor) resolveAgentForTask() (agent.Agent, string, error) {
 
 	// Apply inline env vars and args from task if source is "task"
 	if source == "task" && c.taskAgentConfig != nil {
-		agentInst = applyAgentEnv(agentInst, c.taskAgentConfig.Env)
+		agentInst = coordination.ApplyEnvs(agentInst, c.taskAgentConfig.Env)
 		if len(c.taskAgentConfig.Args) > 0 {
 			agentInst = agentInst.WithArgs(c.taskAgentConfig.Args...)
 		}
@@ -126,21 +118,9 @@ func (c *Conductor) resolveAgentForTask() (agent.Agent, string, error) {
 	return agentInst, source, nil
 }
 
-// AgentResolution holds the result of agent resolution for a specific step.
-//
-// Deprecated: Use coordination.Resolution instead.
-type AgentResolution struct {
-	Agent     agent.Agent
-	Source    string            // Where it was resolved from
-	StepName  string            // Which step this is for
-	InlineEnv map[string]string // Resolved inline env vars
-	Args      []string          // CLI args for this step
-}
-
 // resolveAgentForStep resolves the agent for a specific workflow step.
 // Priority: CLI step-specific > CLI global > Task step > Task default > Workspace step > Workspace default > Auto.
-func (c *Conductor) resolveAgentForStep(ctx context.Context, step workflow.Step) (*AgentResolution, error) {
-	// Use the coordination package for cleaner resolution
+func (c *Conductor) resolveAgentForStep(ctx context.Context, step workflow.Step) (*coordination.Resolution, error) {
 	resolver := coordination.NewResolver(c.agents, c.workspace)
 
 	req := coordination.ResolveRequest{
@@ -150,19 +130,7 @@ func (c *Conductor) resolveAgentForStep(ctx context.Context, step workflow.Step)
 		Step:           step,
 	}
 
-	resolution, err := resolver.ResolveForStep(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to legacy AgentResolution format
-	return &AgentResolution{
-		Agent:     resolution.Agent,
-		Source:    resolution.Source,
-		StepName:  resolution.StepName,
-		InlineEnv: resolution.InlineEnv,
-		Args:      resolution.Args,
-	}, nil
+	return resolver.ResolveForStep(ctx, req)
 }
 
 // GetAgentForStep returns the resolved agent for a step, using cached resolution if available.
@@ -193,7 +161,7 @@ func (c *Conductor) GetAgentForStep(ctx context.Context, step workflow.Step) (ag
 			agentInst, err := c.agents.Get(stepInfo.Name)
 			if err == nil {
 				// Re-apply inline env
-				agentInst = applyAgentEnv(agentInst, stepInfo.InlineEnv)
+				agentInst = coordination.ApplyEnvs(agentInst, stepInfo.InlineEnv)
 				// Re-apply args
 				if len(stepInfo.Args) > 0 {
 					agentInst = agentInst.WithArgs(stepInfo.Args...)

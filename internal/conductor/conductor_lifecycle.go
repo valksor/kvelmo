@@ -12,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
@@ -196,7 +197,7 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 			}
 		} else {
 			// Re-apply inline env vars if stored
-			agentInst = applyAgentEnv(agentInst, c.taskWork.Agent.InlineEnv)
+			agentInst = coordination.ApplyEnvs(agentInst, c.taskWork.Agent.InlineEnv)
 			// Re-apply args if stored
 			if len(c.taskWork.Agent.Args) > 0 {
 				agentInst = agentInst.WithArgs(c.taskWork.Agent.Args...)
