@@ -153,6 +153,7 @@ func (r *Renderer) loadTemplates() error {
 		"memory_stats",
 		"library_collections",
 		"library_detail",
+		"stack_rebase_preview",
 	}
 
 	for _, name := range partials {
@@ -296,6 +297,11 @@ func (r *Renderer) RenderFind(w io.Writer, data interface{}) error {
 // RenderStack renders the stack management page.
 func (r *Renderer) RenderStack(w io.Writer, data StackData) error {
 	return r.Render(w, "stack", data)
+}
+
+// RenderRebasePreview renders the rebase preview partial.
+func (r *Renderer) RenderRebasePreview(w io.Writer, data RebasePreviewData) error {
+	return r.RenderPartial(w, "stack_rebase_preview", data)
 }
 
 // RenderLibrary renders the library documentation page.

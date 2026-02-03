@@ -232,6 +232,7 @@ func (s *Server) setupRouter() http.Handler {
 		// Stack management API (always available)
 		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)
 		mux.HandleFunc("POST /api/v1/stack/sync", s.handleStackSync)
+		mux.HandleFunc("GET /api/v1/stack/rebase-preview", s.handleStackRebasePreview)
 		mux.HandleFunc("POST /api/v1/stack/rebase", s.handleStackRebase)
 
 		// Project workflow endpoints
