@@ -1,0 +1,85 @@
+{{define "library_collections"}}
+{{if .Collections}}
+<div class="card">
+	<div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+		<span class="text-sm font-medium text-base-content/80">{{.Count}} {{pluralize .Count "collection" "collections"}}</span>
+		<div class="flex gap-2">
+			<button hx-get="/api/v1/library" hx-target="#library-collections" hx-swap="innerHTML" class="btn btn-sm btn-ghost">
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+				</svg>
+				Refresh
+			</button>
+		</div>
+	</div>
+	<div class="divide-y divide-base-100">
+		{{range .Collections}}
+		{{$sourceIcon := "M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"}}
+		{{if eq .SourceType "url"}}
+		{{$sourceIcon = "M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"}}
+		{{else if eq .SourceType "file"}}
+		{{$sourceIcon = "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"}}
+		{{else if eq .SourceType "git"}}
+		{{$sourceIcon = "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"}}
+		{{end}}
+
+		{{$modeBadge := "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"}}
+		{{$modeText := "auto"}}
+		{{if eq .IncludeMode "explicit"}}
+		{{$modeBadge = "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"}}
+		{{$modeText = "explicit"}}
+		{{else if eq .IncludeMode "always"}}
+		{{$modeBadge = "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300"}}
+		{{$modeText = "always"}}
+		{{end}}
+
+		{{$locationBadge := "bg-base-200 text-base-content/60"}}
+		{{$locationText := "project"}}
+		{{if eq .Location "shared"}}
+		{{$locationBadge = "bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300"}}
+		{{$locationText = "shared"}}
+		{{end}}
+
+		<div class="p-6 hover:bg-base-50 dark:hover:bg-base-800/50 transition-smooth">
+			<div class="flex items-start justify-between gap-4">
+				<div class="flex-1 min-w-0">
+					<div class="flex items-center gap-3 mb-2">
+						<svg class="w-5 h-5 text-base-content/60 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{$sourceIcon}}"></path>
+						</svg>
+						<h3 class="font-semibold text-base-content truncate">{{.Name}}</h3>
+						<span class="px-2 py-0.5 rounded text-xs font-medium {{$modeBadge}}">{{$modeText}}</span>
+						<span class="px-2 py-0.5 rounded text-xs font-medium {{$locationBadge}}">{{$locationText}}</span>
+					</div>
+					<p class="text-sm text-base-content/60 truncate mb-2">{{.Source}}</p>
+					<div class="flex items-center gap-4 text-xs text-base-content/50">
+						<span>{{.PageCount}} pages</span>
+						<span>{{formatBytes .TotalSize}}</span>
+						<span>{{timeAgo .PulledAt}}</span>
+					</div>
+					{{if .Tags}}
+					<div class="flex flex-wrap gap-2 mt-2">
+						{{range .Tags}}
+						<span class="px-2 py-0.5 text-xs rounded bg-base-200 text-base-content/60">{{.}}</span>
+						{{end}}
+					</div>
+					{{end}}
+				</div>
+				<div class="flex items-center gap-2 flex-shrink-0">
+					<button hx-get="/api/v1/library/{{.ID}}" hx-target="#library-detail-modal" hx-swap="innerHTML" class="btn btn-sm btn-ghost">
+						View
+					</button>
+					<button hx-delete="/api/v1/library/{{.ID}}" hx-target="#library-collections" hx-swap="innerHTML" hx-confirm="Remove collection '{{.Name}}'?" class="btn btn-sm btn-ghost text-error-600 hover:bg-error-50">
+						Remove
+					</button>
+				</div>
+			</div>
+		</div>
+		{{end}}
+	</div>
+</div>
+<div id="library-detail-modal"></div>
+{{else}}
+{{template "no_library" .}}
+{{end}}
+{{end}}
