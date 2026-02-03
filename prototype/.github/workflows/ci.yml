@@ -12,7 +12,9 @@ concurrency:
 
 jobs:
     test:
-        if: "!contains(github.event.head_commit.message, '[skip test]')"
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
         strategy:
             matrix:
                 include:
@@ -90,7 +92,9 @@ jobs:
                     flag-name: go-coverage
 
     jetbrains:
-        if: "!contains(github.event.head_commit.message, '[skip test]')"
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
         runs-on: ubuntu-amd
 
         env:
@@ -137,7 +141,9 @@ jobs:
                     base-path: ide/jetbrains
 
     vscode:
-        if: "!contains(github.event.head_commit.message, '[skip test]')"
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
         runs-on: ubuntu-amd
 
         env:
@@ -206,7 +212,9 @@ jobs:
 
     web-ui:
         runs-on: ubuntu-amd
-        if: "!contains(github.event.head_commit.message, '[skip test]')"
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
 
         steps:
             -   name: Checkout
