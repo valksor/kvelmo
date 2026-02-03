@@ -19,7 +19,9 @@ All commands are invoked as `mehr <command>`. Global flags: `--verbose/-v`, `--q
 | `mehr start <ref>` | Start a new task from file, directory, or provider | `--agent/-A`, `--no-branch`, `--worktree/-w`, `--stash`, `--key/-k`, `--title`, `--slug`, `--commit-prefix`, `--branch-pattern`, `--template`, `--depends-on`, `--agent-plan`, `--agent-implement`, `--agent-review`, `--parallel/-p` | `Start()` |
 | `mehr plan` | Generate implementation specifications | `--standalone`, `--seed/-s`, `--full-context`, `--agent-plan`, `--auto-approve`, `--optimize`, `--force`, `--with-parent`, `--without-parent`, `--with-siblings`, `--max-siblings` | `Plan()` |
 | `mehr implement` | Execute specifications with AI agent | `--dry-run/-n`, `--agent-implement`, `--optimize`, `--only`, `--parallel`, `--force`, `--with-parent`, `--without-parent`, `--with-siblings`, `--max-siblings` | `Implement()` |
+| `mehr implement review <n>` | Implement fixes from a specific review | `--dry-run/-n`, `--agent-implement`, `--optimize`, `--force` | `ImplementReview()` |
 | `mehr review` | Run code review on changes | `--tool`, `--output/-o`, `--agent-review`, `--optimize`, `--force`, `--standalone`, `--branch`, `--range`, `--context`, `--fix`, `--checkpoint` | `Review()` |
+| `mehr review view <n>` | View content of a specific review | `--output/-o`, `--all` | Storage only |
 | `mehr finish` | Complete task, create PR | `--yes/-y`, `--merge`, `--delete`, `--push`, `--squash`, `--target/-t`, `--no-quality`, `--quality-target`, `--delete-work`, `--draft`, `--pr-title`, `--pr-body` | `Finish()` |
 | `mehr continue` | Resume work on task (alias: `c`) | `--auto` | `Continue()` |
 | `mehr abandon` | Discard current task | `--yes/-y`, `--keep-branch`, `--keep-work` | `Delete()` |
@@ -143,6 +145,11 @@ All browser subcommands share: `--host`, `--port`, `--headless`, `--strict-certs
 | `mehr optimize` | Optimize specifications or prompts | | `Optimize()` |
 | `mehr links` | Manage bidirectional `[[links]]` | | Links methods |
 | `mehr memory` | Semantic memory management | | Memory methods |
+| `mehr library pull <source>` | Pull documentation from URL, file, or git | `--name`, `--mode`, `--shared`, `--paths`, `--tag`, `--max-depth`, `--max-pages`, `--dry-run` | Library methods |
+| `mehr library list` | List documentation collections | `--shared`, `--project`, `--verbose` | Library methods |
+| `mehr library show <name>` | Show collection details | `[page]` | Library methods |
+| `mehr library remove <name>` | Remove a collection | `--force` | Library methods |
+| `mehr library update [name]` | Update collection(s) from source | | Library methods |
 | `mehr review-pr` | Standalone PR review | | `RunPRReview()` |
 | `mehr specification view` | View specifications | | Storage only |
 | `mehr budget status` | Show budget status | | Budget methods |
@@ -239,6 +246,17 @@ Base URL: `http://host:port`. Response format: `{"success": bool, "data": object
 | GET | `/api/v1/links/stats` | Get links statistics |
 | POST | `/api/v1/links/rebuild` | Rebuild link index |
 
+### Library
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/library` | List documentation collections |
+| GET | `/api/v1/library/stats` | Get library statistics |
+| GET | `/api/v1/library/{name}` | Get collection details |
+| POST | `/api/v1/library/pull` | Pull documentation from source |
+| POST | `/api/v1/library/pull/preview` | Preview pull operation |
+| DELETE | `/api/v1/library/{name}` | Remove a collection |
+
 ### Costs & Budget
 
 | Method | Path | Description |
@@ -308,6 +326,8 @@ Base URL: `http://host:port`. Response format: `{"success": bool, "data": object
 | GET | `/api/v1/commit/plan` | Plan commit operations |
 | POST | `/api/v1/commit/execute` | Execute commit |
 | GET | `/api/v1/running` | List running tasks |
+| GET | `/api/v1/running/{id}/stream` | Stream running task output (SSE) |
+| POST | `/api/v1/running/{id}/cancel` | Cancel running task |
 | POST | `/api/v1/parallel` | Start parallel tasks |
 
 ### Settings & Configuration
@@ -337,6 +357,7 @@ Base URL: `http://host:port`. Response format: `{"success": bool, "data": object
 |--------|------|-------------|
 | POST | `/api/v1/auth/login` | User login |
 | POST | `/api/v1/auth/logout` | User logout |
+| GET | `/api/v1/auth/csrf` | Get CSRF token |
 | GET | `/health` | Health check |
 | GET | `/api/v1/license` | License info |
 
@@ -432,6 +453,9 @@ These CLI commands are registered as callable MCP tools:
 | `browser_cookies` | Cookie management |
 | `browser_cookies_export` | Export cookies to file |
 | `browser_cookies_import` | Import cookies from file |
+| `library_list` | List documentation collections |
+| `library_show` | Show collection details and pages |
+| `library_get_docs` | Get documentation context for file paths or query |
 
 ---
 
