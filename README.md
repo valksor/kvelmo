@@ -255,6 +255,8 @@ make install
 
 **Prerequisite**: You need an agent CLI installed separately (e.g., [Claude](https://claude.ai/code)). Mehrhof orchestrates it but does not include it. See [Agents](https://valksor.com/docs/mehrhof/nightly/#/agents/index) for supported agents.
 
+**Starting from scratch?** See [INSTALL.md](INSTALL.md) for complete instructions including WSL setup, Git, Go, and agent CLI installation.
+
 ---
 
 ## Verifying Binary Authenticity

@@ -23,13 +23,14 @@ git:
   branch_pattern: "asc/{key}"
   commit_prefix: "[{key}]"
 
-specification:
+storage:
   save_in_project: true
   project_dir: "tickets"
+
+specification:
   filename_pattern: "SPEC-{n}.md"
 
 review:
-  save_in_project: true
   filename_pattern: "CODERABBIT-{n}.txt"
 ```
 
@@ -39,7 +40,7 @@ review:
 |----------------|--------------------------|-------------------------------------------------|
 | Branch naming  | `asc/A-123`              | `git.branch_pattern: "asc/{key}"`               |
 | Commit prefix  | `[A-123] message`        | `git.commit_prefix: "[{key}]"`                  |
-| Spec directory | `tickets/A-123/`         | `specification.project_dir: "tickets"`          |
+| Work directory | `tickets/A-123/`         | `storage.project_dir: "tickets"`                |
 | Spec files     | `SPEC-1.md`, `SPEC-2.md` | `specification.filename_pattern: "SPEC-{n}.md"` |
 | Review files   | `CODERABBIT-1.txt`       | `review.filename_pattern: "CODERABBIT-{n}.txt"` |
 
@@ -94,5 +95,5 @@ mehr commit
 
 - The `{key}` placeholder resolves to the task's external key (e.g., `A-123` from Wrike, GitHub issue number)
 - The `{n}` placeholder in filename patterns is replaced with the spec/review number
-- Internal storage (in `~/.valksor/mehrhof/`) is always maintained as the authoritative copy
-- Project storage (`tickets/`) is a copy that can be committed to your repo
+- When `storage.save_in_project: true`, all work files are stored in `tickets/<task-id>/` (or your configured `project_dir`)
+- When `storage.save_in_project: false` (default), work is stored in `~/.valksor/mehrhof/workspaces/<project-id>/work/`

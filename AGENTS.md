@@ -53,7 +53,7 @@ Every feature MUST include:
 | CLI docs | `docs/cli/feature.md` | Usage + examples |
 | Web UI docs | `docs/web-ui/feature.md` | UI instructions |
 
-Write tests FIRST (TDD). Use table-driven tests. Run `make test` before committing code.
+Write tests FIRST (TDD). Use table-driven tests. Run targeted tests during development; `make test` only after full implementation.
 
 ### 4. Docs by Interface Type
 
@@ -75,13 +75,21 @@ Run checks **only for code you changed**:
 
 | Changed | Command |
 |---------|---------|
-| `cmd/`, `internal/`, `*.go` | `make quality && make test` |
+| `cmd/`, `internal/`, `*.go` | `make quality` + targeted tests (see below) |
 | `ide/vscode/**` | `cd ide/vscode && make quality` |
 | `ide/jetbrains/**` | `cd ide/jetbrains && make quality` |
 | `web-ui-tests/**` | `cd web-ui-tests && make quality` |
 | `docs/**`, `*.md` | None |
 
 Root shortcuts: `make ide-quality` (all IDEs), `make quality-all` (Go + IDEs).
+
+**Testing strategy:**
+- **During development**: `make quality` + run specific tests for changed code:
+  ```bash
+  go test ./internal/storage/...           # Test a package
+  go test -run TestWorkspace ./internal/storage/...  # Test specific function
+  ```
+- **Before committing**: `make test` (full suite) — only after implementation is complete
 
 If tests fail, fix them first. No exceptions for "not my code."
 
@@ -185,6 +193,7 @@ bun run workers:minify
 
 ```bash
 mehr start <ref> | plan | implement | review | finish | continue | abandon
+mehr implement review <n> | review view <n>  # Review workflow commands
 mehr status | list | note <msg> | question <msg> | cost
 mehr undo | redo | reset | browser | mcp | scan | serve | interactive
 mehr project plan|submit|start|sync | stack | config validate
@@ -330,7 +339,10 @@ project:
 
 ## Testing
 
-- Run: `make test`
+- **During development**: Run targeted tests for changed packages
+  - `go test ./internal/storage/...` (specific package)
+  - `go test -run TestName ./path/...` (specific test)
+- **Before commit**: `make test` (full suite, only after implementation complete)
 - Coverage: `make coverage-html` (output: `.coverage/coverage.html`)
 - Style: Table-driven with `tests := []struct{...}{...}`
 - Utilities: `internal/helper_test/` (mocks, fixtures)
