@@ -291,3 +291,278 @@ func TestErrRebaseConflict(t *testing.T) {
 		t.Error("expected errors.Is to detect ErrRebaseConflict")
 	}
 }
+
+func TestRebasePreview_Types(t *testing.T) {
+	// Test that preview types are properly initialized
+	preview := &RebasePreview{
+		Tasks:         make([]TaskPreview, 0),
+		HasConflicts:  false,
+		SafeCount:     2,
+		ConflictCount: 1,
+	}
+
+	if preview.SafeCount != 2 {
+		t.Errorf("expected SafeCount 2, got %d", preview.SafeCount)
+	}
+	if preview.ConflictCount != 1 {
+		t.Errorf("expected ConflictCount 1, got %d", preview.ConflictCount)
+	}
+}
+
+func TestTaskPreview_Types(t *testing.T) {
+	tp := &TaskPreview{
+		TaskID:           "task-1",
+		Branch:           "feature/task-1",
+		OntoBase:         "main",
+		WouldConflict:    true,
+		ConflictingFiles: []string{"file.go"},
+	}
+
+	if tp.TaskID != "task-1" {
+		t.Errorf("expected TaskID 'task-1', got %s", tp.TaskID)
+	}
+	if !tp.WouldConflict {
+		t.Error("expected WouldConflict to be true")
+	}
+	if len(tp.ConflictingFiles) != 1 {
+		t.Errorf("expected 1 conflicting file, got %d", len(tp.ConflictingFiles))
+	}
+}
+
+func TestPreviewRebase_NoConflicts(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	// Create git repo with branches
+	gitDir := initTestGitRepo(t)
+	git, err := vcs.New(ctx, gitDir)
+	if err != nil {
+		t.Fatalf("create git: %v", err)
+	}
+
+	// Check git version - need 2.38+ for merge-tree
+	version, err := git.GetGitVersion(ctx)
+	if err != nil {
+		t.Fatalf("GetGitVersion: %v", err)
+	}
+	if !version.AtLeast(2, 38, 0) {
+		t.Skipf("git %d.%d.%d is too old for merge-tree (requires 2.38+)", version.Major, version.Minor, version.Patch)
+	}
+
+	// Get base branch
+	baseBranch, err := git.CurrentBranch(ctx)
+	if err != nil {
+		t.Fatalf("get current branch: %v", err)
+	}
+
+	// Create feature branch with non-conflicting changes
+	if err := git.CreateBranch(ctx, "feature/task-1", baseBranch); err != nil {
+		t.Fatalf("create branch: %v", err)
+	}
+
+	// Add a new file on feature branch
+	if err := os.WriteFile(filepath.Join(gitDir, "feature.txt"), []byte("feature content\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "add", "feature.txt")
+	cmd.Dir = gitDir
+	_ = cmd.Run()
+
+	cmd = exec.CommandContext(ctx, "git", "commit", "-m", "add feature file")
+	cmd.Dir = gitDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Go back to base and make non-conflicting changes
+	if err := git.Checkout(ctx, baseBranch); err != nil {
+		t.Fatalf("checkout base: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(gitDir, "base.txt"), []byte("base content\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cmd = exec.CommandContext(ctx, "git", "add", "base.txt")
+	cmd.Dir = gitDir
+	_ = cmd.Run()
+
+	cmd = exec.CommandContext(ctx, "git", "commit", "-m", "add base file")
+	cmd.Dir = gitDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Set up storage and stack
+	storage := NewStorage(gitDir)
+	s := NewStack("stack-1", "task-1", "feature/task-1", baseBranch)
+	s.Tasks[0].State = StateNeedsRebase
+
+	if err := storage.AddStack(s); err != nil {
+		t.Fatalf("add stack: %v", err)
+	}
+	if err := storage.Save(); err != nil {
+		t.Fatalf("save storage: %v", err)
+	}
+
+	// Create rebaser and preview
+	rebaser := NewRebaser(storage, git)
+	preview, err := rebaser.PreviewRebase(ctx, "stack-1")
+	if err != nil {
+		t.Fatalf("PreviewRebase: %v", err)
+	}
+
+	if preview.HasConflicts {
+		t.Error("expected no conflicts")
+	}
+	if preview.Unavailable {
+		t.Errorf("preview should be available: %s", preview.UnavailableReason)
+	}
+	if len(preview.Tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(preview.Tasks))
+	}
+	if preview.Tasks[0].WouldConflict {
+		t.Errorf("task should not have conflicts, got files: %v", preview.Tasks[0].ConflictingFiles)
+	}
+	if preview.SafeCount != 1 {
+		t.Errorf("expected SafeCount 1, got %d", preview.SafeCount)
+	}
+}
+
+func TestPreviewRebase_WithConflicts(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	// Create git repo with branches
+	gitDir := initTestGitRepo(t)
+	git, err := vcs.New(ctx, gitDir)
+	if err != nil {
+		t.Fatalf("create git: %v", err)
+	}
+
+	// Check git version
+	version, err := git.GetGitVersion(ctx)
+	if err != nil {
+		t.Fatalf("GetGitVersion: %v", err)
+	}
+	if !version.AtLeast(2, 38, 0) {
+		t.Skipf("git %d.%d.%d is too old for merge-tree (requires 2.38+)", version.Major, version.Minor, version.Patch)
+	}
+
+	baseBranch, err := git.CurrentBranch(ctx)
+	if err != nil {
+		t.Fatalf("get current branch: %v", err)
+	}
+
+	// Create feature branch and modify README.md
+	if err := git.CreateBranch(ctx, "feature/conflict", baseBranch); err != nil {
+		t.Fatalf("create branch: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(gitDir, "README.md"), []byte("# Feature Changes\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "add", "README.md")
+	cmd.Dir = gitDir
+	_ = cmd.Run()
+
+	cmd = exec.CommandContext(ctx, "git", "commit", "-m", "modify readme on feature")
+	cmd.Dir = gitDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Go back to base and make conflicting changes
+	if err := git.Checkout(ctx, baseBranch); err != nil {
+		t.Fatalf("checkout base: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(gitDir, "README.md"), []byte("# Base Changes\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cmd = exec.CommandContext(ctx, "git", "add", "README.md")
+	cmd.Dir = gitDir
+	_ = cmd.Run()
+
+	cmd = exec.CommandContext(ctx, "git", "commit", "-m", "modify readme on base")
+	cmd.Dir = gitDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Set up storage and stack
+	storage := NewStorage(gitDir)
+	s := NewStack("stack-1", "task-conflict", "feature/conflict", baseBranch)
+	s.Tasks[0].State = StateNeedsRebase
+
+	if err := storage.AddStack(s); err != nil {
+		t.Fatalf("add stack: %v", err)
+	}
+	if err := storage.Save(); err != nil {
+		t.Fatalf("save storage: %v", err)
+	}
+
+	// Create rebaser and preview
+	rebaser := NewRebaser(storage, git)
+	preview, err := rebaser.PreviewRebase(ctx, "stack-1")
+	if err != nil {
+		t.Fatalf("PreviewRebase: %v", err)
+	}
+
+	if !preview.HasConflicts {
+		t.Error("expected conflicts")
+	}
+	if preview.Unavailable {
+		t.Errorf("preview should be available: %s", preview.UnavailableReason)
+	}
+	if len(preview.Tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(preview.Tasks))
+	}
+	if !preview.Tasks[0].WouldConflict {
+		t.Error("task should have conflicts")
+	}
+	if preview.ConflictCount != 1 {
+		t.Errorf("expected ConflictCount 1, got %d", preview.ConflictCount)
+	}
+	if preview.SafeCount != 0 {
+		t.Errorf("expected SafeCount 0, got %d", preview.SafeCount)
+	}
+}
+
+func TestPreviewRebase_EmptyStack(t *testing.T) {
+	tmpDir := t.TempDir()
+	storage := NewStorage(tmpDir)
+
+	// Create a stack with no tasks needing rebase
+	s := NewStack("stack-1", "task-1", "feature/task-1", "main")
+	s.Tasks[0].State = StateActive // Not needing rebase
+
+	if err := storage.AddStack(s); err != nil {
+		t.Fatalf("add stack: %v", err)
+	}
+	if err := storage.Save(); err != nil {
+		t.Fatalf("save storage: %v", err)
+	}
+
+	rebaser := NewRebaser(storage, nil) // nil git is OK for empty preview
+	preview, err := rebaser.PreviewRebase(context.Background(), "stack-1")
+	if err != nil {
+		t.Fatalf("PreviewRebase: %v", err)
+	}
+
+	if len(preview.Tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(preview.Tasks))
+	}
+	if preview.HasConflicts {
+		t.Error("expected no conflicts for empty preview")
+	}
+}
