@@ -228,5 +228,5 @@ The extension communicates with the Mehrhof server via:
 ## See Also
 
 - [JetBrains Plugin](jetbrains.md) - IntelliJ IDEA integration
-- [Web UI](../web-ui/interactive.md) - Browser-based interface
-- [CLI Reference](../cli/index.md) - Command-line interface
+- [Web UI](/web-ui/interactive.md) - Browser-based interface
+- [CLI Reference](/cli/index.md) - Command-line interface

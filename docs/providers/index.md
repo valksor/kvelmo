@@ -56,7 +56,7 @@ Providers implement subtasks differently based on their API:
 
 ## Plugin Providers
 
-You can extend Mehrhof with custom providers through the plugin system. See [Plugins](../concepts/plugins.md) for details.
+You can extend Mehrhof with custom providers through the plugin system. See [Plugins](/concepts/plugins.md) for details.
 
 ### Installing a Provider Plugin
 

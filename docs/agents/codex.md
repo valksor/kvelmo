@@ -146,4 +146,4 @@ codex exec --json "your task" > /tmp/codex-output.jsonl
 
 - [Claude Agent](claude.md) - Primary supported agent
 - [Codex CLI Reference](https://developers.openai.com/codex/cli/reference/) - Official documentation
-- [Agent Configuration](../configuration/index.md) - Full config options
+- [Agent Configuration](/configuration/index.md) - Full config options

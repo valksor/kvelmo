@@ -268,4 +268,4 @@ Additional endpoints for task info:
 | `GET /api/v1/guide`  | Next actions guidance |
 | `GET /health`        | Health check          |
 
-See [REST API documentation](../web-ui/api.md) for full details.
+See [REST API Reference](/reference/rest-api.md) for full details.

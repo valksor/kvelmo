@@ -6,7 +6,112 @@ Complete guide to install Mehrhof and all prerequisites from scratch.
 
 ---
 
+## Before You Begin (First-Time Users)
+
+**New to command lines?** This section is for you. If you've used a terminal before, skip to [Quick Start](#quick-start-experienced-users).
+
+### What is a Terminal?
+
+A **terminal** (also called "command line", "console", or "shell") is a text-based way to control your computer. Instead of clicking buttons and icons, you type commands.
+
+It looks like a window with text, usually with a **prompt** like this:
+```
+username@computer:~$
+```
+or on Mac:
+```
+username@MacBook ~ %
+```
+
+The `$` or `%` at the end means the computer is waiting for you to type something.
+
+### How to Open a Terminal
+
+**macOS:**
+1. Press **Cmd + Space** to open Spotlight search
+2. Type **Terminal**
+3. Press **Enter**
+
+**Windows (after WSL is installed - see [Windows section](#windows-wsl-setup)):**
+1. Click the **Start** button
+2. Type **Ubuntu**
+3. Click to open
+
+**Ubuntu/Linux:**
+1. Press the **Super** key (the Windows logo key on your keyboard)
+2. Type **Terminal**
+3. Click to open
+
+### Running Commands
+
+When you see a command in this guide like:
+```bash
+sudo apt update
+```
+
+Here's what to do:
+1. **Copy** the command (highlight it, then Ctrl+C or Cmd+C)
+2. **Paste** it into your terminal (Ctrl+Shift+V on Linux, Cmd+V on Mac, or right-click → Paste)
+3. Press **Enter** to run it
+
+**What to expect:** You'll see text scroll by - this is normal! Commands often print information as they work.
+
+### Passwords in the Terminal
+
+Some commands start with `sudo` (like `sudo apt update`). This runs the command with administrator privileges.
+
+When you run a `sudo` command:
+- You'll be asked for your password
+- **The characters won't appear as you type** - this is a security feature, not a bug
+- Just type your password and press Enter
+
+On Linux/WSL, this is your Linux password (the one you created during setup), not your Windows password.
+
+---
+
+## Which Computer Do I Have?
+
+Some downloads depend on your computer's **architecture** (the type of processor inside). Here's how to check:
+
+**Mac:**
+1. Click the **Apple menu** (top-left corner)
+2. Click **About This Mac**
+3. Look for **Chip** or **Processor**:
+   - **Apple M1, M2, M3, or M4** → You have **Apple Silicon (arm64)**
+   - **Intel** → You have **Intel (amd64)**
+
+**Linux:**
+Open a terminal and run:
+```bash
+uname -m
+```
+- `x86_64` → You have **amd64**
+- `aarch64` → You have **arm64**
+
+**Windows:**
+Don't worry about this - WSL handles it automatically.
+
+---
+
+## Key Terms Reference
+
+| Term | What It Means |
+|------|---------------|
+| **Terminal** | A text-based window where you type commands |
+| **CLI** | "Command Line Interface" - a program you control by typing, not clicking |
+| **`sudo`** | "Super user do" - runs a command with admin privileges |
+| **`curl`** | A program that downloads files from the internet |
+| **`bash`** | A program that runs commands (a "shell") |
+| **PATH** | A list of folders where your computer looks for programs |
+| **`~`** | Shortcut for your home folder (e.g., `/home/yourname/` or `/Users/yourname/`) |
+| **Binary** | A ready-to-run program file |
+| **Repository/Repo** | A project folder managed by Git (version control) |
+
+---
+
 ## Quick Start (Experienced Users)
+
+> **New to terminals?** Skip this section and start at [Before You Begin](#before-you-begin-first-time-users) instead.
 
 Already have Git and an AI agent CLI installed? Run:
 
@@ -29,6 +134,12 @@ If any are missing, follow the relevant sections below.
 
 ## Table of Contents
 
+**First-Time Users:**
+- [Before You Begin](#before-you-begin-first-time-users) - What is a terminal? How to open it
+- [Which Computer Do I Have?](#which-computer-do-i-have) - Check your architecture
+- [Key Terms Reference](#key-terms-reference) - Glossary of technical terms
+
+**Installation:**
 - [Platform Support](#platform-support)
 - [Windows (WSL Setup)](#windows-wsl-setup)
 - [Git Installation](#git-installation)
@@ -64,25 +175,46 @@ Windows users must use WSL2 (Windows Subsystem for Linux). Native Windows is not
 
 ### Step 1: Enable WSL2
 
-Open **PowerShell as Administrator** and run:
+First, open **PowerShell as Administrator**:
+
+1. **Right-click** the **Start** button (Windows icon, bottom-left)
+2. Click **Terminal (Admin)** or **Windows PowerShell (Admin)**
+3. If a popup asks "Do you want to allow this app to make changes?" click **Yes**
+
+Now type (or paste) this command and press Enter:
 
 ```powershell
 wsl --install
 ```
 
-This installs WSL2 with Ubuntu by default. Restart your computer when prompted.
+This installs WSL2 with Ubuntu by default. **Restart your computer when prompted.**
 
 ### Step 2: First Launch
 
-After restart, Ubuntu will launch automatically. If not, search for "Ubuntu" in the Start menu.
+After restart, Ubuntu will launch automatically. If not:
+1. Click **Start**
+2. Type **Ubuntu**
+3. Click to open
 
-Create your Linux username and password when prompted. This is separate from your Windows login.
+You'll be asked to create a **Linux username and password**:
+- This is **separate from your Windows login** - you can use different credentials
+- Pick something simple you'll remember
+- **When typing your password, no characters will appear** - this is normal, just type and press Enter
+- You'll be asked to type it twice to confirm
 
 ### Step 3: Update Ubuntu
+
+This command updates Ubuntu's software list and installs any available updates:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
+
+- `sudo` = run with admin privileges (you'll enter your Linux password)
+- `apt update` = refresh the list of available software
+- `apt upgrade -y` = install updates (`-y` means "yes to all")
+
+**Expect:** Lots of text will scroll by. This can take a few minutes. When you see the prompt again (ending in `$`), it's done.
 
 ### Step 4: Verify WSL2
 
@@ -131,15 +263,17 @@ apk add git
 
 ### macOS
 
-**Option 1: Xcode Command Line Tools** (easiest)
+> **Beginners:** Use Option 1 - just run the command and click "Install" when prompted.
+
+**Option 1: Xcode Command Line Tools** (recommended for beginners)
 
 ```bash
 xcode-select --install
 ```
 
-A popup will appear. Click "Install" and wait for completion.
+A popup will appear. Click "Install" and wait for completion (~5-10 minutes).
 
-**Option 2: Homebrew**
+**Option 2: Homebrew** (if you already use Homebrew)
 
 ```bash
 brew install git
@@ -147,19 +281,29 @@ brew install git
 
 ### Configure Git
 
-After installation, set your identity:
+Git needs to know who you are so it can label your changes. Run these two commands, **replacing the example values with your actual name and email**:
 
 ```bash
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
+git config --global user.name "Jane Smith"
+git config --global user.email "jane.smith@example.com"
 ```
+
+- `--global` means this applies to all projects on your computer
+- Use the email associated with your GitHub/GitLab account if you have one
 
 ### Verify
 
 ```bash
 git --version
-# Expected: git version 2.x.x
 ```
+
+**Success looks like:**
+```
+git version 2.43.0
+```
+(Any version 2.x.x is fine)
+
+**If you see** `command not found` **or** `git is not recognized`, the installation didn't work. Try the steps again for your platform.
 
 ---
 
@@ -207,22 +351,33 @@ apk add go
 
 ### macOS
 
-**Option 1: Homebrew** (recommended)
+> **Beginners:** If you don't have Homebrew, use Option 2 - download and run the installer.
+
+**Option 1: Homebrew** (if you have Homebrew installed)
 
 ```bash
 brew install go
 ```
 
-**Option 2: Official Installer**
+**Option 2: Official Installer** (recommended for beginners)
 
-Download from [go.dev/dl](https://go.dev/dl/) and run the installer.
+1. Go to [go.dev/dl](https://go.dev/dl/)
+2. Download the macOS installer (`.pkg` file)
+3. Double-click to run and follow the prompts
 
 ### Verify
 
 ```bash
 go version
-# Expected: go version go1.25.x ...
 ```
+
+**Success looks like:**
+```
+go version go1.25.6 linux/amd64
+```
+(Version must be 1.25 or higher)
+
+**If you see** `command not found`, close and reopen your terminal, then try again. If it still doesn't work, check that Go is in your PATH (see [Troubleshooting](#path-issues)).
 
 ---
 
@@ -255,8 +410,14 @@ Follow the prompts to complete authentication.
 
 ```bash
 claude --version
-# Expected: claude-code x.x.x
 ```
+
+**Success looks like:**
+```
+claude-code 1.2.3
+```
+
+**If you see** `command not found`, close and reopen your terminal. If it still doesn't work, revisit the installation steps on [claude.ai/code](https://claude.ai/code).
 
 *Reference: [docs/agents/claude.md](docs/agents/claude.md) for advanced configuration.*
 
@@ -311,6 +472,8 @@ codex exec --json "echo test"
 ---
 
 ## Mehrhof Installation
+
+> **Beginners:** Use Method 1 (Install Script) - just run one command and you're done.
 
 ### Method 1: Install Script (Recommended)
 
@@ -399,8 +562,14 @@ The binary is installed to `$GOPATH/bin` (usually `~/go/bin`).
 
 ```bash
 mehr --version
-# Expected: mehr version x.x.x
 ```
+
+**Success looks like:**
+```
+mehr version 1.0.0
+```
+
+**If you see** `command not found`, see [Troubleshooting - PATH Issues](#path-issues).
 
 ---
 
@@ -408,23 +577,55 @@ mehr --version
 
 ### Initialize a Project
 
-Navigate to your project directory and run:
+First, navigate to your project folder using the `cd` (change directory) command:
 
 ```bash
 cd /path/to/your/project
+```
+
+**Examples of real paths:**
+- `cd ~/projects/my-website` (Linux/Mac - `~` means your home folder)
+- `cd ~/Documents/code/my-app` (your Documents folder)
+- `cd /home/jane/work/api-server` (full path on Linux)
+
+**Tip:** You can drag a folder from your file manager into the terminal to paste its path.
+
+Once you're in your project folder, initialize Mehrhof:
+
+```bash
 mehr init
 ```
 
 This creates a `.mehrhof/` directory with default configuration.
 
+> **Note:** Folders starting with `.` (like `.mehrhof/`) are **hidden** by default. In your file manager, enable "Show Hidden Files" to see them (usually Ctrl+H on Linux, Cmd+Shift+. on Mac).
+
 ### Configure Your Agent
 
-Edit `.mehrhof/config.yaml`:
+The configuration file is at `.mehrhof/config.yaml`. To edit it:
+
+**Option 1: Using nano (beginner-friendly)**
+```bash
+nano .mehrhof/config.yaml
+```
+- Make your changes
+- Press **Ctrl+O** then **Enter** to save
+- Press **Ctrl+X** to exit
+
+**Option 2: Using a text editor**
+- Open VS Code, Sublime Text, or any text editor
+- Open the `.mehrhof` folder in your project
+- Edit `config.yaml`
+
+The default configuration looks like this:
 
 ```yaml
 agent:
   default: claude  # or codex (experimental)
 ```
+
+- Lines starting with `#` are comments (ignored by the program)
+- YAML uses indentation (spaces, not tabs) to show structure
 
 ### Quick Verification
 

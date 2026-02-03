@@ -91,5 +91,5 @@ The `<project-id>` is automatically derived from your git remote:
 
 ## See Also
 
-- [Storage Structure Reference](../reference/storage.md) - Complete storage documentation
+- [Storage Structure Reference](/reference/storage.md) - Complete storage documentation
 - [Configuration Overview](index.md) - All configuration options

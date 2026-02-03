@@ -234,6 +234,6 @@ Or browse the example link provider:
 
 ## See Also
 
-- [mehr plugins](../cli/plugins.md) - CLI reference
-- [AI Agents](../agents/index.md) - Built-in agent system
-- [Configuration](../configuration/index.md) - Config file reference
+- [mehr plugins](/cli/plugins.md) - CLI reference
+- [AI Agents](/agents/index.md) - Built-in agent system
+- [Configuration](/configuration/index.md) - Config file reference

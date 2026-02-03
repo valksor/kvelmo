@@ -60,7 +60,7 @@ agent: work-account
 ...
 ```
 
-See [Task File Format](../reference/task-format.md) for complete frontmatter reference and examples.
+See [Task File Format](/reference/task-format.md) for complete frontmatter reference and examples.
 
 ### Directory Source
 
@@ -109,7 +109,7 @@ Each specification file contains:
 - File changes required
 - Step-by-step instructions
 
-See [Specification File Format](../reference/specification-format.md) for details.
+See [Specification File Format](/reference/specification-format.md) for details.
 
 ## Task States
 
@@ -216,4 +216,4 @@ All task data is stored in `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>
     └── 2025-01-15T10-30-00-planning.yaml
 ```
 
-See [Storage Structure](../reference/storage.md) for complete details.
+See [Storage Structure](/reference/storage.md) for complete details.

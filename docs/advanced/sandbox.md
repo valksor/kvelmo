@@ -238,5 +238,5 @@ This occurs in containerized environments where user namespaces are restricted. 
 ## See Also
 
 - [Security & Compliance Scanning](security.md) - SAST, secrets, vulnerability scanning
-- [Configuration Guide](../configuration/index.md) - Workspace configuration
-- [CLI Reference](../cli/index.md) - Command-line options
+- [Configuration Guide](/configuration/index.md) - Workspace configuration
+- [CLI Reference](/cli/index.md) - Command-line options

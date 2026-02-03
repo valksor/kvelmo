@@ -179,7 +179,7 @@ Task: Add health check endpoint (github:42)
 
 ## See Also
 
-- [GitHub Provider](../providers/github.md) — Full provider configuration
-- [Task Templates](../cli/templates.md) — All built-in templates
-- [Budget Management](../cli/budget.md) — Budget configuration and controls
-- [Cost Tracking](../cli/cost.md) — Token and cost analysis
+- [GitHub Provider](/providers/github.md) — Full provider configuration
+- [Task Templates](/cli/templates.md) — All built-in templates
+- [Budget Management](/cli/budget.md) — Budget configuration and controls
+- [Cost Tracking](/cli/cost.md) — Token and cost analysis

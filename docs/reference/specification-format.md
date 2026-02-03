@@ -356,5 +356,5 @@ Create a new user.
 ## See Also
 
 - [Storage Structure](storage.md) - Where specifications are stored
-- [plan command](../cli/plan.md) - Creating specifications
-- [implement command](../cli/implement.md) - Using specifications
+- [plan command](/cli/plan.md) - Creating specifications
+- [implement command](/cli/implement.md) - Using specifications

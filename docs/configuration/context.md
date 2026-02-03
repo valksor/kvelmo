@@ -169,7 +169,7 @@ When hierarchical context is available, the dashboard shows:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-See [Web UI Dashboard](../web-ui/dashboard.md#hierarchical-context) for more details.
+See [Web UI Dashboard](/web-ui/dashboard.md#hierarchical-context) for more details.
 
 ## Benefits
 
@@ -200,6 +200,6 @@ If token usage is a concern, consider:
 
 ## See Also
 
-- [CLI: start](../cli/start.md#context-flags) - Starting tasks with context flags
-- [CLI: plan](../cli/plan.md#context-flags) - Planning with context flags
-- [Providers](../providers/index.md) - Provider-specific capabilities
+- [CLI: start](/cli/start.md#context-flags) - Starting tasks with context flags
+- [CLI: plan](/cli/plan.md#context-flags) - Planning with context flags
+- [Providers](/providers/index.md) - Provider-specific capabilities

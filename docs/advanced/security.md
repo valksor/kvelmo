@@ -490,6 +490,6 @@ mehr scan --dir ./src  # Scan only src/
 
 ## See Also
 
-- [CLI: scan](../cli/scan.md) - Scan commands reference
-- [Configuration Guide](../configuration/index.md) - Security settings
+- [CLI: scan](/cli/scan.md) - Scan commands reference
+- [Configuration Guide](/configuration/index.md) - Security settings
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/) - Web security risks

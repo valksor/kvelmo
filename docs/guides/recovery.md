@@ -277,7 +277,7 @@ mehr start improved-task.md
 
 ## Next Steps
 
-- [Checkpoints Concept](../concepts/checkpoints.md) - How checkpoints work
+- [Checkpoints Concept](/concepts/checkpoints.md) - How checkpoints work
 - [Iterative Workflow](iterative-workflow.md) - Refine through iteration
-- [undo command](../cli/undo.md) - Undo command reference
-- [redo command](../cli/redo.md) - Redo command reference
+- [undo command](/cli/undo.md) - Undo command reference
+- [redo command](/cli/redo.md) - Redo command reference

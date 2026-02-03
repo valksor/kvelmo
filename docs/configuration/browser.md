@@ -64,5 +64,5 @@ Cookies are stored as:
 
 ## See Also
 
-- [Browser Commands](../cli/browser.md) - Complete browser automation documentation
+- [Browser Commands](/cli/browser.md) - Complete browser automation documentation
 - [Configuration Overview](index.md) - All configuration options

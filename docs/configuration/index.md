@@ -63,8 +63,8 @@ env:
 | Section         | Description                        | Details                                 |
 |-----------------|------------------------------------|-----------------------------------------|
 | `git`           | Version control integration        | [Git Configuration](git.md)             |
-| `agent`         | AI agent behavior and aliases      | [Agents Guide](../agents/index.md)      |
-| `sandbox`       | Agent execution sandboxing         | [Sandbox Guide](../advanced/sandbox.md) |
+| `agent`         | AI agent behavior and aliases      | [Agents Guide](/agents/index.md)      |
+| `sandbox`       | Agent execution sandboxing         | [Sandbox Guide](/advanced/sandbox.md) |
 | `browser`       | Browser automation                 | [Browser Configuration](browser.md)     |
 | `storage`       | Task data and caches               | [Storage Configuration](storage.md)     |
 | `specification` | Spec storage location and naming   | [Storage Configuration](storage.md)     |
@@ -335,5 +335,5 @@ mehr config validate
 - [Git Configuration](git.md) - Branch patterns, commit settings
 - [Browser Configuration](browser.md) - Browser automation
 - [Storage Configuration](storage.md) - Task data locations
-- [Agents Guide](../agents/index.md) - Agent configuration and aliases
-- [CLI Reference](../cli/index.md) - All commands
+- [Agents Guide](/agents/index.md) - Agent configuration and aliases
+- [CLI Reference](/cli/index.md) - All commands

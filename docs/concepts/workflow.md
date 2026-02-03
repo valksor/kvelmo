@@ -4,7 +4,7 @@ Mehrhof uses a structured workflow to manage the task lifecycle. Understanding t
 
 ## Task Lifecycle
 
-![Workflow State Diagram](../_media/img/workflow-state-diagram.png)
+![Workflow State Diagram](/_media/img/workflow-state-diagram.png)
 
 ## States
 
@@ -181,6 +181,6 @@ See [Tasks](tasks.md) for more on managing multiple tasks.
 
 ## See Also
 
-- [Glossary](../glossary.md) - Plain-language definitions
-- [CLI: workflow](../cli/workflow.md) - CLI workflow commands
-- [Web UI: Overview](../web-ui/index.md) - Web UI guide
+- [Glossary](/glossary.md) - Plain-language definitions
+- [CLI: workflow](/cli/workflow.md) - CLI workflow commands
+- [Web UI: Overview](/web-ui/index.md) - Web UI guide

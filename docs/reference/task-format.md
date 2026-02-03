@@ -98,7 +98,7 @@ agent_steps:
 ---
 ```
 
-See [AI Agents](../agents/index.md#per-step-agent-configuration) for details on agent configuration.
+See [AI Agents](/agents/index.md#per-step-agent-configuration) for details on agent configuration.
 
 ### With Budget Limits
 
@@ -170,6 +170,6 @@ All files are read and provided as context to the AI.
 
 ## See Also
 
-- [Tasks Concept](../concepts/tasks.md) - Task lifecycle and states
-- [mehr start](../cli/start.md) - Starting tasks
+- [Tasks Concept](/concepts/tasks.md) - Task lifecycle and states
+- [mehr start](/cli/start.md) - Starting tasks
 - [Specification Format](specification-format.md) - AI-generated specification files
