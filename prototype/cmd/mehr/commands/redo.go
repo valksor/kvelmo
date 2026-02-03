@@ -17,7 +17,22 @@ var redoCmd = &cobra.Command{
 	Short: "Restore the next checkpoint",
 	Long: `Restore the current task to the next checkpoint.
 
-This redoes changes that were previously undone.
+HOW REDO WORKS:
+  This redoes changes that were previously undone.
+
+  • Moves HEAD forward to the next checkpoint after an undo
+  • Only available if you previously used 'mehr undo'
+  • Restores code changes that were undone
+
+UNDO/REDO HISTORY:
+  Undo and redo work like a linear history stack:
+  1. Each 'mehr undo' moves backward in checkpoint history
+  2. Each 'mehr redo' moves forward (restores undone changes)
+  3. Creating new checkpoints clears the redo history
+
+RELATED COMMANDS:
+  mehr undo     - Revert to previous checkpoint
+  mehr status   - Show current task state and checkpoint info
 
 Examples:
   mehr redo                    # Redo changes (with confirmation)
