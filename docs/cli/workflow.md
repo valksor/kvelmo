@@ -96,7 +96,7 @@ mehr guide
 
 ## Related Concepts
 
-For a deeper understanding of the workflow state machine, guards, and lifecycle, see [Workflow Concepts](../concepts/workflow.md).
+For a deeper understanding of the workflow state machine, guards, and lifecycle, see [Workflow Concepts](/concepts/workflow.md).
 
 ## Key Transitions
 
@@ -115,11 +115,11 @@ For a deeper understanding of the workflow state machine, guards, and lifecycle,
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Overview](../web-ui/index.md).
+Prefer a visual interface? See [Web UI: Overview](/web-ui/index.md).
 
 ## See Also
 
-- [Workflow Concepts](../concepts/workflow.md) - Detailed state machine explanation
+- [Workflow Concepts](/concepts/workflow.md) - Detailed state machine explanation
 - [status](status.md) - Show current task state
 - [guide](guide.md) - Get context-aware next actions
 - [continue](continue.md) - Resume workflow with suggestions

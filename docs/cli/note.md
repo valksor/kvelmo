@@ -194,10 +194,10 @@ mehr plan
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Notes](../web-ui/notes.md).
+Prefer a visual interface? See [Web UI: Notes](/web-ui/notes.md).
 
 ## See Also
 
 - [plan](plan.md) - Create specifications (agent runs here)
 - [implement](implement.md) - Generate code (agent runs here)
-- [Workflow](../concepts/workflow.md) - Understanding states
+- [Workflow](/concepts/workflow.md) - Understanding states

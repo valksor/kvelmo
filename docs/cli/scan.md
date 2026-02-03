@@ -526,10 +526,10 @@ agent:
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Security & Quality](../web-ui/security-quality.md).
+Prefer a visual interface? See [Web UI: Security & Quality](/web-ui/security-quality.md).
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - Security settings in config.yaml
-- [Advanced: Security Scanning](../advanced/security.md) - Deep dive on security architecture
+- [Configuration Guide](/configuration/index.md) - Security settings in config.yaml
+- [Advanced: Security Scanning](/advanced/security.md) - Deep dive on security architecture
 - [SARIF Specification](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)

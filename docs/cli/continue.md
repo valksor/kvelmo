@@ -142,7 +142,7 @@ Use `guide` for quick suggestions. Use `status` for full details. Use `continue`
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Continuing](../web-ui/continuing.md).
+Prefer a visual interface? See [Web UI: Continuing](/web-ui/continuing.md).
 
 ## See Also
 

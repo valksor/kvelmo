@@ -307,10 +307,10 @@ git checkout task/a1b2c3d4
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Finishing](../web-ui/finishing.md).
+Prefer a visual interface? See [Web UI: Finishing](/web-ui/finishing.md).
 
 ## See Also
 
 - [abandon](./abandon.md) - Abandon without merging
 - [review](./review.md) - Review before finishing
-- [Workflow](../concepts/workflow.md) - Task lifecycle
+- [Workflow](/concepts/workflow.md) - Task lifecycle

@@ -130,4 +130,4 @@ State: implementing
 
 - [status](status.md) - Detailed task status
 - [note](note.md) - Add notes to the task
-- [Workflow](../concepts/workflow.md) - Understanding states
+- [Workflow](/concepts/workflow.md) - Understanding states

@@ -2,7 +2,7 @@
 
 List and manage task providers.
 
-> **Note:** Provider management is CLI-only. Provider authentication is configured in the [Web UI Settings](../web-ui/settings.md) under Providers.
+> **Note:** Provider management is CLI-only. Provider authentication is configured in the [Web UI Settings](/web-ui/settings.md) under Providers.
 
 ## Synopsis
 
@@ -259,9 +259,9 @@ For provider tokens and credentials, the resolution priority is:
 
 ## Web UI
 
-Prefer a visual interface? See the Integrations section in [Settings](../web-ui/settings.md).
+Prefer a visual interface? See the Integrations section in [Settings](/web-ui/settings.md).
 
 ## See Also
 
 - [start](start.md) - Start a task from a provider
-- [Providers Reference](../providers/index.md) - Detailed provider documentation
+- [Providers Reference](/providers/index.md) - Detailed provider documentation

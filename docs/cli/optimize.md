@@ -191,7 +191,7 @@ For cost-sensitive workflows, consider:
 
 ## Web UI
 
-Prefer a visual interface? See the Optimize feature in [Quick Tasks](../web-ui/quick-tasks.md).
+Prefer a visual interface? See the Optimize feature in [Quick Tasks](/web-ui/quick-tasks.md).
 
 ## See Also
 

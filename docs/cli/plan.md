@@ -100,7 +100,7 @@ Skip the topic prompt by providing it directly.
 mehr plan --agent-plan claude-opus
 ```
 
-Use a specific agent for this planning session. See [AI Agents](../agents/index.md#per-step-agent-configuration).
+Use a specific agent for this planning session. See [AI Agents](/agents/index.md#per-step-agent-configuration).
 
 ### Optimize Prompt
 
@@ -210,10 +210,10 @@ mehr note "Simplify the authentication flow"
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Planning](../web-ui/planning.md).
+Prefer a visual interface? See [Web UI: Planning](/web-ui/planning.md).
 
 ## See Also
 
 - [implement](cli/implement.md) - Implement specifications
 - [note](cli/note.md) - Add notes or clarifications
-- [Specification Format](../reference/specification-format.md) - Specification file details
+- [Specification Format](/reference/specification-format.md) - Specification file details

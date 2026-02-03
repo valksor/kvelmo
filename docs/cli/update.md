@@ -157,6 +157,6 @@ make build
 
 ## See Also
 
-- [Quickstart](../quickstart.md) - Installing Mehrhof
-- [Configuration](../configuration/index.md) - Configuring update behavior
+- [Quickstart](/quickstart.md) - Installing Mehrhof
+- [Configuration](/configuration/index.md) - Configuring update behavior
 - [CLI Overview](index.md) - All available commands

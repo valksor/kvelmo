@@ -389,10 +389,10 @@ Fix by setting the environment variable or using a literal value.
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Settings](../web-ui/settings.md).
+Prefer a visual interface? See [Web UI: Settings](/web-ui/settings.md).
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - How configuration works and file reference
+- [Configuration Guide](/configuration/index.md) - How configuration works and file reference
 - [mehr agents](agents.md) - Agent commands
-- [AI Agents](../agents/index.md) - Agent configuration and aliases
+- [AI Agents](/agents/index.md) - Agent configuration and aliases

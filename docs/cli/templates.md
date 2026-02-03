@@ -239,9 +239,9 @@ agent: claude-sonnet
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Templates](../web-ui/templates.md).
+Prefer a visual interface? See [Web UI: Templates](/web-ui/templates.md).
 
 ## See Also
 
 - [start](start.md) - Start a task with `--template` flag
-- [Task File Format](../reference/task-format.md) - Frontmatter reference
+- [Task File Format](/reference/task-format.md) - Frontmatter reference

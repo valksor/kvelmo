@@ -296,7 +296,7 @@ Exceeding the limit returns **HTTP 429 Too Many Requests**.
 
 Both CSRF and rate limiting are **automatically disabled** when the server runs on localhost (default). This keeps the development experience frictionless while protecting network-accessible deployments.
 
-See [Web UI: Authentication](../web-ui/authentication.md) for full details.
+See [Web UI: Authentication](/web-ui/authentication.md) for full details.
 
 ## Notes
 
@@ -310,4 +310,4 @@ See [Web UI: Authentication](../web-ui/authentication.md) for full details.
 
 - [status](status.md) - Check task status from CLI
 - [workflow](workflow.md) - Understanding the workflow state machine
-- [Web UI Documentation](../web-ui/) - Complete Web UI guide
+- [Web UI Documentation](/web-ui/) - Complete Web UI guide

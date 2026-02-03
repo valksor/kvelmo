@@ -73,7 +73,7 @@ mehr review --force    # Reset state and start reviewing
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Reset](../web-ui/reset.md).
+Prefer a visual interface? See [Web UI: Reset](/web-ui/reset.md).
 
 ## See Also
 

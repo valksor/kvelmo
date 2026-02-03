@@ -190,11 +190,11 @@ project/
 
 ## Web UI
 
-Prefer a visual interface? See the Export feature in [Quick Tasks](../web-ui/quick-tasks.md).
+Prefer a visual interface? See the Export feature in [Quick Tasks](/web-ui/quick-tasks.md).
 
 ## See Also
 
 - [quick](quick.md) - Create quick tasks
 - [optimize](optimize.md) - AI optimize before exporting
 - [start](start.md) - Start from exported file
-- [Task Format](../reference/task-format.md) - Task file format reference
+- [Task Format](/reference/task-format.md) - Task file format reference

@@ -81,7 +81,7 @@ See the agent's reasoning and code generation in real-time.
 mehr implement --agent-implement claude
 ```
 
-Use a specific agent for code generation. See [AI Agents](../agents/index.md#per-step-agent-configuration).
+Use a specific agent for code generation. See [AI Agents](/agents/index.md#per-step-agent-configuration).
 
 ### Optimize Prompt
 
@@ -121,7 +121,7 @@ Run multiple agents simultaneously to implement specifications faster. Each agen
 - Speeding up implementation on large codebases
 - Cross-validation between different AI models
 
-**Note:** Parallel execution creates an ad-hoc orchestration configuration without requiring YAML setup. For persistent orchestration, see [Multi-Agent Orchestration](../agents/orchestration.md).
+**Note:** Parallel execution creates an ad-hoc orchestration configuration without requiring YAML setup. For persistent orchestration, see [Multi-Agent Orchestration](/agents/orchestration.md).
 
 ## What Happens
 
@@ -237,7 +237,7 @@ mehr finish             # Complete the task
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Implementing](../web-ui/implementing.md).
+Prefer a visual interface? See [Web UI: Implementing](/web-ui/implementing.md).
 
 ## See Also
 

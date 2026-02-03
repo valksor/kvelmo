@@ -267,7 +267,7 @@ Or switch to an existing task branch:
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Dashboard](../web-ui/dashboard.md).
+Prefer a visual interface? See [Web UI: Dashboard](/web-ui/dashboard.md).
 
 ---
 
@@ -382,4 +382,4 @@ More contextual than `mehr status` with action suggestions.
 ## See Also
 
 - [start](cli/start.md) - Begin a new task
-- [Workflow](../concepts/workflow.md) - Understanding states
+- [Workflow](/concepts/workflow.md) - Understanding states

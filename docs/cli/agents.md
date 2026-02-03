@@ -2,7 +2,7 @@
 
 Manage AI agents including built-in agents and user-defined aliases.
 
-> **Note:** Agent listing is CLI-only. Agents are configured in the [Web UI Settings](../web-ui/settings.md) under the Agent section.
+> **Note:** Agent listing is CLI-only. Agents are configured in the [Web UI Settings](/web-ui/settings.md) under the Agent section.
 
 ## Synopsis
 
@@ -242,9 +242,9 @@ claude --version
 
 ## Web UI
 
-Prefer a visual interface? See the Agent Settings section in [Settings](../web-ui/settings.md).
+Prefer a visual interface? See the Agent Settings section in [Settings](/web-ui/settings.md).
 
 ## See Also
 
-- [AI Agents](../agents/index.md) - How agents work, aliases, and per-step configuration
-- [Configuration Guide](../configuration/index.md) - Config file reference
+- [AI Agents](/agents/index.md) - How agents work, aliases, and per-step configuration
+- [Configuration Guide](/configuration/index.md) - Config file reference

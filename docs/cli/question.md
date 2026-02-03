@@ -315,7 +315,7 @@ mehr finish
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Quick Question](../web-ui/questions.md).
+Prefer a visual interface? See [Web UI: Quick Question](/web-ui/questions.md).
 
 ## See Also
 
@@ -323,4 +323,4 @@ Prefer a visual interface? See [Web UI: Quick Question](../web-ui/questions.md).
 - [plan](plan.md) - Create specifications with AI
 - [implement](implement.md) - Generate code with AI
 - [review](review.md) - Review code with AI
-- [Workflow](../concepts/workflow.md) - Understanding states
+- [Workflow](/concepts/workflow.md) - Understanding states

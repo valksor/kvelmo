@@ -96,7 +96,7 @@ This ensures generated commits blend seamlessly with your repository's style.
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Smart Commit](../web-ui/commit.md).
+Prefer a visual interface? See [Web UI: Smart Commit](/web-ui/commit.md).
 
 ## See Also
 

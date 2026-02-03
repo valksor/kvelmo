@@ -655,10 +655,10 @@ The next browser command will launch a fresh Chrome instance.
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Browser Control](../web-ui/browser.md).
+Prefer a visual interface? See [Web UI: Browser Control](/web-ui/browser.md).
 
 ## See Also
 
-- [Configuration Guide](../configuration/index.md) - Browser settings in config.yaml
-- [Agents Overview](../agents/index.md) - Agent integration with browser tools
-- [Storage Structure](../reference/storage.md) - Session file location
+- [Configuration Guide](/configuration/index.md) - Browser settings in config.yaml
+- [Agents Overview](/agents/index.md) - Agent integration with browser tools
+- [Storage Structure](/reference/storage.md) - Session file location

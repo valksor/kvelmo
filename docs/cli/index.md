@@ -209,7 +209,7 @@ By default, output is human-readable text. Some commands support JSON output via
 
 ## Configuration
 
-See [Configuration Guide](../configuration/index.md) for workspace settings and CLI flags.
+See [Configuration Guide](/configuration/index.md) for workspace settings and CLI flags.
 
 ## Examples
 
