@@ -49,6 +49,7 @@ type WorkspaceConfig struct {
 	Context       *ContextSettings            `yaml:"context,omitempty"`
 	Automation    *AutomationSettings         `yaml:"automation,omitempty"`
 	Project       ProjectSettings             `yaml:"project,omitempty"`
+	Stack         *StackSettings              `yaml:"stack,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -497,6 +498,12 @@ type ProjectSettings struct {
 	CodeDir string `yaml:"code_dir,omitempty"` // Separate code directory (relative to project root or absolute)
 }
 
+// StackSettings holds stacked feature branch configuration.
+type StackSettings struct {
+	AutoRebase       string `yaml:"auto_rebase,omitempty"`        // When to auto-rebase children: "disabled" (default) | "on_finish"
+	BlockOnConflicts bool   `yaml:"block_on_conflicts,omitempty"` // Block auto-rebase if conflicts detected (default: true)
+}
+
 // SpecificationSettings holds specification-related configuration.
 type SpecificationSettings struct {
 	FilenamePattern string `yaml:"filename_pattern"` // Spec filename pattern (default: "specification-{n}.md")
@@ -681,6 +688,10 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 				SkipReview:       "mehrhof-skip-review",
 			},
 		},
+		Stack: &StackSettings{
+			AutoRebase:       "disabled", // Opt-in: "disabled" | "on_finish"
+			BlockOnConflicts: true,       // Safe default: always block on conflicts
+		},
 		Env: make(map[string]string),
 	}
 }
@@ -795,6 +806,18 @@ func (w *Workspace) SaveConfig(cfg *WorkspaceConfig) error {
 # project:
 #     code_dir: "../reporting-engine"   # Relative to project root, or absolute path
 #     code_dir: "/workspace/my-code"    # Absolute path to code directory
+`
+	}
+
+	// Add stack section comment if stack is nil or using defaults
+	if cfg.Stack == nil || cfg.Stack.AutoRebase == "" || cfg.Stack.AutoRebase == "disabled" {
+		content += `
+# Stack settings
+# Configure auto-rebase behavior for stacked feature branches
+# Example:
+# stack:
+#     auto_rebase: disabled     # "disabled" (default) | "on_finish"
+#     block_on_conflicts: true  # Block auto-rebase if conflicts detected (default: true)
 `
 	}
 
