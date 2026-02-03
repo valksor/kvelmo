@@ -91,6 +91,7 @@ Review results are saved to the work directory.
 | `--range`      |       | string | ""           | Compare commit range (standalone only)           |
 | `--context`    |       | int    | 3            | Lines of context in diff (standalone only)       |
 | `--agent`      |       | string | ""           | Agent to use for review                          |
+| `--library`    |       | bool   | false        | Include relevant library docs in prompts         |
 
 ## Examples
 
@@ -496,6 +497,22 @@ If no issues are found or the PR was already reviewed:
 $ mehr review pr --pr-number 123
 
 ⏭️  Skipped: No new changes since last review
+```
+
+## Viewing Reviews
+
+View the content of a specific review:
+
+```bash
+mehr review view 1              # View review 1
+mehr review view 1 -o rev.txt   # Save to file
+mehr review view --all          # View all reviews
+```
+
+In interactive mode:
+```
+> review 1    # View review 1
+> review      # List all reviews (if any exist)
 ```
 
 ## Web UI

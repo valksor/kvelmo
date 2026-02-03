@@ -31,6 +31,7 @@ The `implement` command runs the implementation phase where the AI agent:
 | `--optimize`        |       | bool   | false   | Optimize prompt before sending to agent                                                |
 | `--only`            |       | string |         | Only implement this component (e.g., backend, frontend, tests)                         |
 | `--parallel`        |       | string |         | Run N agents in parallel, or comma-separated agent list (e.g., "3" or "claude,gemini") |
+| `--library`         |       | bool   | false   | Include relevant library docs in prompts                                               |
 
 ## Examples
 
@@ -210,6 +211,28 @@ If not:
 
 ```bash
 mehr undo
+```
+
+## Implementing Review Fixes
+
+After running `mehr review`, you can explicitly implement fixes from that review:
+
+```bash
+mehr implement review 1            # Implement fixes from review 1
+mehr implement review 1 --dry-run  # Preview without applying
+```
+
+This tells the agent to focus specifically on fixing issues identified in that review,
+rather than implementing specifications. Use this when review feedback needs to be addressed.
+
+### Example Workflow
+
+```bash
+mehr implement          # Initial implementation
+mehr review             # Review finds issues (creates REVIEW-1.txt)
+mehr implement review 1 # Fix issues from review 1
+mehr review             # Verify fixes (creates REVIEW-2.txt)
+mehr finish             # Complete the task
 ```
 
 ## Web UI

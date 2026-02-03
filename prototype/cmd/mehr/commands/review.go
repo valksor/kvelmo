@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
+	"github.com/valksor/go-mehrhof/internal/storage"
 	tkdisplay "github.com/valksor/go-toolkit/display"
 )
 
@@ -25,6 +27,7 @@ var (
 	reviewAgentReviewing string
 	reviewOptimize       bool
 	reviewForce          bool // Force reset state before reviewing
+	reviewLibrary        bool // Auto-include library documentation
 	// Standalone mode flags.
 	reviewStandalone  bool
 	reviewBranch      string
@@ -32,6 +35,13 @@ var (
 	reviewContextSize int
 	reviewFix         bool
 	reviewCheckpoint  bool
+)
+
+// Review view flags.
+var (
+	reviewViewNumber int
+	reviewViewAll    bool
+	reviewViewOutput string
 )
 
 var reviewCmd = &cobra.Command{
@@ -79,14 +89,32 @@ Examples:
 	RunE: runReview,
 }
 
+var reviewViewCmd = &cobra.Command{
+	Use:   "view <number>",
+	Short: "View a review's content",
+	Long: `Display the full content of a review with metadata.
+
+Shows the complete review content with markdown formatting,
+along with metadata like timestamp, verdict, and review number.
+
+Examples:
+  mehr review view 1              # View review-1
+  mehr review view 1 -o rev.txt   # Save to file
+  mehr review view --all          # View all reviews`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runReviewView,
+}
+
 func init() {
 	rootCmd.AddCommand(reviewCmd)
+	reviewCmd.AddCommand(reviewViewCmd)
 
 	reviewCmd.Flags().StringVar(&reviewTool, "tool", "", "Review tool to use (empty skips external tool review)")
 	reviewCmd.Flags().StringVarP(&reviewOutput, "output", "o", "", "Output file name (default: review-N.txt)")
 	reviewCmd.Flags().StringVar(&reviewAgentReviewing, "agent-review", "", "Agent for review step (when using agent-based review)")
 	reviewCmd.Flags().BoolVar(&reviewOptimize, "optimize", false, "Optimize prompt before sending to agent")
 	reviewCmd.Flags().BoolVar(&reviewForce, "force", false, "Reset workflow state and retry (use after hung agent)")
+	reviewCmd.Flags().BoolVar(&reviewLibrary, "library", false, "Auto-include relevant library documentation based on working directory")
 
 	// Standalone mode flags
 	reviewCmd.Flags().BoolVar(&reviewStandalone, "standalone", false, "Review without an active task")
@@ -95,6 +123,11 @@ func init() {
 	reviewCmd.Flags().IntVar(&reviewContextSize, "context", 3, "Lines of context in diff (use with --standalone)")
 	reviewCmd.Flags().BoolVar(&reviewFix, "fix", false, "Apply suggested fixes (use with --standalone)")
 	reviewCmd.Flags().BoolVar(&reviewCheckpoint, "checkpoint", true, "Create checkpoint before applying fixes (use with --fix)")
+
+	// Review view flags
+	reviewViewCmd.Flags().IntVarP(&reviewViewNumber, "number", "n", 0, "Review number")
+	reviewViewCmd.Flags().BoolVarP(&reviewViewAll, "all", "a", false, "View all reviews")
+	reviewViewCmd.Flags().StringVarP(&reviewViewOutput, "output", "o", "", "Save to file instead of printing")
 }
 
 func runReview(cmd *cobra.Command, args []string) error {
@@ -111,6 +144,9 @@ func runReview(cmd *cobra.Command, args []string) error {
 	}
 	if reviewOptimize {
 		opts = append(opts, conductor.WithOptimizePrompts(true))
+	}
+	if reviewLibrary {
+		opts = append(opts, conductor.WithLibraryAutoInclude(true))
 	}
 
 	// Initialize conductor with standard providers and agents
@@ -453,4 +489,161 @@ func getNextReviewFilename(workDir string) string {
 	}
 
 	return fmt.Sprintf("review-%d.txt", time.Now().Unix())
+}
+
+func runReviewView(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	// Build conductor
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return err
+	}
+
+	ws := cond.GetWorkspace()
+	if ws == nil {
+		return errors.New("no workspace available")
+	}
+
+	// Get active task
+	activeTask := cond.GetActiveTask()
+	if activeTask == nil {
+		return errors.New("no active task. Start a task first with 'mehr start'")
+	}
+	taskID := activeTask.ID
+
+	// Parse review number from argument or flag
+	number := reviewViewNumber
+	if number == 0 && len(args) > 0 {
+		num, err := strconv.Atoi(args[0])
+		if err != nil {
+			return fmt.Errorf("invalid review number: %w", err)
+		}
+		number = num
+	}
+
+	// Get all reviews to check what exists
+	reviews, err := ws.ListReviews(taskID)
+	if err != nil {
+		return fmt.Errorf("list reviews: %w", err)
+	}
+
+	if len(reviews) == 0 {
+		fmt.Printf("No reviews yet. Run 'mehr review' to create one.\n")
+
+		return nil
+	}
+
+	// View all reviews if --all flag is set
+	if reviewViewAll {
+		return viewAllReviews(ws, taskID, reviews, reviewViewOutput)
+	}
+
+	// Validate review number
+	if number == 0 {
+		return errors.New("review number required. Use: mehr review view <number>")
+	}
+
+	// Check if review exists
+	found := false
+	for _, r := range reviews {
+		if r == number {
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		// Show available reviews
+		fmt.Printf("Review %d not found. Available reviews:\n", number)
+		for _, r := range reviews {
+			fmt.Printf("  review-%d\n", r)
+		}
+
+		return fmt.Errorf("review %d not found", number)
+	}
+
+	// Load and display review
+	return displayReview(ws, taskID, number, reviewViewOutput)
+}
+
+func viewAllReviews(ws *storage.Workspace, taskID string, reviews []int, outputPath string) error {
+	var outputs []string
+
+	for _, num := range reviews {
+		content, err := ws.LoadReview(taskID, num)
+		if err != nil {
+			return fmt.Errorf("load review %d: %w", num, err)
+		}
+
+		if outputPath != "" {
+			// For multiple reviews, append number to filename
+			// For single review, use the path as-is
+			var reviewOutputPath string
+			if len(reviews) > 1 {
+				baseName := strings.TrimSuffix(outputPath, filepath.Ext(outputPath))
+				ext := filepath.Ext(outputPath)
+				if ext == "" {
+					ext = ".txt"
+				}
+				reviewOutputPath = fmt.Sprintf("%s-%d%s", baseName, num, ext)
+			} else {
+				reviewOutputPath = outputPath
+			}
+			if err := os.WriteFile(reviewOutputPath, []byte(content), 0o644); err != nil {
+				return fmt.Errorf("write review %d: %w", num, err)
+			}
+			fmt.Printf("Review %d saved to: %s\n", num, reviewOutputPath)
+		} else {
+			// Print to stdout with separator
+			if len(outputs) > 0 {
+				outputs = append(outputs, "\n"+strings.Repeat("─", 80)+"\n")
+			}
+			outputs = append(outputs, formatReviewHeader(num))
+			outputs = append(outputs, content)
+		}
+	}
+
+	if outputPath == "" {
+		fmt.Print(strings.Join(outputs, ""))
+	}
+
+	return nil
+}
+
+func displayReview(ws *storage.Workspace, taskID string, number int, outputPath string) error {
+	// Load review content
+	content, err := ws.LoadReview(taskID, number)
+	if err != nil {
+		return fmt.Errorf("load review: %w", err)
+	}
+
+	// Format output
+	output := formatReviewHeader(number) + content
+
+	// Write to file or stdout
+	if outputPath != "" {
+		if err := os.WriteFile(outputPath, []byte(output), 0o644); err != nil {
+			return fmt.Errorf("write file: %w", err)
+		}
+		fmt.Printf("Review %d saved to: %s\n", number, outputPath)
+	} else {
+		fmt.Print(output)
+	}
+
+	return nil
+}
+
+func formatReviewHeader(number int) string {
+	var sb strings.Builder
+
+	// Header with number
+	sb.WriteString(tkdisplay.Bold(fmt.Sprintf("─ Review %d", number)))
+	sb.WriteString("\n\n")
+
+	sb.WriteString(strings.Repeat("─", 80))
+	sb.WriteString("\n\n")
+
+	return sb.String()
 }
