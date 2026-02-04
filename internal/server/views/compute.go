@@ -48,6 +48,7 @@ func ComputeDashboard(c *conductor.Conductor, ws *storage.Workspace, pageData Pa
 		data.Reviews = ComputeReviews(ws, data.ActiveWork.ID)
 		data.Question = ComputeQuestion(ws, data.ActiveWork.ID)
 		data.Costs = ComputeCosts(ws, data.ActiveWork.ID)
+		data.Notes = ComputeNotes(ws, data.ActiveWork.ID)
 	}
 
 	return data
@@ -121,8 +122,14 @@ func ComputeActiveWork(c *conductor.Conductor, ws *storage.Workspace) *ActiveWor
 
 	if work != nil {
 		active.Title = work.Metadata.Title
-		// Description is not stored in WorkMetadata - could be derived from source content
 		active.Labels = computeLabels(work.Metadata.Labels)
+
+		// Extract short description from source content for dashboard preview
+		if ws != nil {
+			if content, err := ws.GetSourceContent(activeTask.ID); err == nil && content != "" {
+				active.Description = ExtractShortDescription(content, 200)
+			}
+		}
 	}
 
 	// Check for pending question
@@ -134,6 +141,33 @@ func ComputeActiveWork(c *conductor.Conductor, ws *storage.Workspace) *ActiveWor
 	active.Hierarchy = ComputeHierarchyContext(c, ws, activeTask.ID)
 
 	return active
+}
+
+// ComputeMinimalActiveWork creates minimal active work data from an active task.
+// Used as a fallback when full computation fails during state transitions.
+// This ensures the task card always renders when there's an active task,
+// preventing UI flicker caused by HTTP 204 responses during state changes.
+func ComputeMinimalActiveWork(task *storage.ActiveTask) *ActiveWorkData {
+	if task == nil {
+		return nil
+	}
+
+	stateDisplay := GetStateDisplay(task.State)
+
+	return &ActiveWorkData{
+		Type:       WorkTypeTask,
+		ID:         task.ID,
+		Ref:        task.Ref,
+		State:      task.State,
+		Branch:     task.Branch,
+		Worktree:   task.WorktreePath,
+		StartedAt:  task.Started,
+		Started:    FormatTimeAgo(task.Started),
+		StateIcon:  stateDisplay.Icon,
+		StateBadge: stateDisplay.Badge,
+		StateColor: stateDisplay.Color,
+		BarColor:   stateDisplay.BarColor,
+	}
 }
 
 // ComputeActions determines available actions based on current work state.
@@ -659,6 +693,40 @@ func ComputeCosts(ws *storage.Workspace, taskID string) *CostsData {
 	}
 
 	return data
+}
+
+// ComputeNotes builds the notes section for the dashboard.
+func ComputeNotes(ws *storage.Workspace, taskID string) *NotesData {
+	if ws == nil {
+		return nil
+	}
+
+	notes, err := ws.LoadNotes(taskID)
+	if err != nil || len(notes) == 0 {
+		return nil
+	}
+
+	items := make([]NoteItem, 0, len(notes))
+	for _, note := range notes {
+		// Render markdown content to HTML
+		content, err := RenderMarkdown(note.Content)
+		if err != nil {
+			// Fallback to plain text if markdown rendering fails
+			content = note.Content
+		}
+
+		items = append(items, NoteItem{
+			Number:    note.Number,
+			Timestamp: note.Timestamp.Format("2006-01-02 15:04"),
+			State:     note.State,
+			Content:   content,
+		})
+	}
+
+	return &NotesData{
+		Notes: items,
+		Count: len(items),
+	}
 }
 
 // ComputeRecentTasks builds the recent tasks list.

@@ -65,6 +65,7 @@ type DashboardData struct {
 	Reviews        *ReviewsData
 	Question       *QuestionData
 	Costs          *CostsData
+	Notes          *NotesData
 	RecentTasks    []RecentTaskData
 
 	// Global mode specific
@@ -215,6 +216,20 @@ type OptionData struct {
 	Label       string
 	Value       string
 	Description string
+}
+
+// NotesData contains notes for the dashboard.
+type NotesData struct {
+	Notes []NoteItem
+	Count int
+}
+
+// NoteItem represents a single note in the dashboard.
+type NoteItem struct {
+	Number    int
+	Timestamp string
+	State     string
+	Content   string // HTML-rendered markdown
 }
 
 // CostsData contains cost and budget information.
