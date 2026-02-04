@@ -1042,9 +1042,8 @@ async function startImplementation() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadQueueSelector();
-});
+// Load queue selector immediately (DOM is ready since script is at end of body)
+loadQueueSelector();
 
 // Expose functions for event delegation handlers
 window.loadQueues = loadQueues;

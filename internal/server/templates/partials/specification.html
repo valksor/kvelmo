@@ -51,8 +51,8 @@
                         <!-- Description content -->
                         {{if .Description}}
                         <div class="mt-3">
-                            <div class="prose prose-sm dark:prose-invert max-w-none text-base-content/80">
-                                <pre class="whitespace-pre-wrap font-mono text-sm bg-base-100 p-4 rounded-lg border border-base-300 overflow-x-auto">{{.Description}}</pre>
+                            <div class="prose prose-sm dark:prose-invert max-w-none text-base-content/80 bg-base-100 p-4 rounded-lg border border-base-300 overflow-x-auto">
+                                {{renderMarkdown .Description}}
                             </div>
                             <button data-action="copy-spec" data-spec="{{.Number}}"
                                     class="mt-3 text-xs text-base-content/60 hover:text-base-content/80 dark:hover:text-base-content/20 flex items-center gap-1 transition-smooth">

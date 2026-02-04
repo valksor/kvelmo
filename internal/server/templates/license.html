@@ -114,10 +114,8 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-// Load on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadLicenses();
-});
+// Load licenses immediately (DOM is ready since script is at end of body)
+loadLicenses();
 
 // Expose for event delegation
 window.loadLicenses = loadLicenses;

@@ -9,7 +9,8 @@
         <li class="py-3 flex items-center justify-between hover:bg-base-100 px-2 -mx-2 rounded-lg transition-smooth cursor-pointer"
             hx-post="/api/v1/workflow/start"
             hx-vals='{"ref": "{{.ID}}"}'
-            hx-target="#main-content"
+            hx-target="body"
+            hx-swap="innerHTML"
             title="Click to resume this task"
         >
             <div class="flex items-center gap-3 min-w-0">

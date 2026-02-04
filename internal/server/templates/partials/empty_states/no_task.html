@@ -1,5 +1,7 @@
 {{/* Empty state for when no active task exists */}}
+{{/* Wrapper maintains #task-card ID so HTMX can swap back to active work on state change */}}
 {{define "no_task"}}
+<div id="task-card" hx-get="/ui/partials/task" hx-trigger="sse:{{eventWorkflowStateChanged}}, every 30s" hx-swap="outerHTML">
 <div class="card p-8 text-center">
     {{/* Icon */}}
     <div class="mx-auto w-16 h-16 rounded-full bg-base-200 flex items-center justify-center mb-4">
@@ -19,7 +21,7 @@
     {{/* Actions */}}
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
         {{/* Start task form */}}
-        <form hx-post="/api/v1/workflow/start" hx-target="#main-content" class="flex gap-2">
+        <form hx-post="/api/v1/workflow/start" hx-target="body" hx-swap="innerHTML" class="flex gap-2">
             <input
                 type="text"
                 name="ref"
@@ -42,5 +44,6 @@
     <p class="mt-6 text-xs text-base-content/60">
         Or use <code class="px-2 py-0.5 bg-base-200 rounded">mehr start</code> from the command line
     </p>
+</div>
 </div>
 {{end}}

@@ -89,3 +89,4 @@ window.getSelectedProject = getSelectedProject;
 window.setSelectedProject = setSelectedProject;
 window.clearSelectedProject = clearSelectedProject;
 window.csrfFetch = csrfFetch;
+window.showToast = showToast;

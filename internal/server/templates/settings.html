@@ -2284,21 +2284,19 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-// Load data on page load
-document.addEventListener('DOMContentLoaded', function() {
-    explainAgentConfig();
-    loadProviderHealth();
-    loadAgentsList();
-    loadProvidersList();
-    loadAliasesList();
+// Load data immediately (DOM is ready since script is at end of body)
+explainAgentConfig();
+loadProviderHealth();
+loadAgentsList();
+loadProvidersList();
+loadAliasesList();
 
-    // Load saved project on page load
-    const savedProject = getSelectedProject();
-    const picker = document.getElementById('project-picker');
-    if (savedProject && picker && !picker.value) {
-        picker.value = savedProject;
-    }
-});
+// Load saved project on page load
+const savedProject = getSelectedProject();
+const picker = document.getElementById('project-picker');
+if (savedProject && picker && !picker.value) {
+    picker.value = savedProject;
+}
 
 // Project selection handler - saves to localStorage and switches to project mode
 function selectProject(projectId) {

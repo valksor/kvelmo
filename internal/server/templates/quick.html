@@ -24,9 +24,9 @@
                         <label for="quick-description" class="block text-sm font-medium text-base-content/80 mb-2">
                             Description <span class="text-error-500">*</span>
                         </label>
-                        <input type="text" id="quick-description" name="description" required
-                               placeholder="e.g., fix typo in README.md line 42"
-                               class="input input-enhanced w-full">
+                        <textarea id="quick-description" name="description" required rows="4"
+                          placeholder="Describe the task...&#10;&#10;e.g., Fix typo in README.md line 42"
+                          class="textarea textarea-bordered w-full"></textarea>
                     </div>
                     <div>
                         <label for="quick-title" class="block text-sm font-medium text-base-content/80 mb-2">
@@ -166,12 +166,10 @@
 </div>
 
 <script>
-// Load tasks on page load
-document.addEventListener('DOMContentLoaded', function() {
-    htmx.ajax('GET', '/api/v1/quick', {
-        target: '#task-list',
-        swap: 'innerHTML'
-    });
+// Load quick tasks immediately (DOM is ready since script is at end of body)
+htmx.ajax('GET', '/api/v1/quick', {
+    target: '#task-list',
+    swap: 'innerHTML'
 });
 
 const submitSourceForm = document.getElementById('submit-source-form');

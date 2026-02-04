@@ -366,11 +366,9 @@
 let autoRefreshInterval = null;
 let currentTabId = null;
 
-// Load browser status on page load
-document.addEventListener('DOMContentLoaded', function() {
-  loadBrowserStatus();
-  loadTabs();
-});
+// Load browser status and tabs immediately (DOM is ready since script is at end of body)
+loadBrowserStatus();
+loadTabs();
 
 async function loadBrowserStatus() {
   try {
