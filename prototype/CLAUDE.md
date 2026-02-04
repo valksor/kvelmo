@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 # IT IS YEAR 2026 !!! Please use 2026 in web searches!!!  
+## DO NOT USE TIMELINE! IF complexity must be shown, use Fibonacci!  
 
 Guidance for Claude Code when working with go-mehrhof.
 
@@ -200,21 +201,15 @@ handlers_review.go    // Review handlers
 
 All git commands are classified into three tiers. **No exceptions, no force flags, no overrides.** Tier 2 and 3 commands are never used autonomously — the agent must have explicit user instruction before running any write operation on the repository.
 
-**Before any Tier 2 command**, run `date +"%u %H"` to check day-of-week (1=Mon, 7=Sun) and hour. If day is 1–5 AND hour is >= 09 and < 19, **refuse the operation** and inform the user:
-
-> "Git write operations are blocked during working hours (Mon–Fri 09:00–19:00). Current time: DAY HH:MM. Please retry after 19:00 or on the weekend."
-
 #### Tier 1 — Always Allowed
 
 Safe read-only commands, available anytime:
 
 `git status`, `git diff`, `git log`, `git show`, `git blame`, `git grep`, `git branch` (read-only), `git remote -v` (read-only), `git fetch`, `git reflog`, `git shortlog`, `git describe`, `git checkout`, `git switch`, `git restore`
 
-#### Tier 2 — User-Requested, Outside Work Hours Only
+#### Tier 2 — User-Requested Only
 
 **Only use when the user explicitly asks.** Never run these commands autonomously — not for convenience, not as part of a workflow, not "to be helpful." If the task seems to need one of these commands but the user hasn't asked, ask first.
-
-Additionally blocked Mon–Fri 09:00–19:00. Allowed only on evenings, nights, and weekends (Sat–Sun), and only when the user explicitly requests the operation:
 
 `git add`, `git commit`, `git rm`, `git mv`, `git apply`, `git am`
 

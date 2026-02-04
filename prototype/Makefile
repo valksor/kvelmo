@@ -18,7 +18,7 @@ all: build ## Build the binary (default target)
 build: generate-licenses ## Compile the binary
 	@bun run assets:build
 	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
+	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
 
 generate-licenses: ## Generate licenses.json from go.mod dependencies

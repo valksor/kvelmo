@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.1",
-    "monocart-reporter": "^2.9.23",
+    "monocart-reporter": "^2.10.0",
     "@types/node": "^25.2.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
