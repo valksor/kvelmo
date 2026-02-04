@@ -197,6 +197,87 @@ func (p *YAMLBlockParser) extractQuestion(input map[string]any) *Question {
 	return q
 }
 
+// clarificationPatterns are conservative patterns that indicate an agent is asking
+// for clarification in plain text (fallback when AskUserQuestion tool isn't used).
+var clarificationPatterns = []string{
+	"i need clarification",
+	"could you clarify",
+	"could you please clarify",
+	"please provide",
+	"please clarify",
+	"before i can proceed",
+	"before i proceed",
+	"i need more information",
+	"can you provide more details",
+	"what would you like",
+	"which approach would you prefer",
+}
+
+// DetectPlainTextQuestion detects questions asked in plain text (fallback).
+// Uses conservative patterns to minimize false positives.
+// Returns nil if no question pattern is detected.
+func DetectPlainTextQuestion(text string) *Question {
+	if text == "" {
+		return nil
+	}
+
+	textLower := strings.ToLower(text)
+	for _, pattern := range clarificationPatterns {
+		if strings.Contains(textLower, pattern) {
+			// Extract the paragraph containing the pattern as the question
+			questionText := extractQuestionParagraph(text, pattern)
+			if questionText != "" {
+				return &Question{Text: questionText}
+			}
+		}
+	}
+
+	return nil
+}
+
+// extractQuestionParagraph extracts the paragraph containing the pattern.
+// Returns the paragraph that contains the clarification request.
+func extractQuestionParagraph(text, pattern string) string {
+	textLower := strings.ToLower(text)
+	patternIdx := strings.Index(textLower, pattern)
+	if patternIdx == -1 {
+		return ""
+	}
+
+	// Find paragraph boundaries (double newline or start/end of text)
+	paragraphs := strings.Split(text, "\n\n")
+	runningIdx := 0
+
+	for _, para := range paragraphs {
+		paraEnd := runningIdx + len(para)
+		if patternIdx >= runningIdx && patternIdx < paraEnd {
+			// Found the paragraph containing the pattern
+			trimmed := strings.TrimSpace(para)
+			if trimmed != "" {
+				return trimmed
+			}
+		}
+		runningIdx = paraEnd + 2 // +2 for the "\n\n" separator
+	}
+
+	// Fallback: return a window around the pattern
+	start := patternIdx
+	end := patternIdx + len(pattern)
+
+	// Extend to sentence boundaries
+	for start > 0 && text[start-1] != '\n' && text[start-1] != '.' {
+		start--
+	}
+	for end < len(text) && text[end] != '\n' && text[end] != '.' {
+		end++
+	}
+	if end < len(text) && text[end] == '.' {
+		end++
+	}
+
+	return strings.TrimSpace(text[start:end])
+}
+
 // describeToolCall generates a human-readable description for a tool call.
 func (p *YAMLBlockParser) describeToolCall(name string, input map[string]any) string {
 	switch name {
