@@ -130,7 +130,7 @@
   </div>
 
   <!-- Task List -->
-  <div class="card bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
+  <div id="task-list-container" class="card bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-base-200">
         <thead class="bg-base-200">
@@ -162,15 +162,11 @@
 let allTasks = [];
 let filteredTasks = [];
 
-// Load tasks on page load
-document.addEventListener('DOMContentLoaded', function() {
-  loadTasks();
-
-  // Add event listeners for filters
-  document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 300));
-  document.getElementById('state-filter').addEventListener('change', applyFilters);
-  document.getElementById('sort-by').addEventListener('change', applyFilters);
-});
+// Load tasks and initialize filters immediately (DOM is ready since script is at end of body)
+loadTasks();
+document.getElementById('search-input')?.addEventListener('input', debounce(applyFilters, 300));
+document.getElementById('state-filter')?.addEventListener('change', applyFilters);
+document.getElementById('sort-by')?.addEventListener('change', applyFilters);
 
 async function loadTasks() {
   try {
@@ -184,7 +180,7 @@ async function loadTasks() {
 
         if (context.mode === 'global') {
           document.getElementById('no-project-message').classList.remove('hidden');
-          document.querySelector('.card bg-base-100').classList.add('hidden');
+          document.getElementById('task-list-container').classList.add('hidden');
           return;
         }
       } catch (contextError) {
@@ -197,7 +193,7 @@ async function loadTasks() {
 
     // Hide no-project message and show task list when data is loaded
     document.getElementById('no-project-message').classList.add('hidden');
-    document.querySelector('.card bg-base-100').classList.remove('hidden');
+    document.getElementById('task-list-container').classList.remove('hidden');
 
     applyFilters();
   } catch (error) {

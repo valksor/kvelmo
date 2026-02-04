@@ -76,6 +76,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/aymerick/douceur",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
       "path": "github.com/bahlo/generic-list-go",
       "license": "Apache-2.0",
       "unknown": false
@@ -186,6 +191,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/gorilla/css",
+      "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
       "path": "github.com/hashicorp/go-cleanhttp",
       "license": "Apache-2.0",
       "unknown": false
@@ -278,6 +288,11 @@
     {
       "path": "github.com/mgutz/ansi",
       "license": "MIT",
+      "unknown": false
+    },
+    {
+      "path": "github.com/microcosm-cc/bluemonday",
+      "license": "Apache-2.0",
       "unknown": false
     },
     {
@@ -556,5 +571,5 @@
       "unknown": false
     }
   ],
-  "count": 111
+  "count": 114
 }

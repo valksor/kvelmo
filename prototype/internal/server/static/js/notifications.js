@@ -324,14 +324,50 @@ function formatTimeAgo(date) {
 }
 
 /**
+ * Check if browser notifications can be enabled.
+ * Uses Permissions API when available for more accurate detection.
+ *
+ * @returns {Promise<'granted'|'denied'|'prompt'|'unsupported'>}
+ */
+async function checkNotificationPermission() {
+    if (!('Notification' in window)) {
+        return 'unsupported';
+    }
+
+    // Fast path: already granted or explicitly denied via Notification API
+    if (Notification.permission === 'granted') return 'granted';
+    if (Notification.permission === 'denied') return 'denied';
+
+    // Use Permissions API for more accurate detection
+    if ('permissions' in navigator) {
+        try {
+            const status = await navigator.permissions.query({ name: 'notifications' });
+            return status.state; // 'granted', 'denied', or 'prompt'
+        } catch {
+            // Some browsers throw on notifications query - fall back to Notification API
+        }
+    }
+
+    // Fallback: Notification.permission is 'default', assume promptable
+    return 'prompt';
+}
+
+/**
  * Request browser notification permission.
  * Shows a toast asking the user to enable notifications.
+ * Uses Permissions API to detect if notifications are blocked at browser level.
  */
-function requestBrowserNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') return;
-    if (Notification.permission === 'denied') return;
+async function requestBrowserNotificationPermission() {
+    // Check localStorage first (fast, no async)
     if (localStorage.getItem(NOTIFICATION_PREF_KEY) === 'true') return;
+
+    const permissionState = await checkNotificationPermission();
+
+    // Don't show prompt if:
+    // - Unsupported: browser doesn't have Notification API
+    // - Granted: already have permission
+    // - Denied: browser/user has blocked notifications
+    if (permissionState !== 'prompt') return;
 
     // Show permission prompt after delay
     setTimeout(() => {
@@ -352,8 +388,9 @@ function requestBrowserNotificationPermission() {
             Notification.requestPermission().then(permission => {
                 if (permission === 'granted') {
                     showToast('Browser notifications enabled!', 'success');
-                }
-                if (permission === 'denied') {
+                } else if (permission === 'denied') {
+                    // Show helpful message about browser settings
+                    showToast('Notifications blocked. Check browser settings to enable.', 'warning');
                     localStorage.setItem(NOTIFICATION_PREF_KEY, 'true');
                 }
                 toast.remove();

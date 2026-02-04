@@ -55,8 +55,8 @@
 {{end}}
 
 {{if not .IsViewer}}
-<!-- Quick Question Input -->
-{{if .ActiveWork}}
+<!-- Quick Question Input (only shown during active agent states) -->
+{{if and .ActiveWork (or (eq .ActiveWork.State "planning") (eq .ActiveWork.State "implementing") (eq .ActiveWork.State "reviewing"))}}
 <div id="quick-question" class="card">
     <div class="px-6 py-4 border-b border-base-300">
         <h3 class="text-lg font-bold text-base-content">Quick Question</h3>
@@ -112,6 +112,15 @@
                             eventSource.close();
                         } else if (data.event === 'done') {
                             eventSource.close();
+                        } else if (data.event === 'error' && data.error) {
+                            // Show error in the response area
+                            if (window.showToast) {
+                                window.showToast(data.error, 'error');
+                            }
+                            questionResponse.textContent = data.error;
+                            questionResponse.classList.remove('hidden', 'text-base-content/80', 'whitespace-pre-wrap', 'text-warning');
+                            questionResponse.classList.add('text-error');
+                            eventSource.close();
                         }
                     } catch (err) {
                         console.error('Failed to parse event:', err);
@@ -131,6 +140,28 @@
     }
 })();
 </script>
+{{end}}
+
+<!-- Notes -->
+{{if .Notes}}
+<div id="notes" class="card">
+    <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-base-content">Notes ({{.Notes.Count}})</h3>
+        <span class="text-xs text-base-content/60">User input and Q&A history</span>
+    </div>
+    <div class="divide-y divide-base-200 max-h-96 overflow-y-auto">
+        {{range .Notes.Notes}}
+        <div class="p-4">
+            <div class="flex items-center gap-2 text-xs text-base-content/60 mb-2">
+                <span class="font-mono bg-base-200 px-1.5 py-0.5 rounded">#{{.Number}}</span>
+                <span>{{.Timestamp}}</span>
+                {{if .State}}<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs">{{.State}}</span>{{end}}
+            </div>
+            <div class="prose prose-sm dark:prose-invert max-w-none">{{.Content | safe}}</div>
+        </div>
+        {{end}}
+    </div>
+</div>
 {{end}}
 
 <!-- Specifications -->
@@ -308,7 +339,7 @@
                         <label for="task-content" class="block text-sm font-semibold text-base-content/80 mb-2 text-left">Task Description</label>
                         <textarea name="content" id="task-content" rows="10"
                                   placeholder="# Task Title&#10;&#10;Describe what you want to accomplish...&#10;&#10;## Requirements&#10;- First requirement&#10;- Second requirement"
-                                  class="input font-mono text-sm resize-none"></textarea>
+                                  class="textarea textarea-bordered w-full font-mono text-sm"></textarea>
                         <p class="text-xs text-base-content/40 mt-2 text-left">Use Markdown formatting for better structure</p>
                     </div>
                     <button type="submit" class="btn btn-primary w-full">
@@ -673,7 +704,7 @@ function clearSavedProject() {
     <div class="p-6">
         <div class="flex items-start justify-between gap-6">
             <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-3 mb-3">
+                <div class="flex items-center gap-3 mb-2">
                     <h2 class="text-2xl font-bold text-base-content truncate">{{if .Title}}{{.Title}}{{else}}{{.Type}} {{.ID}}{{end}}</h2>
                     {{if .Labels}}
                     <div class="flex flex-wrap gap-1">
@@ -682,6 +713,23 @@ function clearSavedProject() {
                         {{end}}
                     </div>
                     {{end}}
+                </div>
+
+                {{if .Description}}
+                <p class="text-base-content/70 text-sm mb-3 line-clamp-2">{{.Description}}</p>
+                {{end}}
+
+                <div class="mb-4">
+                    <button hx-get="/ui/partials/task-content?task_id={{.ID}}"
+                            hx-target="body"
+                            hx-swap="beforeend"
+                            class="btn btn-sm btn-ghost gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Task
+                    </button>
                 </div>
 
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -725,8 +773,7 @@ function clearSavedProject() {
     <div class="p-6 flex flex-wrap gap-3">
         {{range .}}
         <button hx-{{if eq .Method "GET"}}get{{else}}post{{end}}="{{.Endpoint}}"
-                hx-target="#task-card"
-                hx-swap="outerHTML"
+                hx-swap="none"
                 {{if .Confirm}}hx-confirm="{{.Confirm}}"{{end}}
                 {{if .Disabled}}disabled{{end}}
                 {{if .Tooltip}}title="{{.Tooltip}}"{{end}}
