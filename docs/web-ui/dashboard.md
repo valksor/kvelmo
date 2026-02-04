@@ -82,13 +82,14 @@ Shows your current task with all key information:
 ┌──────────────────────────────────────────────────────────────┐
 │  Active Task: Add User OAuth Authentication                  │
 ├──────────────────────────────────────────────────────────────┤
+│  Implement OAuth2 authentication with support for Google...  │
+│                                                              │
+│  [👁 View Task]                                              │
+│                                                              │
 │  State: ● Implementing                                       │
 │  Branch: feature/user-oauth                                  │
 │  Worktree: ~/project-worktrees/a1b2c3d4                      │
 │  Progress: ████████░░░░ 80%                                  │
-│                                                              │
-│  Last Action: "Implement" - 2 minutes ago                    │
-│  Next Step: Review                                           │
 │                                                              │
 │  Actions:                                                    │
 │    [Continue] [Plan] [Implement] [Review] [Finish]           │
@@ -101,17 +102,25 @@ Shows your current task with all key information:
 
 | Field           | Description                                       |
 |-----------------|---------------------------------------------------|
-| **Title**       | Task name                                         |
+| **Title**       | Task name (from markdown heading or frontmatter)  |
+| **Description** | Short preview of task content (first ~200 chars)  |
+| **View Task**   | Button to open full task content in modal         |
 | **State**       | Current workflow state with color indicator       |
 | **Branch**      | Git branch name                                   |
 | **Worktree**    | Path if using worktrees                           |
 | **Progress**    | Visual progress bar                               |
-| **Last Action** | What happened last                                |
-| **Next Step**   | Suggested next action                             |
 | **Cost**        | Token usage cost                                  |
 | **Sessions**    | Number of AI sessions                             |
 | **Checkpoint**  | Current checkpoint number                         |
 | **Labels**      | Colored badges for task categorization (optional) |
+
+### View Task Modal
+
+Click **View Task** to open a modal showing the full task content rendered as HTML:
+
+- **Markdown rendered** - Headers, code blocks, lists, tables display properly
+- **Syntax highlighting** - Code blocks show language-appropriate formatting
+- **Click outside** to close the modal, or use the **×** button
 
 ### Action Buttons
 
@@ -333,28 +342,45 @@ For more detailed cost analysis, see [`mehr cost`](/cli/cost.md) in the CLI refe
 
 ## Specifications Section
 
-When specifications exist, shows them with status:
+When specifications exist, shows them with status. Click to expand and view content:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  Specifications (2 files)                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  📄 specification-1.md                                        │
-│     ✓ OAuth Provider Setup                                   │
-│     ✓ Database Schema for Sessions                           │
-│     ✓ Login/Logout Endpoints                                 │
-│     [View Full Content]                                      │
+│  📄 specification-1.md                     [pending]          │
+│  ▼ (click to expand)                                         │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  ## OAuth Provider Setup                               │  │
+│  │                                                        │  │
+│  │  Create the OAuth provider interface with support      │  │
+│  │  for multiple providers (Google, GitHub, etc.)         │  │
+│  │                                                        │  │
+│  │  **Implementation:**                                   │  │
+│  │  ```go                                                 │  │
+│  │  type OAuthProvider interface {                        │  │
+│  │      Authenticate(token string) (*User, error)         │  │
+│  │  }                                                     │  │
+│  │  ```                                                   │  │
+│  └────────────────────────────────────────────────────────┘  │
 │                                                              │
-│  📄 specification-2.md                                        │
-│     ✓ Token Validation Middleware                            │
-│     ✓ Session Management                                     │
-│     ✓ Security Considerations                                │
-│     [View Full Content]                                      │
+│  📄 specification-2.md                     [completed]        │
 │                                                              │
-│  [+ Add another specification]                               │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+### Specification Rendering
+
+Specification content is rendered as HTML with full markdown support:
+
+- **Headers** - Proper heading hierarchy
+- **Code blocks** - Syntax-highlighted with language detection
+- **Lists** - Bulleted and numbered lists
+- **Tables** - Markdown tables rendered as HTML tables
+- **Links** - Clickable hyperlinks
+
+This provides a much better reading experience than raw markdown text.
 
 ## File Changes Section
 
