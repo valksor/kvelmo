@@ -307,6 +307,7 @@ See [Configuration Guide](https://valksor.com/docs/mehrhof/nightly/#/configurati
 
 - [Full Documentation](https://valksor.com/docs/mehrhof/nightly)
 - [Quickstart](https://valksor.com/docs/mehrhof/nightly/#/quickstart) — Install and run your first task
+- [Comparison with Other Tools](docs/COMPARISON.md) — How Mehrhof compares to Aider, Claude Code, Cursor, etc.
 - [Web UI Guide](https://valksor.com/docs/mehrhof/nightly/#/web-ui/getting-started) — Visual walkthrough
 - [CLI Reference](https://valksor.com/docs/mehrhof/nightly/#/cli/index) — All commands and flags
 - [Workflow Concepts](https://valksor.com/docs/mehrhof/nightly/#/concepts/workflow) — Understanding the process
