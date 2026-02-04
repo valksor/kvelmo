@@ -1260,7 +1260,7 @@ func TestBuildUnknownsSection(t *testing.T) {
 			useDefaults: false,
 			wantIn: []string{
 				"STOP and ask the user",
-				"ask_question tool",
+				"AskUserQuestion tool",
 				"Do not guess",
 			},
 			wantNotIn: []string{
