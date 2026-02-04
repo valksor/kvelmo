@@ -666,3 +666,137 @@ func TestParse_QuestionFromToolCallsArray(t *testing.T) {
 		t.Errorf("Question.Text = %q, want %q", resp.Question.Text, "Array question?")
 	}
 }
+
+func TestDetectPlainTextQuestion(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		wantNil  bool
+		wantText string
+	}{
+		{
+			name:     "detects 'I need clarification'",
+			text:     "Looking at the task description.\n\nI need clarification on what database to use. Should it be PostgreSQL or SQLite?",
+			wantNil:  false,
+			wantText: "I need clarification on what database to use. Should it be PostgreSQL or SQLite?",
+		},
+		{
+			name:     "detects 'Could you clarify'",
+			text:     "I've analyzed the requirements.\n\nCould you clarify the expected input format? The specification doesn't mention this.",
+			wantNil:  false,
+			wantText: "Could you clarify the expected input format? The specification doesn't mention this.",
+		},
+		{
+			name:     "detects 'Before I can proceed'",
+			text:     "Before I can proceed, I need to know which authentication method you prefer - JWT or session-based?",
+			wantNil:  false,
+			wantText: "Before I can proceed, I need to know which authentication method you prefer - JWT or session-based?",
+		},
+		{
+			name:     "detects 'Please provide'",
+			text:     "The task is clear but incomplete.\n\nPlease provide the API endpoint URL for the external service.",
+			wantNil:  false,
+			wantText: "Please provide the API endpoint URL for the external service.",
+		},
+		{
+			name:     "detects 'which approach would you prefer'",
+			text:     "There are two ways to implement this.\n\nWhich approach would you prefer - using a library or implementing from scratch?",
+			wantNil:  false,
+			wantText: "Which approach would you prefer - using a library or implementing from scratch?",
+		},
+		{
+			name:    "ignores rhetorical question in code",
+			text:    "Here's the implementation:\n\n```go\n// Why would you do this?\nfunc doSomething() {}\n```",
+			wantNil: true,
+		},
+		{
+			name:    "ignores regular text without clarification patterns",
+			text:    "I've completed the task. The implementation is ready for review. Let me know if you have questions.",
+			wantNil: true,
+		},
+		{
+			name:    "ignores empty text",
+			text:    "",
+			wantNil: true,
+		},
+		{
+			name:    "ignores text with just question marks",
+			text:    "What is this? How does it work? Why?",
+			wantNil: true,
+		},
+		{
+			name:     "case insensitive detection",
+			text:     "I NEED CLARIFICATION on the deployment target.",
+			wantNil:  false,
+			wantText: "I NEED CLARIFICATION on the deployment target.",
+		},
+		{
+			name:     "detects 'I need more information'",
+			text:     "The requirements are vague.\n\nI need more information about the expected behavior when an error occurs.",
+			wantNil:  false,
+			wantText: "I need more information about the expected behavior when an error occurs.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := DetectPlainTextQuestion(tt.text)
+			if tt.wantNil {
+				if q != nil {
+					t.Errorf("DetectPlainTextQuestion() = %v, want nil", q)
+				}
+
+				return
+			}
+			if q == nil {
+				t.Fatal("DetectPlainTextQuestion() = nil, want non-nil")
+			}
+			if q.Text != tt.wantText {
+				t.Errorf("Question.Text = %q, want %q", q.Text, tt.wantText)
+			}
+		})
+	}
+}
+
+func TestExtractQuestionParagraph(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		pattern string
+		want    string
+	}{
+		{
+			name:    "extracts paragraph with pattern",
+			text:    "First paragraph.\n\nI need clarification here.\n\nThird paragraph.",
+			pattern: "i need clarification",
+			want:    "I need clarification here.",
+		},
+		{
+			name:    "handles single paragraph",
+			text:    "I need clarification on this matter.",
+			pattern: "i need clarification",
+			want:    "I need clarification on this matter.",
+		},
+		{
+			name:    "returns empty for missing pattern",
+			text:    "No clarification needed.",
+			pattern: "i need clarification",
+			want:    "",
+		},
+		{
+			name:    "handles pattern at start",
+			text:    "Could you clarify the requirements?\n\nI'll wait for your response.",
+			pattern: "could you clarify",
+			want:    "Could you clarify the requirements?",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractQuestionParagraph(tt.text, tt.pattern)
+			if got != tt.want {
+				t.Errorf("extractQuestionParagraph() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
