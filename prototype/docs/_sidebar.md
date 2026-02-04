@@ -2,6 +2,7 @@
   - [Home](README.md)
   - [Quickstart](quickstart.md)
   - [FAQ](faq.md)
+  - [Comparison with Other Tools](COMPARISON.md)
   - [Glossary](glossary.md)
   - [Web UI vs CLI](guides/web-ui-vs-cli.md)
 

@@ -303,10 +303,58 @@ curl http://localhost:PORT/api/v1/projects
 
 ### GET /api/v1/events
 
-SSE stream for real-time updates.
+SSE stream for real-time updates. Returns `text/event-stream` content type.
 
 ```bash
 curl http://localhost:PORT/api/v1/events
+```
+
+**Event Types:**
+
+| Event | Description |
+|-------|-------------|
+| `connected` | Initial connection established |
+| `heartbeat` | Periodic status update (every 15 seconds) |
+| `state_changed` | Workflow state transition |
+| `agent_message` | Output from the AI agent |
+| `progress` | Progress update during long operations |
+| `error` | Error occurred |
+
+**Heartbeat Event:**
+
+Sent every 15 seconds to keep the connection alive during long agent operations.
+
+```json
+{
+  "state": "implementing",
+  "state_changed": false,
+  "task_id": "abc123",
+  "specs": 3,
+  "checkpoints": 2,
+  "agent": "claude",
+  "timestamp": 1706745600
+}
+```
+
+When no task is active or status is unavailable:
+
+```json
+{
+  "state": "unknown",
+  "timestamp": 1706745600
+}
+```
+
+**State Changed Event:**
+
+```json
+{
+  "from": "planning",
+  "to": "implementing",
+  "event": "plan_done",
+  "task_id": "abc123",
+  "timestamp": "2024-01-31T12:00:00Z"
+}
 ```
 
 ### GET /api/v1/guide
@@ -414,6 +462,55 @@ Run planning phase.
 curl -X POST http://localhost:PORT/api/v1/workflow/plan
 ```
 
+**Response (success):**
+```json
+{
+  "success": true,
+  "message": "planning completed"
+}
+```
+
+**Response (agent question):**
+When the agent needs input, returns status `"waiting"` with question details:
+```json
+{
+  "success": true,
+  "status": "waiting",
+  "message": "Agent has a question",
+  "phase": "planning",
+  "task_id": "abc123",
+  "question": "Which approach should we use?",
+  "options": [
+    {"label": "Option A", "value": "a"},
+    {"label": "Option B", "value": "b"}
+  ]
+}
+```
+
+> **Note:** The `options` field is present for multiple-choice questions and `null` or absent for free-form questions where the user can enter any text.
+
+**Response (budget paused):**
+```json
+{
+  "success": true,
+  "status": "paused",
+  "message": "Task paused due to budget limit",
+  "phase": "planning",
+  "task_id": "abc123"
+}
+```
+
+**Response (budget stopped):**
+```json
+{
+  "success": false,
+  "status": "stopped",
+  "message": "Task stopped due to budget limit",
+  "phase": "planning",
+  "task_id": "abc123"
+}
+```
+
 ### POST /api/v1/workflow/implement
 
 Run implementation phase.
@@ -422,6 +519,29 @@ Run implementation phase.
 curl -X POST http://localhost:PORT/api/v1/workflow/implement
 ```
 
+**Response (success):**
+```json
+{
+  "success": true,
+  "message": "implementation completed"
+}
+```
+
+**Response (agent question):**
+```json
+{
+  "success": true,
+  "status": "waiting",
+  "message": "Agent has a question",
+  "phase": "implementing",
+  "task_id": "abc123",
+  "question": "How should we handle the edge case?",
+  "options": [...]
+}
+```
+
+**Response (budget paused/stopped):** Same format as `/workflow/plan` with `"phase": "implementing"`.
+
 ### POST /api/v1/workflow/review
 
 Run review phase.
@@ -429,6 +549,16 @@ Run review phase.
 ```bash
 curl -X POST http://localhost:PORT/api/v1/workflow/review
 ```
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "message": "review completed"
+}
+```
+
+**Response (budget paused/stopped):** Same format as `/workflow/plan` with `"phase": "reviewing"`.
 
 ### POST /api/v1/workflow/finish
 
