@@ -3,13 +3,17 @@ package views
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/provider/file"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -227,6 +231,67 @@ func TestComputeActiveWork_NoActiveTask(t *testing.T) {
 
 	// No active task, should return nil
 	assert.Nil(t, result)
+}
+
+func TestClearStaleTask(t *testing.T) {
+	// This test verifies that ClearStaleTask detects and clears stale task state
+	// when the work directory has been deleted externally (e.g., .mehrhof/ removed).
+	// In production, ClearStaleTask is called by HTTP handlers before ComputeActiveWork
+	// to ensure state mutations happen at the handler level, not in compute functions.
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+	ctx := context.Background()
+
+	// Create task file
+	taskPath := filepath.Join(tmpDir, "task.md")
+	require.NoError(t, os.WriteFile(taskPath, []byte("# Test Task\n\nTest description"), 0o644))
+
+	// Create conductor with task
+	c, err := conductor.New(
+		conductor.WithWorkDir(tmpDir),
+		conductor.WithHomeDir(homeDir),
+		conductor.WithAutoInit(true),
+		conductor.WithCreateBranch(false),
+		conductor.WithAgent("mock"), // Use mock agent
+	)
+	require.NoError(t, err)
+
+	// Register file provider
+	file.Register(c.GetProviderRegistry())
+
+	// Register mock agent
+	mockAgent := helper_test.NewMockAgent("mock")
+	require.NoError(t, c.GetAgentRegistry().Register(mockAgent))
+
+	// Initialize and start task
+	require.NoError(t, c.Initialize(ctx))
+	require.NoError(t, c.Start(ctx, "file:"+taskPath))
+
+	// Verify task is active
+	activeTask := c.GetActiveTask()
+	require.NotNil(t, activeTask, "task should be active after Start")
+	require.NotNil(t, c.GetTaskWork(), "work should exist after Start")
+
+	// Get workspace for testing
+	ws := c.GetWorkspace()
+	require.NotNil(t, ws)
+
+	// Delete the work directory to simulate external deletion
+	// Work is stored in the workspace data directory (from ActiveTask.WorkDir)
+	workDir := activeTask.WorkDir
+	require.NoError(t, os.RemoveAll(workDir))
+
+	// ClearStaleTask should detect and clear the stale task
+	// (This is called by handlers before ComputeActiveWork)
+	cleared := c.ClearStaleTask()
+	assert.True(t, cleared, "should return true when stale task was cleared")
+
+	// Active task should be cleared
+	assert.Nil(t, c.GetActiveTask(), "stale task should be cleared")
+
+	// ComputeActiveWork should return nil since there's no active task
+	result := ComputeActiveWork(c, ws)
+	assert.Nil(t, result, "should return nil after stale task was cleared")
 }
 
 func TestComputeActions_NoActiveWork(t *testing.T) {

@@ -73,13 +73,24 @@ func defaultFuncMap() template.FuncMap {
 		// Conditionals
 		"eq": func(a, b interface{}) bool { return a == b },
 		"ne": func(a, b interface{}) bool { return a != b },
-		"gt": func(a, b float64) bool { return a > b },
-		"lt": func(a, b float64) bool { return a < b },
-		"ge": func(a, b float64) bool { return a >= b },
-		"le": func(a, b float64) bool { return a <= b },
+		"gt": func(a, b interface{}) bool { return toFloat(a) > toFloat(b) },
+		"lt": func(a, b interface{}) bool { return toFloat(a) < toFloat(b) },
+		"ge": func(a, b interface{}) bool { return toFloat(a) >= toFloat(b) },
+		"le": func(a, b interface{}) bool { return toFloat(a) <= toFloat(b) },
 
 		// String utilities
 		"safe": func(s string) template.HTML { return template.HTML(s) }, //nolint:gosec // For pre-sanitized content
+
+		// Markdown rendering (returns sanitized HTML)
+		"renderMarkdown": func(md string) template.HTML {
+			html, err := RenderMarkdown(md)
+			if err != nil {
+				// Fallback to escaped plain text on error
+				return template.HTML("<pre>" + template.HTMLEscapeString(md) + "</pre>") //nolint:gosec // Content escaped
+			}
+
+			return template.HTML(html) //nolint:gosec // Content sanitized by bluemonday
+		},
 
 		// Constants - SSE event names for HTMX triggers
 		"eventWorkflowStateChanged": func() string { return EventWorkflowStateChanged },
@@ -88,6 +99,29 @@ func defaultFuncMap() template.FuncMap {
 		"eventCostsUpdated":         func() string { return EventCostsUpdated },
 		"eventQuickTasksUpdated":    func() string { return EventQuickTasksUpdated },
 		"eventHierarchyUpdated":     func() string { return EventHierarchyUpdated },
+	}
+}
+
+// toFloat converts numeric types to float64 for template comparisons.
+// Supports common integer and float types. Unknown types return 0.
+func toFloat(v interface{}) float64 {
+	switch n := v.(type) {
+	case int:
+		return float64(n)
+	case int32:
+		return float64(n)
+	case int64:
+		return float64(n)
+	case uint:
+		return float64(n)
+	case uint64:
+		return float64(n)
+	case float32:
+		return float64(n)
+	case float64:
+		return n
+	default:
+		return 0
 	}
 }
 
@@ -111,6 +145,7 @@ func (r *Renderer) loadTemplates() error {
 		"scan",
 		"automation",
 		"library",
+		"commit",
 	}
 
 	for _, page := range pages {
