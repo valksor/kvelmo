@@ -271,10 +271,20 @@ func TestAskQuestion_BackQuestion(t *testing.T) {
 	c.workspace = ws
 	c.activeTask = &storage.ActiveTask{
 		ID:    "test-task",
-		State: "implementing",
+		State: "planning", // Must be planning for EventWait transition to work
 	}
 	c.taskWork = work
 	c.currentSession = loadedSession
+
+	// Set up work unit to satisfy guards, then transition to planning
+	c.machine.SetWorkUnit(&workflow.WorkUnit{
+		ID:          "test-task",
+		Description: "Test task description",
+		Source:      &workflow.Source{Reference: "file:task.md"},
+	})
+	if err := c.machine.Dispatch(context.Background(), workflow.EventPlan); err != nil {
+		t.Fatalf("failed to set machine to planning state: %v", err)
+	}
 
 	// Register mock agent that asks a back-question
 	mockAgent := &mockQuestionAgent{
@@ -784,5 +794,251 @@ func TestBuildQuestionPrompt(t *testing.T) {
 				t.Error("prompt should have '## User Question' section")
 			}
 		})
+	}
+}
+
+// =============================================================================
+// AnswerQuestion Tests
+// =============================================================================
+
+// TestAnswerQuestion_NoActiveTask tests that AnswerQuestion returns error when no task.
+func TestAnswerQuestion_NoActiveTask(t *testing.T) {
+	c, err := New(WithWorkDir(t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = c.AnswerQuestion(context.Background(), "my answer")
+	if err == nil {
+		t.Error("AnswerQuestion should return error when no active task")
+	}
+	if !strings.Contains(err.Error(), "no active task") {
+		t.Errorf("error should mention 'no active task', got: %v", err)
+	}
+}
+
+// TestAnswerQuestion_NoPendingQuestion tests that AnswerQuestion fails without pending question.
+func TestAnswerQuestion_NoPendingQuestion(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create work directory
+	_, err := ws.CreateWork("test-task", storage.SourceInfo{Type: "file", Ref: "task.md"})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Create conductor with active task but NO pending question
+	eventBus := eventbus.NewBus()
+	c := &Conductor{
+		workspace: ws,
+		machine:   workflow.NewMachine(eventBus),
+		eventBus:  eventBus,
+		activeTask: &storage.ActiveTask{
+			ID:    "test-task",
+			State: string(workflow.StateWaiting),
+		},
+	}
+
+	err = c.AnswerQuestion(context.Background(), "my answer")
+	if err == nil {
+		t.Error("AnswerQuestion should return error when no pending question")
+	}
+	if !strings.Contains(err.Error(), "no pending question") {
+		t.Errorf("error should mention 'no pending question', got: %v", err)
+	}
+}
+
+// TestAnswerQuestion_WithPendingQuestion tests the normal flow with a pending question.
+func TestAnswerQuestion_WithPendingQuestion(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create work directory
+	_, err := ws.CreateWork("test-task", storage.SourceInfo{Type: "file", Ref: "task.md"})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Save a pending question
+	pendingQ := &storage.PendingQuestion{
+		Question: "What database should I use?",
+		Options: []storage.QuestionOption{
+			{Label: "PostgreSQL", Description: "Relational database"},
+			{Label: "MongoDB", Description: "Document database"},
+		},
+	}
+	if err := ws.SavePendingQuestion("test-task", pendingQ); err != nil {
+		t.Fatalf("SavePendingQuestion: %v", err)
+	}
+
+	// Verify pending question exists
+	if !ws.HasPendingQuestion("test-task") {
+		t.Fatal("pending question should exist")
+	}
+
+	// Create conductor in waiting state
+	eventBus := eventbus.NewBus()
+	machine := workflow.NewMachine(eventBus)
+
+	// Set up work unit to satisfy guards
+	machine.SetWorkUnit(&workflow.WorkUnit{
+		ID:          "test-task",
+		Description: "Test task description",
+		Source:      &workflow.Source{Reference: "file:task.md"},
+	})
+
+	// Transition machine to waiting state: idle -> planning -> waiting
+	_ = machine.Dispatch(context.Background(), workflow.EventPlan) // idle -> planning
+	_ = machine.Dispatch(context.Background(), workflow.EventWait) // planning -> waiting
+
+	c := &Conductor{
+		workspace: ws,
+		machine:   machine,
+		eventBus:  eventBus,
+		activeTask: &storage.ActiveTask{
+			ID:    "test-task",
+			State: string(workflow.StateWaiting),
+		},
+	}
+
+	// Answer the question
+	err = c.AnswerQuestion(context.Background(), "PostgreSQL")
+	if err != nil {
+		t.Fatalf("AnswerQuestion: %v", err)
+	}
+
+	// Verify pending question was cleared
+	if ws.HasPendingQuestion("test-task") {
+		t.Error("pending question should be cleared after answering")
+	}
+
+	// Verify state transitioned to idle
+	if c.activeTask.State != string(workflow.StateIdle) {
+		t.Errorf("state should be idle after answering, got: %s", c.activeTask.State)
+	}
+
+	// Verify answer was saved as note
+	notes, err := ws.ReadNotes("test-task")
+	if err != nil {
+		t.Fatalf("ReadNotes: %v", err)
+	}
+	if !strings.Contains(notes, "**Q:**") || !strings.Contains(notes, "**A:**") {
+		t.Errorf("notes should contain Q&A format, got: %s", notes)
+	}
+	if !strings.Contains(notes, "PostgreSQL") {
+		t.Errorf("notes should contain the answer 'PostgreSQL', got: %s", notes)
+	}
+}
+
+// TestAnswerQuestion_TransitionsFromWaiting tests state transition from waiting to idle.
+func TestAnswerQuestion_TransitionsFromWaiting(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	_, err := ws.CreateWork("test-task", storage.SourceInfo{Type: "file", Ref: "task.md"})
+	if err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Save pending question
+	if err := ws.SavePendingQuestion("test-task", &storage.PendingQuestion{
+		Question: "Continue?",
+	}); err != nil {
+		t.Fatalf("SavePendingQuestion: %v", err)
+	}
+
+	eventBus := eventbus.NewBus()
+	machine := workflow.NewMachine(eventBus)
+
+	// Set up work unit to satisfy guards
+	machine.SetWorkUnit(&workflow.WorkUnit{
+		ID:          "test-task",
+		Description: "Test task description",
+		Source:      &workflow.Source{Reference: "file:task.md"},
+	})
+
+	// Get machine into waiting state: idle -> planning -> waiting
+	_ = machine.Dispatch(context.Background(), workflow.EventPlan)
+	_ = machine.Dispatch(context.Background(), workflow.EventWait)
+
+	if machine.State() != workflow.StateWaiting {
+		t.Fatalf("machine should be in waiting state, got: %s", machine.State())
+	}
+
+	c := &Conductor{
+		workspace: ws,
+		machine:   machine,
+		eventBus:  eventBus,
+		activeTask: &storage.ActiveTask{
+			ID:    "test-task",
+			State: string(workflow.StateWaiting),
+		},
+	}
+
+	// Answer should transition state
+	if err := c.AnswerQuestion(context.Background(), "yes"); err != nil {
+		t.Fatalf("AnswerQuestion: %v", err)
+	}
+
+	// Machine should now be in idle state
+	if machine.State() != workflow.StateIdle {
+		t.Errorf("machine state should be idle, got: %s", machine.State())
+	}
+}
+
+// TestResetState_FromWaitingWithoutPendingQuestion tests the edge case where
+// state is "waiting" but there's no pending question (e.g., old bug cleared
+// the question but didn't transition state).
+func TestResetState_FromWaitingWithoutPendingQuestion(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openResetTestWorkspace(t, tmpDir)
+
+	eventBus := eventbus.NewBus()
+	machine := workflow.NewMachine(eventBus)
+
+	// Set up work unit to satisfy guards
+	machine.SetWorkUnit(&workflow.WorkUnit{
+		ID:          "test-task",
+		Description: "Test task description",
+		Source:      &workflow.Source{Reference: "file:task.md"},
+	})
+
+	// Get machine into waiting state: idle -> planning -> waiting
+	_ = machine.Dispatch(context.Background(), workflow.EventPlan)
+	_ = machine.Dispatch(context.Background(), workflow.EventWait)
+
+	c := &Conductor{
+		workspace: ws,
+		machine:   machine,
+		eventBus:  eventBus,
+		activeTask: &storage.ActiveTask{
+			ID:    "test-task",
+			State: string(workflow.StateWaiting),
+		},
+	}
+
+	// Verify no pending question
+	if ws.HasPendingQuestion("test-task") {
+		t.Fatal("should have no pending question for this test")
+	}
+
+	// ResetState should work to recover from this stuck state
+	if err := c.ResetState(context.Background()); err != nil {
+		t.Fatalf("ResetState: %v", err)
+	}
+
+	// State should now be idle
+	if c.activeTask.State != string(workflow.StateIdle) {
+		t.Errorf("state should be idle after reset, got: %s", c.activeTask.State)
 	}
 }

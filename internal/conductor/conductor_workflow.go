@@ -201,6 +201,53 @@ func (c *Conductor) ResumePaused(ctx context.Context) error {
 	return nil
 }
 
+// AnswerQuestion records an answer to a pending question and transitions from waiting state.
+func (c *Conductor) AnswerQuestion(ctx context.Context, answer string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	taskID := c.activeTask.ID
+
+	// Check if there's a pending question
+	if !c.workspace.HasPendingQuestion(taskID) {
+		return errors.New("no pending question")
+	}
+
+	// Load the pending question to format the answer
+	q, err := c.workspace.LoadPendingQuestion(taskID)
+	if err != nil {
+		return fmt.Errorf("load pending question: %w", err)
+	}
+
+	// Save as Q&A note
+	note := "**Q:** " + q.Question + "\n\n**A:** " + answer
+	if err := c.workspace.AppendNote(taskID, note, "answer"); err != nil {
+		return fmt.Errorf("save answer: %w", err)
+	}
+
+	// Clear pending question
+	if err := c.workspace.ClearPendingQuestion(taskID); err != nil {
+		return fmt.Errorf("clear question: %w", err)
+	}
+
+	// Dispatch EventAnswer to transition state machine from waiting to idle
+	if err := c.machine.Dispatch(ctx, workflow.EventAnswer); err != nil {
+		return fmt.Errorf("dispatch answer event: %w", err)
+	}
+
+	// Update active task state
+	c.activeTask.State = string(c.machine.State())
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		c.logError(fmt.Errorf("save active task after answer: %w", err))
+	}
+
+	return nil
+}
+
 // ResetState resets the workflow state to idle without losing work.
 // Use this to recover from hung agent sessions where the process was killed
 // but the state remains stuck in planning/implementing/reviewing.
@@ -519,7 +566,9 @@ func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
 			c.logError(fmt.Errorf("save pending question: %w", err))
 		}
 		// Transition to waiting state
-		_ = c.machine.Dispatch(ctx, workflow.EventWait)
+		if err := c.dispatchWithRetry(ctx, workflow.EventWait); err != nil {
+			return err
+		}
 
 		return ErrPendingQuestion
 	}
