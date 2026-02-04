@@ -33,6 +33,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"os"
 	"sync"
 	"time"
 
@@ -202,6 +204,52 @@ func (c *Conductor) GetTaskWork() *storage.TaskWork {
 	return &workCopy
 }
 
+// ClearStaleTask clears an active task that no longer has valid work data.
+// This handles the case where task files were deleted externally while the
+// server was running. Returns true if a stale task was cleared.
+// Only clears the task if the work directory is confirmed missing (os.ErrNotExist),
+// not on transient errors like permission denied or I/O errors.
+func (c *Conductor) ClearStaleTask() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.activeTask == nil {
+		return false
+	}
+
+	// Check if work directory still exists
+	if c.workspace != nil {
+		_, err := c.workspace.LoadWork(c.activeTask.ID)
+		if err == nil {
+			// Work exists, task is not stale
+			return false
+		}
+
+		// Only clear if work is definitely missing, not on transient errors
+		if !errors.Is(err, os.ErrNotExist) {
+			// Transient error (permission denied, I/O error, etc.) - don't clear
+			slog.Warn("unable to verify task work, keeping task active",
+				"id", c.activeTask.ID, "error", err)
+
+			return false
+		}
+	}
+
+	// Work doesn't exist - clear stale state
+	slog.Info("clearing stale active task", "id", c.activeTask.ID)
+
+	if c.workspace != nil {
+		if err := c.workspace.ClearActiveTask(); err != nil {
+			slog.Warn("failed to clear active task file", "id", c.activeTask.ID, "error", err)
+		}
+	}
+
+	c.activeTask = nil
+	c.taskWork = nil
+
+	return true
+}
+
 // GetActiveAgent returns the active agent.
 func (c *Conductor) GetActiveAgent() agent.Agent {
 	c.mu.RLock()
@@ -245,6 +293,41 @@ func (c *Conductor) logVerbosef(format string, args ...any) {
 	if c.opts.Verbose && c.opts.Stdout != nil {
 		_, _ = fmt.Fprintf(c.opts.Stdout, format+"\n", args...)
 	}
+}
+
+// dispatchWithRetry attempts a state machine transition with one retry.
+// If both attempts fail, it transitions to StateFailed for user recovery via 'mehr reset'.
+// Returns nil on success, error on failure (after transitioning to failed state).
+func (c *Conductor) dispatchWithRetry(ctx context.Context, event workflow.Event) error {
+	err := c.machine.Dispatch(ctx, event)
+	if err == nil {
+		return nil
+	}
+
+	// Retry once after a brief pause
+	slog.Warn("state dispatch failed, retrying", "event", event, "error", err)
+	time.Sleep(100 * time.Millisecond)
+
+	err = c.machine.Dispatch(ctx, event)
+	if err == nil {
+		return nil
+	}
+
+	// Both attempts failed - transition to visible error state for user recovery
+	slog.Error("state dispatch failed after retry", "event", event, "error", err)
+
+	// Attempt to reach failed state (recoverable via 'mehr reset')
+	_ = c.machine.Dispatch(ctx, workflow.EventAbort)
+
+	// Sync activeTask state if we have one
+	if c.activeTask != nil {
+		c.activeTask.State = string(c.machine.State())
+		if saveErr := c.workspace.SaveActiveTask(c.activeTask); saveErr != nil {
+			slog.Error("failed to save task state after dispatch error", "error", saveErr)
+		}
+	}
+
+	return fmt.Errorf("state transition failed (use 'mehr reset' to recover): %w", err)
 }
 
 // SetImplementationOptions temporarily sets implementation options for the next implement call.

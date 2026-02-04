@@ -105,38 +105,68 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Determine the working directory for path context in prompts
 	workingDir := c.CodeDir()
 
-	// Build planning prompt with custom instructions
+	// Detect task complexity for prompt routing
+	// Skip complexity detection if force flags are set
 	workspaceCfg, _ := c.workspace.LoadConfig()
-	customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
+	hasParent := c.taskWork.Hierarchy != nil && c.taskWork.Hierarchy.ParentID != ""
+	complexity := DetectTaskComplexity(
+		c.taskWork.Metadata.Title,
+		sourceContent,
+		len(c.taskWork.Source.Files),
+		c.taskWork.Metadata.TaskType,
+		c.taskWork.Metadata.Labels,
+		hasParent,
+	)
 
-	// Fetch hierarchical context (parent and sibling tasks) if configured
-	// Check CLI options first, then workspace config
-	var hierarchy *HierarchicalContext
-	shouldIncludeParent := false
-	if c.opts.WithParent != nil {
-		shouldIncludeParent = *c.opts.WithParent
-	} else if workspaceCfg.Context != nil {
-		shouldIncludeParent = workspaceCfg.Context.IncludeParent
+	// Check for force flags (CLI overrides)
+	if c.opts.ForceQuickPlanning {
+		complexity = ComplexitySimple
+		slog.Debug("forcing simple planning via --quick flag")
+	} else if c.opts.ForceFullPlanning {
+		complexity = ComplexityComplex
+		slog.Debug("forcing full planning via --full flag")
 	}
 
-	if shouldIncludeParent {
-		// Resolve provider and fetch hierarchical context
-		resolveOpts := provider.ResolveOptions{
-			DefaultProvider: c.opts.DefaultProvider,
+	slog.Debug("detected task complexity", "complexity", complexity, "title_len", len(c.taskWork.Metadata.Title), "files", len(c.taskWork.Source.Files))
+
+	var prompt string
+
+	if complexity == ComplexitySimple {
+		// Simple tasks use minimal prompt - skip hierarchical context and verbose guidance
+		prompt = buildSimplePlanningPrompt(workingDir, c.taskWork.Metadata.Title, sourceContent, notes)
+	} else {
+		// Full planning path for medium/complex tasks
+		customInstructions := buildCombinedInstructions(workspaceCfg, "planning")
+
+		// Fetch hierarchical context (parent and sibling tasks) if configured
+		// Check CLI options first, then workspace config
+		var hierarchy *HierarchicalContext
+		shouldIncludeParent := false
+		if c.opts.WithParent != nil {
+			shouldIncludeParent = *c.opts.WithParent
+		} else if workspaceCfg.Context != nil {
+			shouldIncludeParent = workspaceCfg.Context.IncludeParent
 		}
-		ref := c.activeTask.Ref
-		providerCfg := buildProviderConfig(workspaceCfg, parseScheme(ref))
-		if p, id, err := c.providers.Resolve(ctx, ref, providerCfg, resolveOpts); err == nil {
-			// Get the current work unit for hierarchy detection
-			if reader, ok := p.(provider.Reader); ok {
-				if workUnit, err := reader.Fetch(ctx, id); err == nil {
-					hierarchy, _ = c.FetchHierarchicalContextFromConfig(ctx, p, workUnit)
+
+		if shouldIncludeParent {
+			// Resolve provider and fetch hierarchical context
+			resolveOpts := provider.ResolveOptions{
+				DefaultProvider: c.opts.DefaultProvider,
+			}
+			ref := c.activeTask.Ref
+			providerCfg := buildProviderConfig(workspaceCfg, parseScheme(ref))
+			if p, id, err := c.providers.Resolve(ctx, ref, providerCfg, resolveOpts); err == nil {
+				// Get the current work unit for hierarchy detection
+				if reader, ok := p.(provider.Reader); ok {
+					if workUnit, err := reader.Fetch(ctx, id); err == nil {
+						hierarchy, _ = c.FetchHierarchicalContextFromConfig(ctx, p, workUnit)
+					}
 				}
 			}
 		}
-	}
 
-	prompt := buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults, hierarchy)
+		prompt = buildPlanningPrompt(c.workspace, workingDir, c.taskWork.Metadata.Title, sourceContent, notes, existingSpecifications, customInstructions, c.opts.UseDefaults, hierarchy)
+	}
 
 	// Inject library context if auto-include is enabled
 	if c.opts.LibraryAutoInclude {
@@ -195,7 +225,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 			c.logError(fmt.Errorf("save active task after planning error: %w", err))
 		}
-		_ = c.machine.Dispatch(ctx, workflow.EventError)
+		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+			c.logError(dispatchErr)
+		}
 
 		return fmt.Errorf("agent planning: %w", err)
 	}
@@ -248,6 +280,13 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	}
 
 	// If agent asked a question, handle based on mode
+	// First check structured question, then fallback to plain-text detection
+	if response.Question == nil {
+		// Fallback: detect plain-text questions (when agent doesn't use AskUserQuestion tool)
+		// Use the full context (summary + messages) for detection
+		fullContext := buildFullContext(response)
+		response.Question = agent.DetectPlainTextQuestion(fullContext)
+	}
 	if response.Question != nil {
 		if c.opts.SkipAgentQuestions {
 			// In auto mode, skip questions and proceed with agent's best guess
@@ -286,7 +325,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 				c.saveCurrentSession(taskID)
 			}
 			// Dispatch EventWait to properly transition FSM to StateWaiting
-			_ = c.machine.Dispatch(ctx, workflow.EventWait)
+			if err := c.dispatchWithRetry(ctx, workflow.EventWait); err != nil {
+				return err
+			}
 			c.activeTask.State = string(workflow.StateWaiting)
 			if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 				c.logError(fmt.Errorf("save active task after pending question: %w", err))
@@ -322,7 +363,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	}
 
 	// Dispatch completion
-	_ = c.machine.Dispatch(ctx, workflow.EventPlanDone)
+	if err := c.dispatchWithRetry(ctx, workflow.EventPlanDone); err != nil {
+		return err
+	}
 
 	// Save session with completion time
 	c.saveCurrentSession(taskID)
@@ -519,7 +562,9 @@ Please retry the implementation, taking into account this error.
 		if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 			c.logError(fmt.Errorf("save active task after implementation error: %w", err))
 		}
-		_ = c.machine.Dispatch(ctx, workflow.EventError)
+		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+			c.logError(dispatchErr)
+		}
 
 		return fmt.Errorf("agent implementation: %w", err)
 	}
@@ -663,7 +708,9 @@ Please retry the implementation, taking into account this error.
 	}
 
 	// Dispatch completion
-	_ = c.machine.Dispatch(ctx, workflow.EventImplementDone)
+	if err := c.dispatchWithRetry(ctx, workflow.EventImplementDone); err != nil {
+		return err
+	}
 
 	// Save session with completion time
 	c.saveCurrentSession(taskID)
@@ -832,7 +879,9 @@ Please retry the implementation, taking into account this error.
 		if saveErr := c.workspace.SaveActiveTask(c.activeTask); saveErr != nil {
 			c.logError(fmt.Errorf("save active task after implementation error: %w", saveErr))
 		}
-		_ = c.machine.Dispatch(ctx, workflow.EventError)
+		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+			c.logError(dispatchErr)
+		}
 
 		return fmt.Errorf("agent review implementation: %w", err)
 	}
@@ -907,7 +956,9 @@ Please retry the implementation, taking into account this error.
 	}
 
 	// Dispatch completion
-	_ = c.machine.Dispatch(ctx, workflow.EventImplementDone)
+	if err := c.dispatchWithRetry(ctx, workflow.EventImplementDone); err != nil {
+		return err
+	}
 
 	// Save session with completion time
 	c.saveCurrentSession(taskID)
@@ -1009,7 +1060,9 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 		if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 			c.logError(fmt.Errorf("save active task after review error: %w", err))
 		}
-		_ = c.machine.Dispatch(ctx, workflow.EventError)
+		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+			c.logError(dispatchErr)
+		}
 
 		return fmt.Errorf("agent review: %w", err)
 	}
@@ -1097,7 +1150,9 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	}
 
 	// Dispatch completion
-	_ = c.machine.Dispatch(ctx, workflow.EventReviewDone)
+	if err := c.dispatchWithRetry(ctx, workflow.EventReviewDone); err != nil {
+		return err
+	}
 
 	// Save session with completion time
 	c.saveCurrentSession(taskID)
@@ -1335,7 +1390,9 @@ func (c *Conductor) runOrchestratedPlanning(ctx context.Context, taskID string, 
 		if saveErr := c.workspace.SaveActiveTask(c.activeTask); saveErr != nil {
 			c.logError(fmt.Errorf("save active task after planning error: %w", saveErr))
 		}
-		_ = c.machine.Dispatch(ctx, workflow.EventError)
+		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+			c.logError(dispatchErr)
+		}
 
 		return fmt.Errorf("orchestrated planning: %w", err)
 	}
@@ -1421,7 +1478,9 @@ func (c *Conductor) runOrchestratedPlanning(ctx context.Context, taskID string, 
 	}
 
 	// Dispatch completion
-	_ = c.machine.Dispatch(ctx, workflow.EventPlanDone)
+	if err := c.dispatchWithRetry(ctx, workflow.EventPlanDone); err != nil {
+		return err
+	}
 
 	// Save session with completion time
 	c.saveCurrentSession(taskID)
