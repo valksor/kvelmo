@@ -343,21 +343,56 @@ func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Parse request
-	var req questionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+	// Parse request - handle both form and JSON submissions
+	var question string
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid form data: "+err.Error())
 
-		return
+			return
+		}
+		question = r.FormValue("question")
+	} else {
+		var req questionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
+		question = req.Question
 	}
 
-	if req.Question == "" {
+	if question == "" {
 		s.writeError(w, http.StatusBadRequest, "question is required")
 
 		return
 	}
 
-	// Set SSE headers
+	// Validate state allows questions BEFORE starting SSE stream.
+	// Once SSE headers are set, we're committed to HTTP 200.
+	activeTask := s.config.Conductor.GetActiveTask()
+	if activeTask == nil {
+		s.writeError(w, http.StatusBadRequest, "no active task")
+
+		return
+	}
+
+	allowedStates := map[string]bool{
+		string(workflow.StatePlanning):     true,
+		string(workflow.StateImplementing): true,
+		string(workflow.StateReviewing):    true,
+	}
+	if !allowedStates[activeTask.State] {
+		s.writeError(w, http.StatusConflict, fmt.Sprintf(
+			"cannot ask questions in state '%s'; use during planning, implementing, or reviewing",
+			activeTask.State,
+		))
+
+		return
+	}
+
+	// Set SSE headers AFTER validation passes
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -387,7 +422,7 @@ func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) 
 	// Start streaming in background
 	ctx := r.Context()
 	go func() {
-		if err := s.config.Conductor.AskQuestion(ctx, req.Question); err != nil {
+		if err := s.config.Conductor.AskQuestion(ctx, question); err != nil {
 			// Check if agent asked a back-question
 			if errors.Is(err, conductor.ErrPendingQuestion) {
 				sendSSE(w, "", "{\"event\":\"back_question\",\"question\":\"Agent has a follow-up question\"}")

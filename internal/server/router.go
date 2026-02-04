@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -342,6 +343,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)
 		mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
 		mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
+		mux.HandleFunc("GET /ui/partials/task-content", s.handleTaskContentPartial)
 
 		// Main dashboard
 		mux.HandleFunc("GET /", s.handleDashboard)
@@ -536,6 +538,9 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get active task to use its live state (persisted state may be stale)
+	activeTask := s.config.Conductor.GetActiveTask()
+
 	var tasks []map[string]any
 	for _, id := range taskIDs {
 		work, err := ws.LoadWork(id)
@@ -543,10 +548,16 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// Use active task's live state if this is the active task
+		state := work.Metadata.State
+		if activeTask != nil && activeTask.ID == id {
+			state = activeTask.State
+		}
+
 		task := map[string]any{
 			"id":         id,
 			"title":      work.Metadata.Title,
-			"state":      work.Metadata.State,
+			"state":      state,
 			"created_at": work.Metadata.CreatedAt,
 		}
 
@@ -581,6 +592,12 @@ func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 
 // Events handler provides SSE stream of events.
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
+	// Disable write timeout for SSE (allows indefinite streaming during long agent operations)
+	rc := http.NewResponseController(w)
+	if err := rc.SetWriteDeadline(time.Time{}); err != nil {
+		slog.Debug("could not disable write deadline for SSE", "error", err)
+	}
+
 	// Set CORS header first (before any error response)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -597,28 +614,33 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// If no event bus, just keep connection alive
+	// If no event bus, just keep connection alive with heartbeats
 	if s.config.EventBus == nil {
-		// Send initial connection event
 		s.writeSSEEvent(w, flusher, "connected", map[string]string{"status": "connected"})
-
-		// Keep connection alive until client disconnects
-		<-r.Context().Done()
+		s.runSSEHeartbeatLoop(w, flusher, r.Context())
 
 		return
 	}
 
-	// Subscribe to all events
+	// Use channel-based event delivery to prevent panic on client disconnect.
+	// The callback only writes to a channel (never panics), while the main loop
+	// checks ctx.Done() before writing to ResponseWriter.
+	eventCh := make(chan eventbus.Event, 100)
 	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
-		s.writeSSEEvent(w, flusher, string(e.Type), e.Data)
+		select {
+		case eventCh <- e:
+		default:
+			// Channel full, drop event (non-blocking to prevent callback from hanging)
+		}
 	})
 	defer s.config.EventBus.Unsubscribe(subID)
+	defer close(eventCh)
 
 	// Send initial connection event
 	s.writeSSEEvent(w, flusher, "connected", map[string]string{"status": "connected"})
 
-	// Wait for client disconnect
-	<-r.Context().Done()
+	// Run combined event + heartbeat loop (blocks until client disconnects)
+	s.runSSEEventLoop(w, flusher, r.Context(), eventCh)
 }
 
 // writeJSON writes a JSON response.
@@ -639,7 +661,14 @@ func (s *Server) writeError(w http.ResponseWriter, status int, message string) {
 }
 
 // writeSSEEvent writes a Server-Sent Event.
+// Includes panic recovery as defense-in-depth against invalid ResponseWriter access.
 func (s *Server) writeSSEEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data any) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic in SSE write (client likely disconnected)", "panic", r, "event_type", eventType)
+		}
+	}()
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		slog.Error("failed to marshal SSE data", "error", err)
@@ -658,4 +687,93 @@ func (s *Server) writeSSEEvent(w http.ResponseWriter, flusher http.Flusher, even
 		return
 	}
 	flusher.Flush()
+}
+
+// sendHeartbeat sends a heartbeat event with current workflow state.
+// Returns true (retained for API consistency; disconnection is detected via context cancellation).
+//
+//nolint:unparam // Return value kept for API consistency; callers handle disconnection via context
+func (s *Server) sendHeartbeat(w http.ResponseWriter, flusher http.Flusher, ctx context.Context, lastState *string) bool {
+	if s.config.Conductor != nil {
+		if status, err := s.config.Conductor.Status(ctx); err == nil {
+			stateChanged := status.State != *lastState
+			*lastState = status.State
+
+			s.writeSSEEvent(w, flusher, "heartbeat", map[string]any{
+				"state":         status.State,
+				"state_changed": stateChanged,
+				"task_id":       status.TaskID,
+				"specs":         status.Specifications,
+				"checkpoints":   status.Checkpoints,
+				"agent":         status.Agent,
+				"timestamp":     time.Now().Unix(),
+			})
+
+			return true
+		}
+	}
+	// Fallback: send minimal heartbeat event (no conductor or status failed)
+	s.writeSSEEvent(w, flusher, "heartbeat", map[string]any{
+		"state":     "unknown",
+		"timestamp": time.Now().Unix(),
+	})
+
+	return true
+}
+
+// runSSEHeartbeatLoop sends periodic heartbeat events to keep SSE connections alive during long operations.
+// It polls Conductor.Status() every 15 seconds and emits heartbeat events with workflow state info.
+// Blocks until the context is cancelled (client disconnects).
+func (s *Server) runSSEHeartbeatLoop(w http.ResponseWriter, flusher http.Flusher, ctx context.Context) {
+	var lastState string
+	if s.config.Conductor != nil {
+		if status, err := s.config.Conductor.Status(ctx); err == nil {
+			lastState = status.State
+		}
+	}
+
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if !s.sendHeartbeat(w, flusher, ctx, &lastState) {
+				return
+			}
+		}
+	}
+}
+
+// runSSEEventLoop processes events from a channel while sending periodic heartbeats.
+// This pattern prevents panics when clients disconnect by checking context before writes.
+// Blocks until the context is cancelled (client disconnects).
+func (s *Server) runSSEEventLoop(w http.ResponseWriter, flusher http.Flusher, ctx context.Context, eventCh <-chan eventbus.Event) {
+	var lastState string
+	if s.config.Conductor != nil {
+		if status, err := s.config.Conductor.Status(ctx); err == nil {
+			lastState = status.State
+		}
+	}
+
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e, ok := <-eventCh:
+			if !ok {
+				return
+			}
+			s.writeSSEEvent(w, flusher, string(e.Type), e.Data)
+		case <-ticker.C:
+			if !s.sendHeartbeat(w, flusher, ctx, &lastState) {
+				return
+			}
+		}
+	}
 }
