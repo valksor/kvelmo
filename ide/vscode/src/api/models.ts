@@ -382,3 +382,13 @@ export interface QuestionEvent {
   options?: string[];
   timestamp: string;
 }
+
+export interface HeartbeatEvent {
+  state?: string;
+  state_changed?: boolean;
+  task_id?: string;
+  specs?: number;
+  checkpoints?: number;
+  agent?: string;
+  timestamp: number;
+}

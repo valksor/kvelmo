@@ -7,6 +7,7 @@ import type {
   ProgressEvent,
   ErrorEvent as MehrhofErrorEvent,
   QuestionEvent,
+  HeartbeatEvent,
 } from './models';
 
 // eventsource v4 readyState constants
@@ -29,7 +30,7 @@ export interface EventStreamClientEvents {
   progress: (event: ProgressEvent) => void;
   event_error: (event: MehrhofErrorEvent) => void;
   question: (event: QuestionEvent) => void;
-  heartbeat: () => void;
+  heartbeat: (event: HeartbeatEvent) => void;
   raw_event: (type: SSEEventType, data: unknown) => void;
 }
 
@@ -165,7 +166,7 @@ export class EventStreamClient extends EventEmitter {
           this.emit('event_error', data as MehrhofErrorEvent);
           break;
         case 'heartbeat':
-          this.emit('heartbeat');
+          this.emit('heartbeat', data as HeartbeatEvent);
           break;
         default:
           // For other event types, just emit raw_event
