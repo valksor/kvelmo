@@ -25,6 +25,8 @@ var (
 	planOptimize      bool   // Optimize prompt before sending to agent
 	planForce         bool   // Force reset state before planning
 	planLibrary       bool   // Auto-include library documentation
+	planQuick         bool   // Force simple planning (skip complexity detection)
+	planFull          bool   // Force full planning (skip complexity detection)
 
 	// Hierarchical context flags (override workspace config).
 	planWithParent      bool // Include parent task context
@@ -80,6 +82,9 @@ func init() {
 	planCmd.Flags().BoolVar(&planOptimize, "optimize", false, "Optimize prompt before sending to agent")
 	planCmd.Flags().BoolVar(&planForce, "force", false, "Reset workflow state and retry (use after hung agent)")
 	planCmd.Flags().BoolVar(&planLibrary, "library", false, "Auto-include relevant library documentation based on working directory")
+	planCmd.Flags().BoolVar(&planQuick, "quick", false, "Force simple planning (faster for straightforward tasks)")
+	planCmd.Flags().BoolVar(&planFull, "full", false, "Force full planning (override auto-detection)")
+	planCmd.MarkFlagsMutuallyExclusive("quick", "full")
 
 	// Hierarchical context flags (override workspace config)
 	planCmd.Flags().BoolVar(&planWithParent, "with-parent", false, "Include parent task context (overrides config)")
@@ -122,6 +127,14 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	// Per-step agent override for planning
 	if planAgentPlanning != "" {
 		opts = append(opts, conductor.WithStepAgent("planning", planAgentPlanning))
+	}
+
+	// Complexity control flags
+	if planQuick {
+		opts = append(opts, conductor.WithQuickPlanning(true))
+	}
+	if planFull {
+		opts = append(opts, conductor.WithFullPlanning(true))
 	}
 
 	// Initialize conductor with standard providers and agents

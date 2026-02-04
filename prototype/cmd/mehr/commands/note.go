@@ -6,14 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/workflow"
 	kitdisplay "github.com/valksor/go-toolkit/display"
 )
 
@@ -21,6 +22,33 @@ var (
 	noteTask    string // Add a note to queue task (format: <queue-id>/<task-id>)
 	noteRunning string // Add a note to running the parallel task (running task ID)
 )
+
+var noteListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all notes for the active task",
+	Long: `List all notes with timestamps and workflow state.
+
+Each note shows its number, timestamp, and the workflow state when it was added.
+
+Examples:
+  mehr note list    # List all notes for the active task`,
+	RunE: runNoteList,
+}
+
+var noteViewCmd = &cobra.Command{
+	Use:   "view [number]",
+	Short: "View note content",
+	Long: `Display the full content of notes.
+
+Without a number, shows all notes. With a number, shows only that note.
+
+Examples:
+  mehr note view       # View all notes
+  mehr note view 1     # View note #1
+  mehr note view 3     # View note #3`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runNoteView,
+}
 
 var noteCmd = &cobra.Command{
 	Use:     "note [message]",
@@ -64,6 +92,8 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(noteCmd)
+	noteCmd.AddCommand(noteListCmd)
+	noteCmd.AddCommand(noteViewCmd)
 	noteCmd.Flags().StringVar(&noteTask, "task", "", "Queue task ID (format: <queue-id>/<task-id>)")
 	noteCmd.Flags().StringVar(&noteRunning, "running", "", "Running parallel task ID (from 'mehr list --running')")
 }
@@ -102,44 +132,8 @@ func runNote(cmd *cobra.Command, args []string) error {
 	taskID := cond.GetActiveTask().ID
 	ws := cond.GetWorkspace()
 
-	// Helper function to save a note
+	// Helper function to save a regular note (not for answering questions)
 	saveNote := func(message string) error {
-		if ws.HasPendingQuestion(taskID) {
-			q, _ := ws.LoadPendingQuestion(taskID)
-			note := fmt.Sprintf("**Q:** %s\n\n**A:** %s", q.Question, message)
-			if err := ws.AppendNote(taskID, note, "answer"); err != nil {
-				return fmt.Errorf("save answer: %w", err)
-			}
-
-			// Persist answer to the latest session for context recovery
-			latestSessionFile := ws.GetLatestSessionFile(taskID)
-			if latestSessionFile != "" {
-				session, err := ws.LoadSession(taskID, latestSessionFile)
-				if err == nil && session != nil {
-					now := time.Now()
-					// Record the user's answer
-					session.Exchanges = append(session.Exchanges, storage.Exchange{
-						Role:      "user",
-						Content:   "ANSWER: " + message,
-						Timestamp: now,
-					})
-					_ = ws.SaveSession(taskID, latestSessionFile, session)
-				}
-			}
-
-			// Archive full context to transcript if available
-			if q.FullContext != "" {
-				transcriptFile := time.Now().Format("2006-01-02T15-04-05") + "-answer.log"
-				fullEntry := fmt.Sprintf("=== Question ===\n%s\n\n=== Answer ===\n%s\n\n=== Context ===\n%s",
-					q.Question, message, q.FullContext)
-				_ = ws.SaveTranscript(taskID, transcriptFile, fullEntry)
-			}
-
-			_ = ws.ClearPendingQuestion(taskID)
-
-			return nil
-		}
-
 		return ws.AppendNote(taskID, message, cond.GetActiveTask().State)
 	}
 
@@ -147,26 +141,51 @@ func runNote(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		message := strings.Join(args, " ")
 
-		// Check if answering a question BEFORE saving (saveNote clears the question)
-		hadPendingQuestion := ws.HasPendingQuestion(taskID)
-
-		// Show the question being answered (so the user knows what they're responding to)
-		if hadPendingQuestion {
+		// Case 1: Pending question exists - use AnswerQuestion for full handling
+		if ws.HasPendingQuestion(taskID) {
 			q, _ := ws.LoadPendingQuestion(taskID)
 			fmt.Printf("Answering: %s\n", q.Question)
+
+			if err := cond.AnswerQuestion(ctx, message); err != nil {
+				return fmt.Errorf("answer question: %w", err)
+			}
+
+			fmt.Println("Answer submitted.")
+			fmt.Println("\nNext steps:")
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr plan")+"      "+kitdisplay.Muted("- Continue planning with your answer"))
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr implement")+" "+kitdisplay.Muted("- Start implementation"))
+
+			return nil
 		}
 
+		// Case 2: No pending question but stuck in waiting state
+		// (edge case: old code cleared question but didn't transition state)
+		status, _ := cond.Status(ctx)
+		if status.State == string(workflow.StateWaiting) {
+			// Save note first
+			if err := saveNote(message); err != nil {
+				return fmt.Errorf("save note: %w", err)
+			}
+
+			// Reset state to idle
+			if err := cond.ResetState(ctx); err != nil {
+				return fmt.Errorf("reset state: %w", err)
+			}
+
+			fmt.Println("Answer submitted. State reset to idle.")
+			fmt.Println("\nNext steps:")
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr plan")+"      "+kitdisplay.Muted("- Continue planning with your answer"))
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr implement")+" "+kitdisplay.Muted("- Start implementation"))
+
+			return nil
+		}
+
+		// Case 3: Regular note (not in waiting state)
 		if err := saveNote(message); err != nil {
 			return fmt.Errorf("save note: %w", err)
 		}
 
-		// Context-aware success message
-		if hadPendingQuestion {
-			fmt.Println("Answer submitted.")
-			fmt.Println("\nRun 'mehr plan' to continue with your answer.")
-		} else {
-			fmt.Println("Note saved.")
-		}
+		fmt.Println("Note saved.")
 
 		return nil
 	}
@@ -177,8 +196,12 @@ func runNote(cmd *cobra.Command, args []string) error {
 	status, _ := cond.Status(ctx)
 	fmt.Printf("Task: %s (state: %s)\n", status.TaskID, status.State)
 
-	// Show pending question if any
-	if ws.HasPendingQuestion(taskID) {
+	// Track state for handling waiting without pending question
+	hasPendingQuestion := ws.HasPendingQuestion(taskID)
+	isWaitingState := status.State == string(workflow.StateWaiting)
+
+	// Show appropriate prompt based on state
+	if hasPendingQuestion {
 		q, _ := ws.LoadPendingQuestion(taskID)
 		fmt.Printf("\n⚠ Pending question from agent:\n  %s\n", q.Question)
 		if len(q.Options) > 0 {
@@ -187,10 +210,12 @@ func runNote(cmd *cobra.Command, args []string) error {
 				fmt.Printf("    %d. %s\n", i+1, opt.Label)
 			}
 		}
-		fmt.Println("\nType your answer, then run 'mehr plan' to continue.")
+		fmt.Println("\nType your answer below (or 'exit' to leave without answering):")
+	} else if isWaitingState {
+		fmt.Println("\n⚠ Task is in waiting state. Type your answer to continue.")
+	} else {
+		fmt.Println("\nEntering interactive mode. Type 'exit' or 'quit' to leave.")
 	}
-
-	fmt.Println("\nEntering interactive mode. Type 'exit' or 'quit' to leave.")
 	fmt.Println()
 
 	for {
@@ -215,6 +240,52 @@ func runNote(cmd *cobra.Command, args []string) error {
 		default:
 		}
 
+		// Case 1: Pending question - use AnswerQuestion
+		if hasPendingQuestion {
+			if err := cond.AnswerQuestion(ctx, message); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+
+				continue
+			}
+
+			fmt.Println("Answer submitted.")
+			fmt.Println("\nNext steps:")
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr plan")+"      "+kitdisplay.Muted("- Continue planning with your answer"))
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr implement")+" "+kitdisplay.Muted("- Start implementation"))
+
+			hasPendingQuestion = false
+			isWaitingState = false
+			fmt.Println("\nContinue adding notes, or type 'exit' to leave.")
+
+			continue
+		}
+
+		// Case 2: Waiting state but no pending question - reset state
+		if isWaitingState {
+			if err := saveNote(message); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+
+				continue
+			}
+
+			if err := cond.ResetState(ctx); err != nil {
+				fmt.Fprintf(os.Stderr, "Error resetting state: %v\n", err)
+
+				continue
+			}
+
+			fmt.Println("Answer submitted. State reset to idle.")
+			fmt.Println("\nNext steps:")
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr plan")+"      "+kitdisplay.Muted("- Continue planning with your answer"))
+			fmt.Printf("  %s\n", kitdisplay.Cyan("mehr implement")+" "+kitdisplay.Muted("- Start implementation"))
+
+			isWaitingState = false
+			fmt.Println("\nContinue adding notes, or type 'exit' to leave.")
+
+			continue
+		}
+
+		// Case 3: Regular note
 		if err := saveNote(message); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 
@@ -344,4 +415,152 @@ func addNoteToRunningTask(ctx context.Context, runningID string, args []string) 
 	fmt.Printf("✓ Note sent to running task %s\n", runningID)
 
 	return nil
+}
+
+// runNoteList lists all notes for the active task.
+func runNoteList(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return err
+	}
+
+	if cond.GetActiveTask() == nil {
+		fmt.Print(display.NoActiveTaskError())
+
+		return errors.New("no active task")
+	}
+
+	taskID := cond.GetActiveTask().ID
+	ws := cond.GetWorkspace()
+
+	notes, err := ws.LoadNotes(taskID)
+	if err != nil {
+		return fmt.Errorf("load notes: %w", err)
+	}
+
+	if len(notes) == 0 {
+		fmt.Println("No notes yet.")
+		fmt.Println("\nAdd a note with:")
+		fmt.Printf("  %s\n", kitdisplay.Cyan("mehr note \"your message\""))
+
+		return nil
+	}
+
+	fmt.Printf("%s\n\n", kitdisplay.Bold(fmt.Sprintf("Notes (%d)", len(notes))))
+
+	for _, note := range notes {
+		stateInfo := ""
+		if note.State != "" {
+			stateInfo = kitdisplay.Muted(fmt.Sprintf(" [%s]", note.State))
+		}
+
+		// Truncate content for list view
+		content := note.Content
+		if len(content) > 60 {
+			content = content[:57] + "..."
+		}
+		content = strings.ReplaceAll(content, "\n", " ")
+
+		fmt.Printf("  %s %s%s\n",
+			kitdisplay.Cyan(fmt.Sprintf("#%d", note.Number)),
+			note.Timestamp.Format("2006-01-02 15:04"),
+			stateInfo)
+		fmt.Printf("     %s\n\n", kitdisplay.Muted(content))
+	}
+
+	fmt.Println("View full content with:")
+	fmt.Printf("  %s\n", kitdisplay.Cyan("mehr note view")+"       "+kitdisplay.Muted("- View all notes"))
+	fmt.Printf("  %s\n", kitdisplay.Cyan("mehr note view 1")+"     "+kitdisplay.Muted("- View note #1"))
+
+	return nil
+}
+
+// runNoteView displays the full content of notes.
+func runNoteView(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return err
+	}
+
+	if cond.GetActiveTask() == nil {
+		fmt.Print(display.NoActiveTaskError())
+
+		return errors.New("no active task")
+	}
+
+	taskID := cond.GetActiveTask().ID
+	ws := cond.GetWorkspace()
+
+	notes, err := ws.LoadNotes(taskID)
+	if err != nil {
+		return fmt.Errorf("load notes: %w", err)
+	}
+
+	if len(notes) == 0 {
+		fmt.Println("No notes yet.")
+		fmt.Println("\nAdd a note with:")
+		fmt.Printf("  %s\n", kitdisplay.Cyan("mehr note \"your message\""))
+
+		return nil
+	}
+
+	// If a number is provided, show only that note
+	if len(args) > 0 {
+		number, err := strconv.Atoi(args[0])
+		if err != nil {
+			return fmt.Errorf("invalid note number: %w", err)
+		}
+
+		note := findNoteByNumber(notes, number)
+		if note == nil {
+			fmt.Printf("Note #%d not found. Available notes: 1-%d\n", number, len(notes))
+
+			return fmt.Errorf("note #%d not found", number)
+		}
+
+		displayNote(note)
+
+		return nil
+	}
+
+	// Show all notes
+	for i, note := range notes {
+		displayNote(&note)
+		if i < len(notes)-1 {
+			fmt.Println(strings.Repeat("─", 60))
+			fmt.Println()
+		}
+	}
+
+	return nil
+}
+
+// findNoteByNumber finds a note by its number.
+func findNoteByNumber(notes []storage.Note, number int) *storage.Note {
+	for _, note := range notes {
+		if note.Number == number {
+			return &note
+		}
+	}
+
+	return nil
+}
+
+// displayNote formats and prints a single note.
+func displayNote(note *storage.Note) {
+	stateInfo := ""
+	if note.State != "" {
+		stateInfo = fmt.Sprintf(" [%s]", note.State)
+	}
+
+	fmt.Printf("%s %s%s\n\n",
+		kitdisplay.Cyan(fmt.Sprintf("#%d", note.Number)),
+		kitdisplay.Muted(note.Timestamp.Format("2006-01-02 15:04:05")),
+		kitdisplay.Muted(stateInfo))
+	fmt.Println(note.Content)
+	fmt.Println()
 }

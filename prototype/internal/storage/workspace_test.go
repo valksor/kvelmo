@@ -812,6 +812,132 @@ func TestAppendAndReadNotes(t *testing.T) {
 	}
 }
 
+func TestParseNotes(t *testing.T) {
+	content := `# Notes
+
+## 2026-01-27 10:30:05 [planning]
+
+First note content
+
+## 2026-01-27 11:00:00 [implementing]
+
+Second note content
+with multiple lines
+
+## 2026-01-27 12:00:00
+
+Third note without state`
+
+	notes := ParseNotes(content)
+
+	if len(notes) != 3 {
+		t.Fatalf("ParseNotes returned %d notes, want 3", len(notes))
+	}
+
+	// Check first note
+	if notes[0].Number != 1 {
+		t.Errorf("notes[0].Number = %d, want 1", notes[0].Number)
+	}
+	if notes[0].State != "planning" {
+		t.Errorf("notes[0].State = %q, want %q", notes[0].State, "planning")
+	}
+	if !contains(notes[0].Content, "First note content") {
+		t.Errorf("notes[0].Content = %q, want to contain 'First note content'", notes[0].Content)
+	}
+
+	// Check second note
+	if notes[1].Number != 2 {
+		t.Errorf("notes[1].Number = %d, want 2", notes[1].Number)
+	}
+	if notes[1].State != "implementing" {
+		t.Errorf("notes[1].State = %q, want %q", notes[1].State, "implementing")
+	}
+	if !contains(notes[1].Content, "Second note content") {
+		t.Errorf("notes[1].Content = %q, want to contain 'Second note content'", notes[1].Content)
+	}
+	if !contains(notes[1].Content, "with multiple lines") {
+		t.Errorf("notes[1].Content = %q, want to contain 'with multiple lines'", notes[1].Content)
+	}
+
+	// Check third note (no state)
+	if notes[2].Number != 3 {
+		t.Errorf("notes[2].Number = %d, want 3", notes[2].Number)
+	}
+	if notes[2].State != "" {
+		t.Errorf("notes[2].State = %q, want empty", notes[2].State)
+	}
+}
+
+func TestLoadNotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	source := SourceInfo{Type: "file", Ref: "task.md"}
+	if _, err := ws.CreateWork("test-load-notes", source); err != nil {
+		t.Fatalf("CreateWork: %v", err)
+	}
+
+	// Add some notes
+	if err := ws.AppendNote("test-load-notes", "First note", "planning"); err != nil {
+		t.Fatalf("AppendNote: %v", err)
+	}
+	if err := ws.AppendNote("test-load-notes", "Second note", "implementing"); err != nil {
+		t.Fatalf("AppendNote: %v", err)
+	}
+
+	// Load and parse notes
+	notes, err := ws.LoadNotes("test-load-notes")
+	if err != nil {
+		t.Fatalf("LoadNotes: %v", err)
+	}
+
+	if len(notes) != 2 {
+		t.Fatalf("LoadNotes returned %d notes, want 2", len(notes))
+	}
+
+	if notes[0].State != "planning" {
+		t.Errorf("notes[0].State = %q, want %q", notes[0].State, "planning")
+	}
+	if notes[1].State != "implementing" {
+		t.Errorf("notes[1].State = %q, want %q", notes[1].State, "implementing")
+	}
+}
+
+func TestLoadNotes_MissingFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	ws := openTestWorkspace(t, tmpDir)
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Load notes for a non-existent task (no notes.md file)
+	notes, err := ws.LoadNotes("nonexistent-task")
+	if err != nil {
+		t.Fatalf("LoadNotes should not error for missing file, got: %v", err)
+	}
+
+	if len(notes) != 0 {
+		t.Errorf("LoadNotes for missing file returned %d notes, want 0", len(notes))
+	}
+}
+
+func TestParseNotes_Empty(t *testing.T) {
+	// Test empty content
+	notes := ParseNotes("")
+	if len(notes) != 0 {
+		t.Errorf("ParseNotes(\"\") returned %d notes, want 0", len(notes))
+	}
+
+	// Test content with only header
+	notes = ParseNotes("# Notes\n\n")
+	if len(notes) != 0 {
+		t.Errorf("ParseNotes(header only) returned %d notes, want 0", len(notes))
+	}
+}
+
 func TestSpecsDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	ws := openTestWorkspace(t, tmpDir)

@@ -107,6 +107,7 @@ type Specification struct {
 
 // Note represents a user note added via the note command.
 type Note struct {
+	Number    int       `yaml:"-"` // 1-indexed note number (not serialized)
 	Timestamp time.Time `yaml:"timestamp"`
 	Content   string    `yaml:"content"`
 	State     string    `yaml:"state,omitempty"` // state when note was added

@@ -114,7 +114,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Run interactive setup if requested
 	if initInteractive {
-		if err := interactiveSetup(cmd, ws, envPath); err != nil {
+		if err := interactiveSetup(cmd, ws); err != nil {
 			_, _ = fmt.Fprintf(errOut, "warning: interactive setup failed: %v\n", err)
 		}
 	}
@@ -126,17 +126,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(out, "Welcome to Mehrhof!")
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "Quick start:")
-	_, _ = fmt.Fprintf(out, "  1. Set your API key in %s:\n", envPath)
-	_, _ = fmt.Fprintf(out, "     echo 'ANTHROPIC_API_KEY=sk-ant-...' >> %s\n", envPath)
+	_, _ = fmt.Fprintln(out, "  1. Start your first task:")
+	_, _ = fmt.Fprintln(out, "     mehr start file:task.md")
 	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintf(out, "  2. Start your first task:\n")
-	_, _ = fmt.Fprintf(out, "     mehr start file:task.md\n")
+	_, _ = fmt.Fprintln(out, "  2. Create specifications:")
+	_, _ = fmt.Fprintln(out, "     mehr plan")
 	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintf(out, "  3. Create specifications:\n")
-	_, _ = fmt.Fprintf(out, "     mehr plan\n")
+	_, _ = fmt.Fprintln(out, "  3. Implement the specifications:")
+	_, _ = fmt.Fprintln(out, "     mehr implement")
 	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintf(out, "  4. Implement the specifications:\n")
-	_, _ = fmt.Fprintf(out, "     mehr implement\n")
+	_, _ = fmt.Fprintln(out, "Prerequisite: The default 'claude' agent uses the Claude CLI.")
+	_, _ = fmt.Fprintln(out, "Install from: https://claude.ai/claude-code")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Run `mehr help` for configuration options.")
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "Note: Workspace data is stored in your home directory:")
 	_, _ = fmt.Fprintf(out, "     %s\n", ws.TaskRoot())
@@ -150,11 +152,11 @@ func createEnvTemplate(path string) error {
 # This file is gitignored - store secrets here safely.
 # System environment variables take priority over values defined here.
 
-# Example: API keys for agents
+# For custom agents defined in config.yaml (not needed for default claude agent)
 # ANTHROPIC_API_KEY=sk-ant-...
 # GLM_API_KEY=your-key-here
 
-# Example: GitHub token
+# Provider tokens (GitHub, GitLab, Jira, etc.)
 # GITHUB_TOKEN=ghp_...
 `
 
@@ -162,7 +164,7 @@ func createEnvTemplate(path string) error {
 }
 
 // interactiveSetup guides the user through initial configuration.
-func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace, envPath string) error {
+func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace) error {
 	out := cmd.OutOrStdout()
 	in := bufio.NewReader(cmd.InOrStdin())
 
@@ -170,28 +172,7 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace, envPath string)
 	_, _ = fmt.Fprintln(out, "Interactive Setup")
 	_, _ = fmt.Fprintln(out, "-----------------")
 
-	// Step 1: API Key
-	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintf(out, "Enter your Anthropic API key (sk-ant-...): ")
-	apiKey, _ := in.ReadString('\n')
-	apiKey = strings.TrimSpace(apiKey)
-
-	if apiKey != "" {
-		if !strings.HasPrefix(apiKey, "sk-ant-") {
-			_, _ = fmt.Fprintln(out, "Warning: API key doesn't start with 'sk-ant-'. Did you enter it correctly?")
-		}
-		// Append to .env file
-		f, err := os.OpenFile(envPath, os.O_APPEND|os.O_WRONLY, 0o600)
-		if err == nil {
-			_, _ = fmt.Fprintf(f, "\nANTHROPIC_API_KEY=%s\n", apiKey)
-			if err := f.Close(); err != nil {
-				_, _ = fmt.Fprintf(out, "warning: failed to close .env file: %v\n", err)
-			}
-			_, _ = fmt.Fprintln(out, "API key saved to .env")
-		}
-	}
-
-	// Step 2: Default Provider
+	// Step 1: Default Provider
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "Available providers: file, dir, github, jira, linear, notion, wrike, youtrack")
 	_, _ = fmt.Fprintf(out, "Enter default provider [file]: ")
@@ -201,7 +182,7 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace, envPath string)
 		provider = "file"
 	}
 
-	// Step 3: Default Agent
+	// Step 2: Default Agent
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "Available built-in agents: claude")
 	_, _ = fmt.Fprintf(out, "Enter default agent [claude]: ")
