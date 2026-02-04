@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,6 +12,13 @@ import (
 
 // handleAgentLogs streams agent output logs via SSE.
 func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
+	// Disable write timeout for SSE (allows indefinite streaming during long agent operations)
+	// This prevents the connection from being killed by the server's WriteTimeout (default 30s)
+	rc := http.NewResponseController(w)
+	if err := rc.SetWriteDeadline(time.Time{}); err != nil {
+		slog.Debug("could not disable write deadline for SSE", "error", err)
+	}
+
 	// Set CORS header first (before any error response)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -56,38 +64,27 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 		"task_id":    taskID,
 	})
 
-	// Subscribe to all workflow events
+	// Use channel-based event delivery to prevent panic on client disconnect.
+	// The callback only writes to a channel (never panics), while the main loop
+	// checks ctx.Done() before writing to ResponseWriter.
+	eventCh := make(chan eventbus.Event, 100)
 	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
 		// Filter events for this task
 		eventTaskID, _ := e.Data["task_id"].(string)
 		if eventTaskID != taskID {
 			return
 		}
-
-		// Forward all workflow-related events (agent output, state changes, etc.)
-		s.writeSSEEvent(w, flusher, string(e.Type), e.Data)
+		select {
+		case eventCh <- e:
+		default:
+			// Channel full, drop event (non-blocking to prevent callback from hanging)
+		}
 	})
 	defer s.config.EventBus.Unsubscribe(subID)
+	defer close(eventCh)
 
-	// Send keepalive comments every 15 seconds
-	ticker := time.NewTicker(15 * time.Second)
-	defer ticker.Stop()
-
-	done := r.Context().Done()
-
-	for {
-		select {
-		case <-done:
-			return
-		case <-ticker.C:
-			// Send SSE comment to keep connection alive
-			if _, err := w.Write([]byte(": keepalive\n\n")); err != nil {
-				// Client disconnected, exit the loop
-				return
-			}
-			flusher.Flush()
-		}
-	}
+	// Run combined event + heartbeat loop (blocks until client disconnects)
+	s.runSSEEventLoop(w, flusher, r.Context(), eventCh)
 }
 
 // handleAgentLogsHistory returns recent agent log history.

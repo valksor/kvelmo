@@ -250,11 +250,22 @@ func (s *Server) handleMemoryIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse request - handle both form and JSON submissions
 	var req memoryIndexRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid form data: "+err.Error())
 
-		return
+			return
+		}
+		req.TaskID = r.FormValue("task_id")
+	} else {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
 	}
 
 	if req.TaskID == "" {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -141,6 +142,12 @@ func (s *Server) handleRunningTaskCancel(w http.ResponseWriter, r *http.Request)
 // handleRunningTaskStream streams events for a specific running task via SSE.
 // GET /api/v1/running/{id}/stream.
 func (s *Server) handleRunningTaskStream(w http.ResponseWriter, r *http.Request) {
+	// Disable write timeout for SSE (allows indefinite streaming during long agent operations)
+	rc := http.NewResponseController(w)
+	if err := rc.SetWriteDeadline(time.Time{}); err != nil {
+		slog.Debug("could not disable write deadline for SSE", "error", err)
+	}
+
 	// Set CORS header first
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -182,26 +189,34 @@ func (s *Server) handleRunningTaskStream(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// If no event bus, just keep connection alive
+	// If no event bus, just keep connection alive with heartbeats
 	if s.config.EventBus == nil {
 		s.writeSSEEvent(w, flusher, "connected", map[string]string{
 			"status":  "connected",
 			"task_id": taskID,
 		})
-		<-r.Context().Done()
+		s.runSSEHeartbeatLoop(w, flusher, r.Context())
 
 		return
 	}
 
-	// Subscribe to events and filter for this task
+	// Use channel-based event delivery to prevent panic on client disconnect.
+	// The callback only writes to a channel (never panics), while the main loop
+	// checks ctx.Done() before writing to ResponseWriter.
+	eventCh := make(chan eventbus.Event, 100)
 	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
 		// Filter events for this task by checking the Data field
 		// Event.Data is already map[string]any
 		if id, found := e.Data["id"]; found && id == taskID {
-			s.writeSSEEvent(w, flusher, string(e.Type), e.Data)
+			select {
+			case eventCh <- e:
+			default:
+				// Channel full, drop event (non-blocking to prevent callback from hanging)
+			}
 		}
 	})
 	defer s.config.EventBus.Unsubscribe(subID)
+	defer close(eventCh)
 
 	// Send initial task state
 	s.writeSSEEvent(w, flusher, "connected", map[string]any{
@@ -211,8 +226,8 @@ func (s *Server) handleRunningTaskStream(w http.ResponseWriter, r *http.Request)
 		"state":     string(task.Status),
 	})
 
-	// Wait for client disconnect
-	<-r.Context().Done()
+	// Run combined event + heartbeat loop (blocks until client disconnects)
+	s.runSSEEventLoop(w, flusher, r.Context(), eventCh)
 }
 
 // handleParallelStart starts multiple tasks in parallel.

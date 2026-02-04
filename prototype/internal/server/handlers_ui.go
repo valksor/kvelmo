@@ -34,6 +34,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleTaskPartial renders the task card partial.
+// This handler is called by HTMX when SSE events fire during state transitions.
+// It must handle race conditions where GetActiveTask() returns a task but
+// ComputeActiveWork() temporarily returns nil during transitions.
 func (s *Server) handleTaskPartial(w http.ResponseWriter, r *http.Request) {
 	if s.renderer == nil || s.config.Conductor == nil {
 		w.WriteHeader(http.StatusNoContent)
@@ -41,12 +44,31 @@ func (s *Server) handleTaskPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Clear any stale task state before computing view data.
+	// This handles externally deleted work directories. Must be done in the handler
+	// (not in ComputeActiveWork) because it mutates state.
+	s.config.Conductor.ClearStaleTask()
+
+	// ComputeActiveWork computes view data from the current task state.
+	// If it returns nil after clearing stale state, check if we're in a state transition.
 	ws := s.getWorkspace()
 	data := views.ComputeActiveWork(s.config.Conductor, ws)
 	if data == nil {
-		w.WriteHeader(http.StatusNoContent)
+		// No active task (or stale task was cleared) - check if we're in a
+		// legitimate state transition where the task exists but work is loading
+		activeTask := s.config.Conductor.GetActiveTask()
+		if activeTask != nil {
+			// Task exists but ComputeActiveWork returned nil - state transition
+			data = views.ComputeMinimalActiveWork(activeTask)
+		} else {
+			// No active task - render empty state so HTMX can swap content
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if err := s.renderer.RenderEmptyState(w, "no_task", nil); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 
-		return
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

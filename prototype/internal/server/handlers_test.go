@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // startTestServer creates and starts a test server, returning cleanup function.
@@ -72,6 +77,17 @@ func doDelete(ctx context.Context, client *http.Client, url string) (*http.Respo
 	if err != nil {
 		return nil, err
 	}
+
+	return client.Do(req)
+}
+
+// doPostForm performs a POST request with form-urlencoded content type.
+func doPostForm(ctx context.Context, client *http.Client, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	return client.Do(req)
 }
@@ -287,6 +303,29 @@ func TestHandler_WorkflowAnswer_NoConductor(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+}
+
+func TestHandler_WorkflowAnswer_FormEncoded_NoConductor(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// Test form-urlencoded submission (how HTMX forms send data)
+	body := bytes.NewBufferString("answer=test+response")
+	resp, err := doPostForm(ctx, client, srv.URL()+"/api/v1/workflow/answer", body)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	// Should reach conductor check (not fail on JSON parsing)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }
 
@@ -672,4 +711,116 @@ func TestHandler_ImplementWithInvalidParams(t *testing.T) {
 			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		})
 	}
+}
+
+// Tests for handleNonFatalWorkflowError
+
+func TestHandleNonFatalWorkflowError_NilError(t *testing.T) {
+	srv := &Server{
+		config: Config{},
+	}
+	w := httptest.NewRecorder()
+
+	handled := srv.handleNonFatalWorkflowError(w, nil, "planning")
+	assert.False(t, handled, "nil error should not be handled")
+}
+
+func TestHandleNonFatalWorkflowError_PendingQuestion(t *testing.T) {
+	bus := eventbus.NewBus()
+	srv := &Server{
+		config: Config{
+			EventBus: bus,
+		},
+	}
+	w := httptest.NewRecorder()
+
+	// Subscribe to verify event is published
+	eventReceived := false
+	bus.SubscribeAll(func(_ eventbus.Event) {
+		eventReceived = true
+	})
+
+	handled := srv.handleNonFatalWorkflowError(w, conductor.ErrPendingQuestion, "planning")
+
+	assert.True(t, handled, "ErrPendingQuestion should be handled")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Parse response
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Equal(t, true, result["success"])
+	assert.Equal(t, "waiting", result["status"])
+	assert.Equal(t, "Agent has a question", result["message"])
+	assert.Equal(t, "planning", result["phase"])
+	assert.True(t, eventReceived, "SSE event should be published")
+}
+
+func TestHandleNonFatalWorkflowError_BudgetPaused(t *testing.T) {
+	srv := &Server{
+		config: Config{},
+	}
+	w := httptest.NewRecorder()
+
+	handled := srv.handleNonFatalWorkflowError(w, conductor.ErrBudgetPaused, "implementing")
+
+	assert.True(t, handled, "ErrBudgetPaused should be handled")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Parse response
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Equal(t, true, result["success"])
+	assert.Equal(t, "paused", result["status"])
+	assert.Equal(t, "Task paused due to budget limit", result["message"])
+	assert.Equal(t, "implementing", result["phase"])
+}
+
+func TestHandleNonFatalWorkflowError_BudgetStopped(t *testing.T) {
+	srv := &Server{
+		config: Config{},
+	}
+	w := httptest.NewRecorder()
+
+	handled := srv.handleNonFatalWorkflowError(w, conductor.ErrBudgetStopped, "reviewing")
+
+	assert.True(t, handled, "ErrBudgetStopped should be handled")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Parse response
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Equal(t, false, result["success"]) // Note: budget stopped is a failure condition
+	assert.Equal(t, "stopped", result["status"])
+	assert.Equal(t, "Task stopped due to budget limit", result["message"])
+	assert.Equal(t, "reviewing", result["phase"])
+}
+
+func TestHandleNonFatalWorkflowError_UnknownError(t *testing.T) {
+	srv := &Server{
+		config: Config{},
+	}
+	w := httptest.NewRecorder()
+
+	unknownErr := errors.New("some other error")
+	handled := srv.handleNonFatalWorkflowError(w, unknownErr, "planning")
+
+	assert.False(t, handled, "unknown error should not be handled")
+	assert.Equal(t, 0, w.Body.Len(), "no response should be written for unhandled errors")
+}
+
+func TestHandleNonFatalWorkflowError_WrappedPendingQuestion(t *testing.T) {
+	srv := &Server{
+		config: Config{},
+	}
+	w := httptest.NewRecorder()
+
+	// Wrap the error - errors.Is should still match
+	wrappedErr := errors.Join(errors.New("context"), conductor.ErrPendingQuestion)
+	handled := srv.handleNonFatalWorkflowError(w, wrappedErr, "planning")
+
+	assert.True(t, handled, "wrapped ErrPendingQuestion should be handled via errors.Is")
+	assert.Equal(t, http.StatusOK, w.Code)
 }

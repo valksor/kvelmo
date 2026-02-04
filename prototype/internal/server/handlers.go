@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,9 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/server/api"
+	"github.com/valksor/go-mehrhof/internal/server/views"
+	"github.com/valksor/go-toolkit/eventbus"
 )
 
 // Workflow action request/response types.
@@ -121,6 +125,14 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if this is an HTMX request (expects HTML swap)
+	if api.IsHTMXRequest(r) {
+		// HTMX request - render dashboard content for DOM swap
+		s.handleDashboard(w, r)
+
+		return
+	}
+
 	// Check if this is a browser request (wants HTML) or API request (wants JSON)
 	accept := r.Header.Get("Accept")
 	if strings.Contains(accept, "text/html") {
@@ -202,6 +214,88 @@ func (e *invalidFileError) Error() string {
 	return "invalid file type: " + e.ext + " (expected .md, .txt, or .markdown)"
 }
 
+// handleNonFatalWorkflowError checks for non-fatal workflow errors and returns
+// an appropriate success response. Returns true if the error was handled.
+// Non-fatal errors include: pending questions, budget paused, budget stopped.
+func (s *Server) handleNonFatalWorkflowError(w http.ResponseWriter, err error, phase string) bool {
+	if err == nil {
+		return false
+	}
+
+	// Handle pending question - agent needs user input
+	if errors.Is(err, conductor.ErrPendingQuestion) {
+		response := map[string]any{
+			"success": true,
+			"status":  "waiting",
+			"message": "Agent has a question",
+			"phase":   phase,
+		}
+		// Add task details if conductor is available
+		if cond := s.config.Conductor; cond != nil {
+			task := cond.GetActiveTask()
+			if task != nil {
+				response["task_id"] = task.ID
+				if q, loadErr := cond.GetWorkspace().LoadPendingQuestion(task.ID); loadErr == nil && q != nil {
+					response["question"] = q.Question
+					response["options"] = q.Options
+				} else if loadErr != nil {
+					slog.Warn("failed to load pending question", "task_id", task.ID, "error", loadErr)
+				}
+			}
+		}
+		// Publish SSE event to trigger question partial refresh in Web UI
+		if s.config.EventBus != nil {
+			s.config.EventBus.PublishRaw(eventbus.Event{
+				Type: views.EventQuestionAsked,
+				Data: response,
+			})
+		}
+		s.writeJSON(w, http.StatusOK, response)
+
+		return true
+	}
+
+	// Handle budget paused - task paused due to budget limits
+	if errors.Is(err, conductor.ErrBudgetPaused) {
+		response := map[string]any{
+			"success": true,
+			"status":  "paused",
+			"message": "Task paused due to budget limit",
+			"phase":   phase,
+		}
+		// Add task_id for consistency with pending question response
+		if cond := s.config.Conductor; cond != nil {
+			if task := cond.GetActiveTask(); task != nil {
+				response["task_id"] = task.ID
+			}
+		}
+		s.writeJSON(w, http.StatusOK, response)
+
+		return true
+	}
+
+	// Handle budget stopped - task stopped due to budget limits
+	if errors.Is(err, conductor.ErrBudgetStopped) {
+		response := map[string]any{
+			"success": false,
+			"status":  "stopped",
+			"message": "Task stopped due to budget limit",
+			"phase":   phase,
+		}
+		// Add task_id for consistency with pending question response
+		if cond := s.config.Conductor; cond != nil {
+			if task := cond.GetActiveTask(); task != nil {
+				response["task_id"] = task.ID
+			}
+		}
+		s.writeJSON(w, http.StatusOK, response)
+
+		return true
+	}
+
+	return false
+}
+
 // handleWorkflowPlan triggers planning phase.
 func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 	if s.isViewer(r) {
@@ -225,6 +319,9 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 	// Run planning
 	if err := s.config.Conductor.RunPlanning(r.Context()); err != nil {
+		if s.handleNonFatalWorkflowError(w, err, "planning") {
+			return
+		}
 		s.writeError(w, http.StatusInternalServerError, "planning failed: "+err.Error())
 
 		return
@@ -269,6 +366,9 @@ func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request)
 
 	// Run implementation
 	if err := s.config.Conductor.RunImplementation(r.Context()); err != nil {
+		if s.handleNonFatalWorkflowError(w, err, "implementing") {
+			return
+		}
 		s.writeError(w, http.StatusInternalServerError, "implementation failed: "+err.Error())
 
 		return
@@ -303,6 +403,9 @@ func (s *Server) handleWorkflowReview(w http.ResponseWriter, r *http.Request) {
 
 	// Run review
 	if err := s.config.Conductor.RunReview(r.Context()); err != nil {
+		if s.handleNonFatalWorkflowError(w, err, "reviewing") {
+			return
+		}
 		s.writeError(w, http.StatusInternalServerError, "review failed: "+err.Error())
 
 		return
@@ -425,66 +528,56 @@ func (s *Server) handleWorkflowAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Answer string `json:"answer"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+	// Handle both form and JSON submissions (HTMX forms send form-urlencoded)
+	var answer string
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid form data: "+err.Error())
 
-		return
+			return
+		}
+		answer = r.FormValue("answer")
+	} else {
+		var req struct {
+			Answer string `json:"answer"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
+		answer = req.Answer
 	}
 
-	if req.Answer == "" {
+	if answer == "" {
 		s.writeError(w, http.StatusBadRequest, "answer is required")
 
 		return
 	}
 
-	// Get current task
-	activeTask := s.config.Conductor.GetActiveTask()
-	if activeTask == nil {
-		s.writeError(w, http.StatusBadRequest, "no active task")
+	// Use conductor method to answer and transition state machine
+	if err := s.config.Conductor.AnswerQuestion(r.Context(), answer); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to answer: "+err.Error())
 
 		return
 	}
 
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
+	// Publish state change event to trigger UI refresh (actions, task card)
+	if s.config.EventBus != nil {
+		s.config.EventBus.PublishRaw(eventbus.Event{
+			Type: views.EventWorkflowStateChanged,
+			Data: map[string]any{
+				"state":   "idle",
+				"action":  "answer_submitted",
+				"message": "Question answered",
+			},
+		})
 	}
 
-	taskID := activeTask.ID
-
-	// Check if there's a pending question
-	if !ws.HasPendingQuestion(taskID) {
-		s.writeError(w, http.StatusBadRequest, "no pending question")
-
-		return
-	}
-
-	// Load the pending question to format the answer
-	q, err := ws.LoadPendingQuestion(taskID)
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to load question: "+err.Error())
-
-		return
-	}
-
-	// Save as a Q&A pair in notes
-	note := "**Q:** " + q.Question + "\n\n**A:** " + req.Answer
-	if err := ws.AppendNote(taskID, note, "answer"); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to save answer: "+err.Error())
-
-		return
-	}
-
-	// Clear the pending question
-	if err := ws.ClearPendingQuestion(taskID); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to clear question: "+err.Error())
-
-		return
+	// For HTMX requests: delete the question element and let JS toast handler show message
+	if r.Header.Get("Hx-Request") == "true" {
+		w.Header().Set("Hx-Reswap", "delete")
 	}
 
 	s.writeJSON(w, http.StatusOK, map[string]any{
