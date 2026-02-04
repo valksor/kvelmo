@@ -177,14 +177,18 @@ func SVGDiagram(machine *Machine, opts DiagramOptions) string {
 		.state-box.aux { fill: #E6E6FA; stroke: #9370DB; }
 		.state-text { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
 		.transition-line { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+		.transition-back { stroke: #888; stroke-width: 1.5; fill: none; stroke-dasharray: 4,2; marker-end: url(#arrowhead-back); }
 		.transition-label { font-family: Arial, sans-serif; font-size: 10px; fill: #666; text-anchor: middle; }
 	</style>
 `)
 
-	// Arrowhead marker
+	// Arrowhead markers
 	sb.WriteString(`<defs>
 		<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
 			<polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+		</marker>
+		<marker id="arrowhead-back" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+			<polygon points="0 0, 10 3.5, 0 7" fill="#888" />
 		</marker>
 	</defs>
 `)
@@ -198,10 +202,12 @@ func SVGDiagram(machine *Machine, opts DiagramOptions) string {
 	mainY := 80
 
 	statePositions := make(map[State][2]int)
+	stateIndex := make(map[State]int)
 
 	for i, state := range phaseStates {
 		x := startX + i*(boxWidth+spacing)
 		statePositions[state] = [2]int{x, mainY}
+		stateIndex[state] = i
 
 		// Determine CSS class
 		var cssClass string
@@ -226,23 +232,62 @@ func SVGDiagram(machine *Machine, opts DiagramOptions) string {
 		sb.WriteString("\n")
 	}
 
+	// Track which transitions we've drawn to avoid duplicates
+	drawnTransitions := make(map[string]bool)
+
 	// Draw transitions between main states
 	for _, trans := range diag.Edges {
-		if !trans.IsGlobal && trans.From != "" && trans.To != "" {
-			fromPos, fromOk := statePositions[trans.From]
-			toPos, toOk := statePositions[trans.To]
+		if trans.IsGlobal || trans.From == "" || trans.To == "" {
+			continue
+		}
 
-			if fromOk && toOk {
-				// Draw arrow from right side of source to left side of target
-				fromX := fromPos[0] + boxWidth
-				fromY := fromPos[1] + boxHeight/2
-				toX := toPos[0]
-				toY := toPos[1] + boxHeight/2
+		fromPos, fromOk := statePositions[trans.From]
+		toPos, toOk := statePositions[trans.To]
+		fromIdx, fromIsMain := stateIndex[trans.From]
+		toIdx, toIsMain := stateIndex[trans.To]
 
-				sb.WriteString(fmt.Sprintf(`<line x1="%d" y1="%d" x2="%d" y2="%d" class="transition-line" />`,
-					fromX, fromY, toX, toY))
-				sb.WriteString("\n")
+		// Only draw transitions between main phase states
+		if !fromOk || !toOk || !fromIsMain || !toIsMain {
+			continue
+		}
+
+		// Deduplicate transitions (multiple events can cause same state change)
+		key := fmt.Sprintf("%s->%s", trans.From, trans.To)
+		if drawnTransitions[key] {
+			continue
+		}
+		drawnTransitions[key] = true
+
+		if toIdx == fromIdx+1 {
+			// Forward transition: straight arrow from right side to left side
+			fromX := fromPos[0] + boxWidth
+			fromY := fromPos[1] + boxHeight/2
+			toX := toPos[0]
+			toY := toPos[1] + boxHeight/2
+
+			sb.WriteString(fmt.Sprintf(`<line x1="%d" y1="%d" x2="%d" y2="%d" class="transition-line" />`,
+				fromX, fromY, toX, toY))
+			sb.WriteString("\n")
+		} else if fromIdx > toIdx {
+			// Backward transition: curved path above the boxes
+			// Start from top-center of source, curve above, end at top-center of target
+			fromX := fromPos[0] + boxWidth/2
+			fromY := fromPos[1] // Top of source box
+			toX := toPos[0] + boxWidth/2
+			toY := toPos[1] // Top of target box
+
+			// Control point height depends on distance (more boxes to skip = higher arc)
+			distance := fromIdx - toIdx
+			controlY := mainY - 25 - (distance * 15) // Higher arc for longer distances
+			if controlY < 10 {
+				controlY = 10 // Floor to prevent negative Y values
 			}
+
+			// Use quadratic Bezier curve
+			midX := (fromX + toX) / 2
+			sb.WriteString(fmt.Sprintf(`<path d="M %d %d Q %d %d %d %d" class="transition-back" />`,
+				fromX, fromY, midX, controlY, toX, toY))
+			sb.WriteString("\n")
 		}
 	}
 

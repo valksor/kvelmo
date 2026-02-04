@@ -514,3 +514,40 @@ func TestSVGDiagramDimensions(t *testing.T) {
 		t.Error("SVGDiagram() should have height=\"400\"")
 	}
 }
+
+// TestSVGDiagramBackwardTransitions tests that backward transitions use curved paths.
+func TestSVGDiagramBackwardTransitions(t *testing.T) {
+	machine := NewMachine(eventbus.NewBus())
+	opts := DiagramOptions{}
+
+	result := SVGDiagram(machine, opts)
+
+	// Should have forward transitions using <line> elements
+	if !strings.Contains(result, `<line`) {
+		t.Error("SVGDiagram() should have <line> elements for forward transitions")
+	}
+
+	// Should have backward transitions using curved <path> elements
+	// The workflow has backward transitions like planning->idle, implementing->idle, reviewing->idle
+	if !strings.Contains(result, `<path d="M`) {
+		t.Error("SVGDiagram() should have curved <path> elements for backward transitions")
+	}
+
+	// Should have the transition-back CSS class for backward transitions
+	if !strings.Contains(result, `class="transition-back"`) {
+		t.Error("SVGDiagram() should have transition-back CSS class")
+	}
+
+	// Should have quadratic Bezier curves (Q command in SVG path)
+	if !strings.Contains(result, ` Q `) {
+		t.Error("SVGDiagram() should use quadratic Bezier curves for backward transitions")
+	}
+
+	// Should have both arrowhead markers
+	if !strings.Contains(result, `id="arrowhead"`) {
+		t.Error("SVGDiagram() should have arrowhead marker")
+	}
+	if !strings.Contains(result, `id="arrowhead-back"`) {
+		t.Error("SVGDiagram() should have arrowhead-back marker for backward transitions")
+	}
+}
