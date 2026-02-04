@@ -108,7 +108,9 @@ func (c *Conductor) handleBudgetPause(ctx context.Context, work *storage.TaskWor
 	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 		c.logError(fmt.Errorf("save active task after budget pause: %w", err))
 	}
-	_ = c.machine.Dispatch(ctx, workflow.EventPause)
+	if err := c.dispatchWithRetry(ctx, workflow.EventPause); err != nil {
+		return err
+	}
 
 	return ErrBudgetPaused
 }
@@ -130,7 +132,9 @@ func (c *Conductor) handleBudgetStop(ctx context.Context, work *storage.TaskWork
 	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
 		c.logError(fmt.Errorf("save active task after budget stop: %w", err))
 	}
-	_ = c.machine.Dispatch(ctx, workflow.EventAbort)
+	if err := c.dispatchWithRetry(ctx, workflow.EventAbort); err != nil {
+		return err
+	}
 
 	return ErrBudgetStopped
 }

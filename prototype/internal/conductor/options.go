@@ -33,7 +33,9 @@ type Options struct {
 	IncludeFullContext bool // Include full exploration context from pending question (default: summary only)
 
 	// Planning behavior
-	UseDefaults bool // Use default answers for unknowns without asking user (default: false, ask user)
+	UseDefaults        bool // Use default answers for unknowns without asking user (default: false, ask user)
+	ForceQuickPlanning bool // Force simple planning prompt regardless of complexity (--quick)
+	ForceFullPlanning  bool // Force full planning prompt regardless of complexity (--full)
 
 	// Prompt optimization
 	OptimizePrompts bool // Optimize prompts before sending to working agent
@@ -213,6 +215,28 @@ func WithIncludeFullContext(enabled bool) Option {
 func WithUseDefaults(enabled bool) Option {
 	return func(o *Options) {
 		o.UseDefaults = enabled
+	}
+}
+
+// WithQuickPlanning forces simple planning prompt regardless of detected complexity.
+// Use for straightforward tasks when auto-detection is too conservative.
+func WithQuickPlanning(enabled bool) Option {
+	return func(o *Options) {
+		o.ForceQuickPlanning = enabled
+		if enabled {
+			o.ForceFullPlanning = false // Mutual exclusion
+		}
+	}
+}
+
+// WithFullPlanning forces full planning prompt regardless of detected complexity.
+// Use when auto-detection incorrectly classifies a task as simple.
+func WithFullPlanning(enabled bool) Option {
+	return func(o *Options) {
+		o.ForceFullPlanning = enabled
+		if enabled {
+			o.ForceQuickPlanning = false // Mutual exclusion
+		}
 	}
 }
 

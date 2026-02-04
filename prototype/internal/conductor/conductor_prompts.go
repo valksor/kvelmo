@@ -230,6 +230,73 @@ Your response MUST include:
 	return prompt
 }
 
+// buildSimplePlanningPrompt creates a minimal prompt for straightforward tasks.
+// It produces the same output format as buildPlanningPrompt but with ~50% fewer tokens
+// by omitting verbose guidance, examples, and optional context sections.
+//
+// Use this for tasks detected as "simple" by DetectTaskComplexity:
+// - Short descriptions
+// - Single file changes
+// - Action keywords like "update", "bump", "fix typo".
+func buildSimplePlanningPrompt(workingDir, title, sourceContent, notes string) string {
+	currentTime := time.Now().Format("2006-01-02 15:04")
+
+	prompt := fmt.Sprintf(`You are an expert software engineer. Create a concise specification for this straightforward task.
+
+Current timestamp: %s
+Working directory: %s
+
+## Task
+%s
+
+## Source Content
+%s
+`, currentTime, workingDir, title, sourceContent)
+
+	if notes != "" {
+		prompt += fmt.Sprintf(`
+## Notes
+%s
+`, notes)
+	}
+
+	prompt += `
+## Instructions
+Create a brief specification with these sections:
+
+1. **Request** - Task description in your own words
+2. **Plan** - Numbered implementation steps
+3. **Context** - Relevant files (path:lines: description)
+4. **Unknowns** - Questions (numbered) or "0. None"
+5. **Complete Condition** - How to verify (manual + run command)
+6. **Status** - "planned" + current timestamp
+
+## Output Format
+` + "```markdown\n" + `## Request
+<brief task description>
+
+## Plan
+1. <step>
+2. <step>
+
+## Context
+path/to/file:lines: <description>
+
+## Unknowns
+0. None
+
+## Complete Condition
+- manual: <verification step>
+- run: <validation command>
+
+## Status
+planned YYYY-MM-DD HH:MM
+` + "```\n" + `
+Output your specification in this exact structure.`
+
+	return prompt
+}
+
 // buildImplementationPrompt creates the prompt for implementation.
 //
 // The workspace parameter is used to:
@@ -1146,7 +1213,7 @@ Note: Provide your best-guess default answers for any unknowns. Do not wait for 
 	}
 
 	return `If you have questions about requirements or approach:
-1. STOP and ask the user using the ask_question tool before proceeding
+1. STOP and ask the user using the AskUserQuestion tool before proceeding
 2. Do not guess - get clarification for important decisions
 3. Only proceed to specification when all critical unknowns are resolved
 
