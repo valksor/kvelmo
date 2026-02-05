@@ -15,73 +15,27 @@ When you click **"Review"**, Mehrhof:
 
 After implementation completes, click the **"Review"** button:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                  │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                               │
-│  Changes: 5 files modified                                   │
-│                                                              │
-│  Actions:                                                    │
-│    [Plan] [Implement] [Review] [Finish] [Continue]           │
-│                                                              │
-│  [Review] ← Click this button                                │
-└──────────────────────────────────────────────────────────────┘
-```
+The Active Task card shows the number of files modified. Click **Review** to run quality checks on your changes.
 
 ## Review Phase Workflow
 
-```mermaid
-flowchart LR
-    A[Idle + Code Ready] --> B[Click Review]
-    B --> C[Reviewing State]
-    C --> D[Quality Checks Run]
-    D --> E[Report Generated]
-    E --> F[Back to Idle - Review Complete]
+```text
+┌──────────────────┐     ┌──────────────┐     ┌─────────────────┐     ┌────────────────────┐     ┌──────────────────┐     ┌─────────────────────────────────┐
+│ Idle + Code Ready│ ──▶ │ Click Review │ ──▶ │ Reviewing State │ ──▶ │ Quality Checks Run │ ──▶ │ Report Generated │ ──▶ │ Back to Idle - Review Complete  │
+└──────────────────┘     └──────────────┘     └─────────────────┘     └────────────────────┘     └──────────────────┘     └─────────────────────────────────┘
 ```
 
 ## Real-Time Progress
 
 Watch the review in the **Agent Output** section:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                         │
-├──────────────────────────────────────────────────────────────┤
-│  $ Running quality checks...                                 │
-│  ✓ golangci-lint - passed                                    │
-│  ✓ go test - all tests passing                               │
-│                                                              │
-│  Review complete: No issues found                            │
-│  ▶ Streaming...                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Agent Output** section shows real-time progress as quality checks run, displaying each tool's status (passed or failed) and a final summary.
 
 ## Configuring Quality Checks
 
 Configure which linters run during review via **Settings** → **Quality**:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Quality Settings                                            │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Enable Quality Checks         [✓]                           │
-│  Use Defaults                   [✗]  (Safer: require config) │
-│                                                              │
-│  Linters:                                                    │
-│    ┌─────────────────────────────────────────────────────┐   │
-│    │ golangci-lint        [Enabled: ✓]  [Run]            │   │
-│    │ eslint               [Enabled: ✗]  [Disabled]       │   │
-│    │ phpstan              [Enabled: ✓]  [Custom]         │   │
-│    │   Command: vendor/bin/phpstan analyse               │   │
-│    └─────────────────────────────────────────────────────┘   │
-│                                                              │
-│  [Add Custom Linter]                                         │
-│                                                              │
-│  [Save]                                                      │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Quality Settings** panel in Settings lets you enable/disable quality checks, configure built-in linters (golangci-lint, eslint, ruff, php-cs-fixer), and add custom linters with custom commands and arguments. Click **Add Custom Linter** to define additional tools.
 
 **Quality Settings:**
 
@@ -127,54 +81,13 @@ During review, the task state changes to **"Reviewing"**:
 
 After review completes, you'll see a summary:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Review Summary                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Status: ✅ Passed                                           │
-│                                                              │
-│  Checks Run: 5                                               │
-│    ✓ gofmt - Code formatting                                 │
-│    ✓ go vet - Static analysis                                │
-│    ✓ staticcheck - Additional checks                         │
-│    ✓ golangci-lint - Full lint                               │
-│    ✓ go test - Unit tests                                    │
-│                                                              │
-│  Issues Found: 0                                             │
-│                                                              │
-│  Files Analyzed: 5                                           │
-│  Test Coverage: 94.2%                                        │
-│                                                              │
-│  [View Full Report]                                          │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Review Summary** shows the overall status (Passed or Issues Found), lists all checks that ran with their results, and displays metrics like files analyzed and test coverage. Click **View Full Report** for details.
 
 ## When Issues Are Found
 
 If the review finds issues:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Review Summary                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Status: ⚠️ Issues Found                                     │
-│                                                              │
-│  Issues Found: 3                                             │
-│                                                              │
-│  🔴 Error: missing-return in func AuthMiddleware             │
-│     File: internal/auth/middleware.go:45                     │
-│                                                              │
-│  🟡 Warning: exported function should have comment           │
-│     File: internal/auth/oauth.go:23                          │
-│                                                              │
-│  🟡 Warning: unused variable 'sessionID'                     │
-│     File: internal/auth/handlers.go:67                       │
-│                                                              │
-│  [View Full Report] [Fix Issues] [Ignore]                    │
-└──────────────────────────────────────────────────────────────┘
-```
+When issues are found, the summary lists each issue with its severity (error or warning), description, and file location. You can click **Fix Issues** to add the issues as notes and implement again, or **Ignore** to proceed (not recommended for errors).
 
 ### Options
 
@@ -230,21 +143,7 @@ review 2       # View review #2
 
 The dashboard shows a **Reviews** section after you run your first review:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Reviews                                          2 review(s) │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ⚠️ Review #1                              [ISSUES]          │
-│      Found 3 issues requiring attention                      │
-│      [View] [Implement Fixes]                                │
-│                                                              │
-│  ✅ Review #2                              [PASSED]          │
-│      No issues found                                         │
-│      [View]                                                  │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Reviews** section lists all previous reviews with their status (Issues or Passed). Click **View** to see the full review content, or **Implement Fixes** to have the AI address the issues found in that review.
 
 Click **"View"** to see the full review content.
 
@@ -279,12 +178,5 @@ rather than implementing from specifications.
 ## Also Available via CLI
 
 Run code review from the command line for terminal-based workflows or CI/CD integration.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr review` | Run automated code review |
-| `mehr review view 1` | View the content of review #1 |
-| `mehr implement review 1` | Implement fixes from review #1 |
-| `mehr review --standalone` | Review without an active task |
 
 See [CLI: review](/cli/review.md) for all flags and options.

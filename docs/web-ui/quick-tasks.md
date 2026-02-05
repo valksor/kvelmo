@@ -112,10 +112,7 @@ Convert a quick task to a markdown file for the standard workflow:
 3. Choose an output filename (or use the default)
 4. The task is saved as a `.md` file
 
-You can then start the standard workflow with:
-```bash
-mehr start file:your-task.md
-```
+You can then start the standard workflow from the exported file using the **Start** button or CLI.
 
 ### Submitting to Providers
 
@@ -198,26 +195,10 @@ The default queue ID is `quick-tasks`. You can create multiple queues for differ
 
 Capture and manage quick tasks from the command line for rapid entry or scripting.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr quick "description"` | Create a new quick task |
-| `mehr note --task=<id> "text"` | Add a note to a task |
-| `mehr optimize --task=<id>` | Let AI refine the task |
-| `mehr export --task=<id>` | Export task to markdown file |
-| `mehr submit --task=<id>` | Submit task to external provider |
-| `mehr start queue:<id>` | Start the standard workflow for a task |
-
 See [CLI: quick](/cli/quick.md) for all options, queue management, and batch operations.
 
 ## Managing Multiple Queues
 
-You can work with multiple task queues:
+You can work with multiple task queues. Switch between queues using the queue selector at the top of the quick tasks page.
 
-```bash
-# CLI: Create task in specific queue
-mehr quick --queue backlog "future feature"
-
-# Web UI: Select queue from dropdown
-```
-
-Switch between queues using the queue selector at the top of the quick tasks page.
+For CLI queue management, see [CLI: quick](/cli/quick.md).

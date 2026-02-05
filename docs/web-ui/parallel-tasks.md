@@ -16,51 +16,19 @@ Parallel task execution allows you to run multiple tasks simultaneously, each in
 
 ## Starting Parallel Tasks
 
-### Via API
+Parallel tasks can be started via the API or CLI. The Web UI automatically displays any running parallel tasks in the Running Tasks section.
 
-Start multiple tasks in parallel using the `/api/v1/parallel` endpoint:
+**Configuration options:**
 
-```bash
-curl -X POST http://localhost:8080/api/v1/parallel \
-  -H "Content-Type: application/json" \
-  -d '{
-    "references": ["file:a.md", "file:b.md", "file:c.md"],
-    "max_workers": 3,
-    "use_worktree": true
-  }'
-```
+| Option         | Description                                |
+|----------------|--------------------------------------------|
+| References     | Array of task references to start          |
+| Max workers    | Maximum parallel workers (default: 2)      |
+| Use worktree   | Create isolated git worktree for each task |
 
-**Request Body:**
+**Important:** When running more than one worker, worktrees should be enabled to prevent file conflicts between concurrent tasks.
 
-| Field          | Type     | Default | Description                                |
-|----------------|----------|---------|--------------------------------------------|
-| `references`   | string[] | -       | Array of task references to start          |
-| `max_workers`  | int      | 2       | Maximum parallel workers (goroutines)      |
-| `use_worktree` | bool     | false   | Create isolated git worktree for each task |
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "parallel execution started",
-  "task_count": 3,
-  "max_workers": 3,
-  "task_ids": ["abc123", "def456", "ghi789"]
-}
-```
-
-**Important:** When `max_workers > 1`, you must set `use_worktree: true` to prevent file conflicts between concurrent tasks.
-
-### Via CLI
-
-From the CLI, use the `--parallel` flag:
-
-```bash
-mehr start file:a.md file:b.md file:c.md --parallel=3 --worktree
-```
-
-The Web UI will automatically display these tasks in the Running Tasks section.
+For API details, see [REST API Reference](/reference/rest-api.md). For CLI options, see [CLI: start](/cli/start.md).
 
 ## Monitoring Running Tasks
 
@@ -68,40 +36,13 @@ The Web UI will automatically display these tasks in the Running Tasks section.
 
 The dashboard includes a Running Tasks section when parallel tasks are active:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Running Tasks (3)                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ 🟢 abc123  │  file:a.md  │  running  │  5m 30s   │  │      │
-│  │  Worktree: ../worktrees/abc123                    │  │      │
-│  │                            [View Stream] [Cancel] │  │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ 🟢 def456  │  file:b.md  │  running  │  5m 28s   │  │      │
-│  │  Worktree: ../worktrees/def456                    │  │      │
-│  │                            [View Stream] [Cancel] │  │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ ✅ ghi789  │  file:c.md  │  completed │  4m 15s  │  │      │
-│  │  Worktree: ../worktrees/ghi789                    │  │      │
-│  │                            [View Stream]          │  │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  2 running, 3 total                                          │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Running Tasks** section lists all parallel tasks with their ID, reference, status, and duration. Each task shows its worktree path and has **View Stream** to see real-time output and **Cancel** to stop running tasks. A summary shows how many are running vs total.
 
 ### API: List Running Tasks
 
-```bash
-curl http://localhost:8080/api/v1/running
-```
+The running tasks endpoint returns the status of all parallel tasks. For API details, see [REST API Reference](/reference/rest-api.md).
 
-**Response:**
+**Example response:**
 
 ```json
 {
@@ -154,13 +95,7 @@ curl http://localhost:8080/api/v1/running
 
 ### SSE Stream Endpoint
 
-Get real-time updates for a specific task:
-
-```bash
-curl -N http://localhost:8080/api/v1/running/abc123/stream
-```
-
-The stream sends Server-Sent Events with task-specific updates:
+Each task has a dedicated Server-Sent Events stream for real-time updates. The stream sends events like:
 
 ```
 event: connected
@@ -197,20 +132,7 @@ Click the **Cancel** button on any running task. The task will:
 
 ### Via API
 
-```bash
-curl -X POST http://localhost:8080/api/v1/running/abc123/cancel
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "task cancellation requested",
-  "task_id": "abc123",
-  "reference": "file:a.md"
-}
-```
+Tasks can also be cancelled via the API. See [REST API Reference](/reference/rest-api.md) for endpoint details.
 
 **Note:** Cancellation is asynchronous. The task will stop at the next safe checkpoint.
 
@@ -224,24 +146,9 @@ curl -X POST http://localhost:8080/api/v1/running/abc123/cancel
 
 The note is delivered to the task's conductor and included in subsequent agent prompts.
 
-### Via API
+### Via API or CLI
 
-Use the standard notes endpoint with the running task ID:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/notes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "running_task_id": "abc123",
-    "message": "Consider edge case X"
-  }'
-```
-
-### Via CLI
-
-```bash
-mehr note --running=abc123 "Consider edge case X"
-```
+Notes can also be sent via the API or CLI. See [REST API Reference](/reference/rest-api.md) or [CLI: note](/cli/note.md) for details.
 
 ## Best Practices
 
@@ -278,15 +185,7 @@ mehr note --running=abc123 "Consider edge case X"
 
 Manage parallel task execution from the command line for scripting or terminal workflows.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr start <refs> --parallel=N` | Start multiple tasks in parallel with N workers |
-| `mehr start <refs> --parallel=N --worktree` | Use isolated git worktrees per task |
-| `mehr list --running` | List currently running parallel tasks |
-| `mehr note --running=<id> "message"` | Send a note to a specific running task |
-| `mehr project start --parallel=N` | Start project queue tasks in parallel |
-
-See [CLI: start](/cli/start.md) for parallel execution options, and [CLI: list](/cli/list.md) for monitoring running tasks.
+See [CLI: start](/cli/start.md) for parallel execution options and [CLI: list](/cli/list.md) for monitoring running tasks.
 
 ## Related Documentation
 

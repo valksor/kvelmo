@@ -99,72 +99,16 @@ event: message
 data: {"event":"done"}
 ```
 
-## Examples
+## Simplification Modes
 
-### Simplify Uncommitted Changes
+| Mode | Description |
+|------|-------------|
+| Uncommitted changes | Simplifies changes not yet committed |
+| Branch vs base | Simplifies the difference between current branch and base |
+| Commit range | Simplifies code within a specific commit range |
+| Specific files | Simplifies only the specified files |
 
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "uncommitted"
-  }'
-```
-
-### Simplify Branch vs Main
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "branch",
-    "base_branch": "main"
-  }'
-```
-
-### Simplify Commit Range
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "range",
-    "range": "HEAD~5..HEAD"
-  }'
-```
-
-### Simplify Specific Files
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "files",
-    "files": ["src/handler.go", "src/validation.go"]
-  }'
-```
-
-### Skip Checkpoint (Not Recommended)
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "uncommitted",
-    "create_checkpoint": false
-  }'
-```
-
-### Stream Simplify Results
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
-  -H "Content-Type: application/json" \
-  -H "Accept: text/event-stream" \
-  -d '{
-    "mode": "uncommitted"
-  }'
-```
+For API integration examples, see [REST API Reference](/reference/rest-api.md).
 
 ## File Operations
 
@@ -179,19 +123,11 @@ curl -X POST http://localhost:8080/api/v1/workflow/simplify/standalone \
 
 ### Automatic Checkpoints
 
-By default, simplification creates a git checkpoint before modifying files. This allows you to undo changes using `git checkout` or the `mehr undo` command.
-
-To skip checkpoint creation (not recommended):
-
-```json
-{
-  "create_checkpoint": false
-}
-```
+By default, simplification creates a git checkpoint before modifying files. This allows you to undo changes using the **Undo** button or git commands.
 
 ### Recovery
 
-If simplification produces unwanted results, you can recover using git to discard changes or the Mehrhof undo feature to restore from a checkpoint.
+If simplification produces unwanted results, you can recover using the **Undo** button to restore from a checkpoint.
 
 ## Error Response
 
@@ -207,14 +143,6 @@ If simplification produces unwanted results, you can recover using git to discar
 ## Also Available via CLI
 
 Run standalone code simplification from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr simplify --standalone` | Simplify uncommitted changes |
-| `mehr simplify --standalone --branch main` | Simplify current branch vs main |
-| `mehr simplify --standalone --range HEAD~5..HEAD` | Simplify a commit range |
-| `mehr simplify --standalone <files>` | Simplify specific files |
-| `mehr simplify --standalone --no-checkpoint` | Skip checkpoint creation |
 
 See [CLI: simplify](/cli/simplify.md) for all modes, agent selection, and output options.
 

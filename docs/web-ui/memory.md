@@ -17,11 +17,10 @@ When you search, Mehrhof finds semantically similar past tasks using vector simi
 
 Memory features are available through:
 
-| Feature                  | Location                   |
-|--------------------------|----------------------------|
-| **Memory Search**        | Settings → Memory tab      |
-| **Memory Statistics**    | Settings → Memory → Stats  |
-| **Memory Configuration** | Settings → Memory → Config |
+| Feature                  | Location                             |
+|--------------------------|--------------------------------------|
+| **Memory Search**        | Tools → Memory                       |
+| **Memory Configuration** | Settings → Features → Memory System  |
 
 Memory search results appear automatically in the dashboard when starting similar tasks.
 
@@ -31,15 +30,19 @@ Memory search results appear automatically in the dashboard when starting simila
 
 Find similar past tasks:
 
-1. Go to **Settings → Memory**
+1. Go to **Tools → Memory** from the navigation
 2. Enter your search query in the search box
-3. Optionally filter by:
-   - **Document type** - `code_change`, `specification`, `session`, `solution`
-   - **Task ID** - Search within a specific task
-   - **Result limit** - Number of results (default: 5)
-4. Click **"Search"**
+3. Optionally filter by document type:
+   - **Code** — Code changes from past tasks
+   - **Specifications** — Implementation plans
+   - **Sessions** — Agent conversation logs
+   - **Solutions** — Fixes and corrections
+   - **Decisions** — Architectural decisions
+   - **Errors** — Past errors and resolutions
+4. Set a results limit (default: 5)
+5. Click **"Search"**
 
-Results show similar documents with similarity scores.
+Results show similar documents with similarity scores (percentage match).
 
 ### Understanding Results
 
@@ -55,34 +58,9 @@ Each search result shows:
 
 **Similarity Threshold:** Only results above 0.8 (default) are shown. Adjust this in settings.
 
-### Viewing Memory Statistics
-
-See what's stored in memory:
-
-1. Go to **Settings → Memory → Stats**
-2. View:
-   - Total documents stored
-   - Documents by type
-   - Embedding model in use
-   - Vector store configuration
-
-Example:
-```
-Total Documents: 47
-
-Documents by Type:
-  code_change: 18
-  specification: 12
-  session: 14
-  solution: 3
-
-Embedding Model: simple (hash-based)
-Vector Store: ChromaDB (in-memory)
-```
-
 ### Configuring Memory
 
-Memory is configured in **Settings → Memory → Config**:
+Memory is configured in **Settings → Features → Memory System**:
 
 ```yaml
 memory:
@@ -91,6 +69,7 @@ memory:
     backend: chromadb
     connection_string: ./.mehrhof/vectors
     collection: mehr_task_memory
+    embedding_model: default    # or "onnx" for semantic embeddings
   retention:
     max_days: 90
     max_tasks: 1000
@@ -104,21 +83,49 @@ memory:
 ```
 
 **Key Settings:**
+- **embedding_model** - `default` (hash-based) or `onnx` (semantic neural embeddings)
 - **similarity_threshold** - Lower = more results (try 0.65 if none found)
 - **max_results** - How many matches to return
 - **auto_store** - Automatically index completed tasks
 - **suggest_similar** - Show similar tasks when starting new work
 
+### Embedding Models
+
+Mehrhof supports two embedding approaches:
+
+| Model       | How It Works          | Best For                                          |
+|-------------|-----------------------|---------------------------------------------------|
+| **default** | Hash-based (SHA256)   | Fast, offline, exact/near-exact matches           |
+| **onnx**    | Neural network (ONNX) | True semantic similarity ("cat" matches "kitten") |
+
+#### Enabling Semantic Embeddings
+
+For better semantic search, enable ONNX embeddings:
+
+```yaml
+memory:
+  vector_db:
+    embedding_model: onnx
+    onnx:
+      model: all-MiniLM-L6-v2    # 22MB, good quality (default)
+```
+
+**Available models:**
+
+| Model             | Size | Quality            |
+|-------------------|------|--------------------|
+| all-MiniLM-L6-v2  | 22MB | Good (recommended) |
+| all-MiniLM-L12-v2 | 33MB | Better             |
+
+**First-run download**: ONNX models download automatically on first use to `~/.valksor/mehrhof/models/`. No manual setup required.
+
+**Switching models**: Changing from `default` to `onnx` (or vice versa) invalidates existing vectors. You must clear memory after switching models.
+
 ### Clearing Memory
 
-Remove all stored memory:
+To remove all stored memory, use the CLI. See [CLI: memory](/cli/memory.md) for the clear command.
 
-1. Go to **Settings → Memory**
-2. Scroll to **Danger Zone**
-3. Click **"Clear All Memory"**
-4. Confirm the action
-
-**Warning:** This cannot be undone.
+**Warning:** Clearing memory cannot be undone.
 
 ## How Memory Works
 
@@ -140,10 +147,15 @@ When you search, Mehrhof:
 2. Searches the vector database for similar embeddings
 3. Returns documents above the similarity threshold
 
-Vector similarity means:
+**With ONNX embeddings** (true semantic similarity):
 - "authentication bug" finds "login fix"
 - "database schema" finds "model changes"
 - "race condition" finds "concurrency fix"
+- "cat" matches "kitten" and "feline"
+
+**With default embeddings** (hash-based):
+- Works best for exact or near-exact text matches
+- Good for finding specific error messages or function names
 
 ### Agent Integration
 
@@ -192,24 +204,7 @@ This helps the AI apply lessons learned from previous work.
 
 ## Also Available via CLI
 
-Search and manage semantic memory from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr memory search "query"` | Search memory for similar content |
-| `mehr memory stats` | View memory statistics |
-| `mehr memory index --task <id>` | Manually index a specific task |
-| `mehr memory clear` | Clear all stored memory |
-
-See [CLI: memory](/cli/memory.md) for all search options, filters, and output formats.
-
-## Memory Storage
-
-Memory data is stored in:
-```
-./.mehrhof/vectors/              # Vector database
-~/.valksor/mehrhof/memory/        # Memory index
-```
+Prefer working from the terminal? See [CLI: memory](/cli/memory.md) for search, indexing, and management options.
 
 ## Troubleshooting
 

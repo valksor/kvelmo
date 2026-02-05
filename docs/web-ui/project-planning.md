@@ -191,13 +191,13 @@ Begin working on a task from your queue:
 ### Task Status Flow
 
 ```
-┌─────────┐     submit      ┌───────────┐
-│  ready  │ ────────────────> │ submitted │
+┌─────────┐     submit       ┌───────────┐
+│  ready  │ ────────────────>│ submitted │
 └────┬────┘                  └───────────┘
      │                            │
-     │ start                     │
+     │ start                      │
      ▼                            │
-┌───────────┐                    │
+┌───────────┐                     │
 │in_progress│ ────────────────────┘
 └───────────┘
      │
@@ -282,16 +282,6 @@ Use `--status` to override:
 ## Also Available via CLI
 
 Manage project planning from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr project plan dir:./specs` | Create task breakdown from a directory |
-| `mehr project sync wrike:123456` | Sync project structure from external provider |
-| `mehr project tasks` | View the task queue |
-| `mehr project edit <task-id>` | Edit a task's properties |
-| `mehr project reorder --auto` | Let AI optimize task order |
-| `mehr project submit --provider <name>` | Submit tasks to external provider |
-| `mehr project start` | Start the next ready task |
 
 See [CLI: project](/cli/project.md) for all options, selective submission, and provider-specific features.
 

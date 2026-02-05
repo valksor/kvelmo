@@ -29,12 +29,6 @@ POST /api/v1/workflow/reset
 }
 ```
 
-### cURL Example
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/reset
-```
-
 ## When to Use
 
 Use the reset function when:
@@ -59,9 +53,7 @@ Use the reset function when:
 
 ## Also Available via CLI
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr reset` | Reset workflow state to idle |
+Reset the workflow from the command line for scripting or terminal workflows.
 
 See [CLI: reset](/cli/reset.md) for flags and options.
 
