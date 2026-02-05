@@ -20,7 +20,7 @@ require (
 	github.com/temoto/robotstxt v1.1.2
 	github.com/valksor/go-toolkit v0.0.0-20260202190551-837849387b81
 	github.com/yuin/goldmark v1.7.16
-	gitlab.com/gitlab-org/api/client-go v1.27.0
+	gitlab.com/gitlab-org/api/client-go v1.28.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.32.0
 	golang.org/x/net v0.49.0
