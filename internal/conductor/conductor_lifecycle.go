@@ -18,6 +18,15 @@ import (
 	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
+// TaskConflictInfo provides details when starting a task conflicts with an active one.
+// Used by CLI/Web handlers to present appropriate UI before calling Start().
+type TaskConflictInfo struct {
+	ActiveTaskID    string // ID of the currently active task
+	ActiveTaskTitle string // Title of the active task (if available)
+	ActiveBranch    string // Git branch of the active task
+	UsingWorktree   bool   // Whether the active task uses a worktree
+}
+
 // Initialize sets up the conductor for a repository.
 func (c *Conductor) Initialize(ctx context.Context) error {
 	c.mu.Lock()
@@ -316,6 +325,39 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 	c.publishProgress("Task registered", 100)
 
 	return nil
+}
+
+// CheckActiveTaskConflict checks if starting a new task would conflict with an existing active task.
+// Returns nil if no conflict exists (no active task, or using worktree mode).
+// Returns TaskConflictInfo if a conflict exists and the caller should prompt the user.
+// Called by CLI/Web handlers before Start() to handle the conflict UI appropriately.
+func (c *Conductor) CheckActiveTaskConflict(_ context.Context) *TaskConflictInfo {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	// No conflict if no active task
+	if c.activeTask == nil {
+		return nil
+	}
+
+	// No conflict if using worktree mode (parallel tasks supported)
+	if c.opts.UseWorktree {
+		return nil
+	}
+
+	// Conflict exists - gather information for the caller
+	info := &TaskConflictInfo{
+		ActiveTaskID:  c.activeTask.ID,
+		ActiveBranch:  c.activeTask.Branch,
+		UsingWorktree: c.activeTask.WorktreePath != "",
+	}
+
+	// Get title from taskWork if available
+	if c.taskWork != nil {
+		info.ActiveTaskTitle = c.taskWork.Metadata.Title
+	}
+
+	return info
 }
 
 // ContinueWithExisting reuses an existing work directory for an updated task.
