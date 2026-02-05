@@ -152,6 +152,8 @@ export default function Layout() {
   const { data: status, isLoading: statusLoading } = useStatus()
   // Default to global mode while loading (safer - fewer nav items, no project-specific routes)
   const isGlobalMode = statusLoading || status?.mode === 'global'
+  // Only show "Projects" button if server started in global mode (has project list to return to)
+  const canSwitchToGlobal = status?.canSwitchToGlobal ?? false
   const switchToGlobal = useSwitchToGlobal()
   const navRef = useRef<HTMLUListElement>(null)
 
@@ -177,7 +179,7 @@ export default function Layout() {
       {/* Navbar */}
       <nav className="navbar bg-base-100 shadow-sm border-b border-base-300">
         <div className="flex-1 flex items-center gap-2">
-          {!isGlobalMode && (
+          {canSwitchToGlobal && !isGlobalMode && (
             <button
               onClick={() => switchToGlobal.mutate()}
               disabled={switchToGlobal.isPending}

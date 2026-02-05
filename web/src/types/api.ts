@@ -22,6 +22,7 @@ export interface StatusResponse {
   running: boolean
   port: number
   state?: WorkflowState
+  canSwitchToGlobal?: boolean
 }
 
 // /api/v1/task response
