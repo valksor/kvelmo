@@ -152,7 +152,8 @@ func runProvidersStatus(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Initialize conductor to get the provider registry
-	cond, err := initializeConductor(ctx)
+	// Use WithAutoInit(false) since providers listing doesn't require a project context
+	cond, err := initializeConductor(ctx, conductor.WithAutoInit(false))
 	if err != nil {
 		return fmt.Errorf("initialize conductor: %w", err)
 	}

@@ -361,7 +361,7 @@ func TestRunServe_TunnelInfo(t *testing.T) {
 	}()
 
 	serveTunnelInfo = true
-	servePort = 3000
+	servePort = 6337
 
 	// Capture stdout
 	r, w, _ := os.Pipe()
@@ -383,7 +383,7 @@ func TestRunServe_TunnelInfo(t *testing.T) {
 
 	expectedContents := []string{
 		"SSH Tunnel",
-		"localhost:3000",
+		"localhost:6337",
 	}
 
 	for _, want := range expectedContents {
