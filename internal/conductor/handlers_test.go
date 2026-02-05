@@ -1129,7 +1129,7 @@ func TestIsRecoverableError(t *testing.T) {
 }
 
 func TestBuildErrorRecoverySection(t *testing.T) {
-	got := buildErrorRecoverySection()
+	got := computeErrorRecoverySection()
 
 	// Check that key error recovery strategies are present
 	wantIn := []string{
@@ -1161,7 +1161,7 @@ func TestBuildErrorRecoverySection(t *testing.T) {
 }
 
 func TestBuildQualityGateInstructions(t *testing.T) {
-	got := buildQualityGateInstructions()
+	got := computeQualityGateInstructions()
 
 	// Check that key quality gate sections are present
 	wantIn := []string{
@@ -1282,7 +1282,7 @@ func TestBuildUnknownsSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildUnknownsSection(tt.useDefaults)
+			got := computeUnknownsSection(tt.useDefaults)
 
 			for _, want := range tt.wantIn {
 				if !strings.Contains(got, want) {

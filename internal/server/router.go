@@ -183,6 +183,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleInteractiveAnswer)
 		mux.HandleFunc("GET /api/v1/interactive/state", s.handleInteractiveState)
 		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
+		mux.HandleFunc("GET /api/v1/interactive/commands", s.handleInteractiveCommands)
 		mux.HandleFunc("POST /ui/interactive/send", s.handleInteractiveSend)
 
 		// Commit API endpoints (always available)

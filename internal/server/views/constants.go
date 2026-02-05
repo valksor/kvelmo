@@ -18,7 +18,7 @@ const (
 
 // SSE event names - used for server-sent events and HTMX triggers.
 const (
-	EventWorkflowStateChanged = "workflow_state_changed"
+	EventWorkflowStateChanged = "state_changed"
 	EventSpecUpdated          = "spec_updated"
 	EventQuestionAsked        = "question_asked"
 	EventCostsUpdated         = "costs_updated"
@@ -170,7 +170,7 @@ func GetStateDisplayWithProgressAndModifiers(state string, phase display.Progres
 // SpecStatus constants for specification states.
 const (
 	SpecStatusPending   = "pending"
-	SpecStatusActive    = "active"
+	SpecStatusActive    = "in_progress"
 	SpecStatusCompleted = "completed"
 	SpecStatusSkipped   = "skipped"
 )
