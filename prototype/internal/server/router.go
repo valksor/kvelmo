@@ -362,9 +362,10 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 // Status handler returns server and workspace status.
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	response := map[string]any{
-		"mode":    s.modeString(),
-		"running": s.IsRunning(),
-		"port":    s.Port(),
+		"mode":              s.modeString(),
+		"running":           s.IsRunning(),
+		"port":              s.Port(),
+		"canSwitchToGlobal": s.startedInGlobalMode,
 	}
 
 	if s.config.Mode == ModeProject && s.config.Conductor != nil {
