@@ -13,14 +13,14 @@ Mehrhof's links system creates a knowledge graph where:
 
 ## Accessing Links in the Web UI
 
-Links features are available through:
+From the navigation bar, open the **More** dropdown and click **Links**.
 
-| Feature              | Location                             |
-|----------------------|--------------------------------------|
-| **Search entities**  | Navigate to **Links** in the sidebar |
-| **View statistics**  | Links → Statistics panel             |
-| **Rebuild index**    | Links → Rebuild button               |
-| **Browse all links** | Links → Search results               |
+| Feature              | Location                   |
+|----------------------|----------------------------|
+| **Search entities**  | More dropdown → Links      |
+| **View statistics**  | Links → Statistics panel   |
+| **Rebuild index**    | Links → Rebuild button     |
+| **Browse all links** | Links → Search results     |
 
 ## Using Links in the Web UI
 
@@ -28,7 +28,7 @@ Links features are available through:
 
 Find entities by name:
 
-1. Navigate to **Links** in the sidebar
+1. Open the **More** dropdown and click **Links**
 2. Enter a search query in the search box
 3. Click **Search** or press Enter
 
@@ -55,8 +55,8 @@ Statistics include:
 
 Rebuild the index from all workspace content:
 
-1. Navigate to **Links**
-2. Click the **Rebuild** button in the sidebar
+1. Navigate to **Links** (More dropdown)
+2. Click the **Rebuild** button
 3. Wait for confirmation
 
 Use rebuild after:

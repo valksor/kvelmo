@@ -1,18 +1,12 @@
-# Interactive Mode
+# Chat
 
-Interactive mode in the Web UI provides a chat-like interface for real-time communication with the AI agent, combined with workflow control buttons.
+The Chat page provides a conversational interface for real-time communication with the AI agent, combined with workflow control buttons.
 
 ## Access
 
-Navigate to `/interactive` in your browser while the server is running:
+From the navigation bar, open the **Workflow** dropdown and click **Chat**.
 
-```bash
-# Start the server
-mehr serve
-
-# Open your browser to
-http://localhost:PORT/interactive
-```
+Alternatively, navigate directly to `/chat` in your browser.
 
 ## Features
 
@@ -73,11 +67,10 @@ The side panel shows:
 
 ## API Endpoints
 
-The interactive page uses these API endpoints:
+The Chat page uses these API endpoints:
 
 | Endpoint                      | Method | Description                |
 |-------------------------------|--------|----------------------------|
-| `/interactive`                | GET    | Render interactive page    |
 | `/api/v1/interactive/chat`    | POST   | Send chat message to agent |
 | `/api/v1/interactive/command` | POST   | Execute workflow command   |
 | `/api/v1/interactive/state`   | GET    | Get current state          |
@@ -86,20 +79,7 @@ The interactive page uses these API endpoints:
 
 ## Cancellation
 
-You can cancel any running operation by calling the stop endpoint:
-
-```bash
-curl -X POST http://localhost:PORT/api/v1/interactive/stop \
-  -H "Cookie: mehr_session=YOUR_SESSION"
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Cancelled plan operation"
-}
-```
+You can cancel any running operation by clicking the **Stop** button in the Chat interface.
 
 When cancelled:
 - **The agent process is terminated immediately** - no further output

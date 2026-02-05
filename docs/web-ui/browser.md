@@ -4,7 +4,7 @@ The Browser Control Panel provides a web interface for automating Chrome during 
 
 ## Accessing Browser Control
 
-Navigate to `/browser` or click **"Browser"** in the navigation.
+From the navigation bar, open the **More** dropdown and click **Tools**. The Browser Control panel is located on the Tools page.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -30,18 +30,9 @@ Navigate to `/browser` or click **"Browser"** in the navigation.
 
 ## Starting Chrome
 
-Before using browser control, start Chrome with remote debugging enabled:
+Before using browser control, Chrome must be running with remote debugging enabled on port 9222 (the default).
 
-```bash
-# Start Chrome with remote debugging
-google-chrome --remote-debugging-port=9222
-
-# Or on macOS
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
-
-# Or with Chrome binary
-chrome --remote-debugging-port=9222
-```
+See [CLI: browser](/cli/browser.md) for platform-specific instructions on launching Chrome with remote debugging.
 
 ## Features
 
@@ -310,29 +301,18 @@ Measure JavaScript and CSS code coverage:
 
 ### Chrome Not Detected
 
-```
-⚠️ Chrome not detected
+If you see a "Chrome not detected" warning:
 
-Make sure Chrome is running with:
-  chrome --remote-debugging-port=9222
-```
-
-**Solutions:**
-1. Start Chrome with remote debugging enabled
+1. Start Chrome with remote debugging enabled (see [CLI: browser](/cli/browser.md) for instructions)
 2. Verify the port matches (default: 9222)
 3. Check if another process is using the port
 
 ### Connection Timeout
 
-```
-⚠️ Connection timeout
+If you see a "Connection timeout" error:
 
-Could not connect to Chrome. Is it running?
-```
-
-**Solutions:**
-1. Verify Chrome is running
-2. Check the remote debugging port
+1. Verify Chrome is running with remote debugging enabled
+2. Check the remote debugging port matches your configuration
 3. Restart Chrome if needed
 
 ## Configuration

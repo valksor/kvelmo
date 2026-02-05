@@ -28,11 +28,7 @@ The main dashboard displays an automation status widget showing:
 
 ### Automation Page
 
-Navigate to **Automation** in the sidebar for detailed management:
-
-```
-/automation
-```
+From the navigation bar, open the **Admin** dropdown and click **Automation**.
 
 ## Job Queue
 

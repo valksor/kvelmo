@@ -64,9 +64,9 @@ See individual workflow pages for details:
 
 ### Additional Features
 
-- **Interactive Mode** - Chat-based interface for real-time communication
-- **Settings** - Configure workflow, providers, git, and other options
-- **Browser Control** - Automate Chrome for testing and authentication
+- **[Chat](interactive.md)** - Conversational interface for real-time communication (Workflow dropdown)
+- **[Settings](settings.md)** - Configure workflow, providers, git, and other options (Admin dropdown)
+- **[Tools](browser.md)** - Browser automation for testing and authentication (More dropdown)
 - **Task History** - Search, filter, and resume past tasks
 - **Notes** - Add context at any point in the workflow
 - **[Parallel Tasks](parallel-tasks.md)** - Run and monitor multiple tasks simultaneously
