@@ -51,20 +51,29 @@ Tasks in a stack progress through states:
 
 ### State Transitions
 
-```mermaid
-stateDiagram-v2
-    [*] --> active: mehr start --depends-on
-    active --> pending_review: mehr finish / create PR
-    pending_review --> approved: PR approved
-    pending_review --> abandoned: PR closed
-    approved --> merged: PR merged
-    merged --> [*]
-
-    pending_review --> needs_rebase: parent merged
-    approved --> needs_rebase: parent merged
-    needs_rebase --> conflict: rebase fails
-    needs_rebase --> active: rebase succeeds
-    conflict --> active: manual resolution
+```text
+                               mehr start --depends-on
+    ┌───┐ ─────────────────────────────────────────────────▶ ┌────────┐
+    │ * │                                                    │ active │◀──────────────────────────────┐
+    └───┘                                                    └───┬────┘                               │
+                                                                 │                                    │
+                                         mehr finish / create PR │                                    │
+                                                                 ▼                                    │
+                                                        ┌────────────────┐    parent     ┌───────────────┐
+                                      PR closed         │ pending_review │ ── merged ──▶ │ needs_rebase  │
+                              ┌───────────────────────  └───────┬────────┘               └───────┬───────┘
+                              ▼                                 │                                │
+                       ┌───────────┐                PR approved │              rebase    ┌───────┴───────┐
+                       │ abandoned │                            ▼              fails     │               │
+                       └───────────┘                      ┌──────────┐  parent  ─────▶ ┌─┴───────┐       │
+                                                          │ approved │─ merged ───────▶│conflict │       │
+                                                          └────┬─────┘                 └────┬────┘       │
+                                                               │                            │            │
+                                                     PR merged │                  manual    │   rebase   │
+                                                               ▼                resolution  │  succeeds  │
+                       ┌───┐                              ┌────────┐                        │            │
+                       │ * │ ◀────────────────────────────│ merged │                        └────────────┘
+                       └───┘                              └────────┘
 ```
 
 ### Dependencies
@@ -91,66 +100,14 @@ stacks:
         depends_on: "issue-101"
 ```
 
-## Architecture
+## How It Works
 
-### Storage Model
+Stacks are stored in your workspace and persist between sessions. Each project has independent stacks that track:
 
-Stacks are stored in the workspace data directory:
-
-```
-~/.valksor/mehrhof/workspaces/<project>/stacks/
-└── index.yaml         # All stacks for this workspace
-```
-
-The storage uses:
-- **Atomic writes**: Temp file + rename to prevent corruption
-- **YAML format**: Human-readable and editable
-- **Workspace scoping**: Each project has independent stacks
-
-### Package Structure
-
-```
-internal/stack/
-├── stack.go          # Core types (Stack, StackedTask, StackState)
-├── storage.go        # YAML persistence with atomic writes
-├── tracker.go        # PR status tracking and sync
-└── rebase.go         # Rebase orchestration with conflict detection
-```
-
-### Key Types
-
-```go
-type Stack struct {
-    ID        string        // Unique identifier
-    RootTask  string        // First task in the stack
-    Tasks     []StackedTask // All tasks in dependency order
-    CreatedAt time.Time
-    UpdatedAt time.Time
-}
-
-type StackedTask struct {
-    ID         string     // Task reference (e.g., "issue-100")
-    Branch     string     // Git branch name
-    State      StackState // Current state
-    PRNumber   int        // Associated PR number
-    PRURL      string     // PR URL for quick access
-    DependsOn  string     // Parent task ID
-    BaseBranch string     // Original base branch
-    MergedAt   *time.Time // When PR was merged
-}
-
-type StackState string
-
-const (
-    StateActive        StackState = "active"
-    StatePendingReview StackState = "pending-review"
-    StateApproved      StackState = "approved"
-    StateMerged        StackState = "merged"
-    StateNeedsRebase   StackState = "needs-rebase"
-    StateConflict      StackState = "conflict"
-    StateAbandoned     StackState = "abandoned"
-)
-```
+- Task identifiers and their dependencies
+- Git branch names for each task
+- Current state of each task (active, needs-rebase, etc.)
+- Associated PR numbers and URLs
 
 ## Rebase Strategy
 
@@ -181,29 +138,9 @@ The rebase target is determined by the parent's state:
 
 If any task fails to rebase:
 1. The operation immediately aborts
-2. Git rebase is cleaned up (`git rebase --abort`)
+2. The git repository is returned to a clean state
 3. No partial changes are committed
-4. User is notified with conflict details
-
-```go
-// From internal/stack/rebase.go
-if err := r.git.RebaseBranch(ctx, target); err != nil {
-    // Abort the rebase to leave repo in clean state
-    if abortErr := r.git.AbortRebase(ctx); abortErr != nil {
-        slog.Warn("failed to abort rebase", "error", abortErr)
-    }
-    // Return with conflict information
-    return &RebaseResult{
-        FailedTask: &FailedTask{
-            TaskID:       task.ID,
-            Branch:       task.Branch,
-            OntoBase:     target,
-            IsConflict:   true,
-            ConflictHint: err.Error(),
-        },
-    }, err
-}
-```
+4. You're notified with conflict details so you can resolve manually
 
 ## PR Status Tracking
 
@@ -225,19 +162,14 @@ PR status is synced via provider integration:
 
 ## Integration Points
 
-### With `mehr start`
+### With Task Creation
 
 Creating dependent features:
 
-```bash
-# Explicit dependency
-mehr start issue-102 --depends-on issue-101
+- **Explicit dependency**: Specify which task the new task depends on
+- **Detected dependency**: If you're on a feature branch, Mehrhof prompts whether the new task depends on the current one
 
-# Detected dependency (on feature branch)
-mehr start issue-102
-# Prompt: "You're on feature/auth-oauth (issue-101).
-#          Does issue-102 depend on this? [Y/n]"
-```
+See [CLI: start](/cli/start.md) or [Web UI: Creating Tasks](/web-ui/creating-tasks.md) for details.
 
 ### With `mehr finish`
 

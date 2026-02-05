@@ -10,11 +10,11 @@ This document provides an objective comparison of Mehrhof with other AI coding t
 
 AI coding tools in 2026 fall into three categories:
 
-| Category | Examples | Best For |
-|----------|----------|----------|
-| **CLI Tools** | Aider, Claude Code, Mehrhof | Scripting, CI/CD, multi-file refactoring |
+| Category                   | Examples                                   | Best For                                               |
+|----------------------------|--------------------------------------------|--------------------------------------------------------|
+| **CLI Tools**              | Aider, Claude Code, Mehrhof                | Scripting, CI/CD, multi-file refactoring               |
 | **IDE Extensions/Editors** | Cursor, Windsurf, Cline, Roo Code, Copilot | Interactive coding, autocomplete, real-time assistance |
-| **Desktop Apps** | Craft Agents | Document-centric conversations, session management |
+| **Desktop Apps**           | Craft Agents                               | Document-centric conversations, session management     |
 
 Mehrhof is a **CLI + Web UI + IDE** tool focused on **structured workflows** with human review at every step.
 
@@ -22,17 +22,17 @@ Mehrhof is a **CLI + Web UI + IDE** tool focused on **structured workflows** wit
 
 ## Quick Comparison
 
-| Tool | Type | Structured Workflow | Undo/Checkpoints | Multi-Agent | Task Providers | MCP |
-|------|------|:-------------------:|:----------------:|:-----------:|:--------------:|:---:|
-| **Mehrhof** | CLI + Web + IDE | Yes | Git checkpoints | Parallel/Sequential/Consensus | 16+ | Yes |
-| **Aider** | CLI | No | Git commits + `/undo` | No | No | No |
-| **Claude Code** | CLI + IDE | No | No | Subagents | No | Yes |
-| **Cline** | VS Code | Plan/Act mode | Workspace snapshots | No | No | Yes |
-| **Cursor** | IDE | Plan mode | Git worktrees | 8 parallel | No | Yes |
-| **Windsurf** | IDE | No | No | No | No | Yes |
-| **Roo Code** | VS Code | Modes (Architect/Code) | No | Cloud agents | No | Yes |
-| **GitHub Copilot** | IDE + CLI | No | No | Coding agent | GitHub Issues | No |
-| **Craft Agents** | Desktop | Session workflows | No | No | No | Yes |
+| Tool               | Type            |  Structured Workflow   |   Undo/Checkpoints    |          Multi-Agent          | Task Providers | MCP |
+|--------------------|-----------------|:----------------------:|:---------------------:|:-----------------------------:|:--------------:|:---:|
+| **Mehrhof**        | CLI + Web + IDE |          Yes           |    Git checkpoints    | Parallel/Sequential/Consensus |      16+       | Yes |
+| **Aider**          | CLI             |           No           | Git commits + `/undo` |              No               |       No       | No  |
+| **Claude Code**    | CLI + IDE       |           No           |          No           |           Subagents           |       No       | Yes |
+| **Cline**          | VS Code         |     Plan/Act mode      |  Workspace snapshots  |              No               |       No       | Yes |
+| **Cursor**         | IDE             |       Plan mode        |     Git worktrees     |          8 parallel           |       No       | Yes |
+| **Windsurf**       | IDE             |           No           |          No           |              No               |       No       | Yes |
+| **Roo Code**       | VS Code         | Modes (Architect/Code) |          No           |         Cloud agents          |       No       | Yes |
+| **GitHub Copilot** | IDE + CLI       |           No           |          No           |         Coding agent          | GitHub Issues  | No  |
+| **Craft Agents**   | Desktop         |   Session workflows    |          No           |              No               |       No       | Yes |
 
 ---
 
@@ -262,20 +262,20 @@ Mehrhof is a **CLI + Web UI + IDE** tool focused on **structured workflows** wit
 
 ## Feature Matrix
 
-| Feature | Mehrhof | Aider | Claude Code | Cline | Cursor | Windsurf | Roo Code | Copilot | Craft |
-|---------|:-------:|:-----:|:-----------:|:-----:|:------:|:--------:|:--------:|:-------:|:-----:|
-| **CLI** | Yes | Yes | Yes | No | No | No | No | Yes | No |
-| **Web UI** | Yes | No | No | No | No | No | No | No | No |
-| **IDE Plugins** | JB + VS | No | JB + VS | VS | N/A | JB | VS | JB + VS | No |
-| **Desktop App** | No | No | No | No | No | No | No | No | Yes |
-| **Structured Phases** | Yes | No | No | Plan/Act | Plan | No | Modes | No | Sessions |
-| **Git Checkpoints** | Yes | Yes | No | Workspace | Worktrees | No | No | No | No |
-| **Multi-Agent** | Yes | No | Subagents | No | 8 parallel | No | Cloud | Coding | No |
-| **Task Providers** | 16+ | No | No | No | No | No | No | GitHub | No |
-| **MCP Support** | Yes | No | Yes | Yes | Yes | Yes | Yes | No | Yes |
-| **Webhooks** | Yes | No | No | No | No | No | No | Actions | No |
-| **Cost Tracking** | Yes | No | No | No | No | No | No | No | No |
-| **Open Source** | Yes | Yes | No | Yes | No | No | Yes | No | Yes |
+| Feature               | Mehrhof | Aider | Claude Code |   Cline   |   Cursor   | Windsurf | Roo Code | Copilot |  Craft   |
+|-----------------------|:-------:|:-----:|:-----------:|:---------:|:----------:|:--------:|:--------:|:-------:|:--------:|
+| **CLI**               |   Yes   |  Yes  |     Yes     |    No     |     No     |    No    |    No    |   Yes   |    No    |
+| **Web UI**            |   Yes   |  No   |     No      |    No     |     No     |    No    |    No    |   No    |    No    |
+| **IDE Plugins**       | JB + VS |  No   |   JB + VS   |    VS     |    N/A     |    JB    |    VS    | JB + VS |    No    |
+| **Desktop App**       |   No    |  No   |     No      |    No     |     No     |    No    |    No    |   No    |   Yes    |
+| **Structured Phases** |   Yes   |  No   |     No      | Plan/Act  |    Plan    |    No    |  Modes   |   No    | Sessions |
+| **Git Checkpoints**   |   Yes   |  Yes  |     No      | Workspace | Worktrees  |    No    |    No    |   No    |    No    |
+| **Multi-Agent**       |   Yes   |  No   |  Subagents  |    No     | 8 parallel |    No    |  Cloud   | Coding  |    No    |
+| **Task Providers**    |   16+   |  No   |     No      |    No     |     No     |    No    |    No    | GitHub  |    No    |
+| **MCP Support**       |   Yes   |  No   |     Yes     |    Yes    |    Yes     |   Yes    |   Yes    |   No    |   Yes    |
+| **Webhooks**          |   Yes   |  No   |     No      |    No     |     No     |    No    |    No    | Actions |    No    |
+| **Cost Tracking**     |   Yes   |  No   |     No      |    No     |     No     |    No    |    No    |   No    |    No    |
+| **Open Source**       |   Yes   |  Yes  |     No      |    Yes    |     No     |    No    |   Yes    |   No    |   Yes    |
 
 ---
 
@@ -283,28 +283,28 @@ Mehrhof is a **CLI + Web UI + IDE** tool focused on **structured workflows** wit
 
 ### Choose by Use Case
 
-| If you need... | Consider |
-|----------------|----------|
-| Quick CLI iterations, git-first | **Aider** |
-| Maximum extensibility (hooks, plugins) | **Claude Code** |
-| Structured workflow with review gates | **Mehrhof**, **Cline** |
-| Parallel agents for speed | **Cursor** |
-| Context that persists between sessions | **Windsurf** |
-| Mode-based workflows (plan vs code) | **Roo Code**, **Cline** |
-| GitHub-centric development | **GitHub Copilot** |
-| Polished desktop chat UI | **Craft Agents** |
-| Multiple task sources (Jira, Linear, etc.) | **Mehrhof** |
-| Team audit trails and compliance | **Mehrhof**, **Cline Teams** |
-| CI/CD automation | **Mehrhof**, **Aider**, **Claude Code** |
+| If you need...                             | Consider                                |
+|--------------------------------------------|-----------------------------------------|
+| Quick CLI iterations, git-first            | **Aider**                               |
+| Maximum extensibility (hooks, plugins)     | **Claude Code**                         |
+| Structured workflow with review gates      | **Mehrhof**, **Cline**                  |
+| Parallel agents for speed                  | **Cursor**                              |
+| Context that persists between sessions     | **Windsurf**                            |
+| Mode-based workflows (plan vs code)        | **Roo Code**, **Cline**                 |
+| GitHub-centric development                 | **GitHub Copilot**                      |
+| Polished desktop chat UI                   | **Craft Agents**                        |
+| Multiple task sources (Jira, Linear, etc.) | **Mehrhof**                             |
+| Team audit trails and compliance           | **Mehrhof**, **Cline Teams**            |
+| CI/CD automation                           | **Mehrhof**, **Aider**, **Claude Code** |
 
 ### Choose by Team Size
 
-| Team | Recommended |
-|------|-------------|
-| Solo developer, quick tasks | Aider, Claude Code, Craft Agents |
-| Solo developer, complex projects | Cursor, Cline, Roo Code |
-| Small team, informal workflow | Cursor, Windsurf |
-| Team with review requirements | Mehrhof, Cline Teams |
+| Team                             | Recommended                          |
+|----------------------------------|--------------------------------------|
+| Solo developer, quick tasks      | Aider, Claude Code, Craft Agents     |
+| Solo developer, complex projects | Cursor, Cline, Roo Code              |
+| Small team, informal workflow    | Cursor, Windsurf                     |
+| Team with review requirements    | Mehrhof, Cline Teams                 |
 | Enterprise with compliance needs | Mehrhof, Cline Teams, GitHub Copilot |
 
 ---

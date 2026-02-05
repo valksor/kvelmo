@@ -37,11 +37,11 @@ storage:
 
 **Storage locations:**
 
-| Config | Work Location |
-|--------|---------------|
-| `save_in_project: false` | `~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/...` |
-| `save_in_project: true` | `.mehrhof/work/<taskid>/...` |
-| `save_in_project: true` + `project_dir: "tickets"` | `tickets/<taskid>/...` |
+| Config                                             | Work Location                                            |
+|----------------------------------------------------|----------------------------------------------------------|
+| `save_in_project: false`                           | `~/.valksor/mehrhof/workspaces/<name>/work/<taskid>/...` |
+| `save_in_project: true`                            | `.mehrhof/work/<taskid>/...`                             |
+| `save_in_project: true` + `project_dir: "tickets"` | `tickets/<taskid>/...`                                   |
 
 ## Filename Patterns
 

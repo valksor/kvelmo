@@ -4,13 +4,15 @@ Mehrhof offers two ways to work: a graphical Web UI and a command-line interface
 
 ## Quick Comparison
 
-```mermaid
-flowchart LR
-    A[Choose Your Interface] --> B{How do you prefer to work?}
-    B -->|Visual & interactive| C[Web UI]
-    B -->|Commands & automation| D[CLI]
-    C --> E[Dashboard, real-time updates, settings UI]
-    D --> F[Scripts, git workflows, CI/CD]
+```text
+                                    Visual & interactive ──▶ ┌─────────┐ ──▶ Dashboard, real-time updates, settings UI
+                               ┌─────────────────────────────│ Web UI  │
+┌────────────────────────┐     │    ┌───────────────────────┐└─────────┘
+│ Choose Your Interface  │ ──▶ │    │ How do you prefer    │
+└────────────────────────┘     │    │ to work?             │
+                               │    └───────────────────────┘┌─────────┐
+                               └─────────────────────────────│   CLI   │ ──▶ Scripts, git workflows, CI/CD
+                                    Commands & automation ──▶└─────────┘
 ```
 
 ## At a Glance
@@ -43,12 +45,10 @@ If you prefer seeing information laid out visually:
 
 Perfect for pair programming and team reviews:
 
-```mermaid
-flowchart LR
-    A[Share screen] --> B[Everyone sees same view]
-    B --> C[Discuss together]
-    C --> D[Make decisions]
-    D --> E[Click to proceed]
+```text
+┌──────────────┐     ┌────────────────────────┐     ┌──────────────────┐     ┌────────────────┐     ┌──────────────────┐
+│ Share screen │ ──▶ │ Everyone sees same view│ ──▶ │ Discuss together │ ──▶ │ Make decisions │ ──▶ │ Click to proceed │
+└──────────────┘     └────────────────────────┘     └──────────────────┘     └────────────────┘     └──────────────────┘
 ```
 
 - Easy to screen-share during meetings
@@ -68,13 +68,17 @@ When you need to manage multiple tasks:
 
 The Web UI includes a dedicated browser control panel:
 
-```mermaid
-flowchart TD
-    A[Browser Panel] --> B[View tabs]
-    A --> C[Navigate pages]
-    A --> D[Take screenshots]
-    A --> E[Inspect elements]
-    A --> F[Execute JavaScript]
+```text
+                 ┌───────────────┐
+                 │ Browser Panel │
+                 └───────┬───────┘
+                         │
+    ┌──────────┬─────────┼─────────┬──────────────────┐
+    ▼          ▼         ▼         ▼                  ▼
+┌──────────┐ ┌──────────┐ ┌────────────┐ ┌────────────┐ ┌────────────────────┐
+│ View tabs│ │ Navigate │ │    Take    │ │  Inspect   │ │ Execute JavaScript │
+│          │ │  pages   │ │screenshots │ │  elements  │ │                    │
+└──────────┘ └──────────┘ └────────────┘ └────────────┘ └────────────────────┘
 ```
 
 - Control Chrome for testing and scraping
@@ -140,11 +144,10 @@ git push origin feature/new-auth
 
 Once you know the commands:
 
-```mermaid
-flowchart LR
-    A[Type command] --> B[Press Enter]
-    B --> C[Result]
-    C --> D[Next command]
+```text
+┌──────────────┐     ┌─────────────┐     ┌────────┐     ┌──────────────┐
+│ Type command │ ──▶ │ Press Enter │ ──▶ │ Result │ ──▶ │ Next command │
+└──────────────┘     └─────────────┘     └────────┘     └──────────────┘
 ```
 
 - Keyboard-only operation
@@ -209,12 +212,10 @@ Both interfaces have access to the same features:
 
 You don't have to choose one exclusively. Many users mix both:
 
-```mermaid
-flowchart LR
-    A[Start task in Web UI] --> B[Plan in browser]
-    B --> C[Switch to terminal for git]
-    C --> D[Run tests in CLI]
-    D --> E[Back to Web UI to finish]
+```text
+┌─────────────────────┐     ┌─────────────────┐     ┌─────────────────────────┐     ┌──────────────────┐     ┌────────────────────────┐
+│ Start task in Web UI│ ──▶ │ Plan in browser │ ──▶ │ Switch to terminal/git  │ ──▶ │ Run tests in CLI │ ──▶ │ Back to Web UI finish  │
+└─────────────────────┘     └─────────────────┘     └─────────────────────────┘     └──────────────────┘     └────────────────────────┘
 ```
 
 ### Common Hybrid Patterns
@@ -256,16 +257,38 @@ Finish in the Web UI:
 
 Answer these questions to decide:
 
-```mermaid
-flowchart TD
-    A[Need to automate or script?] -->|Yes| B[Use CLI]
-    A -->|No| C{Working with team?}
-    C -->|Yes| D[Use Web UI]
-    C -->|No| E{New to Mehrhof?}
-    E -->|Yes| F[Start with Web UI]
-    E -->|No| G{Prefer terminal?}
-    G -->|Yes| H[Use CLI]
-    G -->|No| I[Use Web UI]
+```text
+┌──────────────────────────────┐
+│ Need to automate or script?  │
+└──────────────┬───────────────┘
+               │
+      ┌────────┴────────┐
+      │ Yes             │ No
+      ▼                 ▼
+┌─────────┐     ┌───────────────────┐
+│ Use CLI │     │ Working with team?│
+└─────────┘     └─────────┬─────────┘
+                          │
+                 ┌────────┴────────┐
+                 │ Yes             │ No
+                 ▼                 ▼
+          ┌────────────┐    ┌──────────────────┐
+          │ Use Web UI │    │ New to Mehrhof?  │
+          └────────────┘    └────────┬─────────┘
+                                     │
+                            ┌────────┴────────┐
+                            │ Yes             │ No
+                            ▼                 ▼
+                   ┌──────────────────┐ ┌──────────────────┐
+                   │ Start w/ Web UI  │ │ Prefer terminal? │
+                   └──────────────────┘ └────────┬─────────┘
+                                                 │
+                                        ┌────────┴────────┐
+                                        │ Yes             │ No
+                                        ▼                 ▼
+                                   ┌─────────┐     ┌────────────┐
+                                   │ Use CLI │     │ Use Web UI │
+                                   └─────────┘     └────────────┘
 ```
 
 ### Quick Decision Table

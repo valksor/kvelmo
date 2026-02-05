@@ -4,19 +4,19 @@ Solutions for common issues with Mehrhof.
 
 ## Quick Fixes
 
-| Problem                         | Quick Fix                                              |
-|---------------------------------|--------------------------------------------------------|
-| Command not found               | `export PATH="$PATH:$(go env GOPATH)/bin"`             |
-| Claude not working              | Ensure Claude CLI is installed: `claude --version`     |
-| No active task                  | `mehr start file:task.md`                              |
-| Bad implementation              | `mehr undo`                                            |
-| Implement says done but no code | `mehr update` (older versions had permission mode bug) |
-| Merge conflict                  | Resolve manually, `git add .`, `git commit`            |
-| Timeout                         | Increase `agent.timeout` in `.mehrhof/config.yaml`     |
-| Start fresh                     | `mehr abandon --yes && mehr start file:task.md`        |
+| Problem                         | Quick Fix                                                     |
+|---------------------------------|---------------------------------------------------------------|
+| Command not found               | `export PATH="$PATH:$(go env GOPATH)/bin"`                    |
+| Claude not working              | Ensure Claude CLI is installed: `claude --version`            |
+| No active task                  | `mehr start file:task.md`                                     |
+| Bad implementation              | `mehr undo`                                                   |
+| Implement says done but no code | `mehr update` (older versions had permission mode bug)        |
+| Merge conflict                  | Resolve manually, `git add .`, `git commit`                   |
+| Timeout                         | Increase `agent.timeout` in `.mehrhof/config.yaml`            |
+| Start fresh                     | `mehr abandon --yes && mehr start file:task.md`               |
 | Web UI won't load               | Check the URL in terminal output, try `http://127.0.0.1:PORT` |
-| Buttons not responding          | Refresh browser, check server terminal for errors      |
-| Task stuck in state             | Click "Reset State" on dashboard, or `mehr reset`      |
+| Buttons not responding          | Refresh browser, check server terminal for errors             |
+| Task stuck in state             | Click "Reset State" on dashboard, or `mehr reset`             |
 
 ---
 
@@ -197,10 +197,10 @@ Error: CSRF token invalid or missing (HTTP 403)
 
 **Cause:** Too many requests from your IP address. The server enforces per-IP rate limits when authentication is enabled.
 
-| Endpoint Type | Limit |
-|---------------|-------|
-| General API | 120 req/min |
-| Auth endpoints | 10 req/min |
+| Endpoint Type  | Limit       |
+|----------------|-------------|
+| General API    | 120 req/min |
+| Auth endpoints | 10 req/min  |
 
 **Fixes:**
 

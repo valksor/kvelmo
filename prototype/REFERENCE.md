@@ -314,6 +314,7 @@ Base URL: `http://host:port`. Response format: `{"success": bool, "data": object
 | POST | `/api/v1/interactive/command` | Execute command |
 | POST | `/api/v1/interactive/answer` | Answer question |
 | GET | `/api/v1/interactive/state` | Get interactive state |
+| GET | `/api/v1/interactive/commands` | List available commands (discovery API) |
 | POST | `/api/v1/interactive/stop` | Stop interactive session |
 | GET | `/api/v1/events` | SSE event stream |
 | GET | `/api/v1/agent/logs/stream` | Stream agent logs (SSE) |
