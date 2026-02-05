@@ -14,6 +14,7 @@ import com.valksor.mehrhof.api.MehrhofApiClient
 import com.valksor.mehrhof.api.models.TaskInfo
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.settings.MehrhofSettings
+import com.valksor.mehrhof.util.CommandParser
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
@@ -372,6 +373,9 @@ class MehrhofProjectService(
         // Refresh initial state
         refreshState()
 
+        // Fetch available commands for dynamic discovery
+        fetchCommands()
+
         // Connect to event stream
         connectEventStream(serverUrl)
 
@@ -539,6 +543,26 @@ class MehrhofProjectService(
                     }
                 }.onFailure { error ->
                     log.warn("Failed to refresh state: ${error.message}")
+                }
+        }
+    }
+
+    /**
+     * Fetch available commands from the discovery API and update the command parser.
+     * This allows the IDE to dynamically discover commands instead of using a hardcoded list.
+     */
+    private fun fetchCommands() {
+        scope.launch {
+            val client = apiClient ?: return@launch
+
+            client
+                .getCommands()
+                .onSuccess { response ->
+                    CommandParser.updateCommands(response.commands)
+                    log.info("Updated command list with ${response.commands.size} commands from discovery API")
+                }.onFailure { error ->
+                    log.warn("Failed to fetch commands, using defaults: ${error.message}")
+                    // Keep using default commands on failure
                 }
         }
     }

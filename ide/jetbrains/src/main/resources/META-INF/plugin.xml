@@ -132,11 +132,299 @@
 
             <separator/>
 
+            <!-- Note & Question actions -->
+            <action id="Mehrhof.Note"
+                    class="com.valksor.mehrhof.actions.NoteAction"
+                    text="Add Note..."
+                    description="Add a note to the current task"/>
+
+            <action id="Mehrhof.Question"
+                    class="com.valksor.mehrhof.actions.QuestionAction"
+                    text="Ask Question..."
+                    description="Ask the agent a question"/>
+
+            <action id="Mehrhof.Reset"
+                    class="com.valksor.mehrhof.actions.ResetAction"
+                    text="Reset Workflow"
+                    description="Reset workflow state to idle"/>
+
+            <action id="Mehrhof.Cost"
+                    class="com.valksor.mehrhof.actions.CostAction"
+                    text="Show Costs"
+                    description="Show cost breakdown"/>
+
+            <separator/>
+
             <!-- Task actions -->
             <action id="Mehrhof.Refresh"
                     class="com.valksor.mehrhof.actions.RefreshAction"
                     text="Refresh"
                     description="Refresh task state"/>
+
+            <separator/>
+
+            <!-- Queue Task actions -->
+            <action id="Mehrhof.QuickTask"
+                    class="com.valksor.mehrhof.actions.QuickTaskAction"
+                    text="Quick Task..."
+                    description="Create a quick task"/>
+
+            <action id="Mehrhof.DeleteQueueTask"
+                    class="com.valksor.mehrhof.actions.DeleteQueueTaskAction"
+                    text="Delete Queue Task..."
+                    description="Delete a queue task"/>
+
+            <action id="Mehrhof.ExportQueueTask"
+                    class="com.valksor.mehrhof.actions.ExportQueueTaskAction"
+                    text="Export Queue Task..."
+                    description="Export a queue task to markdown"/>
+
+            <action id="Mehrhof.OptimizeQueueTask"
+                    class="com.valksor.mehrhof.actions.OptimizeQueueTaskAction"
+                    text="Optimize Queue Task..."
+                    description="AI optimize a queue task"/>
+
+            <action id="Mehrhof.SubmitQueueTask"
+                    class="com.valksor.mehrhof.actions.SubmitQueueTaskAction"
+                    text="Submit Queue Task..."
+                    description="Submit a queue task to provider"/>
+
+            <action id="Mehrhof.SyncTask"
+                    class="com.valksor.mehrhof.actions.SyncTaskAction"
+                    text="Sync Task"
+                    description="Sync task from provider"/>
+
+            <separator/>
+
+            <!-- Find & Search actions -->
+            <action id="Mehrhof.Find"
+                    class="com.valksor.mehrhof.actions.FindAction"
+                    text="Find in Codebase..."
+                    description="Search the codebase"/>
+
+            <!-- Memory actions -->
+            <action id="Mehrhof.MemorySearch"
+                    class="com.valksor.mehrhof.actions.MemorySearchAction"
+                    text="Memory Search..."
+                    description="Search for similar tasks in memory"/>
+
+            <action id="Mehrhof.MemoryIndex"
+                    class="com.valksor.mehrhof.actions.MemoryIndexAction"
+                    text="Memory Index Task..."
+                    description="Index a task to memory"/>
+
+            <action id="Mehrhof.MemoryStats"
+                    class="com.valksor.mehrhof.actions.MemoryStatsAction"
+                    text="Memory Statistics"
+                    description="Show memory system statistics"/>
+
+            <separator/>
+
+            <!-- Library actions -->
+            <action id="Mehrhof.LibraryList"
+                    class="com.valksor.mehrhof.actions.LibraryListAction"
+                    text="Library List"
+                    description="List documentation collections"/>
+
+            <action id="Mehrhof.LibraryShow"
+                    class="com.valksor.mehrhof.actions.LibraryShowAction"
+                    text="Library Show..."
+                    description="Show collection details"/>
+
+            <action id="Mehrhof.LibraryPull"
+                    class="com.valksor.mehrhof.actions.LibraryPullAction"
+                    text="Library Pull..."
+                    description="Pull documentation from source"/>
+
+            <action id="Mehrhof.LibraryRemove"
+                    class="com.valksor.mehrhof.actions.LibraryRemoveAction"
+                    text="Library Remove..."
+                    description="Remove a documentation collection"/>
+
+            <action id="Mehrhof.LibraryStats"
+                    class="com.valksor.mehrhof.actions.LibraryStatsAction"
+                    text="Library Statistics"
+                    description="Show library system statistics"/>
+
+            <separator/>
+
+            <!-- Links actions -->
+            <action id="Mehrhof.LinksList"
+                    class="com.valksor.mehrhof.actions.LinksListAction"
+                    text="Links List"
+                    description="List all entity links"/>
+
+            <action id="Mehrhof.LinksSearch"
+                    class="com.valksor.mehrhof.actions.LinksSearchAction"
+                    text="Links Search..."
+                    description="Search for entities"/>
+
+            <action id="Mehrhof.LinksStats"
+                    class="com.valksor.mehrhof.actions.LinksStatsAction"
+                    text="Links Statistics"
+                    description="Show links system statistics"/>
+
+            <action id="Mehrhof.LinksRebuild"
+                    class="com.valksor.mehrhof.actions.LinksRebuildAction"
+                    text="Links Rebuild Index"
+                    description="Rebuild the links index"/>
+
+            <separator/>
+
+            <!-- Browser actions -->
+            <action id="Mehrhof.BrowserStatus"
+                    class="com.valksor.mehrhof.actions.BrowserStatusAction"
+                    text="Browser Status"
+                    description="Check browser connection status"/>
+
+            <action id="Mehrhof.BrowserTabs"
+                    class="com.valksor.mehrhof.actions.BrowserTabsAction"
+                    text="Browser Tabs"
+                    description="List browser tabs"/>
+
+            <action id="Mehrhof.BrowserGoto"
+                    class="com.valksor.mehrhof.actions.BrowserGotoAction"
+                    text="Browser Go To..."
+                    description="Open URL in new tab"/>
+
+            <action id="Mehrhof.BrowserNavigate"
+                    class="com.valksor.mehrhof.actions.BrowserNavigateAction"
+                    text="Browser Navigate..."
+                    description="Navigate current tab to URL"/>
+
+            <action id="Mehrhof.BrowserReload"
+                    class="com.valksor.mehrhof.actions.BrowserReloadAction"
+                    text="Browser Reload"
+                    description="Reload current page"/>
+
+            <action id="Mehrhof.BrowserScreenshot"
+                    class="com.valksor.mehrhof.actions.BrowserScreenshotAction"
+                    text="Browser Screenshot"
+                    description="Take a screenshot"/>
+
+            <action id="Mehrhof.BrowserClick"
+                    class="com.valksor.mehrhof.actions.BrowserClickAction"
+                    text="Browser Click..."
+                    description="Click an element"/>
+
+            <action id="Mehrhof.BrowserType"
+                    class="com.valksor.mehrhof.actions.BrowserTypeAction"
+                    text="Browser Type..."
+                    description="Type text into an element"/>
+
+            <action id="Mehrhof.BrowserEval"
+                    class="com.valksor.mehrhof.actions.BrowserEvalAction"
+                    text="Browser Eval..."
+                    description="Evaluate JavaScript"/>
+
+            <action id="Mehrhof.BrowserConsole"
+                    class="com.valksor.mehrhof.actions.BrowserConsoleAction"
+                    text="Browser Console Logs"
+                    description="View console messages"/>
+
+            <action id="Mehrhof.BrowserNetwork"
+                    class="com.valksor.mehrhof.actions.BrowserNetworkAction"
+                    text="Browser Network Requests"
+                    description="View network requests"/>
+
+            <separator/>
+
+            <!-- Project actions -->
+            <action id="Mehrhof.ProjectPlan"
+                    class="com.valksor.mehrhof.actions.ProjectPlanAction"
+                    text="Project Plan..."
+                    description="Create a project plan from a source"/>
+
+            <action id="Mehrhof.ProjectTasks"
+                    class="com.valksor.mehrhof.actions.ProjectTasksAction"
+                    text="Project Tasks"
+                    description="View project tasks"/>
+
+            <action id="Mehrhof.ProjectEdit"
+                    class="com.valksor.mehrhof.actions.ProjectEditAction"
+                    text="Project Edit Task..."
+                    description="Edit a project task"/>
+
+            <action id="Mehrhof.ProjectSubmit"
+                    class="com.valksor.mehrhof.actions.ProjectSubmitAction"
+                    text="Project Submit..."
+                    description="Submit project tasks to provider"/>
+
+            <action id="Mehrhof.ProjectStart"
+                    class="com.valksor.mehrhof.actions.ProjectStartAction"
+                    text="Project Start Next Task"
+                    description="Start the next project task"/>
+
+            <action id="Mehrhof.ProjectSync"
+                    class="com.valksor.mehrhof.actions.ProjectSyncAction"
+                    text="Project Sync..."
+                    description="Sync project from provider"/>
+
+            <separator/>
+
+            <!-- Stack actions -->
+            <action id="Mehrhof.StackList"
+                    class="com.valksor.mehrhof.actions.StackListAction"
+                    text="Stack List"
+                    description="List task stacks"/>
+
+            <action id="Mehrhof.StackRebase"
+                    class="com.valksor.mehrhof.actions.StackRebaseAction"
+                    text="Stack Rebase..."
+                    description="Rebase stack tasks"/>
+
+            <action id="Mehrhof.StackSync"
+                    class="com.valksor.mehrhof.actions.StackSyncAction"
+                    text="Stack Sync"
+                    description="Sync stacks with remote"/>
+
+            <separator/>
+
+            <!-- Configuration actions -->
+            <action id="Mehrhof.ConfigValidate"
+                    class="com.valksor.mehrhof.actions.ConfigValidateAction"
+                    text="Config Validate"
+                    description="Validate configuration"/>
+
+            <action id="Mehrhof.AgentsList"
+                    class="com.valksor.mehrhof.actions.AgentsListAction"
+                    text="Agents List"
+                    description="List available agents"/>
+
+            <action id="Mehrhof.AgentsExplain"
+                    class="com.valksor.mehrhof.actions.AgentsExplainAction"
+                    text="Agents Explain..."
+                    description="Show agent details"/>
+
+            <action id="Mehrhof.ProvidersList"
+                    class="com.valksor.mehrhof.actions.ProvidersListAction"
+                    text="Providers List"
+                    description="List available providers"/>
+
+            <action id="Mehrhof.ProvidersInfo"
+                    class="com.valksor.mehrhof.actions.ProvidersInfoAction"
+                    text="Providers Info..."
+                    description="Show provider details"/>
+
+            <action id="Mehrhof.TemplatesList"
+                    class="com.valksor.mehrhof.actions.TemplatesListAction"
+                    text="Templates List"
+                    description="List available templates"/>
+
+            <action id="Mehrhof.TemplatesShow"
+                    class="com.valksor.mehrhof.actions.TemplatesShowAction"
+                    text="Templates Show..."
+                    description="Show template content"/>
+
+            <action id="Mehrhof.Scan"
+                    class="com.valksor.mehrhof.actions.ScanAction"
+                    text="Security Scan"
+                    description="Run security scanners"/>
+
+            <action id="Mehrhof.Commit"
+                    class="com.valksor.mehrhof.actions.CommitAction"
+                    text="Commit Analysis"
+                    description="AI commit assistance"/>
         </group>
 
         <!-- Toolbar actions -->
