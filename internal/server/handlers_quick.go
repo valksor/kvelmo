@@ -208,18 +208,6 @@ func (s *Server) handleQuickTaskDelete(w http.ResponseWriter, r *http.Request) {
 	s.handleQuickTaskDeleteWithID(w, r, taskID)
 }
 
-// handleQuickTaskCard renders a single task card for HTMX swapping.
-// GET /api/v1/quick/{taskId}/card.
-func (s *Server) handleQuickTaskCard(w http.ResponseWriter, r *http.Request) {
-	taskID := r.PathValue("taskId")
-	if taskID == "" {
-		s.writeError(w, http.StatusBadRequest, "task ID is required")
-
-		return
-	}
-	s.handleQuickTaskCardWithID(w, r, taskID)
-}
-
 // Implementation handlers
 
 // handleQuickTaskCreate creates a new quick task.
@@ -424,13 +412,6 @@ func (s *Server) handleQuickTaskNoteWithID(w http.ResponseWriter, r *http.Reques
 
 	slog.Info("quick task note added", "task_id", taskID)
 
-	// For HTMX requests, return the updated card
-	if r.Header.Get("Hx-Request") == "true" {
-		s.handleQuickTaskCardWithID(w, r, taskID)
-
-		return
-	}
-
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "note saved",
@@ -468,13 +449,6 @@ func (s *Server) handleQuickTaskOptimizeWithID(w http.ResponseWriter, r *http.Re
 	}
 
 	slog.Info("quick task optimized", "task_id", taskID)
-
-	// For HTMX requests, return the updated card
-	if r.Header.Get("Hx-Request") == "true" {
-		s.handleQuickTaskCardWithID(w, r, taskID)
-
-		return
-	}
 
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"success":        true,
@@ -625,14 +599,6 @@ func (s *Server) handleQuickTaskStartWithID(w http.ResponseWriter, r *http.Reque
 
 	slog.Info("quick task started", "task_id", taskID)
 
-	// Check if this is HTMX request
-	if r.Header.Get("Hx-Request") == "true" {
-		// Redirect to dashboard for HTMX
-		w.Header().Set("Hx-Redirect", "/")
-
-		return
-	}
-
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "task started",
@@ -689,138 +655,4 @@ func (s *Server) handleQuickTaskDeleteWithID(w http.ResponseWriter, r *http.Requ
 		"success": true,
 		"message": "task deleted",
 	})
-}
-
-// handleQuickTaskCardWithID renders a single task card for HTMX swapping.
-//
-//nolint:unparam // r is part of the handler signature
-func (s *Server) handleQuickTaskCardWithID(w http.ResponseWriter, r *http.Request, taskID string) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
-	}
-
-	// Load queue
-	queueID := "quick-tasks"
-	queue, err := storage.LoadTaskQueue(ws, queueID)
-	if err != nil {
-		//nolint:errcheck // HTTP response write errors are handled by the server
-		w.Write([]byte("<div class='text-red-500'>Error loading task</div>"))
-
-		return
-	}
-
-	task := queue.GetTask(taskID)
-	if task == nil {
-		//nolint:errcheck // HTTP response write errors are handled by the server
-		w.Write([]byte("<div class='text-red-500'>Task not found</div>"))
-
-		return
-	}
-
-	// Load notes
-	notes, _ := ws.LoadQueueNotes(queueID, taskID)
-
-	// Render card HTML
-	html := s.renderQuickTaskCard(task, notes)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//nolint:errcheck // HTTP response write errors are handled by the server
-	w.Write([]byte(html))
-}
-
-// renderQuickTaskCard renders HTML for a single task card.
-func (s *Server) renderQuickTaskCard(task *storage.QueuedTask, notes []storage.QueueNote) string {
-	var labelsHTML string
-	var labelsHTMLSb656 strings.Builder
-	for _, label := range task.Labels {
-		labelsHTMLSb656.WriteString(fmt.Sprintf(`<span class="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 mr-1">%s</span>`, label))
-	}
-	labelsHTML += labelsHTMLSb656.String()
-
-	var notesHTML string
-	var notesHTMLSb661 strings.Builder
-	for i, note := range notes {
-		if i >= 3 {
-			notesHTMLSb661.WriteString(fmt.Sprintf(`<div class="text-sm text-gray-500">...and %d more</div>`, len(notes)-3))
-
-			break
-		}
-		notesHTMLSb661.WriteString(fmt.Sprintf(`<div class="text-sm text-gray-600 mb-1"><span class="text-gray-400">[%s]</span> %s</div>`,
-			note.Timestamp, note.Content))
-	}
-	notesHTML += notesHTMLSb661.String()
-	if len(notes) == 0 {
-		notesHTML = `<div class="text-sm text-gray-400 italic">No notes yet</div>`
-	}
-
-	return fmt.Sprintf(`
-<div class="bg-white rounded-lg shadow p-4 mb-4" id="card-%s">
-    <div class="flex justify-between items-start">
-        <div class="flex-1">
-            <h3 class="font-semibold text-lg">%s</h3>
-            <p class="text-gray-600 text-sm mt-1">%s</p>
-            <div class="mt-2">%s</div>
-        </div>
-        <div class="flex gap-2 ml-4">
-            <button hx-post="/api/v1/quick/%s/optimize"
-                    hx-target="#card-%s"
-                    hx-swap="outerHTML"
-                    class="px-3 py-1 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 rounded">
-                ✨ Optimize
-            </button>
-            <button hx-post="/api/v1/quick/%s/start"
-                    class="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 text-green-700 rounded">
-                ▶️ Start
-            </button>
-            <button hx-delete="/api/v1/quick/%s"
-                    hx-target="#card-%s"
-                    hx-swap="outerHTML"
-                    class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded">
-                🗑️
-            </button>
-        </div>
-    </div>
-    <div class="mt-4 pt-4 border-t">
-        <details class="group">
-            <summary class="cursor-pointer text-sm font-medium text-gray-500 hover:text-gray-700">
-                Notes (%d)
-            </summary>
-            <div class="mt-2 space-y-1">
-                %s
-            </div>
-            <form hx-post="/api/v1/quick/%s/note" hx-target="#card-%s" hx-swap="outerHTML" class="mt-2">
-                <input type="text" name="note" placeholder="Add a note..."
-                       class="w-full px-3 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </form>
-        </details>
-    </div>
-</div>`,
-		task.ID,
-		task.Title,
-		truncateText(task.Description, 100),
-		labelsHTML,
-		task.ID, task.ID,
-		task.ID,
-		task.ID, task.ID,
-		len(notes),
-		notesHTML,
-		task.ID, task.ID,
-	)
-}
-
-// truncateText truncates text to maxLen chars.
-func truncateText(text string, maxLen int) string {
-	if len(text) <= maxLen {
-		return text
-	}
-
-	return text[:maxLen-3] + "..."
 }

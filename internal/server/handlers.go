@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/server/api"
 	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-toolkit/eventbus"
 )
@@ -145,8 +144,8 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 
 	// Check if this is a browser request (wants HTML) or API request (wants JSON)
 	accept := r.Header.Get("Accept")
-	if strings.Contains(accept, "text/html") || api.IsHTMXRequest(r) {
-		// Redirect to dashboard for browser/HTMX requests
+	if strings.Contains(accept, "text/html") {
+		// Redirect to dashboard for browser form submissions
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 
 		return
@@ -583,11 +582,6 @@ func (s *Server) handleWorkflowAnswer(w http.ResponseWriter, r *http.Request) {
 				"message": "Question answered",
 			},
 		})
-	}
-
-	// For HTMX requests: delete the question element and let JS toast handler show message
-	if r.Header.Get("Hx-Request") == "true" {
-		w.Header().Set("Hx-Reswap", "delete")
 	}
 
 	s.writeJSON(w, http.StatusOK, map[string]any{

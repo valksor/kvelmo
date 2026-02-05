@@ -1,13 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/links"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -177,11 +175,6 @@ func searchRegistry(registry map[string]string, query, entityType string, result
 // handleLinksStats returns statistics about the link graph.
 func (s *Server) handleLinksStats(w http.ResponseWriter, r *http.Request) {
 	if s.config.Conductor == nil {
-		if r.Header.Get("Hx-Request") == "true" {
-			s.writeLinksStatsHTML(w, nil)
-
-			return
-		}
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
 		return
@@ -189,11 +182,6 @@ func (s *Server) handleLinksStats(w http.ResponseWriter, r *http.Request) {
 
 	ws := s.config.Conductor.GetWorkspace()
 	if ws == nil {
-		if r.Header.Get("Hx-Request") == "true" {
-			s.writeLinksStatsHTML(w, nil)
-
-			return
-		}
 		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
 
 		return
@@ -201,31 +189,20 @@ func (s *Server) handleLinksStats(w http.ResponseWriter, r *http.Request) {
 
 	linkMgr := storage.GetLinkManager(r.Context(), ws)
 	if linkMgr == nil {
-		resp := &linksStatsResponse{
+		s.writeJSON(w, http.StatusOK, &linksStatsResponse{
 			TotalLinks:     0,
 			TotalSources:   0,
 			TotalTargets:   0,
 			OrphanEntities: 0,
 			MostLinked:     []entityResult{},
 			Enabled:        false,
-		}
-		if r.Header.Get("Hx-Request") == "true" {
-			s.writeLinksStatsHTML(w, resp)
-
-			return
-		}
-		s.writeJSON(w, http.StatusOK, resp)
+		})
 
 		return
 	}
 
 	stats := linkMgr.GetStats()
 	if stats == nil {
-		if r.Header.Get("Hx-Request") == "true" {
-			s.writeLinksStatsHTML(w, nil)
-
-			return
-		}
 		s.writeError(w, http.StatusInternalServerError, "failed to get stats")
 
 		return
@@ -263,22 +240,14 @@ func (s *Server) handleLinksStats(w http.ResponseWriter, r *http.Request) {
 		mostLinked = mostLinked[:10]
 	}
 
-	resp := &linksStatsResponse{
+	s.writeJSON(w, http.StatusOK, &linksStatsResponse{
 		TotalLinks:     stats.TotalLinks,
 		TotalSources:   stats.TotalSources,
 		TotalTargets:   stats.TotalTargets,
 		OrphanEntities: stats.OrphanEntities,
 		MostLinked:     mostLinked,
 		Enabled:        true,
-	}
-
-	if r.Header.Get("Hx-Request") == "true" {
-		s.writeLinksStatsHTML(w, resp)
-
-		return
-	}
-
-	s.writeJSON(w, http.StatusOK, resp)
+	})
 }
 
 // handleRebuildLinks rebuilds the link index from workspace content.
@@ -304,23 +273,12 @@ func (s *Server) handleRebuildLinks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := linkMgr.Rebuild(); err != nil {
-		if r.Header.Get("Hx-Request") == "true" {
-			s.writeLinksRebuildResultHTML(w, false, "Failed to rebuild index: "+err.Error())
-
-			return
-		}
 		s.writeError(w, http.StatusInternalServerError, "failed to rebuild index: "+err.Error())
 
 		return
 	}
 
 	stats := linkMgr.GetStats()
-	if r.Header.Get("Hx-Request") == "true" {
-		s.writeLinksRebuildResultHTML(w, true, fmt.Sprintf("Index rebuilt successfully: %d links, %d entities", stats.TotalLinks, stats.TotalSources))
-
-		return
-	}
-
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
 		"message":       "index rebuilt successfully",
@@ -328,96 +286,6 @@ func (s *Server) handleRebuildLinks(w http.ResponseWriter, r *http.Request) {
 		"total_sources": stats.TotalSources,
 		"total_targets": stats.TotalTargets,
 	})
-}
-
-// writeLinksStatsHTML renders links stats as HTML partial.
-func (s *Server) writeLinksStatsHTML(w http.ResponseWriter, stats *linksStatsResponse) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if stats == nil || !stats.Enabled {
-		_, _ = w.Write([]byte(`
-			<div class="text-center py-4">
-				<p class="text-surface-500 dark:text-surface-400 text-sm">Links system not available.</p>
-				<p class="text-surface-400 dark:text-surface-500 text-xs mt-1">Enable links in workspace settings.</p>
-			</div>
-		`))
-
-		return
-	}
-
-	html := fmt.Sprintf(`
-		<div class="space-y-4">
-			<div class="flex items-center justify-between">
-				<span class="text-sm text-surface-600 dark:text-surface-400">Total Links</span>
-				<span class="text-2xl font-bold text-surface-900 dark:text-surface-100">%s</span>
-			</div>
-			<div class="flex items-center justify-between">
-				<span class="text-sm text-surface-600 dark:text-surface-400">Total Sources</span>
-				<span class="text-lg font-semibold text-surface-900 dark:text-surface-100">%s</span>
-			</div>
-			<div class="flex items-center justify-between">
-				<span class="text-sm text-surface-600 dark:text-surface-400">Total Targets</span>
-				<span class="text-lg font-semibold text-surface-900 dark:text-surface-100">%s</span>
-			</div>
-	`, views.FormatNumber(stats.TotalLinks), views.FormatNumber(stats.TotalSources), views.FormatNumber(stats.TotalTargets))
-
-	if len(stats.MostLinked) > 0 {
-		html += `
-			<div class="border-t border-surface-200 dark:border-surface-700 pt-4 space-y-3">
-				<span class="text-sm font-medium text-surface-700 dark:text-surface-300">Most Linked Entities</span>
-				<div class="space-y-2">
-		`
-
-		var htmlBuilder strings.Builder
-		for i, entity := range stats.MostLinked {
-			shortID := entity.ID
-			if len(shortID) > 20 {
-				shortID = shortID[:20] + "..."
-			}
-
-			htmlBuilder.WriteString(fmt.Sprintf(`
-				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-2">
-						<span class="text-xs text-surface-500">%d.</span>
-						<span class="text-sm text-surface-700 dark:text-surface-300 font-mono">%s</span>
-					</div>
-					<span class="text-sm font-medium text-surface-900 dark:text-surface-100">%d</span>
-				</div>
-		`, i+1, shortID, entity.TotalLinks))
-		}
-		html += htmlBuilder.String()
-
-		html += `
-				</div>
-			</div>
-		`
-	}
-
-	html += `</div>`
-
-	_, _ = w.Write([]byte(html))
-}
-
-// writeLinksRebuildResultHTML renders rebuild result as HTML feedback.
-func (s *Server) writeLinksRebuildResultHTML(w http.ResponseWriter, success bool, message string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	colorClass := "text-success-600 dark:text-success-400 bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800"
-	icon := `<svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`
-
-	if !success {
-		colorClass = "text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-900/20 border-error-200 dark:border-error-800"
-		icon = `<svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>`
-	}
-
-	html := fmt.Sprintf(`
-		<div class="p-3 rounded-lg border %s flex items-start gap-2 text-sm">
-			%s
-			<span>%s</span>
-		</div>
-`, colorClass, icon, message)
-
-	_, _ = w.Write([]byte(html))
 }
 
 // Response types for API.
