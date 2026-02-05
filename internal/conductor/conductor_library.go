@@ -67,6 +67,12 @@ func (c *Conductor) InitializeLibrary(ctx context.Context) error {
 		return fmt.Errorf("create library manager: %w", err)
 	}
 
+	// Use embedding model from memory system (if available) for semantic search
+	// This allows library to use ONNX embeddings for better doc relevance scoring
+	if c.memory != nil && c.memory.memory != nil {
+		manager.SetEmbeddingModel(c.memory.memory.Model())
+	}
+
 	// Store library settings for reference
 	var libSettings *storage.LibrarySettings
 	if cfg != nil {

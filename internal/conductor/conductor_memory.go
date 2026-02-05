@@ -27,22 +27,15 @@ func (c *Conductor) InitializeMemory(ctx context.Context) error {
 		return nil // Memory disabled
 	}
 
-	// Create embedding model
-	var model memory.EmbeddingModel
+	// Create embedding model using registry
+	modelName := cfg.Memory.VectorDB.EmbeddingModel
+	if modelName == "" {
+		modelName = "default"
+	}
 
-	switch cfg.Memory.VectorDB.EmbeddingModel {
-	case "":
-		// Use default
-		model, err = memory.NewLocalHashEmbedding("", "default")
-		if err != nil {
-			return fmt.Errorf("create local hash embedding: %w", err)
-		}
-	default:
-		// Use configured model
-		model, err = memory.NewLocalHashEmbedding("", cfg.Memory.VectorDB.EmbeddingModel)
-		if err != nil {
-			return fmt.Errorf("create local hash embedding: %w", err)
-		}
+	model, err := memory.CreateEmbedding(modelName, cfg.Memory.VectorDB)
+	if err != nil {
+		return fmt.Errorf("create embedding model %q: %w", modelName, err)
 	}
 
 	// Create vector store

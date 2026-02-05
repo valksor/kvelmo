@@ -195,78 +195,9 @@ func TestBudgetPages_MaxPagesLimit(t *testing.T) {
 	}
 }
 
-func TestCalculateRelevanceScoreFromContent(t *testing.T) {
-	title := "Authentication Guide"
-	path := "docs/auth/guide.md"
-	content := "This guide covers OAuth2 and JWT authentication."
-
-	tests := []struct {
-		name     string
-		keywords []string
-		minScore float64
-		maxScore float64
-	}{
-		{"title match", []string{"authentication"}, 0.4, 1.0},
-		{"path match", []string{"auth"}, 0.3, 1.0},
-		{"content match", []string{"oauth2"}, 0.1, 0.5},
-		{"no match", []string{"kubernetes"}, 0.0, 0.1},
-		{"multiple matches", []string{"authentication", "guide", "oauth2"}, 0.5, 1.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			score := calculateRelevanceScoreFromContent(title, path, content, tt.keywords)
-			if score < tt.minScore || score > tt.maxScore {
-				t.Errorf("score %v not in range [%v, %v]", score, tt.minScore, tt.maxScore)
-			}
-		})
-	}
-}
-
-func TestCalculateQueryScoreFromContent(t *testing.T) {
-	title := "Database Setup"
-	content := "How to configure PostgreSQL and Redis connections."
-
-	tests := []struct {
-		name     string
-		keywords []string
-		want     float64
-	}{
-		{"all match", []string{"database", "postgresql"}, 1.0},
-		{"partial match", []string{"database", "mongodb"}, 0.5},
-		{"no match", []string{"kubernetes", "docker"}, 0.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			score := calculateQueryScoreFromContent(title, content, tt.keywords)
-			if score != tt.want {
-				t.Errorf("score = %v, want %v", score, tt.want)
-			}
-		})
-	}
-}
-
-func TestExtractQueryKeywords(t *testing.T) {
-	tests := []struct {
-		query    string
-		expected int // minimum number of keywords
-	}{
-		{"how to authenticate users with JWT", 3}, // authenticate, users, jwt
-		{"the quick brown fox", 2},                // quick, brown, fox - 'the' filtered
-		{"a", 0},                                  // too short
-		{"database configuration", 2},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.query, func(t *testing.T) {
-			keywords := extractQueryKeywords(tt.query)
-			if len(keywords) < tt.expected {
-				t.Errorf("got %d keywords, expected at least %d: %v", len(keywords), tt.expected, keywords)
-			}
-		})
-	}
-}
+// Note: Tests for calculateRelevanceScoreFromContent, calculateQueryScoreFromContent,
+// and extractQueryKeywords have been removed as those functions are now internal to
+// EmbeddingScorer. See embedding_test.go for coverage of the scoring logic.
 
 func TestEstimateTokens(t *testing.T) {
 	tests := []struct {
