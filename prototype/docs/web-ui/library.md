@@ -4,11 +4,7 @@ The library web interface provides documentation collection management with a vi
 
 ## Access
 
-Navigate to **/library** in the web UI.
-
-```
-http://localhost:8080/library
-```
+From the navigation bar, open the **More** dropdown and click **Library**.
 
 ## Features
 
@@ -76,7 +72,7 @@ Click **View** on any collection to see:
 
 ### Statistics Panel
 
-View library statistics in the sidebar:
+View library statistics in the statistics panel:
 
 - Total collections
 - Total pages across all collections
@@ -85,7 +81,7 @@ View library statistics in the sidebar:
 
 ## REST API
 
-All library operations are available via REST API with HTMX support for partial page updates.
+All library operations are available via REST API.
 
 ### List Collections
 
@@ -119,9 +115,6 @@ Query parameters:
   "count": 1
 }
 ```
-
-**HTMX Request:**
-Returns HTML partial for the collections list.
 
 ### Pull Documentation
 
@@ -164,9 +157,6 @@ GET /api/v1/library/{name}
 }
 ```
 
-**HTMX Request:**
-Returns HTML partial with detail modal.
-
 ### Remove Collection
 
 ```http
@@ -180,9 +170,6 @@ DELETE /api/v1/library/{name}
   "message": "collection removed successfully"
 }
 ```
-
-**HTMX Request:**
-Returns HTML feedback message.
 
 ### Get Statistics
 
@@ -206,26 +193,6 @@ GET /api/v1/library/stats
   "enabled": true
 }
 ```
-
-## HTMX Integration
-
-The library interface uses HTMX for dynamic updates:
-
-- **Collections list**: Auto-loads on page mount
-- **Pull form**: Submits via AJAX with loading indicator
-- **Detail modal**: Opens in overlay with dynamic content
-- **Search**: Client-side JavaScript for page filtering
-- **Refresh**: Manual refresh button to reload collections
-
-### HTMX Endpoints
-
-| Endpoint | Trigger | Target | Swap |
-|----------|---------|--------|------|
-| `GET /api/v1/library` | Page load | `#library-collections` | `innerHTML` |
-| `POST /api/v1/library/pull` | Form submit | `#pull-result` | `innerHTML` |
-| `GET /api/v1/library/{name}` | View button | `#library-detail-modal` | `innerHTML` |
-| `DELETE /api/v1/library/{name}` | Remove button | `#library-collections` | `innerHTML` |
-| `GET /api/v1/library/stats` | Page load | `#library-stats` | `innerHTML` |
 
 ## Examples
 

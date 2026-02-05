@@ -220,8 +220,7 @@ curl -X POST http://your-server/api/v1/workflow/plan \
 
 The Web UI handles CSRF automatically:
 
-- **HTMX requests**: Token injected via `htmx:configRequest` event
-- **JavaScript fetch()**: Uses `csrfFetch()` wrapper that adds the header
+- **API requests**: Token automatically included via the React API client layer
 - **Token refresh**: Fetched on page load and cached for the session
 
 No manual configuration is needed for Web UI users.
@@ -262,7 +261,7 @@ All other endpoints require authentication:
 | `/` (dashboard) | ✅ Yes         |
 | `/api/v1/*`     | ✅ Yes         |
 | `/settings`     | ✅ Yes         |
-| `/browser`      | ✅ Yes         |
+| `/tools`        | ✅ Yes         |
 | `/history`      | ✅ Yes         |
 
 ## Managing Auth via CLI

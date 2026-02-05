@@ -4,7 +4,7 @@ Configure your workspace through the Web UI settings page without editing YAML f
 
 ## Accessing Settings
 
-Click the **Settings** icon (gear) in the top-right of the dashboard, or navigate to `/settings`.
+From the navigation bar, open the **Admin** dropdown and click **Settings**.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐

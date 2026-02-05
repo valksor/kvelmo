@@ -4,22 +4,7 @@ The stack page allows you to manage dependent features and their git branches th
 
 ## Accessing the Stack Page
 
-Navigate to **Stacked Features** in the sidebar, or go directly to `/stack`:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Sidebar                                                     │
-├──────────────────────────────────────────────────────────────┤
-│  Dashboard                                                   │
-│  Tasks                                                       │
-│  Project Planning                                            │
-│  Quick Tasks                                                 │
-│  Memory                                                      │
-│  Links                                                       │
-│  ► Stacked Features  ← Click here                            │
-│  Settings                                                    │
-└──────────────────────────────────────────────────────────────┘
-```
+The Stack page is available under **Workflow** dropdown → **Project**, then select the **Stacked Features** tab.
 
 ## Stack Overview
 
@@ -297,7 +282,7 @@ GET /api/v1/stack/rebase-preview?task_id=<id>     # Preview specific task
 GET /api/v1/stack/rebase-preview                   # Preview all stacks
 ```
 
-Returns JSON (for API clients) or HTML (for HTMX requests).
+Returns JSON.
 
 ---
 

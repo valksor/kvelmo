@@ -14,19 +14,19 @@ When you search, the agent extracts key terms from your query, searches for code
 
 ## Accessing in the Web UI
 
-Navigate to the **Find** page from the sidebar or go to `/find` directly.
+Click **Find** in the navigation bar (direct access).
 
 | Feature         | Location              |
 |-----------------|-----------------------|
-| **Code Search** | Sidebar → Find        |
+| **Code Search** | Navigation bar → Find |
 | **Search Form** | Find page main area   |
-| **Search Tips** | Find page sidebar     |
+| **Search Tips** | Find page panel       |
 
 ## Using Find in the Web UI
 
 ### Basic Search
 
-1. Go to **Find** in the sidebar
+1. Click **Find** in the navigation bar
 2. Enter your search query in the **Search Query** field
    - Use natural language: "where is the User struct defined?"
    - Include specific terms: function names, variable names, type names
