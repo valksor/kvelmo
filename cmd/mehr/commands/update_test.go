@@ -4,7 +4,6 @@
 package commands
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -37,9 +36,9 @@ func TestUpdateCommand_Flags(t *testing.T) {
 		defaultValue string
 	}{
 		{
-			name:         "pre-release flag",
-			flagName:     "pre-release",
-			shorthand:    "p",
+			name:         "nightly flag",
+			flagName:     "nightly",
+			shorthand:    "n",
 			defaultValue: "false",
 		},
 		{
@@ -80,7 +79,7 @@ func TestUpdateCommand_Flags(t *testing.T) {
 }
 
 func TestUpdateCommand_ShortDescription(t *testing.T) {
-	expected := "Update mehr to the latest version"
+	expected := "Update Mehrhof to the latest version"
 	if updateCmd.Short != expected {
 		t.Errorf("Short = %q, want %q", updateCmd.Short, expected)
 	}
@@ -90,7 +89,7 @@ func TestUpdateCommand_LongDescriptionContains(t *testing.T) {
 	contains := []string{
 		"latest version",
 		"GitHub releases",
-		"pre-release",
+		"nightly",
 	}
 
 	for _, substr := range contains {
@@ -103,8 +102,9 @@ func TestUpdateCommand_LongDescriptionContains(t *testing.T) {
 func TestUpdateCommand_DocumentsUpdateProcess(t *testing.T) {
 	steps := []string{
 		"latest release",
+		"Downloads the checksums file",
 		"Downloads the binary",
-		"Verifies checksum",
+		"Verifies SHA256 checksum",
 		"Replaces the current binary",
 	}
 
@@ -129,15 +129,15 @@ func TestUpdateCommand_RegisteredInRoot(t *testing.T) {
 	}
 }
 
-func TestUpdateCommand_PreReleaseFlagShorthand(t *testing.T) {
-	flag := updateCmd.Flags().Lookup("pre-release")
+func TestUpdateCommand_NightlyFlagShorthand(t *testing.T) {
+	flag := updateCmd.Flags().Lookup("nightly")
 	if flag == nil {
-		t.Fatal("pre-release flag not found")
+		t.Fatal("nightly flag not found")
 
 		return
 	}
-	if flag.Shorthand != "p" {
-		t.Errorf("pre-release flag shorthand = %q, want 'p'", flag.Shorthand)
+	if flag.Shorthand != "n" {
+		t.Errorf("nightly flag shorthand = %q, want 'n'", flag.Shorthand)
 	}
 }
 
@@ -153,8 +153,8 @@ func TestUpdateCommand_YesFlagShorthand(t *testing.T) {
 	}
 }
 
-// TestGetChecksumsURL tests the getChecksumsURL function.
-func TestGetChecksumsURL(t *testing.T) {
+// TestGetReleaseURLs tests the getReleaseURLs function.
+func TestGetReleaseURLs(t *testing.T) {
 	tests := []struct {
 		name    string
 		version string
@@ -168,24 +168,33 @@ func TestGetChecksumsURL(t *testing.T) {
 			version: "1.0.0",
 		},
 		{
-			name:    "pre-release version",
+			name:    "nightly version",
 			version: "v1.0.0-beta",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
 			status := &update.UpdateStatus{
 				LatestVersion: tt.version,
 			}
 
-			result := getChecksumsURL(ctx, nil, status)
-			if !strings.Contains(result, "checksums.txt") {
-				t.Errorf("getChecksumsURL() = %q, want to contain 'checksums.txt'", result)
+			checksumsURL, signatureURL := getReleaseURLs(status)
+
+			// Verify checksums URL
+			if !strings.Contains(checksumsURL, "checksums.txt") {
+				t.Errorf("checksumsURL = %q, want to contain 'checksums.txt'", checksumsURL)
 			}
-			if !strings.Contains(result, tt.version) {
-				t.Errorf("getChecksumsURL() = %q, want to contain version %q", result, tt.version)
+			if !strings.Contains(checksumsURL, tt.version) {
+				t.Errorf("checksumsURL = %q, want to contain version %q", checksumsURL, tt.version)
+			}
+
+			// Verify signature URL
+			if !strings.Contains(signatureURL, "checksums.txt.minisig") {
+				t.Errorf("signatureURL = %q, want to contain 'checksums.txt.minisig'", signatureURL)
+			}
+			if !strings.Contains(signatureURL, tt.version) {
+				t.Errorf("signatureURL = %q, want to contain version %q", signatureURL, tt.version)
 			}
 		})
 	}

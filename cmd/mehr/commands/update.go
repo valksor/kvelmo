@@ -14,24 +14,25 @@ import (
 )
 
 var (
-	updatePreRelease bool
-	updateCheckOnly  bool
-	updateYes        bool
+	updateNightly   bool
+	updateCheckOnly bool
+	updateYes       bool
 )
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update mehr to the latest version",
-	Long: `Update mehr to the latest version from GitHub releases.
+	Short: "Update Mehrhof to the latest version",
+	Long: `Update Mehrhof to the latest version from GitHub releases.
 
-By default, only stable releases are considered. Use --pre-release to include
-pre-release versions.
+By default, only stable releases are considered. Use --nightly to include
+nightly/pre-release versions.
 
 The update process:
 1. Checks for the latest release
-2. Downloads the binary for your platform
-3. Verifies checksum (if available)
-4. Replaces the current binary atomically
+2. Downloads the checksums file and verifies its signature (if available)
+3. Downloads the binary for your platform
+4. Verifies SHA256 checksum
+5. Replaces the current binary atomically
 
 After a successful update, restart mehr to use the new version.`,
 	RunE: runUpdate,
@@ -39,8 +40,8 @@ After a successful update, restart mehr to use the new version.`,
 
 func init() {
 	rootCmd.AddCommand(updateCmd)
-	updateCmd.Flags().BoolVarP(&updatePreRelease, "pre-release", "p", false,
-		"Include pre-release versions")
+	updateCmd.Flags().BoolVarP(&updateNightly, "nightly", "n", false,
+		"Include nightly/pre-release versions")
 	updateCmd.Flags().BoolVar(&updateCheckOnly, "check", false,
 		"Check for updates without installing")
 	updateCmd.Flags().BoolVarP(&updateYes, "yes", "y", false,
@@ -57,8 +58,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := update.CheckOptions{
-		CurrentVersion:    Version,
-		IncludePreRelease: updatePreRelease,
+		CurrentVersion: Version,
+		IncludeNightly: updateNightly,
 	}
 
 	// Show checking message
@@ -129,21 +130,32 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			"Cannot write to binary directory"))
 	}
 
-	// Download the update
+	// Download the update with signature verification
 	downloader := update.NewDownloader()
-	spinner := display.NewSpinner("Downloading update")
+	spinner := display.NewSpinner("Downloading and verifying update")
 	spinner.Start()
 
-	// Fetch checksums URL from the release assets
-	checksumsURL := getChecksumsURL(ctx, checker, status)
+	// Construct URLs for checksums and signature
+	checksumsURL, signatureURL := getReleaseURLs(status)
 
-	downloadedPath, err := downloader.DownloadWithChecksums(
+	downloadedPath, verifyResult, err := downloader.DownloadWithSignature(
 		ctx,
 		status.AssetURL,
 		checksumsURL,
+		signatureURL,
 		status.AssetName,
+		update.MinisignPublicKey,
 	)
 	if err != nil {
+		// Check if it's a signature verification failure
+		if errors.Is(err, update.ErrSignatureVerificationFailed) {
+			spinner.StopWithError("Signature verification failed")
+			fmt.Printf("\n%s %s\n", display.ErrorMsg("✗"),
+				"The checksums file signature is invalid. This may indicate tampering.")
+			fmt.Println("Update aborted for security. Please report this issue.")
+
+			return err
+		}
 		spinner.StopWithError(fmt.Sprintf("Download failed: %v", err))
 
 		return err
@@ -151,10 +163,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	spinner.StopWithSuccess("Download complete")
 
-	// Warn if no checksum was available
-	if checksumsURL != "" && status.Checksum == "" {
-		fmt.Printf("\n%s Checksum verification unavailable - proceeding anyway\n",
-			display.Warning("→"))
+	// Show verification status
+	if verifyResult.SignatureVerified {
+		fmt.Printf("%s Signature verified\n", display.Success("✓"))
+	} else if verifyResult.SignatureSkipped {
+		fmt.Printf("%s Signature verification skipped: %s\n",
+			display.Warning("→"), verifyResult.SignatureError)
+	}
+	if verifyResult.ChecksumVerified {
+		fmt.Printf("%s Checksum verified\n", display.Success("✓"))
 	}
 
 	// Install the update
@@ -175,15 +192,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// getChecksumsURL fetches the checksums file URL from the release assets.
-func getChecksumsURL(_ context.Context, _ *update.Checker, status *update.UpdateStatus) string {
-	// We need to fetch the release info to get the checksums URL
-	// For now, construct it from the release URL pattern
-	// GitHub releases follow: /owner/repo/releases/download/tag/asset
-	// So checksums would be at: /owner/repo/releases/download/tag/checksums.txt
-
-	// Extract tag from status.LatestVersion
+// getReleaseURLs returns the checksums and signature URLs for a release.
+// GitHub releases follow: /owner/repo/releases/download/tag/asset.
+func getReleaseURLs(status *update.UpdateStatus) (string, string) {
 	tag := status.LatestVersion
+	baseURL := "https://github.com/valksor/go-mehrhof/releases/download/" + tag
 
-	return fmt.Sprintf("https://github.com/valksor/go-mehrhof/releases/download/%s/checksums.txt", tag)
+	return baseURL + "/checksums.txt", baseURL + "/checksums.txt.minisig"
 }

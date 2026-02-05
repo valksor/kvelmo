@@ -46,8 +46,8 @@ func checkForUpdatesInBackground(ctx context.Context) {
 	checker := update.NewChecker(timeoutCtx, token, "valksor", "go-mehrhof")
 
 	opts := update.CheckOptions{
-		CurrentVersion:    Version,
-		IncludePreRelease: false, // Only check for stable releases in the background
+		CurrentVersion: Version,
+		IncludeNightly: false, // Only check for stable releases in the background
 	}
 
 	status, err := checker.Check(timeoutCtx, opts)

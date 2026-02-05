@@ -10,6 +10,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/jedisct1/go-minisign"
 )
 
 // Downloader downloads release binaries and verifies checksums.
@@ -99,6 +101,76 @@ func (d *Downloader) DownloadWithChecksums(ctx context.Context, binaryURL, check
 
 	// Download the binary
 	return d.Download(ctx, binaryURL, checksum)
+}
+
+// VerificationResult contains the results of signature and checksum verification.
+type VerificationResult struct {
+	SignatureVerified bool   // True if signature was present and verified
+	SignatureSkipped  bool   // True if signature file was not found (graceful degradation)
+	SignatureError    string // Non-empty if signature download failed (warning, not error)
+	ChecksumVerified  bool   // True if checksum was verified
+}
+
+// DownloadWithSignature downloads the binary with full signature and checksum verification.
+// This implements the verification flow:
+// 1. Download checksums.txt and checksums.txt.minisig
+// 2. If signature exists, verify it (fail if invalid)
+// 3. Parse checksums.txt to get expected checksum
+// 4. Download binary and verify checksum
+//
+// Returns the path to the downloaded file and verification results.
+func (d *Downloader) DownloadWithSignature(
+	ctx context.Context,
+	binaryURL, checksumsURL, signatureURL, assetName, publicKey string,
+) (string, *VerificationResult, error) {
+	result := &VerificationResult{}
+
+	// Download checksums file
+	checksumsPath, err := d.DownloadChecksumsFile(ctx, checksumsURL)
+	if err != nil {
+		// Checksums file not available - continue with warning
+		result.SignatureSkipped = true
+		result.SignatureError = fmt.Sprintf("could not download checksums: %v", err)
+		path, downloadErr := d.Download(ctx, binaryURL, "")
+
+		return path, result, downloadErr
+	}
+	defer func() { _ = os.Remove(checksumsPath) }()
+
+	// Try to download signature file
+	signaturePath, err := d.DownloadSignatureFile(ctx, signatureURL)
+	if err != nil {
+		// Signature file not available - this is OK for older releases
+		result.SignatureSkipped = true
+		result.SignatureError = fmt.Sprintf("signature file not available: %v", err)
+	} else {
+		defer func() { _ = os.Remove(signaturePath) }()
+
+		// Signature exists - MUST verify (fail if invalid)
+		if err := VerifyMinisignFile(checksumsPath, signaturePath, publicKey); err != nil {
+			return "", result, fmt.Errorf("%w: the checksums file may have been tampered with", err)
+		}
+		result.SignatureVerified = true
+	}
+
+	// Parse checksums file to get expected checksum for asset
+	checksum, err := FindChecksumInFile(checksumsPath, assetName)
+	if err != nil {
+		// Checksum not found for this asset - continue with warning
+		path, downloadErr := d.Download(ctx, binaryURL, "")
+
+		return path, result, downloadErr
+	}
+
+	// Download binary with checksum verification
+	path, err := d.Download(ctx, binaryURL, checksum)
+	if err != nil {
+		return "", result, err
+	}
+
+	result.ChecksumVerified = true
+
+	return path, result, nil
 }
 
 // fetchChecksum downloads and parses the checksums file to find the checksum for the given asset.
@@ -249,4 +321,86 @@ func FindChecksumInFile(checksumsPath, assetName string) (string, error) {
 // GetAssetName returns the expected asset name for the current platform.
 func GetAssetName() string {
 	return fmt.Sprintf("mehr-%s-%s", runtime.GOOS, runtime.GOARCH)
+}
+
+// VerifyMinisign verifies the Minisign signature of a file.
+// Returns nil if verification succeeds.
+// Returns ErrSignatureVerificationFailed if the signature is invalid.
+func VerifyMinisign(content, signature []byte, publicKeyStr string) error {
+	// Parse the public key
+	publicKey, err := minisign.NewPublicKey(publicKeyStr)
+	if err != nil {
+		return fmt.Errorf("%w: invalid public key: %w", ErrSignatureVerificationFailed, err)
+	}
+
+	// Decode the signature
+	sig, err := minisign.DecodeSignature(string(signature))
+	if err != nil {
+		return fmt.Errorf("%w: invalid signature format: %w", ErrSignatureVerificationFailed, err)
+	}
+
+	// Verify the signature
+	valid, err := publicKey.Verify(content, sig)
+	if err != nil {
+		return fmt.Errorf("%w: verification error: %w", ErrSignatureVerificationFailed, err)
+	}
+	if !valid {
+		return fmt.Errorf("%w: signature does not match content", ErrSignatureVerificationFailed)
+	}
+
+	return nil
+}
+
+// VerifyMinisignFile verifies a file's Minisign signature.
+// contentPath is the path to the file to verify.
+// signaturePath is the path to the .minisig signature file.
+// publicKeyStr is the base64-encoded public key string.
+func VerifyMinisignFile(contentPath, signaturePath, publicKeyStr string) error {
+	content, err := os.ReadFile(contentPath)
+	if err != nil {
+		return fmt.Errorf("read content file: %w", err)
+	}
+
+	signature, err := os.ReadFile(signaturePath)
+	if err != nil {
+		return fmt.Errorf("read signature file: %w", err)
+	}
+
+	return VerifyMinisign(content, signature, publicKeyStr)
+}
+
+// DownloadSignatureFile downloads a .minisig signature file.
+// Returns the path to the downloaded file, or an error if download fails.
+// This is a best-effort download - the caller should handle missing signatures gracefully.
+func (d *Downloader) DownloadSignatureFile(ctx context.Context, url string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status: %d", resp.StatusCode)
+	}
+
+	// Create temp file for signature
+	tmpFile, err := os.CreateTemp("", "mehrhof-sig-*.minisig")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = tmpFile.Close() }()
+
+	_, err = io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		_ = os.Remove(tmpFile.Name())
+
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
 }
