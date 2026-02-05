@@ -10,6 +10,26 @@ export default defineConfig({
   build: {
     outDir: '../internal/server/static/app',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React - very stable, changes rarely
+          'vendor-react': ['react', 'react-dom'],
+          // Routing - stable, changes with major updates
+          'vendor-router': ['react-router-dom'],
+          // Data layer - moderately stable
+          'vendor-data': [
+            '@tanstack/react-query',
+            'zustand',
+            'zod',
+            '@hookform/resolvers',
+            'react-hook-form',
+          ],
+          // UI utilities - updated more frequently
+          'vendor-ui': ['lucide-react', 'date-fns'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
