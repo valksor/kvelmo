@@ -105,6 +105,266 @@
         "title": "Refresh",
         "category": "Mehrhof",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "mehrhof.note",
+        "title": "Add Note...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.question",
+        "title": "Ask Question...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.reset",
+        "title": "Reset Workflow",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.cost",
+        "title": "Show Costs",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.quick",
+        "title": "Quick Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.deleteTask",
+        "title": "Delete Queue Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.exportTask",
+        "title": "Export Queue Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.optimizeTask",
+        "title": "Optimize Queue Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.submitTask",
+        "title": "Submit Queue Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.syncTask",
+        "title": "Sync Task",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.find",
+        "title": "Find in Codebase...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.memorySearch",
+        "title": "Memory Search...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.memoryIndex",
+        "title": "Memory Index Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.memoryStats",
+        "title": "Memory Statistics",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.libraryList",
+        "title": "Library List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.libraryShow",
+        "title": "Library Show...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.libraryPull",
+        "title": "Library Pull...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.libraryRemove",
+        "title": "Library Remove...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.libraryStats",
+        "title": "Library Statistics",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.linksList",
+        "title": "Links List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.linksSearch",
+        "title": "Links Search...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.linksStats",
+        "title": "Links Statistics",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.linksRebuild",
+        "title": "Links Rebuild Index",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserStatus",
+        "title": "Browser Status",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserTabs",
+        "title": "Browser Tabs",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserGoto",
+        "title": "Browser Go To...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserNavigate",
+        "title": "Browser Navigate...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserReload",
+        "title": "Browser Reload",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserScreenshot",
+        "title": "Browser Screenshot",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserClick",
+        "title": "Browser Click...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserType",
+        "title": "Browser Type...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserEval",
+        "title": "Browser Eval...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserConsole",
+        "title": "Browser Console Logs",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.browserNetwork",
+        "title": "Browser Network Requests",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectPlan",
+        "title": "Project Plan...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectTasks",
+        "title": "Project Tasks",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectEdit",
+        "title": "Project Edit Task...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectSubmit",
+        "title": "Project Submit...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectStart",
+        "title": "Project Start Next Task",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.projectSync",
+        "title": "Project Sync...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.stackList",
+        "title": "Stack List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.stackRebase",
+        "title": "Stack Rebase...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.stackSync",
+        "title": "Stack Sync",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.configValidate",
+        "title": "Config Validate",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.agentsList",
+        "title": "Agents List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.agentsExplain",
+        "title": "Agents Explain...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.providersList",
+        "title": "Providers List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.providersInfo",
+        "title": "Providers Info...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.templatesList",
+        "title": "Templates List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.templatesShow",
+        "title": "Templates Show...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.scan",
+        "title": "Security Scan",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.commit",
+        "title": "Commit Analysis",
+        "category": "Mehrhof"
       }
     ],
     "viewsContainers": {
@@ -207,8 +467,8 @@
     "@eslint/js": "^9.39.2",
     "@types/glob": "^9.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.2.0",
-    "@types/vscode": "^1.108.1",
+    "@types/node": "^25.2.1",
+    "@types/vscode": "^1.109.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "c8": "^10.1.3",

@@ -22,13 +22,20 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
   private readonly extensionUri: vscode.Uri;
   private messages: ChatMessage[] = [];
   private commandHistory: string[] = [];
+  private knownCommands: Set<string> = new Set();
 
   constructor(extensionUri: vscode.Uri, service: MehrhofProjectService) {
     this.extensionUri = extensionUri;
     this.service = service;
 
     // Listen for service events
-    this.service.on('connectionChanged', () => this.updateView());
+    this.service.on('connectionChanged', () => {
+      this.updateView();
+      // Fetch commands when connection changes
+      if (this.service.isConnected) {
+        void this.fetchCommands();
+      }
+    });
     this.service.on('stateChanged', () => this.updateView());
     this.service.on('taskChanged', () => this.updateView());
     this.service.on('agentMessage', (event: AgentMessageEvent) => this.onAgentMessage(event));
@@ -123,37 +130,34 @@ export class InteractivePanelProvider implements vscode.WebviewViewProvider, vsc
     }
   }
 
+  private async fetchCommands(): Promise<void> {
+    if (!this.service.client) {
+      return;
+    }
+
+    try {
+      const response = await this.service.client.getCommands();
+      this.knownCommands.clear();
+      for (const cmd of response.commands) {
+        this.knownCommands.add(cmd.name.toLowerCase());
+        // Also add aliases
+        if (cmd.aliases) {
+          for (const alias of cmd.aliases) {
+            this.knownCommands.add(alias.toLowerCase());
+          }
+        }
+      }
+    } catch {
+      // API failed - commands will be sent to server anyway, which handles unknown commands
+      console.warn('Failed to fetch commands from discovery API');
+    }
+  }
+
   private isCommand(input: string): boolean {
-    const commands = [
-      'start',
-      'plan',
-      'implement',
-      'review',
-      'finish',
-      'abandon',
-      'continue',
-      'undo',
-      'redo',
-      'status',
-      'st',
-      'cost',
-      'list',
-      'budget',
-      'help',
-      'note',
-      'quick',
-      'label',
-      'specification',
-      'spec',
-      'find',
-      'memory',
-      'library',
-      'simplify',
-      'question',
-      'answer',
-    ];
+    // Check if input starts with a known command from discovery API
+    // If discovery failed, knownCommands will be empty and all input goes to server
     const firstWord = input.split(/\s+/)[0].toLowerCase();
-    return commands.includes(firstWord);
+    return this.knownCommands.has(firstWord);
   }
 
   private async executeInteractiveCommand(input: string): Promise<void> {
