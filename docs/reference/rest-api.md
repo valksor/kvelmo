@@ -311,14 +311,14 @@ curl http://localhost:PORT/api/v1/events
 
 **Event Types:**
 
-| Event | Description |
-|-------|-------------|
-| `connected` | Initial connection established |
-| `heartbeat` | Periodic status update (every 15 seconds) |
-| `state_changed` | Workflow state transition |
-| `agent_message` | Output from the AI agent |
-| `progress` | Progress update during long operations |
-| `error` | Error occurred |
+| Event           | Description                               |
+|-----------------|-------------------------------------------|
+| `connected`     | Initial connection established            |
+| `heartbeat`     | Periodic status update (every 15 seconds) |
+| `state_changed` | Workflow state transition                 |
+| `agent_message` | Output from the AI agent                  |
+| `progress`      | Progress update during long operations    |
+| `error`         | Error occurred                            |
 
 **Heartbeat Event:**
 

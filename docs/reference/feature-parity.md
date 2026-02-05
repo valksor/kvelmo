@@ -4,7 +4,7 @@ This document tracks implementation status across Mehrhof's interfaces. Use this
 
 ## Interface Overview
 
-Mehrhof has six user interfaces:
+Mehrhof has seven user interfaces:
 
 | Interface              | Entry Point              | Purpose                          |
 |------------------------|--------------------------|----------------------------------|
@@ -14,8 +14,38 @@ Mehrhof has six user interfaces:
 | **Interactive Web**    | `/interactive`           | Browser REPL with SSE streaming  |
 | **JetBrains Plugin**   | `ide/jetbrains/`         | IntelliJ/GoLand/WebStorm native  |
 | **VS Code Extension**  | `ide/vscode/`            | VS Code sidebar integration      |
+| **MCP Server**         | `internal/mcp/`          | AI agent tool interface          |
 
-**Parity Goal**: CLI Interactive == Web Interactive == JetBrains == VS Code
+---
+
+## Parity Rules
+
+**CLI is the reference implementation** — all features start here.
+
+**CLI-only commands** (intentionally NOT in other interfaces):
+- `init` - Workspace initialization (one-time setup)
+- `serve` - Starts web server (self-referential)
+- `generate-secret` - One-time utility
+- `update` - CLI self-update
+- `hooks` / `lefthook` - Developer tooling
+
+**CI/CD-only commands**:
+- `review pr` - Only in automation context
+
+**Everything else MUST have 1:1 parity across all interfaces.**
+
+---
+
+## Current Parity Status
+
+| Interface | Required     | Implemented | Parity      |
+|-----------|--------------|-------------|-------------|
+| CLI       | 100%         | 100%        | ✅ Reference |
+| Web UI    | ~95 commands | ~90         | 95%         |
+| Web Chat  | ~95 commands | ~78         | 82%         |
+| VS Code   | ~95 commands | ~69         | 73%         |
+| JetBrains | ~95 commands | ~69         | 73%         |
+| MCP       | ~93 commands | ~95         | 100%+       |
 
 ---
 
@@ -26,12 +56,11 @@ When adding a new feature, complete ALL applicable items:
 - [ ] **CLI Command**: Add in `cmd/mehr/commands/*.go` using Cobra
 - [ ] **Interactive CLI**: Add to `interactive` allowed commands if workflow-relevant
 - [ ] **Web UI Handler**: Add in `internal/server/handlers*.go` or `internal/server/api/`
-- [ ] **Interactive Web**: Add to `handlers_interactive.go` command handler if workflow-relevant
-- [ ] **JetBrains Plugin**: Add to `InteractivePanel.kt` help text and action buttons
-- [ ] **VS Code Extension**: Add to `interactivePanel.ts` commands and action buttons
+- [ ] **Interactive Web**: Add to `handlers_interactive.go` command handler
+- [ ] **JetBrains Plugin**: Add action in `ide/jetbrains/`
+- [ ] **VS Code Extension**: Add command in `ide/vscode/`
+- [ ] **MCP Server**: Verify tool is exposed (auto-mapped from CLI)
 - [ ] **Router Registration**: Update `internal/server/router.go`
-- [ ] **Template/View**: Add in `internal/server/templates/` or `internal/server/views/`
-- [ ] **Navigation**: Update menus if user-facing
 - [ ] **SSE Streaming**: Add for long-running operations
 - [ ] **Tests**: Comprehensive tests (see Testing section in CLAUDE.md)
 - [ ] **Documentation**: Update `docs/cli/` and/or `docs/web-ui/`
@@ -79,120 +108,138 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 
 ## CLI vs. Web UI Parity
 
-| CLI Command       | Web UI | Notes                               |
-|-------------------|--------|-------------------------------------|
-| `start <ref>`     | ✅      | Dashboard + project pages           |
-| `plan`            | ✅      | SSE streaming                       |
-| `implement`       | ✅      | SSE streaming                       |
-| `review`          | ✅      | SSE streaming                       |
-| `finish`          | ✅      | PR creation/merge                   |
-| `continue`        | ✅      | Resume from waiting                 |
-| `abandon`         | ✅      | Discard task                        |
-| `status`          | ✅      | Dashboard display                   |
-| `note <msg>`      | ✅      | Quick note form                     |
-| `question <msg>`  | ✅      | Quick question + SSE                |
-| `cost`            | ✅      | Detailed breakdown by step          |
-| `list`            | ✅      | Recent tasks sidebar                |
-| `undo/redo`       | ✅      | Checkpoint navigation               |
-| `links`           | ✅      | `/links` page                       |
-| `find`            | ✅      | `/find` page                        |
-| `browser`         | ✅      | `/browser` page                     |
-| `mcp`             | ✅      | MCP server toggle                   |
-| `scan`            | ✅      | `/scan` page with scanner selection |
-| `memory`          | ✅      | `/memory` page                      |
-| `library`         | ✅      | `/library` page with pull/list/show |
-| `commit`          | ✅      | `/commit` page with analyze/preview |
-| `project sync`    | ✅      | API + SSE streaming                 |
-| `stack`           | ✅      | `/stack` page                       |
-| `interactive`     | ✅      | `/interactive` page                 |
-| `budget`          | ✅      | API + monthly status/reset          |
-| `optimize`        | ✅      | Quick task optimization             |
-| `export`          | ✅      | Quick task export                   |
-| `serve`           | N/A    | Self-referential                    |
-| `config validate` | ✅      | Settings validation                 |
-| `agents`          | ✅      | Settings page                       |
-| `providers`       | ✅      | Settings (login)                    |
-| `templates`       | ✅      | Settings page                       |
-| `simplify`        | ✅      | `/simplify` page                    |
-| `auto`            | ✅      | `/auto` page                        |
-| `reset`           | ✅      | `/api/v1/reset` endpoint            |
-| `quick`           | ✅      | `/quick` page                       |
-| `submit`          | ✅      | Quick task submit                   |
-| `login`           | ✅      | Settings providers page             |
-| `delete`          | ❌      | CLI-only (queue tasks)              |
-| `specification`   | ❌      | CLI-only (view specs)               |
-| `label`           | ❌      | CLI-only task metadata              |
-| `init`            | ❌      | CLI-only setup                      |
-| `license`         | ❌      | CLI-only informational              |
-| `guide`           | ❌      | CLI-only informational              |
-| `generate-secret` | ❌      | CLI-only utility                    |
-| `update`          | ❌      | CLI-only utility                    |
-| `hooks/lefthook`  | ❌      | CLI-only dev tool                   |
-| `workflow`        | ❌      | CLI-only diagnostic                 |
+| CLI Command            | Web UI   | Notes                               |
+|------------------------|----------|-------------------------------------|
+| `start <ref>`          | ✅        | Dashboard + project pages           |
+| `plan`                 | ✅        | SSE streaming                       |
+| `implement`            | ✅        | SSE streaming                       |
+| `implement review <n>` | ✅        | SSE streaming                       |
+| `review`               | ✅        | SSE streaming                       |
+| `review view <n>`      | ✅        | API endpoint                        |
+| `review pr`            | CI/CD    | Automation context only             |
+| `finish`               | ✅        | PR creation/merge                   |
+| `continue`             | ✅        | Resume from waiting                 |
+| `abandon`              | ✅        | Discard task                        |
+| `auto`                 | ✅        | `/auto` page                        |
+| `quick <desc>`         | ✅        | `/quick` page                       |
+| `guide`                | ✅        | `/api/v1/guide` endpoint            |
+| `status`               | ✅        | Dashboard display                   |
+| `list`                 | ✅        | Recent tasks sidebar                |
+| `note <msg>`           | ✅        | Quick note form                     |
+| `note list/view`       | ✅        | API endpoints                       |
+| `question <msg>`       | ✅        | Quick question + SSE                |
+| `specification`        | ✅        | `/api/v1/tasks/{id}/specs`          |
+| `label`                | ⚠️       | API exists, UI missing              |
+| `delete --task`        | ✅        | Quick task delete                   |
+| `export --task`        | ✅        | Quick task export                   |
+| `optimize --task`      | ✅        | Quick task optimization             |
+| `submit`               | ✅        | Quick task submit                   |
+| `sync`                 | ✅        | API + SSE streaming                 |
+| `cost`                 | ✅        | Detailed breakdown by step          |
+| `budget`               | ✅        | API + monthly status/reset          |
+| `undo/redo`            | ✅        | Checkpoint navigation               |
+| `reset`                | ✅        | `/api/v1/workflow/reset`            |
+| `find`                 | ✅        | `/find` page                        |
+| `memory`               | ✅        | `/memory` page                      |
+| `links`                | ✅        | `/links` page                       |
+| `library`              | ✅        | `/library` page with pull/list/show |
+| `browser`              | ✅        | `/browser` page                     |
+| `browser cookies`      | ❌        | API + UI missing                    |
+| `project`              | ✅        | Project planning pages              |
+| `stack`                | ✅        | `/stack` page                       |
+| `scan`                 | ✅        | `/scan` page with scanner selection |
+| `simplify`             | ✅        | `/simplify` page                    |
+| `commit`               | ✅        | `/commit` page with analyze/preview |
+| `config validate`      | ✅        | Settings validation                 |
+| `config explain`       | ✅        | Settings explanation                |
+| `agents`               | ✅        | Settings page                       |
+| `providers`            | ✅        | Settings (login)                    |
+| `templates`            | ✅        | Settings page                       |
+| `workflow`             | ✅        | `/api/v1/workflow/diagram`          |
+| `license`              | ✅        | `/api/v1/license`                   |
+| `mcp`                  | ✅        | MCP server toggle                   |
+| `interactive`          | ✅        | `/interactive` page                 |
+| `init`                 | CLI-only | Workspace setup                     |
+| `serve`                | N/A      | Self-referential                    |
+| `generate-secret`      | CLI-only | Utility                             |
+| `update`               | CLI-only | CLI self-update                     |
+| `hooks/lefthook`       | CLI-only | Dev tool                            |
 
-**Legend**: ✅ Full | ⚠️ Partial | ❌ Missing | N/A Not applicable
+**Legend**: ✅ Full | ⚠️ Partial | ❌ Missing | CLI-only | CI/CD | N/A
 
 ---
 
 ## Interactive Modes Parity
 
-| Feature          | CLI REPL   | Web `/interactive` | JetBrains | VS Code | Notes               |
-|------------------|------------|--------------------|-----------|---------|--------------------|
-| **Workflow**     |
-| `start`          | ✅          | ✅                  | ✅         | ✅       |                     |
-| `plan`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `implement`      | ✅ (`impl`) | ✅                  | ✅         | ✅       |                     |
-| `review`         | ✅          | ✅                  | ✅         | ✅       |                     |
-| `finish`         | ✅          | ✅                  | ✅         | ✅       |                     |
-| `continue`       | ✅ (`cont`) | ✅                  | ✅         | ✅       |                     |
-| `abandon`        | ✅          | ✅                  | ✅         | ✅       |                     |
-| **Session**      |
-| `status`         | ✅ (`st`)   | ✅                  | ✅         | ✅       |                     |
-| `note`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `question`       | ✅          | ✅                  | ✅         | ✅       |                     |
-| `answer`         | ✅ (`a`)    | ✅                  | ✅         | ✅       |                     |
-| `specification`  | ✅ (`spec`) | ✅                  | ✅         | ✅       |                     |
-| `cost`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `list`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `quick`          | ✅          | ✅                  | ✅         | ✅       |                     |
-| `budget`         | ✅          | ✅                  | ✅         | ✅       |                     |
-| **Search**       |
-| `find`           | ✅          | ✅                  | ✅         | ✅       | AI code search      |
-| `memory`         | ✅          | ✅                  | ✅         | ✅       | Semantic search     |
-| `library`        | ✅          | ✅                  | ✅         | ✅       | Doc library mgmt    |
-| **Tools**        |
-| `simplify`       | ✅          | ✅                  | ✅         | ✅       | Code simplification |
-| `label`          | ✅          | ✅                  | ✅         | ✅       | Task labels         |
-| **Navigation**   |
-| `undo`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `redo`           | ✅          | ✅                  | ✅         | ✅       |                     |
-| `clear`          | ✅          | N/A                | N/A       | N/A     | Web uses UI refresh |
-| `help`/`?`       | ✅          | ✅                  | ✅         | ✅       |                     |
-| `exit`/`quit`    | ✅          | ✅                  | N/A       | N/A     | Close tab/panel     |
-| **Chat**         |
-| `chat <msg>`     | ✅          | ✅ (main input)     | ✅         | ✅       |                     |
+| Feature           | CLI REPL   | Web Chat | JetBrains | VS Code | Notes                                                                       |
+|-------------------|------------|----------|-----------|---------|-----------------------------------------------------------------------------|
+| **Workflow**      |
+| `start`           | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `plan`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `implement`       | ✅ (`impl`) | ✅        | ✅         | ✅       |                                                                             |
+| `review`          | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `finish`          | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `continue`        | ✅ (`cont`) | ✅        | ✅         | ✅       |                                                                             |
+| `abandon`         | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `auto`            | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| **Session**       |
+| `status`          | ✅ (`st`)   | ✅        | ✅         | ✅       |                                                                             |
+| `note`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `question`        | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `answer`          | ✅ (`a`)    | ✅        | ✅         | ✅       |                                                                             |
+| `specification`   | ✅ (`spec`) | ✅        | ✅         | ✅       |                                                                             |
+| `cost`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `list`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `quick`           | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `budget`          | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `reset`           | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| **Search**        |
+| `find`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `memory`          | ✅          | ✅        | ✅         | ✅       | search/index/stats                                                          |
+| `library`         | ✅          | ✅        | ✅         | ✅       | list/show/pull/remove/stats                                                 |
+| `links`           | ✅          | ✅        | ✅         | ✅       | list/search/stats/rebuild                                                   |
+| **Queue Tasks**   |
+| `delete --task`   | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `export --task`   | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `optimize --task` | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `submit`          | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `sync`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| **Tools**         |
+| `simplify`        | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `label`           | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `scan`            | ❌          | ✅        | ✅         | ✅       | CLI redirect                                                                |
+| `commit`          | ❌          | ✅        | ✅         | ✅       | CLI redirect                                                                |
+| **Browser**       |
+| `browser *`       | ❌          | ✅        | ✅         | ✅       | status/tabs/goto/navigate/reload/screenshot/click/type/eval/console/network |
+| **Project**       |
+| `project *`       | ❌          | ✅        | ✅         | ✅       | plan/tasks/edit/submit/start/sync                                           |
+| **Stack**         |
+| `stack *`         | ❌          | ✅        | ✅         | ✅       | list/rebase/sync                                                            |
+| **Config**        |
+| `config *`        | ❌          | ✅        | ✅         | ✅       | validate only; explain redirects to CLI                                     |
+| `agents`          | ❌          | ✅        | ✅         | ✅       | list/explain                                                                |
+| `providers`       | ❌          | ✅        | ✅         | ✅       | list/info; status redirects to CLI                                          |
+| `templates`       | ❌          | ✅        | ✅         | ✅       | list/show; apply redirects to CLI                                           |
+| **Navigation**    |
+| `undo`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `redo`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `clear`           | ✅          | N/A      | N/A       | N/A     | Web uses UI refresh                                                         |
+| `help`/`?`        | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `exit`/`quit`     | ✅          | ✅        | N/A       | N/A     | Close tab/panel                                                             |
+| **Chat**          |
+| `chat <msg>`      | ✅          | ✅ (main) | ✅         | ✅       |                                                                             |
 
 ---
 
-## When CLI-Only Is Appropriate
+## MCP Server Parity
 
-Commands that should NOT be added to interactive modes:
+| CLI Command   | MCP Tool            | Status | Notes                           |
+|---------------|---------------------|--------|---------------------------------|
+| All commands  | Via CLI passthrough | ✅      | Full parity via Cobra mapping   |
+| `init`        | N/A                 | Remove | CLI-only, should not be exposed |
+| `serve`       | N/A                 | Remove | CLI-only, should not be exposed |
+| `workspace_*` | Dedicated tools     | ✅      | AI-friendly data access         |
+| `library_*`   | Dedicated tools     | ✅      | Documentation access            |
+| `agents_*`    | Dedicated tools     | ✅      | Registry access                 |
+| `providers_*` | Dedicated tools     | ✅      | Registry access                 |
 
-- **One-shot utilities**: `generate-secret`, `update check/install`
-- **Developer tools**: `hooks`, `lefthook`, `config validate`
-- **System operations**: `serve`, `workflow`
-- **Flag-heavy operations**: Commands with many CLI flags
-- **Setup tasks**: Operations run once, not during workflow sessions
-
-**The key question**: "Would a user run this during a conversational workflow session?"
-
----
-
-## When to Add to Interactive Modes
-
-Add commands to both CLI REPL and Web `/interactive` when:
-
-- **Workflow control**: `start`, `plan`, `implement`, `review`, `finish`, `continue`, `abandon`
-- **Session context**: `status`, `note`, `question`, `specification`, `cost`, `list`
-- **Session navigation**: `undo`, `redo`, `clear`, `help`, `exit`
-- **Quick actions**: `quick`, `answer`

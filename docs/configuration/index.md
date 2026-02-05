@@ -2,13 +2,16 @@
 
 Mehrhof uses a simple configuration system with sensible defaults.
 
-## How Claude Integration Works
+## How Agent Integration Works
 
-Mehrhof calls Claude CLI as a subprocess:
+Mehrhof calls your agent CLI as a subprocess—it does NOT connect to AI APIs directly:
 
-- **Claude's settings** (API keys, model) are handled by Claude CLI itself
-- **Mehrhof's settings** control workflow behavior and are passed to agents
-- Environment variables in workspace config are passed to Claude when it runs
+- **Your CLI handles authentication**—Claude uses subscription auth, Codex uses your configured API key
+- **No API keys required in Mehrhof** for basic usage
+- **API keys optional** via agent aliases for custom agents or work accounts
+- Environment variables in workspace config are passed to agents when they run
+
+**If your agent CLI works (`claude "Hello"` or `codex exec "test"`), Mehrhof will work.**
 
 ## Configuration Methods
 
@@ -60,18 +63,18 @@ env:
 
 ## Configuration Sections
 
-| Section         | Description                        | Details                                 |
-|-----------------|------------------------------------|-----------------------------------------|
-| `git`           | Version control integration        | [Git Configuration](git.md)             |
+| Section         | Description                        | Details                               |
+|-----------------|------------------------------------|---------------------------------------|
+| `git`           | Version control integration        | [Git Configuration](git.md)           |
 | `agent`         | AI agent behavior and aliases      | [Agents Guide](/agents/index.md)      |
 | `sandbox`       | Agent execution sandboxing         | [Sandbox Guide](/advanced/sandbox.md) |
-| `browser`       | Browser automation                 | [Browser Configuration](browser.md)     |
-| `storage`       | Task data and caches               | [Storage Configuration](storage.md)     |
-| `specification` | Spec storage location and naming   | [Storage Configuration](storage.md)     |
-| `review`        | Review storage location and naming | [Storage Configuration](storage.md)     |
-| `context`       | Hierarchical task context          | [Context Configuration](context.md)     |
-| `budget`        | Cost and token budgets             | (see below)                             |
-| `quality`       | Code quality and linters           | (see below)                             |
+| `browser`       | Browser automation                 | [Browser Configuration](browser.md)   |
+| `storage`       | Task data and caches               | [Storage Configuration](storage.md)   |
+| `specification` | Spec storage location and naming   | [Storage Configuration](storage.md)   |
+| `review`        | Review storage location and naming | [Storage Configuration](storage.md)   |
+| `context`       | Hierarchical task context          | [Context Configuration](context.md)   |
+| `budget`        | Cost and token budgets             | (see below)                           |
+| `quality`       | Code quality and linters           | (see below)                           |
 
 ### providers
 

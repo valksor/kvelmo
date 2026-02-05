@@ -1,10 +1,16 @@
 # Parallel Task Execution
 
-This document describes the internal architecture of Mehrhof's parallel task execution system.
+Run multiple tasks at the same time, each completely isolated from the others.
 
 ## Overview
 
-Parallel task execution allows running multiple tasks simultaneously, each in its own isolated goroutine with a dedicated conductor instance. This architecture enables efficient batch processing while maintaining isolation between tasks.
+Parallel task execution lets you work on several tasks simultaneously. Each task runs independently with its own workspace, so changes in one task never interfere with another. This is useful for:
+
+- **Batch processing** - Complete a backlog of independent tasks quickly
+- **Team workflows** - Different team members can work on separate features
+- **CI/CD pipelines** - Process multiple issues or PRs in parallel
+
+Under the hood, Mehrhof creates a separate environment for each task with its own orchestrator and isolated file system.
 
 ## Architecture
 
@@ -21,20 +27,20 @@ Parallel task execution allows running multiple tasks simultaneously, each in it
 │  └────────┬────────┘                                        │
 │           │                                                 │
 │  ┌────────▼────────────────────────────────────────┐        │
-│  │              Goroutine Pool                      │        │
+│  │              Goroutine Pool                     │        │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐       │        │
 │  │  │ Worker 1 │  │ Worker 2 │  │ Worker 3 │       │        │
 │  │  │ (Task A) │  │ (Task B) │  │ (Task C) │       │        │
 │  │  └────┬─────┘  └────┬─────┘  └────┬─────┘       │        │
 │  │       │             │             │             │        │
 │  │       ▼             ▼             ▼             │        │
-│  │  ┌─────────┐   ┌─────────┐   ┌─────────┐       │        │
-│  │  │Conductor│   │Conductor│   │Conductor│       │        │
-│  │  └─────────┘   └─────────┘   └─────────┘       │        │
+│  │  ┌─────────┐   ┌─────────┐   ┌─────────┐        │        │
+│  │  │Conductor│   │Conductor│   │Conductor│        │        │
+│  │  └─────────┘   └─────────┘   └─────────┘        │        │
 │  └─────────────────────────────────────────────────┘        │
 │                                                             │
 │  ┌─────────────────────────────────────────────────┐        │
-│  │           Git Worktrees (Isolation)              │        │
+│  │           Git Worktrees (Isolation)             │        │
 │  │  ../worktrees/abc123/  ../worktrees/def456/  ...│        │
 │  └─────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────┘
@@ -49,13 +55,13 @@ Parallel task execution allows running multiple tasks simultaneously, each in it
 | Conductor     | Per-task orchestrator (AI agent, storage, VCS) |
 | Git Worktrees | Isolated working directories per task          |
 
-## Thread Safety
+## Safe Concurrent Access
 
-The registry uses `sync.RWMutex` to ensure thread-safe access:
+The system safely handles multiple tasks running at the same time:
 
-- Multiple readers can access task state simultaneously
-- Writers get exclusive access for state updates
-- Event bus notifies subscribers of state changes
+- Multiple clients can view task status without conflicts
+- Updates to task state are handled one at a time to prevent corruption
+- Status changes are broadcast to all connected clients in real-time
 
 ## Isolation Model
 
@@ -68,12 +74,12 @@ Each parallel task receives:
 
 ## Worker Pool
 
-The task runner uses a semaphore-based worker pool:
+Tasks are processed by a pool of workers:
 
-- `max_workers` controls maximum concurrent tasks
-- Tasks queue when all workers are busy
-- Context cancellation propagates to running tasks
-- Failed tasks don't affect other workers
+- **max_workers** setting controls how many tasks run at once
+- Additional tasks wait in a queue until a worker becomes available
+- Cancelling a task stops it without affecting other running tasks
+- If one task fails, other tasks continue running normally
 
 ## Event Flow
 
