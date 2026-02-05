@@ -1,1 +1,0 @@
-import{c as t}from"./vendor-data-CAs1qCax.js";import{a as n}from"./index-F7qbR8zU.js";function i(){return t({mutationFn:o=>n("/workflow/review/standalone",{method:"POST",body:JSON.stringify(o)})})}function r(){return t({mutationFn:o=>n("/workflow/simplify/standalone",{method:"POST",body:JSON.stringify(o)})})}export{r as a,i as u};
