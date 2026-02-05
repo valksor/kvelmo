@@ -20,7 +20,7 @@ The memory system consists of four main components:
        ▼
 ┌─────────────┐     ┌──────────────┐
 │   Indexer   │────▶│ Vector Store │
-└─────────────┘     └──────┬───────┘
+└─────────────┘     └─────┬────────┘
                           │
                 ┌─────────┴─────────┐
                 ▼                   ▼
@@ -39,7 +39,9 @@ Embeddings are numerical representations of text that capture semantic meaning:
 
 ### Embedding Models
 
-**Hash-based embedding** uses SHA256 for deterministic local embeddings without requiring external APIs.
+**Hash-based embedding** (default) uses SHA256 for deterministic local embeddings without requiring external APIs.
+
+**ONNX embedding** provides true semantic similarity using neural networks. This requires an additional sidecar binary that is downloaded on first use. See [ONNX Embedder Sidecar](/advanced/onnx-embedder.md) for architecture details and platform support.
 
 ## Document Types
 

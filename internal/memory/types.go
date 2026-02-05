@@ -186,3 +186,9 @@ func (m *MemorySystem) Clear(ctx context.Context) error {
 	// Implementation depends on vector store capabilities
 	return nil
 }
+
+// Model returns the embedding model used by the memory system.
+// This allows other systems (like library) to reuse the same embedding model.
+func (m *MemorySystem) Model() EmbeddingModel {
+	return m.model
+}
