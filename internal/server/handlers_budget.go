@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/server/api"
 	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -35,6 +36,13 @@ func (s *Server) handleBudgetMonthlyStatus(w http.ResponseWriter, r *http.Reques
 	// Use defaults if no config loaded (no workspace case)
 	if cfg == nil {
 		cfg = storage.NewDefaultWorkspaceConfig()
+	}
+
+	// Return JSON for API clients, HTML for browsers/HTMX
+	if api.AcceptsJSON(r) {
+		s.writeBudgetStatusJSON(w, cfg, state)
+
+		return
 	}
 
 	// Show budget status with config (defaults if no workspace, 0 spent if no state)
@@ -130,6 +138,49 @@ func (s *Server) writeBudgetStatusHTML(w http.ResponseWriter, cfg *storage.Works
 	`
 
 	_, _ = w.Write([]byte(html))
+}
+
+// writeBudgetStatusJSON renders the monthly budget status as JSON for API clients.
+func (s *Server) writeBudgetStatusJSON(w http.ResponseWriter, cfg *storage.WorkspaceConfig, state *storage.MonthlyBudgetState) {
+	enabled := false
+	maxCost := float64(0)
+	warningAt := float64(0.8)
+	currency := "USD"
+
+	if cfg != nil {
+		enabled = cfg.Budget.Monthly.Enabled
+		maxCost = cfg.Budget.Monthly.MaxCost
+		if cfg.Budget.Monthly.WarningAt > 0 {
+			warningAt = cfg.Budget.Monthly.WarningAt
+		}
+		if cfg.Budget.Monthly.Currency != "" {
+			currency = cfg.Budget.Monthly.Currency
+		}
+	}
+
+	response := map[string]any{
+		"enabled": enabled,
+	}
+
+	if enabled {
+		spent := float64(0)
+		warningSent := false
+
+		if state != nil {
+			spent = state.Spent
+			warningSent = state.WarningSent
+		}
+
+		response["max_cost"] = maxCost
+		response["spent"] = spent
+		response["remaining"] = maxCost - spent
+		response["currency"] = currency
+		response["warning_at"] = warningAt
+		response["warned"] = warningSent
+		response["limit_hit"] = spent >= maxCost
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
 }
 
 // handleBudgetMonthlyReset resets the monthly budget tracking.

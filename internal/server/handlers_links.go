@@ -11,46 +11,6 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
-// handleLinksUI renders the links page.
-func (s *Server) handleLinksUI(w http.ResponseWriter, r *http.Request) {
-	if s.renderer == nil {
-		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
-
-		return
-	}
-
-	pageData := views.ComputePageData(
-		s.modeString(),
-		s.config.Mode == ModeGlobal,
-		s.config.AuthStore != nil,
-		s.canSwitchProject(),
-		s.isViewer(r),
-		s.getCurrentUser(r),
-	)
-
-	// Check if links system is available
-	enabled := false
-	if s.config.Conductor != nil {
-		ws := s.config.Conductor.GetWorkspace()
-		if ws != nil {
-			cfg, err := ws.LoadConfig()
-			if err == nil && cfg.Links != nil {
-				enabled = cfg.Links.Enabled
-			}
-		}
-	}
-
-	data := views.LinksData{
-		PageData: pageData,
-		Enabled:  enabled,
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.RenderLinks(w, data); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
-	}
-}
-
 // handleListLinks returns all links in the system.
 func (s *Server) handleListLinks(w http.ResponseWriter, r *http.Request) {
 	if s.config.Conductor == nil {

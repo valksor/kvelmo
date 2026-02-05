@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/server/static"
+	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -15,23 +16,26 @@ import (
 func (s *Server) setupRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	// Serve static assets (self-hosted JS/CSS) - skip in API-only mode
+	// Serve static assets - skip in API-only mode
 	if !s.config.APIOnly {
+		// Fonts and licenses
 		staticFS := http.FileServer(http.FS(static.Public()))
-		mux.Handle("GET /static/", http.StripPrefix("/static/", staticFS))
+		mux.Handle("GET /fonts/", staticFS)
+		mux.Handle("GET /licenses.json", staticFS)
+
+		// React SPA assets - files are at assets/ inside the embed
+		reactFS := http.FileServer(http.FS(static.ReactApp()))
+		mux.Handle("GET /assets/", reactFS)
 	}
 
 	// Health check (public)
 	mux.HandleFunc("GET /health", s.handleHealth)
 
-	// Auth routes (public) - API endpoints always available, web pages only in full mode
+	// Auth routes (public)
 	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/v1/auth/csrf", s.handleCSRFToken)
 	if !s.config.APIOnly {
-		mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-			s.handleLoginPageUI(w, r, "")
-		})
 		mux.HandleFunc("GET /logout", s.handleLogout)
 	}
 
@@ -39,12 +43,9 @@ func (s *Server) setupRouter() http.Handler {
 	mux.HandleFunc("GET /api/v1/status", s.handleStatus)
 	mux.HandleFunc("GET /api/v1/context", s.handleContext)
 
-	// License routes (API endpoints always available, web page only in full mode)
+	// License routes
 	mux.HandleFunc("GET /api/v1/license", s.handleLicense)
 	mux.HandleFunc("GET /api/v1/license/info", s.handleLicenseInfo)
-	if !s.config.APIOnly {
-		mux.HandleFunc("GET /license", s.handleLicensePage)
-	}
 
 	// Project mode routes
 	if s.config.Mode == ModeProject {
@@ -144,12 +145,9 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/links/stats", s.handleLinksStats)
 		mux.HandleFunc("POST /api/v1/links/rebuild", s.handleRebuildLinks)
 
-		// Find search endpoints (API always available, UI only in full mode)
+		// Find search endpoints
 		mux.HandleFunc("GET /api/v1/find", s.handleFindSearch)
 		mux.HandleFunc("POST /api/v1/find", s.handleFindSearch)
-		if !s.config.APIOnly {
-			mux.HandleFunc("GET /find", s.handleFindUI)
-		}
 
 		// Budget endpoints
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
@@ -168,14 +166,11 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/templates/{name}", s.handleGetTemplate)
 		mux.HandleFunc("POST /api/v1/templates/apply", s.handleApplyTemplate)
 
-		// Settings endpoints (API always available, UI only in full mode)
+		// Settings endpoints
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
-		if !s.config.APIOnly {
-			mux.HandleFunc("GET /settings", s.handleSettingsPage)
-		}
 
 		// Sandbox endpoints
 		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
@@ -190,43 +185,8 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
 		mux.HandleFunc("POST /ui/interactive/send", s.handleInteractiveSend)
 
-		// Web UI routes (skip in API-only mode)
-		if !s.config.APIOnly {
-			// Project planning UI
-			mux.HandleFunc("GET /project", s.handleProjectUI)
-
-			// Browser control panel UI
-			mux.HandleFunc("GET /browser", s.handleBrowserUI)
-
-			// Interactive chat web page
-			mux.HandleFunc("GET /interactive", s.handleInteractivePage)
-
-			// Task history UI
-			mux.HandleFunc("GET /history", s.handleHistoryUI)
-
-			// Memory UI
-			mux.HandleFunc("GET /memory", s.handleMemoryUI)
-
-			// Library UI
-			mux.HandleFunc("GET /library", s.handleLibraryUI)
-
-			// Links UI
-			mux.HandleFunc("GET /links", s.handleLinksUI)
-
-			// Commit UI and API
-			mux.HandleFunc("GET /commit", s.handleCommitPage)
-
-			// Security scan UI
-			mux.HandleFunc("GET /scan", s.handleScanPage)
-
-			// Automation UI
-			mux.HandleFunc("GET /automation", s.handleAutomationPage)
-
-			// Stack management UI
-			mux.HandleFunc("GET /stack", s.handleStacksUI)
-		}
-
 		// Commit API endpoints (always available)
+		mux.HandleFunc("GET /api/v1/commit/changes", s.handleCommitChanges)
 		mux.HandleFunc("GET /api/v1/commit/plan", s.handleCommitPlan)
 		mux.HandleFunc("POST /api/v1/commit/execute", s.handleCommitExecute)
 
@@ -263,9 +223,6 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleQuickTaskStart)
 		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleQuickTaskDelete)
 		mux.HandleFunc("GET /api/v1/quick/{taskId}/card", s.handleQuickTaskCard)
-		if !s.config.APIOnly {
-			mux.HandleFunc("GET /quick", s.handleQuickTasksUI)
-		}
 
 		// Running parallel tasks endpoints
 		mux.HandleFunc("GET /api/v1/running", s.handleRunningTasks)
@@ -279,14 +236,11 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/projects", s.handleListProjects)
 		mux.HandleFunc("POST /api/v1/projects/select", s.handleSelectProject)
 
-		// Settings endpoints (API always available, UI only in full mode)
+		// Settings endpoints
 		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
 		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
 		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
-		if !s.config.APIOnly {
-			mux.HandleFunc("GET /settings", s.handleSettingsPage)
-		}
 
 		// Budget status endpoint (returns placeholder when no workspace)
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
@@ -303,11 +257,6 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
 		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
 		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
-
-		// Library UI (show shared collections)
-		if !s.config.APIOnly {
-			mux.HandleFunc("GET /library", s.handleLibraryUI)
-		}
 	}
 
 	// Switch project route (available when started in global mode)
@@ -332,31 +281,18 @@ func (s *Server) setupRouter() http.Handler {
 	mux.HandleFunc("GET /api/v1/agent/logs/stream", s.handleAgentLogs)
 	mux.HandleFunc("GET /api/v1/agent/logs/history", s.handleAgentLogsHistory)
 
-	// UI partial routes (for HTMX updates) - skip in API-only mode
+	// React SPA catch-all - skip in API-only mode
+	// Note: /{path...} matches all paths including root "/" in Go 1.22+
 	if !s.config.APIOnly {
-		mux.HandleFunc("GET /ui/partials/task", s.handleTaskPartial)
-		mux.HandleFunc("GET /ui/partials/actions", s.handleActionsPartial)
-		mux.HandleFunc("GET /ui/partials/specification", s.handleSpecificationPartial)
-		mux.HandleFunc("GET /ui/partials/reviews", s.handleReviewsPartial)
-		mux.HandleFunc("GET /ui/partials/question", s.handleQuestionPartial)
-		mux.HandleFunc("GET /ui/partials/costs", s.handleCostsPartial)
-		mux.HandleFunc("GET /ui/partials/hierarchy", s.handleHierarchyPartial)
-		mux.HandleFunc("GET /ui/partials/workspace-stats", s.handleWorkspaceStatsPartial)
-		mux.HandleFunc("GET /ui/partials/recent-tasks", s.handleRecentTasksPartial)
-		mux.HandleFunc("GET /ui/partials/task-content", s.handleTaskContentPartial)
-
-		// Main dashboard
-		mux.HandleFunc("GET /", s.handleDashboard)
+		mux.HandleFunc("GET /{path...}", s.handleReactApp)
 	}
 
 	// Wrap with middleware chain (innermost to outermost):
 	// 1. Logging (innermost)
 	// 2. CSRF validation
-	// 3. Rate limiting
-	// 4. Authentication (outermost)
+	// 3. Authentication (outermost)
 	handler := s.withMiddleware(mux)
 	handler = s.csrfMiddleware(handler)
-	handler = s.rateLimitMiddleware(handler)
 	handler = s.authMiddleware(handler)
 
 	return handler
@@ -575,18 +511,32 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ListProjects handler returns all discovered projects (global mode).
+// ListProjects handler returns all registered projects (global mode).
+// Uses the project registry (not workspace discovery) to show only explicitly registered projects.
 func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, err := DiscoverProjects()
+	registry, err := storage.LoadRegistry()
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to discover projects: "+err.Error())
+		s.writeError(w, http.StatusInternalServerError, "failed to load registry: "+err.Error())
 
 		return
 	}
 
+	projects := registry.List()
+	result := make([]map[string]any, 0, len(projects))
+
+	for _, p := range projects {
+		result = append(result, map[string]any{
+			"id":          p.ID,
+			"name":        p.Name,
+			"path":        p.Path,
+			"remote_url":  p.RemoteURL,
+			"last_access": p.LastAccess,
+		})
+	}
+
 	s.writeJSON(w, http.StatusOK, map[string]any{
-		"projects": projects,
-		"count":    len(projects),
+		"projects": result,
+		"count":    len(result),
 	})
 }
 

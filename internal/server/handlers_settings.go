@@ -10,130 +10,9 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
-
-// handleSettingsPage renders the settings page.
-func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
-	if s.renderer == nil {
-		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
-
-		return
-	}
-
-	var cfg *storage.WorkspaceConfig
-	var loadErr string
-	var projects []storage.ProjectMetadata
-	var workspaceRoot string // Track workspace root for language detection
-	selectedProject := r.URL.Query().Get("project")
-
-	// Global mode: need to handle project selection
-	if s.config.Mode == ModeGlobal {
-		// Get list of registered projects (from projects.yaml, same as dashboard)
-		if registry, err := storage.LoadRegistry(); err == nil {
-			projects = registry.List()
-		} else {
-			loadErr = "failed to load project registry: " + err.Error()
-		}
-
-		if selectedProject != "" {
-			// Load selected project's config
-			var ws *storage.Workspace
-			cfg, ws, loadErr = loadProjectConfig(r.Context(), selectedProject)
-			if cfg == nil {
-				cfg = storage.NewDefaultWorkspaceConfig()
-			}
-			if ws != nil {
-				workspaceRoot = ws.CodeRoot()
-			}
-		} else if len(projects) > 0 {
-			// No project selected, show picker with message
-			loadErr = "Select a project to view its settings"
-			cfg = storage.NewDefaultWorkspaceConfig()
-		} else if loadErr == "" {
-			loadErr = "No projects found"
-			cfg = storage.NewDefaultWorkspaceConfig()
-		} else {
-			cfg = storage.NewDefaultWorkspaceConfig()
-		}
-	} else {
-		// Project mode: use conductor's workspace
-		if s.config.Conductor != nil {
-			ws := s.config.Conductor.GetWorkspace()
-			if ws != nil {
-				workspaceRoot = ws.CodeRoot()
-				var err error
-				cfg, err = ws.LoadConfig()
-				if err != nil {
-					loadErr = "failed to load config: " + err.Error()
-					cfg = storage.NewDefaultWorkspaceConfig()
-				} else if !ws.HasConfig() {
-					// Workspace opened but no config file exists yet
-					loadErr = "workspace not initialized - showing default settings"
-				}
-			} else {
-				loadErr = "workspace not initialized - showing default settings"
-				cfg = storage.NewDefaultWorkspaceConfig()
-			}
-		} else {
-			loadErr = "workspace not initialized - showing default settings"
-			cfg = storage.NewDefaultWorkspaceConfig()
-		}
-	}
-
-	// Get available agents
-	var agents []string
-	if s.config.Conductor != nil {
-		registry := s.config.Conductor.GetAgentRegistry()
-		if registry != nil {
-			agents = registry.List()
-		}
-	}
-	if len(agents) == 0 {
-		agents = []string{"claude", "gemini", "ollama"}
-	}
-
-	// Combine any load error with query param error
-	errorMsg := r.URL.Query().Get("error")
-	if loadErr != "" && errorMsg == "" {
-		errorMsg = loadErr
-	}
-
-	pageData := views.ComputePageData(
-		s.modeString(),
-		s.config.Mode == ModeGlobal,
-		s.config.AuthStore != nil,
-		s.canSwitchProject(),
-		s.isViewer(r),
-		s.getCurrentUser(r),
-	)
-	pageData.Success = r.URL.Query().Get("success")
-	pageData.Error = errorMsg
-
-	// Compute project info for security scanner detection
-	var projectInfo *views.ProjectInfoData
-	if workspaceRoot != "" {
-		projectInfo = views.ComputeProjectInfo(workspaceRoot)
-	}
-
-	data := views.SettingsData{
-		PageData:        pageData,
-		ShowSensitive:   isLocalRequest(r), // Only show tokens when accessed locally
-		Config:          cfg,
-		Agents:          agents,
-		Projects:        views.ComputeSettingsProjects(projects),
-		SelectedProject: selectedProject,
-		SandboxStatus:   s.getSandboxStatus(),
-		ProjectInfo:     projectInfo,
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.RenderSettings(w, data); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
-	}
-}
 
 // loadProjectConfig loads config for a specific project by ID.
 // Returns the config and workspace, or an error message.
@@ -260,7 +139,6 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 
 	if contentType == "application/json" {
 		// JSON submission - decode directly
-		//nolint:musttag // WorkspaceConfig uses yaml tags which json pkg uses as field names
 		if err := json.NewDecoder(r.Body).Decode(cfg); err != nil {
 			s.writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
 
