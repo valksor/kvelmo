@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check web-ui-test web-ui-test-smoke web-ui-test-ui test-all vscode-quality jetbrains-quality webui-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean
+.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-test web-test-coverage
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -15,8 +15,7 @@ LDFLAGS := -ldflags "-s -w -v -X github.com/valksor/go-toolkit/version.Version=$
 # Default target
 all: build ## Build the binary (default target)
 
-build: generate-licenses ## Compile the binary
-	@bun run assets:build
+build: generate-licenses web-build ## Compile the binary
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
@@ -104,15 +103,35 @@ vscode-quality:
 jetbrains-quality:
 	cd ide/jetbrains && make quality
 
-## Run Web UI tests quality checks
-webui-quality:
-	cd web-ui-tests && make quality
+## Run quality checks on all IDEs
+ide-quality: vscode-quality jetbrains-quality
 
-## Run quality checks on all IDEs and web-ui-tests
-ide-quality: vscode-quality jetbrains-quality webui-quality
-
-## Run ALL quality checks (Go + IDEs + Web UI)
+## Run ALL quality checks (Go + IDEs)
 quality-all: quality ide-quality
+
+# ──────────────────────────────────────────────────────────────────────────────
+# React Frontend
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Install React frontend dependencies
+web-install:
+	cd web && bun install
+
+## Build React frontend (outputs to internal/server/static/app/)
+web-build:
+	cd web && bun run build
+
+## Run React frontend dev server (with proxy to Go backend)
+web-dev:
+	cd web && bun run dev
+
+## Run React frontend tests
+web-test:
+	cd web && bun run test:run
+
+## Run React frontend tests with coverage
+web-test-coverage:
+	cd web && bun run test:coverage
 
 # ──────────────────────────────────────────────────────────────────────────────
 # E2E Tests (Local Manual Only)
@@ -139,33 +158,6 @@ e2e-fast: build e2e-check
 
 ## Run E2E tests (alias for e2e-fast)
 e2e: e2e-fast
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Web UI Tests (Playwright)
-# ──────────────────────────────────────────────────────────────────────────────
-
-## Install Web UI test dependencies
-web-ui-test-install:
-	@echo "Installing Web UI test dependencies..."
-	cd web-ui-tests && make deps
-
-## Run all Web UI tests
-web-ui-test: build
-	@echo "Running Web UI tests..."
-	cd web-ui-tests && make test
-
-## Run Web UI smoke tests (faster, for CI)
-web-ui-test-smoke: build
-	@echo "Running Web UI smoke tests..."
-	cd web-ui-tests && make test-smoke
-
-## Run Web UI tests with UI mode (for debugging)
-web-ui-test-ui: build
-	@echo "Running Web UI tests with UI..."
-	cd web-ui-tests && make test-ui
-
-## Run all tests (Go + Web UI smoke)
-test-all: test web-ui-test-smoke
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Docker Sandbox
