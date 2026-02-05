@@ -17,7 +17,11 @@ No prior experience with command-line tools is required if you choose the Web UI
 
 **Git** — Mehrhof uses Git for version control and checkpoints. [Install Git](https://git-scm.com/downloads) if you don't have it.
 
-**Agent CLI** — Mehrhof orchestrates your local agent to handle text transformations. It does not provide AI access—you need an agent CLI installed separately. Claude is the recommended and primary-supported agent. **Already paying for Claude or another agent? Mehrhof is free—no extra cost.**
+**Agent CLI** — Mehrhof orchestrates your local agent CLI. Claude is recommended, but Codex and custom agents are also supported.
+
+> **No API Keys Required to Start**
+>
+> Mehrhof uses your agent CLI directly. If `claude --version` or `codex --version` works, you're ready—no API keys to copy for basic usage. For advanced setups (custom agents, work accounts), API keys can be configured via [agent aliases](/agents/index.md#agent-aliases).
 
 ```bash
 # Check if Claude is installed
@@ -37,6 +41,12 @@ If you don't have Claude, follow the [Claude setup guide](https://claude.ai/code
 ```bash
 # Latest stable release
 curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
+
+# Install specific version
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- -v v1.2.3
+
+# Install nightly build (latest development)
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- --nightly
 ```
 
 The script auto-detects your OS and architecture, verifies checksums, and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
@@ -77,15 +87,15 @@ Mehrhof works two ways: through a **Web UI** or a **command-line interface (CLI)
 
 The Web UI is ideal if you prefer visual interfaces or are new to development tools. Everything happens in your browser with click-through workflows.
 
-```mermaid
-flowchart LR
-    A[Install Mehrhof] --> B[Run mehr init]
-    B --> C[Run mehr serve --open]
-    C --> D[Click Create Task]
-    D --> E[Click Plan]
-    E --> F[Review Plans]
-    F --> G[Click Create]
-    G --> H[Review & Finish]
+```text
+┌─────────────────┐     ┌───────────────┐     ┌─────────────────────┐     ┌───────────────────┐
+│ Install Mehrhof │ ──▶ │ Run mehr init │ ──▶ │ mehr serve --open   │ ──▶ │ Click Create Task │
+└─────────────────┘     └───────────────┘     └─────────────────────┘     └─────────┬─────────┘
+                                                                                    │
+                                                                                    ▼
+┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────┐
+│ Review & Finish │ ◀── │ Click Create │ ◀── │ Review Plans │ ◀── │ Click Plan │
+└─────────────────┘     └──────────────┘     └──────────────┘     └────────────┘
 ```
 
 **Get started:**

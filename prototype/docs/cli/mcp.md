@@ -183,14 +183,14 @@ No workspace parameter is needed in tool arguments.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| `Server not initialized` | Called `tools/list` or `tools/call` before `initialize` | Send an `initialize` request first |
-| `Rate limit exceeded` | Too many tool calls in a short period | Increase `rate_limit.rate` and `rate_limit.burst` in config |
-| `Protocol version mismatch` | Client sends wrong protocol version | Use protocol version `2025-06-18` |
-| `Tool not found` | Tool name doesn't match any registered tool | Check tool names via `tools/list` — command tools don't include the `mehr` prefix |
-| Browser tools fail | Chrome/Chromium not running or CDP not available | Start a browser with `mehr browser` first, then use browser tools |
-| Timeout errors | Command execution exceeds 30s (Cobra) or 5min (all tools) | Simplify the operation or increase context deadline |
+| Problem                     | Cause                                                     | Solution                                                                          |
+|-----------------------------|-----------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `Server not initialized`    | Called `tools/list` or `tools/call` before `initialize`   | Send an `initialize` request first                                                |
+| `Rate limit exceeded`       | Too many tool calls in a short period                     | Increase `rate_limit.rate` and `rate_limit.burst` in config                       |
+| `Protocol version mismatch` | Client sends wrong protocol version                       | Use protocol version `2025-06-18`                                                 |
+| `Tool not found`            | Tool name doesn't match any registered tool               | Check tool names via `tools/list` — command tools don't include the `mehr` prefix |
+| Browser tools fail          | Chrome/Chromium not running or CDP not available          | Start a browser with `mehr browser` first, then use browser tools                 |
+| Timeout errors              | Command execution exceeds 30s (Cobra) or 5min (all tools) | Simplify the operation or increase context deadline                               |
 
 ## See Also
 

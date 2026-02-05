@@ -14,6 +14,19 @@ Mehrhof doesn't connect to AI APIs directly. It calls agent CLIs as subprocesses
 User → mehr plan → Agent CLI → AI Response → Mehrhof processes output
 ```
 
+## Why CLI, Not Direct API?
+
+Mehrhof uses CLI tools rather than direct API connections:
+
+| Mehrhof Approach                | API-Based Tools                 |
+|---------------------------------|---------------------------------|
+| Uses your existing CLI          | Requires API key configuration  |
+| Auth handled by your CLI        | API keys stored in config files |
+| Works if your CLI works         | Requires environment setup      |
+| API keys optional (for aliases) | API keys always required        |
+
+**Already have Claude or Codex working?** You're ready to go—no additional configuration needed. API keys are only required if you want to configure [agent aliases](#agent-aliases) for custom agents or work accounts.
+
 ## Claude as the Primary Agent
 
 Mehrhof is designed and optimized for **Claude**. The workflow engine, approval modes, tool integration, and output parsing are all built around Claude's capabilities.

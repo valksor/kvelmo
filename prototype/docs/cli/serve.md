@@ -22,7 +22,7 @@ The `serve` command starts a local HTTP server providing a web-based UI for mana
 
 | Flag            | Type   | Default   | Description                                      |
 |-----------------|--------|-----------|--------------------------------------------------|
-| `--port`, `-p`  | int    | 0         | Server port (0 = random available port)          |
+| `--port`, `-p`  | int    | 6337      | Server port (0 = random, auto-fallback if taken) |
 | `--host`        | string | localhost | Host to bind to (use 0.0.0.0 for network access) |
 | `--global`      | bool   | false     | Run in global mode showing all projects          |
 | `--open`        | bool   | false     | Automatically open browser after server starts   |
@@ -134,11 +134,11 @@ mehr serve unregister <project-id>
 ### Basic Usage
 
 ```bash
-# Start server in project mode (random port)
+# Start server in project mode (port 6337, or random if taken)
 mehr serve
 
 # Start on a specific port
-mehr serve --port 3000
+mehr serve --port 8080
 
 # Start and open browser automatically
 mehr serve --open
@@ -199,11 +199,11 @@ mehr serve --tunnel-info
 # Output includes SSH tunnel instructions:
 # SSH Tunnel Instructions:
 #   Access remote serve from your local machine (-L flag):
-#     ssh -L 8080:localhost:3000 user@remote-server
+#     ssh -L 8080:localhost:6337 user@remote-server
 #     Then open: http://localhost:8080 on YOUR local machine
 #
 #   Access local serve from remote server (-R flag):
-#     ssh -R 8080:localhost:3000 user@remote-server
+#     ssh -R 8080:localhost:6337 user@remote-server
 #     Then open: http://localhost:8080 on THE REMOTE server
 ```
 
@@ -213,21 +213,21 @@ Alternative tunneling solutions (no special flags needed):
 
 **Cloudflare Tunnel** (free, no port forwarding):
 ```bash
-mehr serve --port 3000
-cloudflared tunnel --url http://localhost:3000
+mehr serve
+cloudflared tunnel --url http://localhost:6337
 # Gives you: https://random-name.trycloudflare.com
 ```
 
 **Tailscale** (mesh VPN):
 ```bash
-mehr serve --host 0.0.0.0 --port 3000
-# Access via Tailscale IP: http://100.x.x.x:3000
+mehr serve --host 0.0.0.0
+# Access via Tailscale IP: http://100.x.x.x:6337
 ```
 
 **ngrok**:
 ```bash
-mehr serve --port 3000
-ngrok http 3000
+mehr serve
+ngrok http 6337
 ```
 
 ### Authentication Setup
@@ -285,10 +285,10 @@ The Web UI handles CSRF automatically. IDE plugins include CSRF infrastructure f
 
 Per-IP rate limiting protects against brute-force and abuse:
 
-| Endpoint Type | Limit |
-|---------------|-------|
-| General API | 120 req/min |
-| Auth endpoints | 10 req/min |
+| Endpoint Type  | Limit       |
+|----------------|-------------|
+| General API    | 120 req/min |
+| Auth endpoints | 10 req/min  |
 
 Exceeding the limit returns **HTTP 429 Too Many Requests**.
 

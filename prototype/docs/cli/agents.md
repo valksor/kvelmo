@@ -138,10 +138,10 @@ agent:
   retry_delay: 5s   # Delay between retry attempts (default: 5s)
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `retry_count` | `3` | Total attempts per agent invocation. Set to `1` to disable retries |
-| `retry_delay` | `5s` | Wait time between retries. Applies between each attempt |
+| Setting       | Default | Description                                                        |
+|---------------|---------|--------------------------------------------------------------------|
+| `retry_count` | `3`     | Total attempts per agent invocation. Set to `1` to disable retries |
+| `retry_delay` | `5s`    | Wait time between retries. Applies between each attempt            |
 
 Retries are context-aware: if the user cancels an operation (Ctrl+C), retries stop immediately.
 
