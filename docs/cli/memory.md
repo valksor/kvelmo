@@ -50,7 +50,42 @@ memory:
 
 ### Embedding Models
 
-**Hash-based embedding** (default) uses SHA256 for deterministic local embeddings without requiring external APIs. Dimension: 1536.
+| Model     | Type       | Description                                           | Dimension |
+|-----------|------------|-------------------------------------------------------|-----------|
+| `default` | Hash-based | SHA256 deterministic embedding (no external APIs)     | 1536      |
+| `onnx`    | Semantic   | Neural embedding using ONNX Runtime (download-on-use) | 384       |
+
+**Hash-based embedding** (default) uses SHA256 for deterministic local embeddings. Fast and fully offline, but only matches identical or near-identical text.
+
+**ONNX embedding** uses neural networks for true semantic similarity. "cat" will match "kitten" and "feline". Requires ONNX Runtime library (auto-installed on first use).
+
+### Enabling Semantic Embeddings
+
+To enable ONNX semantic embeddings, update your config:
+
+```yaml
+memory:
+  enabled: true
+  vector_db:
+    embedding_model: onnx
+    onnx:
+      model: all-MiniLM-L6-v2    # Default model (22MB, good quality)
+      # cache_path: ~/.valksor/mehrhof/models/  # Custom cache location
+      # max_length: 256          # Max tokens per text (default: 256)
+```
+
+**Available ONNX models:**
+
+| Model               | Size | Quality | Speed  |
+|---------------------|------|---------|--------|
+| `all-MiniLM-L6-v2`  | 22MB | Good    | Fast   |
+| `all-MiniLM-L12-v2` | 33MB | Better  | Medium |
+
+**First-run behavior**: On first use, Mehrhof downloads the model to `~/.valksor/mehrhof/models/`. Subsequent runs use the cached model.
+
+**Important**: Switching between `default` (hash) and `onnx` embeddings invalidates existing vectors. Run `mehr memory clear` after changing embedding models.
+
+For details on the ONNX sidecar architecture, platform support, and troubleshooting, see [Advanced: ONNX Embedder](/advanced/onnx-embedder.md).
 
 ## Commands
 

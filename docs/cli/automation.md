@@ -81,10 +81,10 @@ export MEHR_GITLAB_WEBHOOK_SECRET="your-gitlab-webhook-secret"
 
 ## Webhook Limits
 
-| Limit | Value | Description |
-|-------|-------|-------------|
-| Max payload size | 10 MB | Webhook requests exceeding this size are rejected with HTTP 413 |
-| Rate limiting | Per-IP | When auth is enabled, standard rate limits apply to webhook endpoints |
+| Limit            | Value  | Description                                                           |
+|------------------|--------|-----------------------------------------------------------------------|
+| Max payload size | 10 MB  | Webhook requests exceeding this size are rejected with HTTP 413       |
+| Rate limiting    | Per-IP | When auth is enabled, standard rate limits apply to webhook endpoints |
 
 Webhook endpoints use provider-specific authentication (webhook secrets) and are exempt from CSRF validation.
 

@@ -42,18 +42,18 @@ mehr library pull https://docs.example.com/ --shared
 
 **Options:**
 
-| Flag | Description |
-|------|-------------|
-| `--name` | Collection name (auto-generated if not provided) |
-| `--mode` | Include mode: `auto`, `explicit`, `always` (default: `auto`) |
-| `--paths` | Comma-separated glob patterns for auto-include (e.g., `src/**/*.ts`) |
-| `--tags` | Comma-separated tags for organization |
-| `--shared` | Store in shared location (available to all projects) |
-| `--max-depth` | Maximum crawl depth for URLs (default: 3) |
-| `--max-pages` | Maximum pages to crawl for URLs (default: 100) |
-| `--dry-run` | Preview what would be pulled without saving |
-| `--continue` | Resume an interrupted crawl |
-| `--restart` | Ignore existing state and start fresh |
+| Flag          | Description                                                          |
+|---------------|----------------------------------------------------------------------|
+| `--name`      | Collection name (auto-generated if not provided)                     |
+| `--mode`      | Include mode: `auto`, `explicit`, `always` (default: `auto`)         |
+| `--paths`     | Comma-separated glob patterns for auto-include (e.g., `src/**/*.ts`) |
+| `--tags`      | Comma-separated tags for organization                                |
+| `--shared`    | Store in shared location (available to all projects)                 |
+| `--max-depth` | Maximum crawl depth for URLs (default: 3)                            |
+| `--max-pages` | Maximum pages to crawl for URLs (default: 100)                       |
+| `--dry-run`   | Preview what would be pulled without saving                          |
+| `--continue`  | Resume an interrupted crawl                                          |
+| `--restart`   | Ignore existing state and start fresh                                |
 
 ### Resume Interrupted Crawls
 
@@ -100,12 +100,12 @@ mehr library list --shared
 
 **Options:**
 
-| Flag | Description |
-|------|-------------|
+| Flag        | Description                          |
+|-------------|--------------------------------------|
 | `--verbose` | Show detailed collection information |
-| `--tag` | Filter by tag |
-| `--shared` | Only show shared collections |
-| `--project` | Only show project collections |
+| `--tag`     | Filter by tag                        |
+| `--shared`  | Only show shared collections         |
+| `--project` | Only show project collections        |
 
 ### `mehr library show <name>`
 
@@ -167,6 +167,41 @@ When enabled, documentation is automatically selected based on:
 
 - **Project**: Stored in `.mehrhof/library/` within the project (default)
 - **Shared**: Stored in `~/.valksor/mehrhof/library/` and available to all projects
+
+### Downloaded Content Structure
+
+When you pull documentation, Mehrhof downloads and converts content to markdown:
+
+```
+.mehrhof/library/                         # Project collections
+  └── {collection-id}/
+      ├── meta.json                        # Collection metadata
+      └── pages/
+          ├── index.md                     # Root page
+          ├── getting-started.md           # Converted pages
+          └── api/
+              └── reference.md
+
+~/.valksor/mehrhof/library/               # Shared collections (--shared)
+  └── {collection-id}/
+      └── ...
+```
+
+**Storage behavior:**
+- **URL sources**: HTML converted to markdown, images stripped
+- **Local files**: Copied as-is (markdown files) or converted
+- **Git repos**: Cloned temporarily, specified path extracted
+
+### Auto-Include Mechanism
+
+When the `--library` flag is used, Mehrhof automatically selects relevant documentation:
+
+1. **Collection filtering**: Scans collections matching path patterns against working files
+2. **Page scoring**: Scores each page by relevance (keyword matching or semantic similarity if ONNX enabled)
+3. **Token budgeting**: Includes top-scoring pages within the configured token budget
+4. **Truncation**: High-scoring pages may be truncated if they exceed remaining budget
+
+Configure scoring behavior via the [memory embedding model](/cli/memory.md#embedding-models). When ONNX embeddings are enabled, library uses semantic similarity for more accurate relevance scoring.
 
 ### Path Patterns
 

@@ -15,26 +15,37 @@ mehr update [flags]
 The `update` command checks for new releases on GitHub and updates the installed binary to the latest version. It supports:
 
 - Automatic platform detection (linux/darwin, amd64/arm64)
-- Optional SHA256 checksum verification
-- Pre-release version updates
+- Minisign signature verification (if available)
+- SHA256 checksum verification
+- Nightly/pre-release version updates
 - Atomic binary replacement (no downtime)
 
 ## How It Works
 
 1. **Check** - Queries GitHub releases API for the latest version
-2. **Download** - Downloads the platform-specific binary to a temporary file
-3. **Verify** - Verifies SHA256 checksum if available
-4. **Install** - Atomically replaces the current binary
+2. **Download checksums** - Downloads `checksums.txt` and verifies its Minisign signature
+3. **Download binary** - Downloads the platform-specific binary to a temporary file
+4. **Verify checksum** - Verifies SHA256 checksum against signed checksums file
+5. **Install** - Atomically replaces the current binary
+
+### Security
+
+The update process verifies release integrity using a chain of trust:
+
+1. **Signature verification**: The `checksums.txt` file is signed with Minisign. If the signature is present and invalid, the update is aborted.
+2. **Checksum verification**: The downloaded binary is verified against the SHA256 checksum in the signed checksums file.
+
+If the signature file is missing (older releases), the update proceeds with a warning. If the signature is present but invalid, the update fails for security.
 
 On Unix systems (Linux/macOS), the binary replacement is atomic using `os.Rename()`. The running process continues using the old binary, while new invocations use the updated version.
 
 ## Flags
 
-| Flag                | Description                          | Default |
-|---------------------|--------------------------------------|---------|
-| `-p, --pre-release` | Include pre-release versions         | `false` |
-| `--check`           | Check for updates without installing | `false` |
-| `-y, --yes`         | Skip confirmation prompt             | `false` |
+| Flag            | Description                              | Default |
+|-----------------|------------------------------------------|---------|
+| `-n, --nightly` | Include nightly/pre-release versions     | `false` |
+| `--check`       | Check for updates without installing     | `false` |
+| `-y, --yes`     | Skip confirmation prompt                 | `false` |
 
 ## Examples
 
@@ -53,11 +64,13 @@ Output:
   Current:   v1.0.0
   Latest:    v1.1.0
   Release:   https://github.com/valksor/go-mehrhof/releases/tag/v1.1.0
-  Download:  mehrhof-linux-amd64 (15.2 MB)
+  Download:  mehr-linux-amd64 (15.2 MB)
 
 Download and install v1.1.0? [y/N]: y
-⠋ Downloading update
+⠋ Downloading and verifying update
 ✓ Download complete
+✓ Signature verified
+✓ Checksum verified
 ⠋ Installing update
 ✓ Installation complete
 
@@ -71,10 +84,10 @@ Download and install v1.1.0? [y/N]: y
 mehr update --check
 ```
 
-### Include Pre-Releases
+### Include Nightly Builds
 
 ```bash
-mehr update --pre-release
+mehr update --nightly
 ```
 
 ### Skip Confirmation
@@ -118,7 +131,7 @@ update:
 
 ## Permissions
 
-If mehr is installed in a system directory like `/usr/local/bin`, you may need write permissions:
+If Mehrhof is installed in a system directory like `/usr/local/bin`, you may need write permissions:
 
 ```bash
 sudo mehr update
@@ -131,11 +144,12 @@ The command will detect if the directory is not writable and prompt you.
 The update command looks for binaries with these exact names:
 
 ```
-mehrhof-linux-amd64
-mehrhof-linux-arm64
-mehrhof-darwin-amd64
-mehrhof-darwin-arm64
-checksums.txt  # Optional SHA256 checksums
+mehr-linux-amd64
+mehr-linux-arm64
+mehr-darwin-amd64
+mehr-darwin-arm64
+checksums.txt           # SHA256 checksums
+checksums.txt.minisig   # Minisign signature (optional, for verification)
 ```
 
 ## Authentication

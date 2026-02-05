@@ -107,6 +107,6 @@ Prefer a visual interface? See the Sync from Provider feature in [Project Planni
 
 ## See Also
 
-- [`mehr project plan`](./project-plan.md) - Create a project plan from scratch
-- [`mehr project submit`](./project-submit.md) - Submit a project for implementation
-- [`mehr queue list`](./queue-list.md) - List all queues
+- [`mehr project plan`](/cli/project-plan.md) - Create a project plan from scratch
+- [`mehr project submit`](/cli/project-submit.md) - Submit a project for implementation
+- [`mehr queue list`](/cli/queue-list.md) - List all queues
