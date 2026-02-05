@@ -52,6 +52,24 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for active task conflict (non-worktree mode only allows one active task)
+	if conflict := s.config.Conductor.CheckActiveTaskConflict(r.Context()); conflict != nil {
+		response := map[string]any{
+			"success":       false,
+			"conflict_type": "active_task",
+			"active_task": map[string]any{
+				"id":             conflict.ActiveTaskID,
+				"title":          conflict.ActiveTaskTitle,
+				"branch":         conflict.ActiveBranch,
+				"using_worktree": conflict.UsingWorktree,
+			},
+			"message": "Another task is already active. Use worktree mode for parallel tasks, or finish/abandon current task first.",
+		}
+		s.writeJSON(w, http.StatusConflict, response)
+
+		return
+	}
+
 	var ref string
 	contentType := r.Header.Get("Content-Type")
 
@@ -125,18 +143,10 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if this is an HTMX request (expects HTML swap)
-	if api.IsHTMXRequest(r) {
-		// HTMX request - render dashboard content for DOM swap
-		s.handleDashboard(w, r)
-
-		return
-	}
-
 	// Check if this is a browser request (wants HTML) or API request (wants JSON)
 	accept := r.Header.Get("Accept")
-	if strings.Contains(accept, "text/html") {
-		// Redirect to dashboard for browser requests
+	if strings.Contains(accept, "text/html") || api.IsHTMXRequest(r) {
+		// Redirect to dashboard for browser/HTMX requests
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 
 		return
@@ -893,16 +903,37 @@ func (s *Server) handleLoginPage(w http.ResponseWriter, _ *http.Request, errMsg 
 	}
 }
 
+// selectProjectRequest is the JSON request body for project selection.
+type selectProjectRequest struct {
+	Path string `json:"path"`
+}
+
 // handleSelectProject switches from global mode to project mode.
 func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
-	// Parse request
-	if err := r.ParseForm(); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid form data")
+	var projectPath string
 
-		return
+	// Check if JSON request (API client) or form (HTMX)
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "application/json" {
+		var req selectProjectRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+
+			return
+		}
+
+		projectPath = req.Path
+	} else {
+		// Form data (HTMX)
+		if err := r.ParseForm(); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid form data")
+
+			return
+		}
+
+		projectPath = r.FormValue("path")
 	}
 
-	projectPath := r.FormValue("path")
 	if projectPath == "" {
 		s.writeError(w, http.StatusBadRequest, "project path is required")
 
@@ -918,19 +949,17 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("switched to project mode", "path", projectPath)
 
-	// Check if this is an HTMX request (keep URL, return HTML)
-	// HTMX sets this header when making requests
-	isHTMX := r.Header.Get("Hx-Request") == "true"
-
-	if isHTMX {
-		// Render and return the full dashboard HTML
-		// HTMX will swap the body content, URL stays the same
-		s.handleDashboard(w, r)
+	// Return JSON for API clients, redirect for HTMX
+	if contentType == "application/json" {
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"path":    projectPath,
+		})
 
 		return
 	}
 
-	// For non-HTMX requests, redirect to dashboard
+	// Redirect for HTMX/browser
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -940,8 +969,7 @@ func (s *Server) handleSwitchProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("switched back to global mode")
 
-	// Redirect to dashboard
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	s.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
 // labelRequest represents a label modification request.

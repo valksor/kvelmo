@@ -7,7 +7,6 @@ import (
 
 	"github.com/rs/xid"
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 )
 
 // handleFindSearch handles find search requests via Web UI.
@@ -170,32 +169,4 @@ func (s *Server) handleFindSearchJSON(w http.ResponseWriter, r *http.Request, qu
 		"count":   len(results),
 		"matches": results,
 	})
-}
-
-// handleFindUI renders the find search UI page.
-func (s *Server) handleFindUI(w http.ResponseWriter, r *http.Request) {
-	if s.renderer == nil {
-		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
-
-		return
-	}
-
-	pageData := views.ComputePageData(
-		s.modeString(),
-		s.config.Mode == ModeGlobal,
-		s.config.AuthStore != nil,
-		s.canSwitchProject(),
-		s.isViewer(r),
-		s.getCurrentUser(r),
-	)
-
-	data := map[string]any{
-		"PageData": pageData,
-		"Title":    "Find - Code Search",
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.Render(w, "find", data); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
-	}
 }

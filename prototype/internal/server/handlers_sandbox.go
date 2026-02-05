@@ -196,34 +196,6 @@ func (s *Server) publishSandboxStatus(enabled bool) {
 	}
 }
 
-// getSandboxStatus returns the current sandbox status for templates.
-func (s *Server) getSandboxStatus() sandbox.Status {
-	var cfg *storage.WorkspaceConfig
-
-	if s.config.Conductor != nil {
-		ws := s.config.Conductor.GetWorkspace()
-		if ws != nil {
-			var err error
-			cfg, err = ws.LoadConfig()
-			if err != nil {
-				cfg = storage.NewDefaultWorkspaceConfig()
-			}
-		}
-	}
-
-	if cfg == nil {
-		cfg = storage.NewDefaultWorkspaceConfig()
-	}
-
-	return sandbox.Status{
-		Enabled:   cfg.Sandbox != nil && cfg.Sandbox.Enabled,
-		Platform:  runtime.GOOS,
-		Active:    s.isSandboxActive(),
-		Supported: sandbox.Supported(),
-		Network:   cfg.Sandbox != nil && cfg.Sandbox.Network,
-	}
-}
-
 // isSandboxEnabled returns whether sandbox is enabled in the config.
 func (s *Server) isSandboxEnabled() bool {
 	if s.config.Conductor != nil {

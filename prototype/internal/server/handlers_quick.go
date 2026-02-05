@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -690,34 +689,6 @@ func (s *Server) handleQuickTaskDeleteWithID(w http.ResponseWriter, r *http.Requ
 		"success": true,
 		"message": "task deleted",
 	})
-}
-
-// handleQuickTasksUI renders the quick tasks management page.
-// GET /quick.
-func (s *Server) handleQuickTasksUI(w http.ResponseWriter, r *http.Request) {
-	if s.renderer == nil {
-		http.Error(w, "renderer not loaded", http.StatusInternalServerError)
-
-		return
-	}
-
-	pageData := views.ComputePageData(
-		s.modeString(),
-		s.config.Mode == ModeGlobal,
-		s.config.AuthStore != nil,
-		s.canSwitchProject(),
-		s.isViewer(r),
-		s.getCurrentUser(r),
-	)
-
-	data := views.QuickTasksData{
-		PageData: pageData,
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.RenderQuick(w, data); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
-	}
 }
 
 // handleQuickTaskCardWithID renders a single task card for HTMX swapping.

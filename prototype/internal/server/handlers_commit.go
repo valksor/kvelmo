@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 )
@@ -23,37 +22,6 @@ type CommitResult struct {
 	Hash    string `json:"hash,omitempty"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
-}
-
-// handleCommitPage renders the commit page.
-func (s *Server) handleCommitPage(w http.ResponseWriter, r *http.Request) {
-	if s.renderer == nil {
-		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
-
-		return
-	}
-
-	pageData := views.ComputePageData(
-		s.modeString(),
-		s.config.Mode == ModeGlobal,
-		s.config.AuthStore != nil,
-		s.canSwitchProject(),
-		s.isViewer(r),
-		s.getCurrentUser(r),
-	)
-
-	// Check if git is available
-	enabled := s.config.Conductor != nil && s.config.Conductor.GetGit() != nil
-
-	data := views.CommitData{
-		PageData: pageData,
-		Enabled:  enabled,
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.RenderCommit(w, data); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to render template: "+err.Error())
-	}
 }
 
 // handleCommitPlan analyzes changes and returns commit groups for preview.
@@ -174,6 +142,119 @@ func (s *Server) handleCommitExecute(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"results": results,
 	})
+}
+
+// ChangesResponse is the response for GET /api/v1/commit/changes.
+type ChangesResponse struct {
+	Files          []FileChange `json:"files"`
+	TotalAdditions int          `json:"total_additions"`
+	TotalDeletions int          `json:"total_deletions"`
+	HasStaged      bool         `json:"has_staged"`
+	HasUnstaged    bool         `json:"has_unstaged"`
+}
+
+// FileChange represents a changed file with diff statistics.
+type FileChange struct {
+	Path      string `json:"path"`
+	Status    string `json:"status"` // added, modified, deleted, renamed
+	Additions int    `json:"additions"`
+	Deletions int    `json:"deletions"`
+}
+
+// handleCommitChanges returns raw git changes without AI analysis.
+// GET /api/v1/commit/changes?include_unstaged=true|false.
+func (s *Server) handleCommitChanges(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not available")
+
+		return
+	}
+
+	git := s.config.Conductor.GetGit()
+	if git == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "git not available")
+
+		return
+	}
+
+	includeUnstaged := r.URL.Query().Get("include_unstaged") == "true"
+
+	// Get file statuses
+	statuses, err := git.Status(ctx)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "git status: "+err.Error())
+
+		return
+	}
+
+	// Get diff stats for additions/deletions
+	stagedStats, _ := git.DiffNumstat(ctx, true)
+	unstagedStats, _ := git.DiffNumstat(ctx, false)
+
+	// Build stats map for lookup
+	statsMap := make(map[string]vcs.DiffStat)
+	for _, stat := range stagedStats {
+		statsMap[stat.Path] = stat
+	}
+	if includeUnstaged {
+		for _, stat := range unstagedStats {
+			if existing, ok := statsMap[stat.Path]; ok {
+				existing.Additions += stat.Additions
+				existing.Deletions += stat.Deletions
+				statsMap[stat.Path] = existing
+			} else {
+				statsMap[stat.Path] = stat
+			}
+		}
+	}
+
+	// Build response
+	resp := ChangesResponse{}
+	for _, f := range statuses {
+		isStaged := f.IsStaged()
+		isUnstaged := f.WorkDir != ' '
+
+		if isStaged {
+			resp.HasStaged = true
+		}
+		if isUnstaged {
+			resp.HasUnstaged = true
+		}
+
+		// Skip if only unstaged and we don't want unstaged
+		if !includeUnstaged && !isStaged {
+			continue
+		}
+
+		stat := statsMap[f.Path]
+		resp.Files = append(resp.Files, FileChange{
+			Path:      f.Path,
+			Status:    mapGitStatus(f.Index, f.WorkDir),
+			Additions: stat.Additions,
+			Deletions: stat.Deletions,
+		})
+		resp.TotalAdditions += stat.Additions
+		resp.TotalDeletions += stat.Deletions
+	}
+
+	s.writeJSON(w, http.StatusOK, resp)
+}
+
+// mapGitStatus converts git status bytes to a human-readable status string.
+func mapGitStatus(index, workDir byte) string {
+	if index == 'A' || workDir == 'A' {
+		return "added"
+	}
+	if index == 'D' || workDir == 'D' {
+		return "deleted"
+	}
+	if index == 'R' {
+		return "renamed"
+	}
+
+	return "modified"
 }
 
 // agentAdapter adapts agent.Agent to vcs.Agent interface.

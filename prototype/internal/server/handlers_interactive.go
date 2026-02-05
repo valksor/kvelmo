@@ -1812,35 +1812,3 @@ func (s *Server) buildChatPrompt(message string) string {
 
 	return builder.String()
 }
-
-// handleInteractivePage renders the interactive page.
-// GET /interactive.
-func (s *Server) handleInteractivePage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-
-		return
-	}
-
-	// Get current state
-	var state, taskID, title string
-	if s.config.Conductor != nil {
-		if task := s.config.Conductor.GetActiveTask(); task != nil {
-			state = task.State
-			taskID = task.ID
-			if work := s.config.Conductor.GetTaskWork(); work != nil {
-				title = work.Metadata.Title
-			}
-		}
-	}
-
-	data := map[string]any{
-		"State":  state,
-		"TaskID": taskID,
-		"Title":  title,
-	}
-
-	if err := s.renderer.Render(w, "interactive", data); err != nil {
-		slog.Error("render interactive page", "error", err)
-	}
-}
