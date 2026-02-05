@@ -198,8 +198,46 @@ jobs:
                     flag-name: typescript-coverage
                     base-path: ide/vscode
 
+    web:
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+        runs-on: ubuntu-amd
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Install Dependencies
+                working-directory: web
+                run: bun install
+
+            -   name: Lint
+                working-directory: web
+                run: bun run lint
+
+            -   name: Run Tests with Coverage
+                working-directory: web
+                run: bun run test:coverage
+
+            -   name: Upload React coverage to Coveralls
+                if: github.event_name != 'pull_request'
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: web/coverage/lcov.info
+                    format: lcov
+                    parallel: true
+                    flag-name: react-coverage
+                    base-path: web
+
     coverage-finish:
-        needs: [test, jetbrains, vscode, web-ui]
+        needs: [test, jetbrains, vscode, web]
         runs-on: ubuntu-amd
         if: github.event_name != 'pull_request'
         steps:
@@ -208,74 +246,10 @@ jobs:
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
                     parallel-finished: true
-                    carryforward: "go-coverage,kotlin-coverage,typescript-coverage,web-ui-coverage"
-
-    web-ui:
-        runs-on: ubuntu-amd
-        if: >-
-            !contains(github.event.head_commit.message, '[skip test]') &&
-            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
-
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v6
-
-            -   name: Set up Go
-                uses: actions/setup-go@v6
-                with:
-                    go-version: '1.25'
-                    cache: true
-
-            -   name: Setup Bun
-                uses: oven-sh/setup-bun@v2
-
-            -   name: Install Go dependencies
-                run: go mod download
-
-            -   name: Install root dependencies
-                run: bun install
-
-            -   name: Install Playwright dependencies
-                working-directory: web-ui-tests
-                run: bun install
-
-            -   name: Install Playwright Chromium
-                working-directory: web-ui-tests
-                run: bun run install:browsers
-
-            -   name: Lint
-                working-directory: web-ui-tests
-                run: bun run lint
-
-            -   name: Check Formatting
-                working-directory: web-ui-tests
-                run: bun run format:check
-
-            -   name: Run Web UI smoke tests
-                run: make web-ui-test-smoke
-
-            -   name: Run Web UI full tests (coverage)
-                if: github.event_name != 'pull_request'
-                run: cd web-ui-tests && bun run test:coverage
-
-            -   name: Upload Web UI coverage to Coveralls
-                if: github.event_name != 'pull_request'
-                uses: coverallsapp/github-action@v2
-                with:
-                    github-token: ${{ secrets.GITHUB_TOKEN }}
-                    file: web-ui-tests/coverage/lcov.info
-                    parallel: true
-                    flag-name: web-ui-coverage
-
-            -   uses: actions/upload-artifact@v4
-                if: failure()
-                with:
-                    name: playwright-report
-                    path: web-ui-tests/playwright-report/
-                    retention-days: 7
+                    carryforward: "go-coverage,kotlin-coverage,typescript-coverage,react-coverage"
 
     cleanup:
-        needs: [test, jetbrains, vscode, web-ui, coverage-finish]
+        needs: [test, jetbrains, vscode, web, coverage-finish]
         if: always()
         strategy:
             matrix:
@@ -304,18 +278,13 @@ jobs:
                     rm -rf ~/.npm/
                     rm -rf ide/vscode/node_modules/ || true
                     rm -rf ide/vscode/coverage/ || true
+                    rm -rf web/node_modules/ || true
+                    rm -rf web/coverage/ || true
 
             -   name: Cleanup browser caches
                 run: |
                     rm -rf ~/.cache/chromium/
                     rm -rf ~/.cache/ms-playwright/
-
-            -   name: Cleanup test artifacts
-                if: matrix.runner == 'ubuntu-amd'
-                run: |
-                    rm -rf web-ui-tests/playwright-report/
-                    rm -rf web-ui-tests/test-results/
-                    rm -rf web-ui-tests/coverage/
 
             -   name: Cleanup release artifacts
                 if: matrix.runner == 'ubuntu-amd'

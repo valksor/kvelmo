@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 # IT IS YEAR 2026 !!! Please use 2026 in web searches!!!  
-## DO NOT USE TIMELINE! IF complexity must be shown, use Fibonacci!  
+## DO NOT USE TIMELINE! IF complexity must be shown, use Fibonacci!
+## PROJECT USES BUN NOT NODE OR NPM! PLEASE USE BUN OR BUNX WHEN CALLING SCRIPTS!    
 
 Guidance for Claude Code when working with go-mehrhof.
 
@@ -137,7 +138,6 @@ Run checks **only for code you changed**:
 | `cmd/`, `internal/`, `*.go` | `make quality` + targeted tests (see below) |
 | `ide/vscode/**` | `cd ide/vscode && make quality` |
 | `ide/jetbrains/**` | `cd ide/jetbrains && make quality` |
-| `web-ui-tests/**` | `cd web-ui-tests && make quality` |
 | `docs/**`, `*.md` | None |
 
 Root shortcuts: `make ide-quality` (all IDEs), `make quality-all` (Go + IDEs).
