@@ -50,9 +50,51 @@ fmt: ## Format code with go fmt, goimports, and gofumpt
 	goimports -w .
 	gofumpt -l -w .
 
-install: build ## Install binary locally to GOPATH/bin
-	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)
-	@echo "Installed to $(GOPATH)/bin/$(BINARY_NAME)"
+install: build ## Install binary locally
+	@INSTALL_DIR=""; \
+	for dir in "$$HOME/.local/bin" "$$HOME/bin" "/usr/local/bin"; do \
+		if [ -d "$$dir" ] && [ -w "$$dir" ]; then \
+			INSTALL_DIR="$$dir"; \
+			break; \
+		fi; \
+		if [ "$$dir" = "$$HOME/.local/bin" ] || [ "$$dir" = "$$HOME/bin" ]; then \
+			if mkdir -p "$$dir" 2>/dev/null; then \
+				INSTALL_DIR="$$dir"; \
+				break; \
+			fi; \
+		fi; \
+	done; \
+	if [ -z "$$INSTALL_DIR" ]; then \
+		INSTALL_DIR="/usr/local/bin"; \
+	fi; \
+	INSTALL_PATH="$$INSTALL_DIR/$(BINARY_NAME)"; \
+	echo "Installing to $$INSTALL_PATH..."; \
+	if [ -w "$$INSTALL_DIR" ]; then \
+		cp $(BUILD_DIR)/$(BINARY_NAME) "$$INSTALL_PATH"; \
+	else \
+		echo "Requesting sudo access to install to $$INSTALL_DIR..."; \
+		sudo cp $(BUILD_DIR)/$(BINARY_NAME) "$$INSTALL_PATH"; \
+	fi; \
+	echo "✓ Installed $(BINARY_NAME) to $$INSTALL_PATH"; \
+	case ":$$PATH:" in \
+		*":$$INSTALL_DIR:"*) ;; \
+		*) \
+			echo ""; \
+			echo "⚠ $$INSTALL_DIR is not in your PATH"; \
+			echo "Add it by running:"; \
+			SHELL_NAME=$$(basename "$$SHELL"); \
+			case "$$SHELL_NAME" in \
+				bash) echo "  echo 'export PATH=\"$$INSTALL_DIR:\$$PATH\"' >> ~/.bashrc && source ~/.bashrc" ;; \
+				zsh)  echo "  echo 'export PATH=\"$$INSTALL_DIR:\$$PATH\"' >> ~/.zshrc && source ~/.zshrc" ;; \
+				*)    echo "  export PATH=\"$$INSTALL_DIR:\$$PATH\"" ;; \
+			esac; \
+			echo ""; \
+		;; \
+	esac; \
+	if command -v $(BINARY_NAME) >/dev/null 2>&1; then \
+		echo "Verifying installation..."; \
+		$(BINARY_NAME) version; \
+	fi
 
 clean: ## Clean build artifacts
 	rm -rf $(BUILD_DIR)
