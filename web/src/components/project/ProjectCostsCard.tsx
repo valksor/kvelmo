@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiRequest } from '@/api/client'
 import { Loader2, AlertTriangle, AlertCircle } from 'lucide-react'
+import { formatCost } from '@/utils/format'
 
 interface BudgetStatusResponse {
   enabled: boolean
@@ -42,14 +43,6 @@ export function ProjectCostsCard() {
   const currency = budget.currency || 'USD'
   const pct = maxCost > 0 ? (spent / maxCost) * 100 : 0
 
-  const formatCost = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-    }).format(amount)
-  }
-
   const budgetColor = budget.limit_hit
     ? 'bg-error'
     : budget.warned
@@ -64,7 +57,7 @@ export function ProjectCostsCard() {
         <div className="flex items-center justify-between pb-4 border-b border-base-200">
           <h3 className="text-lg font-bold text-base-content">Monthly Budget</h3>
           <span className="text-sm text-base-content/60">
-            {formatCost(spent)} / {formatCost(maxCost)}
+            {formatCost(spent, currency)} / {formatCost(maxCost, currency)}
           </span>
         </div>
 
@@ -82,11 +75,11 @@ export function ProjectCostsCard() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="text-center p-3 bg-primary/10 rounded-xl">
-            <div className="text-xl font-bold text-primary">{formatCost(spent)}</div>
+            <div className="text-xl font-bold text-primary">{formatCost(spent, currency)}</div>
             <div className="text-xs text-base-content/60 mt-1">Spent</div>
           </div>
           <div className="text-center p-3 bg-success/10 rounded-xl">
-            <div className="text-xl font-bold text-success">{formatCost(remaining)}</div>
+            <div className="text-xl font-bold text-success">{formatCost(remaining, currency)}</div>
             <div className="text-xs text-base-content/60 mt-1">Remaining</div>
           </div>
         </div>

@@ -1,23 +1,11 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight, Loader2, FolderGit2 } from 'lucide-react'
-import type { TaskHistoryItem, WorkflowState } from '@/types/api'
+import type { TaskHistoryItem } from '@/types/api'
+import { getStateConfig } from '@/constants/stateConfig'
 
 interface RecentTasksCardProps {
   tasks?: TaskHistoryItem[]
   isLoading?: boolean
-}
-
-const stateConfig: Record<WorkflowState, { icon: string; badge: string }> = {
-  idle: { icon: '⏸️', badge: 'badge-ghost' },
-  planning: { icon: '📝', badge: 'badge-info' },
-  implementing: { icon: '🔨', badge: 'badge-primary' },
-  reviewing: { icon: '🔍', badge: 'badge-secondary' },
-  waiting: { icon: '⏳', badge: 'badge-warning' },
-  checkpointing: { icon: '💾', badge: 'badge-info' },
-  reverting: { icon: '↩️', badge: 'badge-warning' },
-  restoring: { icon: '↪️', badge: 'badge-warning' },
-  done: { icon: '✅', badge: 'badge-success' },
-  failed: { icon: '❌', badge: 'badge-error' },
 }
 
 export function RecentTasksCard({ tasks, isLoading }: RecentTasksCardProps) {
@@ -64,7 +52,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task }: TaskRowProps) {
-  const config = stateConfig[task.state] || stateConfig.idle
+  const config = getStateConfig(task.state)
 
   return (
     <Link

@@ -1,23 +1,12 @@
 import { Link } from 'react-router-dom'
 import { Clock, GitBranch, ExternalLink } from 'lucide-react'
-import type { TaskResponse, WorkflowState } from '@/types/api'
+import type { TaskResponse } from '@/types/api'
 import { formatDistanceToNow } from 'date-fns'
+import { getStateConfig } from '@/constants/stateConfig'
+import { formatTokens, formatCostSimple } from '@/utils/format'
 
 interface TaskCardProps {
   task: TaskResponse
-}
-
-const stateConfig: Record<WorkflowState, { badge: string; color: string }> = {
-  idle: { badge: 'badge-ghost', color: 'bg-base-300' },
-  planning: { badge: 'badge-info', color: 'bg-info' },
-  implementing: { badge: 'badge-primary', color: 'bg-primary' },
-  reviewing: { badge: 'badge-secondary', color: 'bg-secondary' },
-  waiting: { badge: 'badge-warning', color: 'bg-warning' },
-  checkpointing: { badge: 'badge-info', color: 'bg-info' },
-  reverting: { badge: 'badge-warning', color: 'bg-warning' },
-  restoring: { badge: 'badge-warning', color: 'bg-warning' },
-  done: { badge: 'badge-success', color: 'bg-success' },
-  failed: { badge: 'badge-error', color: 'bg-error' },
 }
 
 export function TaskCard({ task }: TaskCardProps) {
@@ -27,7 +16,7 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const { task: activeTask, work } = task
   const state = activeTask.state
-  const config = stateConfig[state] || stateConfig.idle
+  const config = getStateConfig(state)
 
   const startedAgo = activeTask.started
     ? formatDistanceToNow(new Date(activeTask.started), { addSuffix: true })
@@ -77,7 +66,7 @@ export function TaskCard({ task }: TaskCardProps) {
             <div className="flex gap-4 text-sm">
               <span>
                 <span className="text-base-content/60">Cost:</span>{' '}
-                <span className="font-medium">${work.costs.total_cost_usd.toFixed(2)}</span>
+                <span className="font-medium">{formatCostSimple(work.costs.total_cost_usd)}</span>
               </span>
               {work.costs.total_input_tokens != null && (
                 <span>
@@ -91,10 +80,4 @@ export function TaskCard({ task }: TaskCardProps) {
       </div>
     </div>
   )
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return n.toString()
 }

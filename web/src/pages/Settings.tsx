@@ -1042,6 +1042,36 @@ function FeatureSettings({ data, updateField }: SectionProps) {
                 onChange={(v) => updateField(['memory', 'vector_db', 'connection_string'], v)}
               />
             </div>
+            <h4 className="font-medium text-sm mt-4 mb-2">Embedding Model</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Model Type"
+                hint="ONNX provides true semantic similarity"
+                value={data.memory?.vector_db?.embedding_model || 'default'}
+                onChange={(v) => updateField(['memory', 'vector_db', 'embedding_model'], v)}
+                options={[
+                  { value: 'default', label: 'Hash-based (default)' },
+                  { value: 'onnx', label: 'ONNX Neural (semantic)' },
+                ]}
+              />
+              {data.memory?.vector_db?.embedding_model === 'onnx' && (
+                <Select
+                  label="ONNX Model"
+                  hint="Downloaded on first use"
+                  value={data.memory?.vector_db?.onnx?.model || 'all-MiniLM-L6-v2'}
+                  onChange={(v) => updateField(['memory', 'vector_db', 'onnx', 'model'], v)}
+                  options={[
+                    { value: 'all-MiniLM-L6-v2', label: 'all-MiniLM-L6-v2 (22MB, fast)' },
+                    { value: 'all-MiniLM-L12-v2', label: 'all-MiniLM-L12-v2 (33MB, better)' },
+                  ]}
+                />
+              )}
+            </div>
+            {data.memory?.vector_db?.embedding_model === 'onnx' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Switching embedding models invalidates existing vectors. Run <code className="bg-muted px-1 rounded">mehr memory clear</code> after changing.
+              </p>
+            )}
             <h4 className="font-medium text-sm mt-4 mb-2">Search</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <NumberInput

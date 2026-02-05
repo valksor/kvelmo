@@ -3,6 +3,7 @@ import { GitBranch, Clock, FolderGit2, ExternalLink, HelpCircle, Eye } from 'luc
 import { formatDistanceToNow } from 'date-fns'
 import type { WorkflowState } from '@/types/api'
 import { TaskContentModal } from './TaskContentModal'
+import { getStateConfig } from '@/constants/stateConfig'
 
 interface ActiveWorkCardProps {
   task?: {
@@ -20,19 +21,6 @@ interface ActiveWorkCardProps {
   }
 }
 
-const stateConfig: Record<WorkflowState, { icon: string; badge: string; bgClass: string }> = {
-  idle: { icon: '⏸️', badge: 'badge-ghost', bgClass: 'bg-base-200' },
-  planning: { icon: '📝', badge: 'badge-info', bgClass: 'bg-info/10' },
-  implementing: { icon: '🔨', badge: 'badge-primary', bgClass: 'bg-primary/10' },
-  reviewing: { icon: '🔍', badge: 'badge-secondary', bgClass: 'bg-secondary/10' },
-  waiting: { icon: '⏳', badge: 'badge-warning', bgClass: 'bg-warning/10' },
-  checkpointing: { icon: '💾', badge: 'badge-info', bgClass: 'bg-info/10' },
-  reverting: { icon: '↩️', badge: 'badge-warning', bgClass: 'bg-warning/10' },
-  restoring: { icon: '↪️', badge: 'badge-warning', bgClass: 'bg-warning/10' },
-  done: { icon: '✅', badge: 'badge-success', bgClass: 'bg-success/10' },
-  failed: { icon: '❌', badge: 'badge-error', bgClass: 'bg-error/10' },
-}
-
 export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
   const [showModal, setShowModal] = useState(false)
 
@@ -41,7 +29,7 @@ export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
   }
 
   const state = task.state
-  const config = stateConfig[state] || stateConfig.idle
+  const config = getStateConfig(state)
 
   const startedAgo = task.started
     ? formatDistanceToNow(new Date(task.started), { addSuffix: true })

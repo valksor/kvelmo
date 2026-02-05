@@ -420,6 +420,13 @@ export interface VectorDBSettings {
   connection_string?: string
   collection?: string
   embedding_model?: string
+  onnx?: ONNXSettings
+}
+
+export interface ONNXSettings {
+  model?: string
+  cache_path?: string
+  max_length?: number
 }
 
 export interface MemoryRetentionConfig {

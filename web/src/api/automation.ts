@@ -158,17 +158,8 @@ export function useAutomationConfig() {
 export function useCancelJob() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (jobId: string) => {
-      const response = await fetch(`/api/v1/automation/jobs/${jobId}/cancel`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to cancel job')
-      }
-      return response.json()
-    },
+    mutationFn: (jobId: string) =>
+      apiRequest(`/automation/jobs/${jobId}/cancel`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation', 'jobs'] })
       queryClient.invalidateQueries({ queryKey: ['automation', 'status'] })
@@ -182,17 +173,8 @@ export function useCancelJob() {
 export function useRetryJob() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (jobId: string) => {
-      const response = await fetch(`/api/v1/automation/jobs/${jobId}/retry`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to retry job')
-      }
-      return response.json()
-    },
+    mutationFn: (jobId: string) =>
+      apiRequest(`/automation/jobs/${jobId}/retry`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation', 'jobs'] })
       queryClient.invalidateQueries({ queryKey: ['automation', 'status'] })

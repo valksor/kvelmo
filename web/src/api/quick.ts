@@ -129,19 +129,11 @@ export function useQuickTask(taskId: string) {
 export function useCreateQuickTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: QuickTaskCreateRequest) => {
-      const response = await fetch('/api/v1/quick', {
+    mutationFn: (data: QuickTaskCreateRequest) =>
+      apiRequest<QuickTaskCreateResponse>('/quick', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to create task')
-      }
-      return response.json() as Promise<QuickTaskCreateResponse>
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
     },
@@ -154,19 +146,11 @@ export function useCreateQuickTask() {
 export function useAddQuickTaskNote() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ taskId, note }: { taskId: string; note: string }) => {
-      const response = await fetch(`/api/v1/quick/${taskId}/note`, {
+    mutationFn: ({ taskId, note }: { taskId: string; note: string }) =>
+      apiRequest(`/quick/${taskId}/note`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ note }),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to add note')
-      }
-      return response.json()
-    },
+      }),
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
       queryClient.invalidateQueries({ queryKey: ['quick-tasks', taskId] })
@@ -180,19 +164,11 @@ export function useAddQuickTaskNote() {
 export function useOptimizeQuickTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ taskId, agent }: { taskId: string; agent?: string }) => {
-      const response = await fetch(`/api/v1/quick/${taskId}/optimize`, {
+    mutationFn: ({ taskId, agent }: { taskId: string; agent?: string }) =>
+      apiRequest<QuickTaskOptimizeResponse>(`/quick/${taskId}/optimize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ agent }),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Optimization failed')
-      }
-      return response.json() as Promise<QuickTaskOptimizeResponse>
-    },
+      }),
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
       queryClient.invalidateQueries({ queryKey: ['quick-tasks', taskId] })
@@ -206,22 +182,19 @@ export function useOptimizeQuickTask() {
 export function useExportQuickTask() {
   return useMutation({
     mutationFn: async ({ taskId, output }: { taskId: string; output?: string }) => {
-      const response = await fetch(`/api/v1/quick/${taskId}/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ output }),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Export failed')
-      }
-      // If no output specified, response is the markdown file
+      // If no output specified, response is the markdown file (blob)
       if (!output) {
-        const blob = await response.blob()
+        const blob = await apiRequest<Blob>(
+          `/quick/${taskId}/export`,
+          { method: 'POST', body: JSON.stringify({}) },
+          'blob'
+        )
         return { success: true, blob }
       }
-      return response.json() as Promise<QuickTaskExportResponse>
+      return apiRequest<QuickTaskExportResponse>(`/quick/${taskId}/export`, {
+        method: 'POST',
+        body: JSON.stringify({ output }),
+      })
     },
   })
 }
@@ -232,19 +205,11 @@ export function useExportQuickTask() {
 export function useSubmitQuickTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ taskId, ...data }: { taskId: string } & QuickTaskSubmitRequest) => {
-      const response = await fetch(`/api/v1/quick/${taskId}/submit`, {
+    mutationFn: ({ taskId, ...data }: { taskId: string } & QuickTaskSubmitRequest) =>
+      apiRequest<QuickTaskSubmitResponse>(`/quick/${taskId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Submission failed')
-      }
-      return response.json() as Promise<QuickTaskSubmitResponse>
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
     },
@@ -257,18 +222,8 @@ export function useSubmitQuickTask() {
 export function useStartQuickTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (taskId: string) => {
-      const response = await fetch(`/api/v1/quick/${taskId}/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to start task')
-      }
-      return response.json()
-    },
+    mutationFn: (taskId: string) =>
+      apiRequest(`/quick/${taskId}/start`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
       queryClient.invalidateQueries({ queryKey: ['active-task'] })
@@ -282,17 +237,8 @@ export function useStartQuickTask() {
 export function useDeleteQuickTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (taskId: string) => {
-      const response = await fetch(`/api/v1/quick/${taskId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to delete task')
-      }
-      return response.json()
-    },
+    mutationFn: (taskId: string) =>
+      apiRequest(`/quick/${taskId}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
     },
@@ -305,19 +251,11 @@ export function useDeleteQuickTask() {
 export function useSubmitSource() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: SubmitSourceRequest) => {
-      const response = await fetch('/api/v1/quick/submit-source', {
+    mutationFn: (data: SubmitSourceRequest) =>
+      apiRequest<SubmitSourceResponse>('/quick/submit-source', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Submission failed')
-      }
-      return response.json() as Promise<SubmitSourceResponse>
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quick-tasks'] })
     },

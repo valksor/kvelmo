@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
+import { apiRequest } from './client'
 
 // ============================================================================
 // Types
@@ -69,19 +70,11 @@ export interface StandaloneSimplifyResponse {
  */
 export function useStandaloneReview() {
   return useMutation({
-    mutationFn: async (data: StandaloneReviewRequest) => {
-      const response = await fetch('/api/v1/workflow/review/standalone', {
+    mutationFn: (data: StandaloneReviewRequest) =>
+      apiRequest<StandaloneReviewResponse>('/workflow/review/standalone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Review failed')
-      }
-      return response.json() as Promise<StandaloneReviewResponse>
-    },
+      }),
   })
 }
 
@@ -90,18 +83,10 @@ export function useStandaloneReview() {
  */
 export function useStandaloneSimplify() {
   return useMutation({
-    mutationFn: async (data: StandaloneSimplifyRequest) => {
-      const response = await fetch('/api/v1/workflow/simplify/standalone', {
+    mutationFn: (data: StandaloneSimplifyRequest) =>
+      apiRequest<StandaloneSimplifyResponse>('/workflow/simplify/standalone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Simplify failed')
-      }
-      return response.json() as Promise<StandaloneSimplifyResponse>
-    },
+      }),
   })
 }
