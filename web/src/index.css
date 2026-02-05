@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: winter --default, business;
+}
+@plugin "@tailwindcss/typography";
+
+/* Base styles */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
