@@ -71,8 +71,8 @@ func (m *Manager) GetDocsForPaths(ctx context.Context, filePaths []string, maxTo
 				}
 			}
 
-			// Calculate relevance score based on keywords
-			score := calculateRelevanceScoreFromContent(pageTitle, pagePath, content, keywords)
+			// Calculate relevance score (uses embeddings if available, falls back to keywords)
+			score := m.scorer.ScoreForPath(ctx, pageTitle, content, keywords)
 
 			candidates = append(candidates, &PageContent{
 				CollectionID:   coll.ID,
@@ -169,7 +169,6 @@ func (m *Manager) GetDocsForQuery(ctx context.Context, query string, maxTokens i
 		return nil, err
 	}
 
-	queryKeywords := extractQueryKeywords(query)
 	var candidates []*PageContent
 
 	for _, coll := range collections {
@@ -206,8 +205,8 @@ func (m *Manager) GetDocsForQuery(ctx context.Context, query string, maxTokens i
 				}
 			}
 
-			// Score based on query matching
-			score := calculateQueryScoreFromContent(pageTitle, content, queryKeywords)
+			// Score based on query matching (uses embeddings if available, falls back to keywords)
+			score := m.scorer.ScoreForQuery(ctx, pageTitle, content, query)
 			if score == 0 {
 				continue
 			}
@@ -272,92 +271,6 @@ func budgetPages(candidates []*PageContent, maxTokens, maxPages int) (*DocContex
 	result.TotalTokens = totalTokens
 
 	return result, nil
-}
-
-// calculateRelevanceScoreFromContent scores based on keyword matches in title, path, and content.
-func calculateRelevanceScoreFromContent(title, path, content string, keywords []string) float64 {
-	if len(keywords) == 0 {
-		return 0.5 // Default score when no keywords
-	}
-
-	score := 0.0
-	titleLower := strings.ToLower(title)
-	pathLower := strings.ToLower(path)
-	contentLower := strings.ToLower(content)
-
-	for _, kw := range keywords {
-		kwLower := strings.ToLower(kw)
-
-		// Title match: high weight
-		if strings.Contains(titleLower, kwLower) {
-			score += 0.4
-		}
-
-		// Path match: medium weight
-		if strings.Contains(pathLower, kwLower) {
-			score += 0.3
-		}
-
-		// Content match: lower weight (just presence)
-		if strings.Contains(contentLower, kwLower) {
-			score += 0.1
-		}
-	}
-
-	// Normalize to 0-1 range
-	maxScore := float64(len(keywords)) * 0.8
-	if maxScore > 0 {
-		score = score / maxScore
-		if score > 1.0 {
-			score = 1.0
-		}
-	}
-
-	return score
-}
-
-// calculateQueryScoreFromContent scores based on query keyword matches in title and content.
-func calculateQueryScoreFromContent(title, content string, queryKeywords []string) float64 {
-	if len(queryKeywords) == 0 {
-		return 0
-	}
-
-	matches := 0
-	titleLower := strings.ToLower(title)
-	contentLower := strings.ToLower(content)
-
-	for _, kw := range queryKeywords {
-		kwLower := strings.ToLower(kw)
-		if strings.Contains(titleLower, kwLower) || strings.Contains(contentLower, kwLower) {
-			matches++
-		}
-	}
-
-	// Return proportion of keywords matched
-	return float64(matches) / float64(len(queryKeywords))
-}
-
-// extractQueryKeywords extracts search keywords from a query string.
-func extractQueryKeywords(query string) []string {
-	// Simple word splitting - could be enhanced with NLP
-	words := strings.Fields(strings.ToLower(query))
-
-	// Filter common words
-	stopWords := map[string]bool{
-		"a": true, "an": true, "the": true, "is": true, "are": true,
-		"in": true, "on": true, "at": true, "to": true, "for": true,
-		"of": true, "and": true, "or": true, "how": true, "what": true,
-		"where": true, "when": true, "why": true, "which": true,
-	}
-
-	var keywords []string
-	for _, w := range words {
-		if len(w) >= 2 && !stopWords[w] {
-			keywords = append(keywords, w)
-		}
-	}
-
-	return keywords
 }
 
 // estimateTokens provides a rough token count estimate.

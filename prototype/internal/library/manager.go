@@ -17,6 +17,7 @@ type Manager struct {
 	projectStore *Store
 	sharedStore  *Store
 	config       *Config
+	scorer       *EmbeddingScorer
 }
 
 // NewManager creates a new Manager with project and shared stores.
@@ -43,6 +44,7 @@ func NewManager(ctx context.Context, repoRoot string) (*Manager, error) {
 		projectStore: projectStore,
 		sharedStore:  sharedStore,
 		config:       config,
+		scorer:       NewEmbeddingScorer(nil), // Uses keyword fallback by default
 	}, nil
 }
 
@@ -70,6 +72,7 @@ func NewManagerWithConfig(ctx context.Context, repoRoot string, config *Config) 
 		projectStore: projectStore,
 		sharedStore:  sharedStore,
 		config:       config,
+		scorer:       NewEmbeddingScorer(nil), // Uses keyword fallback by default
 	}, nil
 }
 
@@ -716,5 +719,13 @@ func NewManagerFromWorkspace(ctx context.Context, ws *storage.Workspace) (*Manag
 		projectStore: projectStore,
 		sharedStore:  sharedStore,
 		config:       config,
+		scorer:       NewEmbeddingScorer(nil), // Uses keyword fallback by default
 	}, nil
+}
+
+// SetEmbeddingModel sets the embedding model for semantic scoring.
+// If nil, keyword-based scoring is used (default behavior).
+// This allows sharing the embedding model with other systems like memory.
+func (m *Manager) SetEmbeddingModel(model EmbeddingModel) {
+	m.scorer = NewEmbeddingScorer(model)
 }
