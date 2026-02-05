@@ -226,6 +226,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/jedisct1/go-minisign",
+      "license": "MIT",
+      "unknown": false
+    },
+    {
       "path": "github.com/jmoiron/sqlx",
       "license": "Apache-2.0",
       "unknown": false
@@ -421,6 +426,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/yalue/onnxruntime_go",
+      "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
       "path": "github.com/yosida95/uritemplate/v3",
       "license": "Apache-2.0",
       "unknown": false
@@ -571,5 +581,5 @@
       "unknown": false
     }
   ],
-  "count": 114
+  "count": 116
 }
