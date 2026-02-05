@@ -19,7 +19,7 @@ import {
   Layers,
   MoreHorizontal,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
+import { useRef, useEffect, type ComponentType } from 'react'
 import { useStatus } from '@/api/workflow'
 import { useSwitchToGlobal } from '@/api/projects'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -60,7 +60,17 @@ function NavDropdownMenu({
 
   return (
     <li>
-      <details>
+      <details
+        onToggle={(e) => {
+          if ((e.target as HTMLDetailsElement).open) {
+            // Close other open details in the same menu (accordion behavior)
+            const menu = (e.target as HTMLElement).closest('ul.menu')
+            menu?.querySelectorAll('details[open]').forEach((el) => {
+              if (el !== e.target) el.removeAttribute('open')
+            })
+          }
+        }}
+      >
         <summary className={isChildActive ? 'menu-active' : ''}>
           <Icon size={18} />
           <span className="hidden sm:inline">{dropdown.label}</span>
@@ -72,6 +82,9 @@ function NavDropdownMenu({
             <li key={to}>
               <NavLink
                 to={to}
+                onClick={(e) => {
+                  (e.target as HTMLElement).closest('details')?.removeAttribute('open')
+                }}
                 className={({ isActive }) => (isActive ? 'menu-active' : '')}
               >
                 <ItemIcon size={16} />
@@ -140,6 +153,20 @@ export default function Layout() {
   // Default to global mode while loading (safer - fewer nav items, no project-specific routes)
   const isGlobalMode = statusLoading || status?.mode === 'global'
   const switchToGlobal = useSwitchToGlobal()
+  const navRef = useRef<HTMLUListElement>(null)
+
+  // Close all dropdowns when clicking outside navigation
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        navRef.current.querySelectorAll('details[open]').forEach((el) => {
+          el.removeAttribute('open')
+        })
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // In global mode, only show global items
   // In project mode, show project items with dropdowns
@@ -166,7 +193,7 @@ export default function Layout() {
           </a>
         </div>
         <div className="flex-none flex items-center gap-2">
-          <ul className="menu menu-horizontal px-1">
+          <ul ref={navRef} className="menu menu-horizontal px-1">
             {navItems.map((entry, index) => {
               const isLast = index === navItems.length - 1
 
