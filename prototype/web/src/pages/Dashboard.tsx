@@ -1,0 +1,94 @@
+import { useActiveTask, useStatus } from '@/api/workflow'
+import { useTaskHistory } from '@/api/settings'
+import { useWorkflowSSE } from '@/hooks/useWorkflowSSE'
+import { ProjectSelector } from '@/components/project/ProjectSelector'
+import { TaskSummaryCard } from '@/components/project/TaskSummaryCard'
+import { ProjectCostsCard } from '@/components/project/ProjectCostsCard'
+import { TaskCreationTabs } from '@/components/project/TaskCreationTabs'
+import { RecentTasksCard } from '@/components/project/RecentTasksCard'
+import { Loader2, Wifi, WifiOff } from 'lucide-react'
+
+export default function Dashboard() {
+  // SSE connection for real-time updates
+  const { connected } = useWorkflowSSE()
+
+  // Data fetching
+  const { data: status, isLoading: statusLoading } = useStatus()
+
+  // Only fetch task data in project mode
+  const isGlobalMode = status?.mode === 'global'
+  const { data: taskData, isLoading: taskLoading } = useActiveTask({
+    enabled: !isGlobalMode && !statusLoading,
+  })
+  const { data: tasksHistory, isLoading: historyLoading } = useTaskHistory({
+    enabled: !isGlobalMode && !statusLoading,
+  })
+
+  // Loading state
+  if (statusLoading || (!isGlobalMode && taskLoading)) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Global mode: show project selector
+  if (isGlobalMode) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Projects</h1>
+          <ConnectionStatus connected={connected} />
+        </div>
+        <ProjectSelector />
+      </div>
+    )
+  }
+
+  // Project mode: show project dashboard
+  const hasActiveTask = !!(taskData?.active && taskData.task)
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <ConnectionStatus connected={connected} />
+      </div>
+
+      {/* Active task summary (links to task page) */}
+      {hasActiveTask && <TaskSummaryCard task={taskData.task} work={taskData.work} />}
+
+      {/* Two column layout: Task creation + Budget */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Task creation tabs (Start/Quick/Plan) */}
+        <TaskCreationTabs />
+
+        {/* Right: Budget/Costs overview */}
+        <ProjectCostsCard />
+      </div>
+
+      {/* Recent tasks */}
+      <RecentTasksCard tasks={tasksHistory} isLoading={historyLoading} />
+    </div>
+  )
+}
+
+function ConnectionStatus({ connected }: { connected: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      {connected ? (
+        <>
+          <Wifi size={16} className="text-success" />
+          <span className="text-base-content/60">Connected</span>
+        </>
+      ) : (
+        <>
+          <WifiOff size={16} className="text-warning" />
+          <span className="text-base-content/60">Reconnecting...</span>
+        </>
+      )}
+    </div>
+  )
+}
