@@ -103,13 +103,6 @@ func New(cfg Config) (*Server, error) {
 		activeOps:           make(map[string]*activeOperation),
 	}
 
-	// Load template renderer
-	renderer, err := views.NewRenderer(templateFS)
-	if err != nil {
-		return nil, fmt.Errorf("load templates: %w", err)
-	}
-	s.renderer = renderer
-
 	// Initialize shared-only library for global mode (allows accessing shared collections
 	// even when no project is selected and conductor is nil)
 	if cfg.Mode == ModeGlobal {
@@ -260,29 +253,6 @@ func (s *Server) modeString() string {
 	}
 }
 
-// isLocalRequest returns true if the request originates from localhost.
-// Used to determine whether to show sensitive data like API tokens.
-func isLocalRequest(r *http.Request) bool {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		// If we can't parse, assume it's the host without port
-		host = r.RemoteAddr
-	}
-
-	// Check for loopback addresses
-	if host == "127.0.0.1" || host == "::1" || host == "localhost" {
-		return true
-	}
-
-	// Also check if the IP is a loopback
-	ip := net.ParseIP(host)
-	if ip != nil && ip.IsLoopback() {
-		return true
-	}
-
-	return false
-}
-
 // switchToProject switches the server from global mode to project mode.
 // This updates the config, creates a conductor for the project, and rebuilds the router.
 func (s *Server) switchToProject(ctx context.Context, projectPath string) error {
@@ -341,29 +311,6 @@ func (s *Server) switchToGlobal() {
 	if s.httpServer != nil {
 		s.httpServer.Handler = s.router
 	}
-}
-
-// canSwitchProject returns true if the server can switch between projects.
-func (s *Server) canSwitchProject() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	return s.startedInGlobalMode
-}
-
-// getCurrentUser returns the username from the session, if available.
-func (s *Server) getCurrentUser(r *http.Request) string {
-	cookie, err := r.Cookie(sessionCookieName)
-	if err != nil {
-		return ""
-	}
-
-	sess, ok := s.sessions.get(cookie.Value)
-	if !ok || sess == nil {
-		return ""
-	}
-
-	return sess.Username
 }
 
 // Operation tracking helpers for interactive mode cancellation.

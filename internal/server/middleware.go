@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -215,19 +214,15 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// csrfCookieName is the name of the CSRF cookie (used in localhost mode).
+const csrfCookieName = "mehr_csrf"
+
 // csrfMiddleware validates CSRF tokens on state-changing requests (POST/PUT/DELETE).
-// Protects against cross-site request forgery when auth is enabled and requests use session cookies.
+// Uses double-submit cookie pattern in localhost mode, session-based tokens in auth mode.
 func (s *Server) csrfMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Skip CSRF for safe methods (GET, HEAD, OPTIONS)
 		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
-			next.ServeHTTP(w, r)
-
-			return
-		}
-
-		// Skip CSRF if no auth store configured (localhost mode)
-		if s.config.AuthStore == nil {
 			next.ServeHTTP(w, r)
 
 			return
@@ -247,145 +242,34 @@ func (s *Server) csrfMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Validate CSRF token from header against session
-		cookie, err := r.Cookie(sessionCookieName)
-		if err != nil {
-			// No session cookie = no CSRF needed (auth middleware will reject)
-			next.ServeHTTP(w, r)
+		// Get CSRF token from header
+		csrfHeader := r.Header.Get("X-Csrf-Token")
+		if csrfHeader == "" {
+			s.writeError(w, http.StatusForbidden, "CSRF token missing")
 
 			return
 		}
 
-		sess, valid := s.sessions.get(cookie.Value)
-		if !valid {
-			next.ServeHTTP(w, r)
-
-			return
-		}
-
-		csrfToken := r.Header.Get("X-Csrf-Token")
-		if csrfToken == "" || csrfToken != sess.CSRFToken {
-			s.writeError(w, http.StatusForbidden, "CSRF token invalid or missing")
-
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-// rateLimiter provides per-IP rate limiting using a token bucket approach.
-type rateLimiter struct {
-	mu      sync.Mutex
-	buckets map[string]*tokenBucket
-	limit   int           // Requests per window
-	window  time.Duration // Time window for rate limit
-}
-
-// tokenBucket tracks request count for a single IP.
-type tokenBucket struct {
-	tokens    int
-	lastReset time.Time
-}
-
-// newRateLimiter creates a rate limiter with the given limit per window.
-func newRateLimiter(limit int, window time.Duration) *rateLimiter {
-	return &rateLimiter{
-		buckets: make(map[string]*tokenBucket),
-		limit:   limit,
-		window:  window,
-	}
-}
-
-// maxBuckets is the maximum number of tracked IPs to prevent unbounded memory growth.
-const maxBuckets = 10_000
-
-// allow checks if a request from the given IP is allowed.
-func (rl *rateLimiter) allow(ip string) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	now := time.Now()
-	bucket, exists := rl.buckets[ip]
-
-	if !exists || now.Sub(bucket.lastReset) >= rl.window {
-		// If at capacity, evict the oldest bucket before adding a new one.
-		if !exists && len(rl.buckets) >= maxBuckets {
-			var oldestIP string
-			var oldestTime time.Time
-			for k, v := range rl.buckets {
-				if oldestIP == "" || v.lastReset.Before(oldestTime) {
-					oldestIP = k
-					oldestTime = v.lastReset
-				}
-			}
-			delete(rl.buckets, oldestIP)
-		}
-
-		rl.buckets[ip] = &tokenBucket{tokens: 1, lastReset: now}
-
-		return true
-	}
-
-	if bucket.tokens >= rl.limit {
-		return false
-	}
-
-	bucket.tokens++
-
-	return true
-}
-
-// cleanup removes stale entries older than 2x the window.
-func (rl *rateLimiter) cleanup() {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	cutoff := time.Now().Add(-2 * rl.window)
-	for ip, bucket := range rl.buckets {
-		if bucket.lastReset.Before(cutoff) {
-			delete(rl.buckets, ip)
-		}
-	}
-}
-
-// rateLimitMiddleware provides per-IP rate limiting for API endpoints.
-func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
-	// General API: 120 requests per minute
-	generalLimiter := newRateLimiter(120, time.Minute)
-	// Auth endpoints: 10 attempts per minute (brute-force protection)
-	authLimiter := newRateLimiter(10, time.Minute)
-
-	// Periodic cleanup of stale entries
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			generalLimiter.cleanup()
-			authLimiter.cleanup()
-		}
-	}()
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract client IP
-		ip := extractClientIP(r)
-
-		// Use stricter limiter for auth endpoints
-		if r.URL.Path == "/api/v1/auth/login" {
-			if !authLimiter.allow(ip) {
-				w.Header().Set("Retry-After", "60")
-				s.writeError(w, http.StatusTooManyRequests, "rate limit exceeded, try again later")
+		// In auth mode: validate against session token
+		if s.config.AuthStore != nil {
+			cookie, err := r.Cookie(sessionCookieName)
+			if err != nil {
+				s.writeError(w, http.StatusForbidden, "CSRF validation failed")
 
 				return
 			}
-		}
 
-		// General rate limit for all API endpoints
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			if !generalLimiter.allow(ip) {
-				w.Header().Set("Retry-After", "60")
-				s.writeError(w, http.StatusTooManyRequests, "rate limit exceeded, try again later")
+			sess, valid := s.sessions.get(cookie.Value)
+			if !valid || csrfHeader != sess.CSRFToken {
+				s.writeError(w, http.StatusForbidden, "CSRF token invalid")
+
+				return
+			}
+		} else {
+			// In localhost mode: validate against CSRF cookie (double-submit pattern)
+			cookie, err := r.Cookie(csrfCookieName)
+			if err != nil || csrfHeader != cookie.Value {
+				s.writeError(w, http.StatusForbidden, "CSRF token invalid")
 
 				return
 			}
@@ -393,16 +277,6 @@ func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// extractClientIP extracts the client IP from the request.
-func extractClientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-
-	return host
 }
 
 // isPublicEndpoint returns true if the path doesn't require authentication.
@@ -410,6 +284,7 @@ func isPublicEndpoint(path string) bool {
 	publicPaths := []string{
 		"/login",
 		"/api/v1/auth/login",
+		"/api/v1/auth/csrf",
 		"/health",
 	}
 
@@ -419,9 +294,17 @@ func isPublicEndpoint(path string) bool {
 		}
 	}
 
-	// Static assets
-	if strings.HasPrefix(path, "/static/") {
-		return true
+	// Static assets (React app bundle, fonts, etc.)
+	staticPrefixes := []string{
+		"/assets/",
+		"/fonts/",
+		"/licenses.json",
+		"/vite.svg",
+	}
+	for _, prefix := range staticPrefixes {
+		if strings.HasPrefix(path, prefix) || path == strings.TrimSuffix(prefix, "/") {
+			return true
+		}
 	}
 
 	return false
@@ -440,25 +323,62 @@ func (s *Server) redirectToLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-// handleCSRFToken returns the CSRF token for the current session.
-// Clients fetch this after login and include it as X-CSRF-Token on state-changing requests.
+// handleCSRFToken returns the CSRF token for the current session or generates one for localhost mode.
+// Clients fetch this and include it as X-CSRF-Token on state-changing requests.
 func (s *Server) handleCSRFToken(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	// In auth mode: return session-based token
+	if s.config.AuthStore != nil {
+		cookie, err := r.Cookie(sessionCookieName)
+		if err != nil {
+			s.writeError(w, http.StatusUnauthorized, "no session")
+
+			return
+		}
+
+		sess, valid := s.sessions.get(cookie.Value)
+		if !valid {
+			s.writeError(w, http.StatusUnauthorized, "invalid session")
+
+			return
+		}
+
+		s.writeJSON(w, http.StatusOK, map[string]string{
+			"csrf_token": sess.CSRFToken,
+		})
+
+		return
+	}
+
+	// In localhost mode: use double-submit cookie pattern
+	// Check if we already have a CSRF cookie
+	if cookie, err := r.Cookie(csrfCookieName); err == nil && cookie.Value != "" {
+		s.writeJSON(w, http.StatusOK, map[string]string{
+			"csrf_token": cookie.Value,
+		})
+
+		return
+	}
+
+	// Generate new CSRF token
+	token, err := generateToken()
 	if err != nil {
-		s.writeError(w, http.StatusUnauthorized, "no session")
+		s.writeError(w, http.StatusInternalServerError, "failed to generate CSRF token")
 
 		return
 	}
 
-	sess, valid := s.sessions.get(cookie.Value)
-	if !valid {
-		s.writeError(w, http.StatusUnauthorized, "invalid session")
-
-		return
-	}
+	// Set as cookie (accessible to JS for double-submit)
+	http.SetCookie(w, &http.Cookie{
+		Name:     csrfCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: false, // Must be readable by JS
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400 * 7, // 7 days
+	})
 
 	s.writeJSON(w, http.StatusOK, map[string]string{
-		"csrf_token": sess.CSRFToken,
+		"csrf_token": token,
 	})
 }
 

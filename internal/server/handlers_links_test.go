@@ -113,8 +113,16 @@ func TestHandleRebuildLinks_Disabled(t *testing.T) {
 	ctx := context.Background()
 	client := testHTTPClient()
 
+	// Get CSRF token first
+	token, cookie, err := getCSRF(ctx, client, srv.URL())
+	require.NoError(t, err)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL()+"/api/v1/links/rebuild", bytes.NewReader([]byte{}))
 	require.NoError(t, err)
+	req.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)

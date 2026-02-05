@@ -162,7 +162,8 @@ func TestServer_IndexPage(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	assert.Contains(t, string(body), "Mehrhof Web UI")
+	// React SPA shell contains the root div for client-side rendering
+	assert.Contains(t, string(body), `<div id="root"></div>`)
 }
 
 func TestServer_ContextEndpoint(t *testing.T) {

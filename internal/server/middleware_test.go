@@ -90,8 +90,9 @@ func TestIsPublicEndpoint(t *testing.T) {
 		{"/login", true},
 		{"/api/v1/auth/login", true},
 		{"/health", true},
-		{"/static/style.css", true},
-		{"/static/js/app.js", true},
+		{"/assets/index-C9-pDdfR.js", true},  // React SPA assets
+		{"/assets/index-0FzapFyr.css", true}, // React SPA styles
+		{"/vite.svg", true},                  // Vite favicon
 		{"/", false},
 		{"/api/v1/status", false},
 		{"/api/v1/tasks", false},

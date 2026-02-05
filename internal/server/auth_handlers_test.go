@@ -17,38 +17,6 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
-func TestHandler_LoginPage(t *testing.T) {
-	tmpDir := t.TempDir()
-	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
-	require.NoError(t, err)
-	require.NoError(t, authStore.AddUser("admin", "password123", storage.RoleUser))
-
-	cfg := Config{
-		Port:      0,
-		Mode:      ModeProject,
-		AuthStore: authStore,
-	}
-
-	srv, cleanup := startTestServer(t, cfg)
-	defer cleanup()
-
-	ctx := context.Background()
-	client := testHTTPClient()
-
-	resp, err := doGet(ctx, client, srv.URL()+"/login")
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
-
-	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	assert.Contains(t, string(body), "Mehrhof Login")
-	assert.Contains(t, string(body), "Username")
-	assert.Contains(t, string(body), "Password")
-}
-
 func TestHandler_Login_FormSubmit_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 	authStore, err := storage.LoadAuthStoreFromPath(tmpDir + "/auth.yaml")
