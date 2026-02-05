@@ -120,75 +120,75 @@ type NotesFile struct {
 
 // LinksSettings holds bidirectional linking configuration.
 type LinksSettings struct {
-	Enabled          bool `yaml:"enabled"`                      // Enable link system (default: true)
-	AutoIndex        bool `yaml:"auto_index"`                   // Auto-index on save (default: true when Enabled=true)
-	CaseSensitive    bool `yaml:"case_sensitive,omitempty"`     // Name matching (default: false)
-	MaxContextLength int  `yaml:"max_context_length,omitempty"` // Context chars for links (default: 200)
+	Enabled          bool `yaml:"enabled" json:"enabled"`                                           // Enable link system (default: true)
+	AutoIndex        bool `yaml:"auto_index" json:"auto_index"`                                     // Auto-index on save (default: true when Enabled=true)
+	CaseSensitive    bool `yaml:"case_sensitive,omitempty" json:"case_sensitive,omitempty"`         // Name matching (default: false)
+	MaxContextLength int  `yaml:"max_context_length,omitempty" json:"max_context_length,omitempty"` // Context chars for links (default: 200)
 }
 
 // ContextSettings holds hierarchical task context configuration.
 // Controls whether parent and sibling task context is included when working on subtasks.
 type ContextSettings struct {
-	IncludeParent    bool `yaml:"include_parent"`              // Include parent task context (default: true)
-	IncludeSiblings  bool `yaml:"include_siblings"`            // Include sibling subtask context (default: true)
-	MaxSiblings      int  `yaml:"max_siblings,omitempty"`      // Maximum sibling tasks to include (default: 5)
-	DescriptionLimit int  `yaml:"description_limit,omitempty"` // Truncate descriptions to this length (default: 500)
+	IncludeParent    bool `yaml:"include_parent" json:"include_parent"`                           // Include parent task context (default: true)
+	IncludeSiblings  bool `yaml:"include_siblings" json:"include_siblings"`                       // Include sibling subtask context (default: true)
+	MaxSiblings      int  `yaml:"max_siblings,omitempty" json:"max_siblings,omitempty"`           // Maximum sibling tasks to include (default: 5)
+	DescriptionLimit int  `yaml:"description_limit,omitempty" json:"description_limit,omitempty"` // Truncate descriptions to this length (default: 500)
 }
 
 // AutomationSettings holds webhook automation configuration for GitHub/GitLab.
 type AutomationSettings struct {
-	Enabled       bool                          `yaml:"enabled,omitempty"`        // Master enable switch
-	Providers     map[string]ProviderAutoConfig `yaml:"providers,omitempty"`      // Per-provider config (github, gitlab)
-	AccessControl AutomationAccessControlConfig `yaml:"access_control,omitempty"` // User/repo filtering
-	Queue         AutomationQueueConfig         `yaml:"queue,omitempty"`          // Job queue settings
-	Labels        AutomationLabelConfig         `yaml:"labels,omitempty"`         // Label configuration
+	Enabled       bool                          `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Master enable switch
+	Providers     map[string]ProviderAutoConfig `yaml:"providers,omitempty" json:"providers,omitempty"`           // Per-provider config (github, gitlab)
+	AccessControl AutomationAccessControlConfig `yaml:"access_control,omitempty" json:"access_control,omitempty"` // User/repo filtering
+	Queue         AutomationQueueConfig         `yaml:"queue,omitempty" json:"queue,omitempty"`                   // Job queue settings
+	Labels        AutomationLabelConfig         `yaml:"labels,omitempty" json:"labels,omitempty"`                 // Label configuration
 }
 
 // ProviderAutoConfig holds provider-specific automation settings.
 type ProviderAutoConfig struct {
-	Enabled       bool                    `yaml:"enabled,omitempty"`        // Enable for this provider
-	WebhookSecret string                  `yaml:"webhook_secret,omitempty"` // Webhook signature secret
-	TriggerOn     AutomationTriggerConfig `yaml:"trigger_on,omitempty"`     // Which events to trigger
-	CommandPrefix string                  `yaml:"command_prefix,omitempty"` // Comment trigger (default: @mehrhof)
-	UseWorktrees  bool                    `yaml:"use_worktrees,omitempty"`  // Isolate with worktrees
-	DryRun        bool                    `yaml:"dry_run,omitempty"`        // Log actions without executing
+	Enabled       bool                    `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Enable for this provider
+	WebhookSecret string                  `yaml:"webhook_secret,omitempty" json:"webhook_secret,omitempty"` // Webhook signature secret
+	TriggerOn     AutomationTriggerConfig `yaml:"trigger_on,omitempty" json:"trigger_on,omitempty"`         // Which events to trigger
+	CommandPrefix string                  `yaml:"command_prefix,omitempty" json:"command_prefix,omitempty"` // Comment trigger (default: @mehrhof)
+	UseWorktrees  bool                    `yaml:"use_worktrees,omitempty" json:"use_worktrees,omitempty"`   // Isolate with worktrees
+	DryRun        bool                    `yaml:"dry_run,omitempty" json:"dry_run,omitempty"`               // Log actions without executing
 }
 
 // AutomationTriggerConfig defines which events trigger automation.
 type AutomationTriggerConfig struct {
-	IssueOpened     bool     `yaml:"issue_opened,omitempty"`     // Auto-fix on issue open
-	IssueLabeled    []string `yaml:"issue_labeled,omitempty"`    // Auto-fix on specific labels
-	PROpened        bool     `yaml:"pr_opened,omitempty"`        // Auto-review on PR open (GitHub)
-	PRUpdated       bool     `yaml:"pr_updated,omitempty"`       // Re-review on PR update
-	MROpened        bool     `yaml:"mr_opened,omitempty"`        // Auto-review on MR open (GitLab)
-	MRUpdated       bool     `yaml:"mr_updated,omitempty"`       // Re-review on MR update
-	CommentCommands bool     `yaml:"comment_commands,omitempty"` // @mehrhof commands in comments
+	IssueOpened     bool     `yaml:"issue_opened,omitempty" json:"issue_opened,omitempty"`         // Auto-fix on issue open
+	IssueLabeled    []string `yaml:"issue_labeled,omitempty" json:"issue_labeled,omitempty"`       // Auto-fix on specific labels
+	PROpened        bool     `yaml:"pr_opened,omitempty" json:"pr_opened,omitempty"`               // Auto-review on PR open (GitHub)
+	PRUpdated       bool     `yaml:"pr_updated,omitempty" json:"pr_updated,omitempty"`             // Re-review on PR update
+	MROpened        bool     `yaml:"mr_opened,omitempty" json:"mr_opened,omitempty"`               // Auto-review on MR open (GitLab)
+	MRUpdated       bool     `yaml:"mr_updated,omitempty" json:"mr_updated,omitempty"`             // Re-review on MR update
+	CommentCommands bool     `yaml:"comment_commands,omitempty" json:"comment_commands,omitempty"` // @mehrhof commands in comments
 }
 
 // AutomationAccessControlConfig defines who can trigger automation.
 type AutomationAccessControlConfig struct {
-	Mode       string   `yaml:"mode,omitempty"`        // "allowlist", "blocklist", "all"
-	Allowlist  []string `yaml:"allowlist,omitempty"`   // Allowed users/orgs
-	Blocklist  []string `yaml:"blocklist,omitempty"`   // Blocked users/orgs
-	AllowBots  bool     `yaml:"allow_bots,omitempty"`  // Allow bot accounts
-	RequireOrg bool     `yaml:"require_org,omitempty"` // Require org membership
+	Mode       string   `yaml:"mode,omitempty" json:"mode,omitempty"`               // "allowlist", "blocklist", "all"
+	Allowlist  []string `yaml:"allowlist,omitempty" json:"allowlist,omitempty"`     // Allowed users/orgs
+	Blocklist  []string `yaml:"blocklist,omitempty" json:"blocklist,omitempty"`     // Blocked users/orgs
+	AllowBots  bool     `yaml:"allow_bots,omitempty" json:"allow_bots,omitempty"`   // Allow bot accounts
+	RequireOrg bool     `yaml:"require_org,omitempty" json:"require_org,omitempty"` // Require org membership
 }
 
 // AutomationQueueConfig defines job queue behavior.
 type AutomationQueueConfig struct {
-	MaxConcurrent  int      `yaml:"max_concurrent,omitempty"`  // Max parallel jobs (default: 1)
-	JobTimeout     string   `yaml:"job_timeout,omitempty"`     // Per-job timeout (default: 30m)
-	RetryAttempts  int      `yaml:"retry_attempts,omitempty"`  // Max retry on failure (default: 0)
-	RetryDelay     string   `yaml:"retry_delay,omitempty"`     // Delay between retries
-	PriorityLabels []string `yaml:"priority_labels,omitempty"` // Labels that boost priority
+	MaxConcurrent  int      `yaml:"max_concurrent,omitempty" json:"max_concurrent,omitempty"`   // Max parallel jobs (default: 1)
+	JobTimeout     string   `yaml:"job_timeout,omitempty" json:"job_timeout,omitempty"`         // Per-job timeout (default: 30m)
+	RetryAttempts  int      `yaml:"retry_attempts,omitempty" json:"retry_attempts,omitempty"`   // Max retry on failure (default: 0)
+	RetryDelay     string   `yaml:"retry_delay,omitempty" json:"retry_delay,omitempty"`         // Delay between retries
+	PriorityLabels []string `yaml:"priority_labels,omitempty" json:"priority_labels,omitempty"` // Labels that boost priority
 }
 
 // AutomationLabelConfig defines label management for automation.
 type AutomationLabelConfig struct {
-	MehrhofGenerated string `yaml:"mehr_generated,omitempty"` // Label for mehrhof PRs (default: "mehrhof-generated")
-	InProgress       string `yaml:"in_progress,omitempty"`    // Label during processing
-	Failed           string `yaml:"failed,omitempty"`         // Label on failure
-	SkipReview       string `yaml:"skip_review,omitempty"`    // PRs with this skip auto-review
+	MehrhofGenerated string `yaml:"mehr_generated,omitempty" json:"mehr_generated,omitempty"` // Label for mehrhof PRs (default: "mehrhof-generated")
+	InProgress       string `yaml:"in_progress,omitempty" json:"in_progress,omitempty"`       // Label during processing
+	Failed           string `yaml:"failed,omitempty" json:"failed,omitempty"`                 // Label on failure
+	SkipReview       string `yaml:"skip_review,omitempty" json:"skip_review,omitempty"`       // PRs with this skip auto-review
 }
 
 // Session records an interaction session.
@@ -219,29 +219,29 @@ type UsageInfo struct {
 
 // CostStats tracks cumulative token/cost usage across all workflow steps.
 type CostStats struct {
-	TotalInputTokens  int                      `yaml:"total_input_tokens"`
-	TotalOutputTokens int                      `yaml:"total_output_tokens"`
-	TotalCachedTokens int                      `yaml:"total_cached_tokens,omitempty"`
-	TotalCostUSD      float64                  `yaml:"total_cost_usd"`
-	ByStep            map[string]StepCostStats `yaml:"by_step,omitempty"`
+	TotalInputTokens  int                      `yaml:"total_input_tokens" json:"total_input_tokens"`
+	TotalOutputTokens int                      `yaml:"total_output_tokens" json:"total_output_tokens"`
+	TotalCachedTokens int                      `yaml:"total_cached_tokens,omitempty" json:"total_cached_tokens,omitempty"`
+	TotalCostUSD      float64                  `yaml:"total_cost_usd" json:"total_cost_usd"`
+	ByStep            map[string]StepCostStats `yaml:"by_step,omitempty" json:"by_step,omitempty"`
 }
 
 // StepCostStats tracks usage for a specific workflow step.
 type StepCostStats struct {
-	InputTokens  int     `yaml:"input_tokens"`
-	OutputTokens int     `yaml:"output_tokens"`
-	CachedTokens int     `yaml:"cached_tokens,omitempty"`
-	CostUSD      float64 `yaml:"cost_usd"`
-	Calls        int     `yaml:"calls"` // Number of agent calls in this step
+	InputTokens  int     `yaml:"input_tokens" json:"input_tokens"`
+	OutputTokens int     `yaml:"output_tokens" json:"output_tokens"`
+	CachedTokens int     `yaml:"cached_tokens,omitempty" json:"cached_tokens,omitempty"`
+	CostUSD      float64 `yaml:"cost_usd" json:"cost_usd"`
+	Calls        int     `yaml:"calls" json:"calls"` // Number of agent calls in this step
 }
 
 // BudgetConfig defines cost/token budgets for a task.
 type BudgetConfig struct {
-	MaxTokens int     `yaml:"max_tokens,omitempty"`
-	MaxCost   float64 `yaml:"max_cost,omitempty"`
-	Currency  string  `yaml:"currency,omitempty"`
-	OnLimit   string  `yaml:"on_limit,omitempty"`   // warn | pause | stop
-	WarningAt float64 `yaml:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
+	MaxTokens int     `yaml:"max_tokens,omitempty" json:"max_tokens,omitempty"`
+	MaxCost   float64 `yaml:"max_cost,omitempty" json:"max_cost,omitempty"`
+	Currency  string  `yaml:"currency,omitempty" json:"currency,omitempty"`
+	OnLimit   string  `yaml:"on_limit,omitempty" json:"on_limit,omitempty"`     // warn | pause | stop
+	WarningAt float64 `yaml:"warning_at,omitempty" json:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
 }
 
 // BudgetStatus tracks warning/limit status for a task budget.

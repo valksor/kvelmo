@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -732,4 +733,54 @@ func (g *Git) HashChangedFiles(ctx context.Context, includeUnstaged bool) (strin
 	h := sha256.Sum256([]byte(strings.Join(files, "|")))
 
 	return hex.EncodeToString(h[:]), nil
+}
+
+// DiffStat holds line change statistics for a file.
+type DiffStat struct {
+	Path      string // File path
+	Additions int    // Lines added
+	Deletions int    // Lines deleted
+}
+
+// DiffNumstat returns line additions/deletions for changed files.
+// If staged is true, shows only staged changes; otherwise shows all uncommitted changes.
+func (g *Git) DiffNumstat(ctx context.Context, staged bool) ([]DiffStat, error) {
+	args := []string{"diff", "--numstat"}
+	if staged {
+		args = append(args, "--cached")
+	}
+
+	output, err := g.run(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if output == "" {
+		return nil, nil
+	}
+
+	// Parse numstat output: "15\t3\tpath/to/file.go" per line
+	// Binary files show: "-\t-\tpath/to/file.bin"
+	var stats []DiffStat
+	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) != 3 {
+			continue
+		}
+
+		// Handle binary files (shown as "-")
+		add, _ := strconv.Atoi(parts[0])
+		del, _ := strconv.Atoi(parts[1])
+
+		stats = append(stats, DiffStat{
+			Path:      parts[2],
+			Additions: add,
+			Deletions: del,
+		})
+	}
+
+	return stats, nil
 }
