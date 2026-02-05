@@ -132,7 +132,7 @@ Your new specification should acknowledge what was already planned and either:
 	}
 
 	// Add specification validation instructions
-	prompt += buildSpecValidationInstructions()
+	prompt += getSpecValidationInstructions()
 
 	// Add chain-of-thought guidance for planning
 	prompt += `
@@ -181,7 +181,7 @@ path/to/file:line-range: <description of relevant code>
 ...
 
 ## Unknowns
-` + buildUnknownsSection(useDefaults) + `
+` + getUnknownsSection(useDefaults) + `
 
 ## Complete Condition
 - manual: <describe manual verification step>
@@ -387,7 +387,7 @@ Focus on specifications with status "draft" (not yet "done"). Work on specificat
 	}
 
 	// Phase 6: Reference Material (Error Recovery, Quality Gates, Verification)
-	prompt += buildErrorRecoverySection()
+	prompt += getErrorRecoverySection()
 
 	prompt += `
 ## Testing and Verification
@@ -415,7 +415,7 @@ content: |
   ... (rest of content unchanged)
 ` + "```" + `
 
-` + buildQualityGateInstructions()
+` + getQualityGateInstructions()
 
 	// Phase 7: Browser Tools (optional, at end)
 	if browserSection := buildBrowserToolsSectionForStep(workspace, "implementing"); browserSection != "" {
@@ -983,9 +983,10 @@ Browser is ENABLED. Use it during review to:
 	}
 }
 
-// buildErrorRecoverySection creates a prompt section with error recovery strategies.
+// computeErrorRecoverySection creates a prompt section with error recovery strategies.
 // Returns instructions for handling common failure scenarios.
-func buildErrorRecoverySection() string {
+// Called once at init time; use getErrorRecoverySection() for cached access.
+func computeErrorRecoverySection() string {
 	return `
 ## Error Recovery Strategies
 
@@ -1024,9 +1025,10 @@ If you encounter errors:
 `
 }
 
-// buildSpecValidationInstructions creates a prompt section with specification quality checklist.
+// computeSpecValidationInstructions creates a prompt section with specification quality checklist.
 // Returns instructions for validating specification completeness and quality.
-func buildSpecValidationInstructions() string {
+// Called once at init time; use getSpecValidationInstructions() for cached access.
+func computeSpecValidationInstructions() string {
 	return `
 ## Specification Quality Checklist
 
@@ -1091,9 +1093,10 @@ func buildSpecificationTrackingSummary(workspace *storage.Workspace, taskID stri
 	return strings.Join(summary, "\n")
 }
 
-// buildQualityGateInstructions creates a prompt section with pre-review quality checklist.
+// computeQualityGateInstructions creates a prompt section with pre-review quality checklist.
 // Returns instructions for self-verification before completing implementation.
-func buildQualityGateInstructions() string {
+// Called once at init time; use getQualityGateInstructions() for cached access.
+func computeQualityGateInstructions() string {
 	return `
 ## Pre-Review Quality Checklist
 
@@ -1198,8 +1201,9 @@ func extractExploredFiles(response *agent.Response) []string {
 	return files
 }
 
-// buildUnknownsSection creates the Unknowns section based on whether to use defaults or ask user.
-func buildUnknownsSection(useDefaults bool) string {
+// computeUnknownsSection creates the Unknowns section based on whether to use defaults or ask user.
+// Called once at init time; use getUnknownsSection() for cached access.
+func computeUnknownsSection(useDefaults bool) string {
 	if useDefaults {
 		return `0. None
 OR
