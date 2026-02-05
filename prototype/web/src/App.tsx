@@ -1,23 +1,41 @@
+import { lazy, Suspense, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
+
+// Eagerly loaded (critical path)
 import Dashboard from '@/pages/Dashboard'
-import Chat from '@/pages/Chat'
-import History from '@/pages/History'
-import Settings from '@/pages/Settings'
-import Tools from '@/pages/Tools'
-import TaskDetail from '@/pages/TaskDetail'
 import Login from '@/pages/Login'
-import Project from '@/pages/Project'
-import Find from '@/pages/Find'
-import Library from '@/pages/Library'
-import Commit from '@/pages/Commit'
-import Links from '@/pages/Links'
-import License from '@/pages/License'
-import Review from '@/pages/Review'
-import Simplify from '@/pages/Simplify'
-import Quick from '@/pages/Quick'
-import Automation from '@/pages/Automation'
+import NotFound from '@/pages/NotFound'
+
+// Lazy loaded pages - largest first for maximum impact
+const Tools = lazy(() => import('@/pages/Tools'))
+const Settings = lazy(() => import('@/pages/Settings'))
+const Quick = lazy(() => import('@/pages/Quick'))
+const Automation = lazy(() => import('@/pages/Automation'))
+const Project = lazy(() => import('@/pages/Project'))
+const Chat = lazy(() => import('@/pages/Chat'))
+const History = lazy(() => import('@/pages/History'))
+const Review = lazy(() => import('@/pages/Review'))
+const Simplify = lazy(() => import('@/pages/Simplify'))
+const Library = lazy(() => import('@/pages/Library'))
+const Find = lazy(() => import('@/pages/Find'))
+const Commit = lazy(() => import('@/pages/Commit'))
+const Links = lazy(() => import('@/pages/Links'))
+const License = lazy(() => import('@/pages/License'))
+const TaskDetail = lazy(() => import('@/pages/TaskDetail'))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  )
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,22 +56,28 @@ export default function App() {
 
           {/* Protected routes with layout */}
           <Route element={<Layout />}>
+            {/* Eagerly loaded */}
             <Route path="/" element={<Dashboard />} />
-            <Route path="/task/:id" element={<TaskDetail />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/tools" element={<Tools />} />
-            <Route path="/project" element={<Project />} />
-            <Route path="/find" element={<Find />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/commit" element={<Commit />} />
-            <Route path="/links" element={<Links />} />
-            <Route path="/license" element={<License />} />
-            <Route path="/review" element={<Review />} />
-            <Route path="/simplify" element={<Simplify />} />
-            <Route path="/quick" element={<Quick />} />
-            <Route path="/automation" element={<Automation />} />
+
+            {/* Lazy loaded */}
+            <Route path="/task/:id" element={<LazyRoute><TaskDetail /></LazyRoute>} />
+            <Route path="/chat" element={<LazyRoute><Chat /></LazyRoute>} />
+            <Route path="/history" element={<LazyRoute><History /></LazyRoute>} />
+            <Route path="/settings" element={<LazyRoute><Settings /></LazyRoute>} />
+            <Route path="/tools" element={<LazyRoute><Tools /></LazyRoute>} />
+            <Route path="/project" element={<LazyRoute><Project /></LazyRoute>} />
+            <Route path="/find" element={<LazyRoute><Find /></LazyRoute>} />
+            <Route path="/library" element={<LazyRoute><Library /></LazyRoute>} />
+            <Route path="/commit" element={<LazyRoute><Commit /></LazyRoute>} />
+            <Route path="/links" element={<LazyRoute><Links /></LazyRoute>} />
+            <Route path="/license" element={<LazyRoute><License /></LazyRoute>} />
+            <Route path="/review" element={<LazyRoute><Review /></LazyRoute>} />
+            <Route path="/simplify" element={<LazyRoute><Simplify /></LazyRoute>} />
+            <Route path="/quick" element={<LazyRoute><Quick /></LazyRoute>} />
+            <Route path="/automation" element={<LazyRoute><Automation /></LazyRoute>} />
+
+            {/* 404 - eagerly loaded */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

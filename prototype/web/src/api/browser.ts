@@ -250,19 +250,11 @@ export function useBrowserStatus() {
 export function useBrowserGoto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (url: string) => {
-      const response = await fetch('/api/v1/browser/goto', {
+    mutationFn: (url: string) =>
+      apiRequest('/browser/goto', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ url }),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to navigate')
-      }
-      return response.json()
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['browser'] })
     },
@@ -275,19 +267,11 @@ export function useBrowserGoto() {
 export function useBrowserNavigate() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: NavigateRequest) => {
-      const response = await fetch('/api/v1/browser/navigate', {
+    mutationFn: (data: NavigateRequest) =>
+      apiRequest('/browser/navigate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to navigate')
-      }
-      return response.json()
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['browser'] })
     },
@@ -299,19 +283,11 @@ export function useBrowserNavigate() {
  */
 export function useBrowserScreenshot() {
   return useMutation({
-    mutationFn: async (data: ScreenshotRequest = {}) => {
-      const response = await fetch('/api/v1/browser/screenshot', {
+    mutationFn: (data: ScreenshotRequest = {}) =>
+      apiRequest<ScreenshotResponse>('/browser/screenshot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to take screenshot')
-      }
-      return response.json() as Promise<ScreenshotResponse>
-    },
+      }),
   })
 }
 
@@ -320,19 +296,11 @@ export function useBrowserScreenshot() {
  */
 export function useBrowserClick() {
   return useMutation({
-    mutationFn: async (data: ClickRequest) => {
-      const response = await fetch('/api/v1/browser/click', {
+    mutationFn: (data: ClickRequest) =>
+      apiRequest('/browser/click', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Click failed')
-      }
-      return response.json()
-    },
+      }),
   })
 }
 
@@ -341,19 +309,11 @@ export function useBrowserClick() {
  */
 export function useBrowserType() {
   return useMutation({
-    mutationFn: async (data: TypeRequest) => {
-      const response = await fetch('/api/v1/browser/type', {
+    mutationFn: (data: TypeRequest) =>
+      apiRequest('/browser/type', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Type failed')
-      }
-      return response.json()
-    },
+      }),
   })
 }
 
@@ -362,19 +322,11 @@ export function useBrowserType() {
  */
 export function useBrowserEval() {
   return useMutation({
-    mutationFn: async (data: EvalRequest) => {
-      const response = await fetch('/api/v1/browser/eval', {
+    mutationFn: (data: EvalRequest) =>
+      apiRequest<EvalResponse>('/browser/eval', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Eval failed')
-      }
-      return response.json() as Promise<EvalResponse>
-    },
+      }),
   })
 }
 
@@ -383,19 +335,11 @@ export function useBrowserEval() {
  */
 export function useBrowserDOM() {
   return useMutation({
-    mutationFn: async (data: DOMRequest) => {
-      const response = await fetch('/api/v1/browser/dom', {
+    mutationFn: (data: DOMRequest) =>
+      apiRequest<DOMResponse>('/browser/dom', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'DOM query failed')
-      }
-      return response.json() as Promise<DOMResponse>
-    },
+      }),
   })
 }
 
@@ -405,19 +349,11 @@ export function useBrowserDOM() {
 export function useBrowserReload() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: ReloadRequest = {}) => {
-      const response = await fetch('/api/v1/browser/reload', {
+    mutationFn: (data: ReloadRequest = {}) =>
+      apiRequest('/browser/reload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Reload failed')
-      }
-      return response.json()
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['browser'] })
     },
@@ -430,19 +366,11 @@ export function useBrowserReload() {
 export function useBrowserClose() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: CloseRequest) => {
-      const response = await fetch('/api/v1/browser/close', {
+    mutationFn: (data: CloseRequest) =>
+      apiRequest('/browser/close', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Close failed')
-      }
-      return response.json()
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['browser'] })
     },
@@ -458,19 +386,11 @@ export function useBrowserClose() {
  */
 export function useBrowserNetwork() {
   return useMutation({
-    mutationFn: async (data: NetworkRequest = {}) => {
-      const response = await fetch('/api/v1/browser/network', {
+    mutationFn: (data: NetworkRequest = {}) =>
+      apiRequest<NetworkResponse>('/browser/network', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Network monitoring failed')
-      }
-      return response.json() as Promise<NetworkResponse>
-    },
+      }),
   })
 }
 
@@ -479,19 +399,11 @@ export function useBrowserNetwork() {
  */
 export function useBrowserConsole() {
   return useMutation({
-    mutationFn: async (data: ConsoleRequest = {}) => {
-      const response = await fetch('/api/v1/browser/console', {
+    mutationFn: (data: ConsoleRequest = {}) =>
+      apiRequest<ConsoleResponse>('/browser/console', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Console monitoring failed')
-      }
-      return response.json() as Promise<ConsoleResponse>
-    },
+      }),
   })
 }
 
@@ -500,19 +412,11 @@ export function useBrowserConsole() {
  */
 export function useBrowserWebSocket() {
   return useMutation({
-    mutationFn: async (data: WebSocketRequest = {}) => {
-      const response = await fetch('/api/v1/browser/websocket', {
+    mutationFn: (data: WebSocketRequest = {}) =>
+      apiRequest<WebSocketResponse>('/browser/websocket', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'WebSocket monitoring failed')
-      }
-      return response.json() as Promise<WebSocketResponse>
-    },
+      }),
   })
 }
 
@@ -521,19 +425,11 @@ export function useBrowserWebSocket() {
  */
 export function useBrowserSource() {
   return useMutation({
-    mutationFn: async (data: SourceRequest = {}) => {
-      const response = await fetch('/api/v1/browser/source', {
+    mutationFn: (data: SourceRequest = {}) =>
+      apiRequest<SourceResponse>('/browser/source', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to get source')
-      }
-      return response.json() as Promise<SourceResponse>
-    },
+      }),
   })
 }
 
@@ -542,19 +438,11 @@ export function useBrowserSource() {
  */
 export function useBrowserScripts() {
   return useMutation({
-    mutationFn: async (data: ScriptsRequest = {}) => {
-      const response = await fetch('/api/v1/browser/scripts', {
+    mutationFn: (data: ScriptsRequest = {}) =>
+      apiRequest<ScriptsResponse>('/browser/scripts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to get scripts')
-      }
-      return response.json() as Promise<ScriptsResponse>
-    },
+      }),
   })
 }
 
@@ -563,19 +451,11 @@ export function useBrowserScripts() {
  */
 export function useBrowserStyles() {
   return useMutation({
-    mutationFn: async (data: StylesRequest) => {
-      const response = await fetch('/api/v1/browser/styles', {
+    mutationFn: (data: StylesRequest) =>
+      apiRequest<StylesResponse>('/browser/styles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to get styles')
-      }
-      return response.json() as Promise<StylesResponse>
-    },
+      }),
   })
 }
 
@@ -584,18 +464,10 @@ export function useBrowserStyles() {
  */
 export function useBrowserCoverage() {
   return useMutation({
-    mutationFn: async (data: CoverageRequest = {}) => {
-      const response = await fetch('/api/v1/browser/coverage', {
+    mutationFn: (data: CoverageRequest = {}) =>
+      apiRequest<CoverageResponse>('/browser/coverage', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to get coverage')
-      }
-      return response.json() as Promise<CoverageResponse>
-    },
+      }),
   })
 }

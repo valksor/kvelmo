@@ -33,9 +33,12 @@ async function refreshCsrfToken(): Promise<string | null> {
   }
 }
 
+export type ResponseType = 'json' | 'blob' | 'text'
+
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  responseType: ResponseType = 'json'
 ): Promise<T> {
   // Only try to get CSRF token once
   if (!csrfAttempted) {
@@ -78,7 +81,15 @@ export async function apiRequest<T>(
     throw new Error(error || `API error: ${res.status}`)
   }
 
-  return res.json()
+  // Handle different response types
+  switch (responseType) {
+    case 'blob':
+      return res.blob() as Promise<T>
+    case 'text':
+      return res.text() as Promise<T>
+    default:
+      return res.json()
+  }
 }
 
 /**

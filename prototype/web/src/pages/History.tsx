@@ -15,6 +15,7 @@ import {
 import { useTaskHistory } from '@/api/settings'
 import { formatDistanceToNow } from 'date-fns'
 import type { WorkflowState, TaskHistoryItem } from '@/types/api'
+import { getStateConfig } from '@/constants/stateConfig'
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -49,17 +50,18 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'title-desc', label: 'Title Z-A' },
 ]
 
-const stateConfig: Record<WorkflowState, { icon: React.ReactNode; badge: string }> = {
-  idle: { icon: <Clock size={14} />, badge: 'badge-ghost' },
-  planning: { icon: <Play size={14} />, badge: 'badge-info' },
-  implementing: { icon: <Play size={14} />, badge: 'badge-primary' },
-  reviewing: { icon: <RefreshCw size={14} />, badge: 'badge-secondary' },
-  waiting: { icon: <Clock size={14} />, badge: 'badge-warning' },
-  checkpointing: { icon: <RefreshCw size={14} />, badge: 'badge-info' },
-  reverting: { icon: <RefreshCw size={14} />, badge: 'badge-warning' },
-  restoring: { icon: <RefreshCw size={14} />, badge: 'badge-warning' },
-  done: { icon: <CheckCircle size={14} />, badge: 'badge-success' },
-  failed: { icon: <XCircle size={14} />, badge: 'badge-error' },
+// Lucide React icons for this page (different visual style than emoji icons)
+const stateIcons: Record<WorkflowState, React.ReactNode> = {
+  idle: <Clock size={14} />,
+  planning: <Play size={14} />,
+  implementing: <Play size={14} />,
+  reviewing: <RefreshCw size={14} />,
+  waiting: <Clock size={14} />,
+  checkpointing: <RefreshCw size={14} />,
+  reverting: <RefreshCw size={14} />,
+  restoring: <RefreshCw size={14} />,
+  done: <CheckCircle size={14} />,
+  failed: <XCircle size={14} />,
 }
 
 export default function History() {
@@ -255,7 +257,8 @@ export default function History() {
 }
 
 function TaskRow({ task }: { task: TaskHistoryItem }) {
-  const config = stateConfig[task.state] || stateConfig.idle
+  const config = getStateConfig(task.state)
+  const icon = stateIcons[task.state] || stateIcons.idle
   const createdAgo = task.created_at
     ? formatDistanceToNow(new Date(task.created_at), { addSuffix: true })
     : 'unknown'
@@ -275,7 +278,7 @@ function TaskRow({ task }: { task: TaskHistoryItem }) {
       </td>
       <td>
         <span className={`badge gap-1 ${config.badge}`}>
-          {config.icon}
+          {icon}
           {task.state}
         </span>
       </td>

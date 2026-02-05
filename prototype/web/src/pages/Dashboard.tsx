@@ -1,5 +1,7 @@
 import { useActiveTask, useStatus } from '@/api/workflow'
 import { useTaskHistory } from '@/api/settings'
+import { useQuery } from '@tanstack/react-query'
+import { apiRequest } from '@/api/client'
 import { useWorkflowSSE } from '@/hooks/useWorkflowSSE'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
 import { TaskSummaryCard } from '@/components/project/TaskSummaryCard'
@@ -23,6 +25,13 @@ export default function Dashboard() {
   const { data: tasksHistory, isLoading: historyLoading } = useTaskHistory({
     enabled: !isGlobalMode && !statusLoading,
   })
+  const { data: budget } = useQuery({
+    queryKey: ['budget', 'monthly', 'status'],
+    queryFn: () => apiRequest<{ enabled: boolean }>('/budget/monthly/status'),
+    enabled: !isGlobalMode && !statusLoading,
+  })
+
+  const budgetEnabled = budget?.enabled ?? false
 
   // Loading state
   if (statusLoading || (!isGlobalMode && taskLoading)) {
@@ -60,13 +69,13 @@ export default function Dashboard() {
       {/* Active task summary (links to task page) */}
       {hasActiveTask && <TaskSummaryCard task={taskData.task} work={taskData.work} />}
 
-      {/* Two column layout: Task creation + Budget */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Task creation tabs (Start/Quick/Plan) */}
+      {/* Two column layout: Task creation + Budget (or full width if no budget) */}
+      <div className={`grid grid-cols-1 ${budgetEnabled ? 'lg:grid-cols-2' : ''} gap-6`}>
+        {/* Left: Task creation tabs (Start/Quick/Plan) - full width if no budget */}
         <TaskCreationTabs />
 
-        {/* Right: Budget/Costs overview */}
-        <ProjectCostsCard />
+        {/* Right: Budget/Costs overview (only if enabled) */}
+        {budgetEnabled && <ProjectCostsCard />}
       </div>
 
       {/* Recent tasks */}
