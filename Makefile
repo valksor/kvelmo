@@ -1,4 +1,4 @@
-.PHONY: build test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-test web-test-coverage
+.PHONY: build build-embedder test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-test web-test-coverage
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -19,6 +19,11 @@ build: generate-licenses web-build ## Compile the binary
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
+
+build-embedder: ## Compile the ONNX embedder sidecar (requires ONNX Runtime)
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=1 go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/mehr-embedder ./cmd/mehr-embedder
+	@echo "Built $(BUILD_DIR)/mehr-embedder"
 
 generate-licenses: ## Generate licenses.json from go.mod dependencies
 	@echo "Generating dependency licenses..."

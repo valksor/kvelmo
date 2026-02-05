@@ -219,23 +219,19 @@ jobs:
                     # Copy binaries with correct names
                     cp dist/mehr_linux_amd64_v1/mehr dist/mehr-linux-amd64
                     cp dist/mehr_linux_arm64_v8.0/mehr dist/mehr-linux-arm64
-                    cp dist/mehr_darwin_amd64_v1/mehr dist/mehr-darwin-amd64
                     cp dist/mehr_darwin_arm64_v8.0/mehr dist/mehr-darwin-arm64
                     # Upload all artifacts
                     gh release upload "$RELEASE_TAG" \
                         dist/mehr-linux-amd64 \
                         dist/mehr-linux-arm64 \
-                        dist/mehr-darwin-amd64 \
                         dist/mehr-darwin-arm64 \
                         dist/checksums.txt \
                         dist/checksums.txt.minisig \
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
-                        dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
                         dist/mehr-linux-amd64.sbom.spdx.json \
                         dist/mehr-linux-arm64.sbom.spdx.json \
-                        dist/mehr-darwin-amd64.sbom.spdx.json \
                         dist/mehr-darwin-arm64.sbom.spdx.json \
                         --clobber
 
@@ -248,7 +244,81 @@ jobs:
                     gh release upload "$RELEASE_TAG" \
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
-                        dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
+                        --clobber
+
+    # Build mehr-embedder (ONNX sidecar) on native runners
+    # Requires CGO and ONNX Runtime, so can't cross-compile
+    embedder:
+        strategy:
+            matrix:
+                include:
+                    -   goos: linux
+                        goarch: amd64
+                        runner: ubuntu-amd
+                        onnx_arch: x64
+                    -   goos: linux
+                        goarch: arm64
+                        runner: self-arm
+                        onnx_arch: aarch64
+                    -   goos: darwin
+                        goarch: arm64
+                        runner: macos-arm
+        runs-on: ${{ matrix.runner }}
+
+        env:
+            ONNX_VERSION: '1.20.1'
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Set up Go
+                uses: actions/setup-go@v6
+                with:
+                    go-version: ${{ env.GO_VERSION }}
+                    cache: true
+
+            -   name: Install ONNX Runtime (Linux)
+                if: matrix.goos == 'linux'
+                run: |
+                    curl -L "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-${{ matrix.onnx_arch }}-${ONNX_VERSION}.tgz" | tar xz
+                    sudo mkdir -p /usr/local/lib
+                    sudo cp onnxruntime-linux-*/lib/* /usr/local/lib/
+                    sudo ldconfig
+
+            -   name: Install ONNX Runtime (macOS)
+                if: matrix.goos == 'darwin'
+                run: brew install onnxruntime
+
+            -   name: Build embedder
+                env:
+                    CGO_ENABLED: '1'
+                    GOOS: ${{ matrix.goos }}
+                    GOARCH: ${{ matrix.goarch }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    VERSION="${RELEASE_TAG#v}"
+                    if [ "$VERSION" = "nightly" ]; then
+                        VERSION="nightly"
+                    fi
+
+                    go build -trimpath \
+                        -ldflags "-s -w -X github.com/valksor/go-toolkit/version.Version=${VERSION}" \
+                        -o "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" \
+                        ./cmd/mehr-embedder
+
+            -   name: Generate checksum
+                run: |
+                    sha256sum "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" > "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256"
+
+            -   name: Upload embedder to release
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    gh release upload "$RELEASE_TAG" \
+                        "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" \
+                        "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256" \
                         --clobber
 
