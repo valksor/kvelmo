@@ -96,11 +96,4 @@ Creates commits for the provided groups.
 
 Create logically grouped commits from the command line for scripting or terminal workflows.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr commit` | Analyze and create grouped commits interactively |
-| `mehr commit --all` | Include unstaged changes |
-| `mehr commit --push` | Push commits after creating |
-| `mehr commit --dry-run` | Preview commit groups without creating |
-
 See [CLI: commit](/cli/commit.md) for all options, agent configuration, and non-interactive modes.

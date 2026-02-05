@@ -6,12 +6,17 @@ Create tasks from scratch, upload files, or pull from external providers like Gi
 
 Click **"Create Task"** on the dashboard to open the creation dialog. You'll see four tabs:
 
-```mermaid
-flowchart TD
-    A[Create Task] --> B[Write Task]
-    A --> C[Upload File]
-    A --> D[From URL]
-    A --> E[From Provider]
+```text
+              ┌─────────────┐
+              │ Create Task │
+              └──────┬──────┘
+                     │
+    ┌────────┬───────┼───────┬───────────────┐
+    ▼        ▼       ▼       ▼               ▼
+┌────────┐ ┌────────┐ ┌──────┐ ┌───────────────┐
+│ Write  │ │ Upload │ │ From │ │ From Provider │
+│ Task   │ │ File   │ │ URL  │ │               │
+└────────┘ └────────┘ └──────┘ └───────────────┘
 ```
 
 ## Option 1: Write Task
@@ -24,23 +29,7 @@ Write your task description directly in the browser.
 3. Enter a title and description
 4. Click **"Create Task"**
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Create Task                                                 │
-├─────────────────────────────────────────────────────────────┤
-│  [Write Task] [Upload File] [From URL] [From Provider]      │
-│  ─────────────────────────────────────────────────────────  │
-│  Title: [_________________________________________________] │
-│                                                              │
-│  Description:                                                │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │                                                    │     │
-│  └────────────────────────────────────────────────────┘     │
-│  Supports markdown formatting                               │
-│                                                              │
-│                                    [Create Task] [Cancel]   │
-└─────────────────────────────────────────────────────────────┘
-```
+The **Create Task** dialog has four tabs at the top: **Write Task**, **Upload File**, **From URL**, and **From Provider**. The Write Task tab shows a title field and a description text area that supports markdown formatting. Click **Create Task** to save.
 
 **Example task:**
 
@@ -74,23 +63,7 @@ Drag and drop an existing task file.
 3. Drag and drop your file (or click to browse)
 4. Click **"Create Task"**
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Upload File                                                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│              ┌─────────────────────────────────┐             │
-│              │                                 │             │
-│              │     Drag & drop file here       │             │
-│              │     or click to browse          │             │
-│              │                                 │             │
-│              └─────────────────────────────────┘             │
-│                                                              │
-│  Supported: .md, .txt (max 5MB)                              │
-│                                                              │
-│                              [Cancel]         [Upload]       │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Upload File** tab shows a drop zone where you can drag and drop a task file, or click to browse. Supported formats are `.md` (markdown with frontmatter) and `.txt` (plain text), up to 5MB.
 
 ## Option 3: From URL
 
@@ -113,43 +86,26 @@ Pull tasks directly from external project management tools.
 4. Enter the issue/ticket number
 5. Click **"Create Task"**
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Create Task from Provider                                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Provider: [GitHub ▼]                                        │
-│                                                              │
-│  Issue Number: [123________________]                          │
-│                                                              │
-│  ℹ️ Fetching from: github.com/valksor/go-mehrhof             │
-│                                                              │
-│                              [Cancel]         [Create Task]   │
-└──────────────────────────────────────────────────────────────┘
-```
+The **From Provider** tab lets you select a provider from the dropdown (GitHub, GitLab, Jira, etc.) and enter the issue or ticket number. The dialog shows which repository it will fetch from based on your project's git remote.
 
 ### Supported Providers
 
-| Provider | Setup Command            |
-|----------|--------------------------|
-| GitHub   | `mehr github login`      |
-| GitLab   | `mehr gitlab login`      |
-| Jira     | `mehr jira configure`    |
-| Linear   | `mehr linear configure`  |
-| Notion   | `mehr notion configure`  |
-| Trello   | `mehr trello configure`  |
-| Asana    | `mehr asana configure`   |
-| ClickUp  | `mehr clickup configure` |
+Providers must be configured before use. Supported providers include:
 
-See [Providers](/providers/index.md) for complete setup instructions.
+- GitHub
+- GitLab
+- Jira
+- Linear
+- Notion
+- Trello
+- Asana
+- ClickUp
+
+See [Providers](/providers/index.md) for setup instructions.
 
 ### GitHub Example
 
-1. First, log in to GitHub:
-   ```bash
-   mehr github login
-   ```
-
+1. Configure GitHub access (see [Providers: GitHub](/providers/github.md))
 2. In the Web UI:
    - Select **"GitHub"** from the provider dropdown
    - Enter the issue number (e.g., `42`)
@@ -180,20 +136,7 @@ Once you create a task:
 3. **Work directory initialized** - At `~/.valksor/mehrhof/workspaces/<project-id>/work/<id>/`
 4. **Task set as active** - Appears in the Active Task card
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Branch: feature/user-oauth                                  │
-│  Progress: ░░░░░░░░░░ 0%                                      │
-│                                                              │
-│  Last Action: "Task created" - just now                       │
-│  Next Step: Plan                                              │
-│                                                              │
-│  [Continue] [Plan] [Implement] [Review] [Finish]             │
-└──────────────────────────────────────────────────────────────┘
-```
+Once created, the task appears in the **Active Task** card showing its state, git branch, and progress. Action buttons let you proceed with the workflow: **Plan**, **Implement**, **Review**, and **Finish**.
 
 ### Local Metadata Enrichment
 
@@ -218,12 +161,5 @@ After creating your task:
 ## Also Available via CLI
 
 Create tasks from the command line for terminal-based workflows or scripting.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr start task.md` | Create task from a file |
-| `mehr start github:123` | Create task from a GitHub issue |
-| `mehr start jira:PROJ-456` | Create task from Jira |
-| `mehr start dir:./tasks/` | Create tasks from a directory |
 
 See [CLI: start](/cli/start.md) for all providers and options.

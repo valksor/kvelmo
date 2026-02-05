@@ -183,14 +183,6 @@ Useful for:
 
 Manage links from the command line for scripting or terminal workflows.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr links list [entity]` | Browse entities or list links for a specific entity |
-| `mehr links backlinks <entity>` | View what references a specific entity |
-| `mehr links search <name>` | Search for entities by name |
-| `mehr links stats` | View graph statistics |
-| `mehr links rebuild` | Rebuild the link index from source content |
-
 See [CLI: links](/cli/links.md) for all options and output formats.
 
 ## Link Storage

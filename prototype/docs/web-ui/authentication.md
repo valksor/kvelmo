@@ -15,131 +15,37 @@ Authentication is mandatory when using `--host 0.0.0.0` or any non-localhost add
 
 ## Setting Up Authentication
 
-### Add Users
+User management is performed via the command line before starting the server. The CLI provides commands to:
 
-Before starting a network-accessible server, add users:
+- Add users with passwords and roles
+- List configured users
+- Change passwords
+- Modify user roles
+- Remove users
 
-```bash
-# Add a full-access user
-mehr serve auth add admin mypassword
+**Valid roles:** `user` (full access), `viewer` (read-only)
 
-# Add a read-only viewer
-mehr serve auth add stakeholder viewpass --role viewer
-
-# Add multiple users
-mehr serve auth add admin secretpassword
-mehr serve auth add developer devpass123
-```
-
-### List Users
-
-View all configured users:
-
-```bash
-mehr serve auth list
-```
-
-Output:
-```
-Configured users:
-USERNAME    ROLE    CREATED
-admin       user    2025-01-15 10:30
-developer   user    2025-01-15 10:31
-stakeholder viewer   2025-01-15 10:32
-```
-
-### Change Passwords
-
-Update a user's password:
-
-```bash
-mehr serve auth passwd admin newpassword
-```
-
-### Change User Roles
-
-Modify a user's role after creation:
-
-```bash
-# Promote viewer to full user
-mehr serve auth role stakeholder user
-
-# Demote user to viewer
-mehr serve auth role contractor viewer
-```
-
-**Valid roles:** `user`, `viewer`
-
-### Remove Users
-
-Delete a user:
-
-```bash
-mehr serve auth remove developer
-```
+See [CLI: serve](/cli/serve.md) for all authentication commands and examples.
 
 ## Starting Server with Authentication
 
-### Step 1: Add Users
+1. **Add users** using the CLI authentication commands
+2. **Start the server** with network access enabled
 
-```bash
-mehr serve auth add admin mypassword
-```
-
-### Step 2: Start Server
-
-```bash
-mehr serve --host 0.0.0.0 --port 3000
-```
-
-The server now requires authentication for all non-public endpoints.
+The server then requires authentication for all non-public endpoints.
 
 ## Credential Storage
 
-User credentials are stored at `~/.valksor/mehrhof/auth.yaml`:
-
-```yaml
-version: "1"
-users:
-  admin:
-    username: admin
-    password_hash: "$2a$10$..."  # bcrypt hash
-    created_at: "2025-01-15T10:30:00Z"
-  developer:
-    username: developer
-    password_hash: "$2a$10$..."
-    created_at: "2025-01-15T10:31:00Z"
-```
+User credentials are stored securely in your home directory.
 
 **Security notes:**
 - Passwords are hashed using bcrypt
 - Plain text passwords are never stored
-- The auth file should be protected (chmod 600)
+- The auth file is automatically protected with restricted permissions
 
 ## Login Process
 
-When accessing an authenticated server:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Mehrhof Login                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│                   [Mehrhof Logo]                             │
-│                                                              │
-│  Welcome to Mehrhof                                          │
-│  Please log in to continue                                  │
-│                                                              │
-│  ┌────────────────────────────────────────────┐             │
-│  │ Username: [____________________________]  │             │
-│  │                                          │             │
-│  │ Password: [____________________________]  │             │
-│  │                                          │             │
-│  │            [Login]                      │             │
-│  └────────────────────────────────────────────┘             │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+When accessing an authenticated server, the login page displays the Mehrhof logo, a welcome message, username and password fields, and a **Login** button.
 
 ### Session Management
 
@@ -162,59 +68,20 @@ CSRF protection uses the Synchronizer Token Pattern:
 
 ### When CSRF Is Active
 
-| Server Mode | CSRF Enforced |
-|-------------|---------------|
-| `localhost` (default) | ❌ No — localhost mode skips CSRF |
+| Server Mode                | CSRF Enforced                             |
+|----------------------------|-------------------------------------------|
+| `localhost` (default)      | ❌ No — localhost mode skips CSRF          |
 | `--host 0.0.0.0` with auth | ✅ Yes — all POST/PUT/DELETE require token |
 
 CSRF is automatically disabled in localhost mode because cross-site attacks cannot target localhost.
 
 ### Getting a CSRF Token
 
-#### From Login Response
+The CSRF token is provided:
+- **On login:** Returned in the login response
+- **For existing sessions:** Available via the CSRF endpoint
 
-The login endpoint returns the CSRF token in the JSON response:
-
-```bash
-curl -X POST http://your-server/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "secret"}'
-```
-
-Response:
-```json
-{
-  "status": "ok",
-  "csrf_token": "abc123..."
-}
-```
-
-#### From CSRF Endpoint
-
-For existing sessions, fetch a fresh token:
-
-```bash
-curl http://your-server/api/v1/auth/csrf \
-  -H "Cookie: mehr_session=your-session-cookie"
-```
-
-Response:
-```json
-{
-  "csrf_token": "abc123..."
-}
-```
-
-### Using the Token
-
-Include the token in the `X-Csrf-Token` header on all state-changing requests:
-
-```bash
-curl -X POST http://your-server/api/v1/workflow/plan \
-  -H "Cookie: mehr_session=your-session-cookie" \
-  -H "X-Csrf-Token: abc123..." \
-  -H "Content-Type: application/json"
-```
+For API integration details, see [REST API Reference](/reference/rest-api.md).
 
 ### Web UI Handling
 
@@ -235,11 +102,11 @@ Both the VS Code extension and JetBrains plugin include CSRF infrastructure:
 
 ### Endpoints Exempt from CSRF
 
-| Endpoint | Reason |
-|----------|--------|
-| `GET`, `HEAD`, `OPTIONS` | Safe methods — no state changes |
-| `/api/v1/auth/login` | No session exists yet |
-| `/api/v1/webhooks/*` | Provider-specific authentication (webhook secrets) |
+| Endpoint                 | Reason                                             |
+|--------------------------|----------------------------------------------------|
+| `GET`, `HEAD`, `OPTIONS` | Safe methods — no state changes                    |
+| `/api/v1/auth/login`     | No session exists yet                              |
+| `/api/v1/webhooks/*`     | Provider-specific authentication (webhook secrets) |
 
 ## Authentication Behavior
 
@@ -264,52 +131,11 @@ All other endpoints require authentication:
 | `/tools`        | ✅ Yes         |
 | `/history`      | ✅ Yes         |
 
-## Managing Auth via CLI
+## Managing Users
 
-### All Auth Commands
+User management is performed via the command line. There is no settings panel for user management in the Web UI.
 
-```bash
-# Add a user
-mehr serve auth add <username> <password> [--role <role>]
-
-# List all users
-mehr serve auth list
-
-# Change password
-mehr serve auth passwd <username> <new-password>
-
-# Change user role
-mehr serve auth role <username> <role>
-
-# Remove a user
-mehr serve auth remove <username>
-```
-
-### Examples
-
-```bash
-# Add admin user
-mehr serve auth add admin securepassword123
-
-# Add read-only viewer
-mehr serve auth add stakeholder viewpass123 --role viewer
-
-# Change admin password
-mehr serve auth passwd admin newsecurepassword
-
-# Promote viewer to user
-mehr serve auth role stakeholder user
-
-# List users to verify
-mehr serve auth list
-
-# Remove a user
-mehr serve auth remove olduser
-```
-
-## Web UI Auth Management
-
-In the Web UI, authentication is managed through the login page. There is no settings panel for user management—use the CLI for that.
+See [CLI: serve](/cli/serve.md) for all authentication commands.
 
 ## Security Best Practices
 
@@ -327,10 +153,7 @@ In the Web UI, authentication is managed through the login page. There is no set
 
 ### File Permissions
 
-Protect the auth file:
-```bash
-chmod 600 ~/.valksor/mehrhof/auth.yaml
-```
+The auth file is automatically created with restricted permissions to protect credentials.
 
 ## Read-Only Users
 
@@ -362,24 +185,9 @@ Viewers are **blocked from all write operations**:
 | Running scans       | ❌ Security and quality scans            |
 | Clearing memory     | ❌ Memory cache operations               |
 
-### Creating a Viewer
+### Creating and Managing Viewers
 
-```bash
-# Add a new viewer
-mehr serve auth add stakeholder viewpass123 --role viewer
-```
-
-### Modifying User Roles
-
-Change an existing user's role:
-
-```bash
-# Promote viewer to full user
-mehr serve auth role stakeholder user
-
-# Demote user to viewer
-mehr serve auth role contractor viewer
-```
+Viewers are created and managed via the CLI. See [CLI: serve](/cli/serve.md) for commands to add viewers and modify user roles.
 
 ### Viewer Experience
 
@@ -400,10 +208,10 @@ When using authentication over the internet:
 
 When authentication is enabled, the server enforces per-IP rate limiting to protect against abuse:
 
-| Endpoint Type | Limit | Window |
-|---------------|-------|--------|
-| General API (`/api/v1/*`) | 120 requests | Per minute |
-| Auth endpoints (`/api/v1/auth/login`) | 10 requests | Per minute |
+| Endpoint Type                         | Limit        | Window     |
+|---------------------------------------|--------------|------------|
+| General API (`/api/v1/*`)             | 120 requests | Per minute |
+| Auth endpoints (`/api/v1/auth/login`) | 10 requests  | Per minute |
 
 When rate limited, the server returns **HTTP 429 Too Many Requests**. Wait and retry.
 
@@ -413,29 +221,20 @@ Rate limiting is automatically disabled in localhost mode.
 
 ### "Authentication Required" Error
 
-You see this when accessing `0.0.0.0` without users configured:
+This appears when accessing a network server without users configured.
 
-```
-Error: Authentication required for non-localhost access
-Configure users with: mehr serve auth add <username> <password>
-```
-
-**Solution:** Add users before starting the server
+**Solution:** Add users via the CLI before starting the server. See [CLI: serve](/cli/serve.md).
 
 ### Login Not Working
 
 If you can't log in:
 1. Verify username is correct
-2. Reset password with `mehr serve auth passwd`
-3. Check auth file exists at `~/.valksor/mehrhof/auth.yaml`
+2. Reset password via the CLI
+3. Check that the auth file exists in your home directory
 
 ### Lost Password
 
-If you forget your password:
-```bash
-# Reset it with passwd command
-mehr serve auth pass admin newpassword
-```
+Passwords can be reset via the CLI. See [CLI: serve](/cli/serve.md) for the password reset command.
 
 ## Next Steps
 

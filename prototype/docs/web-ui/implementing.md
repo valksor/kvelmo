@@ -18,61 +18,26 @@ When you click **"Implement"**, the AI:
 
 After planning completes, and you've reviewed the specifications, click the **"Implement"** button:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Specifications: 2 ready                                     │
-│                                                              │
-│  Actions:                                                    │
-│    [Plan] [Implement] [Review] [Finish] [Continue]           │
-│                                                              │
-│  [Implement] ← Click this button                             │
-└──────────────────────────────────────────────────────────────┘
-```
+The Active Task card shows the number of specifications ready. Click **Implement** to start the implementation phase.
 
 ## Implementation Phase Workflow
 
-```mermaid
-flowchart LR
-    A[Idle + Specs Ready] --> B[Click Implement]
-    B --> C[Implementing State]
-    C --> D[AI Reads Specs]
-    D --> E[AI Writes Code]
-    E --> F[Checkpoint Created]
-    F --> G[Back to Idle - Code Ready]
+```text
+┌───────────────────┐     ┌──────────────────┐     ┌────────────────────┐     ┌────────────────┐
+│ Idle + Specs Ready│ ──▶ │ Click Implement  │ ──▶ │ Implementing State │ ──▶ │ AI Reads Specs │
+└───────────────────┘     └──────────────────┘     └────────────────────┘     └───────┬────────┘
+                                                                                      │
+                                                                                      ▼
+┌────────────────────────────┐     ┌────────────────────┐     ┌────────────────┐
+│ Back to Idle - Code Ready  │ ◀── │ Checkpoint Created │ ◀── │ AI Writes Code │
+└────────────────────────────┘     └────────────────────┘     └────────────────┘
 ```
 
 ## Real-Time Progress
 
 Watch the AI work in the **Agent Output** section:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                          │
-├──────────────────────────────────────────────────────────────┤
-│  $ Reading specification files...                             │
-│  ✓ Found 2 specification files to process                     │
-│                                                              │
-│  → Creating internal/auth/oauth.go                           │
-│    • Defined OAuthConfig struct                              │
-│    • Added GoogleProvider implementation                      │
-│  ✓ Created successfully                                       │
-│                                                              │
-│  → Modifying internal/auth/middleware.go                     │
-│    • Added AuthMiddleware function                           │
-│    • Integrated session validation                           │
-│  ✓ Modified successfully                                      │
-│                                                              │
-│  → Creating internal/auth/oauth_test.go                      │
-│    • Added TestGoogleProvider                                │
-│    • Added TestAuthMiddleware                               │
-│  ✓ Created successfully                                       │
-│                                                              │
-│  ▶ Streaming... (scrolling updates in real-time)              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Agent Output** section shows real-time progress as the AI reads specifications, creates new files, and modifies existing ones. Each file change shows what was added or modified.
 
 ## The Implementing State
 
@@ -88,35 +53,7 @@ During implementation, the task state changes to **"Implementing"**:
 
 After implementation completes, review what changed:
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│  File Changes (5 files)                                            │
-├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  ▼ internal/auth/oauth.go                 [+ Created, 87 lines]    │
-│     │  + package auth                                              │
-│     │  +                                                           │
-│     │  + type OAuthConfig struct { ... }                           │
-│     │  + func NewGoogleProvider(...)                               │
-│     │  + func (p *GoogleProvider) RedirectURL(...)                 │
-│                                                                    │
-│  ▼ internal/auth/middleware.go             [+ Modified, 23 lines]  │
-│     │  @@ -5,6 +5,10 @@                                            │
-│     │     + "github.com/valksor/go-mehrhof/internal/auth"          │
-│     │   ...                                                        │
-│     │  +45:        func AuthMiddleware(...)                        │
-│                                                                    │
-│  ▼ internal/auth/oauth_test.go             [+ Created, 54 lines]   │
-│     │  [expand to view tests...]                                   │
-│                                                                    │
-│  ▼ cmd/server/main.go                     [+ Modified, 8 lines]    │
-│     │  [expand to view changes...]                                 │
-│                                                                    │
-│  ▼ go.lock                                  [+ Modified, 2 lines]  │
-│     │  [expand to view dependencies...]                            │
-│                                                                    │
-└────────────────────────────────────────────────────────────────────┘
-```
+The **File Changes** section lists all files that were created or modified, with line counts and expandable diffs. Click any file to see the full diff.
 
 Click any file to see the full diff.
 
@@ -145,13 +82,14 @@ If you're not happy with the implementation:
 2. Add a note explaining what went wrong
 3. Click **"Implement"** again
 
-```mermaid
-flowchart LR
-    A[Implementation Complete] --> B{Happy?}
-    B -->|Yes| C[Continue to Review]
-    B -->|No| D[Click Undo]
-    D --> E[Add Note: Fix X]
-    E --> F[Implement Again]
+```text
+                                           Yes ──▶ ┌────────────────────┐
+                                      ┌────────────│ Continue to Review │
+┌────────────────────────┐     ┌──────┴──┐         └────────────────────┘
+│ Implementation Complete│ ──▶ │ Happy?  │
+└────────────────────────┘     └──────┬──┘         ┌────────────┐     ┌────────────────┐     ┌─────────────────┐
+                                      └────────────│ Click Undo │ ──▶ │ Add Note: Fix X│ ──▶ │ Implement Again │
+                                           No ──▶  └────────────┘     └────────────────┘     └─────────────────┘
 ```
 
 ### Add Notes and Implement Again
@@ -194,11 +132,5 @@ After implementation completes:
 ## Also Available via CLI
 
 Run implementation from the command line for terminal-based workflows or automation.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr implement` | Execute specifications and generate code |
-| `mehr implement --dry-run` | Preview what would be implemented |
-| `mehr implement review 1` | Implement fixes from a specific review |
 
 See [CLI: implement](/cli/implement.md) for all flags and options.

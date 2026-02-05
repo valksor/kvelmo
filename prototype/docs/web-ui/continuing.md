@@ -12,33 +12,23 @@ When you click **"Continue"**, Mehrhof:
 
 ## Starting Continue
 
-Click the **"Continue"** button in the Quick Actions section:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Quick Actions                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Idle                                                 │
-│                                                              │
-│  Suggestions:                                                │
-│  • Click Plan to create specifications                        │
-│  • Click Continue to auto-execute next step                  │
-│                                                              │
-│  [Continue] ← Click this button                              │
-└──────────────────────────────────────────────────────────────┘
-```
+Click the **"Continue"** button in the Quick Actions section. The section displays your task name, current state, suggestions for what to do next, and the **Continue** button.
 
 ## Continue Workflow
 
-```mermaid
-flowchart LR
-    A[Click Continue] --> B{Current State?}
-    B -->|No specs| C[Run Plan]
-    B -->|Specs ready| D[Run Implement]
-    B -->|Code ready| E[Run Review]
-    B -->|Reviewed| F[Suggest Finish]
+```text
+                                    No specs ────▶ ┌──────────┐
+                               ┌───────────────────│ Run Plan │
+                               │                   └──────────┘
+                               │   Specs ready ──▶ ┌───────────────┐
+┌────────────────┐     ┌───────┴───────┐───────────│ Run Implement │
+│ Click Continue │ ──▶ │ Current State?│           └───────────────┘
+└────────────────┘     └───────┬───────┘───────────┌────────────┐
+                               │   Code ready ───▶ │ Run Review │
+                               │                   └────────────┘
+                               └───────────────────┌────────────────┐
+                                    Reviewed ────▶ │ Suggest Finish │
+                                                   └────────────────┘
 ```
 
 ## Context-Aware Suggestions
@@ -47,81 +37,19 @@ Continue analyzes your task state and suggests what to do next:
 
 ### After Starting (No Specifications)
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Continue Workflow                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Idle                                                 │
-│                                                              │
-│  No specifications yet.                                      │
-│                                                              │
-│  Suggested action:                                           │
-│    📋 Create specifications using the Plan phase            │
-│                                                              │
-│  [Click Plan]  [Close]                                      │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Continue Workflow** dialog shows your task name and state (Idle), notes that no specifications exist yet, and suggests creating specifications using the Plan phase. Action buttons include **Click Plan** and **Close**.
 
 ### After Planning
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Continue Workflow                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Idle                                                 │
-│  Specifications: 2 ready                                     │
-│                                                              │
-│  Specifications are ready for implementation.                │
-│                                                              │
-│  Suggested action:                                           │
-│    🔨 Implement the specifications                           │
-│                                                              │
-│  [Click Implement]  [Close]                                 │
-└──────────────────────────────────────────────────────────────┘
-```
+When specifications are ready, the dialog shows the spec count and suggests implementing them. Action buttons include **Click Implement** and **Close**.
 
 ### After Implementation
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Continue Workflow                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Idle                                                 │
-│  Changes: 5 files modified                                   │
-│                                                              │
-│  Code has been generated.                                    │
-│                                                              │
-│  Suggested actions:                                          │
-│    🔍 Review changes with git diff                           │
-│    🧪 Run automated code review                             │
-│    ✅ Complete and merge task                                │
-│                                                              │
-│  [Review] [Finish] [Close]                                  │
-└──────────────────────────────────────────────────────────────┘
-```
+When code has been generated, the dialog shows the number of files modified and suggests reviewing changes, running automated code review, or completing and merging the task. Action buttons include **Review**, **Finish**, and **Close**.
 
 ## Auto-Execute Mode
 
-For faster workflow, use auto-execute:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Continue with Auto-Execute                                  │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Auto-execute will run the next logical step automatically.  │
-│                                                              │
-│  Next step: Plan (create specifications)                     │
-│                                                              │
-│  [Continue with Auto]  [Close]                              │
-└──────────────────────────────────────────────────────────────┘
-```
+For faster workflow, use auto-execute. The dialog explains that auto-execute will run the next logical step automatically, shows what the next step will be (e.g., "Plan"), and offers **Continue with Auto** and **Close** buttons.
 
 With auto-execute, Mehrhof runs the next step without requiring another click.
 
@@ -138,23 +66,7 @@ After stepping away from a task:
 
 ### Quick Status Check
 
-Use Continue for a faster status update than full status:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Quick Status                                                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: a1b2c3d4                                              │
-│  Title: Add User OAuth Authentication                        │
-│  State: Idle                                                 │
-│  Branch: feature/user-oauth                                  │
-│                                                              │
-│  Ready for: Implement (specs created)                        │
-│                                                              │
-│  [Implement] [Close]                                        │
-└──────────────────────────────────────────────────────────────┘
-```
+Use Continue for a faster status update than full status. The **Quick Status** panel shows task ID, title, state, branch, and what the task is ready for (e.g., "Implement (specs created)"). Relevant action buttons are displayed.
 
 ### Speed Through Workflow
 
@@ -189,10 +101,5 @@ After using Continue:
 ## Also Available via CLI
 
 Resume tasks from the command line when returning to work or automating workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr continue` | See suggested next action |
-| `mehr continue --auto` | Automatically execute the next step |
 
 See [CLI: continue](/cli/continue.md) for all flags and options.

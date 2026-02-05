@@ -136,11 +136,7 @@ For CLI interactive mode, see [`mehr interactive`](/cli/interactive.md).
 
 ## Also Available via CLI
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr interactive` | Enter REPL mode for chat and workflow control |
-
-See [CLI: interactive](/cli/interactive.md) for keyboard shortcuts and commands.
+See [CLI: interactive](/cli/interactive.md) for REPL mode, keyboard shortcuts, and commands.
 
 ## See Also
 
