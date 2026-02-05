@@ -308,35 +308,35 @@ func TestBuildConductorOptions(t *testing.T) {
 	tests := []struct {
 		name    string
 		cmdOpts CommandOptions
-		minOpts int // Minimum expected options
+		minOpts int // Minimum expected options (includes WithVerbose + WithAutoInit defaults)
 	}{
 		{
 			name: "minimal options",
 			cmdOpts: CommandOptions{
 				Verbose: false,
 			},
-			minOpts: 1,
+			minOpts: 2, // WithVerbose + WithAutoInit
 		},
 		{
 			name: "verbose mode",
 			cmdOpts: CommandOptions{
 				Verbose: true,
 			},
-			minOpts: 1,
+			minOpts: 3, // WithVerbose + WithAutoInit + WithStdout (dedup)
 		},
 		{
 			name: "dry run",
 			cmdOpts: CommandOptions{
 				DryRun: true,
 			},
-			minOpts: 2,
+			minOpts: 3, // WithVerbose + WithAutoInit + WithDryRun
 		},
 		{
 			name: "full context",
 			cmdOpts: CommandOptions{
 				FullContext: true,
 			},
-			minOpts: 2,
+			minOpts: 3, // WithVerbose + WithAutoInit + WithIncludeFullContext
 		},
 		{
 			name: "all options enabled",
@@ -345,28 +345,28 @@ func TestBuildConductorOptions(t *testing.T) {
 				DryRun:      true,
 				FullContext: true,
 			},
-			minOpts: 4,
+			minOpts: 5, // WithVerbose + WithAutoInit + WithDryRun + WithIncludeFullContext + dedup stdout
 		},
 		{
 			name: "step agent - planning",
 			cmdOpts: CommandOptions{
 				StepAgent: "planning",
 			},
-			minOpts: 2,
+			minOpts: 3, // WithVerbose + WithAutoInit + WithStepAgent
 		},
 		{
 			name: "step agent - implement (alias)",
 			cmdOpts: CommandOptions{
 				StepAgent: "implement",
 			},
-			minOpts: 2,
+			minOpts: 3, // WithVerbose + WithAutoInit + WithStepAgent
 		},
 		{
 			name: "step agent - unknown (should be ignored)",
 			cmdOpts: CommandOptions{
 				StepAgent: "unknown-step",
 			},
-			minOpts: 1,
+			minOpts: 2, // WithVerbose + WithAutoInit (unknown step ignored)
 		},
 	}
 

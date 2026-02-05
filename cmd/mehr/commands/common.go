@@ -118,6 +118,7 @@ func IsSandbox() bool {
 func BuildConductorOptions(cmdOpts CommandOptions) []conductor.Option {
 	opts := []conductor.Option{
 		conductor.WithVerbose(cmdOpts.Verbose),
+		conductor.WithAutoInit(true), // Auto-initialize workspace if .mehrhof/ doesn't exist
 	}
 
 	if cmdOpts.DryRun {

@@ -21,7 +21,7 @@ var licenseCmd = &cobra.Command{
 	Use:     "license",
 	Short:   "Display license information",
 	GroupID: "info",
-	Long: `Display license information for mehrhof and its dependencies.
+	Long: `Display license information for Mehrhof and its dependencies.
 
 Examples:
   mehr license           # Show mehrhof license

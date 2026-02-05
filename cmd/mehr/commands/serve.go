@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,6 +19,10 @@ import (
 	"github.com/valksor/go-mehrhof/internal/server"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
+
+// DefaultPreferredPort is the default port for the web server.
+// Falls back to a random port if this port is already in use.
+const DefaultPreferredPort = 6337
 
 var (
 	servePort       int
@@ -95,8 +100,8 @@ var serveCmd = &cobra.Command{
 By default, runs in project mode showing the current workspace.
 Use --global to see all projects across the system.
 
-The server uses a random available port by default to avoid conflicts.
-Use --port to specify a specific port if needed.
+The server listens on port 6337 by default.
+If port 6337 is in use, a random available port is selected automatically.
 
 Remote Access:
   Use --host 0.0.0.0 to bind to all network interfaces.
@@ -104,8 +109,8 @@ Remote Access:
   Use 'mehr serve auth add' to configure users first.
 
 Examples:
-  mehr serve                        # Project mode on random port
-  mehr serve --port 3000            # Project mode on port 3000
+  mehr serve                        # Port 6337 (or random if taken)
+  mehr serve --port 8080            # Specific port
   mehr serve --global               # Global mode (all projects)
   mehr serve --open                 # Open browser automatically
   mehr serve --host 0.0.0.0         # Network accessible (requires auth)
@@ -155,7 +160,7 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	// Main serve flags
-	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Server port (0 = random available port)")
+	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Server port (default: 6337, 0 = random)")
 	serveCmd.Flags().StringVar(&serveHost, "host", "localhost", "Host to bind to (use 0.0.0.0 for all interfaces)")
 	serveCmd.Flags().BoolVar(&serveGlobal, "global", false, "Global mode (show all projects)")
 	serveCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
@@ -185,7 +190,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	if serveTunnelInfo {
 		port := servePort
 		if port == 0 {
-			port = 3000 // Default port for documentation
+			port = DefaultPreferredPort
 		}
 		fmt.Printf("SSH Tunnel Instructions:\n")
 		fmt.Printf("  Access remote serve from your local machine (-L flag):\n")
@@ -196,6 +201,21 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		fmt.Printf("    Then open: http://localhost:8080 on THE REMOTE server\n")
 
 		return nil
+	}
+
+	// Handle default port with smart fallback
+	if !cmd.Flags().Changed("port") {
+		// Try preferred port 6337, fall back to random if taken
+		host := serveHost
+		if host == "" {
+			host = "localhost"
+		}
+		if portAvailable(host, DefaultPreferredPort) {
+			servePort = DefaultPreferredPort
+		} else {
+			fmt.Printf("Port %d in use, using random available port\n", DefaultPreferredPort)
+			servePort = 0
+		}
 	}
 
 	// Create server config
@@ -333,6 +353,19 @@ func openBrowser(url string) error {
 	}
 
 	return exec.Command(cmd, args...).Start() //nolint:noctx // browser should outlive command
+}
+
+// portAvailable checks if a port is available for binding.
+func portAvailable(host string, port int) bool {
+	addr := fmt.Sprintf("%s:%d", host, port)
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(context.Background(), "tcp", addr)
+	if err != nil {
+		return false
+	}
+	_ = ln.Close()
+
+	return true
 }
 
 // runServeRegister handles the "mehr serve register" command.
