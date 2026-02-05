@@ -1,413 +1,102 @@
 # Dashboard
 
-The dashboard is the main interface for monitoring and managing your tasks.
+The dashboard is the main landing page for the Web UI, providing quick access to task creation, active task status, and recent work.
 
-## Starting the Dashboard
+## Accessing the Dashboard
 
-Start the Web UI server:
+Once the Web UI server is running, open your browser to the displayed URL (typically `http://localhost:XXXX`). The dashboard is the default landing page.
 
-```bash
-# Start server (random port)
-mehr serve
+## Dashboard Modes
 
-# Start on specific port
-mehr serve --port 3000
+The dashboard operates in two modes depending on how the server was started.
 
-# Start and open browser automatically
-mehr serve --open
+### Project Mode (Default)
 
-# Global mode (all projects)
-mehr serve --global
-```
+When the server is started from a project directory, the dashboard shows:
+- **Active Task Summary** — Current task status with a link to full details
+- **Task Creation** — Tabs for starting tasks (Quick Start, Quick Tasks, Planning)
+- **Budget Overview** — Cost tracking (if budget is enabled)
+- **Recent Tasks** — Your recent task history with quick access
 
-The dashboard opens at `http://localhost:XXXX`
+### Global Mode
+
+When the server is started in global mode, the dashboard shows a project selector:
+- List of all registered projects
+- Project paths and statistics
+- Click any project to view its dashboard
 
 ## Dashboard Layout
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Mehrhof                        [Dark Mode Toggle] [Settings]   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Workflow State Diagram                                   │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Active Task Card                                         │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌───────────────────┐  ┌──────────────────────────────────┐    │
-│  │  Quick Actions    │  │  Task History                    │    │
-│  └───────────────────┘  │  (past tasks)                    │    │
-│                         └──────────────────────────────────┘    │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Agent Output (Live)                                      │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌───────────────────┐  ┌──────────────────────────────────┐    │
-│  │  Costs            │  │  Specifications / File Changes   │    │
-│  └───────────────────┘  └──────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Workflow State Diagram
-
-At the top of the dashboard, an interactive diagram shows your current workflow state:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ┌─────┐    plan    ┌───────┐    implement    ┌─────────┐    │
-│  │ IDLE│ ──────────>│PLANING│ ──────────────> │IMPLEMENT│    │
-│  └─────┘            └───────│                 └────┬────┘    │
-│    ▲                        │                      │         │
-│    │                        │ finish               │ review  │
-│    └────────────────────────┴──────────────────────┴─────────┤
-│                         ◀── DONE ◀──                         │
-└──────────────────────────────────────────────────────────────┘
-```
-
-- **Current state** is highlighted in color
-- **Valid transitions** are shown as arrows
-- **Updates automatically** as the workflow progresses
-
-This visualization helps you understand where you are and what actions are available.
-
-## Active Task Card
-
-Shows your current task with all key information:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                  │
-├──────────────────────────────────────────────────────────────┤
-│  Implement OAuth2 authentication with support for Google...  │
-│                                                              │
-│  [👁 View Task]                                              │
-│                                                              │
-│  State: ● Implementing                                       │
-│  Branch: feature/user-oauth                                  │
-│  Worktree: ~/project-worktrees/a1b2c3d4                      │
-│  Progress: ████████░░░░ 80%                                  │
-│                                                              │
-│  Actions:                                                    │
-│    [Continue] [Plan] [Implement] [Review] [Finish]           │
-│                                                              │
-│  Cost: $0.45  |  Sessions: 3  |  Checkpoint: 5/7             │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Information Shown
-
-| Field           | Description                                       |
-|-----------------|---------------------------------------------------|
-| **Title**       | Task name (from markdown heading or frontmatter)  |
-| **Description** | Short preview of task content (first ~200 chars)  |
-| **View Task**   | Button to open full task content in modal         |
-| **State**       | Current workflow state with color indicator       |
-| **Branch**      | Git branch name                                   |
-| **Worktree**    | Path if using worktrees                           |
-| **Progress**    | Visual progress bar                               |
-| **Cost**        | Token usage cost                                  |
-| **Sessions**    | Number of AI sessions                             |
-| **Checkpoint**  | Current checkpoint number                         |
-| **Labels**      | Colored badges for task categorization (optional) |
-
-### View Task Modal
-
-Click **View Task** to open a modal showing the full task content rendered as HTML:
-
-- **Markdown rendered** - Headers, code blocks, lists, tables display properly
-- **Syntax highlighting** - Code blocks show language-appropriate formatting
-- **Click outside** to close the modal, or use the **×** button
-
-### Action Buttons
-
-| Button        | Purpose                       |
-|---------------|-------------------------------|
-| **Continue**  | Auto-run next logical step    |
-| **Plan**      | Generate specifications       |
-| **Implement** | Execute specifications        |
-| **Review**    | Run quality checks            |
-| **Finish**    | Complete and merge task       |
-| **Undo**      | Revert to previous checkpoint |
-| **Redo**      | Reapply undone checkpoint     |
-| **Abandon**   | Cancel and discard task       |
-
-### Labels
-
-Labels appear as colored badges on the task card for organization and filtering:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  🏷️ priority:high  ×  type:bug  ×  team:backend  [+ Add]     │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**Managing Labels:**
-
-- **Add labels** - Click **+ Add** button to open label picker with autocomplete
-- **Remove labels** - Click **×** on any label badge
-- **View all labels** - API endpoint `/api/v1/labels` shows all labels with counts
-
-**Label Colors:**
-
-Colors are hash-based (consistent per label name):
-- Same label always has same color
-- Visual distinction for easy scanning
-
-**Common Label Patterns:**
-
-| Category | Examples                                                                |
-|----------|-------------------------------------------------------------------------|
-| Priority | `priority:critical`, `priority:high`, `priority:medium`, `priority:low` |
-| Type     | `type:bug`, `type:feature`, `type:refactor`, `type:docs`, `type:test`   |
-| Team     | `team:frontend`, `team:backend`, `team:devops`                          |
-| Status   | `status:blocked`, `status:in-review`                                    |
-
-### Hierarchical Context
-
-When working on a subtask (e.g., a GitHub issue that's a child of another issue), the active task card shows hierarchical context:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  👤 Parent Task                                               │
-├──────────────────────────────────────────────────────────────┤
-│  Implement User Authentication System                        │
-│                                                              │
-│  Add OAuth2 authentication with support for Google and...    │
-│                                                              │
-│  [View in provider →]                                        │
-└──────────────────────────────────────────────────────────────┘
-```
-
-And sibling subtasks:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  🔗 Related Subtasks                                         │
-├──────────────────────────────────────────────────────────────┤
-│  ● Implement OAuth2 Provider Interface                       │
-│  ○ Add Token Refresh Logic                                   │
-│  ○ Create Login/Logout Endpoints                             │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**Legend:**
-- `●` (green) - Completed
-- `◐` (blue) - In progress
-- `○` (gray) - Todo
-- `✗` (red) - Failed
-- `⏸` (yellow) - Paused
-
-This context helps you understand:
-- The broader goal (parent task)
-- What related work is being done by others (siblings)
-- How your subtask fits into the overall plan
-
-See [Context Configuration](/configuration/context.md) to customize hierarchical context inclusion.
-
-## Quick Actions
-
-Context-aware buttons for common tasks:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Quick Actions                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Idle                                                 │
-│                                                              │
-│  Ready for: Implement (2 specifications ready)               │
-│                                                              │
-│  [Implement] [Undo] [Add Note]                               │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## Task History
-
-Browse and resume past tasks:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Task History                                                │
-├──────────────────────────────────────────────────────────────┤
-│  🔍 [Search tasks...]       Filter: [All ▼]    Sort: [Date ▼]│
-│                                                              │
-│  ┌─────────────────────────────────────────────────────┐     │
-│  │ 📋 Add User OAuth Authentication     │ [Done]       │     │
-│  │ State: Done  Branch: main  Created: 2h ago          │     │
-│  │ $0.45 • 3 sessions                                  │     │
-│  │                                    [View] [Load]    │     │
-│  └─────────────────────────────────────────────────────┘     │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────┐     │
-│  │ 📋 Health Check Endpoint            │ [Implementing]│     │
-│  │ State: Implementing  Branch: feature/health         │     │
-│  │ $0.12 • 1 session                                   │     │
-│  │                                    [View] [Load]    │     │
-│  └─────────────────────────────────────────────────────┘     │
-│                                                              │
-│  Showing 2 of 12 tasks                                       │
-└──────────────────────────────────────────────────────────────┘
-```
-
-See [Task History](task-history.md) for details on filtering and search.
-
-## Agent Output
-
-Real-time streaming of AI responses:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                         │
-├──────────────────────────────────────────────────────────────┤
-│  $ Analyzing codebase structure...                           │
-│  $ Reading specification files...                            │
-│  ✓ Found 2 specification files to process                    │
-│                                                              │
-│  → Creating internal/auth/oauth.go                           │
-│    • Defined OAuthConfig struct                              │
-│    • Added GoogleProvider implementation                     │
-│  ✓ Created successfully                                      │
-│                                                              │
-│  → Modifying internal/auth/middleware.go                     │
-│    • Added AuthMiddleware function                           │
-│  ✓ Modified successfully                                     │
-│                                                              │
-│  ▶ Streaming... (scrolls automatically)                      │
-└──────────────────────────────────────────────────────────────┘
-```
-
-Features:
-- **Auto-scroll** - Follows output as it streams
-- **Color-coded** - Different colors for different message types
-- **Timestamps** - Shows when each action occurred
-- **Copy button** - Copy output to clipboard
-
-## Costs Section
-
-Track token usage and costs:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Costs & Usage                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  This Session: $0.45  |  Tasks: 3  |  Tokens: 145,231        │
-│                                                              │
-│  Cost by Task:                                               │
-│  Add Health Check              $0.12  ███████░░░░            │
-│  User OAuth Auth               $0.28  ████████████████       │
-│  Fix Login Bug                  $0.05  ██░░░░░░░░░░░░        │
-│                                                              │
-│  Token Usage (Last 7 Days):                                  │
-│  Mon   ████████░░  92K tokens                                │
-│  Tue   ██████████  115K tokens                               │
-│  Wed   ██████░░░░  78K tokens                                │
-│  Thu   ████████░░  95K tokens                                │
-│  Fri   ███████░░░  88K tokens                                │
-│                                                              │
-│  Estimated: $0.68/day  |  Budget: $5.00/day  (13.6% used)    │
-└──────────────────────────────────────────────────────────────┘
-```
-
-Budget limits show a progress bar and warning state when thresholds are reached.
-
-### Cost Tracking Details
-
-The Costs section provides real-time tracking of token usage and associated costs:
-
-| Metric            | Description                                |
-|-------------------|--------------------------------------------|
-| **Input Tokens**  | Tokens sent to the AI (prompt + context)   |
-| **Output Tokens** | Tokens generated by the AI (response)      |
-| **Cached Tokens** | Previously processed tokens (90% discount) |
-| **Total Cost**    | USD cost based on agent model pricing      |
-
-**Cost Data Location:** Stored in `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/work.yaml`
-
-**API Access:**
-```bash
-# Get cost data via API
-curl http://localhost:8080/api/v1/costs
-
-# Get task-specific costs
-curl http://localhost:8080/api/v1/tasks/{id}/costs
-```
-
-For more detailed cost analysis, see [`mehr cost`](/cli/cost.md) in the CLI reference.
-
-## Specifications Section
-
-When specifications exist, shows them with status. Click to expand and view content:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Specifications (2 files)                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  📄 specification-1.md                     [pending]          │
-│  ▼ (click to expand)                                         │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  ## OAuth Provider Setup                               │  │
-│  │                                                        │  │
-│  │  Create the OAuth provider interface with support      │  │
-│  │  for multiple providers (Google, GitHub, etc.)         │  │
-│  │                                                        │  │
-│  │  **Implementation:**                                   │  │
-│  │  ```go                                                 │  │
-│  │  type OAuthProvider interface {                        │  │
-│  │      Authenticate(token string) (*User, error)         │  │
-│  │  }                                                     │  │
-│  │  ```                                                   │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                              │
-│  📄 specification-2.md                     [completed]        │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Specification Rendering
-
-Specification content is rendered as HTML with full markdown support:
-
-- **Headers** - Proper heading hierarchy
-- **Code blocks** - Syntax-highlighted with language detection
-- **Lists** - Bulleted and numbered lists
-- **Tables** - Markdown tables rendered as HTML tables
-- **Links** - Clickable hyperlinks
-
-This provides a much better reading experience than raw markdown text.
-
-## File Changes Section
-
-After implementation, shows what changed:
-
-```
-┌───────────────────────────────────────────────────────────────────┐
-│  File Changes (5 files)                                           │
-├───────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ▼ internal/auth/oauth.go                 [+ Created, 87 lines]   │
-│  ▼ internal/auth/middleware.go            [+ Modified, 23 lines]  │
-│  ▼ internal/auth/oauth_test.go            [+ Created, 54 lines]   │
-│  ▼ cmd/server/main.go                     [+ Modified, 8 lines]   │
-│  ▼ go.lock                                [+ Modified, 2 lines]   │
-│                                                                   │
-│  [View All Diffs]                                                 │
-└───────────────────────────────────────────────────────────────────┘
-```
-
-Click any file to see the diff view.
+### Active Task Summary
+
+When you have an active task, a summary card appears at the top showing:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Task name (click to view full details) |
+| **State** | Current workflow state (planning, implementing, etc.) |
+| **Branch** | Git branch for this task |
+
+Click **View Task** or the task title to open the Task Detail page with full workflow controls.
+
+### Task Creation Tabs
+
+Three tabs for starting new work:
+
+| Tab | Purpose |
+|-----|---------|
+| **Start** | Begin a new task from a reference (file path, GitHub issue, Jira ticket) |
+| **Quick** | Manage quick tasks queue — lightweight tasks for rapid execution |
+| **Plan** | Create project plans from requirements or specifications |
+
+### Budget Overview
+
+If monthly budget tracking is enabled in [Settings](/web-ui/settings.md), this section shows:
+- Current month spending
+- Budget limit and remaining
+- Warning indicators when approaching limits
+
+### Recent Tasks
+
+A list of your recent tasks with:
+- Task title and state
+- Creation date
+- Quick links to view or resume
+
+See [Task History](/web-ui/task-history.md) for full filtering and search capabilities.
+
+## Task Detail Page
+
+**For active task management, click a task to access the Task Detail page.** This page provides:
+
+- **Workflow Actions** — Buttons for Plan, Implement, Review, Finish, Undo, Redo, Abandon
+- **Workflow Diagram** — Visual state machine showing current progress
+- **Specifications** — View generated specs with expandable content
+- **Reviews** — Code review results and issues
+- **Notes** — Add context notes for the AI agent
+- **Agent Terminal** — Real-time streaming of AI responses
+- **Costs** — Token usage and cost tracking
+- **Quick Questions** — Ask the agent questions without changing workflow state
+
+This separation keeps the dashboard lightweight while providing full control on the task detail page.
+
+## Connection Status
+
+The dashboard header shows your real-time connection status:
+- **Connected** (green) — SSE connection active, receiving live updates
+- **Reconnecting** (yellow) — Connection lost, attempting to reconnect
+
+Real-time updates include:
+- Task state changes
+- Agent activity indicators
+- Cost updates
+- New checkpoint notifications
 
 ## Dashboard Features
 
 ### Dark Mode
 
-Toggle between light and dark themes using the button in the top-right.
+Toggle between light and dark themes using the button in the top-right corner.
 
 ### Mobile Responsive
 
@@ -416,14 +105,6 @@ Full feature support on mobile devices with:
 - Touch-friendly controls
 - Stacked layouts on small screens
 
-### Real-Time Updates
-
-All dashboard sections update automatically via Server-Sent Events (SSE):
-- Task state changes
-- Agent output streaming
-- Cost updates
-- New checkpoints
-
 ### Notifications
 
 Stay informed with:
@@ -431,10 +112,15 @@ Stay informed with:
 - Browser notifications for task completion (requires permission)
 - Notification center showing recent alerts
 
+---
+
+## Also Available via CLI
+
+Prefer working from the terminal? See [CLI: serve](/cli/serve.md) for server options and flags.
+
 ## Next Steps
 
-- [**Getting Started**](getting-started.md) - First time walkthrough
-- [**Creating Tasks**](creating-tasks.md) - Create your first task
-- [**Settings**](settings.md) - Configure workspace
-- [**Context Configuration**](/configuration/context.md) - Hierarchical task context settings
-- [**CLI: serve**](/cli/serve.md) - Server command options
+- [**Getting Started**](/web-ui/getting-started.md) — First time walkthrough
+- [**Creating Tasks**](/web-ui/creating-tasks.md) — Create your first task
+- [**Settings**](/web-ui/settings.md) — Configure workspace
+- [**Task History**](/web-ui/task-history.md) — Browse past tasks

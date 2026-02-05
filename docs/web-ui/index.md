@@ -17,13 +17,8 @@ The Mehrhof Web UI provides a comfortable browser-based interface for the plan â
 
 ## Getting Started
 
-1. **Start the server:**
-   ```bash
-   mehr serve --open
-   ```
-
+1. **Start the server** â€” See [Getting Started](getting-started.md) for setup instructions
 2. **Open your browser** to `http://localhost:XXXX`
-
 3. **Create your first task** by clicking "Create Task"
 
 For a complete walkthrough, see [Getting Started](getting-started.md).
@@ -86,30 +81,22 @@ Both interfaces provide the same core functionality. The choice depends on your 
 | Feature           | Web UI            | CLI                |
 |-------------------|-------------------|--------------------|
 | Task management   | Buttons and forms | Commands and flags |
-| Status monitoring | Always visible    | Run `mehr status`  |
+| Status monitoring | Always visible    | Manual checks      |
 | Configuration     | Visual forms      | Edit YAML files    |
 | Automation        | Not available     | Scriptable         |
 | Learning curve    | Lower             | Higher             |
 
 For a detailed comparison, see [Web UI vs CLI](/guides/web-ui-vs-cli.md).
 
-## Starting the Server
+---
 
-```bash
-# Basic usage
-mehr serve
+## Also Available via CLI
 
-# Open browser automatically
-mehr serve --open
+Prefer working from the terminal? All Web UI features are available as CLI commands.
 
-# Specific port
-mehr serve --port 3000
+See [CLI: serve](/cli/serve.md) for starting the server and [CLI Overview](/cli/index.md) for all workflow commands.
 
-# Global mode (all projects)
-mehr serve --global
-```
-
-See [CLI: serve](/cli/serve.md) for all server options.
+---
 
 ## Next Steps
 

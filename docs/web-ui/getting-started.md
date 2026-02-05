@@ -20,94 +20,30 @@ By the end of this guide, you'll be able to:
 
 ---
 
-## Step 1: Navigate to Your Project
+## Step 1: Start the Server
 
-Open your terminal and go to your project directory:
+Before using the Web UI, you need to start the server from your terminal. See [CLI: serve](/cli/serve.md) for setup instructions.
 
-```bash
-cd /path/to/your/project
-```
+Once started, your browser will open automatically to `http://localhost:XXXX`.
 
-```mermaid
-flowchart LR
-    A[Terminal] --> B["cd /path/to/project"]
-    B --> C[mehr init]
-    C --> D[mehr serve --open]
-    D --> E[Browser opens]
-```
-
-> **Tip:** If you don't have a project yet, create one:
-> ```bash
-> mkdir my-project
-> cd my-project
-> ```
-
----
-
-## Step 2: Initialize (First Time Only)
-
-If this is your first time using Mehrhof in this project, run:
-
-```bash
-mehr init
-```
-
-You should see:
-
-```
-Initialized task workspace
-Created: .mehrhof/ (configuration)
-Updated: .gitignore
-Note: Workspace data is stored in your home directory
-```
-
-This only needs to be done once per project.
-
----
-
-## Step 3: Start the Web UI
-
-Start the server and open your browser:
-
-```bash
-mehr serve --open
-```
-
-Your browser will open automatically to `http://localhost:XXXX`
-
-> **If --open doesn't work:** Manually open your browser to the URL shown in the terminal (e.g., `http://localhost:54321`)
+> **Need help with setup?** The [CLI: serve](/cli/serve.md) guide covers initialization, starting the server, and troubleshooting.
 
 ### What You'll See
 
-```mermaid
-flowchart TD
-    A[Dashboard] --> B[Active Task Card]
-    A --> C[Create Task Button]
-    A --> D[Quick Actions]
-    A --> E[Task History]
-    A --> F[Settings]
+```text
+                    ┌───────────┐
+                    │ Dashboard │
+                    └─────┬─────┘
+                          │
+      ┌───────────┬───────┼───────┬─────────────┐
+      ▼           ▼       ▼       ▼             ▼
+┌───────────┐ ┌────────┐ ┌───────┐ ┌──────────┐ ┌──────────┐
+│  Active   │ │ Create │ │ Quick │ │   Task   │ │ Settings │
+│   Task    │ │  Task  │ │Actions│ │  History │ │          │
+└───────────┘ └────────┘ └───────┘ └──────────┘ └──────────┘
 ```
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Mehrhof Dashboard                           │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  Active Task: No active task                             │  │
-│  │                                                          │  │
-│  │  [+ Create Task]                                         │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐  │
-│  │  Task History   │  │  Quick Actions  │  │   Settings    │  │
-│  │  (empty)        │  │                 │  │               │  │
-│  └─────────────────┘  └─────────────────┘  └───────────────┘  │
-│                                                                 │
-│  [Dark Mode Toggle]                                             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The dashboard has several sections:
+The dashboard displays several sections: an **Active Task Card** (showing "No active task" initially with a **Create Task** button), **Task History** (empty at first), **Quick Actions**, and **Settings**. A dark mode toggle appears in the top right corner.
 
 | Section              | What It Does                                                              |
 |----------------------|---------------------------------------------------------------------------|
@@ -120,23 +56,7 @@ The dashboard has several sections:
 
 ### Workflow Diagram
 
-At the top of the dashboard, you'll see an interactive workflow diagram that visualizes the current state:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ┌─────┐    plan    ┌───────┐    implement    ┌─────────┐   │
-│  │ IDLE│ ──────────>│PLANING│ ──────────────> │IMPLEMENT│   │
-│  └─────┘             └───────│                  └────┬────┘   │
-│    ▲                        │                      │         │
-│    │                        │ finish              │ review  │
-│    └────────────────────────┴──────────────────────┴─────────┤
-│                         ◀── DONE ◀──                           │
-└──────────────────────────────────────────────────────────────┘
-```
-
-- **Current state** is highlighted in color
-- **Valid transitions** are shown as arrows
-- The diagram updates automatically as the workflow progresses
+At the top of the dashboard, you'll see an interactive workflow diagram that visualizes the current state. It shows states (IDLE → PLANNING → IMPLEMENT → DONE) with arrows indicating valid transitions. The current state is highlighted in color, and the diagram updates automatically as the workflow progresses.
 
 This helps you understand where you are in the workflow and what actions are available.
 
@@ -150,30 +70,20 @@ Click the **"Create Task"** button in the center of the dashboard.
 
 You'll see a dialog with several options:
 
-```mermaid
-flowchart TD
-    A[Create Task Dialog] --> B[Write Task]
-    A --> C[Upload File]
-    A --> D[From URL]
-    A --> E[From Provider]
+```text
+           ┌────────────────────┐
+           │ Create Task Dialog │
+           └─────────┬──────────┘
+                     │
+     ┌───────┬───────┼───────┬──────────────┐
+     ▼       ▼       ▼       ▼              ▼
+┌────────┐ ┌────────┐ ┌──────┐ ┌─────────────────┐
+│ Write  │ │ Upload │ │ From │ │ From Provider   │
+│ Task   │ │ File   │ │ URL  │ │                 │
+└────────┘ └────────┘ └──────┘ └─────────────────┘
 ```
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Create Task                                                 │
-├─────────────────────────────────────────────────────────────┤
-│  [Write Task] [Upload File] [From URL] [From Provider]      │
-│  ─────────────────────────────────────────────────────────  │
-│  Title: [_________________________________________________] │
-│                                                              │
-│  Description:                                                │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │                                                    │     │
-│  └────────────────────────────────────────────────────┘     │
-│                                                              │
-│                                    [Create Task] [Cancel]   │
-└─────────────────────────────────────────────────────────────┘
-```
+The **Create Task** dialog has tabs for **Write Task**, **Upload File**, **From URL**, and **From Provider**. Below the tabs, you'll find a Title field and a Description text area. Action buttons include **Create Task** and **Cancel**.
 
 ### Option A: Write a Task (Recommended for First Time)
 
@@ -211,15 +121,15 @@ Create a `/health` endpoint that:
 
 Mehrhof works in three distinct phases. This separation gives you control over each step—you can review the plan before any code is written.
 
-```mermaid
-flowchart LR
-    A[Task Created] --> B[1. Plan Phase]
-    B --> C[Specifications Created]
-    C --> D[2. Implement Phase]
-    D --> E[Code Written]
-    E --> F[3. Review Phase]
-    F --> G[Quality Checks]
-    G --> H[Finish]
+```text
+┌──────────────┐     ┌─────────────┐     ┌────────────────────┐     ┌──────────────────┐
+│ Task Created │ ──▶ │ 1. Plan     │ ──▶ │ Specs Created      │ ──▶ │ 2. Implement     │
+└──────────────┘     └─────────────┘     └────────────────────┘     └────────┬─────────┘
+                                                                             │
+                                                                             ▼
+┌────────┐     ┌─────────────────┐     ┌─────────────┐     ┌──────────────────────────┐
+│ Finish │ ◀── │ Quality Checks  │ ◀── │ 3. Review   │ ◀── │ Code Written             │
+└────────┘     └─────────────────┘     └─────────────┘     └──────────────────────────┘
 ```
 
 ### The Planning Phase (Plan Mode)
@@ -278,27 +188,13 @@ Both specifications will be used during implementation.
 
 After creating your task, you'll see it appear in the **Active Task** card.
 
-```mermaid
-flowchart LR
-    A[Idle State] --> B[Click 'Plan']
-    B --> C[Planning State]
-    C --> D[AI Generates Specifications]
-    D --> E[Ready to Implement]
+```text
+┌────────────┐     ┌──────────────┐     ┌────────────────┐     ┌─────────────────────────┐     ┌────────────────────┐
+│ Idle State │ ──▶ │ Click 'Plan' │ ──▶ │ Planning State │ ──▶ │ AI Generates Specs      │ ──▶ │ Ready to Implement │
+└────────────┘     └──────────────┘     └────────────────┘     └─────────────────────────┘     └────────────────────┘
 ```
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add Health Check Endpoint                       │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Branch: feature/add-health-check                             │
-│                                                              │
-│  Actions:                                                    │
-│    [Plan] [Implement] [Review] [Finish] [Continue]           │
-│                                                              │
-│  Cost: $0.12  |  Sessions: 1  |  Checkpoint: 3/5             │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Active Task** card shows the task title, state indicator (● Idle), git branch name, action buttons (**Plan**, **Implement**, **Review**, **Finish**, **Continue**), and metrics (cost, sessions, checkpoint position).
 
 1. Click the **"Plan"** button
 2. Watch as the AI analyzes your requirements
@@ -336,24 +232,7 @@ Use our existing HTTP router pattern from main.go
 
 This note will be included when the AI implements the task.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Specifications                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  📄 specification-1.md                                       │
-│     # Implementation Plan: Add Health Check Endpoint         │
-│                                                              │
-│     ## Overview                                              │
-│     Create a /health endpoint that returns HTTP 200...       │
-│                                                              │
-│     ## Files to Create                                       │
-│     - internal/health/handler.go                             │
-│     - internal/health/handler_test.go                        │
-│                                                              │
-│  [+ Add Note]  [View Full Content]                           │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Specifications** section displays spec file names (e.g., `specification-1.md`) with expandable content showing the implementation plan, overview, and files to create. Action buttons include **Add Note** and **View Full Content**.
 
 ---
 
@@ -361,12 +240,10 @@ This note will be included when the AI implements the task.
 
 When you're happy with the plan, click the **"Implement"** button.
 
-```mermaid
-flowchart LR
-    A[Plan Ready] --> B[Click Implement]
-    B --> C[AI Writes Code]
-    C --> D[Files Created/Modified]
-    D --> E[Ready for Review]
+```text
+┌────────────┐     ┌──────────────────┐     ┌────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│ Plan Ready │ ──▶ │ Click Implement  │ ──▶ │ AI Writes Code │ ──▶ │ Files Created/Mod.  │ ──▶ │ Ready for Review │
+└────────────┘     └──────────────────┘     └────────────────┘     └─────────────────────┘     └──────────────────┘
 ```
 
 Watch as the AI:
@@ -388,30 +265,7 @@ Modified: cmd/server/main.go
 Created: internal/health/handler_test.go
 ```
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                          │
-├──────────────────────────────────────────────────────────────┤
-│  $ Analyzing codebase structure...                            │
-│  $ Reading specification files...                             │
-│  ✓ Found 3 specification files to process                     │
-│                                                              │
-│  → Creating internal/health/handler.go                        │
-│    • Defined HealthHandler struct                             │
-│    • Added ServeHTTP method                                   │
-│  ✓ Created successfully                                       │
-│                                                              │
-│  → Modifying cmd/server/main.go                               │
-│    • Registered /health route                                 │
-│  ✓ Modified successfully                                      │
-│                                                              │
-│  → Creating internal/health/handler_test.go                   │
-│    • Added TestHealthHandler                                  │
-│  ✓ Created successfully                                       │
-│                                                              │
-│  ▶ Streaming... (scrolling updates in real-time)              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Agent Output** panel shows live streaming updates with status indicators (checkmarks for completed actions, arrows for in-progress actions). It displays what the AI is analyzing, creating, and modifying in real-time.
 
 ---
 
@@ -423,28 +277,7 @@ After implementation completes, review what changed:
 2. See which files were created or modified
 3. Click on files to see the actual changes (diff view)
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  File Changes (3 files)                                       │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ▼ internal/health/handler.go          [+ Created, 45 lines] │
-│     │  + package health                                         │
-│     │  +                                                        │
-│     │  + type HealthHandler struct { ... }                      │
-│     │  + func (h *HealthHandler) ServeHTTP(...)                │
-│                                                              │
-│  ▼ cmd/server/main.go                  [+ Modified, 3 lines] │
-│     │  @@ -15,6 +15,9 @@                                        │
-│     │           + "github.com/valksor/go-mehrhof/internal/health"│
-│     │   ...                                                     │
-│     │  +43:        mux.HandleFunc("/health", health.Handler)   │
-│                                                              │
-│  ▼ internal/health/handler_test.go      [+ Created, 32 lines]│
-│     │  [expand to view tests...]                                 │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **File Changes** section lists files with status indicators (Created, Modified) and line counts. Click any file to expand and see the diff, showing the specific code changes made.
 
 ### Not Happy With Something?
 
@@ -454,13 +287,14 @@ Use **Undo** to go back:
 2. Add a note explaining what to fix
 3. Click **"Implement"** again
 
-```mermaid
-flowchart LR
-    A[Review Changes] --> B{Happy?}
-    B -->|Yes| C[Click Finish]
-    B -->|No| D[Click Undo]
-    D --> E[Add Note]
-    E --> F[Implement Again]
+```text
+                                    Yes ──▶ ┌──────────────┐
+                               ┌────────────│ Click Finish │
+┌────────────────┐     ┌───────┴──┐         └──────────────┘
+│ Review Changes │ ──▶ │  Happy?  │
+└────────────────┘     └───────┬──┘         ┌────────────┐     ┌──────────┐     ┌───────────────────┐
+                               └────────────│ Click Undo │ ──▶ │ Add Note │ ──▶ │ Implement Again   │
+                                    No ──▶  └────────────┘     └──────────┘     └───────────────────┘
 ```
 
 ---
@@ -475,29 +309,7 @@ This will:
 - Clean up the task branch
 - Mark the task as complete
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ✓ Finish Task                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add Health Check Endpoint                             │
-│  Status: Ready to finish                                     │
-│                                                              │
-│  Summary:                                                    │
-│  • 3 files created                                           │
-│  • 1 file modified                                           │
-│  • 0 files deleted                                           │
-│  • All tests passing                                         │
-│                                                              │
-│  What happens next:                                          │
-│  ✓ Quality checks will run                                   │
-│  ✓ Changes will merge to main branch                         │
-│  ✓ Feature branch will be deleted                            │
-│  ✓ Task will be marked complete                              │
-│                                                              │
-│                                    [Cancel] [Confirm Finish] │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Finish Task** confirmation dialog shows the task name, status, a summary of changes (files created, modified, deleted, test status), and explains what happens next (quality checks, merge, branch cleanup, task completion). Action buttons include **Cancel** and **Confirm Finish**.
 
 ---
 
@@ -536,13 +348,15 @@ A: Absolutely! They're fully compatible. You can start a task in the browser and
 A: Your code stays in your project directory. Task data (specs, sessions) is stored in `~/.valksor/mehrhof/` to keep your project clean.
 
 **Q: How do I stop the server?**
-A: Press `Ctrl+C` in the terminal where `mehr serve` is running.
+A: Press `Ctrl+C` in the terminal where the server is running.
 
 ---
 
-## CLI Equivalent
+## Also Available via CLI
 
-For the full CLI workflow, see [Getting Started with the CLI](/guides/first-task.md).
+Prefer working from the terminal? See [Getting Started with the CLI](/guides/first-task.md) for the command-line workflow.
+
+---
 
 ## Next Steps
 

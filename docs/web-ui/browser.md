@@ -4,29 +4,11 @@ The Browser Control Panel provides a web interface for automating Chrome during 
 
 ## Accessing Browser Control
 
-From the navigation bar, open the **More** dropdown and click **Tools**. The Browser Control panel is located on the Tools page.
+From the navigation bar, click **Tools**, then select the **Browser** tab.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Browser Automation                                          │
-├──────────────────────────────────────────────────────────────┤
-│  Chrome detected: chrome (port 9222)                         │
-│                                                              │
-│  Open Tabs:                                                  │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ 🌐 GitHub - valksor/go-mehrhof          [Active]    │      │
-│  │ 🌐 Localhost:8080 - Health Endpoint                 │      │
-│  │ 🌐 Google - "How to implement OAuth"                │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  Controls:                                                   │
-│  URL: [____________________]  [Goto]  [Refresh]              │
-│                                                              │
-│  [Screenshot] [Console] [DOM Query] [Close Tab]              │
-│                                                              │
-│  Last action: Navigated to localhost:8080/health             │
-└──────────────────────────────────────────────────────────────┘
-```
+The Browser panel shows the Chrome connection status and lists all open tabs. You can navigate to URLs, take screenshots, click elements, type text, evaluate JavaScript, query the DOM, and access DevTools features (network, console, WebSocket, source, coverage).
+
+For a complete overview of the Tools page, see [Tools](/web-ui/tools.md).
 
 ## Starting Chrome
 
@@ -51,35 +33,13 @@ View and manage all open Chrome tabs:
 
 Navigate to any URL:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Navigate to URL                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  URL: [http://localhost:8080/health___________]              │
-│                                                              │
-│  [Goto]  [Cancel]                                            │
-└──────────────────────────────────────────────────────────────┘
-```
+Enter the URL in the address field and click **Goto** to navigate, or **Cancel** to close the dialog.
 
 ### Screenshots
 
 Capture screenshots of the current page:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Screenshot Options                                          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [Full Page]  [Visible Only]                                 │
-│                                                              │
-│  Format: [PNG ▼]  [JPEG]                                     │
-│                                                              │
-│  Quality: [████████░░] 80%                                   │
-│                                                              │
-│  [Capture]  [Cancel]                                         │
-└──────────────────────────────────────────────────────────────┘
-```
+The screenshot dialog lets you choose between **Full Page** or **Visible Only** capture, select the format (PNG or JPEG), and adjust the quality slider. Click **Capture** to take the screenshot.
 
 Screenshots are saved to the configured screenshot directory.
 
@@ -87,61 +47,19 @@ Screenshots are saved to the configured screenshot directory.
 
 Inspect page elements using CSS selectors:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  DOM Query                                                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Selector: [#submit-button________________]                  │
-│                                                              │
-│  Results (1):                                                │
-│  • <button id="submit-button" class="btn primary">           │
-│      Submit                                                  │
-│    </button>                                                 │
-│                                                              │
-│  [Query]  [Cancel]                                           │
-└──────────────────────────────────────────────────────────────┘
-```
+Enter a CSS selector in the text field and click **Query** to find matching elements. Results display the matched HTML elements below the input field.
 
 ### JavaScript Console
 
 View console output:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Console Output                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Level: [All ▼]  [Info]  [Warn]  [Error]                     │
-│                                                              │
-│  10:23:45 [Info]   Page loaded                               │
-│  10:23:46 [Info]   API request: GET /api/users               │
-│  10:23:47 [Warn]   Deprecated API usage detected             │
-│  10:23:48 [Error]  Failed to load resource: net::ERR_...     │
-│                                                              │
-│  [Clear]  [Close]                                            │
-└──────────────────────────────────────────────────────────────┘
-```
+The console panel displays browser console messages with timestamps and severity levels. Use the level filter to show All, Info, Warn, or Error messages. Click **Clear** to reset the log.
 
 ### Element Interaction
 
 Click elements and type text:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Interact with Element                                       │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Action: [Click ▼]  [Type]                                   │
-│                                                              │
-│  Selector: [#email-input________________]                    │
-│                                                              │
-│  Text to type: [user@example.com____________]                │
-│  (for Type action only)                                      │
-│                                                              │
-│  [Execute]  [Cancel]                                         │
-└──────────────────────────────────────────────────────────────┘
-```
+Select an action (Click or Type), enter the element selector, and optionally provide text to type. Click **Execute** to perform the interaction.
 
 ## DevTools Monitoring
 
@@ -151,19 +69,7 @@ The Browser Control Panel includes deep DevTools inspection panels for monitorin
 
 Capture HTTP requests and responses over a configurable duration:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Network Monitor                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Duration: [5__]s  ☑ Capture Body  [Monitor]                 │
-│                                                              │
-│  3 request(s) captured                                       │
-│  GET /api/users                                  200         │
-│  POST /api/login                                 401         │
-│  GET /static/logo.png                            304         │
-└──────────────────────────────────────────────────────────────┘
-```
+Set the monitoring duration, optionally enable **Capture Body** to include request/response bodies, and click **Monitor** to start. Captured requests display with their methods, paths, and status codes.
 
 - **Duration**: How long to monitor (1–30 seconds)
 - **Capture Body**: Include request/response bodies (up to 1MB default)
@@ -172,18 +78,7 @@ Capture HTTP requests and responses over a configurable duration:
 
 Listen for browser console messages with optional level filtering:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Console Logs                                                │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Duration: [5__]s  Level: [All ▼]  [Listen]                  │
-│                                                              │
-│  [error]   Uncaught TypeError: Cannot read property          │
-│  [warning] Deprecated API usage detected                     │
-│  [log]     Page loaded successfully                          │
-└──────────────────────────────────────────────────────────────┘
-```
+Set the listening duration, choose a level filter (All, Error, Warning, Info, or Log), and click **Listen** to capture console messages. Messages are color-coded by severity.
 
 - **Level filter**: All, Error, Warning, Info, or Log
 - Messages are color-coded by severity
@@ -192,18 +87,7 @@ Listen for browser console messages with optional level filtering:
 
 Monitor WebSocket frames sent and received:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  WebSocket Monitor                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Duration: [5__]s  [Monitor]                                 │
-│                                                              │
-│  → {"type":"subscribe","channel":"updates"}                  │
-│  ← {"type":"ack","status":"subscribed"}                      │
-│  ← {"type":"data","payload":{...}}                           │
-└──────────────────────────────────────────────────────────────┘
-```
+Set the monitoring duration and click **Monitor** to capture WebSocket frames. Sent frames are marked with → and received frames with ←.
 
 - **→** indicates sent frames, **←** indicates received frames
 
@@ -211,20 +95,7 @@ Monitor WebSocket frames sent and received:
 
 View the full HTML source or loaded JavaScript files:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Page Source                                                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [View Source]  [Scripts]                                    │
-│                                                              │
-│  <!DOCTYPE html>                                             │
-│  <html lang="en">                                            │
-│    <head>...</head>                                          │
-│    <body>...</body>                                          │
-│  </html>                                                     │
-└──────────────────────────────────────────────────────────────┘
-```
+Click **View Source** to see the full HTML of the current page, or **Scripts** to list all loaded JavaScript files with their source code.
 
 - **View Source**: Full HTML of the current page
 - **Scripts**: Lists all loaded JavaScript files with their source code
@@ -233,21 +104,7 @@ View the full HTML source or loaded JavaScript files:
 
 Inspect computed and matched CSS styles for any element:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  CSS Inspector                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Selector: [h1.title_____________]                           │
-│  ☑ Computed  ☐ Matched  [Inspect]                            │
-│                                                              │
-│  Computed Styles                                             │
-│  color: rgb(0, 0, 0)                                         │
-│  font-size: 24px                                             │
-│  font-weight: 700                                            │
-│  margin-bottom: 16px                                         │
-└──────────────────────────────────────────────────────────────┘
-```
+Enter a CSS selector, choose whether to show **Computed** styles (final resolved values) or **Matched** styles (CSS rules that applied), and click **Inspect** to view the results.
 
 - **Computed**: Final resolved CSS property values
 - **Matched**: CSS rules that matched the element (with selectors and origins)
@@ -256,22 +113,7 @@ Inspect computed and matched CSS styles for any element:
 
 Measure JavaScript and CSS code coverage:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Code Coverage                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Duration: [5__]s  ☑ JS  ☑ CSS  [Measure]                    │
-│                                                              │
-│  Coverage Summary                                            │
-│  ┌──────────┐  ┌──────────┐                                  │
-│  │ JS Used  │  │ JS Total │                                  │
-│  │  45 KB   │  │  120 KB  │                                  │
-│  └──────────┘  └──────────┘                                  │
-│  JS Files (3): main.js, vendor.js, analytics.js              │
-│  CSS Files (2): styles.css, theme.css                        │
-└──────────────────────────────────────────────────────────────┘
-```
+Set the measurement duration, toggle **JS** and/or **CSS** coverage tracking, and click **Measure**. The results show used vs total bytes and list the files analyzed.
 
 - **Duration**: How long to collect coverage data
 - **JS/CSS**: Toggle which types to track
@@ -338,20 +180,5 @@ browser:
 ## Also Available via CLI
 
 Control Chrome automation from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr browser status` | Check browser connection status |
-| `mehr browser goto <url>` | Navigate to a URL |
-| `mehr browser screenshot` | Capture page screenshot |
-| `mehr browser click <selector>` | Click an element |
-| `mehr browser type <selector> <text>` | Type text into an element |
-| `mehr browser dom <selector>` | Query DOM elements |
-| `mehr browser network` | Monitor network traffic |
-| `mehr browser console` | Listen for console logs |
-| `mehr browser websocket` | Monitor WebSocket frames |
-| `mehr browser source` | Get page HTML source |
-| `mehr browser styles <selector>` | Inspect CSS styles |
-| `mehr browser coverage` | Measure code coverage |
 
 See [CLI: browser](/cli/browser.md) for all options and DevTools monitoring commands.

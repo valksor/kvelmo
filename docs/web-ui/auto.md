@@ -199,12 +199,6 @@ AUTO failed at: quality
 
 Run automated workflows from the command line for scripting or CI/CD integration.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr auto task.md` | Run full workflow automatically |
-| `mehr auto --max-retries 5 task.md` | Set quality check retry limit |
-| `mehr auto --no-quality task.md` | Skip quality checks |
-
 See [CLI: auto](/cli/auto.md) for all flags and CI/CD examples.
 
 ## Common Workflows
@@ -228,10 +222,7 @@ See [CLI: auto](/cli/auto.md) for all flags and CI/CD examples.
 
 ### CI/CD Integration
 
-```bash
-# In your CI pipeline
-mehr auto --max-retries 1 --quality-target lint task.md
-```
+Auto mode can be integrated into CI/CD pipelines. See [CLI: auto](/cli/auto.md) for pipeline examples and configuration.
 
 ## Notes
 

@@ -38,11 +38,11 @@ Results appear below with file paths, line numbers, and code snippets.
 
 Optionally refine your search:
 
-| Field           | Description                                        | Example              |
-|-----------------|----------------------------------------------------|----------------------|
-| **Path**        | Restrict to a directory (relative to project root) | `./internal/auth`    |
-| **File Pattern** | Glob pattern for files                            | `**/*.go`, `**/*_test.go` |
-| **Context Lines** | Lines of surrounding context in results          | 1, 3 (default), 5, 10 |
+| Field             | Description                                        | Example                   |
+|-------------------|----------------------------------------------------|---------------------------|
+| **Path**          | Restrict to a directory (relative to project root) | `./internal/auth`         |
+| **File Pattern**  | Glob pattern for files                             | `**/*.go`, `**/*_test.go` |
+| **Context Lines** | Lines of surrounding context in results            | 1, 3 (default), 5, 10     |
 
 ### Streaming Results
 
@@ -52,13 +52,13 @@ For large codebases, check **Stream results** to see matches as they're found ra
 
 Each search result shows:
 
-| Field    | Description                              |
-|----------|------------------------------------------|
-| File     | Path to the matching file                |
-| Line     | Line number of the match                 |
-| Snippet  | The matching code snippet                |
-| Context  | Surrounding lines (based on context setting) |
-| Reason   | Why this result matches your query       |
+| Field   | Description                                  |
+|---------|----------------------------------------------|
+| File    | Path to the matching file                    |
+| Line    | Line number of the match                     |
+| Snippet | The matching code snippet                    |
+| Context | Surrounding lines (based on context setting) |
+| Reason  | Why this result matches your query           |
 
 Results are displayed in a structured format with clickable file paths for easy navigation.
 
@@ -156,14 +156,6 @@ internal/models/user.go:25
 ## Also Available via CLI
 
 Search code from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr find "query"` | Search with AI-powered code search |
-| `mehr find "query" --path ./src` | Limit search to a directory |
-| `mehr find "query" --pattern "*.go"` | Filter to specific file patterns |
-| `mehr find "query" --context 5` | Include more context lines |
-| `mehr find "query" --stream` | Stream results as they're found |
 
 See [CLI: find](/cli/find.md) for all search options and output formats.
 

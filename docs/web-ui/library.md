@@ -16,16 +16,16 @@ The pull form allows adding documentation from three source types:
 
 Pull documentation from any public URL with automatic HTML-to-markdown conversion.
 
-| Field | Description |
-|-------|-------------|
-| **Source** | URL to documentation (e.g., `https://docs.example.com/`) |
-| **Name** | Collection name (optional, auto-detected from URL) |
-| **Include Mode** | When to include: Auto, Explicit, or Always |
-| **Path Patterns** | Comma-separated glob patterns for auto-include |
-| **Tags** | Comma-separated tags for organization |
-| **Max Crawl Depth** | Link depth for crawling (default: 3) |
-| **Max Pages** | Maximum pages to fetch (default: 100) |
-| **Shared** | Store globally (available to all projects) |
+| Field               | Description                                              |
+|---------------------|----------------------------------------------------------|
+| **Source**          | URL to documentation (e.g., `https://docs.example.com/`) |
+| **Name**            | Collection name (optional, auto-detected from URL)       |
+| **Include Mode**    | When to include: Auto, Explicit, or Always               |
+| **Path Patterns**   | Comma-separated glob patterns for auto-include           |
+| **Tags**            | Comma-separated tags for organization                    |
+| **Max Crawl Depth** | Link depth for crawling (default: 3)                     |
+| **Max Pages**       | Maximum pages to fetch (default: 100)                    |
+| **Shared**          | Store globally (available to all projects)               |
 
 #### File Source
 
@@ -222,6 +222,15 @@ GET /api/v1/library/stats
 2. Confirm the removal
 3. Collection is deleted from storage
 
+## Storage Locations
+
+Pulled documentation is stored locally:
+
+- **Project collections**: `.mehrhof/library/` within the project
+- **Shared collections**: `~/.valksor/mehrhof/library/` (available to all projects)
+
+For details on the storage structure and auto-include mechanism, see [CLI: library — Downloaded Content Structure](/cli/library.md#downloaded-content-structure).
+
 ## Integration with AI Workflows
 
 Documentation collections are automatically used in AI workflows:
@@ -237,14 +246,6 @@ Enable auto-include via `--library` flag in CLI commands or configure collection
 ## Also Available via CLI
 
 Manage documentation collections from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr library` | List all collections |
-| `mehr library pull <source>` | Pull documentation from URL, file, or git |
-| `mehr library show <name>` | View collection details and pages |
-| `mehr library remove <name>` | Delete a collection |
-| `mehr library stats` | View library statistics |
 
 See [CLI: library](/cli/library.md) for all pull options, filtering, and batch operations.
 

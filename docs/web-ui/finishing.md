@@ -16,112 +16,40 @@ When you click **"Finish"**, Mehrhof:
 
 When you're satisfied with the implementation, click **"Finish"** button:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                  │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                               │
-│  Changes: 5 files modified                                   │
-│  Tests: ✅ All passing                                        │
-│                                                              │
-│  Actions:                                                    │
-│    [Plan] [Implement] [Review] [Finish] [Continue]           │
-│                                                              │
-│  [Finish] ← Click this button                                │
-└──────────────────────────────────────────────────────────────┘
-```
+When tests are passing and you're satisfied with the implementation, click **Finish** in the Active Task card to complete and merge your changes.
 
 ## Finish Phase Workflow
 
-```mermaid
-flowchart LR
-    A[Idle + Code Ready] --> B[Click Finish]
-    B --> C[Quality Checks]
-    C --> D{Checks Pass?}
-    D -->|Yes| E[Merge to Main]
-    D -->|No| F[Show Errors - Cancel Finish]
-    E --> G[Delete Branch]
-    G --> H[Mark Done]
+```text
+┌──────────────────┐     ┌──────────────┐     ┌────────────────┐     ┌──────────────┐
+│ Idle + Code Ready│ ──▶ │ Click Finish │ ──▶ │ Quality Checks │ ──▶ │ Checks Pass? │
+└──────────────────┘     └──────────────┘     └────────────────┘     └──────┬───────┘
+                                                                            │
+                          ┌─────────────────────────────────────────────────┼──────────────────────┐
+                          │ Yes                                             │                 No   │
+                          ▼                                                 │                      ▼
+                   ┌───────────────┐     ┌───────────────┐     ┌───────────┐│    ┌─────────────────────────────┐
+                   │ Merge to Main │ ──▶ │ Delete Branch │ ──▶ │ Mark Done ││    │ Show Errors - Cancel Finish │
+                   └───────────────┘     └───────────────┘     └───────────┘│    └─────────────────────────────┘
 ```
 
 ## Finish Confirmation Dialog
 
 Clicking **"Finish"** shows a confirmation dialog:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ✓ Finish Task                                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  Status: Ready to finish                                     │
-│                                                              │
-│  Summary:                                                    │
-│  • 3 files created                                           │
-│  • 2 files modified                                          │
-│  • 0 files deleted                                           │
-│  • All tests passing                                         │
-│                                                              │
-│  What happens next:                                          │
-│  ✓ Quality checks will run                                   │
-│  ✓ Changes will merge to main branch                         │
-│  ✓ Feature branch will be deleted                            │
-│  ✓ Task will be marked complete                              │
-│                                                              │
-│  Target Branch: main                                         │
-│  Merge Strategy: Squash merge                                │
-│                                                              │
-│                                    [Cancel] [Confirm Finish] │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Finish Task** confirmation dialog shows a summary of changes (files created, modified, deleted), what will happen (quality checks, merge, branch cleanup), and the target branch. Click **Confirm Finish** to proceed.
 
 ## Quality Checks
 
 Before merging, finish runs quality checks (if configured):
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Running Quality Checks...                                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ▶ Running make test...                                      │
-│  ✓ Tests passed (12/12)                                      │
-│                                                              │
-│  ▶ Running make quality...                                   │
-│  ✓ Code formatted                                            │
-│  ✓ No lint issues                                            │
-│  ✓ Security checks passed                                    │
-│                                                              │
-│  All checks passed!                                          │
-│                                                              │
-│                                    [Continue]  [Cancel]      │
-└──────────────────────────────────────────────────────────────┘
-```
+The quality checks progress dialog shows each check as it runs (tests, formatting, linting, security), with status indicators for passed or failed checks.
 
 ### When Checks Fail
 
 If quality checks fail, finish is cancelled:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ⚠️ Quality Checks Failed                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  The following checks failed:                                │
-│                                                              │
-│  ✗ Tests: 2 failed                                           │
-│    • TestAuthMiddleware - missing return                     │
-│    • TestOAuthFlow - timeout                                 │
-│                                                              │
-│  ✗ Lint: 3 warnings                                          │
-│    • missing-comments on exported functions                  │
-│    • unused variable 'ctx'                                   │
-│                                                              │
-│  Fix issues and try again, or force finish.                  │
-│                                                              │
-│                    [Try Again]  [Force Finish]  [Cancel]     │
-└──────────────────────────────────────────────────────────────┘
-```
+If quality checks fail, the dialog lists each failure with details. You can click **Try Again** after fixing issues, **Force Finish** to proceed anyway (not recommended), or **Cancel** to return to the task.
 
 ## Merge Behavior
 
@@ -150,24 +78,7 @@ Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
 
 Once finish completes:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ✓ Task Completed                                            │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Done                                                 │
-│                                                              │
-│  Summary:                                                    │
-│  • Merged to main branch                                     │
-│  • Branch feature/user-oauth deleted                         │
-│  • Work directory cleaned up                                 │
-│                                                              │
-│  Commit: abc1234f (main branch)                              │
-│                                                              │
-│  [View in History]  [Create New Task]                        │
-└──────────────────────────────────────────────────────────────┘
-```
+Once complete, the success dialog shows what happened: branch merged, feature branch deleted, and the new commit hash. Click **View in History** to see the completed task or **Create New Task** to start fresh.
 
 ## Finish Options
 
@@ -218,12 +129,5 @@ After finishing:
 ## Also Available via CLI
 
 Complete tasks from the command line for terminal-based workflows or automation.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr finish` | Complete and merge the task |
-| `mehr finish --no-quality` | Skip quality checks |
-| `mehr finish --keep-work` | Preserve work directory after merge |
-| `mehr finish --target develop` | Merge to a specific branch |
 
 See [CLI: finish](/cli/finish.md) for all flags and options.
