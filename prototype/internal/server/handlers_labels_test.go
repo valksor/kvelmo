@@ -1,4 +1,4 @@
-//nolint:noctx,errcheck // Test file - HTTP requests without context/error check is acceptable in tests
+//nolint:errcheck // Test file - error check sometimes skipped in tests
 package server
 
 import (
@@ -666,17 +666,30 @@ func TestHandler_TaskLabels_MethodNotAllowed(t *testing.T) {
 	})
 
 	client := testHTTPClient()
+	ctx := context.Background()
+
+	// Get CSRF token first
+	token, cookie, err := getCSRF(ctx, client, srv.URL())
+	require.NoError(t, err)
 
 	// Try PUT (not allowed)
-	req, _ := http.NewRequest(http.MethodPut, srv.URL()+"/api/v1/task/labels", nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPut, srv.URL()+"/api/v1/task/labels", nil)
+	req.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 
-	// Try DELETE (not allowed)
-	req2, _ := http.NewRequest(http.MethodDelete, srv.URL()+"/api/v1/task/labels", nil)
+	// Try DELETE (not allowed) - reuse same token
+	req2, _ := http.NewRequestWithContext(ctx, http.MethodDelete, srv.URL()+"/api/v1/task/labels", nil)
+	req2.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req2.AddCookie(cookie)
+	}
 	resp2, err := client.Do(req2)
 	require.NoError(t, err)
 	defer func() { _ = resp2.Body.Close() }()

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -60,36 +61,131 @@ func doGet(ctx context.Context, client *http.Client, url string) (*http.Response
 	return client.Do(req)
 }
 
-// doPost performs a POST request with context and JSON content type.
+// getCSRF fetches a CSRF token from the server for localhost mode tests.
+// Returns the token string and the cookie that should be included in subsequent requests.
+func getCSRF(ctx context.Context, client *http.Client, baseURL string) (string, *http.Cookie, error) {
+	resp, err := doGet(ctx, client, baseURL+"/api/v1/auth/csrf")
+	if err != nil {
+		return "", nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var result map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", nil, err
+	}
+
+	token := result["csrf_token"]
+	var csrfCookie *http.Cookie
+	for _, c := range resp.Cookies() {
+		if c.Name == "mehr_csrf" {
+			csrfCookie = c
+
+			break
+		}
+	}
+
+	return token, csrfCookie, nil
+}
+
+// doPost performs a POST request with context, JSON content type, and CSRF token.
 func doPost(ctx context.Context, client *http.Client, url string, body io.Reader) (*http.Response, error) {
+	// Extract base URL for CSRF fetch
+	baseURL := url[:len(url)-len("/"+url[strings.LastIndex(url, "/")+1:])]
+	// Find the /api/v1 prefix to get baseURL
+	if idx := strings.Index(url, "/api/"); idx > 0 {
+		baseURL = url[:idx]
+	}
+
+	token, cookie, err := getCSRF(ctx, client, baseURL)
+	if err != nil {
+		return nil, errors.Join(errors.New("failed to get CSRF token"), err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-
-	return client.Do(req)
-}
-
-// doDelete performs a DELETE request with context.
-func doDelete(ctx context.Context, client *http.Client, url string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
-	if err != nil {
-		return nil, err
+	req.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req.AddCookie(cookie)
 	}
 
 	return client.Do(req)
 }
 
-// doPostForm performs a POST request with form-urlencoded content type.
+// doDelete performs a DELETE request with context and CSRF token.
+func doDelete(ctx context.Context, client *http.Client, url string) (*http.Response, error) {
+	// Extract base URL for CSRF fetch
+	baseURL := url
+	if idx := strings.Index(url, "/api/"); idx > 0 {
+		baseURL = url[:idx]
+	}
+
+	token, cookie, err := getCSRF(ctx, client, baseURL)
+	if err != nil {
+		return nil, errors.Join(errors.New("failed to get CSRF token"), err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+
+	return client.Do(req)
+}
+
+// doPostForm performs a POST request with form-urlencoded content type and CSRF token.
 func doPostForm(ctx context.Context, client *http.Client, url string, body io.Reader) (*http.Response, error) {
+	// Extract base URL for CSRF fetch
+	baseURL := url
+	if idx := strings.Index(url, "/api/"); idx > 0 {
+		baseURL = url[:idx]
+	}
+
+	token, cookie, err := getCSRF(ctx, client, baseURL)
+	if err != nil {
+		return nil, errors.Join(errors.New("failed to get CSRF token"), err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-Csrf-Token", token)
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
 
 	return client.Do(req)
+}
+
+// createTestConductor creates a conductor for testing.
+func createTestConductor(t *testing.T) (*conductor.Conductor, string) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	cond, err := conductor.New(
+		conductor.WithWorkDir(tmpDir),
+		conductor.WithHomeDir(homeDir),
+		conductor.WithAutoInit(true),
+		conductor.WithDryRun(true),
+		conductor.WithStdout(io.Discard),
+		conductor.WithStderr(io.Discard),
+	)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_ = cond.Initialize(ctx)
+
+	return cond, tmpDir
 }
 
 func TestHandler_WorkflowStart_NoConductor(t *testing.T) {
