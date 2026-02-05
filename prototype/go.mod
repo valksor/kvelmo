@@ -11,6 +11,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v67 v67.0.0
 	github.com/google/uuid v1.6.0
+	github.com/jedisct1/go-minisign v0.0.0-20241212093149-d2f9f49435c7
 	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/rs/xid v1.6.0
@@ -19,6 +20,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/temoto/robotstxt v1.1.2
 	github.com/valksor/go-toolkit v0.0.0-20260202190551-837849387b81
+	github.com/yalue/onnxruntime_go v1.25.0
 	github.com/yuin/goldmark v1.7.16
 	gitlab.com/gitlab-org/api/client-go v1.27.0
 	golang.org/x/crypto v0.47.0

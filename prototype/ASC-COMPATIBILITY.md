@@ -1,8 +1,8 @@
 # ASC Compatibility Guide
 
-This is a migration / parallel use guide for ASC users. ASC is in no way, shape or form affiliated with mehrhof, and ASC is not needed for mehrhof to work.  
+This is a migration / parallel use guide for ASC users. ASC is in no way, shape or form affiliated with Mehrhof, and ASC is not needed for Mehrhof to work.  
 
-How to configure mehrhof to match the asc file structure and conventions.
+How to configure Mehrhof to match the asc file structure and conventions.
 
 ## Quick Setup
 

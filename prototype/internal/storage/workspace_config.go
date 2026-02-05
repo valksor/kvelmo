@@ -289,10 +289,18 @@ type MemorySettings struct {
 
 // VectorDBSettings configures vector database backend.
 type VectorDBSettings struct {
-	Backend          string `yaml:"backend,omitempty" json:"backend,omitempty"`                     // "chromadb", "pinecone", "weaviate", "qdrant" (default: "chromadb")
-	ConnectionString string `yaml:"connection_string,omitempty" json:"connection_string,omitempty"` // Path or URL to vector DB (default: "./.mehrhof/vectors")
-	Collection       string `yaml:"collection,omitempty" json:"collection,omitempty"`               // Collection name (default: "mehr_task_memory")
-	EmbeddingModel   string `yaml:"embedding_model,omitempty" json:"embedding_model,omitempty"`     // Embedding model name (default: "default")
+	Backend          string       `yaml:"backend,omitempty" json:"backend,omitempty"`                     // "chromadb", "pinecone", "weaviate", "qdrant" (default: "chromadb")
+	ConnectionString string       `yaml:"connection_string,omitempty" json:"connection_string,omitempty"` // Path or URL to vector DB (default: "./.mehrhof/vectors")
+	Collection       string       `yaml:"collection,omitempty" json:"collection,omitempty"`               // Collection name (default: "mehr_task_memory")
+	EmbeddingModel   string       `yaml:"embedding_model,omitempty" json:"embedding_model,omitempty"`     // Embedding model name: "default" (hash) or "onnx" (semantic)
+	ONNX             ONNXSettings `yaml:"onnx,omitempty" json:"onnx,omitempty"`                           // ONNX embedding model settings
+}
+
+// ONNXSettings configures the ONNX embedding model.
+type ONNXSettings struct {
+	Model     string `yaml:"model,omitempty" json:"model,omitempty"`           // ONNX model name (default: "all-MiniLM-L6-v2")
+	CachePath string `yaml:"cache_path,omitempty" json:"cache_path,omitempty"` // Custom model cache path (default: ~/.valksor/mehrhof/models/)
+	MaxLength int    `yaml:"max_length,omitempty" json:"max_length,omitempty"` // Maximum sequence length (default: 256)
 }
 
 // MemoryRetentionConfig controls data retention.

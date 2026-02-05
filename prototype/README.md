@@ -1,4 +1,4 @@
-# Mehrhof — Structured Creation Environment
+# Valksor Mehrhof — Structured Creation Environment
 
 [![valksor](https://badgen.net/static/org/valksor/green)](https://github.com/valksor)
 [![BSD-3-Clause](https://img.shields.io/badge/BSD--3--Clause-green?style=flat)](https://github.com/valksor/go-mehrhof/blob/master/LICENSE)
@@ -26,8 +26,9 @@ Mehrhof is:
 
 - **A workflow framework** that turns requests into structured, reviewable outputs
 - **A structured process** that breaks creation into clear steps: plan → create → review → finish
-- **A wrapper for agent CLIs**—your already-installed local tools (Claude, Codex, or custom); no extra subscriptions required
-- **Completely free**—BSD-3 licensed, no usage fees, no account needed; if you already pay for an agent CLI, Mehrhof adds zero cost
+- **Uses your existing CLI**—Claude, Codex, or custom agents; no API keys required to get started
+- **Completely free**—BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
+- **Zero config for existing users**—if your agent CLI works, Mehrhof works. API keys optional for advanced setups
 - **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
 
 Mehrhof is not magic. It's a structured way to work with tools you already have, with clear checkpoints and human oversight at every step.
@@ -236,6 +237,16 @@ These limitations are features, not bugs. They keep you in control.
 curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
 ```
 
+**Other versions:**
+
+```bash
+# Install specific version
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- -v v1.2.3
+
+# Install nightly build (latest development)
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash -s -- --nightly
+```
+
 ### Pre-built Binary
 
 ```bash
@@ -253,7 +264,7 @@ cd go-mehrhof
 make install
 ```
 
-**Prerequisite**: You need an agent CLI installed separately (e.g., [Claude](https://claude.ai/code)). Mehrhof orchestrates it but does not include it. See [Agents](https://valksor.com/docs/mehrhof/nightly/#/agents/index) for supported agents.
+**Prerequisite**: You need an agent CLI installed separately (e.g., [Claude](https://claude.ai/code)). Mehrhof uses your CLI subscription directly—no API keys to configure. If `claude --version` works, you're ready. See [Agents](https://valksor.com/docs/mehrhof/nightly/#/agents/index) for supported agents.
 
 **Starting from scratch?** See [INSTALL.md](INSTALL.md) for complete instructions including WSL setup, Git, Go, and agent CLI installation.
 

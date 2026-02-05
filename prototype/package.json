@@ -7,7 +7,7 @@
         "docsify-pagination": "^2.10.1",
         "prettier": "^3.8.1",
         "prismjs": "^1.30.0",
-        "wrangler": "^4.62.0"
+        "wrangler": "^4.63.0"
     },
     "scripts": {
         "bump": "npx npm-check-updates -u && bun i",

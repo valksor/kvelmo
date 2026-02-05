@@ -48,12 +48,12 @@ CI enforces via `make check-alias`.
 
 Every feature MUST include:
 
-| Requirement | Location | Target |
-|-------------|----------|--------|
-| Unit tests | `*_test.go` next to source | 80%+ coverage |
-| Integration tests | `internal/helper_test/` | Critical paths |
-| CLI docs | `docs/cli/feature.md` | Usage + examples |
-| Web UI docs | `docs/web-ui/feature.md` | UI instructions |
+| Requirement       | Location                   | Target           |
+|-------------------|----------------------------|------------------|
+| Unit tests        | `*_test.go` next to source | 80%+ coverage    |
+| Integration tests | `internal/helper_test/`    | Critical paths   |
+| CLI docs          | `docs/cli/feature.md`      | Usage + examples |
+| Web UI docs       | `docs/web-ui/feature.md`   | UI instructions  |
 
 Write tests FIRST (TDD). Use table-driven tests. Run targeted tests during development; `make test` only after full implementation.
 
@@ -61,13 +61,13 @@ Write tests FIRST (TDD). Use table-driven tests. Run targeted tests during devel
 
 Documentation is organized by interface with specific tone and content rules:
 
-| Directory | Audience | Tone |
-|-----------|----------|------|
-| `docs/web-ui/` | Non-technical users | Professional, accessible, corporate |
-| `docs/cli/` | CLI-savvy developers | Technical, concise |
-| `docs/ide/` | IDE users | Visual, task-oriented |
-| `docs/concepts/` | All users | Accessible without being condescending |
-| `docs/reference/` | Developers/integrators | Technical, comprehensive |
+| Directory         | Audience               | Tone                                   |
+|-------------------|------------------------|----------------------------------------|
+| `docs/web-ui/`    | Non-technical users    | Professional, accessible, corporate    |
+| `docs/cli/`       | CLI-savvy developers   | Technical, concise                     |
+| `docs/ide/`       | IDE users              | Visual, task-oriented                  |
+| `docs/concepts/`  | All users              | Accessible without being condescending |
+| `docs/reference/` | Developers/integrators | Technical, comprehensive               |
 
 #### Web UI Docs (`docs/web-ui/`)
 
@@ -99,11 +99,6 @@ Documentation is organized by interface with specific tone and content rules:
 
 [Brief intro about when CLI is useful]
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr note "msg"` | Add a single note |
-| `mehr note` | Interactive mode |
-
 See [CLI: note](/cli/note.md) for all options and flags.
 ```
 
@@ -133,12 +128,12 @@ See [CLI: note](../cli/note.md) for details.
 
 Run checks **only for code you changed**:
 
-| Changed | Command |
-|---------|---------|
+| Changed                     | Command                                     |
+|-----------------------------|---------------------------------------------|
 | `cmd/`, `internal/`, `*.go` | `make quality` + targeted tests (see below) |
-| `ide/vscode/**` | `cd ide/vscode && make quality` |
-| `ide/jetbrains/**` | `cd ide/jetbrains && make quality` |
-| `docs/**`, `*.md` | None |
+| `ide/vscode/**`             | `cd ide/vscode && make quality`             |
+| `ide/jetbrains/**`          | `cd ide/jetbrains && make quality`          |
+| `docs/**`, `*.md`           | None                                        |
 
 Root shortcuts: `make ide-quality` (all IDEs), `make quality-all` (Go + IDEs).
 
@@ -265,39 +260,39 @@ mehr agents | providers | templates | update | generate-secret
 
 ### Entry Points
 
-| Path | Description |
-|------|-------------|
-| CLI | `cmd/mehr/main.go` → `commands.Execute()` → Cobra handlers |
-| Interactive CLI | → `interactive` → REPL → command dispatcher |
-| Web UI | → `serve` → `internal/server/server.go` → handlers → templates |
-| Interactive Web | → `/interactive` handler → SSE + HTMX |
-| JetBrains Plugin | → `ide/jetbrains/` → Kotlin plugin → REST API + SSE |
-| VS Code Extension | → `ide/vscode/` → TypeScript extension → REST API + SSE |
+| Path              | Description                                                    |
+|-------------------|----------------------------------------------------------------|
+| CLI               | `cmd/mehr/main.go` → `commands.Execute()` → Cobra handlers     |
+| Interactive CLI   | → `interactive` → REPL → command dispatcher                    |
+| Web UI            | → `serve` → `internal/server/server.go` → handlers → templates |
+| Interactive Web   | → `/interactive` handler → SSE + HTMX                          |
+| JetBrains Plugin  | → `ide/jetbrains/` → Kotlin plugin → REST API + SSE            |
+| VS Code Extension | → `ide/vscode/` → TypeScript extension → REST API + SSE        |
 
 ### Core Packages
 
-| Package | Responsibility |
-|---------|----------------|
-| `internal/conductor/` | Main orchestrator (Facade) - workflow, storage, VCS, agents, browser, MCP |
-| `internal/workflow/` | State machine - states, events, guards, effects, transitions |
-| `internal/agent/` | AI agent abstraction with streaming; Claude implementation |
-| `internal/agent/claude/` | Claude CLI wrapper agent |
-| `internal/coordination/` | Agent resolution - 7-level priority system |
-| `internal/provider/` | Task sources: file, github, gitlab, jira, linear, notion, etc. |
-| `internal/storage/` | Split storage: `.mehrhof/` (project) + `~/.valksor/mehrhof/` (workspaces). `Root()` = project hub, `CodeRoot()` = code target |
-| `internal/vcs/` | Git: branches, worktrees, checkpoints (undo/redo) |
-| `internal/events/` | Pub/sub event bus |
-| `internal/browser/` | Chrome automation (CDP) |
-| `internal/mcp/` | Model Context Protocol server |
-| `internal/memory/` | Semantic memory with vector embeddings |
-| `internal/server/` | Web UI: REST API, SSE, authentication, CSRF protection, rate limiting |
-| `internal/automation/` | Webhook automation: GitHub/GitLab webhooks, job queue, access control |
-| `ide/jetbrains/` | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE |
-| `ide/vscode/` | VS Code extension - TypeScript, webview-based UI via REST API + SSE |
-| `internal/links/` | Bidirectional linking (`[[reference]]` syntax) |
-| `internal/plugin/` | External agent/provider extensions (JSON-RPC) |
-| `internal/security/` | SAST (gosec), secrets (gitleaks), vulns (govulncheck) |
-| `internal/quality/` | Linters, formatters |
+| Package                  | Responsibility                                                                                                                |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `internal/conductor/`    | Main orchestrator (Facade) - workflow, storage, VCS, agents, browser, MCP                                                     |
+| `internal/workflow/`     | State machine - states, events, guards, effects, transitions                                                                  |
+| `internal/agent/`        | AI agent abstraction with streaming; Claude implementation                                                                    |
+| `internal/agent/claude/` | Claude CLI wrapper agent                                                                                                      |
+| `internal/coordination/` | Agent resolution - 7-level priority system                                                                                    |
+| `internal/provider/`     | Task sources: file, github, gitlab, jira, linear, notion, etc.                                                                |
+| `internal/storage/`      | Split storage: `.mehrhof/` (project) + `~/.valksor/mehrhof/` (workspaces). `Root()` = project hub, `CodeRoot()` = code target |
+| `internal/vcs/`          | Git: branches, worktrees, checkpoints (undo/redo)                                                                             |
+| `internal/events/`       | Pub/sub event bus                                                                                                             |
+| `internal/browser/`      | Chrome automation (CDP)                                                                                                       |
+| `internal/mcp/`          | Model Context Protocol server                                                                                                 |
+| `internal/memory/`       | Semantic memory with vector embeddings                                                                                        |
+| `internal/server/`       | Web UI: REST API, SSE, authentication, CSRF protection, rate limiting                                                         |
+| `internal/automation/`   | Webhook automation: GitHub/GitLab webhooks, job queue, access control                                                         |
+| `ide/jetbrains/`         | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE                                                          |
+| `ide/vscode/`            | VS Code extension - TypeScript, webview-based UI via REST API + SSE                                                           |
+| `internal/links/`        | Bidirectional linking (`[[reference]]` syntax)                                                                                |
+| `internal/plugin/`       | External agent/provider extensions (JSON-RPC)                                                                                 |
+| `internal/security/`     | SAST (gosec), secrets (gitleaks), vulns (govulncheck)                                                                         |
+| `internal/quality/`      | Linters, formatters                                                                                                           |
 
 ### Key Patterns
 
@@ -358,18 +353,18 @@ project:
 
 ### Workflow States
 
-| State | Description |
-|-------|-------------|
-| `idle` | No active task |
-| `planning` | AI generating specifications |
-| `implementing` | AI executing specifications |
-| `reviewing` | Code review in progress |
-| `waiting` | Awaiting user response |
-| `checkpointing` | Creating git checkpoint |
-| `reverting` | Undo to checkpoint |
-| `restoring` | Redo to checkpoint |
-| `done` | Completed |
-| `failed` | Failed |
+| State           | Description                  |
+|-----------------|------------------------------|
+| `idle`          | No active task               |
+| `planning`      | AI generating specifications |
+| `implementing`  | AI executing specifications  |
+| `reviewing`     | Code review in progress      |
+| `waiting`       | Awaiting user response       |
+| `checkpointing` | Creating git checkpoint      |
+| `reverting`     | Undo to checkpoint           |
+| `restoring`     | Redo to checkpoint           |
+| `done`          | Completed                    |
+| `failed`        | Failed                       |
 
 ---
 
