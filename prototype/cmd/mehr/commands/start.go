@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	tkdisplay "github.com/valksor/go-toolkit/display"
 	"github.com/valksor/go-toolkit/eventbus"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
@@ -298,9 +299,52 @@ func runStart(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check for an existing task
-	if cond.GetActiveTask() != nil {
-		return fmt.Errorf("task already active: %s\n\nOptions:\n  mehr status   - View task details\n  mehr finish   - Complete the task\n  mehr abandon  - Cancel and start fresh", cond.GetActiveTask().ID)
+	// Check for active task conflict (unless already using --worktree)
+	if !startWorktree {
+		if conflict := cond.CheckActiveTaskConflict(ctx); conflict != nil {
+			fmt.Printf("\n%s %s\n", tkdisplay.Warning("⚠"), "Another task is already active")
+			fmt.Printf("  ID:     %s\n", conflict.ActiveTaskID)
+			if conflict.ActiveTaskTitle != "" {
+				fmt.Printf("  Title:  %s\n", conflict.ActiveTaskTitle)
+			}
+			if conflict.ActiveBranch != "" {
+				fmt.Printf("  Branch: %s\n", conflict.ActiveBranch)
+			}
+			fmt.Println()
+			fmt.Println("Options:")
+			fmt.Println("  [w] Use worktree - start new task in parallel")
+			fmt.Println("  [f] Finish first - complete current task (mehr finish)")
+			fmt.Println("  [a] Abandon      - cancel current task (mehr abandon)")
+			fmt.Println("  [c] Cancel       - keep current task, don't start new")
+
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Print("\nChoice [w/f/a/C]: ")
+			choice, readErr := reader.ReadString('\n')
+			if readErr != nil {
+				return fmt.Errorf("read choice: %w", readErr)
+			}
+			choice = strings.ToLower(strings.TrimSpace(choice))
+
+			switch choice {
+			case "w", "worktree":
+				startWorktree = true
+				opts = append(opts, conductor.WithUseWorktree(true))
+				fmt.Println("\nUsing worktree mode for parallel task...")
+				// Re-initialize conductor with worktree option
+				cond, err = initializeConductor(ctx, opts...)
+				if err != nil {
+					return err
+				}
+			case "f", "finish":
+				return errors.New("run 'mehr finish' to complete the active task first")
+			case "a", "abandon":
+				return errors.New("run 'mehr abandon' to cancel the active task first")
+			case "", "c", "cancel":
+				return fmt.Errorf("cancelled - task %s remains active", conflict.ActiveTaskID)
+			default:
+				return fmt.Errorf("invalid choice: %s", choice)
+			}
+		}
 	}
 
 	// Check for existing work directories from finished tasks
