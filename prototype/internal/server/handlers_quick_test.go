@@ -237,26 +237,6 @@ func TestHandler_QuickTaskDelete_NoConductor(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }
 
-func TestHandler_QuickTaskCard_NoConductor(t *testing.T) {
-	cfg := Config{
-		Port:      0,
-		Mode:      ModeProject,
-		Conductor: nil,
-	}
-
-	srv, cleanup := startTestServer(t, cfg)
-	defer cleanup()
-
-	ctx := context.Background()
-	client := testHTTPClient()
-
-	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/quick/task-1/card")
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-
-	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-}
-
 func TestHandler_QuickTaskCreate_InvalidJSON(t *testing.T) {
 	cfg := Config{
 		Port:      0,

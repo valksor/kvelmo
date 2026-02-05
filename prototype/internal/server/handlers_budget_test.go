@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -33,17 +32,15 @@ func TestHandleBudgetMonthlyStatus_NoConductor(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 
-	// Should return OK with default budget (shows default values)
+	// Should return OK with default config (disabled by default)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
 	bodyStr := string(body)
-	// Without conductor, it shows default budget info (100 max cost)
-	// The HTML should contain budget information
-	assert.Contains(t, bodyStr, time.Now().Format("January")) // month label
-	assert.Contains(t, bodyStr, "100")                        // default max cost
+	// Without conductor, budget defaults to disabled
+	assert.Contains(t, bodyStr, `"enabled":false`)
 }
 
 func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {
@@ -61,6 +58,7 @@ func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 100.0
 	wsConfig.Budget.Monthly.WarningAt = 0.8
+	wsConfig.Budget.Monthly.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -95,9 +93,10 @@ func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bodyStr := string(body)
-	// Should contain budget information
-	assert.Contains(t, bodyStr, "45.5") // spent amount
-	assert.Contains(t, bodyStr, "100")  // max cost
+	// JSON response should contain budget information
+	assert.Contains(t, bodyStr, `"spent":45.5`)     // spent amount
+	assert.Contains(t, bodyStr, `"max_cost":100`)   // max cost
+	assert.Contains(t, bodyStr, `"remaining":54.5`) // remaining
 }
 
 func TestHandleBudgetMonthlyStatus_ExceededBudget(t *testing.T) {
@@ -116,6 +115,7 @@ func TestHandleBudgetMonthlyStatus_ExceededBudget(t *testing.T) {
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 50.0
 	wsConfig.Budget.Monthly.WarningAt = 0.8
+	wsConfig.Budget.Monthly.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -144,9 +144,10 @@ func TestHandleBudgetMonthlyStatus_ExceededBudget(t *testing.T) {
 	require.NoError(t, err)
 
 	bodyStr := string(body)
-	assert.Contains(t, bodyStr, "75")  // spent amount
-	assert.Contains(t, bodyStr, "100") // percentage is capped at 100% in HTML
-	assert.Contains(t, bodyStr, "Warning sent")
+	// JSON response should indicate exceeded budget
+	assert.Contains(t, bodyStr, `"spent":75`)       // spent amount
+	assert.Contains(t, bodyStr, `"limit_hit":true`) // over budget
+	assert.Contains(t, bodyStr, `"warned":true`)    // warning was sent
 }
 
 func TestHandleBudgetMonthlyStatus_NoBudgetSet(t *testing.T) {
@@ -161,9 +162,10 @@ func TestHandleBudgetMonthlyStatus_NoBudgetSet(t *testing.T) {
 	ws := c.GetWorkspace()
 	require.NotNil(t, ws)
 
-	// Config with no monthly budget set (MaxCost = 0)
+	// Config with budget disabled
 	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 0 // Explicitly set to 0 for "no budget"
+	wsConfig.Budget.Monthly.MaxCost = 0     // Explicitly set to 0
+	wsConfig.Budget.Monthly.Enabled = false // Disabled
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -183,13 +185,8 @@ func TestHandleBudgetMonthlyStatus_NoBudgetSet(t *testing.T) {
 	require.NoError(t, err)
 
 	bodyStr := string(body)
-	// When MaxCost is 0, the handler shows "No monthly budget configured"
-	// But if the config was loaded from a previous test, it might show different values
-	// So we check for the presence of the "0 spent" part at minimum
-	assert.Contains(t, bodyStr, "0") // spent is 0
-	// The exact message depends on whether our config was properly loaded
-	// If it shows "No monthly budget configured", that's ideal
-	// If it shows a default budget (like 100), that's also acceptable behavior
+	// JSON response shows budget is disabled
+	assert.Contains(t, bodyStr, `"enabled":false`)
 }
 
 func TestHandleBudgetMonthlyReset_NoConductor(t *testing.T) {
@@ -287,152 +284,6 @@ func TestHandleBudgetMonthlyReset_Success(t *testing.T) {
 	assert.False(t, newState.WarningSent)
 }
 
-func TestWriteBudgetStatusHTML_ErrorMsg(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	wsConfig := storage.NewDefaultWorkspaceConfig()
-	errMsg := "test error message"
-
-	srv.writeBudgetStatusHTML(w, wsConfig, nil, errMsg)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-	assert.Contains(t, body, "test error message")
-	assert.Contains(t, body, "text-error-600")
-}
-
-func TestWriteBudgetStatusHTML_NoConfig(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-
-	srv.writeBudgetStatusHTML(w, nil, nil, "")
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-	assert.Contains(t, body, "No monthly budget configured")
-}
-
-func TestWriteBudgetStatusHTML_ZeroMaxCost(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 0 // Explicitly set to 0
-
-	srv.writeBudgetStatusHTML(w, wsConfig, nil, "")
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-	assert.Contains(t, body, "No monthly budget configured")
-}
-
-func TestWriteBudgetStatusHTML_WithState(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 100.0
-
-	state := &storage.MonthlyBudgetState{
-		Month:       time.Now().Format("2006-01"),
-		Spent:       50.0,
-		WarningSent: false,
-	}
-
-	srv.writeBudgetStatusHTML(w, wsConfig, state, "")
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-
-	// Should contain budget info
-	assert.Contains(t, body, time.Now().Format("January 2006"))
-	assert.Contains(t, body, "50")  // spent
-	assert.Contains(t, body, "100") // max
-	assert.Contains(t, body, "50")  // percentage
-}
-
-func TestWriteBudgetStatusHTML_WarningLevel(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 100.0
-	wsConfig.Budget.Monthly.WarningAt = 0.8
-
-	state := &storage.MonthlyBudgetState{
-		Month:       time.Now().Format("2006-01"),
-		Spent:       85.0, // 85% - over warning threshold
-		WarningSent: true,
-	}
-
-	srv.writeBudgetStatusHTML(w, wsConfig, state, "")
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-
-	assert.Contains(t, body, "85") // percentage
-	assert.Contains(t, body, "Warning sent")
-}
-
-func TestWriteBudgetStatusHTML_ErrorLevel(t *testing.T) {
-	cfg := Config{
-		Port: 0,
-		Mode: ModeProject,
-	}
-
-	srv, err := New(cfg)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 100.0
-
-	state := &storage.MonthlyBudgetState{
-		Month:       time.Now().Format("2006-01"),
-		Spent:       110.0, // Over budget
-		WarningSent: true,
-	}
-
-	srv.writeBudgetStatusHTML(w, wsConfig, state, "")
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	body := w.Body.String()
-
-	assert.Contains(t, body, "110") // percentage (over 100%)
-}
-
 func TestHandleBudgetMonthlyStatus_NilState(t *testing.T) {
 	c := helper_test.NewTestConductor(t)
 
@@ -448,6 +299,7 @@ func TestHandleBudgetMonthlyStatus_NilState(t *testing.T) {
 	// Set up budget config but no state
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 100.0
+	wsConfig.Budget.Monthly.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -467,74 +319,12 @@ func TestHandleBudgetMonthlyStatus_NilState(t *testing.T) {
 	require.NoError(t, err)
 
 	bodyStr := string(body)
-	// Should show 0 spent since no state file exists
-	assert.Contains(t, bodyStr, "0") // spent amount
+	// JSON response should show 0 spent since no state file exists
+	assert.Contains(t, bodyStr, `"spent":0`)
+	assert.Contains(t, bodyStr, `"max_cost":100`)
 }
 
-// Unit test for writeBudgetStatusHTML without server setup.
-func TestWriteBudgetStatusHTML_ContentTypes(t *testing.T) {
-	tests := []struct {
-		name       string
-		maxCost    float64
-		spent      float64
-		warningAt  float64
-		wantStatus string
-	}{
-		{
-			name:       "success status - under budget",
-			maxCost:    100.0,
-			spent:      30.0,
-			warningAt:  0.8,
-			wantStatus: "success",
-		},
-		{
-			name:       "warning status - at threshold",
-			maxCost:    100.0,
-			spent:      80.0,
-			warningAt:  0.8,
-			wantStatus: "warning",
-		},
-		{
-			name:       "error status - over budget",
-			maxCost:    100.0,
-			spent:      100.0,
-			warningAt:  0.8,
-			wantStatus: "error",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := Config{
-				Port: 0,
-				Mode: ModeProject,
-			}
-
-			srv, err := New(cfg)
-			require.NoError(t, err)
-
-			w := httptest.NewRecorder()
-			wsConfig := storage.NewDefaultWorkspaceConfig()
-			wsConfig.Budget.Monthly.MaxCost = tt.maxCost
-			wsConfig.Budget.Monthly.WarningAt = tt.warningAt
-
-			state := &storage.MonthlyBudgetState{
-				Month: time.Now().Format("2006-01"),
-				Spent: tt.spent,
-			}
-
-			srv.writeBudgetStatusHTML(w, wsConfig, state, "")
-
-			assert.Equal(t, http.StatusOK, w.Code)
-			body := w.Body.String()
-
-			// Check for the appropriate color class
-			assert.Contains(t, body, "bg-"+tt.wantStatus+"-500")
-		})
-	}
-}
-
-func TestHandleBudgetMonthlyReset_HTMLResponse(t *testing.T) {
+func TestHandleBudgetMonthlyReset_JSONResponse(t *testing.T) {
 	c := helper_test.NewTestConductor(t)
 
 	cfg := Config{
@@ -565,7 +355,7 @@ func TestHandleBudgetMonthlyReset_HTMLResponse(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Response should be HTML
+	// Response should be JSON
 	ct := resp.Header.Get("Content-Type")
-	assert.Contains(t, ct, "text/html")
+	assert.Contains(t, ct, "application/json")
 }

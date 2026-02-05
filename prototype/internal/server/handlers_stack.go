@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/valksor/go-mehrhof/internal/server/api"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/stack"
 )
 
@@ -413,14 +411,6 @@ func (s *Server) handleStackRebasePreview(w http.ResponseWriter, r *http.Request
 		}
 
 		response := convertPreviewToResponse(preview)
-
-		// Return HTML for HTMX requests
-		if api.IsHTMXRequest(r) {
-			s.renderRebasePreviewHTML(w, response)
-
-			return
-		}
-
 		s.writeJSON(w, http.StatusOK, response)
 
 		return
@@ -508,43 +498,6 @@ func boolToInt(b bool) int {
 	}
 
 	return 0
-}
-
-// renderRebasePreviewHTML renders the preview as HTML for HTMX requests.
-func (s *Server) renderRebasePreviewHTML(w http.ResponseWriter, preview rebasePreviewResponse) {
-	if s.renderer == nil {
-		s.writeError(w, http.StatusInternalServerError, "renderer not loaded")
-
-		return
-	}
-
-	// Convert to view data
-	data := views.RebasePreviewData{
-		Tasks:             make([]views.RebaseTaskPreview, 0, len(preview.Tasks)),
-		HasConflicts:      preview.HasConflicts,
-		SafeCount:         preview.SafeCount,
-		ConflictCount:     preview.ConflictCount,
-		Unavailable:       preview.Unavailable,
-		UnavailableReason: preview.UnavailableReason,
-	}
-
-	for _, task := range preview.Tasks {
-		data.Tasks = append(data.Tasks, views.RebaseTaskPreview{
-			TaskID:           task.TaskID,
-			Branch:           task.Branch,
-			OntoBase:         task.OntoBase,
-			Safe:             task.Safe,
-			WouldConflict:    task.WouldConflict,
-			ConflictingFiles: task.ConflictingFiles,
-			Unavailable:      task.Unavailable,
-		})
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderer.RenderRebasePreview(w, data); err != nil {
-		slog.Error("failed to render rebase preview", "error", err)
-		http.Error(w, "render error: "+err.Error(), http.StatusInternalServerError)
-	}
 }
 
 // getStackStateIcon returns the icon for a stack state.

@@ -15,7 +15,6 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/library"
 	"github.com/valksor/go-mehrhof/internal/registration"
-	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/taskrunner"
 	"github.com/valksor/go-toolkit/eventbus"
@@ -65,7 +64,6 @@ type Server struct {
 	listener   net.Listener
 	router     http.Handler
 	sessions   *sessionStore
-	renderer   *views.Renderer // Template renderer
 
 	mu                  sync.RWMutex
 	running             bool
