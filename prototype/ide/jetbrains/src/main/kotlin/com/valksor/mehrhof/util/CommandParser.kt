@@ -50,9 +50,10 @@ sealed class ParsedInput {
  */
 object CommandParser {
     /**
-     * Recognized workflow commands (and their aliases).
+     * Default workflow commands (and their aliases).
+     * Used as fallback when discovery API is unavailable.
      */
-    val workflowCommands: Set<String> =
+    private val defaultCommands: Set<String> =
         setOf(
             "start",
             "plan",
@@ -78,8 +79,45 @@ object CommandParser {
             "simplify",
             "spec",
             "specification",
-            "label"
+            "label",
+            "reset",
+            "auto",
+            "answer",
+            "question"
         )
+
+    /**
+     * Current set of recognized workflow commands.
+     * Initially populated with defaults, can be updated via [updateCommands].
+     */
+    @Volatile
+    var workflowCommands: Set<String> = defaultCommands
+        private set
+
+    /**
+     * Updates the known commands from the discovery API response.
+     * Includes both command names and aliases.
+     */
+    fun updateCommands(commands: List<com.valksor.mehrhof.api.models.CommandInfo>) {
+        val newCommands = mutableSetOf<String>()
+        for (cmd in commands) {
+            newCommands.add(cmd.name.lowercase())
+            cmd.aliases?.forEach { alias ->
+                newCommands.add(alias.lowercase())
+            }
+        }
+        // Only update if we got some commands
+        if (newCommands.isNotEmpty()) {
+            workflowCommands = newCommands
+        }
+    }
+
+    /**
+     * Resets commands to defaults (for testing or error recovery).
+     */
+    fun resetToDefaults() {
+        workflowCommands = defaultCommands
+    }
 
     /**
      * Parses user input into a structured ParsedInput.
@@ -138,17 +176,4 @@ object CommandParser {
             else -> ParsedInput.Chat(trimmed)
         }
     }
-
-    /**
-     * Normalizes command aliases to their canonical form.
-     * e.g., "impl" -> "implement", "st" -> "status", "cont" -> "continue"
-     */
-    fun normalizeCommand(command: String): String =
-        when (command.lowercase()) {
-            "impl" -> "implement"
-            "st" -> "status"
-            "cont" -> "continue"
-            "spec" -> "specification"
-            else -> command.lowercase()
-        }
 }

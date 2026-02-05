@@ -276,40 +276,6 @@ class CommandParserTest {
     }
 
     // ========================================================================
-    // normalizeCommand tests
-    // ========================================================================
-
-    @Test
-    fun `normalizeCommand converts impl to implement`() {
-        assertEquals("implement", CommandParser.normalizeCommand("impl"))
-    }
-
-    @Test
-    fun `normalizeCommand converts st to status`() {
-        assertEquals("status", CommandParser.normalizeCommand("st"))
-    }
-
-    @Test
-    fun `normalizeCommand converts cont to continue`() {
-        assertEquals("continue", CommandParser.normalizeCommand("cont"))
-    }
-
-    @Test
-    fun `normalizeCommand converts spec to specification`() {
-        assertEquals("specification", CommandParser.normalizeCommand("spec"))
-    }
-
-    @Test
-    fun `normalizeCommand lowercases input`() {
-        assertEquals("plan", CommandParser.normalizeCommand("PLAN"))
-    }
-
-    @Test
-    fun `normalizeCommand keeps unknown commands lowercase`() {
-        assertEquals("unknown", CommandParser.normalizeCommand("Unknown"))
-    }
-
-    // ========================================================================
     // workflowCommands set tests
     // ========================================================================
 
@@ -326,10 +292,10 @@ class CommandParserTest {
     }
 
     @Test
-    fun `workflowCommands does not contain chat commands`() {
+    fun `workflowCommands does not contain chat-only commands`() {
+        // "chat" and "clear" are UI-only, not workflow commands
         assertFalse("chat" in CommandParser.workflowCommands)
-        assertFalse("answer" in CommandParser.workflowCommands)
-        assertFalse("help" in CommandParser.workflowCommands)
         assertFalse("clear" in CommandParser.workflowCommands)
+        // Note: "answer" and "help" ARE now workflow commands (used in interactive mode)
     }
 }
