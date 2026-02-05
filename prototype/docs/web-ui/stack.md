@@ -4,32 +4,13 @@ The stack page allows you to manage dependent features and their git branches th
 
 ## Accessing the Stack Page
 
-The Stack page is available under **Workflow** dropdown → **Project**, then select the **Stacked Features** tab.
+From the navigation bar, click **Tools**, then select the **Stack** tab.
+
+For a complete overview of the Tools page, see [Tools](/web-ui/tools.md).
 
 ## Stack Overview
 
-The stack page shows all feature stacks with their tasks and status:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Stacked Features                   [Sync PR Status]         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Stack: auth-system                                          │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  3 tasks · Root: issue-100                             │  │
-│  │                                                        │  │
-│  │  ✓ issue-100  feature/auth-system       merged         │  │
-│  │  ⟳ issue-101  feature/auth-oauth        needs-rebase   │  │
-│  │  ● issue-102  feature/auth-oauth-google active         │  │
-│  │                                                        │  │
-│  │  [⚠ Needs Rebase]                    [Rebase All]      │  │
-│  │                                                        │  │
-│  │  Created: 2024-01-15 10:00 · Updated: 2024-01-18 14:30 │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The stack page shows all feature stacks with their tasks and status. Each stack card displays the stack name, task count, root task reference, and a list of tasks with their branch names and status indicators. A **Sync PR Status** button appears at the top to refresh status from providers. Stack cards show timestamps for creation and last update, and action buttons like **Needs Rebase** warning and **Rebase All** when applicable.
 
 ## Task States
 
@@ -47,17 +28,7 @@ Each task displays its current state with a visual indicator:
 
 ## Syncing PR Status
 
-Click **"Sync PR Status"** to fetch the latest PR status from your provider:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  [Sync PR Status]  ← Click this button                       │
-│                     ↓                                        │
-│  Syncing... ⟳                                                │
-│                     ↓                                        │
-│  ✓ Synced: 2 tasks updated                                   │
-└──────────────────────────────────────────────────────────────┘
-```
+Click **"Sync PR Status"** to fetch the latest PR status from your provider. A loading indicator shows during sync, and upon completion a success message shows how many tasks were updated.
 
 The sync operation:
 1. Fetches PR status for all stacked tasks
@@ -66,162 +37,33 @@ The sync operation:
 
 ## Rebasing Stacks
 
-When a parent feature merges, its children need rebasing. Click **"Preview Rebase"** on a stack card:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Stack: auth-system                                          │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  [⚠ Needs Rebase]               [Preview Rebase]  ←    │  │
-│  │                                                        │  │
-│  │  Click to preview what will happen before rebasing     │  │
-│  └────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
-```
+When a parent feature merges, its children need rebasing. Click **"Preview Rebase"** on a stack card to see what will happen before performing the rebase.
 
 ### Preview Modal
 
-Clicking "Preview Rebase" opens a modal showing conflict status:
+Clicking **"Preview Rebase"** opens a modal showing the conflict status. If no conflicts are detected, it shows how many tasks can be safely rebased and lists each branch with its target. Action buttons include **Cancel** and **Rebase Now**.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Rebase Preview                                        [X]   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ✓ 2 task(s) can be safely rebased                           │
-│  No conflicts detected.                                      │
-│                                                              │
-│  ───────────────────────────────────────────────────────────  │
-│  ✓ feature/auth-oauth        → main                          │
-│  ✓ feature/auth-google       → auth-oauth                    │
-│  ───────────────────────────────────────────────────────────  │
-│                                                              │
-│                              [Cancel]   [Rebase Now]         │
-└──────────────────────────────────────────────────────────────┘
-```
-
-If conflicts are detected, the "Rebase Now" button is disabled:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Rebase Preview                                        [X]   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ⚠ 1 task(s) have conflicts                                  │
-│  Resolve conflicts manually before rebasing.                 │
-│                                                              │
-│  ───────────────────────────────────────────────────────────  │
-│  ✓ feature/auth-oauth        → main                          │
-│  ✗ feature/auth-google       → auth-oauth                    │
-│     Conflicting files:                                       │
-│       • internal/auth/oauth.go                               │
-│       • internal/auth/handler.go                             │
-│  ───────────────────────────────────────────────────────────  │
-│                                                              │
-│                              [Cancel]   [Rebase Now] (grayed)|
-└──────────────────────────────────────────────────────────────┘
-```
+If conflicts are detected, the modal shows which tasks have conflicts and lists the conflicting files. The **Rebase Now** button is disabled until conflicts are resolved manually.
 
 ### Rebase Progress
 
-Watch the rebase progress in real-time:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Rebasing stack auth-system...                               │
-│                                                              │
-│  ✓ issue-101: rebased onto main                              │
-│  ⟳ issue-102: rebasing onto feature/auth-oauth...            │
-│                                                              │
-│  ▶ In progress...                                            │
-└──────────────────────────────────────────────────────────────┘
-```
+During rebase, a progress panel shows real-time status updates for each task being rebased, with checkmarks for completed tasks and spinners for in-progress tasks.
 
 ### Rebase Success
 
-When rebase completes successfully:
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│  ✓ Rebase Complete                                             │
-│                                                                │
-│  Rebased 2 tasks:                                              │
-│    • issue-101: main ← feature/auth-system                     │
-│    • issue-102: feature/auth-oauth ← feature/auth-oauth-google │
-│                                                                │
-│  Next steps:                                                   │
-│    1. Push updated branches                                    │
-│    2. Update PRs if needed                                     │
-└────────────────────────────────────────────────────────────────┘
-```
+When rebase completes successfully, a success message shows which tasks were rebased and to which branches. Next steps are suggested: push updated branches and update PRs if needed.
 
 ### Rebase Conflict
 
-If a conflict occurs, the rebase aborts and shows the conflict:
-
-```
-┌───────────────────────────────────────────────────────────────────┐
-│  ✗ Rebase Failed - Conflict                                       │
-├───────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  Task: issue-102 (feature/auth-oauth-google)                      │
-│  Rebasing onto: feature/auth-oauth                                │
-│                                                                   │
-│  Conflict hint:                                                   │
-│    Merge conflict in internal/auth/oauth.go                       │
-│                                                                   │
-│  Resolution:                                                      │
-│    1. Open terminal in your project                               │
-│    2. Checkout the branch: git checkout feature/auth-oauth-google │
-│    3. Start rebase: git rebase feature/auth-oauth                 │
-│    4. Resolve conflicts manually                                  │
-│    5. Continue rebase: git rebase --continue                      │
-│    6. Return here and sync status                                 │
-│                                                                   │
-│  [Copy Resolution Steps]                                          │
-└───────────────────────────────────────────────────────────────────┘
-```
+If a conflict occurs, the rebase aborts and shows conflict details including the task, target branch, conflict hint (which file), and step-by-step resolution instructions. A **Copy Resolution Steps** button helps you copy the git commands needed to resolve manually.
 
 ## Task Details
 
-Click on a task to see more details:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Task: issue-101                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Branch: feature/auth-oauth                                  │
-│  State: needs-rebase                                         │
-│  PR: #101 (https://github.com/org/repo/pull/101)             │
-│                                                              │
-│  Depends on: issue-100 (merged)                              │
-│  Blocks: issue-102                                           │
-│                                                              │
-│  Part of stack: auth-system                                  │
-│                                                              │
-│  [View PR] [Rebase This Task]                                │
-└──────────────────────────────────────────────────────────────┘
-```
+Click on a task to see more details including the branch name, state, PR link, dependencies (what it depends on), blocking relationships (what it blocks), and which stack it belongs to. Action buttons include **View PR** and **Rebase This Task**.
 
 ## Empty State
 
-When no stacks exist:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  No Stacked Features                                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Create dependent features by using:                         │
-│                                                              │
-│    mehr start <task> --depends-on <parent>                   │
-│                                                              │
-│  Or start a task while on a feature branch to be prompted    │
-│  about creating a dependency.                                │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+When no stacks exist, the page explains how to create dependent features using `mehr start <task> --depends-on <parent>` or by starting a task while on a feature branch to be prompted about creating a dependency.
 
 ## Status Badges
 
@@ -235,42 +77,18 @@ Stacks display status badges for quick visibility:
 
 ## Help Section
 
-The page includes a help section explaining stacked features:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  About Stacked Features                                      │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Stacked features allow you to work on Feature B while       │
-│  Feature A is waiting on code review.                        │
-│                                                              │
-│  • Create a dependent feature:                               │
-│      mehr start feature-b --depends-on feature-a             │
-│                                                              │
-│  • Sync PR status:                                           │
-│      Click "Sync PR Status" to fetch latest PR states        │
-│                                                              │
-│  • Rebase after parent merges:                               │
-│      When a parent PR merges, children are marked            │
-│      "needs-rebase". Click "Rebase All" to rebase them.      │
-│                                                              │
-│  Use `mehr stack` in the CLI for more options including      │
-│  --graph and --mermaid visualization.                        │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The page includes a help section explaining stacked features: how they allow you to work on Feature B while Feature A is waiting on code review, how to create dependent features, sync PR status, and rebase after parent merges. It also points to `mehr stack` in the CLI for more options including `--graph` and `--mermaid` visualization.
 
 ## API Endpoints
 
 The stack page uses these API endpoints:
 
-| Method | Endpoint                      | Description                    |
-|--------|-------------------------------|--------------------------------|
-| GET    | `/api/v1/stack`               | List all stacks                |
-| POST   | `/api/v1/stack/sync`          | Sync PR status                 |
-| GET    | `/api/v1/stack/rebase-preview`| Preview rebase (check conflicts)|
-| POST   | `/api/v1/stack/rebase`        | Rebase stacks/tasks            |
+| Method | Endpoint                       | Description                      |
+|--------|--------------------------------|----------------------------------|
+| GET    | `/api/v1/stack`                | List all stacks                  |
+| POST   | `/api/v1/stack/sync`           | Sync PR status                   |
+| GET    | `/api/v1/stack/rebase-preview` | Preview rebase (check conflicts) |
+| POST   | `/api/v1/stack/rebase`         | Rebase stacks/tasks              |
 
 ### Rebase Preview API
 
@@ -290,15 +108,7 @@ Returns JSON.
 
 Manage stacked features from the command line for scripting or terminal workflows.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr stack` | List all stacks and their tasks |
-| `mehr stack sync` | Sync PR status from providers |
-| `mehr stack rebase` | Rebase all stacks needing updates |
-| `mehr stack rebase --stack <id>` | Rebase a specific stack |
-| `mehr stack rebase --task <id>` | Rebase a specific task |
-
-See [CLI: stack](/cli/stack.md) for visualization options (`--graph`, `--mermaid`) and all flags.
+See [CLI: stack](/cli/stack.md) for visualization options and all flags.
 
 ## See Also
 

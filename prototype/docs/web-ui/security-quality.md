@@ -20,24 +20,22 @@ Security and quality features are available from:
 
 | Feature               | Location                               |
 |-----------------------|----------------------------------------|
-| **Run Scan**          | Dashboard → Quick Actions → "Run Scan" |
-| **Simplify**          | Dashboard → Quick Actions → "Simplify" |
-| **Quality Settings**  | Settings → Quality                     |
-| **Security Settings** | Settings → Security                    |
+| **Run Scan**          | Tools → Security                       |
+| **Simplify**          | Simplify page (navigation bar)         |
+| **Security Settings** | Settings → Features → Security Scanning|
 
-Scans run automatically during implementation and review if enabled.
+Scans run automatically during implementation and review if enabled in Settings.
+
+For a complete overview of the Tools page, see [Tools](/web-ui/tools.md).
 
 ## Security Scanning
 
 ### Running a Manual Scan
 
-1. Go to the **Dashboard**
-2. Click **"Run Scan"** in Quick Actions
-3. Configure options:
-   - **Directory** - Path to scan (default: project root)
-   - **Scanners** - Select which scanners to run
-   - **Format** - Output format (text, JSON, SARIF)
-4. Click **"Start Scan"**
+1. Go to **Tools → Security**
+2. Select which scanners to run
+3. Set the **Fail Level** (severity that indicates failure)
+4. Click **Run Scan**
 
 Results appear in the agent output area.
 
@@ -254,24 +252,13 @@ Human-readable text output shown in the dashboard.
 
 ### CI/CD Integration
 
-```bash
-# Run security scan in CI
-curl -X POST http://localhost:8080/api/v1/scan \
-  -H "Content-Type: application/json" \
-  -d '{"directory": "./src", "format": "sarif"}'
-```
+Security scans can be integrated into CI/CD pipelines via the API. See [REST API Reference](/reference/rest-api.md) for endpoint details.
 
 ---
 
 ## Also Available via CLI
 
 Run security scans and code simplification from the command line for scripting or CI/CD integration.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr scan` | Run all enabled security scanners |
-| `mehr scan --sarif` | Generate SARIF format report |
-| `mehr simplify` | Simplify code based on workflow state |
 
 See [CLI: scan](/cli/scan.md) for scanner selection and output options, and [CLI: simplify](/cli/simplify.md) for simplification modes.
 

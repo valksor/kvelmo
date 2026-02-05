@@ -17,48 +17,21 @@ When you click **"Plan"**, the AI:
 
 After creating a task, click the **"Plan"** button in the Active Task card:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                  │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                               │
-│  Branch: feature/user-oauth                                  │
-│                                                              │
-│  Actions:                                                    │
-│    [Plan] [Implement] [Review] [Finish] [Continue]           │
-│                                                              │
-│  [Plan] ← Click this button                                  │
-└──────────────────────────────────────────────────────────────┘
-```
+The Active Task card shows your task details and action buttons. Click **Plan** to start the planning phase.
 
 ## Planning Phase Workflow
 
-```mermaid
-flowchart LR
-    A[Idle State] --> B[Click Plan]
-    B --> C[Planning State]
-    C --> D[AI Analyzes]
-    D --> E[Specifications Created]
-    E --> F[Back to Idle - Ready to Implement]
+```text
+┌────────────┐     ┌────────────┐     ┌────────────────┐     ┌─────────────┐     ┌─────────────────┐     ┌───────────────────────────────┐
+│ Idle State │ ──▶ │ Click Plan │ ──▶ │ Planning State │ ──▶ │ AI Analyzes │ ──▶ │ Specs Created   │ ──▶ │ Back to Idle - Ready to Impl. │
+└────────────┘     └────────────┘     └────────────────┘     └─────────────┘     └─────────────────┘     └───────────────────────────────┘
 ```
 
 ## Real-Time Progress
 
 Watch the AI work in the **Agent Output** section:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Output (Live)                                         │
-├──────────────────────────────────────────────────────────────┤
-│  $ Reading task description...                               │
-│  $ Analyzing codebase structure...                           │
-│  ✓ Scanning internal/ directory                              │
-│  ✓ Reviewing existing auth patterns                          │
-│  $ Creating specification...                                 │
-│  ✓ Generated specification-1.md                              │
-│  ▶ Streaming...                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Agent Output** section shows real-time progress as the AI reads your task description, analyzes the codebase structure, reviews existing patterns, and generates specification files.
 
 ## The Planning State
 
@@ -74,37 +47,21 @@ During planning, the task state changes to **"Planning"**:
 
 After planning completes, review the generated specifications:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Specifications (2 files)                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  📄 specification-1.md                                        │
-│     ✓ OAuth Provider Setup                                   │
-│     ✓ Database Schema for Sessions                           │
-│     ✓ Login/Logout Endpoints                                 │
-│                                                              │
-│  📄 specification-2.md                                        │
-│     ✓ Token Validation Middleware                            │
-│     ✓ Session Management                                     │
-│     ✓ Security Considerations                                │
-│                                                              │
-│  [View Full Content] [+ Add another specification]           │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Specifications** section lists all generated specification files with their key topics. Click **View Full Content** to read the complete specifications, or **Add another specification** to create additional specs.
 
 ## Iterative Planning
 
 You can run planning multiple times to build on existing specifications:
 
-```mermaid
-flowchart LR
-    A[Click Plan] --> B[specification-1.md created]
-    B --> C[Review spec]
-    C --> D[Add note: Add error handling]
-    D --> E[Click Plan again]
-    E --> F[specification-2.md created]
-    F --> G[Both specs used in implementation]
+```text
+┌────────────┐     ┌─────────────────────────┐     ┌─────────────┐     ┌────────────────────────────┐
+│ Click Plan │ ──▶ │ specification-1.md      │ ──▶ │ Review spec │ ──▶ │ Add note: error handling   │
+└────────────┘     └─────────────────────────┘     └─────────────┘     └──────────────┬─────────────┘
+                                                                                      │
+                                                                                      ▼
+┌─────────────────────────────────────┐     ┌─────────────────────────┐     ┌──────────────────┐
+│ Both specs used in implementation   │ ◀── │ specification-2.md      │ ◀── │ Click Plan again │
+└─────────────────────────────────────┘     └─────────────────────────┘     └──────────────────┘
 ```
 
 **Steps:**
@@ -122,43 +79,13 @@ Add notes to provide additional context before planning:
 1. Click **"Add Note"** button
 2. Enter your context or requirements
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Add Note                                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ Use the existing OAuth2 library from go-oauth2:    │      │
-│  │ we already have this as a dependency.              │      │
-│  │                                                    │      │
-│  │ Sessions should be stored in PostgreSQL, not       │      │
-│  │ Redis.                                             │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│                                    [Cancel] [Add Note]       │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Add Note** dialog accepts markdown-formatted text. Include specific requirements, existing dependencies to use, or constraints the AI should follow during planning.
 
 ## Answering Questions
 
 If the AI needs clarification during planning, it will enter the **"Waiting"** state and show a question:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Question from Agent                                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Which OAuth2 library should we use for Google integration?  │
-│                                                              │
-│  Options:                                                    │
-│    • go-oauth2/oauth2 (existing dependency)                  │
-│    • golang.org/x/oauth2                                     │
-│    • Other (specify)                                         │
-│                                                              │
-│  [Answer: go-oauth2/oauth2]  [Answer: golang.org/x/oauth2]   │
-│  [Provide custom answer]                                     │
-└──────────────────────────────────────────────────────────────┘
-```
+When the AI needs clarification, it enters the **Waiting** state and displays a question with suggested options. You can click a suggested answer or provide a custom response using **Add Note**.
 
 Use the **"Add Note"** button to answer, then click **"Plan"** again.
 
@@ -223,10 +150,5 @@ After planning completes:
 ## Also Available via CLI
 
 Run planning from the command line for terminal-based workflows or automation.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr plan` | Generate specifications from task description |
-| `mehr plan --force` | Re-run planning even if specs exist |
 
 See [CLI: plan](/cli/plan.md) for all flags and options.

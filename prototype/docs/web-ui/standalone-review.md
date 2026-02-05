@@ -110,84 +110,16 @@ event: message
 data: {"event":"done"}
 ```
 
-## Examples
+## Review Modes
 
-### Review Uncommitted Changes
+| Mode | Description |
+|------|-------------|
+| Uncommitted changes | Reviews changes not yet committed |
+| Branch vs base | Compares current branch to a base branch (e.g., main) |
+| Commit range | Reviews a specific range of commits |
+| Specific files | Reviews only the specified files |
 
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "uncommitted"
-  }'
-```
-
-### Review Branch vs Main
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "branch",
-    "base_branch": "main"
-  }'
-```
-
-### Review Commit Range
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "range",
-    "range": "HEAD~5..HEAD"
-  }'
-```
-
-### Review Specific Files
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "files",
-    "files": ["src/handler.go", "src/validation.go"]
-  }'
-```
-
-### Stream Review Results
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -H "Accept: text/event-stream" \
-  -d '{
-    "mode": "uncommitted"
-  }'
-```
-
-### Review and Fix Uncommitted Changes
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "uncommitted",
-    "apply_fixes": true
-  }'
-```
-
-### Review and Fix Without Checkpoint (Not Recommended)
-
-```bash
-curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "uncommitted",
-    "apply_fixes": true,
-    "create_checkpoint": false
-  }'
-```
+For API integration examples, see [REST API Reference](/reference/rest-api.md).
 
 ## Verdicts
 
@@ -220,13 +152,6 @@ curl -X POST http://localhost:8080/api/v1/workflow/review/standalone \
 ## Also Available via CLI
 
 Run standalone code reviews from the command line for scripting or terminal workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr review --standalone` | Review uncommitted changes |
-| `mehr review --standalone --branch main` | Review current branch vs main |
-| `mehr review --standalone --range HEAD~5..HEAD` | Review a commit range |
-| `mehr review --standalone <files>` | Review specific files |
 
 See [CLI: review](/cli/review.md) for all review modes, fix application, and output options.
 

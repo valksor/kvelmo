@@ -35,115 +35,43 @@ Checkpoints are automatic snapshots created at key workflow moments:
 
 Click **"Undo"** to go back one step:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                   │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                                │
-│  Checkpoints: 3/5                                            │
-│                                                              │
-│  Quick Actions:                                              │
-│    [Continue] [Undo] [Redo] [Abandon]                        │
-│                                                              │
-│  [Undo] ← Click this button                                  │
-└──────────────────────────────────────────────────────────────┘
-```
+The Active Task card shows your current checkpoint position. Click **Undo** to revert to the previous checkpoint.
 
 ### Undo After Implementation
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Undo Checkpoint                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Current: #3 - Implementation complete                       │
-│  Undo to: #2 - After planning                                │
-│                                                              │
-│  Changes that will be reverted:                              │
-│  • internal/auth/oauth.go (created)                          │
-│  • internal/auth/middleware.go (modified)                    │
-│  • internal/auth/oauth_test.go (created)                     │
-│  • cmd/server/main.go (modified)                             │
-│                                                              │
-│  This will restore files to the planning state.             │
-│                                                              │
-│  Current state will be saved for redo.                       │
-│                                                              │
-│                                [Cancel]  [Confirm Undo]      │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Undo Checkpoint** dialog shows which checkpoint you're at and which you'll revert to, lists files that will be reverted, and confirms the current state will be saved for redo. Click **Confirm Undo** to proceed.
 
 ## Using Redo
 
 After undoing, click **"Redo"** to go forward:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Redo Checkpoint                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Current: #2 - After planning                                │
-│  Redo to: #3 - Implementation complete                        │
-│                                                              │
-│  Changes that will be reapplied:                             │
-│  • internal/auth/oauth.go (create)                           │
-│  • internal/auth/middleware.go (modify)                      │
-│  • internal/auth/oauth_test.go (create)                      │
-│  • cmd/server/main.go (modify)                               │
-│                                                              │
-│                                [Cancel]  [Confirm Redo]      │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Redo Checkpoint** dialog shows which state you'll restore and lists the files that will be reapplied. Click **Confirm Redo** to proceed.
 
 ## Undo/Redo Workflow
 
-```mermaid
-flowchart LR
-    A[Implementation] --> B{Happy?}
-    B -->|No| C[Click Undo]
-    C --> D[Back to Planning]
-    D --> E[Add Note]
-    E --> F[Implement Again]
-    B -->|Yes| G[Continue]
-
-    F --> H{Happy now?}
-    H -->|No| C
-    H -->|Yes| G
-
-    C --> I[Can Redo?]
-    I -->|Yes| J[Redo Available]
+```text
+                                        Yes ──▶ ┌──────────┐
+                                   ┌────────────│ Continue │◀────────────────────────────────────┐
+┌────────────────┐     ┌───────────┴┐           └──────────┘                                     │
+│ Implementation │ ──▶ │   Happy?   │                                                       Yes │
+└────────────────┘     └───────────┬┘                                                           │
+                                   │                                                     ┌──────┴─────┐
+                              No   │                                                     │ Happy now? │
+                                   ▼                                                     └──────┬─────┘
+                            ┌────────────┐     ┌──────────────────┐     ┌──────────┐     ┌──────┴──────────┐
+                            │ Click Undo │ ──▶ │ Back to Planning │ ──▶ │ Add Note │ ──▶ │ Implement Again │
+                            └──────┬─────┘     └──────────────────┘     └──────────┘     └─────────────────┘
+                                   │                                                            ▲
+                                   │  ┌───────────────┐                                    No   │
+                                   └──│ Redo Available│◀── (if you change your mind) ──────────┘
+                                      └───────────────┘
 ```
 
 ## Checkpoint History
 
 View all checkpoints in the Active Task card:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Checkpoints (5)                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  #5 • Implementation complete  ◀── Current                  │
-│      Files: 3 created, 2 modified                            │
-│      [View Details]                                          │
-│                                                              │
-│  #4 • Specifications created                                 │
-│      Files: 2 specification files                            │
-│      [View Details] [Restore]                                │
-│                                                              │
-│  #3 • Planning complete                                      │
-│      Files: specification-1.md                               │
-│      [View Details] [Restore]                                │
-│                                                              │
-│  #2 • Task started                                           │
-│      Initial checkpoint                                      │
-│      [View Details] [Restore]                                │
-│                                                              │
-│  #1 • Initial state                                          │
-│      Task registered                                         │
-│      [View Details] [Restore]                                │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Checkpoints** section lists all checkpoints with descriptions and file counts. The current checkpoint is highlighted. Click **View Details** to see what changed, or **Restore** to jump directly to any checkpoint.
 
 Click **"Restore"** on any checkpoint to jump directly to that state.
 
@@ -197,11 +125,5 @@ After using Undo/Redo:
 ## Also Available via CLI
 
 Navigate checkpoints from the command line.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr undo` | Revert to previous checkpoint |
-| `mehr redo` | Restore an undone checkpoint |
-| `mehr undo --steps 2` | Undo multiple checkpoints at once |
 
 See [CLI: undo](/cli/undo.md) and [CLI: redo](/cli/redo.md) for all options.

@@ -1,489 +1,331 @@
 # Settings
 
-Configure your workspace through the Web UI settings page without editing YAML files directly.
+Configure your workspace through the Web UI settings page without editing configuration files directly.
 
 ## Accessing Settings
 
-From the navigation bar, open the **Admin** dropdown and click **Settings**.
+From the navigation bar, click **Settings**. In global mode, you must first select a project.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Workspace Settings                                          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [General] [Project] [Git] [Agent] [Workflow] [Browser] ...  │
-│  ─────────────────────────────────────────────────────────   │
-│                                                              │
-│  Settings apply to: current-project                          │
-│                                                              │
-│                                        [Reset] [Save]        │
-└──────────────────────────────────────────────────────────────┘
-```
+The Settings page has four tabs: **Core**, **Providers**, **Features**, and **Automation**. Make changes and click **Save** to apply.
 
-## Settings Sections
+## Core Tab
 
-### Project Settings
-
-Configure the project layout when your task hub and code target are in different directories:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Project Settings                                            │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Code Directory                                              │
-│  [../reporting-engine ]                                      │
-│                                                              │
-│  Path to code target directory (relative or absolute).       │
-│  Leave empty if the project hub is the code target.          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-| Setting            | Description                                                          | Default |
-|--------------------|----------------------------------------------------------------------|---------|
-| **Code Directory** | Path to the code target directory (relative to project root or absolute) | `""`    |
-
-When set, the project hub (`.mehrhof/`, tasks, queues) stays in the current directory while agents edit code, run git operations, and execute linters in the specified code directory. Supports relative paths and environment variables (`${HOME}/code`).
-
-**Example use case:** You have a Mehrhof hub in `/projects/task-hub/` but the actual code lives in `/projects/reporting-engine/`. Set **Code Directory** to `../reporting-engine` so agents operate on the correct codebase.
-
-**CLI equivalent:** `project.code_dir` in `.mehrhof/config.yaml`. See [CLI: config](/cli/config.md#project-settings).
+Core settings control fundamental workflow behavior.
 
 ### Git Settings
 
 Configure version control integration:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Git Settings                                                │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Auto-commit               [✓ Enabled]                       │
-│  Sign commits             [✗ Disabled]                       │
-│  Target branch            [main              ]               │
-│  Branch pattern           [{type}/{key}--{slug}]             │
-│  Commit prefix            [{key}]                            │
-│  Stash on start           [✗ Disabled]                       │
-│  Auto-pop stash           [✓ Enabled]                        │
-│                                                              │
-│  Branch Pattern Variables:                                   │
-│    {type}    - Task type (feature, fix, etc.)                │
-│    {key}     - External key (JIRA-123, etc.)                 │
-│    {slug}    - URL-safe title slug                           │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-| Setting            | Description                          | Default                |
-|--------------------|--------------------------------------|------------------------|
-| **Auto-commit**    | Automatically commit changes         | `true`                 |
-| **Sign commits**   | GPG sign commits                     | `false`                |
-| **Target branch**  | Branch to merge into                 | `main`                 |
-| **Branch pattern** | Template for branch names            | `{type}/{key}--{slug}` |
-| **Commit prefix**  | Template for commit messages         | `[{key}]`              |
-| **Stash on start** | Auto-stash before creating branch    | `false`                |
-| **Auto-pop stash** | Auto-pop stash after branch creation | `true`                 |
+| Setting | Description |
+|---------|-------------|
+| **Commit Prefix** | Pattern for commit messages (use `{key}`, `{type}`, `{slug}`) |
+| **Branch Pattern** | Pattern for branch names |
+| **Default Branch** | Override branch detection (e.g., main, develop) |
+| **Auto Commit** | Commit automatically after implementation |
+| **Sign Commits** | GPG sign commits |
+| **Stash on Start** | Auto-stash changes before creating branch |
+| **Auto Pop Stash** | Pop stash after branch creation |
 
 ### Agent Settings
 
 Configure AI agent behavior:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Agent Settings                                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Default agent            [claude            ]               │
-│  Timeout (seconds)       [300              ]                 │
-│  Max retries             [3                ]                 │
-│                                                              │
-│  Step-specific agents:                                       │
-│    Planning:           [claude           ]                   │
-│    Implementing:       [claude-sonnet    ]                   │
-│    Reviewing:          [claude           ]                   │
-│                                                              │
-│  Available agents:                                           │
-│    • claude - Claude AI via Claude CLI                       │
-│    • claude-opus - Claude 3 Opus (slower, smarter)           │
-│    • claude-sonnet - Claude 3.5 Sonnet (faster)              │
-│                                                              │
-│  [Add Custom Agent Alias]                                    │
-└──────────────────────────────────────────────────────────────┘
-```
-
-| Setting           | Description                   | Default  |
-|-------------------|-------------------------------|----------|
-| **Default agent** | Agent to use for all steps    | `claude` |
-| **Timeout**       | Maximum seconds per operation | `300`    |
-| **Max retries**   | Retry attempts on failure     | `3`      |
+| Setting | Description |
+|---------|-------------|
+| **Default Agent** | Agent to use when not specified |
+| **Timeout** | Maximum time for agent execution (seconds) |
+| **Max Retries** | Retry count on transient failures |
+| **Instructions** | Global instructions included in all prompts |
+| **Optimize Prompts** | Optimize prompts for token efficiency |
 
 ### Workflow Settings
 
-Configure task lifecycle behavior:
+Configure task lifecycle:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Workflow Settings                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Auto-init               [✓ Enabled]                         │
-│  Session retention       [7                ] days            │
-│  Delete work on finish   [✗ Disabled]                        │
-│  Delete work on abandon  [✗ Disabled]                        │
-│                                                              │
-│  Quality checks on finish:                                   │
-│    Run tests             [✓ Enabled]                         │
-│    Run quality           [✓ Enabled]                         │
-│    Fail on error         [✓ Enabled]                         │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+| Setting | Description |
+|---------|-------------|
+| **Auto Init** | Auto-initialize new workspaces |
+| **Session Retention** | Days to keep session history |
+| **Delete Work on Finish** | Clean up work directory after finish |
+| **Delete Work on Abandon** | Clean up work directory on abandon |
 
-| Setting                    | Description                      | Default |
-|----------------------------|----------------------------------|---------|
-| **Auto-init**              | Auto-initialize new workspaces   | `true`  |
-| **Session retention**      | Days to keep session history     | `7`     |
-| **Delete work on finish**  | Clean up after successful finish | `false` |
-| **Delete work on abandon** | Clean up after abandon           | `false` |
+### Budget Settings
 
-### Browser Settings
+Control spending limits:
 
-Configure browser automation:
+**Per Task:**
+- **Max Cost** — Maximum USD per task
+- **Max Tokens** — Maximum tokens per task
+- **On Limit** — Action when limit reached (warn, pause, stop)
+- **Warning At** — Percentage threshold for warnings
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Browser Settings                                            │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Enabled                 [✓ Enabled]                         │
-│  Headless                [✗ Disabled]                        │
-│  Port                    [9222             ]                 │
-│  Timeout (seconds)       [30               ]                 │
-│  Screenshot directory    [./screenshots    ]                 │
-│                                                              │
-│  Cookies:                                                    │
-│    Profile                [default          ]                │
-│    Persist cookies       [✓ Enabled]                         │
-│                                                              │
-│  [Test Browser Connection]                                   │
-└──────────────────────────────────────────────────────────────┘
-```
+**Monthly:**
+- **Enable Monthly Budget** — Track spending across workspace
+- **Max Cost** — Monthly spending limit
+- **Currency** — Display currency
+- **Warning At** — Percentage threshold for warnings
 
-| Setting                  | Description               | Default         |
-|--------------------------|---------------------------|-----------------|
-| **Enabled**              | Enable browser automation | `true`          |
-| **Headless**             | Run Chrome without UI     | `false`         |
-| **Port**                 | Chrome debugging port     | `9222`          |
-| **Timeout**              | Seconds before timeout    | `30`            |
-| **Screenshot directory** | Where to save screenshots | `./screenshots` |
+### Project & Storage
 
-### Integrations
+Configure directory layout:
 
-Configure authentication tokens for external task providers. Each provider section is collapsible and includes helpful guidance on obtaining tokens.
+| Setting | Description |
+|---------|-------------|
+| **Code Directory** | Separate code directory (relative or absolute) |
+| **Project Directory** | Where to store work files |
+| **Save in Project** | Store work in project directory instead of global |
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Integrations                                                │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ▶ GitHub                              [Configured]          │
-│  ▶ GitLab                                                    │
-│  ▶ Jira                                [Configured]          │
-│  ▶ Linear                                                    │
-│  ▶ Notion                                                    │
-│  ▶ Wrike                                                     │
-│  ▶ YouTrack                                                  │
-│  ▶ Bitbucket                                                 │
-│  ▶ Asana                                                     │
-│  ▶ ClickUp                                                   │
-│  ▶ Trello                                                    │
-│  ▶ Azure DevOps                                              │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+### Stack Settings
 
-Click any provider to expand its configuration:
+Configure stacked feature branches:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ▼ GitHub                              [Configured]          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Personal Access Token                                       │
-│  [••••••••••••••••••••••••]                                  │
-│                                                              │
-│  Get token → • Settings → Developer settings →               │
-│  Personal access tokens • Required: repo, read:user          │
-│                                                              │
-│  Organization (optional)                                     │
-│  [my-org                 ]                                   │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+| Setting | Description |
+|---------|-------------|
+| **Auto Rebase** | When to auto-rebase child branches (disabled, on_finish) |
+| **Block on Conflicts** | Block auto-rebase if conflicts detected |
 
-**Token Help**: Each provider shows:
-- **Get token →** - Link to the token generation page
-- **Navigation steps** - How to find the token settings
-- **Required scopes** - Permissions needed for the token
+### Updates & Patterns
 
-**Supported Providers:**
+| Setting | Description |
+|---------|-------------|
+| **Enable Update Checks** | Check for new versions |
+| **Check Interval** | Hours between update checks |
+| **Specification Pattern** | Filename pattern for specs |
+| **Review Pattern** | Filename pattern for reviews |
 
-| Provider     | Token Type            | Additional Config     |
-|--------------|-----------------------|-----------------------|
-| GitHub       | Personal Access Token | Organization          |
-| GitLab       | Personal Access Token | Instance URL          |
-| Jira         | API Token             | Base URL, Email       |
-| Linear       | API Key               | Team                  |
-| Notion       | Integration Token     | Database ID           |
-| Wrike        | Permanent Token       | Folder ID             |
-| YouTrack     | Permanent Token       | Instance URL          |
-| Bitbucket    | App Password          | Username              |
-| Asana        | Personal Access Token | Workspace GID         |
-| ClickUp      | API Token             | Team ID               |
-| Trello       | API Key + Token       | (both required)       |
-| Azure DevOps | Personal Access Token | Organization, Project |
+## Providers Tab
 
-### Specification Settings
+Configure authentication and settings for external task providers.
 
-Configure where specifications are saved:
+### Default Provider
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Specification Settings                                      │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Save in project         [✗ Disabled]                        │
-│  Project directory       [tickets          ]                 │
-│  Filename pattern        [specification-{n}.md]              │
-│                                                              │
-│  Pattern Variables:                                          │
-│    {n}    - Specification number (1, 2, 3, ...)              │
-│                                                              │
-│  Example: "SPEC-{n}.md" → SPEC-1.md, SPEC-2.md, ...          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+| Setting | Description |
+|---------|-------------|
+| **Default Provider** | Provider for bare task references (file, github, jira, etc.) |
+| **Default Mention** | Mention text when submitting tasks |
 
-| Setting               | Description                                                  | Default                |
-|-----------------------|--------------------------------------------------------------|------------------------|
-| **Save in project**   | Save specifications to project directory for version control | `false`                |
-| **Project directory** | Directory name (e.g., "tickets")                             | `""` (home dir only)   |
-| **Filename pattern**  | Template with `{n}` placeholder                              | `specification-{n}.md` |
+### GitHub
 
-When enabled, specifications are saved to both:
-- Home directory (authoritative): `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/specifications/`
-- Project directory (committable): `<project-dir>/<task-id>/`
+| Setting | Description |
+|---------|-------------|
+| **Token** | Personal access token |
+| **Owner** | Repository owner |
+| **Repository** | Repository name |
+| **Target Branch** | Default branch for PRs |
+| **Draft PRs** | Create PRs as draft by default |
 
-### Review Settings
+### GitLab
 
-Configure where code reviews are saved:
+| Setting | Description |
+|---------|-------------|
+| **Token** | Personal access token |
+| **Host** | GitLab host (default: gitlab.com) |
+| **Project Path** | Path like `group/project` |
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Review Settings                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Save in project         [✗ Disabled]                        │
-│  Filename pattern        [review-{n}.txt   ]                 │
-│                                                              │
-│  Example: "CODERABBIT-{n}.txt" → CODERABBIT-1.txt, ...       │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+### Jira
 
-| Setting              | Description                                      | Default          |
-|----------------------|--------------------------------------------------|------------------|
-| **Save in project**  | Save reviews alongside specifications in project | `false`          |
-| **Filename pattern** | Template with `{n}` placeholder                  | `review-{n}.txt` |
+| Setting | Description |
+|---------|-------------|
+| **Token** | API token |
+| **Email** | Email for Cloud authentication |
+| **Base URL** | Jira instance URL |
+| **Project** | Default project key |
 
-Reviews use the same project directory as specifications.
+### Linear
 
-### Provider Settings
+| Setting | Description |
+|---------|-------------|
+| **Token** | API key |
+| **Team** | Default team key |
 
-Configure default provider behavior:
+### Notion
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Provider Settings                                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Default provider         [file             ]                │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+| Setting | Description |
+|---------|-------------|
+| **Token** | Integration token |
+| **Database ID** | Default database |
+| **Status Property** | Property name for status |
 
-### License Information
+### Other Providers
 
-View license and dependency information:
+Additional providers available: Bitbucket, Azure DevOps, Asana, ClickUp, Trello, Wrike, YouTrack. Expand the **Other Providers** section to configure these.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  License Information                                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Project License: BSD 3-Clause                               │
-│  Copyright (c) 2025+, Dāvis Zālītis (k0d3r1s)                │
-│  Copyright (c) 2025+, SIA Valksor                            │
-│                                                              │
-│  [View Full License Text]                                    │
-│                                                              │
-│  Dependency Licenses:                                        │
-│    MIT                    12 packages                        │
-│    BSD-3-Clause           8 packages                         │
-│    BSD-style              5 packages                         │
-│    Unknown                1 package                          │
-│                                                              │
-│  [Export Attribution] [Filter Unknown]                       │
-│                                                              │
-│  Open Source Licenses Used:                                  │
-│    • google.golang.org/protobuf    BSD-3-Clause              │
-│    • github.com/stretchr/testify    MIT                      │
-│    • github.com/valksor/go-toolkit  BSD-3-Clause             │
-│    • gopkg.in/yaml.v3               MIT                      │
-│    • golang.org/x/crypto            BSD-style                │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+## Features Tab
 
-**Features:**
-- **View Project License** - Full BSD 3-Clause license text
-- **Dependency List** - All Go module dependencies with licenses
-- **SPRF Detection** - Standardized license identifiers (MIT, Apache-2.0, etc.)
-- **Export Attribution** - Generate machine-readable attribution data
-- **Filter Unknown** - Show only packages with undetectable licenses
+Enable and configure optional features.
 
-**License Types:**
+### Browser Automation
 
-| Type       | Examples               |
-|------------|------------------------|
-| Permissive | MIT, BSD, Apache-2.0   |
-| Reciprocal | GPL-2.0, MPL-2.0       |
-| Restricted | AGPL-3.0, GPL-3.0      |
-| Unknown    | Custom or undetectable |
+Control Chrome automation for testing and verification:
 
-When distributing software that includes Mehrhof, ensure you:
-1. Preserve license notices
-2. Acknowledge dependencies
-3. Comply with reciprocal license terms
+| Setting | Description |
+|---------|-------------|
+| **Enable Browser** | Allow AI agents to control a browser |
+| **Port** | Chrome debugging port (0 = random) |
+| **Timeout** | Seconds before timeout |
+| **Screenshot Directory** | Where to save screenshots |
+| **Headless** | Run browser without UI |
+| **Auto-load/save Cookies** | Persist browser cookies |
+
+### MCP (Model Context Protocol)
+
+| Setting | Description |
+|---------|-------------|
+| **Enable MCP Server** | Allow AI agents to call Mehrhof via MCP |
+| **Rate Limit** | Requests per second |
+| **Burst Size** | Maximum burst requests |
+
+### Security Scanning
+
+Configure automated security checks:
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Security Scanning** | Scan code for vulnerabilities |
+| **Run On** | When to scan (planning, implementing, reviewing) |
+| **Fail On** | Severity level that blocks completion |
+| **Block Finish** | Block task completion on failures |
+| **Scanners** | Enable SAST, Secrets, Dependencies, License checks |
+
+### Memory System
+
+Configure semantic memory:
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Memory** | Enable semantic search and learning |
+| **Backend** | Vector database (ChromaDB, Pinecone, etc.) |
+| **Connection String** | Database connection |
+| **Embedding Model** | Hash-based (default) or ONNX (semantic) |
+| **Max Results** | Search results limit |
+| **Similarity Threshold** | Minimum match score (0-1) |
+
+### Sandbox
+
+Isolate agent execution:
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Sandbox** | Isolate agent execution |
+| **Allow Network** | Required for LLM APIs |
+| **Tmp Directory** | Temporary file location |
+
+### Quality & Linters
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Quality Checks** | Run linters and formatters |
+| **Use Defaults** | Auto-enable linters for detected languages |
+
+### Links (Bidirectional Linking)
+
+| Setting | Description |
+|---------|-------------|
+| **Enabled** | Enable bidirectional linking |
+| **Auto Index** | Automatically index links |
+| **Case Sensitive** | Case-sensitive link matching |
+| **Max Context Length** | Characters of context to show |
+
+### Hierarchical Context
+
+| Setting | Description |
+|---------|-------------|
+| **Include Parent** | Show parent task context |
+| **Include Siblings** | Show sibling task context |
+| **Max Siblings** | Maximum siblings to include |
+| **Description Limit** | Characters per description |
+
+### Labels
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Labels** | Enable task labeling |
+
+### Library (Documentation)
+
+| Setting | Description |
+|---------|-------------|
+| **Auto Include Max** | Max collections to auto-include |
+| **Max Pages Per Prompt** | Pages per agent prompt |
+| **Max Token Budget** | Token limit for library content |
+
+## Automation Tab
+
+Configure webhook automation for GitHub and GitLab.
+
+### Webhook Automation
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Automation** | Process webhooks automatically |
+
+### GitHub Triggers
+
+| Setting | Description |
+|---------|-------------|
+| **Enable GitHub** | Enable GitHub webhook processing |
+| **Webhook Secret** | Secret for webhook validation |
+| **Command Prefix** | Comment trigger (default: @mehrhof) |
+| **Trigger On** | Issue opened, PR opened, PR updated, Comment commands |
+| **Use Worktrees** | Isolate work with git worktrees |
+| **Dry Run** | Log actions without executing |
+
+### GitLab Triggers
+
+| Setting | Description |
+|---------|-------------|
+| **Enable GitLab** | Enable GitLab webhook processing |
+| **Webhook Secret** | Secret for webhook validation |
+| **Command Prefix** | Comment trigger |
+| **Trigger On** | Issue opened, MR opened, MR updated, Comment commands |
+
+### Access Control
+
+| Setting | Description |
+|---------|-------------|
+| **Mode** | All users, Allowlist only, Blocklist |
+| **Allow Bots** | Allow bot accounts |
+| **Require Org** | Require organization membership |
+
+### Queue Settings
+
+| Setting | Description |
+|---------|-------------|
+| **Max Concurrent** | Maximum parallel jobs |
+| **Job Timeout** | Timeout per job (e.g., 30m, 1h) |
+| **Retry Attempts** | Retries on failure |
+| **Retry Delay** | Delay between retries |
+
+### Automation Labels
+
+| Setting | Description |
+|---------|-------------|
+| **Generated Label** | Label for Mehrhof PRs |
+| **In Progress Label** | Label while processing |
+| **Failed Label** | Label on failure |
+| **Skip Review Label** | Label to skip review |
+
+## Global Mode
+
+When running in global mode, a project picker appears at the top. Select a project to view and edit its settings.
+
+**Security note:** In global mode, sensitive fields (API tokens, passwords) are masked for security.
 
 ## Saving Changes
 
 1. Make your desired changes
-2. Click **"Save"** at the bottom of the page
+2. Click **Save** at the top of the page
 
-Changes are written to `.mehrhof/config.yaml` and take effect immediately.
+Changes are written to the configuration file and take effect immediately. A success notification confirms the update.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ✓ Settings Saved                                            │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Configuration updated successfully.                         │
-│                                                              │
-│  File: .mehrhof/config.yaml                                  │
-│                                                              │
-│  [Continue]                                                  │
-└──────────────────────────────────────────────────────────────┘
-```
+---
 
-## Resetting Settings
+## Also Available via CLI
 
-Click **"Reset"** to discard unsaved changes and reload the current configuration.
-
-## Global Mode Settings
-
-When running in global mode (`mehr serve --global`), a project picker appears:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Project: [my-app ▼]                                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Available projects:                                         │
-│    • my-app (3 tasks)                                        │
-│    • api-service (1 task)                                    │
-│    • docs (0 tasks)                                          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**Security note:** In global mode, sensitive fields (API tokens, passwords) are hidden for security.
-
-## Provider Health
-
-Monitor connection status and rate limits for configured providers:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Provider Health                                             │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  GitHub                                                      │
-│    Status: ● Connected                                       │
-│    Rate limit: 4872/5000 remaining                           │
-│    Reset: 2025-01-15 16:00:00 UTC                            │
-│    Last sync: 5 minutes ago                                  │
-│                                                              │
-│  Jira                                                        │
-│    Status: ● Connected                                       │
-│    Cloud: PROD.atlassian.net                                 │
-│    Last sync: 1 hour ago                                     │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## Settings File
-
-All settings are stored in `.mehrhof/config.yaml`:
-
-```yaml
-project:
-  code_dir: ""  # Path to code target (relative or absolute); empty = hub is code target
-
-git:
-  auto_commit: true
-  sign_commits: false
-  target_branch: main
-  branch_pattern: "{type}/{key}--{slug}"
-  commit_prefix: "[{key}]"
-  stash_on_start: false
-  auto_pop_stash: true
-
-agent:
-  default: claude
-  timeout: 300
-  max_retries: 3
-  steps:
-    planning: { name: claude }
-    implementing: { name: claude-sonnet }
-    reviewing: { name: claude }
-
-workflow:
-  auto_init: true
-  session_retention_days: 7
-  delete_work_on_finish: false
-  delete_work_on_abandon: false
-
-specification:
-  save_in_project: false
-  project_dir: ""
-  filename_pattern: "specification-{n}.md"
-
-review:
-  save_in_project: false
-  filename_pattern: "review-{n}.txt"
-
-browser:
-  enabled: true
-  headless: false
-  port: 9222
-  timeout: 30
-  screenshot_dir: "./screenshots"
-```
+Prefer working from the terminal? See [CLI: config](/cli/config.md) for configuration options.
 
 ## Next Steps
 
-- [**Dashboard**](dashboard.md) - Return to main view
-- [**CLI: config**](/cli/config.md) - Manage config from CLI
-- [**Configuration**](/configuration/index.md) - Advanced configuration guide
+- [**Dashboard**](/web-ui/dashboard.md) — Return to main view
+- [**Tools**](/web-ui/tools.md) — Browser, Memory, Security, Stack tools
+- [**Configuration Guide**](/configuration/index.md) — Advanced configuration

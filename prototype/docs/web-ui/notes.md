@@ -14,39 +14,11 @@ Notes are saved to your task and included in all future AI interactions:
 
 Click the **"Add Note"** button in the Active Task card:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Active Task: Add User OAuth Authentication                  │
-├──────────────────────────────────────────────────────────────┤
-│  State: ● Idle                                               │
-│                                                              │
-│  [+ Add Note] ← Click this button                            │
-│                                                              │
-│  Notes (3)                                                   │
-│  • "Use PostgreSQL for sessions"                             │
-│  • "Add rate limiting"                                       │
-│  • "JWT token should expire in 24h"                          │
-└──────────────────────────────────────────────────────────────┘
-```
+In the Active Task card, click **Add Note** to open the note dialog. Existing notes are listed below the button, showing all context you've added to the task.
 
 ## Add Note Dialog
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Add Note                                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Enter your note (markdown supported):                       │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │                                                    │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  This note will be included in the next planning or          │
-│  implementation prompt.                                      │
-│                                                              │
-│                                    [Cancel] [Add Note]       │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Add Note** dialog opens with a text area that supports markdown formatting. Enter your note and click **Add Note** to save it. Notes are automatically included in the next planning or implementation prompt.
 
 ## Types of Notes
 
@@ -94,11 +66,10 @@ A: Use golang.org/x/oauth2 - it's already in our dependencies.
 
 Add notes before planning to guide specification creation:
 
-```mermaid
-flowchart LR
-    A[Create Task] --> B[Add Notes]
-    B --> C[Click Plan]
-    C --> D[Specifications Include Notes]
+```text
+┌─────────────┐     ┌───────────┐     ┌────────────┐     ┌─────────────────────────────┐
+│ Create Task │ ──▶ │ Add Notes │ ──▶ │ Click Plan │ ──▶ │ Specifications Include Notes│
+└─────────────┘     └───────────┘     └────────────┘     └─────────────────────────────┘
 ```
 
 **Example:**
@@ -112,34 +83,13 @@ flowchart LR
 
 Add notes before implementation to guide code generation:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Specifications (2 ready)                                    │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [+ Add Note]  Click before implementing                     │
-│                                                              │
-│  Note: Use the existing session store from                   │
-│  internal/session/ - don't create a new one.                 │
-│                                                              │
-│  [Implement]                                                 │
-└──────────────────────────────────────────────────────────────┘
-```
+Before clicking **Implement**, you can click **Add Note** to provide additional context that will guide code generation. This is useful for specifying existing utilities to reuse or constraints to follow.
 
 ### Answering Questions
 
 When the AI asks a question during planning, use notes to answer:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Question from Agent                                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Should session tokens expire? If so, how long?              │
-│                                                              │
-│  [+ Add Note to Answer]                                      │
-└──────────────────────────────────────────────────────────────┘
-```
+When the agent asks a question during planning, the question appears in the task card. Click **Add Note** to provide your answer.
 
 Click **"Add Note"** and provide your answer:
 
@@ -174,26 +124,7 @@ Support Google OAuth only initially. Add other providers later.
 
 View all notes in the Active Task card:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Notes (5)                                                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  📝 2025-01-15 11:30 - Answer to agent question              │
-│     Use golang.org/x/oauth2 library                          │
-│     [View] [Delete]                                          │
-│                                                              │
-│  📝 2025-01-15 11:00 - Planning context                      │
-│     Support Google OAuth only initially                      │
-│     [View] [Delete]                                          │
-│                                                              │
-│  📝 2025-01-15 10:45 - Storage preference                    │
-│     Use PostgreSQL for sessions, not Redis                   │
-│     [View] [Delete]                                          │
-│                                                              │
-│  [+ Add Note]                                                │
-└──────────────────────────────────────────────────────────────┘
-```
+The Active Task card displays all notes with timestamps. Each note shows a preview and has **View** and **Delete** buttons. The most recent notes appear first.
 
 ## Managing Notes
 
@@ -239,11 +170,5 @@ After adding notes:
 ## Also Available via CLI
 
 Add notes from the command line when working in a terminal or automating workflows.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr note "message"` | Add a single note |
-| `mehr note` | Interactive mode for multiple notes |
-| `mehr answer "response"` | Answer a pending agent question |
 
 See [CLI: note](/cli/note.md) for flags, interactive mode, and advanced options.

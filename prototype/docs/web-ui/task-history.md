@@ -4,29 +4,7 @@ Browse, search, filter, and resume past tasks from the Task History section.
 
 ## Accessing Task History
 
-The Task History section appears on the dashboard showing all tasks in your workspace:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Task History                                                │
-├──────────────────────────────────────────────────────────────┤
-│  🔍 [Search tasks by title...]            Filter: [All ▼]    │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ 📋 Add User OAuth Authentication     │ [Done]       │      │
-│  │ State: Done  Branch: main  Created: 2h ago          │      │
-│  │                                    [View] [Load]    │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐      │
-│  │ 📋 Health Check Endpoint            │ [Implementing]│      │
-│  │ State: Implementing  Branch: feature/health         │      │
-│  │                                    [View] [Load]    │      │
-│  └────────────────────────────────────────────────────┘      │
-│                                                              │
-│  Showing 2 of 12 tasks                                        │
-└──────────────────────────────────────────────────────────────┘
-```
+The **Task History** section appears on the dashboard showing all tasks in your workspace. At the top, you'll find a search box to filter tasks by title and a dropdown to filter by state. Below that, task cards are displayed in a scrollable list, each showing the task title, state badge, git branch, and creation time. Each card has **View** and **Load** buttons. A summary at the bottom shows how many tasks are displayed out of the total.
 
 ## Task Card Information
 
@@ -42,27 +20,11 @@ Each task card displays:
 | **Cost**        | Token cost for this task                   |
 | **Sessions**    | Number of AI sessions                      |
 
-```
-┌─────────────────────────────────────────────┐
-│ 📋 Add User OAuth Authentication          │
-│                                             │
-│ State: Done         Branch: main            │
-│ Created: 2 hours ago                       │
-│ $0.45 • 3 sessions                          │
-│                                             │
-│ [View Details]  [Load]  [Delete]           │
-└─────────────────────────────────────────────┘
-```
+Each task card displays the title, state with colored badge, branch name, creation time, cost, and session count. Action buttons include **View Details**, **Load**, and **Delete**.
 
 ## Searching Tasks
 
-Use the search box to find tasks by title:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  🔍 [Search tasks by title...]            Filter: [All ▼]    │
-└──────────────────────────────────────────────────────────────┘
-```
+Use the search box at the top of the Task History section to find tasks by title.
 
 **Examples:**
 - `oauth` - Finds all tasks with "oauth" in title
@@ -73,7 +35,7 @@ Search is case-insensitive and matches partial titles.
 
 ## Filtering Tasks
 
-Filter tasks by state:
+Filter tasks by state using the dropdown next to the search box:
 
 | Filter        | Shows                                                       |
 |---------------|-------------------------------------------------------------|
@@ -82,17 +44,6 @@ Filter tasks by state:
 | **Completed** | Tasks that finished successfully                            |
 | **Failed**    | Tasks that encountered errors                               |
 | **Idle**      | Tasks ready for action                                      |
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Filter: [All ▼]                                              │
-│          ├── All                                              │
-│          ├── Active                                           │
-│          ├── Completed                                        │
-│          ├── Failed                                           │
-│          └── Idle                                             │
-└──────────────────────────────────────────────────────────────┘
-```
 
 ## Sorting Tasks
 
@@ -107,65 +58,30 @@ Change the sort order:
 
 ## Viewing Task Details
 
-Click **"View Details"** on any task card to see:
+Click **"View Details"** on any task card to open a modal with complete task information:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Task Details: Add User OAuth Authentication                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task ID: a1b2c3d4                                           │
-│  State: Done                                                 │
-│  Source: task.md                                             │
-│  Branch: main (deleted after merge)                          │
-│                                                              │
-│  Timeline:                                                   │
-│  • Created: 2 hours ago                                       │
-│  • Planned: 2 hours ago (5 min)                              │
-│  • Implemented: 2 hours ago (15 min)                         │
-│  • Reviewed: 2 hours ago (2 min)                             │
-│  • Finished: 2 hours ago                                      │
-│                                                              │
-│  Specifications (2):                                          │
-│  • specification-1.md - OAuth Provider Setup                 │
-│  • specification-2.md - Token Validation                     │
-│                                                              │
-│  Changes:                                                     │
-│  • 3 files created                                           │
-│  • 2 files modified                                           │
-│  • 0 files deleted                                           │
-│                                                              │
-│  Cost: $0.45 (145,231 tokens)                                │
-│  Sessions: 3                                                 │
-│                                                              │
-│  [Close]  [Load This Task]  [Delete]                         │
-└──────────────────────────────────────────────────────────────┘
-```
+- **Task ID** - Unique identifier
+- **State** - Current workflow state
+- **Source** - Original task file
+- **Branch** - Git branch (or "deleted after merge")
+- **Timeline** - When each phase occurred (Created, Planned, Implemented, Reviewed, Finished)
+- **Specifications** - List of spec files created during planning
+- **Changes** - Summary of files created, modified, and deleted
+- **Cost** - Total cost and token count
+- **Sessions** - Number of AI sessions
+
+The modal has **Close**, **Load This Task**, and **Delete** buttons.
 
 ## Resuming Past Tasks
 
-Click **"Load"** on any task to make it active again:
+Click **"Load"** on any task to make it active again. A confirmation dialog opens explaining what will happen:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Load Task                                                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│  State: Done                                                 │
-│                                                              │
-│  Loading this task will:                                     │
-│  • Set it as the active task                                 │
-│  • Switch to its branch (if exists)                          │
-│  • Restore all specifications and notes                       │
-│  • Allow you to review or continue work                      │
-│                                                              │
-│  Note: If the branch was deleted after finishing, you       │
-│  cannot continue this task.                                  │
-│                                                              │
-│                                [Cancel]  [Load Task]         │
-└──────────────────────────────────────────────────────────────┘
-```
+- Set it as the active task
+- Switch to its branch (if exists)
+- Restore all specifications and notes
+- Allow you to review or continue work
+
+The dialog notes that if the branch was deleted after finishing, you cannot continue the task. Click **Load Task** to proceed or **Cancel** to close.
 
 ### When to Resume
 
@@ -186,26 +102,14 @@ Resume a task when you need to:
 
 ## Deleting Tasks
 
-Click **"Delete"** to remove a task from history:
+Click **"Delete"** to remove a task from history. A confirmation dialog warns you that this action:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Delete Task                                                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Are you sure you want to delete this task?                  │
-│                                                              │
-│  Task: Add User OAuth Authentication                         │
-│                                                              │
-│  This will:                                                  │
-│  • Remove task from history                                  │
-│  • Delete work directory                                    │
-│  • Remove all checkpoints                                   │
-│  • Cannot be undone                                         │
-│                                                              │
-│                                [Cancel]  [Delete]           │
-└──────────────────────────────────────────────────────────────┘
-```
+- Removes task from history
+- Deletes work directory
+- Removes all checkpoints
+- Cannot be undone
+
+Click **Delete** to confirm or **Cancel** to keep the task.
 
 ⚠️ **Warning:** Deleting a task is permanent and cannot be undone.
 
@@ -238,12 +142,5 @@ The task history shows all tasks in your workspace, making it easy to:
 ## Also Available via CLI
 
 Browse and search tasks from the command line.
-
-| Command | What It Does |
-|---------|--------------|
-| `mehr list` | List all tasks |
-| `mehr list --state done` | Filter by task state |
-| `mehr list --search oauth` | Search tasks by keyword |
-| `mehr list --verbose` | Show detailed task information |
 
 See [CLI: list](/cli/list.md) for all filters and options.

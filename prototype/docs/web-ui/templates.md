@@ -273,13 +273,6 @@ agent: claude
 
 Manage and apply templates from the command line for scripting or terminal workflows.
 
-| Command | What It Does |
-|---------|--------------|
-| `mehr templates` | List all available templates |
-| `mehr templates show <name>` | Show template configuration details |
-| `mehr templates apply <name> <file>` | Apply a template to a task file |
-| `mehr start --template <name> <ref>` | Create a task with a template applied |
-
 See [CLI: templates](/cli/templates.md) for creating custom templates and all options.
 
 ## Template Storage
