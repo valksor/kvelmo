@@ -158,8 +158,8 @@ If any are missing, follow the relevant sections below.
 |----------|--------------|---------|
 | Linux (all distros) | x86_64 (amd64) | Full |
 | Linux (all distros) | ARM64 (aarch64) | Full |
-| macOS | Intel (amd64) | Full |
 | macOS | Apple Silicon (arm64) | Full |
+| macOS | Intel (amd64) | Via Rosetta 2 (uses arm64 binary) |
 | Windows | via WSL2 | Full (run Linux binary in WSL) |
 
 **Time estimates:**
@@ -404,7 +404,7 @@ After installation, authenticate with your Anthropic account:
 claude login
 ```
 
-Follow the prompts to complete authentication.
+Follow the prompts to complete authentication. This uses your **Claude subscription**—no separate API key setup required. Once authenticated, Mehrhof will use your CLI directly with no additional configuration.
 
 ### Verify
 
@@ -514,8 +514,9 @@ Download directly from GitHub releases:
 |----------|----------|
 | Linux x86_64 | [mehr-linux-amd64](https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-linux-amd64) |
 | Linux ARM64 | [mehr-linux-arm64](https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-linux-arm64) |
-| macOS Intel | [mehr-darwin-amd64](https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-amd64) |
-| macOS Apple Silicon | [mehr-darwin-arm64](https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64) |
+| macOS (all Macs) | [mehr-darwin-arm64](https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-darwin-arm64) |
+
+> **Intel Mac users:** The ARM64 binary runs seamlessly via Rosetta 2 (automatic translation).
 
 **Manual installation:**
 
