@@ -332,3 +332,72 @@ func TestHandler_InteractiveState_WrongMethod(t *testing.T) {
 
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
+
+func TestHandler_InteractiveCommands_ReturnsCommandList(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil, // Discovery doesn't require conductor
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// GET /api/v1/interactive/commands should return command metadata
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/interactive/commands")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	respBody, _ := io.ReadAll(resp.Body)
+	var result struct {
+		Commands []struct {
+			Name        string   `json:"name"`
+			Aliases     []string `json:"aliases"`
+			Description string   `json:"description"`
+			Category    string   `json:"category"`
+		} `json:"commands"`
+	}
+	require.NoError(t, json.Unmarshal(respBody, &result))
+
+	// Should have multiple commands
+	assert.Greater(t, len(result.Commands), 10, "expected many commands")
+
+	// Check for core commands
+	commandNames := make(map[string]bool)
+	for _, cmd := range result.Commands {
+		commandNames[cmd.Name] = true
+	}
+
+	assert.True(t, commandNames["plan"], "expected 'plan' command")
+	assert.True(t, commandNames["implement"], "expected 'implement' command")
+	assert.True(t, commandNames["review"], "expected 'review' command")
+	assert.True(t, commandNames["status"], "expected 'status' command")
+	assert.True(t, commandNames["reset"], "expected 'reset' command (Web-specific)")
+}
+
+func TestHandler_InteractiveCommands_WrongMethod(t *testing.T) {
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: nil,
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+
+	// POST on GET endpoint should return 405
+	body := bytes.NewBufferString(`{}`)
+	resp, err := doPost(ctx, client, srv.URL()+"/api/v1/interactive/commands", body)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+}

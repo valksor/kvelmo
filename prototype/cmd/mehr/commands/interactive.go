@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	routercommands "github.com/valksor/go-mehrhof/internal/conductor/commands"
 	mehrhofdisplay "github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/library"
@@ -287,94 +287,42 @@ func (s *InteractiveSession) handleCommand(ctx context.Context, input string) er
 
 // executeCommand runs the actual command logic.
 func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, args []string, input string) error {
+	// First, check if the command is handled by the unified router
+	if routercommands.IsKnownCommand(cmd) {
+		result, err := routercommands.Execute(ctx, s.cond, cmd, args)
+		if err != nil {
+			// Check for specific error types
+			if errors.Is(err, routercommands.ErrNoActiveTask) {
+				return errors.New("no active task - use 'start <reference>' first")
+			}
+
+			return err
+		}
+
+		// Handle special result types
+		if result != nil {
+			// Handle exit signal
+			if result.Type == routercommands.ResultExit {
+				return io.EOF
+			}
+
+			// Render the result for CLI display
+			s.renderResult(result)
+
+			// Update local state if result includes state
+			if result.State != "" {
+				s.state = workflow.State(result.State)
+			}
+		}
+
+		return nil
+	}
+
+	// Handle CLI-specific commands that aren't in the router
+	// These have special behavior like streaming, interactive prompts, or complex subcommands
 	switch cmd {
-	case "exit":
-		return io.EOF // Signal to exit the REPL
-
-	case "help":
-		s.printHelp()
-
 	case "chat":
 		return s.handleChat(ctx, strings.Join(args, " "))
-
-	case "start":
-		return s.handleStart(ctx, args)
-
-	case "plan":
-		return s.handlePlan(ctx, strings.Join(args, " "))
-
-	case "implement":
-		// Handle "implement review <n>" subcommand
-		if len(args) > 0 && args[0] == "review" {
-			if len(args) < 2 {
-				return errors.New("usage: implement review <number>")
-			}
-			reviewNum, err := strconv.Atoi(args[1])
-			if err != nil {
-				return errors.New("review number must be an integer")
-			}
-			if reviewNum <= 0 {
-				return fmt.Errorf("review number must be positive, got %d", reviewNum)
-			}
-
-			return s.handleImplementReview(ctx, reviewNum)
-		}
-
-		return s.handleImplement(ctx)
-
-	case "review":
-		// Handle "review <n>" for viewing reviews, "review" alone runs review workflow
-		if len(args) > 0 {
-			// If first arg is a number, view that review
-			if _, err := strconv.Atoi(args[0]); err == nil {
-				return s.handleReviewView(ctx, args)
-			}
-			// "review view <n>" subcommand
-			if args[0] == "view" {
-				return s.handleReviewView(ctx, args[1:])
-			}
-		}
-		// No args or unrecognized args - run review workflow
-		return s.handleReview(ctx)
-
-	case "continue":
-		return s.handleContinue(ctx)
-
-	case "status":
-		return s.handleStatus(ctx)
-
-	case "answer":
-		return s.handleAnswer(ctx, strings.Join(args, " "))
-
-	case "undo":
-		return s.handleUndo(ctx)
-
-	case "redo":
-		return s.handleRedo(ctx)
-
-	case "clear":
-		s.handleClear()
-
-	case "finish":
-		return s.handleFinish(ctx)
-
-	case "abandon":
-		return s.handleAbandon(ctx)
-
-	case "note":
-		return s.handleNote(ctx, strings.Join(args, " "))
-
-	case "quick":
-		return s.handleQuick(ctx, strings.Join(args, " "))
-
-	case "cost":
-		return s.handleCost(ctx)
-
-	case "list":
-		return s.handleList(ctx)
-
-	case "specification", "spec":
-		return s.handleSpecification(ctx, args)
 
 	case "find":
 		return s.handleFind(ctx, args)
@@ -391,15 +339,10 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 	case "library":
 		return s.handleLibrary(ctx, args)
 
-	case "budget":
-		return s.handleBudget(ctx)
-
 	default:
 		// If no recognized command, treat as a chat message
 		return s.handleChat(ctx, input)
 	}
-
-	return nil
 }
 
 // printHelp displays available commands.
@@ -489,662 +432,6 @@ func (s *InteractiveSession) handleChat(ctx context.Context, message string) err
 	if response != nil && response.Question != nil {
 		return s.handleAgentQuestion(response.Question)
 	}
-
-	return nil
-}
-
-// handleStart starts a new task.
-func (s *InteractiveSession) handleStart(ctx context.Context, args []string) error {
-	if len(args) == 0 {
-		return errors.New("usage: start <reference>")
-	}
-
-	reference := args[0]
-
-	s.printf(true, "Starting task from: %s\n", display.Cyan(reference))
-
-	if err := s.cond.Start(ctx, reference); err != nil {
-		return err
-	}
-
-	// Update state
-	s.state = workflow.StateIdle
-	s.printf(true, "%s Task started successfully\n", display.SuccessMsg("✓"))
-	s.printf(true, "Next: Use %s to enter planning phase\n", display.Cyan("plan"))
-
-	return nil
-}
-
-// handlePlan enters the planning phase.
-func (s *InteractiveSession) handlePlan(ctx context.Context, _ string) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task - use 'start <reference>' first")
-	}
-
-	s.printf(true, "Entering planning phase...\n")
-
-	if err := s.cond.Plan(ctx); err != nil {
-		return err
-	}
-
-	s.state = workflow.StatePlanning
-	s.printf(true, "%s Planning phase started\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleImplement enters the implementation phase.
-func (s *InteractiveSession) handleImplement(ctx context.Context) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	s.printf(true, "Entering implementation phase...\n")
-
-	if err := s.cond.Implement(ctx); err != nil {
-		return err
-	}
-
-	s.state = workflow.StateImplementing
-	s.printf(true, "%s Implementation phase started\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleImplementReview implements fixes from a specific review.
-func (s *InteractiveSession) handleImplementReview(ctx context.Context, reviewNumber int) error {
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
-	}
-
-	// Pre-validate review availability before changing state
-	ws := s.cond.GetWorkspace()
-	reviews, err := ws.ListReviews(task.ID)
-	if err != nil {
-		return fmt.Errorf("list reviews: %w", err)
-	}
-	if len(reviews) == 0 {
-		return errors.New("no reviews found - run 'review' first to generate code review")
-	}
-	// Check if the requested review exists
-	reviewExists := false
-	for _, r := range reviews {
-		if r == reviewNumber {
-			reviewExists = true
-
-			break
-		}
-	}
-	if !reviewExists {
-		if len(reviews) == 1 {
-			return fmt.Errorf("review %d not found - only review %d exists", reviewNumber, reviews[0])
-		}
-
-		return fmt.Errorf("review %d not found - available reviews: %v", reviewNumber, reviews)
-	}
-
-	s.printf(true, "Implementing fixes from review %d...\n", reviewNumber)
-
-	// Enter implementation state for review fixes
-	if err := s.cond.ImplementReview(ctx, reviewNumber); err != nil {
-		return err
-	}
-
-	s.state = workflow.StateImplementing
-
-	// Run the review implementation - reset state on error
-	runErr := s.cond.RunReviewImplementation(ctx, reviewNumber)
-	if runErr != nil {
-		// Reset to idle on failure to avoid stuck state
-		s.state = workflow.StateIdle
-
-		return runErr
-	}
-
-	s.state = workflow.StateIdle
-	s.printf(true, "%s Review %d fixes applied\n", display.SuccessMsg("✓"), reviewNumber)
-	s.printf(true, "Next: Use %s to verify the fixes\n", display.Cyan("review"))
-
-	return nil
-}
-
-// handleReview enters the review phase.
-func (s *InteractiveSession) handleReview(ctx context.Context) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	s.printf(true, "Entering review phase...\n")
-
-	if err := s.cond.Review(ctx); err != nil {
-		return err
-	}
-
-	s.state = workflow.StateReviewing
-	s.printf(true, "%s Review phase started\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleContinue resumes from waiting state.
-func (s *InteractiveSession) handleContinue(ctx context.Context) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	s.printf(true, "Continuing...\n")
-
-	// Check if there's a pending question
-	task := s.cond.GetActiveTask()
-	question, err := s.cond.GetWorkspace().LoadPendingQuestion(task.ID)
-	if err == nil && question != nil {
-		// Need to answer the question first
-		return errors.New("agent has a pending question - use 'answer <response>'")
-	}
-
-	// Resume workflow
-	if err := s.cond.ResumePaused(ctx); err != nil {
-		return err
-	}
-
-	s.printf(true, "%s Resumed\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleStatus displays task status.
-func (s *InteractiveSession) handleStatus(ctx context.Context) error {
-	status, err := s.cond.Status(ctx)
-	if err != nil {
-		return err
-	}
-
-	s.printf(true, "\n%s\n", display.Bold("Task Status:"))
-	s.printf(true, "  ID:      %s\n", status.TaskID)
-	s.printf(true, "  Title:   %s\n", status.Title)
-	s.printf(true, "  State:   %s\n", mehrhofdisplay.ColorState(status.State, status.State))
-	if status.Branch != "" {
-		s.printf(true, "  Branch:  %s\n", display.Cyan(status.Branch))
-	}
-	s.printf(true, "  Specs:   %d\n", status.Specifications)
-	s.printf(true, "  Checkpoints: %d\n", status.Checkpoints)
-	s.printf(true, "\n")
-
-	return nil
-}
-
-// handleAnswer responds to an agent question.
-func (s *InteractiveSession) handleAnswer(ctx context.Context, response string) error {
-	if response == "" {
-		return errors.New("response cannot be empty")
-	}
-
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
-	}
-
-	s.printf(true, "Answering agent question...\n")
-
-	// Clear the pending question
-	if err := s.cond.GetWorkspace().ClearPendingQuestion(task.ID); err != nil {
-		return fmt.Errorf("clear pending question: %w", err)
-	}
-
-	// Add an answer as a note
-	if err := s.cond.GetWorkspace().AppendNote(task.ID, string(s.state), response); err != nil {
-		return fmt.Errorf("save answer: %w", err)
-	}
-
-	// Resume workflow based on the current state
-	switch s.state {
-	case workflow.StatePlanning:
-		if err := s.cond.Plan(ctx); err != nil {
-			return err
-		}
-	case workflow.StateImplementing:
-		if err := s.cond.Implement(ctx); err != nil {
-			return err
-		}
-	case workflow.StateReviewing:
-		if err := s.cond.Review(ctx); err != nil {
-			return err
-		}
-	case workflow.StateIdle, workflow.StateDone, workflow.StateFailed,
-		workflow.StateWaiting, workflow.StatePaused, workflow.StateCheckpointing,
-		workflow.StateReverting, workflow.StateRestoring:
-		// Cannot resume from these states
-		return fmt.Errorf("cannot resume from state: %s", s.state)
-	}
-
-	s.printf(true, "%s Answer sent, resuming...\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleUndo undoes to the previous checkpoint.
-func (s *InteractiveSession) handleUndo(ctx context.Context) error {
-	s.printf(true, "Undoing to previous checkpoint...\n")
-
-	if err := s.cond.Undo(ctx); err != nil {
-		return err
-	}
-
-	s.printf(true, "%s Undo complete\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleRedo redoes to the next checkpoint.
-func (s *InteractiveSession) handleRedo(ctx context.Context) error {
-	s.printf(true, "Redoing to next checkpoint...\n")
-
-	if err := s.cond.Redo(ctx); err != nil {
-		return err
-	}
-
-	s.printf(true, "%s Redo complete\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleClear clears the screen.
-func (s *InteractiveSession) handleClear() {
-	// ANSI escape code to clear the screen
-	fmt.Print("\033[H\033[2J")
-}
-
-// handleFinish completes the current task.
-func (s *InteractiveSession) handleFinish(ctx context.Context) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	// Show confirmation
-	status, err := s.cond.Status(ctx)
-	if err != nil {
-		return fmt.Errorf("get status: %w", err)
-	}
-
-	s.printf(true, "\n%s\n", display.Bold("About to finish task:"))
-	s.printf(true, "  ID:      %s\n", status.TaskID)
-	if status.Title != "" {
-		s.printf(true, "  Title:   %s\n", status.Title)
-	}
-	if status.Branch != "" {
-		s.printf(true, "  Branch:  %s\n", display.Cyan(status.Branch))
-	}
-	s.printf(true, "  State:   %s\n", mehrhofdisplay.ColorState(status.State, status.State))
-	s.printf(true, "\n%s\n", display.Muted("Press Enter to confirm, Ctrl+C to cancel"))
-
-	// Simple confirmation
-	line, _ := s.rl.Readline()
-	if line != "" && !strings.HasPrefix(strings.ToLower(line), "y") {
-		s.printf(true, "Cancelled\n")
-
-		return nil
-	}
-
-	opts := conductor.FinishOptions{}
-
-	if err := s.cond.Finish(ctx, opts); err != nil {
-		return fmt.Errorf("finish: %w", err)
-	}
-
-	s.state = workflow.StateDone
-	s.printf(true, "\n%s Task completed\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleAbandon discards the current task.
-func (s *InteractiveSession) handleAbandon(ctx context.Context) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	status, err := s.cond.Status(ctx)
-	if err != nil {
-		return fmt.Errorf("get status: %w", err)
-	}
-
-	s.printf(true, "\n%s\n", display.WarningMsg("About to abandon task:"))
-	s.printf(true, "  ID:      %s\n", status.TaskID)
-	if status.Title != "" {
-		s.printf(true, "  Title:   %s\n", status.Title)
-	}
-	if status.Branch != "" {
-		s.printf(true, "  Branch:  %s\n", display.Cyan(status.Branch))
-	}
-	s.printf(true, "  State:   %s\n", mehrhofdisplay.ColorState(status.State, status.State))
-	if status.Branch != "" {
-		s.printf(true, "\n%s This will delete the branch and work directory!\n",
-			display.ErrorMsg("WARNING:"))
-	}
-	s.printf(true, "\n%s\n", display.Muted("Type 'yes' to confirm, Ctrl+C to cancel"))
-
-	line, _ := s.rl.Readline()
-	if strings.ToLower(line) != "yes" {
-		s.printf(true, "Cancelled\n")
-
-		return nil
-	}
-
-	opts := conductor.DeleteOptions{
-		Force:      true,
-		KeepBranch: false,
-		DeleteWork: conductor.BoolPtr(true),
-	}
-
-	if err := s.cond.Delete(ctx, opts); err != nil {
-		return fmt.Errorf("abandon: %w", err)
-	}
-
-	s.state = workflow.StateIdle
-	s.printf(true, "\n%s Task abandoned\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleNote adds a note to the current task.
-//
-//nolint:unparam // ctx is kept for consistent signature with other handlers
-func (s *InteractiveSession) handleNote(ctx context.Context, message string) error {
-	if s.cond.GetActiveTask() == nil {
-		return errors.New("no active task")
-	}
-
-	if message == "" {
-		return errors.New("usage: note <message>")
-	}
-
-	task := s.cond.GetActiveTask()
-	ws := s.cond.GetWorkspace()
-
-	// Handle pending question
-	if ws.HasPendingQuestion(task.ID) {
-		q, _ := ws.LoadPendingQuestion(task.ID)
-		note := fmt.Sprintf("**Q:** %s\n\n**A:** %s", q.Question, message)
-		if err := ws.AppendNote(task.ID, note, "answer"); err != nil {
-			return fmt.Errorf("save answer: %w", err)
-		}
-		_ = ws.ClearPendingQuestion(task.ID)
-		s.printf(true, "%s Answer saved\n", display.SuccessMsg("✓"))
-
-		return nil
-	}
-
-	if err := ws.AppendNote(task.ID, message, task.State); err != nil {
-		return fmt.Errorf("save note: %w", err)
-	}
-
-	s.printf(true, "%s Note saved\n", display.SuccessMsg("✓"))
-
-	return nil
-}
-
-// handleQuick creates a quick task.
-func (s *InteractiveSession) handleQuick(ctx context.Context, description string) error {
-	if description == "" {
-		return errors.New("usage: quick <description>")
-	}
-
-	s.printf(true, "Creating quick task...\n")
-
-	result, err := s.cond.CreateQuickTask(ctx, conductor.QuickTaskOptions{
-		Description: description,
-		QueueID:     "quick-tasks",
-	})
-	if err != nil {
-		return fmt.Errorf("create quick task: %w", err)
-	}
-
-	s.printf(true, "%s Quick task created: %s\n",
-		display.SuccessMsg("✓"), display.Cyan(result.TaskID))
-	s.printf(true, "Queue: %s\n", result.QueueID)
-	s.printf(true, "\nNext steps:\n")
-	s.printf(true, "  start %s  - Start working on it\n", result.TaskID)
-
-	return nil
-}
-
-// handleCost shows token usage and costs.
-//
-//nolint:unparam // ctx is kept for consistent signature with other handlers
-func (s *InteractiveSession) handleCost(ctx context.Context) error {
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
-	}
-
-	work := s.cond.GetTaskWork()
-	if work == nil {
-		return errors.New("unable to load task work")
-	}
-
-	costs := work.Costs
-
-	s.printf(true, "\n%s\n", display.Bold("Cost Summary:"))
-	s.printf(true, "  Input tokens:   %d\n", costs.TotalInputTokens)
-	s.printf(true, "  Output tokens:  %d\n", costs.TotalOutputTokens)
-	s.printf(true, "  Cached tokens:  %d\n", costs.TotalCachedTokens)
-	s.printf(true, "  Total tokens:   %d\n", costs.TotalInputTokens+costs.TotalOutputTokens)
-	s.printf(true, "  Total cost:     $%.4f\n", costs.TotalCostUSD)
-
-	// Show by-step breakdown if available
-	if len(costs.ByStep) > 0 {
-		s.printf(true, "\n%s\n", display.Bold("By Step:"))
-		for step, stepCost := range costs.ByStep {
-			s.printf(true, "  %s: %d tokens ($%.4f)\n",
-				step, stepCost.InputTokens+stepCost.OutputTokens, stepCost.CostUSD)
-		}
-	}
-	s.printf(true, "\n")
-
-	return nil
-}
-
-// handleList lists all tasks in the workspace.
-//
-//nolint:unparam // ctx is kept for consistent signature with other handlers
-func (s *InteractiveSession) handleList(ctx context.Context) error {
-	ws := s.cond.GetWorkspace()
-	taskIDs, err := ws.ListWorks()
-	if err != nil {
-		return fmt.Errorf("list tasks: %w", err)
-	}
-
-	if len(taskIDs) == 0 {
-		s.printf(true, "No tasks in workspace\n")
-
-		return nil
-	}
-
-	s.printf(true, "\n%s\n", display.Bold("Tasks:"))
-
-	// Get active task ID for highlighting
-	activeID := ""
-	var activeTask *storage.ActiveTask
-	if ws.HasActiveTask() {
-		activeTask, _ = ws.LoadActiveTask()
-		if activeTask != nil {
-			activeID = activeTask.ID
-		}
-	}
-
-	for _, id := range taskIDs {
-		work, _ := ws.LoadWork(id)
-		prefix := "  "
-		if id == activeID {
-			prefix = "* "
-		}
-		title := "(no title)"
-		if work != nil && work.Metadata.Title != "" {
-			title = work.Metadata.Title
-		}
-		if len(title) > 40 {
-			title = title[:37] + "..."
-		}
-		state := "idle"
-		if id == activeID && activeTask != nil {
-			state = mehrhofdisplay.FormatStateString(activeTask.State)
-		}
-		s.printf(true, "%s%s [%s] %s\n",
-			prefix, display.Cyan(id), mehrhofdisplay.ColorState(state, state), title)
-	}
-	s.printf(true, "\n")
-
-	return nil
-}
-
-// handleSpecification views or lists specifications.
-//
-//nolint:unparam // ctx is kept for consistent signature with other handlers
-func (s *InteractiveSession) handleSpecification(ctx context.Context, args []string) error {
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
-	}
-
-	ws := s.cond.GetWorkspace()
-
-	// If no args, list all specs
-	if len(args) == 0 {
-		specs, err := ws.ListSpecificationsWithStatus(task.ID)
-		if err != nil {
-			return fmt.Errorf("list specifications: %w", err)
-		}
-
-		if len(specs) == 0 {
-			s.printf(true, "\nNo specifications yet. Use 'plan' to create them.\n\n")
-
-			return nil
-		}
-
-		s.printf(true, "\n%s\n", display.Bold("Specifications:"))
-		for _, spec := range specs {
-			icon := mehrhofdisplay.GetSpecificationStatusIcon(spec.Status)
-			title := spec.Title
-			if title == "" {
-				title = "(untitled)"
-			}
-			if len(title) > 50 {
-				title = title[:47] + "..."
-			}
-			s.printf(true, "  %s spec-%d: %s [%s]\n",
-				icon, spec.Number, title, spec.Status)
-		}
-		s.printf(true, "\n")
-		s.printf(true, "Use 'specification <number>' to view a specific specification\n\n")
-
-		return nil
-	}
-
-	// View specific spec
-	num, err := strconv.Atoi(args[0])
-	if err != nil {
-		return errors.New("usage: specification <number>")
-	}
-
-	content, err := ws.LoadSpecification(task.ID, num)
-	if err != nil {
-		return fmt.Errorf("load specification: %w", err)
-	}
-
-	// Also load the spec metadata for title/status
-	specs, _ := ws.ListSpecificationsWithStatus(task.ID)
-	var title, status string
-	for _, spec := range specs {
-		if spec.Number == num {
-			title = spec.Title
-			status = spec.Status
-
-			break
-		}
-	}
-
-	s.printf(true, "\n%s\n", display.Bold(fmt.Sprintf("Specification %d:", num)))
-	if title != "" {
-		s.printf(true, "Title: %s\n", title)
-	}
-	if status != "" {
-		s.printf(true, "Status: %s\n", status)
-	}
-	s.printf(true, "\n%s\n\n", content)
-
-	return nil
-}
-
-// handleReviewView views or lists reviews.
-//
-//nolint:unparam // ctx is kept for consistent signature with other handlers
-func (s *InteractiveSession) handleReviewView(ctx context.Context, args []string) error {
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
-	}
-
-	ws := s.cond.GetWorkspace()
-
-	// Get all reviews
-	reviews, err := ws.ListReviews(task.ID)
-	if err != nil {
-		return fmt.Errorf("list reviews: %w", err)
-	}
-
-	// If no args, list all reviews
-	if len(args) == 0 {
-		if len(reviews) == 0 {
-			s.printf(true, "\nNo reviews yet. Use 'review' (with no args when no reviews exist) to run one.\n\n")
-
-			return nil
-		}
-
-		s.printf(true, "\n%s\n", display.Bold("Reviews:"))
-		for _, num := range reviews {
-			s.printf(true, "  review-%d\n", num)
-		}
-		s.printf(true, "\n")
-		s.printf(true, "Use 'review <number>' to view a specific review\n")
-		s.printf(true, "Use 'implement review <number>' to fix issues from a review\n\n")
-
-		return nil
-	}
-
-	// View specific review
-	num, err := strconv.Atoi(args[0])
-	if err != nil {
-		return errors.New("usage: review <number>")
-	}
-
-	// Check if review exists
-	found := false
-	for _, r := range reviews {
-		if r == num {
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
-		s.printf(true, "\nReview %d not found. Available reviews:\n", num)
-		for _, r := range reviews {
-			s.printf(true, "  review-%d\n", r)
-		}
-		s.printf(true, "\n")
-
-		return fmt.Errorf("review %d not found", num)
-	}
-
-	content, err := ws.LoadReview(task.ID, num)
-	if err != nil {
-		return fmt.Errorf("load review: %w", err)
-	}
-
-	s.printf(true, "\n%s\n", display.Bold(fmt.Sprintf("Review %d:", num)))
-	s.printf(true, "\n%s\n\n", content)
 
 	return nil
 }
@@ -1555,43 +842,13 @@ func formatSize(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// handleBudget displays budget status.
-func (s *InteractiveSession) handleBudget(context.Context) error {
-	task := s.cond.GetActiveTask()
-	if task == nil {
-		return errors.New("no active task")
+// capitalizeFirst capitalizes the first letter of a string.
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
 	}
 
-	ws := s.cond.GetWorkspace()
-	work, err := ws.LoadWork(task.ID)
-	if err != nil {
-		return fmt.Errorf("load task: %w", err)
-	}
-
-	cfg, err := ws.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("load config: %w", err)
-	}
-
-	taskBudget := cfg.Budget.PerTask
-	if work.Budget != nil {
-		taskBudget = *work.Budget
-	}
-
-	costs := work.Costs
-	totalTokens := costs.TotalInputTokens + costs.TotalOutputTokens
-
-	s.printf(true, "\n%s\n", display.Bold("Budget Status:"))
-	s.printf(true, "  Task:    %s\n", task.ID)
-	s.printf(true, "  Tokens:  %d / %s\n",
-		totalTokens,
-		formatLimit(taskBudget.MaxTokens))
-	s.printf(true, "  Cost:    %s / %s\n",
-		formatCost(costs.TotalCostUSD),
-		formatCost(taskBudget.MaxCost))
-	s.printf(true, "\n")
-
-	return nil
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 // handleAgentEvent processes an agent streaming event.
@@ -1657,6 +914,158 @@ func (s *InteractiveSession) handleAgentQuestion(q *agent.Question) error {
 	s.printf(true, "%s\n", display.Muted("Answer with: answer <response> or answer <number>"))
 
 	return nil
+}
+
+// renderResult formats and displays a router result for CLI output.
+func (s *InteractiveSession) renderResult(result *routercommands.Result) {
+	switch result.Type {
+	case routercommands.ResultMessage:
+		s.printf(true, "%s %s\n", display.SuccessMsg("✓"), result.Message)
+
+	case routercommands.ResultStatus:
+		if data, ok := result.Data.(routercommands.StatusData); ok {
+			s.printf(true, "\n%s\n", display.Bold("Task Status:"))
+			if data.TaskID != "" {
+				s.printf(true, "  ID:      %s\n", data.TaskID)
+			}
+			if data.Title != "" {
+				s.printf(true, "  Title:   %s\n", data.Title)
+			}
+			s.printf(true, "  State:   %s\n", mehrhofdisplay.ColorState(data.State, data.State))
+			if data.Branch != "" {
+				s.printf(true, "  Branch:  %s\n", display.Cyan(data.Branch))
+			}
+			if data.SpecCount > 0 {
+				s.printf(true, "  Specs:   %d\n", data.SpecCount)
+			}
+			s.printf(true, "\n")
+		} else {
+			s.printf(true, "%s\n", result.Message)
+		}
+
+	case routercommands.ResultCost:
+		if data, ok := result.Data.(routercommands.CostData); ok {
+			s.printf(true, "\n%s\n", display.Bold("Cost Summary:"))
+			s.printf(true, "  Input tokens:   %d\n", data.InputTokens)
+			s.printf(true, "  Output tokens:  %d\n", data.OutputTokens)
+			s.printf(true, "  Cached tokens:  %d\n", data.CachedTokens)
+			s.printf(true, "  Total tokens:   %d\n", data.TotalTokens)
+			s.printf(true, "  Total cost:     $%.4f\n", data.TotalCostUSD)
+			s.printf(true, "\n")
+		} else {
+			s.printf(true, "%s\n", result.Message)
+		}
+
+	case routercommands.ResultBudget:
+		if data, ok := result.Data.(routercommands.BudgetData); ok {
+			s.printf(true, "\n%s\n", display.Bold("Budget Status:"))
+			s.printf(true, "  Type:       %s\n", data.Type)
+			s.printf(true, "  Used:       %s\n", data.Used)
+			s.printf(true, "  Max:        %s\n", data.Max)
+			s.printf(true, "  Percentage: %.1f%%\n", data.Percentage)
+			if data.Warned {
+				s.printf(true, "  %s\n", display.WarningMsg("Warning threshold reached"))
+			}
+			s.printf(true, "\n")
+		} else {
+			s.printf(true, "%s\n", result.Message)
+		}
+
+	case routercommands.ResultList:
+		s.printf(true, "\n%s\n", display.Bold(result.Message))
+		switch items := result.Data.(type) {
+		case []routercommands.TaskListItem:
+			for _, item := range items {
+				prefix := "  "
+				if result.TaskID != "" && item.ID == result.TaskID {
+					prefix = "* "
+				}
+				title := item.Title
+				if len(title) > 40 {
+					title = title[:37] + "..."
+				}
+				s.printf(true, "%s%s [%s] %s\n",
+					prefix, display.Cyan(item.ID),
+					mehrhofdisplay.ColorState(item.State, item.State), title)
+			}
+		case []routercommands.SpecificationItem:
+			for _, item := range items {
+				icon := mehrhofdisplay.GetSpecificationStatusIcon(item.Status)
+				title := item.Title
+				if title == "" {
+					title = "(untitled)"
+				}
+				if len(title) > 50 {
+					title = title[:47] + "..."
+				}
+				s.printf(true, "  %s spec-%d: %s [%s]\n",
+					icon, item.Number, title, item.Status)
+			}
+		default:
+			// Generic list handling
+			s.printf(true, "  %v\n", result.Data)
+		}
+		s.printf(true, "\n")
+
+	case routercommands.ResultHelp:
+		// Help output is handled by printHelp, but router can provide command info
+		if cmds, ok := result.Data.([]routercommands.CommandInfo); ok {
+			s.printf(true, "\n%s\n", display.Bold("Available Commands:"))
+			categories := make(map[string][]routercommands.CommandInfo)
+			for _, cmd := range cmds {
+				categories[cmd.Category] = append(categories[cmd.Category], cmd)
+			}
+			for category, commands := range categories {
+				s.printf(true, "\n%s\n", display.Bold(capitalizeFirst(category)+":"))
+				for _, cmd := range commands {
+					aliases := ""
+					if len(cmd.Aliases) > 0 {
+						aliases = " (aliases: " + strings.Join(cmd.Aliases, ", ") + ")"
+					}
+					s.printf(true, "  %-15s %s%s\n", cmd.Name, cmd.Description, display.Muted(aliases))
+				}
+			}
+			s.printf(true, "\n")
+		} else {
+			s.printHelp()
+		}
+
+	case routercommands.ResultError:
+		s.printf(false, "%s %s\n", display.ErrorMsg("Error:"), result.Message)
+
+	case routercommands.ResultChat:
+		// Chat responses display the message directly
+		s.printf(true, "%s\n", result.Message)
+
+	case routercommands.ResultSpecifications:
+		// Specifications are handled as a list
+		s.printf(true, "\n%s\n", display.Bold(result.Message))
+		if items, ok := result.Data.([]routercommands.SpecificationItem); ok {
+			for _, item := range items {
+				icon := mehrhofdisplay.GetSpecificationStatusIcon(item.Status)
+				title := item.Title
+				if title == "" {
+					title = "(untitled)"
+				}
+				if len(title) > 50 {
+					title = title[:47] + "..."
+				}
+				s.printf(true, "  %s spec-%d: %s [%s]\n",
+					icon, item.Number, title, item.Status)
+			}
+		}
+		s.printf(true, "\n")
+
+	case routercommands.ResultQuestion:
+		// Question results require user input
+		s.printf(true, "\n%s\n", display.WarningMsg("Question:"))
+		s.printf(true, "  %s\n", result.Message)
+		s.printf(true, "\n")
+
+	case routercommands.ResultExit:
+		// Exit is handled before renderResult is called, but include for exhaustiveness
+		// Nothing to display
+	}
 }
 
 // handleEvent processes events from the event bus.
