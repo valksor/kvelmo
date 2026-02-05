@@ -52,33 +52,33 @@ The main **Interactive** tab provides a full interactive experience matching the
 
 Type these in the input field:
 
-| Command         | Description                                                   |
-|-----------------|---------------------------------------------------------------|
-| `start <ref>`   | Start a task (e.g., `start github:123`, `start file:task.md`) |
-| `plan`          | Run planning phase                                            |
-| `implement`     | Run implementation phase                                      |
-| `review`        | Run code review                                               |
-| `continue`      | Resume from waiting state                                     |
-| `finish`        | Complete the task                                             |
-| `abandon`       | Discard the task                                              |
-| `undo` / `redo` | Navigate checkpoints                                          |
-| `status`        | Show task status                                              |
-| `cost`          | Show token usage                                              |
-| `chat <msg>`    | Chat with agent                                               |
-| `answer <resp>` | Answer agent question                                         |
-| `note <msg>`    | Add a note to task                                            |
-| `find <query>`  | AI-powered code search                                        |
-| `memory <query>`| Semantic memory search                                        |
-| `library [cmd]` | Manage documentation library                                  |
-| `list`          | List all tasks                                                |
-| `specification` | View specifications (alias: `spec`)                           |
-| `question <msg>`| Ask the agent a question                                      |
-| `quick <desc>`  | Create a quick task                                           |
-| `simplify`      | Simplify code                                                 |
-| `label add/rm`  | Manage task labels                                            |
-| `budget`        | Show budget status                                            |
-| `help`          | Show available commands                                       |
-| `clear`         | Clear messages                                                |
+| Command          | Description                                                   |
+|------------------|---------------------------------------------------------------|
+| `start <ref>`    | Start a task (e.g., `start github:123`, `start file:task.md`) |
+| `plan`           | Run planning phase                                            |
+| `implement`      | Run implementation phase                                      |
+| `review`         | Run code review                                               |
+| `continue`       | Resume from waiting state                                     |
+| `finish`         | Complete the task                                             |
+| `abandon`        | Discard the task                                              |
+| `undo` / `redo`  | Navigate checkpoints                                          |
+| `status`         | Show task status                                              |
+| `cost`           | Show token usage                                              |
+| `chat <msg>`     | Chat with agent                                               |
+| `answer <resp>`  | Answer agent question                                         |
+| `note <msg>`     | Add a note to task                                            |
+| `find <query>`   | AI-powered code search                                        |
+| `memory <query>` | Semantic memory search                                        |
+| `library [cmd]`  | Manage documentation library                                  |
+| `list`           | List all tasks                                                |
+| `specification`  | View specifications (alias: `spec`)                           |
+| `question <msg>` | Ask the agent a question                                      |
+| `quick <desc>`   | Create a quick task                                           |
+| `simplify`       | Simplify code                                                 |
+| `label add/rm`   | Manage task labels                                            |
+| `budget`         | Show budget status                                            |
+| `help`           | Show available commands                                       |
+| `clear`          | Clear messages                                                |
 
 ### Tool Window Tabs
 
@@ -249,14 +249,15 @@ ide/jetbrains/src/main/kotlin/com/valksor/mehrhof/
 
 The plugin uses the Interactive API endpoints:
 
-| Endpoint                      | Method    | Purpose                                         |
-|-------------------------------|-----------|-------------------------------------------------|
-| `/api/v1/interactive/command` | POST      | Execute commands (start, plan, implement, etc.) |
-| `/api/v1/interactive/chat`    | POST      | Chat with agent                                 |
-| `/api/v1/interactive/answer`  | POST      | Answer agent question                           |
-| `/api/v1/interactive/state`   | GET       | Get current state                               |
-| `/api/v1/interactive/stop`    | POST      | Cancel running operation                        |
-| `/api/v1/events`              | GET (SSE) | Real-time event stream                          |
+| Endpoint                        | Method    | Purpose                                         |
+|---------------------------------|-----------|-------------------------------------------------|
+| `/api/v1/interactive/command`   | POST      | Execute commands (start, plan, implement, etc.) |
+| `/api/v1/interactive/chat`      | POST      | Chat with agent                                 |
+| `/api/v1/interactive/answer`    | POST      | Answer agent question                           |
+| `/api/v1/interactive/state`     | GET       | Get current state                               |
+| `/api/v1/interactive/commands`  | GET       | List available commands (discovery API)         |
+| `/api/v1/interactive/stop`      | POST      | Cancel running operation                        |
+| `/api/v1/events`                | GET (SSE) | Real-time event stream                          |
 
 Additional endpoints for task info:
 

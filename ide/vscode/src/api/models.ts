@@ -89,6 +89,20 @@ export interface AnswerRequest {
   answer: string;
 }
 
+export interface AddNoteRequest {
+  message: string;
+}
+
+export interface AddNoteResponse {
+  success: boolean;
+  note_number?: number;
+  error?: string;
+}
+
+export interface QuestionRequest {
+  message: string;
+}
+
 export interface StartTaskRequest {
   ref?: string;
   content?: string;
@@ -310,11 +324,508 @@ export interface InteractiveStopResponse {
 }
 
 // ============================================================================
+// Command Discovery Models
+// ============================================================================
+
+export interface CommandArg {
+  name: string;
+  required: boolean;
+  description?: string;
+}
+
+export interface CommandInfo {
+  name: string;
+  aliases?: string[];
+  description: string;
+  category: string;
+  args?: CommandArg[];
+  requires_task: boolean;
+  subcommands?: string[];
+}
+
+export interface CommandsResponse {
+  commands: CommandInfo[];
+}
+
+// ============================================================================
 // Error Response
 // ============================================================================
 
 export interface ErrorResponse {
   error: string;
+}
+
+// ============================================================================
+// Queue Task Models (for quick tasks)
+// ============================================================================
+
+export interface DeleteQueueTaskResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface ExportQueueTaskResponse {
+  success: boolean;
+  message?: string;
+  markdown?: string;
+  error?: string;
+}
+
+export interface OptimizeQueueTaskResponse {
+  success: boolean;
+  message?: string;
+  original_title?: string;
+  optimized_title?: string;
+  added_labels?: string[];
+  improvement_notes?: string[];
+  error?: string;
+}
+
+export interface SubmitQueueTaskRequest {
+  provider: string;
+}
+
+export interface SubmitQueueTaskResponse {
+  success: boolean;
+  message?: string;
+  external_id?: string;
+  url?: string;
+  error?: string;
+}
+
+export interface SyncTaskResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+// ============================================================================
+// Find Search Models
+// ============================================================================
+
+export interface FindSearchResponse {
+  query: string;
+  count: number;
+  matches: FindMatch[];
+}
+
+export interface FindMatch {
+  file: string;
+  line: number;
+  snippet: string;
+  context?: string;
+  reason?: string;
+}
+
+// ============================================================================
+// Memory Models
+// ============================================================================
+
+export interface MemorySearchResponse {
+  results: MemoryResult[];
+  count: number;
+}
+
+export interface MemoryResult {
+  task_id: string;
+  type: string;
+  score: number;
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MemoryIndexResponse {
+  success: boolean;
+  message?: string;
+  task_id?: string;
+  error?: string;
+}
+
+export interface MemoryStatsResponse {
+  total_documents: number;
+  by_type: Record<string, number>;
+  enabled: boolean;
+}
+
+// ============================================================================
+// Library Models
+// ============================================================================
+
+export interface LibraryListResponse {
+  collections: LibraryCollection[];
+  count: number;
+}
+
+export interface LibraryCollection {
+  id: string;
+  name: string;
+  source: string;
+  source_type: string;
+  include_mode: string;
+  page_count: number;
+  total_size: number;
+  location: string;
+  pulled_at?: string;
+  tags?: string[];
+  paths?: string[];
+}
+
+export interface LibraryShowResponse {
+  collection: LibraryCollection;
+  pages: string[];
+}
+
+export interface LibraryStatsResponse {
+  total_collections: number;
+  total_pages: number;
+  total_size: number;
+  project_count: number;
+  shared_count: number;
+  by_mode: Record<string, number>;
+  enabled: boolean;
+}
+
+export interface LibraryPullResponse {
+  success: boolean;
+  message?: string;
+  collection?: LibraryCollection;
+  error?: string;
+}
+
+export interface LibraryRemoveResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+// ============================================================================
+// Links Models
+// ============================================================================
+
+export interface LinksListResponse {
+  links: LinkData[];
+  count: number;
+}
+
+export interface LinkData {
+  source: string;
+  target: string;
+  context: string;
+  created_at: string;
+}
+
+export interface EntityLinksResponse {
+  entity_id: string;
+  outgoing: LinkData[];
+  incoming: LinkData[];
+}
+
+export interface LinksSearchResponse {
+  query: string;
+  results: EntityResult[];
+  count: number;
+}
+
+export interface EntityResult {
+  entity_id: string;
+  type: string;
+  name?: string;
+  task_id?: string;
+  id?: string;
+  full_type?: string;
+  total_links?: number;
+}
+
+export interface LinksStatsResponse {
+  total_links: number;
+  total_sources: number;
+  total_targets: number;
+  orphan_entities: number;
+  most_linked: EntityResult[];
+  enabled: boolean;
+}
+
+export interface LinksRebuildResponse {
+  success: boolean;
+  message?: string;
+  total_links?: number;
+  total_sources?: number;
+  total_targets?: number;
+  error?: string;
+}
+
+// ============================================================================
+// Browser Models
+// ============================================================================
+
+export interface BrowserStatusResponse {
+  connected: boolean;
+  host?: string;
+  port?: number;
+  tabs?: BrowserTab[];
+  error?: string;
+}
+
+export interface BrowserTab {
+  id: string;
+  title: string;
+  url: string;
+}
+
+export interface BrowserTabsResponse {
+  tabs: BrowserTab[];
+  count: number;
+}
+
+export interface BrowserGotoRequest {
+  url: string;
+}
+
+export interface BrowserGotoResponse {
+  success: boolean;
+  tab?: BrowserTab;
+}
+
+export interface BrowserNavigateRequest {
+  tab_id?: string;
+  url: string;
+}
+
+export interface BrowserNavigateResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface BrowserClickRequest {
+  tab_id?: string;
+  selector: string;
+}
+
+export interface BrowserClickResponse {
+  success: boolean;
+  selector?: string;
+}
+
+export interface BrowserTypeRequest {
+  tab_id?: string;
+  selector: string;
+  text: string;
+  clear?: boolean;
+}
+
+export interface BrowserTypeResponse {
+  success: boolean;
+  selector?: string;
+}
+
+export interface BrowserEvalRequest {
+  tab_id?: string;
+  expression: string;
+}
+
+export interface BrowserEvalResponse {
+  success: boolean;
+  result?: unknown;
+}
+
+export interface BrowserDOMRequest {
+  tab_id?: string;
+  selector: string;
+  all?: boolean;
+  html?: boolean;
+  limit?: number;
+}
+
+export interface BrowserDOMElement {
+  tag_name: string;
+  text_content?: string;
+  outer_html?: string;
+  visible: boolean;
+}
+
+export interface BrowserDOMResponse {
+  success: boolean;
+  element?: BrowserDOMElement;
+  elements?: BrowserDOMElement[];
+  count?: number;
+  showing?: number;
+}
+
+export interface BrowserScreenshotRequest {
+  tab_id?: string;
+  format?: string;
+  quality?: number;
+  full_page?: boolean;
+}
+
+export interface BrowserScreenshotResponse {
+  success: boolean;
+  format?: string;
+  data?: string;
+  size?: number;
+  encoding?: string;
+}
+
+export interface BrowserReloadRequest {
+  tab_id?: string;
+  hard?: boolean;
+}
+
+export interface BrowserReloadResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface BrowserCloseRequest {
+  tab_id: string;
+}
+
+export interface BrowserCloseResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface BrowserConsoleRequest {
+  tab_id?: string;
+  duration?: number;
+  level?: string;
+}
+
+export interface BrowserConsoleMessage {
+  level: string;
+  text: string;
+  timestamp?: string;
+}
+
+export interface BrowserConsoleResponse {
+  success: boolean;
+  messages?: BrowserConsoleMessage[];
+  count?: number;
+}
+
+export interface BrowserNetworkRequest {
+  tab_id?: string;
+  duration?: number;
+  capture_body?: boolean;
+  max_body_size?: number;
+}
+
+export interface BrowserNetworkEntry {
+  method: string;
+  url: string;
+  status?: number;
+  status_text?: string;
+  timestamp: string;
+  request_body?: string;
+  response_body?: string;
+}
+
+export interface BrowserNetworkResponse {
+  success: boolean;
+  requests?: BrowserNetworkEntry[];
+  count?: number;
+}
+
+// ============================================================================
+// Project Models
+// ============================================================================
+
+export interface ProjectPlanRequest {
+  source: string;
+  title?: string;
+  instructions?: string;
+}
+
+export interface ProjectPlanResponse {
+  success: boolean;
+  queue_id?: string;
+  task_count?: number;
+  questions?: string[];
+  error?: string;
+}
+
+export interface ProjectTasksResponse {
+  queue_id: string;
+  tasks: ProjectQueueTask[];
+  count: number;
+}
+
+export interface ProjectQueueTask {
+  id: string;
+  title: string;
+  status: string;
+  priority: number;
+  parent_id?: string;
+  depends_on?: string[];
+}
+
+export interface ProjectSubmitRequest {
+  provider: string;
+  queue_id?: string;
+  create_epic?: boolean;
+  labels?: string[];
+}
+
+export interface ProjectSubmitResponse {
+  success: boolean;
+  submitted_count?: number;
+  tasks?: ProjectSubmittedTask[];
+  error?: string;
+}
+
+export interface ProjectSubmittedTask {
+  local_id: string;
+  external_id: string;
+  title: string;
+}
+
+export interface ProjectSyncRequest {
+  reference: string;
+}
+
+export interface ProjectSyncResponse {
+  success: boolean;
+  queue_id?: string;
+  queue_title?: string;
+  tasks_synced?: number;
+  error?: string;
+}
+
+// ============================================================================
+// Stack Models
+// ============================================================================
+
+export interface StackListResponse {
+  stacks: StackInfo[];
+  count: number;
+}
+
+export interface StackInfo {
+  id: string;
+  task_count: number;
+  tasks: StackTask[];
+}
+
+export interface StackTask {
+  id: string;
+  branch: string;
+  state: string;
+  depends_on?: string;
+  pr_number?: number;
+}
+
+export interface StackRebaseResponse {
+  success: boolean;
+  rebased_count?: number;
+  rebased_tasks?: string[];
+  error?: string;
+}
+
+export interface StackSyncResponse {
+  success: boolean;
+  updated_count?: number;
+  error?: string;
 }
 
 // ============================================================================
