@@ -20,4 +20,8 @@ var (
 
 	// ErrDevBuild is returned when checking updates from a dev build.
 	ErrDevBuild = errors.New("update: dev build")
+
+	// ErrSignatureVerificationFailed is returned when Minisign signature verification fails.
+	// This indicates the checksums file may have been tampered with.
+	ErrSignatureVerificationFailed = errors.New("update: signature verification failed")
 )

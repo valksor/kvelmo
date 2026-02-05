@@ -79,8 +79,8 @@ func (c *Checker) Check(ctx context.Context, opts CheckOptions) (*UpdateStatus, 
 		if r.GetDraft() {
 			continue // Skip draft releases
 		}
-		if !opts.IncludePreRelease && r.GetPrerelease() {
-			continue // Skip pre-releases if not requested
+		if !opts.IncludeNightly && r.GetPrerelease() {
+			continue // Skip nightly/pre-releases if not requested
 		}
 		latestRelease = r
 

@@ -611,3 +611,188 @@ func TestReleaseInfoFromGitHub(t *testing.T) {
 		})
 	}
 }
+
+// Test fixtures for Minisign verification
+// Generated using: minisign -G -f -p test-public.key -s test-secret.key -W.
+const (
+	testMinisignPublicKey = "RWRf78Prk79PdQ9cTZM4m2hijMBOktAMz2k8CpNqyq54ClqZacWoJ0Pm"
+	testMinisignContent   = "abc123def456  test-file\n"
+	testMinisignSignature = `untrusted comment: signature from minisign secret key
+RURf78Prk79PdbtjQ7d6JnyuuVPL1xHlaTiOFX10gWJNnBpihQd6ZAThBj03BbYYdd+DNfMgkTNmIvxawymW2F+hxzPdgJSvMAA=
+trusted comment: timestamp:1770293603	file:test-checksums.txt	hashed
+3FldcmxwJc2CBA9tnXI0OhXpO627xfBzbowbRD3jyf1D4ezZCVUOtDJewR01ZkFbsazqgHiEWuSVAAcxic6SBg==`
+)
+
+func TestVerifyMinisign(t *testing.T) {
+	tests := []struct {
+		name      string
+		content   []byte
+		signature []byte
+		publicKey string
+		wantErr   bool
+	}{
+		{
+			name:      "valid signature",
+			content:   []byte(testMinisignContent),
+			signature: []byte(testMinisignSignature),
+			publicKey: testMinisignPublicKey,
+			wantErr:   false,
+		},
+		{
+			name:      "invalid signature - wrong content",
+			content:   []byte("different content"),
+			signature: []byte(testMinisignSignature),
+			publicKey: testMinisignPublicKey,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid signature - wrong public key",
+			content:   []byte(testMinisignContent),
+			signature: []byte(testMinisignSignature),
+			publicKey: "RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVpPw2", // Different key
+			wantErr:   true,
+		},
+		{
+			name:      "invalid signature - malformed",
+			content:   []byte(testMinisignContent),
+			signature: []byte("not a valid signature"),
+			publicKey: testMinisignPublicKey,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid public key",
+			content:   []byte(testMinisignContent),
+			signature: []byte(testMinisignSignature),
+			publicKey: "invalid-key",
+			wantErr:   true,
+		},
+		{
+			name:      "empty signature",
+			content:   []byte(testMinisignContent),
+			signature: []byte(""),
+			publicKey: testMinisignPublicKey,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyMinisign(tt.content, tt.signature, tt.publicKey)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VerifyMinisign() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && err != nil {
+				// Verify it's the right error type
+				if !strings.Contains(err.Error(), "signature verification failed") {
+					t.Errorf("Expected signature verification error, got: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestVerifyMinisignFile(t *testing.T) {
+	// Create temp files for testing
+	tmpDir := t.TempDir()
+
+	contentPath := filepath.Join(tmpDir, "checksums.txt")
+	sigPath := filepath.Join(tmpDir, "checksums.txt.minisig")
+
+	// Write valid content and signature
+	if err := os.WriteFile(contentPath, []byte(testMinisignContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sigPath, []byte(testMinisignSignature), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name        string
+		contentPath string
+		sigPath     string
+		publicKey   string
+		wantErr     bool
+	}{
+		{
+			name:        "valid files",
+			contentPath: contentPath,
+			sigPath:     sigPath,
+			publicKey:   testMinisignPublicKey,
+			wantErr:     false,
+		},
+		{
+			name:        "content file not found",
+			contentPath: "/nonexistent/file",
+			sigPath:     sigPath,
+			publicKey:   testMinisignPublicKey,
+			wantErr:     true,
+		},
+		{
+			name:        "signature file not found",
+			contentPath: contentPath,
+			sigPath:     "/nonexistent/file",
+			publicKey:   testMinisignPublicKey,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyMinisignFile(tt.contentPath, tt.sigPath, tt.publicKey)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VerifyMinisignFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestMinisignPublicKeyConstant(t *testing.T) {
+	// Verify the production public key is valid format
+	// This doesn't verify the key is correct, just that it's a valid base64 key
+	if len(MinisignPublicKey) == 0 {
+		t.Error("MinisignPublicKey constant is empty")
+	}
+
+	// The key should be 56 characters (base64 encoded Ed25519 public key with prefix)
+	if len(MinisignPublicKey) != 56 {
+		t.Errorf("MinisignPublicKey length = %d, want 56", len(MinisignPublicKey))
+	}
+
+	// Should start with "RW" (minisign public key prefix)
+	if !strings.HasPrefix(MinisignPublicKey, "RW") {
+		t.Errorf("MinisignPublicKey should start with 'RW', got %q", MinisignPublicKey[:2])
+	}
+}
+
+func TestVerificationResult(t *testing.T) {
+	// Test that VerificationResult struct works as expected
+	result := &VerificationResult{
+		SignatureVerified: true,
+		SignatureSkipped:  false,
+		SignatureError:    "",
+		ChecksumVerified:  true,
+	}
+
+	if !result.SignatureVerified {
+		t.Error("SignatureVerified should be true")
+	}
+	if result.SignatureSkipped {
+		t.Error("SignatureSkipped should be false")
+	}
+	if !result.ChecksumVerified {
+		t.Error("ChecksumVerified should be true")
+	}
+}
+
+func TestErrSignatureVerificationFailed(t *testing.T) {
+	// Verify the error is defined and non-nil
+	if ErrSignatureVerificationFailed == nil {
+		t.Error("ErrSignatureVerificationFailed should not be nil")
+	}
+
+	// Verify error message
+	if !strings.Contains(ErrSignatureVerificationFailed.Error(), "signature verification failed") {
+		t.Errorf("Error message should contain 'signature verification failed', got: %s",
+			ErrSignatureVerificationFailed.Error())
+	}
+}
