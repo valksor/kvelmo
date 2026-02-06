@@ -49,18 +49,24 @@ export function QuickQuestion({ state, taskId }: QuickQuestionProps) {
           <MessageCircleQuestion size={16} />
           Ask the Agent
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask a question or provide guidance..."
-            className="input input-bordered input-sm flex-1"
-            disabled={askQuestion.isPending}
-          />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="form-control flex-1">
+            <label className="label py-1" htmlFor="quick-question-input">
+              <span className="label-text">Message</span>
+            </label>
+            <input
+              id="quick-question-input"
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask a question or provide guidance..."
+              className="input input-bordered w-full"
+              disabled={askQuestion.isPending}
+            />
+          </div>
           <button
             type="submit"
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary"
             disabled={!question.trim() || askQuestion.isPending}
           >
             {askQuestion.isPending ? (
