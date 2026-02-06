@@ -45,11 +45,10 @@ type WorkMetadata struct {
 // SourceInfo tracks the original source (read-only reference).
 // Hybrid storage: metadata in YAML, actual file content in source/ directory.
 type SourceInfo struct {
-	Type    string    `yaml:"type"`              // directory, file, github, youtrack
-	Ref     string    `yaml:"ref"`               // original reference
-	ReadAt  time.Time `yaml:"read_at"`           // when source was read
-	Files   []string  `yaml:"files,omitempty"`   // relative paths to source files (e.g., "source/task.md")
-	Content string    `yaml:"content,omitempty"` // kept for backwards compat, empty for new tasks
+	Type   string    `yaml:"type"`            // directory, file, github, youtrack
+	Ref    string    `yaml:"ref"`             // original reference
+	ReadAt time.Time `yaml:"read_at"`         // when source was read
+	Files  []string  `yaml:"files,omitempty"` // relative paths to source files (e.g., "source/task.md")
 }
 
 // GitInfo holds git-related information.

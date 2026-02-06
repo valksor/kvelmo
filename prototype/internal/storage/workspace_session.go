@@ -213,11 +213,6 @@ func (w *Workspace) GetSourceContent(taskID string) (string, error) {
 		parts = append(parts, fmt.Sprintf("### %s\n\n%s", filename, string(content)))
 	}
 
-	// Fallback: read from embedded content (backwards compatibility)
-	if len(parts) == 0 && work.Source.Content != "" {
-		parts = append(parts, work.Source.Content)
-	}
-
 	return strings.Join(parts, "\n\n---\n\n"), nil
 }
 
