@@ -254,7 +254,9 @@ data class Specification(
     val content: String,
     @SerializedName("created_at")
     val createdAt: String? = null,
-    val status: String? = null
+    val status: String? = null,
+    @SerializedName("implemented_files")
+    val implementedFiles: List<String>? = null
 )
 
 // ============================================================================

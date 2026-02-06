@@ -286,48 +286,41 @@ ghi789   file:c.md       completed  task-003    4m15s      ../worktrees/ghi789
 2 running, 3 total
 ```
 
-### Start with Stash (Uncommitted Changes)
+### Uncommitted Changes (Auto-Stash)
 
-If you have uncommitted changes, use `--stash` to automatically stash them before creating the branch:
+When you have uncommitted changes, `mehr start` automatically stashes them before creating the branch and restores them after switching:
 
 ```bash
-mehr start --stash task.md
+mehr start task.md  # uncommitted changes are auto-stashed and restored
 ```
 
-This is useful when:
-- You have work-in-progress changes that aren't ready to commit
-- You want to start a new task without losing your current work
-- You need to context-switch to a different task
+The `--stash` flag is still accepted for backward compatibility but is no longer required.
 
 **Behavior:**
 1. Stashes uncommitted changes **including untracked files** (displays stash reference, e.g., `stash@{0}`)
-2. Creates new branch
-3. Restores stashed changes into the new branch (regular mode, if `auto_pop_stash: true`)
+2. Creates new branch and switches to it
+3. Restores stashed changes into the new branch (if `auto_pop_stash: true`, which is the default)
 4. For `--worktree` mode: Stash stays in main repo (not popped into isolated worktree)
 
 **Error Handling:**
-- Stash restoration failures are now **fatal** (prevents silent data loss)
+- Stash restoration failures are **fatal** (prevents silent data loss)
 - If stash pop fails, the operation will error, and you can manually recover using the displayed stash reference
 
 **Configuration:**
-You can enable stash-on-start by default in `.mehrhof/config.yaml`:
+
+To preserve the stash for manual restoration instead of auto-popping:
 
 ```yaml
 git:
-  stash_on_start: true  # Auto-stash changes before creating task branch
-  auto_pop_stash: true  # Auto-pop stash after branch creation (default: true)
-  # Set to false to preserve stash for manual restoration
+  auto_pop_stash: false  # Preserve stash for manual restoration (default: true)
 ```
-
-When `stash_on_start` is enabled in config, the `--stash` flag is not required.
 
 If `auto_pop_stash` is set to `false`, the stash will be preserved, and you'll need to manually run `git stash pop` to restore the changes.
 
-**Equivalent to:**
+Use `--no-branch` to skip branch creation entirely (no stashing needed):
+
 ```bash
-git stash push -u -m "mehrhof: stash before task 2026-01-05T10:30:00"
-mehr start task.md
-git stash pop  # Only if auto_pop_stash: true (not for worktrees)
+mehr start --no-branch task.md
 ```
 
 ### Specify Agent

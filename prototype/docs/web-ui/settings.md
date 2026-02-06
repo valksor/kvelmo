@@ -38,6 +38,19 @@ Configure AI agent behavior:
 | **Instructions** | Global instructions included in all prompts |
 | **Optimize Prompts** | Optimize prompts for token efficiency |
 
+### Agent Aliases
+
+Create custom aliases that wrap base agents with additional configuration.
+
+| Field | Description |
+|-------|-------------|
+| **Extends** | Base agent to wrap (e.g., claude, codex) |
+| **Binary Path** | Custom path to agent binary (overrides default) |
+| **Description** | Human-readable description |
+| **Args** | Space-separated CLI arguments |
+
+Click **Add Alias** to create a new alias. Click the trash icon to remove one.
+
 ### Workflow Settings
 
 Configure task lifecycle:

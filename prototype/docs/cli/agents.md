@@ -66,8 +66,10 @@ agents:
 | Field         | Required | Description                                            |
 |---------------|----------|--------------------------------------------------------|
 | `extends`     | Yes      | Name of the agent to wrap (built-in or another alias)  |
+| `binary_path` | No       | Custom path to agent binary (overrides default lookup) |
 | `description` | No       | Human-readable description shown in `mehr agents list` |
 | `env`         | No       | Environment variables passed to the agent              |
+| `args`        | No       | Additional CLI arguments passed to the agent           |
 
 ### Environment Variable Expansion
 
@@ -206,6 +208,28 @@ agents:
     env:
       MAX_TOKENS: "16000"
 ```
+
+### Custom Binary Path
+
+Use `binary_path` when the agent binary is in a non-standard location:
+
+```yaml
+agents:
+  custom-claude:
+    extends: claude
+    binary_path: /opt/custom/bin/claude-code
+    description: "Claude from custom installation"
+
+  dev-claude:
+    extends: claude
+    binary_path: "${HOME}/dev/claude-code/bin/claude"
+    description: "Development build of Claude"
+```
+
+The `binary_path` field:
+- Overrides the default binary lookup (which searches `$PATH`)
+- Supports environment variable expansion (`${VAR}`)
+- Is validated at runtime when the agent is used (not at config load time)
 
 ## Troubleshooting
 

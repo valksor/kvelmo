@@ -202,6 +202,7 @@ export interface Specification {
   content: string;
   created_at?: string;
   status?: string;
+  implemented_files?: string[];
 }
 
 // ============================================================================

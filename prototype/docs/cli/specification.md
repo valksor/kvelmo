@@ -34,6 +34,23 @@ mehr specification view <number> [flags]
 
 The specification number can be provided as a positional argument or via the `--number` flag.
 
+### specification diff
+
+Display a read-only unified diff for a file listed in a specification's `implemented_files`.
+
+```bash
+mehr specification diff <number> --file <path> [flags]
+```
+
+**Flags:**
+
+| Flag        | Short | Type   | Default | Description                                  |
+|-------------|-------|--------|---------|----------------------------------------------|
+| `--number`  | `-n`  | int    | 0       | Specification number                          |
+| `--file`    | `-f`  | string | ""      | Implemented file path (required)              |
+| `--context` | `-c`  | int    | 3       | Number of context lines in the unified diff   |
+| `--output`  | `-o`  | string | ""      | Save diff to file instead of printing         |
+
 ## Examples
 
 ### View a specific specification
@@ -78,6 +95,18 @@ mehr specification view 1 -o spec.md
 mehr specification view --all -o spec.md
 ```
 
+### View implemented file diff
+
+```bash
+mehr specification diff 1 --file web/src/components/task/SpecificationsList.tsx
+```
+
+### Save diff to file
+
+```bash
+mehr specification diff 1 --file internal/server/handlers.go -o spec.diff
+```
+
 ### No specifications yet
 
 ```bash
@@ -102,7 +131,7 @@ Specification 5 not found. Available specifications:
 
 ## Web UI
 
-Prefer a visual interface? See the Specifications section in [Planning](/web-ui/planning.md).
+Prefer a visual interface? See [Web UI: Implementing](/web-ui/implementing.md) for viewing implemented file diffs from the Specifications section.
 
 ## See Also
 

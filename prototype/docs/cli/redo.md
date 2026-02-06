@@ -93,6 +93,7 @@ Checkpoints:
 - Redo stack is empty (no undo was performed)
 - New changes were made after undo (stack cleared)
 - New planning or implementation phase ran
+- Current `HEAD` is not on a Mehrhof checkpoint commit
 
 ### Error Messages
 
