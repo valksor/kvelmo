@@ -33,24 +33,28 @@ export function NotesCard({ notes, taskId }: NotesCardProps) {
         </div>
 
         {/* Add note form */}
-        <form onSubmit={handleSubmit} className="mt-4">
-          <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="form-control flex-1">
+            <label className="label py-1" htmlFor="task-note-input">
+              <span className="label-text">New note</span>
+            </label>
             <input
+              id="task-note-input"
               type="text"
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="Add a note..."
-              className="input input-bordered flex-1"
+              className="input input-bordered w-full"
               disabled={isPending || !taskId}
             />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isPending || !newNote.trim() || !taskId}
-            >
-              {isPending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            </button>
           </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isPending || !newNote.trim() || !taskId}
+          >
+            {isPending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+          </button>
         </form>
 
         {/* Notes list */}
