@@ -113,9 +113,11 @@ export function QuickTaskForm() {
 
       {mode === 'simple' ? (
         <>
-          <div>
-            <label className="block text-sm font-medium text-base-content/80 mb-2">
-              Description <span className="text-error">*</span>
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text">
+                Description <span className="text-error">*</span>
+              </span>
             </label>
             <textarea
               rows={4}
@@ -127,9 +129,9 @@ export function QuickTaskForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Title (optional)
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Title (optional)</span>
               </label>
               <input
                 type="text"
@@ -139,8 +141,10 @@ export function QuickTaskForm() {
                 className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">Priority</label>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Priority</span>
+              </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
@@ -151,8 +155,10 @@ export function QuickTaskForm() {
                 <option value={3}>Low</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">Labels</label>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Labels</span>
+              </label>
               <input
                 type="text"
                 value={labels}
@@ -166,9 +172,11 @@ export function QuickTaskForm() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Source <span className="text-error">*</span>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">
+                  Source <span className="text-error">*</span>
+                </span>
               </label>
               <input
                 type="text"
@@ -178,9 +186,11 @@ export function QuickTaskForm() {
                 className="input input-bordered w-full font-mono text-sm"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Provider <span className="text-error">*</span>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">
+                  Provider <span className="text-error">*</span>
+                </span>
               </label>
               <select
                 value={provider}
@@ -197,9 +207,9 @@ export function QuickTaskForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Title (optional)
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Title (optional)</span>
               </label>
               <input
                 type="text"
@@ -209,8 +219,10 @@ export function QuickTaskForm() {
                 className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">Labels</label>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Labels</span>
+              </label>
               <input
                 type="text"
                 value={labels}
@@ -222,9 +234,9 @@ export function QuickTaskForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Notes (one per line)
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Notes (one per line)</span>
               </label>
               <textarea
                 rows={3}
@@ -234,9 +246,9 @@ export function QuickTaskForm() {
                 className="textarea textarea-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Instructions
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Instructions</span>
               </label>
               <textarea
                 rows={3}
@@ -254,7 +266,7 @@ export function QuickTaskForm() {
                 type="checkbox"
                 checked={optimize}
                 onChange={(e) => setOptimize(e.target.checked)}
-                className="checkbox checkbox-sm checkbox-primary"
+                className="checkbox checkbox-primary"
               />
               <span className="text-sm">Optimize with AI</span>
             </label>
@@ -263,7 +275,7 @@ export function QuickTaskForm() {
                 type="checkbox"
                 checked={dryRun}
                 onChange={(e) => setDryRun(e.target.checked)}
-                className="checkbox checkbox-sm checkbox-primary"
+                className="checkbox checkbox-primary"
               />
               <span className="text-sm">Dry run</span>
             </label>

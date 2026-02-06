@@ -31,24 +31,29 @@ export function TaskCreationTabs() {
   const [showMoreStartModes, setShowMoreStartModes] = useState(false)
 
   return (
-    <div className="card bg-base-100 shadow-sm">
-      <div className="px-4 pt-4 space-y-3">
-        {/* Primary entrypoint: Start task */}
+    <div className="card bg-base-100 shadow-sm border border-base-300/70">
+      <div className="px-4 pt-4 pb-4 space-y-3 border-b border-base-300/70">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-base-content">How would you like to start?</h3>
+          <p className="text-sm text-base-content/60">
+            Use Start Task for full workflow, or expand to quick capture and plan-first modes.
+          </p>
+        </div>
+
         <button
           type="button"
           onClick={() => setActiveTab('start')}
-          className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
+          className={`w-full px-4 py-3 text-sm font-semibold rounded-xl border flex items-center justify-center gap-2 transition-colors ${
             activeTab === 'start'
-              ? 'bg-primary text-primary-content shadow-md'
-              : 'bg-base-200 text-base-content hover:bg-base-300'
+              ? 'border-primary bg-primary/10 text-primary shadow-sm'
+              : 'border-base-300 bg-base-100 text-base-content hover:bg-base-200/60'
           }`}
         >
           <Zap size={18} />
           <span>Start Task</span>
         </button>
 
-        {/* Secondary modes are available but hidden by default */}
-        <div>
+        <div className="space-y-2">
           <button
             type="button"
             onClick={() => {
@@ -58,31 +63,33 @@ export function TaskCreationTabs() {
                 setActiveTab('start')
               }
             }}
-            className="text-sm text-primary hover:underline"
+            className="btn btn-ghost btn-sm justify-start px-2"
           >
-            {showMoreStartModes ? '▼ Hide more ways to start' : '▶ More ways to start'}
+            {showMoreStartModes ? 'Hide more ways to start' : 'More ways to start'}
           </button>
 
           {showMoreStartModes && (
-            <div className="inline-flex p-1 bg-base-200 rounded-lg mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-base-300/70 bg-base-200/30 p-2">
               <MainTabButton
                 active={activeTab === 'quick'}
                 onClick={() => setActiveTab('quick')}
                 icon={<ListTodo size={14} />}
                 label="Quick"
+                description="Capture and submit tasks fast"
               />
               <MainTabButton
                 active={activeTab === 'plan'}
                 onClick={() => setActiveTab('plan')}
                 icon={<FolderTree size={14} />}
                 label="Plan"
+                description="Create a multi-task project plan"
               />
             </div>
           )}
         </div>
       </div>
 
-      <div className="card-body pt-4">
+      <div className="card-body pt-5">
         {activeTab === 'start' && <StartTaskForm />}
         {activeTab === 'quick' && <QuickTaskForm />}
         {activeTab === 'plan' && (
@@ -205,8 +212,10 @@ function StartTaskForm() {
       </p>
 
       {/* Source Type Selector */}
-      <div>
-        <label className="block text-sm font-medium text-base-content/80 mb-2">Source</label>
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Source</span>
+        </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <SourceTypeButton
             active={sourceType === 'file'}
@@ -239,17 +248,23 @@ function StartTaskForm() {
       {sourceType === 'file' && <FileInput file={file} onFileChange={setFile} />}
       {sourceType === 'text' && <TextInput value={textContent} onChange={setTextContent} />}
       {sourceType === 'empty' && (
-        <div>
+        <div className="form-control">
+          <label className="label py-1" htmlFor="task-empty-key">
+            <span className="label-text">Key or title (optional)</span>
+          </label>
           <input
+            id="task-empty-key"
             type="text"
             value={emptyKey}
             onChange={(e) => setEmptyKey(e.target.value)}
             placeholder="Optional: KEY-123 or task title"
             className="input input-bordered w-full"
           />
-          <p className="text-xs text-base-content/40 mt-1">
-            Start with an empty task. Optionally provide a key or title.
-          </p>
+          <label className="label py-1">
+            <span className="label-text-alt text-base-content/60">
+              Start with an empty task. Optionally provide a key or title.
+            </span>
+          </label>
         </div>
       )}
       {sourceType === 'provider' && (
@@ -265,9 +280,9 @@ function StartTaskForm() {
       <button
         type="button"
         onClick={() => setShowOptions(!showOptions)}
-        className="text-sm text-primary hover:underline"
+        className="btn btn-ghost btn-sm justify-start px-2"
       >
-        {showOptions ? '▼ Hide advanced options' : '▶ Show advanced options'}
+        {showOptions ? 'Hide advanced options' : 'Show advanced options'}
       </button>
 
       {/* Options Panel */}
@@ -279,7 +294,7 @@ function StartTaskForm() {
                 type="checkbox"
                 checked={useWorktree}
                 onChange={(e) => setUseWorktree(e.target.checked)}
-                className="checkbox checkbox-sm checkbox-primary"
+                className="checkbox checkbox-primary"
               />
               <span className="text-sm">Worktree</span>
             </label>
@@ -288,7 +303,7 @@ function StartTaskForm() {
                 type="checkbox"
                 checked={noBranch}
                 onChange={(e) => setNoBranch(e.target.checked)}
-                className="checkbox checkbox-sm checkbox-primary"
+                className="checkbox checkbox-primary"
               />
               <span className="text-sm">No branch</span>
             </label>
@@ -297,21 +312,21 @@ function StartTaskForm() {
                 type="checkbox"
                 checked={stash}
                 onChange={(e) => setStash(e.target.checked)}
-                className="checkbox checkbox-sm checkbox-primary"
+                className="checkbox checkbox-primary"
               />
               <span className="text-sm">Stash changes</span>
             </label>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-base-content/60 mb-1">
-                Template
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Template</span>
               </label>
               <select
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
-                className="select select-bordered select-sm w-full"
+                className="select select-bordered w-full"
               >
                 {TASK_TEMPLATES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -320,40 +335,40 @@ function StartTaskForm() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-base-content/60 mb-1">
-                External Key
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">External Key</span>
               </label>
               <input
                 type="text"
                 value={externalKey}
                 onChange={(e) => setExternalKey(e.target.value)}
                 placeholder="FEATURE-123"
-                className="input input-bordered input-sm w-full"
+                className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-base-content/60 mb-1">
-                Title Override
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Title Override</span>
               </label>
               <input
                 type="text"
                 value={titleOverride}
                 onChange={(e) => setTitleOverride(e.target.value)}
                 placeholder="Custom title"
-                className="input input-bordered input-sm w-full"
+                className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-base-content/60 mb-1">
-                Depends On
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text">Depends On</span>
               </label>
               <input
                 type="text"
                 value={dependsOn}
                 onChange={(e) => setDependsOn(e.target.value)}
                 placeholder="Parent task ID"
-                className="input input-bordered input-sm w-full"
+                className="input input-bordered w-full"
               />
             </div>
           </div>
@@ -363,8 +378,14 @@ function StartTaskForm() {
       {error && <ErrorMessage message={error} />}
 
       <button type="submit" className="btn btn-primary w-full" disabled={isPending}>
-        {isPending && <Loader2 size={16} className="animate-spin mr-2" />}
-        Start Task
+        {isPending ? (
+          <>
+            <Loader2 size={16} className="animate-spin mr-2" />
+            Starting Workflow...
+          </>
+        ) : (
+          'Start Workflow'
+        )}
       </button>
     </form>
   )
@@ -379,21 +400,27 @@ interface MainTabButtonProps {
   onClick: () => void
   icon: React.ReactNode
   label: string
+  description: string
 }
 
-function MainTabButton({ active, onClick, icon, label }: MainTabButtonProps) {
+function MainTabButton({ active, onClick, icon, label, description }: MainTabButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center justify-center gap-1.5 transition-all ${
+      className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
         active
-          ? 'bg-base-100 text-base-content shadow-sm'
-          : 'text-base-content/50 hover:text-base-content/80'
+          ? 'border-primary bg-primary/10 text-primary shadow-sm'
+          : 'border-base-300 bg-base-100 text-base-content hover:bg-base-200/60'
       }`}
     >
-      {icon}
-      <span>{label}</span>
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5">{icon}</span>
+        <span className="space-y-0.5">
+          <span className="block text-sm font-medium">{label}</span>
+          <span className="block text-xs text-base-content/65">{description}</span>
+        </span>
+      </div>
     </button>
   )
 }
