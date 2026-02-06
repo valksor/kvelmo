@@ -241,15 +241,21 @@ export function BrowserPanel() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title">Navigate</h3>
-          <form onSubmit={handleGoto} className="flex gap-2">
-            <input
-              type="url"
-              className="input input-bordered flex-1"
-              placeholder="https://example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={!isConnected}
-            />
+          <form onSubmit={handleGoto} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="form-control flex-1">
+              <label className="label py-1" htmlFor="browser-navigate-url">
+                <span className="label-text">URL</span>
+              </label>
+              <input
+                id="browser-navigate-url"
+                type="url"
+                className="input input-bordered w-full"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={!isConnected}
+              />
+            </div>
             <button
               type="submit"
               className="btn btn-primary"
@@ -323,13 +329,13 @@ export function BrowserPanel() {
                     <Camera size={16} />
                     Screenshot
                   </h4>
-                  <div className="flex gap-4 items-end flex-wrap">
+                  <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-4 items-end">
                     <div className="form-control">
-                      <label className="label">
-                        <span className="label-text text-sm">Format</span>
+                      <label className="label py-1">
+                        <span className="label-text">Format</span>
                       </label>
                       <select
-                        className="select select-bordered select-sm"
+                        className="select select-bordered"
                         value={screenshotFormat}
                         onChange={(e) => setScreenshotFormat(e.target.value as 'png' | 'jpeg')}
                       >
@@ -337,24 +343,26 @@ export function BrowserPanel() {
                         <option value="jpeg">JPEG</option>
                       </select>
                     </div>
-                    <label className="label cursor-pointer gap-2">
-                      <input
-                        type="checkbox"
-                        checked={screenshotFullPage}
-                        onChange={(e) => setScreenshotFullPage(e.target.checked)}
-                        className="checkbox checkbox-sm"
-                      />
-                      <span className="label-text">Full page</span>
-                    </label>
+                    <div className="form-control">
+                      <label className="label cursor-pointer justify-start gap-3 py-1">
+                        <input
+                          type="checkbox"
+                          checked={screenshotFullPage}
+                          onChange={(e) => setScreenshotFullPage(e.target.checked)}
+                          className="checkbox checkbox-primary"
+                        />
+                        <span className="label-text">Full page</span>
+                      </label>
+                    </div>
                     <button
-                      className="btn btn-sm btn-primary"
+                      className="btn btn-primary"
                       onClick={handleScreenshot}
                       disabled={screenshotMutation.isPending}
                     >
                       {screenshotMutation.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Camera size={14} />
+                        <Camera size={16} />
                       )}
                       Capture
                     </button>
@@ -382,55 +390,57 @@ export function BrowserPanel() {
                   </h4>
                   <div className="space-y-3">
                     <div className="form-control">
-                      <label className="label">
-                        <span className="label-text text-sm">CSS Selector</span>
+                      <label className="label py-1">
+                        <span className="label-text">CSS Selector</span>
                       </label>
                       <input
                         type="text"
-                        className="input input-bordered input-sm"
+                        className="input input-bordered"
                         placeholder="#submit, .btn-primary, [data-testid='login']"
                         value={selector}
                         onChange={(e) => setSelector(e.target.value)}
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-outline"
                         onClick={handleClick}
                         disabled={!selector.trim() || clickMutation.isPending}
                       >
-                        {clickMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MousePointer size={14} />}
+                        {clickMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MousePointer size={16} />}
                         Click
                       </button>
                     </div>
-                    <div className="flex gap-2 items-end">
-                      <div className="form-control flex-1">
-                        <label className="label">
-                          <span className="label-text text-sm">Text to type</span>
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 items-end">
+                      <div className="form-control">
+                        <label className="label py-1">
+                          <span className="label-text">Text to type</span>
                         </label>
                         <input
                           type="text"
-                          className="input input-bordered input-sm"
+                          className="input input-bordered"
                           placeholder="Hello world"
                           value={typeText}
                           onChange={(e) => setTypeText(e.target.value)}
                         />
                       </div>
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={typeClear}
-                          onChange={(e) => setTypeClear(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Clear first</span>
-                      </label>
+                      <div className="form-control">
+                        <label className="label cursor-pointer justify-start gap-3 py-1">
+                          <input
+                            type="checkbox"
+                            checked={typeClear}
+                            onChange={(e) => setTypeClear(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text">Clear first</span>
+                        </label>
+                      </div>
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-outline"
                         onClick={handleType}
                         disabled={!selector.trim() || typeMutation.isPending}
                       >
-                        {typeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Type size={14} />}
+                        {typeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Type size={16} />}
                         Type
                       </button>
                     </div>
@@ -473,31 +483,36 @@ export function BrowserPanel() {
                     DOM Query
                   </h4>
                   <div className="space-y-3">
-                    <div className="flex gap-4 items-end flex-wrap">
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={domQueryAll}
-                          onChange={(e) => setDomQueryAll(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Query all</span>
-                      </label>
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={domIncludeHtml}
-                          onChange={(e) => setDomIncludeHtml(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Include HTML</span>
-                      </label>
+                    <p className="text-xs text-base-content/60">
+                      Uses the CSS selector from the Click & Type section above.
+                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div className="flex flex-wrap gap-4">
+                        <label className="label cursor-pointer gap-2 py-0">
+                          <input
+                            type="checkbox"
+                            checked={domQueryAll}
+                            onChange={(e) => setDomQueryAll(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text text-sm">Query all</span>
+                        </label>
+                        <label className="label cursor-pointer gap-2 py-0">
+                          <input
+                            type="checkbox"
+                            checked={domIncludeHtml}
+                            onChange={(e) => setDomIncludeHtml(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text text-sm">Include HTML</span>
+                        </label>
+                      </div>
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-primary"
                         onClick={handleDomQuery}
                         disabled={!selector.trim() || domMutation.isPending}
                       >
-                        {domMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={14} />}
+                        {domMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={16} />}
                         Query
                       </button>
                     </div>
@@ -596,31 +611,33 @@ export function BrowserPanel() {
                 {/* Network tab */}
                 {devToolsTab === 'network' && (
                   <div className="space-y-4">
-                    <div className="flex gap-4 items-end flex-wrap">
+                    <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-sm">Duration (seconds)</span>
+                        <label className="label py-1">
+                          <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
                           type="number"
-                          className="input input-bordered input-sm w-24"
+                          className="input input-bordered w-24"
                           value={networkDuration}
                           onChange={(e) => setNetworkDuration(Number(e.target.value))}
                           min={1}
                           max={30}
                         />
                       </div>
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={networkCaptureBody}
-                          onChange={(e) => setNetworkCaptureBody(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Capture bodies</span>
-                      </label>
+                      <div className="form-control">
+                        <label className="label cursor-pointer justify-start gap-3 py-1">
+                          <input
+                            type="checkbox"
+                            checked={networkCaptureBody}
+                            onChange={(e) => setNetworkCaptureBody(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text">Capture bodies</span>
+                        </label>
+                      </div>
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-primary"
                         onClick={handleNetworkMonitor}
                         disabled={networkMutation.isPending}
                       >
@@ -675,14 +692,14 @@ export function BrowserPanel() {
                 {/* Console tab */}
                 {devToolsTab === 'console' && (
                   <div className="space-y-4">
-                    <div className="flex gap-4 items-end flex-wrap">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[220px_260px_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-sm">Duration (seconds)</span>
+                        <label className="label py-1">
+                          <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
                           type="number"
-                          className="input input-bordered input-sm w-24"
+                          className="input input-bordered w-24"
                           value={consoleDuration}
                           onChange={(e) => setConsoleDuration(Number(e.target.value))}
                           min={1}
@@ -690,11 +707,11 @@ export function BrowserPanel() {
                         />
                       </div>
                       <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-sm">Level filter</span>
+                        <label className="label py-1">
+                          <span className="label-text">Level filter</span>
                         </label>
                         <select
-                          className="select select-bordered select-sm"
+                          className="select select-bordered"
                           value={consoleLevel}
                           onChange={(e) => setConsoleLevel(e.target.value)}
                         >
@@ -705,7 +722,7 @@ export function BrowserPanel() {
                         </select>
                       </div>
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-primary"
                         onClick={handleConsoleMonitor}
                         disabled={consoleMutation.isPending}
                       >
@@ -745,14 +762,14 @@ export function BrowserPanel() {
                 {/* WebSocket tab */}
                 {devToolsTab === 'websocket' && (
                   <div className="space-y-4">
-                    <div className="flex gap-4 items-end">
+                    <div className="grid grid-cols-1 sm:grid-cols-[220px_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-sm">Duration (seconds)</span>
+                        <label className="label py-1">
+                          <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
                           type="number"
-                          className="input input-bordered input-sm w-24"
+                          className="input input-bordered w-24"
                           value={wsDuration}
                           onChange={(e) => setWsDuration(Number(e.target.value))}
                           min={1}
@@ -760,7 +777,7 @@ export function BrowserPanel() {
                         />
                       </div>
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-primary"
                         onClick={handleWsMonitor}
                         disabled={wsMutation.isPending}
                       >
@@ -832,40 +849,44 @@ export function BrowserPanel() {
                 {/* Coverage tab */}
                 {devToolsTab === 'coverage' && (
                   <div className="space-y-4">
-                    <div className="flex gap-4 items-end flex-wrap">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[220px_auto_auto_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-sm">Duration (seconds)</span>
+                        <label className="label py-1">
+                          <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
                           type="number"
-                          className="input input-bordered input-sm w-24"
+                          className="input input-bordered w-24"
                           value={coverageDuration}
                           onChange={(e) => setCoverageDuration(Number(e.target.value))}
                           min={1}
                           max={30}
                         />
                       </div>
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={coverageTrackJs}
-                          onChange={(e) => setCoverageTrackJs(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Track JS</span>
-                      </label>
-                      <label className="label cursor-pointer gap-2">
-                        <input
-                          type="checkbox"
-                          checked={coverageTrackCss}
-                          onChange={(e) => setCoverageTrackCss(e.target.checked)}
-                          className="checkbox checkbox-sm"
-                        />
-                        <span className="label-text text-sm">Track CSS</span>
-                      </label>
+                      <div className="form-control">
+                        <label className="label cursor-pointer justify-start gap-3 py-1">
+                          <input
+                            type="checkbox"
+                            checked={coverageTrackJs}
+                            onChange={(e) => setCoverageTrackJs(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text">Track JS</span>
+                        </label>
+                      </div>
+                      <div className="form-control">
+                        <label className="label cursor-pointer justify-start gap-3 py-1">
+                          <input
+                            type="checkbox"
+                            checked={coverageTrackCss}
+                            onChange={(e) => setCoverageTrackCss(e.target.checked)}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span className="label-text">Track CSS</span>
+                        </label>
+                      </div>
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-primary"
                         onClick={() => coverageMutation.mutate({
                           duration: coverageDuration,
                           track_js: coverageTrackJs,
@@ -991,14 +1012,20 @@ export function MemoryPanel() {
           </p>
 
           <form onSubmit={handleSearch} className="space-y-4 mt-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                className="input input-bordered flex-1"
-                placeholder="Search query..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="form-control flex-1">
+                <label className="label py-1" htmlFor="memory-search-query">
+                  <span className="label-text">Search query</span>
+                </label>
+                <input
+                  id="memory-search-query"
+                  type="text"
+                  className="input input-bordered w-full"
+                  placeholder="Search query..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
               <button
                 type="submit"
                 className="btn btn-primary"
@@ -1019,7 +1046,7 @@ export function MemoryPanel() {
                 <label key={opt.value} className="label cursor-pointer gap-2">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-sm"
+                    className="checkbox checkbox-primary"
                     checked={types.includes(opt.value)}
                     onChange={() => toggleType(opt.value)}
                   />
@@ -1029,12 +1056,12 @@ export function MemoryPanel() {
             </div>
 
             <div className="form-control w-32">
-              <label className="label">
-                <span className="label-text text-sm">Results limit</span>
+              <label className="label py-1">
+                <span className="label-text">Results limit</span>
               </label>
               <input
                 type="number"
-                className="input input-bordered input-sm w-full"
+                className="input input-bordered w-full"
                 value={limit}
                 onChange={(e) => setLimit(Number(e.target.value))}
                 min={1}
@@ -1173,7 +1200,7 @@ export function SecurityPanel() {
                   <label key={opt.value} className="label cursor-pointer gap-2">
                     <input
                       type="checkbox"
-                      className="checkbox checkbox-sm checkbox-primary"
+                      className="checkbox checkbox-primary"
                       checked={scanners.includes(opt.value)}
                       onChange={() => toggleScanner(opt.value)}
                     />
@@ -1188,7 +1215,7 @@ export function SecurityPanel() {
                 <span className="label-text font-medium">Fail Level</span>
               </label>
               <select
-                className="select select-bordered select-sm"
+                className="select select-bordered"
                 value={failLevel}
                 onChange={(e) => setFailLevel(e.target.value)}
               >
