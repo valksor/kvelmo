@@ -98,7 +98,6 @@ func (f *Factory) CreateForParallel(ctx context.Context, additionalOpts ...Optio
 	opts := []Option{
 		WithUseWorktree(true),
 		WithAutoInit(true),
-		WithCreateBranch(true),
 	}
 	opts = append(opts, additionalOpts...)
 

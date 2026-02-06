@@ -260,12 +260,7 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 		return fmt.Errorf("task already active: %s (use 'task status' to check)", c.activeTask.ID)
 	}
 
-	// If git is available and branch creation requested, check for clean workspace FIRST
-	if err := c.prepareWorkspace(ctx); err != nil {
-		return err
-	}
-
-	// Detect provider and fetch work unit
+	// Detect provider and fetch work unit (before stash, since file refs must be readable)
 	p, workUnit, err := c.fetchWorkUnit(ctx, reference)
 	if err != nil {
 		return err
@@ -288,6 +283,13 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 
 	// Capture task agent config from workUnit (if specified in task frontmatter)
 	c.taskAgentConfig = workUnit.AgentConfig
+
+	// Stash uncommitted changes before branch creation.
+	// Must happen AFTER fetchWorkUnit (file refs need to be readable)
+	// and BEFORE createBranchOrWorktree (needs clean workspace for branch switch).
+	if err := c.prepareWorkspace(ctx); err != nil {
+		return err
+	}
 
 	// Determine task ID: use external key with timestamp suffix to prevent collisions on restart.
 	// The timestamp ensures uniqueness if the same external task is started multiple times
@@ -332,8 +334,12 @@ func (c *Conductor) Start(ctx context.Context, reference string) error {
 // Returns TaskConflictInfo if a conflict exists and the caller should prompt the user.
 // Called by CLI/Web handlers before Start() to handle the conflict UI appropriately.
 func (c *Conductor) CheckActiveTaskConflict(_ context.Context) *TaskConflictInfo {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Sync in-memory state with disk before checking for conflicts.
+	// Handles the case where CLI abandoned/started a task while the server was running.
+	c.syncActiveTaskLocked()
 
 	// No conflict if no active task
 	if c.activeTask == nil {
@@ -477,10 +483,10 @@ func (c *Conductor) ContinueWithExisting(ctx context.Context, reference string, 
 }
 
 // prepareWorkspace ensures workspace is ready for branch creation.
-// If StashChanges is enabled, uncommitted changes are stashed.
-// Otherwise, returns an error if workspace has uncommitted changes.
+// Uncommitted changes are automatically stashed and restored after branch creation
+// (unless AutoPopStash is false in config).
 func (c *Conductor) prepareWorkspace(ctx context.Context) error {
-	if c.git == nil || !c.opts.CreateBranch {
+	if c.git == nil || c.opts.NoBranch {
 		return nil
 	}
 
@@ -493,26 +499,26 @@ func (c *Conductor) prepareWorkspace(ctx context.Context) error {
 		return nil
 	}
 
-	if c.opts.StashChanges {
-		message := "mehrhof: stash before task " + time.Now().Format("2006-01-02T15:04:05")
-		if err := c.git.Stash(ctx, message); err != nil {
-			return fmt.Errorf("stash changes: %w", err)
-		}
+	// Auto-stash uncommitted changes before branch creation.
+	// Set StashChanges so createBranchOrWorktree() pops stash after switch.
+	c.opts.StashChanges = true
 
-		// Verify stash was created and display reference for manual recovery
-		stashes, err := c.git.StashList(ctx)
-		if err == nil && len(stashes) > 0 {
-			// Display stash reference (e.g., "stash@{0}")
-			stashRef := strings.Split(stashes[0], ":")[0]
-			c.publishProgress(fmt.Sprintf("Stashed uncommitted changes (%s)", stashRef), 5)
-		} else {
-			c.publishProgress("Stashed uncommitted changes", 5)
-		}
-
-		return nil
+	message := "mehrhof: stash before task " + time.Now().Format("2006-01-02T15:04:05")
+	if err := c.git.Stash(ctx, message); err != nil {
+		return fmt.Errorf("stash changes: %w", err)
 	}
 
-	return errors.New("workspace has uncommitted changes\nPlease commit or stash your changes, or use --no-branch to work on the current branch")
+	// Verify stash was created and display reference for manual recovery
+	stashes, err := c.git.StashList(ctx)
+	if err == nil && len(stashes) > 0 {
+		// Display stash reference (e.g., "stash@{0}")
+		stashRef := strings.Split(stashes[0], ":")[0]
+		c.publishProgress(fmt.Sprintf("Stashed uncommitted changes (%s)", stashRef), 5)
+	} else {
+		c.publishProgress("Stashed uncommitted changes", 5)
+	}
+
+	return nil
 }
 
 // mergeLocalMetadata merges metadata from a local queue task into a provider work unit.

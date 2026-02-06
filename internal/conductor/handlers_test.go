@@ -1775,3 +1775,123 @@ func TestBuildImplementationPromptHasYamlExample(t *testing.T) {
 		}
 	}
 }
+
+func TestPublishAgentEvent(t *testing.T) {
+	tests := []struct {
+		name        string
+		event       agent.Event
+		wantContent string
+		wantType    string
+		wantSkip    bool // true if event should be skipped (not published)
+	}{
+		{
+			name: "text event publishes content",
+			event: agent.Event{
+				Type: agent.EventText,
+				Text: "Planning the implementation...",
+			},
+			wantContent: "Planning the implementation...",
+			wantType:    "text",
+		},
+		{
+			name: "tool_use event publishes description",
+			event: agent.Event{
+				Type: agent.EventToolUse,
+				Text: "", // Empty text for tool_use
+				ToolCall: &agent.ToolCall{
+					Name:        "Read",
+					Description: "Reading internal/server/handlers.go",
+				},
+			},
+			wantContent: "Reading internal/server/handlers.go",
+			wantType:    "tool_use",
+		},
+		{
+			name: "tool_use event falls back to name when description empty",
+			event: agent.Event{
+				Type: agent.EventToolUse,
+				Text: "",
+				ToolCall: &agent.ToolCall{
+					Name:        "Bash",
+					Description: "",
+				},
+			},
+			wantContent: "Bash",
+			wantType:    "tool_use",
+		},
+		{
+			name: "empty text and no tool call skips event",
+			event: agent.Event{
+				Type: agent.EventText,
+				Text: "",
+			},
+			wantSkip: true,
+		},
+		{
+			name: "text takes precedence over tool call",
+			event: agent.Event{
+				Type: agent.EventText,
+				Text: "Response text",
+				ToolCall: &agent.ToolCall{
+					Name:        "Read",
+					Description: "Tool description",
+				},
+			},
+			wantContent: "Response text",
+			wantType:    "text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bus := eventbus.NewBus()
+			c := &Conductor{
+				eventBus: bus,
+				activeTask: &storage.ActiveTask{
+					ID: "task-123",
+				},
+			}
+
+			// Capture published events
+			var receivedEvent eventbus.Event
+			var eventReceived bool
+			bus.SubscribeAll(func(e eventbus.Event) {
+				receivedEvent = e
+				eventReceived = true
+			})
+
+			c.publishAgentEvent(tt.event)
+
+			if tt.wantSkip {
+				if eventReceived {
+					t.Error("expected event to be skipped, but one was published")
+				}
+
+				return
+			}
+
+			if !eventReceived {
+				t.Fatal("expected event to be published, but none was received")
+			}
+
+			if receivedEvent.Type != "agent_message" {
+				t.Errorf("event type = %q, want %q", receivedEvent.Type, "agent_message")
+			}
+
+			gotContent, _ := receivedEvent.Data["content"].(string)
+			if gotContent != tt.wantContent {
+				t.Errorf("content = %q, want %q", gotContent, tt.wantContent)
+			}
+
+			gotType, _ := receivedEvent.Data["type"].(string)
+			if gotType != tt.wantType {
+				t.Errorf("type = %q, want %q", gotType, tt.wantType)
+			}
+
+			gotTaskID, _ := receivedEvent.Data["task_id"].(string)
+			if gotTaskID != "task-123" {
+				t.Errorf("task_id = %q, want %q", gotTaskID, "task-123")
+			}
+		})
+	}
+}

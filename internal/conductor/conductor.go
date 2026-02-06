@@ -82,8 +82,9 @@ type Conductor struct {
 	workflowAdapters []*plugin.WorkflowAdapter
 
 	// Current state
-	activeTask *storage.ActiveTask
-	taskWork   *storage.TaskWork
+	activeTask         *storage.ActiveTask
+	taskWork           *storage.TaskWork
+	planningInProgress bool // Guard against concurrent/sequential planning calls
 
 	// Configuration
 	opts Options
@@ -248,6 +249,77 @@ func (c *Conductor) ClearStaleTask() bool {
 	c.taskWork = nil
 
 	return true
+}
+
+// syncActiveTaskLocked reconciles in-memory active task state with the on-disk
+// .active_task file. This handles the case where another process (e.g., CLI)
+// modifies the active task while the Web UI server is running.
+//
+// Must be called with c.mu held in write mode (Lock, not RLock).
+func (c *Conductor) syncActiveTaskLocked() {
+	if c.workspace == nil {
+		return
+	}
+
+	diskHasTask := c.workspace.HasActiveTask()
+
+	// Case 1: Task abandoned/finished externally (file deleted, memory still has it)
+	if !diskHasTask && c.activeTask != nil {
+		slog.Info("syncing stale active task: cleared externally", "id", c.activeTask.ID)
+		c.activeTask = nil
+		c.taskWork = nil
+		c.machine.Reset()
+
+		return
+	}
+
+	// Case 2: Task started externally (file exists, memory has nothing)
+	if diskHasTask && c.activeTask == nil {
+		active, err := c.workspace.LoadActiveTask()
+		if err != nil {
+			slog.Warn("sync active task: failed to load from disk", "error", err)
+
+			return
+		}
+
+		slog.Info("syncing active task: loaded from disk", "id", active.ID)
+
+		c.activeTask = active
+
+		work, err := c.workspace.LoadWork(active.ID)
+		if err == nil {
+			c.taskWork = work
+			c.machine.SetWorkUnit(c.buildWorkUnit())
+		}
+
+		return
+	}
+
+	// Case 3: Both exist but IDs differ (task changed externally)
+	if diskHasTask && c.activeTask != nil {
+		active, err := c.workspace.LoadActiveTask()
+		if err != nil {
+			slog.Warn("sync active task: failed to reload from disk", "error", err)
+
+			return
+		}
+
+		if active.ID != c.activeTask.ID {
+			slog.Info("syncing active task: changed externally",
+				"old_id", c.activeTask.ID, "new_id", active.ID)
+
+			c.activeTask = active
+			c.machine.Reset()
+
+			work, err := c.workspace.LoadWork(active.ID)
+			if err == nil {
+				c.taskWork = work
+				c.machine.SetWorkUnit(c.buildWorkUnit())
+			} else {
+				c.taskWork = nil
+			}
+		}
+	}
 }
 
 // GetActiveAgent returns the active agent.

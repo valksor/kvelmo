@@ -510,7 +510,7 @@ func TestEnsureCleanWorkspace_NoGit(t *testing.T) {
 
 	ctx := context.Background()
 	// No git, no branch creation - should pass
-	c.opts.CreateBranch = false
+	c.opts.NoBranch = true
 	err = c.prepareWorkspace(ctx)
 	if err != nil {
 		t.Errorf("prepareWorkspace should pass without git: %v", err)
@@ -536,7 +536,7 @@ func TestPrepareWorkspace_NoBranchCreation(t *testing.T) {
 	_ = c.Initialize(ctx)
 
 	// No branch creation requested - should pass even with dirty workspace
-	c.opts.CreateBranch = false
+	c.opts.NoBranch = true
 
 	// Make the workspace dirty
 	if err := os.WriteFile(filepath.Join(tmpDir, "dirty.txt"), []byte("dirty"), 0o644); err != nil {
@@ -545,7 +545,7 @@ func TestPrepareWorkspace_NoBranchCreation(t *testing.T) {
 
 	err = c.prepareWorkspace(ctx)
 	if err != nil {
-		t.Errorf("prepareWorkspace should pass when CreateBranch=false: %v", err)
+		t.Errorf("prepareWorkspace should pass when NoBranch=true: %v", err)
 	}
 }
 
@@ -558,7 +558,7 @@ func TestPrepareWorkspace_CleanWorkspace(t *testing.T) {
 	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 
-	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithCreateBranch(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -573,7 +573,7 @@ func TestPrepareWorkspace_CleanWorkspace(t *testing.T) {
 	}
 }
 
-func TestPrepareWorkspace_DirtyWorkspace(t *testing.T) {
+func TestPrepareWorkspace_DirtyWorkspace_AutoStash(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -582,7 +582,7 @@ func TestPrepareWorkspace_DirtyWorkspace(t *testing.T) {
 	homeDir := t.TempDir()
 	initGitRepo(t, tmpDir)
 
-	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir), WithCreateBranch(true))
+	c, err := New(WithWorkDir(tmpDir), WithHomeDir(homeDir))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -597,8 +597,31 @@ func TestPrepareWorkspace_DirtyWorkspace(t *testing.T) {
 	}
 
 	err = c.prepareWorkspace(ctx)
-	if err == nil {
-		t.Error("prepareWorkspace should fail with dirty workspace")
+	if err != nil {
+		t.Errorf("prepareWorkspace should auto-stash dirty workspace: %v", err)
+	}
+
+	// Verify StashChanges was set (for pop logic in createBranchOrWorktree)
+	if !c.opts.StashChanges {
+		t.Error("expected StashChanges to be set after auto-stash")
+	}
+
+	// Verify stash was actually created
+	stashes, stashErr := c.git.StashList(ctx)
+	if stashErr != nil {
+		t.Fatalf("StashList: %v", stashErr)
+	}
+	if len(stashes) == 0 {
+		t.Error("expected at least one stash entry after auto-stash")
+	}
+
+	// Verify workspace is now clean
+	hasChanges, changesErr := c.git.HasChanges(ctx)
+	if changesErr != nil {
+		t.Fatalf("HasChanges: %v", changesErr)
+	}
+	if hasChanges {
+		t.Error("workspace should be clean after auto-stash")
 	}
 }
 
@@ -1018,7 +1041,7 @@ This is a test task description.
 	}
 
 	// Create conductor
-	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(false))
+	c, err := New(WithWorkDir(tmpDir), WithNoBranch(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -1084,7 +1107,7 @@ This is a test task for status checking.
 	}
 
 	// Create conductor
-	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(false))
+	c, err := New(WithWorkDir(tmpDir), WithNoBranch(true))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -1163,6 +1186,10 @@ func (a *mockAgent) WithEnv(key, value string) agent.Agent {
 }
 
 func (a *mockAgent) WithArgs(args ...string) agent.Agent {
+	return a
+}
+
+func (a *mockAgent) WithRetries(_ int) agent.Agent {
 	return a
 }
 

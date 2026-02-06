@@ -335,10 +335,11 @@ func (c *Conductor) registerAliasAgents(cfg *storage.WorkspaceConfig) error {
 		}
 
 		// Resolve environment variable references
-		env := env.ExpandEnvInMap(alias.Env)
+		envVars := env.ExpandEnvInMap(alias.Env)
+		binaryPath := os.ExpandEnv(alias.BinaryPath)
 
 		// Create and register the alias agent
-		aliasAgent := agent.NewAlias(name, base, env, alias.Args, alias.Description)
+		aliasAgent := agent.NewAlias(name, base, binaryPath, envVars, alias.Args, alias.Description)
 		if err := c.agents.Register(aliasAgent); err != nil {
 			return fmt.Errorf("register alias %q: %w", name, err)
 		}

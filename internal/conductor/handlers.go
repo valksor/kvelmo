@@ -34,11 +34,76 @@ const (
 	backoffMultiplier   = 2.0
 )
 
+// publishAgentEvent publishes an agent streaming event to the event bus
+// with a flat data structure matching the React frontend's expectations.
+func (c *Conductor) publishAgentEvent(event agent.Event) {
+	// Determine content to send
+	content := event.Text
+	if content == "" && event.ToolCall != nil {
+		// For tool_use events, send the tool description (matches StatusLine.OnEvent behavior)
+		content = event.ToolCall.Description
+		if content == "" {
+			content = event.ToolCall.Name
+		}
+	}
+
+	// Skip empty events to reduce noise
+	if content == "" {
+		return
+	}
+
+	// Include task ID for clients that scope SSE messages by task.
+	taskID := ""
+	if c.activeTask != nil {
+		taskID = c.activeTask.ID
+	}
+
+	c.eventBus.PublishRaw(eventbus.Event{
+		Type: events.TypeAgentMessage,
+		Data: map[string]any{
+			"task_id": taskID,
+			"content": content,
+			// Compatibility aliases for older/web clients.
+			"message": content,
+			"text":    content,
+			"type":    string(event.Type),
+		},
+	})
+}
+
 // RunPlanning executes the planning phase (creates SPEC files).
 func (c *Conductor) RunPlanning(ctx context.Context) error {
+	slog.Debug("RunPlanning called",
+		"task_id", c.activeTask.ID,
+		"state", c.activeTask.State)
+
+	// GUARD: Prevent concurrent or sequential planning calls.
+	// This happens when Claude Code's plan mode behavior triggers multiple planning cycles.
+	c.mu.Lock()
+	if c.planningInProgress {
+		c.mu.Unlock()
+		slog.Warn("RunPlanning called while planning already in progress, skipping",
+			"task_id", c.activeTask.ID)
+
+		return nil // Return success - the original planning call will handle the work
+	}
+	c.planningInProgress = true
+	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		c.planningInProgress = false
+		c.mu.Unlock()
+	}()
+
 	c.publishProgress("Starting planning phase...", 0)
 
 	taskID := c.activeTask.ID
+
+	// IDEMPOTENCY GUARD: Record starting spec count to detect duplicate spec creation.
+	// If specs are created by another process/goroutine during this planning phase,
+	// we skip our spec creation to prevent duplicates.
+	startingSpecNum, _ := c.workspace.NextSpecificationNumber(taskID)
+	startingSpecCount := startingSpecNum - 1 // NextSpecificationNumber returns next num
 
 	// Create progress tracker for this phase
 	var statusLine *progress.StatusLine
@@ -52,6 +117,10 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get planning agent: %w", err)
 	}
+	// Disable retries for planning - spec creation is the success signal.
+	// Claude Code in plan mode doesn't send completion events, so non-zero exit
+	// would trigger retries and create duplicate specs.
+	planningAgent = planningAgent.WithRetries(0)
 
 	// Ensure any existing session is saved before creating a new one
 	c.ensureSessionSaved(taskID)
@@ -200,12 +269,9 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 	// Run agent with streaming, accumulate output for transcript
 	c.publishProgress("Agent analyzing task...", 20)
 	var transcriptBuilder strings.Builder
-	response, err := planningAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
+	response, agentErr := planningAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 		// Also track progress if not dry-run
 		if statusLine != nil {
 			_ = statusLine.OnEvent(event)
@@ -217,19 +283,36 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 
 		return nil
 	})
-	if err != nil {
-		if statusLine != nil {
-			statusLine.Done()
-		}
-		c.activeTask.State = "idle"
-		if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
-			c.logError(fmt.Errorf("save active task after planning error: %w", err))
-		}
-		if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
-			c.logError(dispatchErr)
-		}
 
-		return fmt.Errorf("agent planning: %w", err)
+	// Check if spec was created - this is the real success signal.
+	// Claude Code in plan mode may exit with non-zero code even when successful,
+	// so we use spec creation as the source of truth.
+	currentSpecNum, _ := c.workspace.NextSpecificationNumber(taskID)
+	specCreated := currentSpecNum > startingSpecNum
+
+	if agentErr != nil {
+		if specCreated {
+			// Spec was created despite agent error - treat as success
+			slog.Info("planning succeeded - spec created despite agent error",
+				"task_id", taskID,
+				"spec_num", currentSpecNum-1,
+				"agent_error", agentErr)
+			// Continue with normal completion flow
+		} else {
+			// Real failure - no spec was created
+			if statusLine != nil {
+				statusLine.Done()
+			}
+			c.activeTask.State = "idle"
+			if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+				c.logError(fmt.Errorf("save active task after planning error: %w", err))
+			}
+			if dispatchErr := c.dispatchWithRetry(ctx, workflow.EventError); dispatchErr != nil {
+				c.logError(dispatchErr)
+			}
+
+			return fmt.Errorf("agent planning (no spec created): %w", agentErr)
+		}
 	}
 
 	// Record usage stats
@@ -308,6 +391,7 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 			for _, opt := range response.Question.Options {
 				pendingQuestion.Options = append(pendingQuestion.Options, storage.QuestionOption{
 					Label:       opt.Label,
+					Value:       opt.Value,
 					Description: opt.Description,
 				})
 			}
@@ -337,24 +421,42 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 		}
 	}
 
-	c.publishProgress("Creating specifications...", 70)
+	// IDEMPOTENCY GUARD: Check if specs were already created during this planning phase.
+	// This prevents duplicate specs when RunPlanning is called multiple times
+	// (e.g., due to Claude Code's plan mode behavior with ExitPlanMode).
+	currentSpecNum, _ = c.workspace.NextSpecificationNumber(taskID)
+	currentSpecCount := currentSpecNum - 1
+	if currentSpecCount > startingSpecCount {
+		slog.Warn("specs already created during planning, skipping duplicate spec creation",
+			"task_id", taskID,
+			"starting_count", startingSpecCount,
+			"current_count", currentSpecCount)
+		// Skip spec creation but continue to completion
+	} else {
+		c.publishProgress("Creating specifications...", 70)
 
-	// Create specification from response
-	nextNum, err := c.workspace.NextSpecificationNumber(taskID)
-	if err != nil {
-		return fmt.Errorf("get next specification number: %w", err)
+		// Create specification from response
+		nextNum, err := c.workspace.NextSpecificationNumber(taskID)
+		if err != nil {
+			return fmt.Errorf("get next specification number: %w", err)
+		}
+
+		// Format specification content
+		specContent := formatSpecificationContent(nextNum, response)
+
+		if err := c.workspace.SaveSpecification(taskID, nextNum, specContent); err != nil {
+			return fmt.Errorf("save specification: %w", err)
+		}
+
+		c.eventBus.PublishRaw(eventbus.Event{
+			Type: events.TypeSpecUpdated,
+			Data: map[string]any{"task_id": taskID, "spec_number": nextNum},
+		})
+
+		// Create checkpoint if git is available
+		commitMsg := c.generateCommitMessage(ctx, fmt.Sprintf("planning (spec-%d)", nextNum))
+		c.createCheckpointIfNeeded(ctx, taskID, commitMsg)
 	}
-
-	// Format specification content
-	specContent := formatSpecificationContent(nextNum, response)
-
-	if err := c.workspace.SaveSpecification(taskID, nextNum, specContent); err != nil {
-		return fmt.Errorf("save specification: %w", err)
-	}
-
-	// Create checkpoint if git is available
-	commitMsg := c.generateCommitMessage(ctx, fmt.Sprintf("planning (spec-%d)", nextNum))
-	c.createCheckpointIfNeeded(ctx, taskID, commitMsg)
 
 	// Update state back to idle
 	c.activeTask.State = "idle"
@@ -501,10 +603,7 @@ Please retry the implementation, taking into account this error.
 
 		response, err = implementingAgent.RunWithCallback(ctx, currentPrompt, func(event agent.Event) error {
 			// Always publish to event bus
-			c.eventBus.PublishRaw(eventbus.Event{
-				Type: events.TypeAgentMessage,
-				Data: map[string]any{"event": event},
-			})
+			c.publishAgentEvent(event)
 			// Also track progress if not dry-run
 			if statusLine != nil {
 				_ = statusLine.OnEvent(event)
@@ -818,10 +917,7 @@ Please retry the implementation, taking into account this error.
 
 		response, err = implementingAgent.RunWithCallback(ctx, currentPrompt, func(event agent.Event) error {
 			// Always publish to event bus
-			c.eventBus.PublishRaw(eventbus.Event{
-				Type: events.TypeAgentMessage,
-				Data: map[string]any{"event": event},
-			})
+			c.publishAgentEvent(event)
 			// Also track progress if not dry-run
 			if statusLine != nil {
 				_ = statusLine.OnEvent(event)
@@ -1037,10 +1133,7 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	var transcriptBuilder strings.Builder
 	response, err := reviewAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Always publish to event bus
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 		// Also track progress if not dry-run
 		if statusLine != nil {
 			_ = statusLine.OnEvent(event)
@@ -1129,6 +1222,26 @@ func (c *Conductor) RunReview(ctx context.Context) error {
 	if reviewContent != "" {
 		if err := c.workspace.AppendNote(taskID, "## Review Results\n\n"+reviewContent, "reviewing"); err != nil {
 			c.logError(fmt.Errorf("append review note: %w", err))
+		}
+
+		// Save review as a review file (enables ListReviews, LoadReview, and implement-review workflow)
+		nextReviewNum, err := c.workspace.NextReviewNumber(taskID)
+		if err != nil {
+			c.logError(fmt.Errorf("get next review number: %w", err))
+		} else {
+			var reviewBuilder strings.Builder
+			reviewBuilder.WriteString(fmt.Sprintf("# Code Review - %s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+			reviewBuilder.WriteString(fmt.Sprintf("Task: %s\n", taskID))
+			status := "PASSED"
+			if len(response.Files) > 0 || strings.Contains(strings.ToLower(reviewContent), "issue") {
+				status = "ISSUES"
+			}
+			reviewBuilder.WriteString(fmt.Sprintf("Status: %s\n\n---\n\n", status))
+			reviewBuilder.WriteString(reviewContent)
+
+			if saveErr := c.workspace.SaveReview(taskID, nextReviewNum, reviewBuilder.String()); saveErr != nil {
+				c.logError(fmt.Errorf("save review: %w", saveErr))
+			}
 		}
 	}
 
@@ -1469,6 +1582,11 @@ func (c *Conductor) runOrchestratedPlanning(ctx context.Context, taskID string, 
 		return fmt.Errorf("save specification: %w", err)
 	}
 
+	c.eventBus.PublishRaw(eventbus.Event{
+		Type: events.TypeSpecUpdated,
+		Data: map[string]any{"task_id": taskID, "spec_number": nextNum},
+	})
+
 	c.publishProgress(fmt.Sprintf("Specification %d created", nextNum), 90)
 
 	// Update state back to idle
@@ -1518,10 +1636,7 @@ func (c *Conductor) simplifyInput(ctx context.Context, taskID string) error {
 	c.publishProgress("Agent simplifying input...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 		if event.Text != "" {
 			transcriptBuilder.WriteString(event.Text)
 		}
@@ -1591,10 +1706,7 @@ func (c *Conductor) simplifyPlanning(ctx context.Context, taskID string) error {
 	c.publishProgress("Agent simplifying specifications...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 		if event.Text != "" {
 			transcriptBuilder.WriteString(event.Text)
 		}
@@ -1620,6 +1732,10 @@ func (c *Conductor) simplifyPlanning(ctx context.Context, taskID string) error {
 		if err := c.workspace.SaveSpecification(taskID, spec.Number, spec.Content); err != nil {
 			return fmt.Errorf("save specification %d: %w", spec.Number, err)
 		}
+		c.eventBus.PublishRaw(eventbus.Event{
+			Type: events.TypeSpecUpdated,
+			Data: map[string]any{"task_id": taskID, "spec_number": spec.Number},
+		})
 	}
 
 	if session != nil {
@@ -1713,10 +1829,7 @@ func (c *Conductor) simplifyImplementing(ctx context.Context, taskID string) err
 	c.publishProgress("Agent simplifying code...", 40)
 	var transcriptBuilder strings.Builder
 	response, err := simplifyingAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 		if event.Text != "" {
 			transcriptBuilder.WriteString(event.Text)
 		}

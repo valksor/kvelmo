@@ -400,8 +400,8 @@ func TestAskQuestion_EventPublishing(t *testing.T) {
 		name:     "test-agent",
 		response: "Test response",
 		events: []agent.Event{
-			{Type: "content", Data: map[string]any{"text": "Hello"}},
-			{Type: "content", Data: map[string]any{"text": " World"}},
+			{Type: agent.EventText, Text: "Hello"},
+			{Type: agent.EventText, Text: " World"},
 		},
 	}
 	if err := c.agents.Register(mockAgent); err != nil {
@@ -698,6 +698,10 @@ func (m *mockQuestionAgent) WithEnv(key, value string) agent.Agent {
 }
 
 func (m *mockQuestionAgent) WithArgs(args ...string) agent.Agent {
+	return m
+}
+
+func (m *mockQuestionAgent) WithRetries(_ int) agent.Agent {
 	return m
 }
 

@@ -523,10 +523,7 @@ func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
 	c.logVerbosef("Asking agent question...")
 	response, err := questionAgent.RunWithCallback(ctx, prompt, func(event agent.Event) error {
 		// Publish to event bus for Web UI consumption
-		c.eventBus.PublishRaw(eventbus.Event{
-			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
-		})
+		c.publishAgentEvent(event)
 
 		return nil
 	})
@@ -554,6 +551,7 @@ func (c *Conductor) AskQuestion(ctx context.Context, question string) error {
 		for _, opt := range response.Question.Options {
 			options = append(options, storage.QuestionOption{
 				Label:       opt.Label,
+				Value:       opt.Value,
 				Description: opt.Description,
 			})
 		}
@@ -729,9 +727,15 @@ func (c *Conductor) countCheckpoints(ctx context.Context) int {
 
 // publishProgress publishes a progress event.
 func (c *Conductor) publishProgress(message string, percent int) {
+	taskID := ""
+	if c.activeTask != nil {
+		taskID = c.activeTask.ID
+	}
+
 	c.eventBus.PublishRaw(eventbus.Event{
 		Type: events.TypeProgress,
 		Data: map[string]any{
+			"task_id": taskID,
 			"message": message,
 			"percent": percent,
 		},
