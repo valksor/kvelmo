@@ -12,7 +12,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/paths"
 )
@@ -46,12 +45,6 @@ func TestListCommand_Flags(t *testing.T) {
 			name:         "worktrees flag",
 			flagName:     "worktrees",
 			shorthand:    "w",
-			defaultValue: "false",
-		},
-		{
-			name:         "json flag",
-			flagName:     "json",
-			shorthand:    "",
 			defaultValue: "false",
 		},
 	}
@@ -105,7 +98,6 @@ func TestListCommand_Examples(t *testing.T) {
 	examples := []string{
 		"mehr list",
 		"--worktrees",
-		"--json",
 	}
 
 	for _, example := range examples {
@@ -235,7 +227,6 @@ func TestRunList_EmptyWorkspace(t *testing.T) {
 
 	// Save/restore all list flags
 	origFormat := listFormat
-	origJSON := listJSON
 	origRunning := listRunning
 	origWorktrees := listWorktreesOnly
 	origSearch := listSearch
@@ -247,7 +238,6 @@ func TestRunList_EmptyWorkspace(t *testing.T) {
 
 	defer func() {
 		listFormat = origFormat
-		listJSON = origJSON
 		listRunning = origRunning
 		listWorktreesOnly = origWorktrees
 		listSearch = origSearch
@@ -259,7 +249,6 @@ func TestRunList_EmptyWorkspace(t *testing.T) {
 	}()
 
 	listFormat = "table"
-	listJSON = false
 	listRunning = false
 	listWorktreesOnly = false
 	listSearch = ""
@@ -323,9 +312,8 @@ func TestRunList_WithTasks(t *testing.T) {
 	}
 
 	work1, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("First Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork task-1: %v", err)
@@ -336,9 +324,8 @@ func TestRunList_WithTasks(t *testing.T) {
 	}
 
 	work2, err := ws.CreateWork("task-2", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Second Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork task-2: %v", err)
@@ -353,7 +340,6 @@ func TestRunList_WithTasks(t *testing.T) {
 
 	// Save/restore all list flags
 	origFormat := listFormat
-	origJSON := listJSON
 	origRunning := listRunning
 	origWorktrees := listWorktreesOnly
 	origSearch := listSearch
@@ -365,7 +351,6 @@ func TestRunList_WithTasks(t *testing.T) {
 
 	defer func() {
 		listFormat = origFormat
-		listJSON = origJSON
 		listRunning = origRunning
 		listWorktreesOnly = origWorktrees
 		listSearch = origSearch
@@ -377,7 +362,6 @@ func TestRunList_WithTasks(t *testing.T) {
 	}()
 
 	listFormat = "table"
-	listJSON = false
 	listRunning = false
 	listWorktreesOnly = false
 	listSearch = ""
@@ -450,9 +434,8 @@ func TestRunList_JSONFormat(t *testing.T) {
 	}
 
 	work1, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("First Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork task-1: %v", err)
@@ -466,7 +449,6 @@ func TestRunList_JSONFormat(t *testing.T) {
 
 	// Save/restore all list flags
 	origFormat := listFormat
-	origJSON := listJSON
 	origRunning := listRunning
 	origWorktrees := listWorktreesOnly
 	origSearch := listSearch
@@ -478,7 +460,6 @@ func TestRunList_JSONFormat(t *testing.T) {
 
 	defer func() {
 		listFormat = origFormat
-		listJSON = origJSON
 		listRunning = origRunning
 		listWorktreesOnly = origWorktrees
 		listSearch = origSearch
@@ -490,7 +471,6 @@ func TestRunList_JSONFormat(t *testing.T) {
 	}()
 
 	listFormat = "json"
-	listJSON = true
 	listRunning = false
 	listWorktreesOnly = false
 	listSearch = ""
