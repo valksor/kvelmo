@@ -190,13 +190,9 @@ jobs:
                 working-directory: ide/vscode
                 run: bun run compile
 
-            -   name: Compile Tests
-                working-directory: ide/vscode
-                run: bun run compile:test
-
             -   name: Run Tests with Coverage
                 working-directory: ide/vscode
-                run: xvfb-run -a bun run test:coverage
+                run: bun run test:coverage
 
             -   name: Upload TypeScript coverage to Coveralls
                 if: github.event_name != 'pull_request'

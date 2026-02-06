@@ -14,17 +14,18 @@ build: deps
 watch: deps
 	bun run watch
 
-# Compile tests
-compile-test: deps
-	bun run compile:test
-
-# Run tests (requires VS Code)
-test: deps compile-test
+# Run tests (bun test, no VS Code needed)
+test: deps
 	bun run test
 
-# Run unit tests only (fast, no VS Code)
-test-unit: deps
-	bun run test:unit
+# Run tests with coverage
+test-coverage: deps
+	bun run test:coverage
+
+# Run integration tests (requires VS Code)
+test-integration: deps
+	bun run compile && bun run compile:test
+	bun run test:integration
 
 # Run linter
 lint: deps
@@ -64,9 +65,9 @@ help:
 	@echo "  deps         - Install bun dependencies"
 	@echo "  build        - Build the extension"
 	@echo "  watch        - Watch for changes and rebuild"
-	@echo "  compile-test - Compile test files"
-	@echo "  test         - Run integration tests (requires VS Code)"
-	@echo "  test-unit    - Run unit tests (fast, no VS Code)"
+	@echo "  test         - Run unit tests (fast, no VS Code)"
+	@echo "  test-coverage - Run unit tests with coverage"
+	@echo "  test-integration - Run integration tests (requires VS Code)"
 	@echo "  lint         - Run ESLint"
 	@echo "  lint-fix     - Run ESLint with auto-fix"
 	@echo "  format       - Format code with Prettier"
