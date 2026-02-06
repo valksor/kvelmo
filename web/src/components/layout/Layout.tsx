@@ -14,7 +14,6 @@ import {
   Eye,
   Sparkles,
   Zap,
-  Bot,
   ArrowLeft,
   Layers,
 } from 'lucide-react'
@@ -103,7 +102,8 @@ const adminDropdown: NavDropdown = {
   icon: Settings,
   items: [
     { to: '/settings', icon: Settings, label: 'Settings' },
-    { to: '/automation', icon: Bot, label: 'Automation' },
+    // DISABLED: automation temporarily unavailable (requires remote serve)
+    // { to: '/automation', icon: Bot, label: 'Automation' },
     { to: '/license', icon: Scale, label: 'License' },
   ],
 }
@@ -152,6 +152,7 @@ export default function Layout() {
   const { data: status, isLoading: statusLoading } = useStatus()
   // Default to global mode while loading (safer - fewer nav items, no project-specific routes)
   const isGlobalMode = statusLoading || status?.mode === 'global'
+  const activeProject = isGlobalMode ? undefined : status?.project
   // Only show "Projects" button if server started in global mode (has project list to return to)
   const canSwitchToGlobal = status?.canSwitchToGlobal ?? false
   const switchToGlobal = useSwitchToGlobal()
@@ -193,6 +194,19 @@ export default function Layout() {
           <a href="/" className="btn btn-ghost text-xl">
             Mehrhof
           </a>
+          {activeProject && (
+            <div className="flex items-center gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-1 max-w-[55vw] min-w-0">
+              <FolderKanban size={14} className="text-primary shrink-0" />
+              <span className="text-sm font-medium truncate">{activeProject.name}</span>
+              <span className="text-base-content/40">|</span>
+              <span
+                className="text-xs font-mono text-base-content/60 truncate"
+                title={activeProject.remote_url || activeProject.path}
+              >
+                {activeProject.remote_url || activeProject.path}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex-none flex items-center gap-2">
           <ul ref={navRef} className="menu menu-horizontal px-1">

@@ -27,6 +27,7 @@ http://localhost:PORT/api/v1
 
 Replace `PORT` with the actual port number shown when starting the server.
 
+<!-- DISABLED: remote serve
 ## Authentication
 
 For network-accessible servers (`--host 0.0.0.0`), include session cookies:
@@ -40,12 +41,12 @@ curl -c cookies.txt -X POST http://localhost:PORT/api/v1/auth/login \
 # Use session cookie for requests
 curl -b cookies.txt http://localhost:PORT/api/v1/status
 ```
+-->
 
 ## Endpoints Overview
 
 | Category           | Endpoints                                                                             |
 |--------------------|---------------------------------------------------------------------------------------|
-| **Authentication** | Login, logout                                                                         |
 | **Read**           | Status, context, tasks, specs, sessions, notes, costs                                 |
 | **Workflow**       | start, plan, implement, review, finish, undo, redo, continue, auto                    |
 | **Project**        | plan, tasks, submit, reorder, start                                                   |
@@ -57,6 +58,7 @@ curl -b cookies.txt http://localhost:PORT/api/v1/status
 
 ---
 
+<!-- DISABLED: remote serve
 ## Authentication Endpoints
 
 ### POST /api/v1/auth/login
@@ -84,6 +86,7 @@ End the current session.
 ```bash
 curl -X POST http://localhost:PORT/api/v1/auth/logout
 ```
+-->
 
 ---
 
@@ -1423,5 +1426,4 @@ Error responses:
 ## Next Steps
 
 - [**CLI: serve**](/cli/serve.md) - Server command options
-- [**Authentication**](authentication.md) - Setup for remote access
 - [**Dashboard**](dashboard.md) - Web UI interface

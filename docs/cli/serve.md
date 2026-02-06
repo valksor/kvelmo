@@ -6,9 +6,6 @@ Start the web UI server for browser-based task management.
 
 ```bash
 mehr serve [flags]
-mehr serve auth <subcommand>
-mehr serve register [flags]
-mehr serve unregister [project-id]
 ```
 
 ## Description
@@ -23,12 +20,11 @@ The `serve` command starts a local HTTP server providing a web-based UI for mana
 | Flag            | Type   | Default   | Description                                      |
 |-----------------|--------|-----------|--------------------------------------------------|
 | `--port`, `-p`  | int    | 6337      | Server port (0 = random, auto-fallback if taken) |
-| `--host`        | string | localhost | Host to bind to (use 0.0.0.0 for network access) |
 | `--global`      | bool   | false     | Run in global mode showing all projects          |
 | `--open`        | bool   | false     | Automatically open browser after server starts   |
 | `--api`         | bool   | false     | API-only mode (no web UI, for IDE plugins)       |
-| `--tunnel-info` | bool   | false     | Show SSH tunnel instructions for remote access   |
 
+<!-- DISABLED: remote serve
 ## Subcommands
 
 ### mehr serve auth
@@ -128,6 +124,7 @@ mehr serve unregister
 # Unregister by project ID
 mehr serve unregister <project-id>
 ```
+-->
 
 ## Examples
 
@@ -155,8 +152,6 @@ Start the server without the web UI for IDE plugin integration (JetBrains, VS Co
 # API-only mode - no web UI, all /api/v1/* endpoints available
 mehr serve --api --port 8080
 
-# API-only with network binding (authentication required)
-mehr serve --api --host 0.0.0.0 --port 8080
 ```
 
 **What's available in API-only mode:**
@@ -171,6 +166,7 @@ mehr serve --api --host 0.0.0.0 --port 8080
 
 **Use case:** IDE plugins connect via API endpoints and don't require the web UI.
 
+<!-- DISABLED: remote serve
 ### Remote Access
 
 #### Direct Network Binding
@@ -296,11 +292,11 @@ Exceeding the limit returns **HTTP 429 Too Many Requests**.
 Both CSRF and rate limiting are **automatically disabled** when the server runs on localhost (default). This keeps the development experience frictionless while protecting network-accessible deployments.
 
 See [Web UI: Authentication](/web-ui/authentication.md) for full details.
+-->
 
 ## Notes
 
 - The server binds to `localhost` by default for security
-- Use `--host 0.0.0.0` only after configuring authentication
 - In project mode, the conductor is initialized at startup
 - In global mode, projects are discovered from `~/.valksor/mehrhof/workspaces/`
 - Use `Ctrl+C` to stop the server gracefully

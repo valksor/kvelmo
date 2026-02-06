@@ -12,7 +12,6 @@ The Settings page is organized into three sections that match the top navigation
 |---------|------------------|
 | **Work** | Git, agent defaults, workflow, project storage, and provider connections |
 | **Advanced** | Agent aliases, budget, stack options, update patterns, memory, security, sandbox, and other advanced features |
-| **Admin** | Webhook automation and queue controls |
 
 Each settings block is collapsible. Use the chevron on the right side of each block header to expand or collapse details.
 
@@ -275,6 +274,7 @@ Isolate agent execution:
 | **Max Pages Per Prompt** | Pages per agent prompt |
 | **Max Token Budget** | Token limit for library content |
 
+<!-- DISABLED: automation temporarily unavailable (requires remote serve)
 ## Admin Section (Automation)
 
 Configure webhook automation for GitHub and GitLab.
@@ -330,6 +330,7 @@ Configure webhook automation for GitHub and GitLab.
 | **In Progress Label** | Label while processing |
 | **Failed Label** | Label on failure |
 | **Skip Review Label** | Label to skip review |
+-->
 
 ## Global Mode
 

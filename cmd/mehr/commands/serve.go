@@ -103,37 +103,22 @@ Use --global to see all projects across the system.
 The server listens on port 6337 by default.
 If port 6337 is in use, a random available port is selected automatically.
 
-Remote Access:
-  Use --host 0.0.0.0 to bind to all network interfaces.
-  Authentication is required when exposing to the network.
-  Use 'mehr serve auth add' to configure users first.
-
 Examples:
   mehr serve                        # Port 6337 (or random if taken)
   mehr serve --port 8080            # Specific port
   mehr serve --global               # Global mode (all projects)
   mehr serve --open                 # Open browser automatically
-  mehr serve --host 0.0.0.0         # Network accessible (requires auth)
-  mehr serve --api                  # API-only mode (no web UI, for IDE plugins)
-  mehr serve --tunnel-info          # Show SSH tunnel instructions
-
-Subcommands:
-  mehr serve register     # Register project for remote access
-  mehr serve unregister   # Remove project from registry
-  mehr serve auth         # Manage authentication`,
+  mehr serve --api                  # API-only mode (no web UI, for IDE plugins)`,
 	RunE: runServe,
 }
 
 var serveRegisterCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Register project for remote access",
+	Short: "Register project in global registry",
 	Long: `Register the current project in the global registry.
 
-This enables the project to be accessed in remote mode,
-where the web UI can be hosted centrally and control projects remotely.
-
-For local global mode (mehr serve --global), all projects are shown
-automatically - registration is only needed for remote access.
+Registered projects appear in global mode (mehr serve --global).
+Use this to organize projects you want to manage from a single dashboard.
 
 Examples:
   mehr serve register        # Register current project
@@ -143,11 +128,11 @@ Examples:
 
 var serveUnregisterCmd = &cobra.Command{
 	Use:   "unregister [project-id]",
-	Short: "Remove project from remote registry",
+	Short: "Remove project from global registry",
 	Long: `Remove a project from the global registry.
 
 If no project ID is provided, removes the current project.
-This prevents the project from being accessed in remote mode.
+This removes the project from the global mode dashboard.
 
 Examples:
   mehr serve unregister                      # Remove current project
@@ -156,31 +141,42 @@ Examples:
 	Args: cobra.MaximumNArgs(1),
 }
 
+// DISABLED: remote serve temporarily unavailable
+// Blank references prevent "unused" lint errors for disabled code.
+var (
+	_ = serveAuthListCmd
+	_ = serveAuthRemoveCmd
+	_ = serveAuthPasswdCmd
+	_ = serveAuthRoleCmd
+	_ = runServeAuthList
+	_ = runServeAuthRemove
+	_ = runServeAuthPasswd
+	_ = runServeAuthRole
+)
+
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	// Main serve flags
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Server port (default: 6337, 0 = random)")
-	serveCmd.Flags().StringVar(&serveHost, "host", "localhost", "Host to bind to (use 0.0.0.0 for all interfaces)")
+	// DISABLED: remote serve temporarily unavailable
+	// serveCmd.Flags().StringVar(&serveHost, "host", "localhost", "Host to bind to (use 0.0.0.0 for all interfaces)")
 	serveCmd.Flags().BoolVar(&serveGlobal, "global", false, "Global mode (show all projects)")
 	serveCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
-	serveCmd.Flags().BoolVar(&serveTunnelInfo, "tunnel-info", false, "Show SSH tunnel instructions")
+	// DISABLED: remote serve temporarily unavailable
+	// serveCmd.Flags().BoolVar(&serveTunnelInfo, "tunnel-info", false, "Show SSH tunnel instructions")
 	serveCmd.Flags().BoolVar(&serveAPIOnly, "api", false, "API-only mode (no web UI)")
 
-	// Register subcommand
 	serveCmd.AddCommand(serveRegisterCmd)
 	serveRegisterCmd.Flags().BoolVarP(&serveRegisterList, "list", "l", false, "List all registered projects")
-
-	// Unregister subcommand
 	serveCmd.AddCommand(serveUnregisterCmd)
-
-	// Auth subcommands
-	serveCmd.AddCommand(serveAuthCmd)
-	serveAuthCmd.AddCommand(serveAuthAddCmd)
-	serveAuthCmd.AddCommand(serveAuthListCmd)
-	serveAuthCmd.AddCommand(serveAuthRemoveCmd)
-	serveAuthCmd.AddCommand(serveAuthPasswdCmd)
-	serveAuthCmd.AddCommand(serveAuthRoleCmd)
+	// DISABLED: remote serve temporarily unavailable
+	// serveCmd.AddCommand(serveAuthCmd)
+	// serveAuthCmd.AddCommand(serveAuthAddCmd)
+	// serveAuthCmd.AddCommand(serveAuthListCmd)
+	// serveAuthCmd.AddCommand(serveAuthRemoveCmd)
+	// serveAuthCmd.AddCommand(serveAuthPasswdCmd)
+	// serveAuthCmd.AddCommand(serveAuthRoleCmd)
 }
 
 func runServe(cmd *cobra.Command, _ []string) error {
@@ -397,6 +393,7 @@ func runServeRegister(cmd *cobra.Command, _ []string) error {
 			remoteURL, _ = res.Git.RemoteURL(ctx, remote)
 		}
 	}
+	remoteURL = storage.SanitizeRemoteURL(remoteURL)
 
 	// Get project name from directory or remote
 	name := filepath.Base(res.Root)

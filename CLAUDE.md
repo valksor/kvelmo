@@ -250,7 +250,9 @@ mehr agents | providers | templates | update | generate-secret
 
 **Interactive mode** (`mehr interactive` or Web `/interactive`): workflow commands + chat.
 
+<!-- DISABLED: automation temporarily unavailable
 **Automation mode** (`mehr serve --api`): Receive GitHub/GitLab webhooks to auto-fix issues and auto-review PRs. Configure in `.mehrhof/config.yaml` under `automation:`. See [docs/cli/automation.md](docs/cli/automation.md).
+-->
 
 **Recovery tip:** If an agent hangs and you kill it, use `mehr reset` to reset state to idle without losing work. Or use `--force` on step commands (e.g., `mehr plan --force`).
 
@@ -285,8 +287,8 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/browser/`      | Chrome automation (CDP)                                                                                                       |
 | `internal/mcp/`          | Model Context Protocol server                                                                                                 |
 | `internal/memory/`       | Semantic memory with vector embeddings                                                                                        |
-| `internal/server/`       | Web UI: REST API, SSE, authentication, CSRF protection, rate limiting                                                         |
-| `internal/automation/`   | Webhook automation: GitHub/GitLab webhooks, job queue, access control                                                         |
+| `internal/server/`       | Web UI: REST API, SSE (auth/CSRF/rate-limiting temporarily disabled)                                                          |
+| `internal/automation/`   | Webhook automation: GitHub/GitLab webhooks, job queue, access control (temporarily disabled — server wiring removed)           |
 | `ide/jetbrains/`         | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE                                                          |
 | `ide/vscode/`            | VS Code extension - TypeScript, webview-based UI via REST API + SSE                                                           |
 | `internal/links/`        | Bidirectional linking (`[[reference]]` syntax)                                                                                |
@@ -314,10 +316,12 @@ mehr agents | providers | templates | update | generate-secret
 - `CodeRoot()` = code target (where agents edit code, git operates, linters run); defaults to `Root()` when `project.code_dir` is not set
 - Use `CodeRoot()` / `Conductor.CodeDir()` for anything that touches source code files
 
+<!-- DISABLED: remote serve
 **Security Middleware** (`internal/server/middleware.go`):
 - CSRF protection via `X-Csrf-Token` header (Synchronizer Token Pattern). Enforced on POST/PUT/DELETE when auth is enabled. Authorization is skipped in localhost mode, CSRF ALWAYS enforced.
 - Per-IP rate limiting: 120 req/min general API, 10 req/min auth endpoints. Returns HTTP 429 when exceeded.
 - Both are automatically disabled in localhost mode (`AuthStore == nil`).
+-->
 
 ### Agent Configuration
 

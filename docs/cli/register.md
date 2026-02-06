@@ -1,6 +1,6 @@
 # mehr serve register / mehr serve unregister
 
-Manage the project registry for remote access.
+Manage the global project registry.
 
 > **Note**: These commands have been moved under `mehr serve`. The old `mehr register` and `mehr unregister` commands are deprecated.
 
@@ -13,13 +13,11 @@ mehr serve unregister [project-id]
 
 ## Description
 
-The `register` and `unregister` subcommands manage a registry of projects that can be accessed remotely. This is useful for:
+The `register` and `unregister` subcommands manage a registry of projects for global mode. This is useful for:
 
-- Setting up projects for remote/hosted web UI access
+- Adding projects to the global mode dashboard (`mehr serve --global`)
 - Organizing frequently used projects
-- Preparing for multi-project dashboards
-
-**Note**: The registry supports future remote mode functionality. Local global mode (`mehr serve --global`) discovers all projects automatically without requiring registration.
+- Managing multi-project workflows from a single server
 
 ## Commands
 
@@ -112,19 +110,18 @@ Project IDs are automatically generated based on:
 
 ## Use Cases
 
-### Setting Up Remote Access
+### Setting Up Global Mode
 
 ```bash
-# Register projects you want accessible remotely
+# Register projects for the global dashboard
 cd ~/projects/important-app
 mehr serve register
 
 cd ~/projects/client-work
 mehr serve register
 
-# Start server with network access (requires auth)
-mehr serve auth add admin mypassword
-mehr serve --host 0.0.0.0
+# Start server in global mode
+mehr serve --global
 ```
 
 ### Managing Project List
@@ -139,14 +136,8 @@ mehr serve unregister old-project-id
 
 ## Notes
 
-- Registration is separate from project discovery
-- `mehr serve --global` shows ALL projects from workspaces directory (no registration required)
-- Registration is opt-in for future remote access features
-- The registry persists across sessions
-
-## Web UI
-
-Prefer a visual interface? See the remote access setup in [Remote Access](/web-ui/remote-access.md).
+- Registered projects appear in global mode (`mehr serve --global`)
+- The registry persists across sessions at `~/.valksor/mehrhof/`
 
 ## See Also
 

@@ -66,6 +66,7 @@ mehr serve --port 9090
 
 See [Providers](/providers/index.md) for token setup per provider.
 
+<!-- DISABLED: remote serve
 ### Remote Access Not Working
 
 **Cause:** Server not bound to accessible address.
@@ -79,6 +80,7 @@ mehr serve --host 0.0.0.0 --auth
 ```
 
 See [Remote Access](/web-ui/remote-access.md) for full setup.
+-->
 
 ---
 
@@ -178,6 +180,7 @@ budget:
 
 3. **Check your provider's rate limits** — Anthropic and other providers have usage tiers. Higher tiers allow more requests per minute. See your provider's dashboard for current limits.
 
+<!-- DISABLED: remote serve
 ### CSRF Token Errors
 
 **Cause:** Making POST/PUT/DELETE requests to an authenticated server without a valid CSRF token.
@@ -209,6 +212,7 @@ Error: CSRF token invalid or missing (HTTP 403)
 3. **Localhost mode** — Rate limiting is disabled on localhost
 
 > **Note:** This is different from AI provider rate limits (see "Rate limited" below). Server rate limiting protects the Mehrhof server itself.
+-->
 
 ### Agent Retry Behavior
 

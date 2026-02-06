@@ -13,7 +13,6 @@ The Mehrhof Web UI provides a comfortable browser-based interface for the plan �
 | **Configuration**              | ✅ Forms with validation       | ⚠️ Editing YAML files           |
 | **Automation**                 | ❌ Not available               | ✅ Scriptable                    |
 | **Git workflows**              | ⚠️ Possible                   | ✅ Native integration            |
-| **Remote access**              | ✅ Any browser                 | ⚠️ SSH required                 |
 
 ## Getting Started
 
@@ -68,11 +67,13 @@ See individual workflow pages for details:
 
 > **For developers:** Programmatic access to all features is available via the [REST API](/reference/rest-api.md).
 
+<!-- DISABLED: remote serve
 ## Remote Access
 
 Access the Web UI from anywhere:
 - [Remote Access](remote-access.md) - SSH tunnels, Cloudflare, Tailscale
 - [Authentication](authentication.md) - User management and security
+-->
 
 ## Comparison with CLI
 

@@ -24,7 +24,6 @@ Mehrhof offers two ways to work: a graphical Web UI and a command-line interface
 | **Visibility**           | See everything at once           | See what you ask for                |
 | **Collaboration**        | Easy to screen-share             | Harder to share                     |
 | **Automation**           | Manual only                      | Fully scriptable                    |
-| **Remote access**        | Requires setup                   | Works over SSH naturally            |
 | **Configuration**        | Visual forms                     | Edit YAML files                     |
 | **Multi-task**           | Easy switching                   | Terminal per task                   |
 
@@ -332,8 +331,7 @@ Jump to the **[Your First Task](first-task.md)** CLI tutorial.
 | Easy collaboration             | Scriptability             |
 | At-a-glance status             | Keyboard efficiency       |
 | Integrated settings            | Git-native workflow       |
-| Browser automation             | Remote server access      |
-| Lower learning curve           | Faster once learned       |
+| Browser automation             | Faster once learned       |
 
 **Remember:** Both interfaces share the same backend. You can switch anytime without losing your place.
 

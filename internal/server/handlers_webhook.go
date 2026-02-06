@@ -6,6 +6,20 @@ import (
 	"github.com/valksor/go-mehrhof/internal/automation"
 )
 
+// DISABLED: automation temporarily unavailable (requires remote serve)
+// Blank references prevent "unused" lint errors for disabled code.
+var (
+	_ = (*Server).handleWebhook
+	_ = (*Server).handleAutomationStatus
+	_ = (*Server).handleAutomationJobs
+	_ = (*Server).handleAutomationJob
+	_ = (*Server).handleAutomationJobCancel
+	_ = (*Server).handleAutomationJobRetry
+	_ = (*Server).handleAutomationConfig
+	_ = (*Server).getAutomationConfig
+	_ = convertJobToMap
+)
+
 // handleWebhook processes incoming webhooks from providers.
 // POST /api/v1/webhooks/{provider}.
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -23,6 +37,8 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 // handleAutomationStatus returns the current automation status.
 // GET /api/v1/automation/status.
+//
+//nolint:unparam // Required by http.HandlerFunc interface
 func (s *Server) handleAutomationStatus(w http.ResponseWriter, r *http.Request) {
 	if s.automation == nil {
 		s.writeJSON(w, http.StatusOK, map[string]any{
@@ -148,6 +164,8 @@ func (s *Server) handleAutomationJobRetry(w http.ResponseWriter, r *http.Request
 
 // handleAutomationConfig returns the automation configuration.
 // GET /api/v1/automation/config.
+//
+//nolint:unparam // Required by http.HandlerFunc interface
 func (s *Server) handleAutomationConfig(w http.ResponseWriter, r *http.Request) {
 	if s.automation == nil || s.automationConfig == nil {
 		s.writeJSON(w, http.StatusOK, map[string]any{
