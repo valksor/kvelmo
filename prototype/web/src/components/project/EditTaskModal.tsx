@@ -71,7 +71,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
-          <div>
+          <div className="form-control">
             <label className="label">
               <span className="label-text">Title</span>
             </label>
@@ -85,7 +85,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
           </div>
 
           {/* Description */}
-          <div>
+          <div className="form-control">
             <label className="label">
               <span className="label-text">Description</span>
             </label>
@@ -99,7 +99,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
 
           {/* Priority + Status */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="form-control">
               <label className="label">
                 <span className="label-text">Priority</span>
               </label>
@@ -115,7 +115,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
                 <option value={5}>Lowest (5)</option>
               </select>
             </div>
-            <div>
+            <div className="form-control">
               <label className="label">
                 <span className="label-text">Status</span>
               </label>
@@ -133,7 +133,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
           </div>
 
           {/* Parent ID */}
-          <div>
+          <div className="form-control">
             <label className="label">
               <span className="label-text">Parent Task ID</span>
             </label>
@@ -147,7 +147,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
           </div>
 
           {/* Dependencies */}
-          <div>
+          <div className="form-control">
             <label className="label">
               <span className="label-text">Dependencies</span>
               <span className="label-text-alt">Comma-separated task IDs</span>
@@ -162,7 +162,7 @@ export function EditTaskModal({ task, onClose }: EditTaskModalProps) {
           </div>
 
           {/* Labels */}
-          <div>
+          <div className="form-control">
             <label className="label">
               <span className="label-text">Labels</span>
               <span className="label-text-alt">Comma-separated</span>

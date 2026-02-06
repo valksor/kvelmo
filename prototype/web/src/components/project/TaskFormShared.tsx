@@ -73,15 +73,21 @@ interface TextInputProps {
 
 export function TextInput({ value, onChange }: TextInputProps) {
   return (
-    <div>
+    <div className="form-control">
+      <label className="label py-1" htmlFor="task-text-source">
+        <span className="label-text">Task content</span>
+      </label>
       <textarea
+        id="task-text-source"
         rows={6}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="# Task Title&#10;&#10;Describe what you want to accomplish...&#10;&#10;## Requirements&#10;- First requirement&#10;- Second requirement"
         className="textarea textarea-bordered w-full font-mono text-sm"
       />
-      <p className="text-xs text-base-content/40 mt-1">Use Markdown for better structure</p>
+      <label className="label py-1">
+        <span className="label-text-alt text-base-content/60">Use Markdown for better structure</span>
+      </label>
     </div>
   )
 }
@@ -101,8 +107,10 @@ export function ReferenceInput({
 }: ReferenceInputProps) {
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className="block text-xs font-medium text-base-content/60 mb-1">Provider</label>
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Provider</span>
+        </label>
         <select
           value={provider}
           onChange={(e) => onProviderChange(e.target.value)}
@@ -115,8 +123,10 @@ export function ReferenceInput({
           ))}
         </select>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-base-content/60 mb-1">Reference ID</label>
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Reference ID</span>
+        </label>
         <input
           type="text"
           value={referenceId}
@@ -131,8 +141,8 @@ export function ReferenceInput({
 
 export function ErrorMessage({ message }: { message: string }) {
   return (
-    <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
-      {message}
+    <div className="alert alert-error text-sm">
+      <span>{message}</span>
     </div>
   )
 }

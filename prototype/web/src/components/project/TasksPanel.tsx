@@ -155,7 +155,7 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
               <div>
                 <label className="text-xs text-base-content/60">Provider</label>
                 <select
-                  className="select select-bordered select-sm"
+                  className="select select-bordered"
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
                 >
@@ -171,7 +171,7 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
                 <input
                   type="text"
                   placeholder="@username"
-                  className="input input-bordered input-sm w-32"
+                  className="input input-bordered w-32"
                   value={mention}
                   onChange={(e) => setMention(e.target.value)}
                 />
@@ -179,7 +179,7 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="checkbox checkbox-sm"
+                  className="checkbox checkbox-primary"
                   checked={dryRun}
                   onChange={(e) => setDryRun(e.target.checked)}
                 />

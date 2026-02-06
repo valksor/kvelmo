@@ -108,8 +108,10 @@ export function ProjectPlanForm({
           'Upload a specification or requirements file to create a project plan with multiple tasks'}
       </p>
 
-      <div>
-        <label className="block text-sm font-medium text-base-content/80 mb-2">Source Type</label>
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Source Type</span>
+        </label>
         <div className="grid grid-cols-1 gap-2">
           <SourceTypeButton
             active={sourceType === 'file'}
@@ -191,39 +193,53 @@ export function ProjectPlanForm({
       )}
 
       {sourceType === 'dir' && (
-        <div>
+        <div className="form-control">
+          <label className="label py-1" htmlFor="project-plan-dir-path">
+            <span className="label-text">Directory path</span>
+          </label>
           <input
+            id="project-plan-dir-path"
             type="text"
             value={dirPath}
             onChange={(e) => setDirPath(e.target.value)}
             placeholder="./path/to/directory"
             className="input input-bordered w-full font-mono text-sm"
           />
-          <p className="text-xs text-base-content/40 mt-1">
-            Reads ALL files in directory. Best for small codebases (&lt;50 files).
-          </p>
+          <label className="label py-1">
+            <span className="label-text-alt text-base-content/60">
+              Reads ALL files in directory. Best for small codebases (&lt;50 files).
+            </span>
+          </label>
         </div>
       )}
 
       {sourceType === 'research' && (
-        <div>
+        <div className="form-control">
+          <label className="label py-1" htmlFor="project-plan-research-path">
+            <span className="label-text">Research path</span>
+          </label>
           <input
+            id="project-plan-research-path"
             type="text"
             value={researchPath}
             onChange={(e) => setResearchPath(e.target.value)}
             placeholder="./path/to/docs"
             className="input input-bordered w-full font-mono text-sm"
           />
-          <p className="text-xs text-base-content/40 mt-1">
-            AI-guided research mode. Provides file manifest, AI selectively explores files.
-          </p>
+          <label className="label py-1">
+            <span className="label-text-alt text-base-content/60">
+              AI-guided research mode. Provides file manifest, AI selectively explores files.
+            </span>
+          </label>
         </div>
       )}
 
       {sourceType === 'provider' && (
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-base-content/60 mb-1">Provider</label>
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text">Provider</span>
+            </label>
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
@@ -236,8 +252,10 @@ export function ProjectPlanForm({
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-base-content/60 mb-1">Reference</label>
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text">Reference</span>
+            </label>
             <input
               type="text"
               value={referenceId}
@@ -249,9 +267,9 @@ export function ProjectPlanForm({
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-base-content/80 mb-2">
-          Project Title (optional)
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Project Title (optional)</span>
         </label>
         <input
           type="text"
@@ -262,9 +280,9 @@ export function ProjectPlanForm({
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-base-content/80 mb-2">
-          Instructions (optional)
+      <div className="form-control">
+        <label className="label py-1">
+          <span className="label-text">Instructions (optional)</span>
         </label>
         <textarea
           rows={3}
@@ -280,7 +298,7 @@ export function ProjectPlanForm({
           type="checkbox"
           checked={useSchema}
           onChange={(e) => setUseSchema(e.target.checked)}
-          className="checkbox checkbox-primary checkbox-sm"
+          className="checkbox checkbox-primary"
         />
         <span className="text-sm text-base-content/80">Use schema-driven extraction</span>
       </label>

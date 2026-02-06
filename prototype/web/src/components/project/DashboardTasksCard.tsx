@@ -191,7 +191,7 @@ function QueueView({
             </label>
             <select
               id="dashboard-queue-select"
-              className="select select-bordered select-sm w-full sm:w-80"
+              className="select select-bordered w-full sm:w-80"
               value={effectiveSelectedQueueId}
               onChange={(e) => onSelectedQueueIdChange(e.target.value)}
             >
