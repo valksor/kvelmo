@@ -55,8 +55,8 @@ func TestCheckpointStruct(t *testing.T) {
 }
 
 func TestCheckpointPrefix(t *testing.T) {
-	if CheckpointPrefix != "task-checkpoint" {
-		t.Errorf("CheckpointPrefix = %q, want %q", CheckpointPrefix, "task-checkpoint")
+	if CheckpointPrefix != "refs/mehrhof/checkpoints" {
+		t.Errorf("CheckpointPrefix = %q, want %q", CheckpointPrefix, "refs/mehrhof/checkpoints")
 	}
 }
 

@@ -38,6 +38,15 @@ func TestCreateCheckpoint(t *testing.T) {
 	if cp.ID == "" {
 		t.Error("ID should not be empty")
 	}
+
+	// Checkpoints should not create visible git tags.
+	tags, err := g.run(ctx, "tag", "-l", "*checkpoint*")
+	if err != nil {
+		t.Fatalf("list tags: %v", err)
+	}
+	if tags != "" {
+		t.Errorf("expected no checkpoint tags, got %q", tags)
+	}
 }
 
 func TestCreateMultipleCheckpoints(t *testing.T) {
@@ -542,44 +551,44 @@ func TestCheckpointTrackerBasic(t *testing.T) {
 	}
 }
 
-func TestCheckpointTagRegexp(t *testing.T) {
+func TestCheckpointRefRegexp(t *testing.T) {
 	tests := []struct {
-		tag      string
+		ref      string
 		wantTask string
 		wantNum  string
 	}{
-		{"task-checkpoint/abc123/1", "abc123", "1"},
-		{"task-checkpoint/task-456/42", "task-456", "42"},
-		{"task-checkpoint/my-task/100", "my-task", "100"},
+		{"refs/mehrhof/checkpoints/abc123/1", "abc123", "1"},
+		{"refs/mehrhof/checkpoints/task-456/42", "task-456", "42"},
+		{"refs/mehrhof/checkpoints/my-task/100", "my-task", "100"},
 	}
 
 	for _, tt := range tests {
-		matches := checkpointTagRe.FindStringSubmatch(tt.tag)
+		matches := checkpointRefRe.FindStringSubmatch(tt.ref)
 		if matches == nil {
-			t.Errorf("tag %q should match", tt.tag)
+			t.Errorf("ref %q should match", tt.ref)
 
 			continue
 		}
 		if matches[1] != tt.wantTask {
-			t.Errorf("tag %q: task = %q, want %q", tt.tag, matches[1], tt.wantTask)
+			t.Errorf("ref %q: task = %q, want %q", tt.ref, matches[1], tt.wantTask)
 		}
 		if matches[2] != tt.wantNum {
-			t.Errorf("tag %q: num = %q, want %q", tt.tag, matches[2], tt.wantNum)
+			t.Errorf("ref %q: num = %q, want %q", tt.ref, matches[2], tt.wantNum)
 		}
 	}
 }
 
-func TestCheckpointTagRegexpNoMatch(t *testing.T) {
+func TestCheckpointRefRegexpNoMatch(t *testing.T) {
 	nonMatching := []string{
 		"not-a-checkpoint",
-		"task-checkpoint/",
-		"task-checkpoint/task",
-		"other-prefix/task/1",
+		"refs/mehrhof/checkpoints/",
+		"refs/mehrhof/checkpoints/task",
+		"refs/other/task/1",
 	}
 
-	for _, tag := range nonMatching {
-		if checkpointTagRe.MatchString(tag) {
-			t.Errorf("tag %q should not match", tag)
+	for _, ref := range nonMatching {
+		if checkpointRefRe.MatchString(ref) {
+			t.Errorf("ref %q should not match", ref)
 		}
 	}
 }

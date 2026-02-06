@@ -21,11 +21,11 @@ type Checkpoint struct {
 	Timestamp time.Time // When checkpoint was created
 }
 
-// CheckpointPrefix is the tag prefix for checkpoints.
-const CheckpointPrefix = "task-checkpoint"
+// CheckpointPrefix is the internal git ref prefix used for checkpoints.
+const CheckpointPrefix = "refs/mehrhof/checkpoints"
 
-// checkpointTagRe matches checkpoint tags: task-checkpoint/<taskID>/<number>.
-var checkpointTagRe = regexp.MustCompile(`^task-checkpoint/([^/]+)/(\d+)$`)
+// checkpointRefRe matches checkpoint refs: refs/mehrhof/checkpoints/<taskID>/<number>.
+var checkpointRefRe = regexp.MustCompile(`^refs/mehrhof/checkpoints/([^/]+)/(\d+)$`)
 
 // CreateCheckpoint creates a checkpoint for a task with default prefix [taskID].
 func (g *Git) CreateCheckpoint(ctx context.Context, taskID, message string) (*Checkpoint, error) {
@@ -64,18 +64,19 @@ func (g *Git) CreateCheckpointWithPrefix(ctx context.Context, taskID, message, c
 			return nil, fmt.Errorf("create commit: %w", err)
 		}
 	} else {
-		// Use current HEAD for empty checkpoint
-		commitHash, err = g.RevParse(ctx, "HEAD")
+		// Keep checkpoint history linear even when no files changed.
+		commitMsg := fmt.Sprintf("%s %s", commitPrefix, message)
+		commitHash, err = g.Commit(ctx, commitMsg, CommitOptions{AllowEmpty: true})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create empty checkpoint commit: %w", err)
 		}
 	}
 
-	// Create tag for checkpoint
-	tagName := fmt.Sprintf("%s/%s/%d", CheckpointPrefix, taskID, number)
-	_, err = g.run(ctx, "tag", tagName, commitHash)
+	// Create internal checkpoint ref (hidden from normal tag listings)
+	refName := fmt.Sprintf("%s/%s/%d", CheckpointPrefix, taskID, number)
+	_, err = g.run(ctx, "update-ref", refName, commitHash)
 	if err != nil {
-		return nil, fmt.Errorf("create checkpoint tag: %w", err)
+		return nil, fmt.Errorf("create checkpoint ref: %w", err)
 	}
 
 	return &Checkpoint{
@@ -90,27 +91,27 @@ func (g *Git) CreateCheckpointWithPrefix(ctx context.Context, taskID, message, c
 // ListCheckpoints returns all checkpoints for a task.
 func (g *Git) ListCheckpoints(ctx context.Context, taskID string) ([]*Checkpoint, error) {
 	prefix := fmt.Sprintf("%s/%s/", CheckpointPrefix, taskID)
-	out, err := g.run(ctx, "tag", "-l", prefix+"*")
+	out, err := g.run(ctx, "for-each-ref", "--format=%(refname)", prefix)
 	if err != nil {
 		return nil, err
 	}
 
 	var checkpoints []*Checkpoint
-	for _, tag := range strings.Split(out, "\n") {
-		tag = strings.TrimSpace(tag)
-		if tag == "" {
+	for _, refName := range strings.Split(out, "\n") {
+		refName = strings.TrimSpace(refName)
+		if refName == "" {
 			continue
 		}
 
-		matches := checkpointTagRe.FindStringSubmatch(tag)
+		matches := checkpointRefRe.FindStringSubmatch(refName)
 		if matches == nil || matches[1] != taskID {
 			continue
 		}
 
 		num, _ := strconv.Atoi(matches[2])
 
-		// Get commit info for this tag
-		hash, err := g.RevParse(ctx, tag)
+		// Get commit info for this ref
+		hash, err := g.RevParse(ctx, refName)
 		if err != nil {
 			continue
 		}
@@ -308,10 +309,10 @@ func (g *Git) Redo(ctx context.Context, taskID string) (*Checkpoint, error) {
 	return next, nil
 }
 
-// DeleteCheckpoint removes a checkpoint tag.
+// DeleteCheckpoint removes a checkpoint ref.
 func (g *Git) DeleteCheckpoint(ctx context.Context, taskID string, number int) error {
-	tagName := fmt.Sprintf("%s/%s/%d", CheckpointPrefix, taskID, number)
-	_, err := g.run(ctx, "tag", "-d", tagName)
+	refName := fmt.Sprintf("%s/%s/%d", CheckpointPrefix, taskID, number)
+	_, err := g.run(ctx, "update-ref", "-d", refName)
 	if err != nil {
 		return fmt.Errorf("delete checkpoint: %w", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -311,6 +312,65 @@ func TestGetBaseBranch(t *testing.T) {
 	// Should be main or master (depends on git version)
 	if base != "main" && base != "master" {
 		t.Errorf("base branch = %q, expected main or master", base)
+	}
+}
+
+func TestGetBaseBranch_UsesTrackingBranch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+	dir := initTestRepo(t)
+
+	remoteDir := filepath.Join(t.TempDir(), "origin.git")
+	if err := os.MkdirAll(remoteDir, 0o755); err != nil {
+		t.Fatalf("create remote dir: %v", err)
+	}
+	if err := runGit(ctx, remoteDir, "init", "--bare"); err != nil {
+		t.Fatalf("init bare remote: %v", err)
+	}
+
+	// Configure remote and publish a staging branch.
+	if err := runGit(ctx, dir, "remote", "add", "origin", remoteDir); err != nil {
+		t.Fatalf("add remote: %v", err)
+	}
+
+	baseBranch, err := runGitCommandContext(ctx, dir, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		t.Fatalf("get base branch: %v", err)
+	}
+	baseBranch = strings.TrimSpace(baseBranch)
+	if _, err := runGitCommandContext(ctx, dir, "push", "-u", "origin", baseBranch); err != nil {
+		t.Fatalf("push base branch: %v", err)
+	}
+
+	if err := runGit(ctx, dir, "checkout", "-b", "staging"); err != nil {
+		t.Fatalf("create staging branch: %v", err)
+	}
+	if _, err := runGitCommandContext(ctx, dir, "push", "-u", "origin", "staging"); err != nil {
+		t.Fatalf("push staging branch: %v", err)
+	}
+
+	// Work branch tracks origin/staging.
+	if err := runGit(ctx, dir, "checkout", "-b", "feature/tracking"); err != nil {
+		t.Fatalf("create feature branch: %v", err)
+	}
+	if err := runGit(ctx, dir, "branch", "--set-upstream-to=origin/staging", "feature/tracking"); err != nil {
+		t.Fatalf("set upstream: %v", err)
+	}
+
+	g, err := New(ctx, dir)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	got, err := g.GetBaseBranch(ctx)
+	if err != nil {
+		t.Fatalf("GetBaseBranch: %v", err)
+	}
+	if got != "staging" {
+		t.Fatalf("GetBaseBranch = %q, want %q", got, "staging")
 	}
 }
 
