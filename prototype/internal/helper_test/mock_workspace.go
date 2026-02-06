@@ -267,12 +267,12 @@ func (m *MockWorkspace) GetSourceContent(taskID string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	work, ok := m.TaskWorks[taskID]
+	_, ok := m.TaskWorks[taskID]
 	if !ok {
 		return "", nil
 	}
 
-	return work.Source.Content, nil
+	return "", nil
 }
 
 // NextSpecificationNumber returns the next specification number.

@@ -82,9 +82,8 @@ func SetupTestTask(t *testing.T, c *conductor.Conductor, title string) *storage.
 	// Create task work
 	taskID := "test-task-" + title
 	work, err := ws.CreateWork(taskID, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: taskContent,
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("Create work: %v", err)
