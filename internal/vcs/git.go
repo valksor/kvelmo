@@ -127,7 +127,7 @@ func (g *Git) Status(ctx context.Context) ([]FileStatus, error) {
 		files = append(files, fs)
 	}
 
-	return files, nil
+	return g.filterAllowedDirtySubmodules(files), nil
 }
 
 // FileStatus represents a file's git status.
@@ -600,45 +600,7 @@ func (g *Git) DiffFiles(ctx context.Context, files []string, contextLines int) (
 //  2. Check if common branch names exist (main, master, develop)
 //  3. Fall back to first branch
 func (g *Git) DetectDefaultBranch(ctx context.Context) (string, error) {
-	// Try to get from origin/HEAD
-	out, err := g.run(ctx, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-	if err == nil {
-		branch := strings.TrimSpace(out)
-		// Remove "origin/" prefix if present
-		branch = strings.TrimPrefix(branch, "origin/")
-		if branch != "" {
-			return branch, nil
-		}
-	}
-
-	// Fall back to checking common branch names
-	candidates := []string{"main", "master", "develop"}
-	for _, name := range candidates {
-		if g.BranchExists(ctx, name) {
-			return name, nil
-		}
-	}
-
-	// Try remote branches
-	remote, _ := g.GetDefaultRemote(ctx)
-	if remote != "" {
-		for _, name := range candidates {
-			if g.RemoteBranchExists(ctx, remote, name) {
-				return name, nil
-			}
-		}
-	}
-
-	// Fall back to first branch
-	branches, err := g.ListBranches(ctx)
-	if err != nil {
-		return "", fmt.Errorf("list branches: %w", err)
-	}
-	if len(branches) > 0 {
-		return branches[0].Name, nil
-	}
-
-	return "", errors.New("no default branch found")
+	return g.GetBaseBranch(ctx)
 }
 
 // RepoInfo contains detected information about the repository.

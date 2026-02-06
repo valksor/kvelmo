@@ -109,17 +109,35 @@ func (g *Git) ListBranches(ctx context.Context) ([]Branch, error) {
 
 // GetBaseBranch finds the base branch (usually main or master).
 func (g *Git) GetBaseBranch(ctx context.Context) (string, error) {
-	// Try common base branch names
-	candidates := []string{"main", "master", "develop"}
-
-	for _, name := range candidates {
-		if g.BranchExists(ctx, name) {
-			return name, nil
+	// 1. Prefer current branch upstream tracking branch.
+	currentBranch, err := g.CurrentBranch(ctx)
+	if err == nil && currentBranch != "" && currentBranch != "HEAD" {
+		if tracking, trackErr := g.GetTrackingBranch(ctx, currentBranch); trackErr == nil {
+			tracking = strings.TrimSpace(tracking)
+			if tracking != "" {
+				if idx := strings.Index(tracking, "/"); idx > 0 && idx < len(tracking)-1 {
+					return tracking[idx+1:], nil
+				}
+			}
 		}
 	}
 
-	// Try to find from remote (use detected remote, not hardcoded "origin")
 	remote, _ := g.GetDefaultRemote(ctx)
+
+	// 2. Try remote HEAD symbolic ref.
+	if remote != "" {
+		out, refErr := g.run(ctx, "symbolic-ref", "--short", fmt.Sprintf("refs/remotes/%s/HEAD", remote))
+		if refErr == nil {
+			branch := strings.TrimSpace(out)
+			branch = strings.TrimPrefix(branch, remote+"/")
+			if branch != "" {
+				return branch, nil
+			}
+		}
+	}
+
+	// 3. Try known candidate branch names (remote first, then local).
+	candidates := []string{"dev-asc", "dev", "staging", "main", "master", "develop"}
 	if remote != "" {
 		for _, name := range candidates {
 			if g.RemoteBranchExists(ctx, remote, name) {
@@ -127,8 +145,13 @@ func (g *Git) GetBaseBranch(ctx context.Context) (string, error) {
 			}
 		}
 	}
+	for _, name := range candidates {
+		if g.BranchExists(ctx, name) {
+			return name, nil
+		}
+	}
 
-	// Fall back to first branch
+	// 4. Fall back to first local branch.
 	branches, err := g.ListBranches(ctx)
 	if err != nil {
 		return "", err
