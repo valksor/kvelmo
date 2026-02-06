@@ -186,209 +186,233 @@ export default function Quick() {
         </p>
       </div>
 
-      {/* Create Form */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body">
-          <h3 className="font-medium mb-4 flex items-center gap-2">
-            <Plus size={18} />
-            New Quick Task
-          </h3>
-
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Title (optional)</span>
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Brief summary"
-                className="input input-bordered"
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Description *</span>
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What needs to be done?"
-                className="textarea textarea-bordered h-24"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Priority</span>
-                </label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(Number(e.target.value))}
-                  className="select select-bordered"
-                >
-                  <option value={0}>Low</option>
-                  <option value={1}>Normal</option>
-                  <option value={2}>High</option>
-                </select>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        {/* Create Form */}
+        <div className="card bg-base-100 shadow-sm border border-base-300/60 xl:col-span-7">
+          <div className="card-body gap-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Plus size={18} />
+                  New Quick Task
+                </h3>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Capture a task fast, then refine it later if needed.
+                </p>
               </div>
+              <span className="badge badge-primary badge-outline">Quick entry</span>
+            </div>
 
+            <form onSubmit={handleCreate} className="space-y-5">
               <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Labels (comma-separated)</span>
+                <label className="label py-1">
+                  <span className="label-text font-medium">Title (optional)</span>
                 </label>
                 <input
                   type="text"
-                  value={labels}
-                  onChange={(e) => setLabels(e.target.value)}
-                  placeholder="bug, frontend, urgent"
-                  className="input input-bordered"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Brief summary"
+                  className="input input-bordered w-full"
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!description.trim() || createMutation.isPending}
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus size={18} />
-              )}
-              Create Task
-            </button>
-          </form>
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text font-medium">Description *</span>
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What needs to be done?"
+                  className="textarea textarea-bordered h-28 w-full"
+                  required
+                />
+                <label className="label py-1">
+                  <span className="label-text-alt text-base-content/55">
+                    Be specific enough that someone else could start work directly.
+                  </span>
+                </label>
+              </div>
 
-          {createMutation.isError && (
-            <div className="alert alert-error mt-4">
-              <AlertCircle size={18} />
-              <span>{createMutation.error.message}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Source Import (Collapsible) */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body">
-          <button
-            type="button"
-            className="flex items-center justify-between w-full text-left"
-            onClick={() => setShowSourceForm(!showSourceForm)}
-          >
-            <h3 className="font-medium flex items-center gap-2">
-              <ExternalLink size={18} />
-              Import from External Source
-            </h3>
-            {showSourceForm ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
-
-          {showSourceForm && (
-            <form onSubmit={handleSourceSubmit} className="space-y-4 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Provider</span>
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Priority</span>
                   </label>
                   <select
-                    value={sourceProvider}
-                    onChange={(e) => setSourceProvider(e.target.value)}
-                    className="select select-bordered"
+                    value={priority}
+                    onChange={(e) => setPriority(Number(e.target.value))}
+                    className="select select-bordered w-full"
                   >
-                    <option value="github">GitHub</option>
-                    <option value="gitlab">GitLab</option>
-                    <option value="jira">Jira</option>
-                    <option value="linear">Linear</option>
-                    <option value="asana">Asana</option>
-                    <option value="notion">Notion</option>
-                    <option value="trello">Trello</option>
+                    <option value={0}>Low</option>
+                    <option value={1}>Normal</option>
+                    <option value={2}>High</option>
                   </select>
                 </div>
 
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Reference (URL or ID)</span>
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Labels (comma-separated)</span>
                   </label>
                   <input
                     type="text"
-                    value={sourceRef}
-                    onChange={(e) => setSourceRef(e.target.value)}
-                    placeholder="https://github.com/org/repo/issues/123"
-                    className="input input-bordered"
-                    required
+                    value={labels}
+                    onChange={(e) => setLabels(e.target.value)}
+                    placeholder="bug, frontend, urgent"
+                    className="input input-bordered w-full"
                   />
                 </div>
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Notes (optional)</span>
-                </label>
-                <textarea
-                  value={sourceNotes}
-                  onChange={(e) => setSourceNotes(e.target.value)}
-                  placeholder="Additional context or instructions"
-                  className="textarea textarea-bordered h-20"
-                />
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  className="btn btn-primary w-full sm:w-auto"
+                  disabled={!description.trim() || createMutation.isPending}
+                >
+                  {createMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus size={18} />
+                  )}
+                  Create Task
+                </button>
               </div>
-
-              <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={sourceOptimize}
-                    onChange={(e) => setSourceOptimize(e.target.checked)}
-                    className="checkbox checkbox-sm"
-                  />
-                  <span className="label-text">Optimize with AI after import</span>
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-secondary"
-                disabled={!sourceRef.trim() || submitSourceMutation.isPending}
-              >
-                {submitSourceMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ExternalLink size={18} />
-                )}
-                Import & Submit
-              </button>
-
-              {submitSourceMutation.isSuccess && (
-                <div className="alert alert-success mt-2">
-                  <span>
-                    Task imported!{' '}
-                    {submitSourceMutation.data.external_url && (
-                      <a
-                        href={submitSourceMutation.data.external_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        View →
-                      </a>
-                    )}
-                  </span>
-                </div>
-              )}
-
-              {submitSourceMutation.isError && (
-                <div className="alert alert-error mt-2">
-                  <AlertCircle size={18} />
-                  <span>{submitSourceMutation.error.message}</span>
-                </div>
-              )}
             </form>
-          )}
+
+            {createMutation.isError && (
+              <div className="alert alert-error">
+                <AlertCircle size={18} />
+                <span>{createMutation.error.message}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Source Import (Collapsible) */}
+        <div className="card bg-base-100 shadow-sm border border-base-300/60 xl:col-span-5">
+          <div className="card-body gap-0">
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-left pb-4 border-b border-base-300"
+              onClick={() => setShowSourceForm(!showSourceForm)}
+            >
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <ExternalLink size={18} />
+                  Import from External Source
+                </h3>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Pull an existing issue, ticket, or task into your queue.
+                </p>
+              </div>
+              {showSourceForm ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+
+            {showSourceForm && (
+              <form onSubmit={handleSourceSubmit} className="space-y-5 pt-5">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text font-medium">Provider</span>
+                    </label>
+                    <select
+                      value={sourceProvider}
+                      onChange={(e) => setSourceProvider(e.target.value)}
+                      className="select select-bordered w-full"
+                    >
+                      <option value="github">GitHub</option>
+                      <option value="gitlab">GitLab</option>
+                      <option value="jira">Jira</option>
+                      <option value="linear">Linear</option>
+                      <option value="asana">Asana</option>
+                      <option value="notion">Notion</option>
+                      <option value="trello">Trello</option>
+                    </select>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text font-medium">Reference (URL or ID)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={sourceRef}
+                      onChange={(e) => setSourceRef(e.target.value)}
+                      placeholder="https://github.com/org/repo/issues/123"
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Notes (optional)</span>
+                  </label>
+                  <textarea
+                    value={sourceNotes}
+                    onChange={(e) => setSourceNotes(e.target.value)}
+                    placeholder="Additional context or instructions"
+                    className="textarea textarea-bordered h-24 w-full"
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label cursor-pointer justify-start gap-3 py-1">
+                    <input
+                      type="checkbox"
+                      checked={sourceOptimize}
+                      onChange={(e) => setSourceOptimize(e.target.checked)}
+                      className="checkbox checkbox-sm"
+                    />
+                    <span className="label-text">Optimize with AI after import</span>
+                  </label>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    className="btn btn-secondary w-full sm:w-auto"
+                    disabled={!sourceRef.trim() || submitSourceMutation.isPending}
+                  >
+                    {submitSourceMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ExternalLink size={18} />
+                    )}
+                    Import & Submit
+                  </button>
+                </div>
+
+                {submitSourceMutation.isSuccess && (
+                  <div className="alert alert-success mt-2">
+                    <span>
+                      Task imported!{' '}
+                      {submitSourceMutation.data.external_url && (
+                        <a
+                          href={submitSourceMutation.data.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          View →
+                        </a>
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {submitSourceMutation.isError && (
+                  <div className="alert alert-error mt-2">
+                    <AlertCircle size={18} />
+                    <span>{submitSourceMutation.error.message}</span>
+                  </div>
+                )}
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
@@ -424,7 +448,7 @@ export default function Quick() {
                   key={task.id}
                   className="border border-base-300 rounded-lg p-4 hover:bg-base-200/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-medium truncate">{task.title}</h4>
@@ -445,7 +469,7 @@ export default function Quick() {
                       )}
                     </div>
 
-                    <div className="flex gap-1 flex-shrink-0">
+                    <div className="flex flex-wrap sm:justify-end gap-1.5 flex-shrink-0">
                       <button
                         className="btn btn-ghost btn-xs"
                         onClick={() => handleOptimize(task.id)}

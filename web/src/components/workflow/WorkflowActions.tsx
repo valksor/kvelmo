@@ -43,7 +43,7 @@ interface ActionConfig {
 
 const isActive = (s: WorkflowState) => s.endsWith('ing')
 
-const actions: ActionConfig[] = [
+const primaryActions: ActionConfig[] = [
   {
     action: 'plan',
     label: 'Plan',
@@ -72,6 +72,9 @@ const actions: ActionConfig[] = [
     className: 'btn-success',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
   },
+]
+
+const advancedActions: ActionConfig[] = [
   {
     action: 'sync',
     label: 'Sync',
@@ -135,6 +138,7 @@ export function WorkflowActions({
 
   // Implementation options state
   const [showImplementOptions, setShowImplementOptions] = useState(false)
+  const [showAdvancedActions, setShowAdvancedActions] = useState(false)
   const [selectedComponent, setSelectedComponent] = useState('')
   const [parallelCount, setParallelCount] = useState(0)
 
@@ -184,7 +188,7 @@ export function WorkflowActions({
     executeAction({ action: 'implement', implementOptions: options })
   }
 
-  const implementConfig = actions.find((a) => a.action === 'implement')!
+  const implementConfig = primaryActions.find((a) => a.action === 'implement')!
   const isImplementDisabled = isPending || implementConfig.disabled(state, hasTask, progressPhase)
 
   return (
@@ -227,12 +231,12 @@ export function WorkflowActions({
 
         {/* Primary actions */}
         <div className="flex flex-col gap-2">
-          {actions.map((config) => {
+          {primaryActions.map((config) => {
             // Special handling for implement button
             if (config.action === 'implement') {
               return (
                 <div key={config.action} className="flex flex-col gap-1">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-stretch">
                     <button
                       className={`btn ${config.className} justify-start gap-2 flex-1`}
                       disabled={isImplementDisabled}
@@ -241,19 +245,21 @@ export function WorkflowActions({
                       {config.icon}
                       {config.label}
                     </button>
-                    {/* Options toggle button */}
-                    <button
-                      className={`btn ${config.className} btn-square`}
-                      disabled={isImplementDisabled}
-                      onClick={() => setShowImplementOptions(!showImplementOptions)}
-                      title="Implementation options"
-                    >
-                      {showImplementOptions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    </button>
+
+                    {showAdvancedActions && (
+                      <button
+                        className={`btn ${config.className} btn-square`}
+                        disabled={isImplementDisabled}
+                        onClick={() => setShowImplementOptions(!showImplementOptions)}
+                        title="Implementation options"
+                      >
+                        {showImplementOptions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      </button>
+                    )}
                   </div>
 
                   {/* Implementation options panel */}
-                  {showImplementOptions && (
+                  {showAdvancedActions && showImplementOptions && (
                     <div className="p-3 bg-base-200/50 rounded-lg space-y-3 mt-1">
                       <div>
                         <label className="block text-xs font-medium text-base-content/60 mb-1">
@@ -319,19 +325,53 @@ export function WorkflowActions({
 
         {/* Secondary actions */}
         <div className="divider my-2" />
-        <div className="flex flex-wrap gap-1">
-          {secondaryActions.map((config) => (
-            <button
-              key={config.action}
-              className={`btn ${config.className}`}
-              disabled={isPending || config.disabled(state, hasTask, progressPhase)}
-              onClick={() => handleAction(config)}
-              title={config.label}
-            >
-              {config.icon}
-            </button>
-          ))}
-        </div>
+        <button
+          className="btn btn-ghost btn-sm justify-start gap-2"
+          type="button"
+          onClick={() => {
+            const next = !showAdvancedActions
+            setShowAdvancedActions(next)
+            if (!next) {
+              setShowImplementOptions(false)
+              setSelectedComponent('')
+              setParallelCount(0)
+            }
+          }}
+        >
+          {showAdvancedActions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          Advanced actions
+        </button>
+
+        {showAdvancedActions && (
+          <>
+            <div className="flex flex-col gap-2">
+              {advancedActions.map((config) => (
+                <button
+                  key={config.action}
+                  className={`btn ${config.className} justify-start gap-2`}
+                  disabled={isPending || config.disabled(state, hasTask, progressPhase)}
+                  onClick={() => handleAction(config)}
+                >
+                  {config.icon}
+                  {config.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {secondaryActions.map((config) => (
+                <button
+                  key={config.action}
+                  className={`btn ${config.className}`}
+                  disabled={isPending || config.disabled(state, hasTask, progressPhase)}
+                  onClick={() => handleAction(config)}
+                  title={config.label}
+                >
+                  {config.icon}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

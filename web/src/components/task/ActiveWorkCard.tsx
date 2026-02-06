@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { GitBranch, Clock, FolderGit2, ExternalLink, HelpCircle, Eye } from 'lucide-react'
+import {
+  GitBranch,
+  Clock,
+  FolderGit2,
+  ExternalLink,
+  HelpCircle,
+  Eye,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { WorkflowState, ProgressPhase } from '@/types/api'
 import { TaskContentModal } from './TaskContentModal'
@@ -24,6 +33,7 @@ interface ActiveWorkCardProps {
 
 export function ActiveWorkCard({ task, work, progressPhase }: ActiveWorkCardProps) {
   const [showModal, setShowModal] = useState(false)
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
 
   if (!task) {
     return null
@@ -86,27 +96,7 @@ export function ActiveWorkCard({ task, work, progressPhase }: ActiveWorkCardProp
             </div>
           )}
 
-          {/* Metadata grid */}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 mt-4 text-sm">
-            {task.branch && (
-              <div>
-                <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
-                  Branch
-                </dt>
-                <dd className="font-mono text-base-content flex items-center gap-1">
-                  <GitBranch size={14} className="text-base-content/40" />
-                  {task.branch}
-                </dd>
-              </div>
-            )}
-            {task.ref && (
-              <div>
-                <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
-                  Source
-                </dt>
-                <dd className="text-base-content truncate">{task.ref}</dd>
-              </div>
-            )}
+          <dl className="grid grid-cols-1 mt-4 text-sm">
             <div>
               <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
                 Started
@@ -116,21 +106,58 @@ export function ActiveWorkCard({ task, work, progressPhase }: ActiveWorkCardProp
                 {startedAgo}
               </dd>
             </div>
-            {task.worktree_path && (
-              <div>
-                <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
-                  Worktree
-                </dt>
-                <dd
-                  className="font-mono text-base-content truncate flex items-center gap-1"
-                  title={task.worktree_path}
-                >
-                  <FolderGit2 size={14} className="text-base-content/40" />
-                  {task.worktree_path}
-                </dd>
-              </div>
-            )}
           </dl>
+
+          {(task.branch || task.ref || task.worktree_path) && (
+            <div className="mt-3">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm px-0"
+                onClick={() => setShowTechnicalDetails((prev) => !prev)}
+              >
+                {showTechnicalDetails ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                Technical details
+              </button>
+
+              {showTechnicalDetails && (
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 mt-2 text-sm p-3 rounded-lg bg-base-200/50">
+                  {task.branch && (
+                    <div>
+                      <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
+                        Branch
+                      </dt>
+                      <dd className="font-mono text-base-content flex items-center gap-1">
+                        <GitBranch size={14} className="text-base-content/40" />
+                        {task.branch}
+                      </dd>
+                    </div>
+                  )}
+                  {task.ref && (
+                    <div>
+                      <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
+                        Source
+                      </dt>
+                      <dd className="text-base-content truncate">{task.ref}</dd>
+                    </div>
+                  )}
+                  {task.worktree_path && (
+                    <div>
+                      <dt className="text-base-content/60 text-xs font-medium uppercase tracking-wide mb-1">
+                        Worktree
+                      </dt>
+                      <dd
+                        className="font-mono text-base-content truncate flex items-center gap-1"
+                        title={task.worktree_path}
+                      >
+                        <FolderGit2 size={14} className="text-base-content/40" />
+                        {task.worktree_path}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </div>
+          )}
 
           {/* Indicators */}
           {state === 'waiting' && (
