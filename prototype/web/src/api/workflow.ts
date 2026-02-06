@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from './client'
-import type { StatusResponse, TaskResponse, WorkflowAction } from '@/types/api'
+import type { StatusResponse, TaskResponse, WorkflowAction, ImplementOptions } from '@/types/api'
 
 /**
  * Hook to get server status and workflow state
@@ -31,16 +31,41 @@ export function useWorkflowAction() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ action, options }: { action: WorkflowAction; options?: Record<string, unknown> }) => {
-      return apiRequest(`/workflow/${action}`, {
+    mutationFn: async ({
+      action,
+      options,
+      implementOptions,
+    }: {
+      action: WorkflowAction
+      options?: Record<string, unknown>
+      implementOptions?: ImplementOptions
+    }) => {
+      let endpoint = `/workflow/${action}`
+
+      // Add query params for implement action
+      if (action === 'implement' && implementOptions) {
+        const params = new URLSearchParams()
+        if (implementOptions.component) {
+          params.set('component', implementOptions.component)
+        }
+        if (implementOptions.parallel && implementOptions.parallel > 0) {
+          params.set('parallel', String(implementOptions.parallel))
+        }
+        const queryString = params.toString()
+        if (queryString) {
+          endpoint += `?${queryString}`
+        }
+      }
+
+      return apiRequest(endpoint, {
         method: 'POST',
         body: options ? JSON.stringify(options) : undefined,
       })
     },
     onSuccess: () => {
-      // Invalidate relevant queries after action
-      queryClient.invalidateQueries({ queryKey: ['task'] })
-      queryClient.invalidateQueries({ queryKey: ['status'] })
+      // Force immediate refetch for responsive UI after user action
+      queryClient.refetchQueries({ queryKey: ['task', 'active'] })
+      queryClient.refetchQueries({ queryKey: ['status'] })
     },
   })
 }
@@ -59,7 +84,8 @@ export function useAnswerQuestion() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task'] })
+      // Force immediate refetch after answering question
+      queryClient.refetchQueries({ queryKey: ['task', 'active'] })
     },
   })
 }

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { apiRequest } from './client'
 
 export interface Project {
@@ -30,8 +30,6 @@ export function useProjects(enabled: boolean = true) {
  * Hook to switch to a project (global mode)
  */
 export function useSwitchProject() {
-  const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: async (projectPath: string) => {
       return apiRequest('/projects/select', {
@@ -40,8 +38,8 @@ export function useSwitchProject() {
       })
     },
     onSuccess: () => {
-      // Invalidate all queries - mode has changed
-      queryClient.invalidateQueries()
+      // Mode changed - reload to get fresh state
+      window.location.href = '/'
     },
   })
 }

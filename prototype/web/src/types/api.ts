@@ -25,12 +25,16 @@ export interface StatusResponse {
   canSwitchToGlobal?: boolean
 }
 
+// Progress phases for context-aware state display (matches internal/display/display.go)
+export type ProgressPhase = 'started' | 'planned' | 'implemented' | 'reviewed'
+
 // /api/v1/task response
 export interface TaskResponse {
   active: boolean
   task?: {
     id: string
     state: WorkflowState
+    progress_phase: ProgressPhase
     ref: string
     branch: string
     worktree_path: string
@@ -39,6 +43,7 @@ export interface TaskResponse {
   work?: {
     title: string
     external_key: string
+    description?: string
     created_at: string
     updated_at: string
     costs: CostData
@@ -94,10 +99,62 @@ export interface Specification {
   status: 'pending' | 'in_progress' | 'completed'
   created_at: string
   completed_at?: string
+  implemented_files?: string[]
+}
+
+export interface SpecificationDiffResponse {
+  task_id: string
+  specification: number
+  file: string
+  context: number
+  has_diff: boolean
+  diff: string
+}
+
+export interface AgentLogEntry {
+  index: number
+  kind?: string
+  started_at?: string
+  file?: string
+  type?: 'output' | 'error' | 'info'
+  message: string
+}
+
+export interface AgentLogsHistoryResponse {
+  logs: AgentLogEntry[]
+  task_id?: string
+  count?: number
 }
 
 // Workflow actions
-export type WorkflowAction = 'plan' | 'implement' | 'review' | 'finish' | 'undo' | 'redo' | 'abandon' | 'reset'
+export type WorkflowAction =
+  | 'plan'
+  | 'implement'
+  | 'review'
+  | 'finish'
+  | 'sync'
+  | 'undo'
+  | 'redo'
+  | 'abandon'
+  | 'reset'
+
+export interface WorkflowSyncResponse {
+  success: boolean
+  has_changes: boolean
+  changes_summary?: string
+  spec_generated?: string
+  source_updated?: boolean
+  previous_snapshot_path?: string
+  diff_path?: string
+  warnings?: string[]
+  message: string
+}
+
+// Options for implement action (passed as query params)
+export interface ImplementOptions {
+  component?: string
+  parallel?: number
+}
 
 // SSE event types
 export interface SSEEvent {
@@ -179,13 +236,13 @@ export interface BudgetConfig {
 }
 
 export interface MonthlyBudgetSettings {
-  enabled?: boolean
   max_cost?: number
   currency?: string
   warning_at?: number
 }
 
 export interface BudgetSettings {
+  enabled?: boolean
   per_task?: BudgetConfig
   monthly?: MonthlyBudgetSettings
   exchange_rates?: Record<string, number>
@@ -632,6 +689,7 @@ export interface PluginsConfig {
 // Agent aliases
 export interface AgentAliasConfig {
   extends: string
+  binary_path?: string
   description?: string
   components?: string[]
   env?: Record<string, string>
@@ -686,6 +744,7 @@ export interface TaskHistoryItem {
   id: string
   title: string
   state: WorkflowState
+  progress_phase?: ProgressPhase
   created_at: string
   worktree_path?: string
 }

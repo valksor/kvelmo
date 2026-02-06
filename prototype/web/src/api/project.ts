@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiRequest } from './client'
+import { apiRequest, getCsrfToken } from './client'
 
 // ============================================================================
 // Types
@@ -184,9 +184,17 @@ export function useUploadFile() {
       const formData = new FormData()
       formData.append('file', file)
 
+      // Get CSRF token for non-JSON request
+      const csrfToken = await getCsrfToken()
+      const headers: Record<string, string> = {}
+      if (csrfToken) {
+        headers['X-Csrf-Token'] = csrfToken
+      }
+
       const response = await fetch('/api/v1/project/upload', {
         method: 'POST',
         credentials: 'include',
+        headers,
         body: formData,
       })
 
