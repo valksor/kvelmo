@@ -3,6 +3,7 @@ import { Loader2, AlertCircle, Search, FileText, AlertTriangle, Info, CheckCircl
 import { useStandaloneReview, type StandaloneMode, type ReviewIssue } from '@/api/standalone'
 import { useStatus } from '@/api/workflow'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
+import { Checkbox, FormField, TextArea, TextInput } from '@/components/settings/FormField'
 
 export default function Review() {
   const { data: status, isLoading: statusLoading } = useStatus()
@@ -89,113 +90,86 @@ export default function Review() {
         <div className="card-body">
           <h3 className="font-medium mb-4">Review Configuration</h3>
 
-          {/* Mode Selection */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Review Mode</span>
-            </label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as StandaloneMode)}
-              className="select select-bordered"
-            >
-              <option value="uncommitted">Uncommitted Changes</option>
-              <option value="branch">Branch Comparison</option>
-              <option value="range">Commit Range</option>
-              <option value="files">Specific Files</option>
-            </select>
-          </div>
-
-          {/* Mode-specific inputs */}
-          {mode === 'branch' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Base Branch</span>
-              </label>
-              <input
-                type="text"
-                value={baseBranch}
-                onChange={(e) => setBaseBranch(e.target.value)}
-                placeholder="main"
-                className="input input-bordered"
-              />
-            </div>
-          )}
-
-          {mode === 'range' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Commit Range</span>
-              </label>
-              <input
-                type="text"
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-                placeholder="HEAD~3..HEAD"
-                className="input input-bordered"
-              />
-            </div>
-          )}
-
-          {mode === 'files' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">File Paths (comma-separated)</span>
-              </label>
-              <textarea
-                value={files}
-                onChange={(e) => setFiles(e.target.value)}
-                placeholder="src/main.go, internal/handler.go"
-                className="textarea textarea-bordered h-24"
-              />
-            </div>
-          )}
-
-          {/* Agent override */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Agent (optional)</span>
-            </label>
-            <input
-              type="text"
-              value={agent}
-              onChange={(e) => setAgent(e.target.value)}
-              placeholder="Leave empty for default"
-              className="input input-bordered"
-            />
-          </div>
-
-          {/* Checkpoint toggle */}
-          <div className="form-control">
-            <label className="label cursor-pointer justify-start gap-3">
-              <input
-                type="checkbox"
-                checked={createCheckpoint}
-                onChange={(e) => setCreateCheckpoint(e.target.checked)}
-                className="checkbox checkbox-sm"
-              />
-              <span className="label-text">Create checkpoint before review</span>
-            </label>
-          </div>
-
-          {/* Run button */}
-          <button
-            onClick={handleRun}
-            disabled={reviewMutation.isPending}
-            className="btn btn-primary mt-4"
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void handleRun()
+            }}
           >
-            {reviewMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Running Review...
-              </>
-            ) : (
-              <>
-                <Search size={18} />
-                Run Review
-              </>
+            <FormField label="Review Mode">
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as StandaloneMode)}
+                className="select select-bordered w-full"
+              >
+                <option value="uncommitted">Uncommitted Changes</option>
+                <option value="branch">Branch Comparison</option>
+                <option value="range">Commit Range</option>
+                <option value="files">Specific Files</option>
+              </select>
+            </FormField>
+
+            {mode === 'branch' && (
+              <TextInput
+                label="Base Branch"
+                value={baseBranch}
+                onChange={setBaseBranch}
+                placeholder="main"
+              />
             )}
-          </button>
+
+            {mode === 'range' && (
+              <TextInput
+                label="Commit Range"
+                value={range}
+                onChange={setRange}
+                placeholder="HEAD~3..HEAD"
+              />
+            )}
+
+            {mode === 'files' && (
+              <TextArea
+                label="File Paths"
+                hint="Comma-separated paths"
+                value={files}
+                onChange={setFiles}
+                placeholder="src/main.go, internal/handler.go"
+                rows={4}
+              />
+            )}
+
+            <TextInput
+              label="Agent (optional)"
+              value={agent}
+              onChange={setAgent}
+              placeholder="Leave empty for default"
+            />
+
+            <Checkbox
+              label="Create checkpoint before review"
+              checked={createCheckpoint}
+              onChange={setCreateCheckpoint}
+            />
+
+            <button
+              type="submit"
+              disabled={reviewMutation.isPending}
+              className="btn btn-primary w-full"
+            >
+              {reviewMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Running Review...
+                </>
+              ) : (
+                <>
+                  <Search size={18} />
+                  Run Review
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </div>
 
