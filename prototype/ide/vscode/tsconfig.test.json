@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "out"
+    "outDir": "out",
+    "types": ["bun-types"]
   },
   "include": ["src/**/*", "test/**/*"]
 }
