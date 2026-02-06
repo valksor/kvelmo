@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from './client'
-import type { SpecificationsResponse, NotesResponse, CostsResponse } from '@/types/api'
+import type {
+  SpecificationsResponse,
+  NotesResponse,
+  CostsResponse,
+  SpecificationDiffResponse,
+  AgentLogsHistoryResponse,
+} from '@/types/api'
 
 /**
  * Hook for fetching task specifications
@@ -36,6 +42,18 @@ export function useTaskCosts(taskId?: string) {
 }
 
 /**
+ * Hook for fetching persisted agent output history for a task
+ */
+export function useAgentLogsHistory(taskId?: string) {
+  return useQuery({
+    queryKey: ['task', taskId, 'agent-logs'],
+    queryFn: () =>
+      apiRequest<AgentLogsHistoryResponse>(`/agent/logs/history?task_id=${encodeURIComponent(taskId || '')}`),
+    enabled: !!taskId,
+  })
+}
+
+/**
  * Hook for fetching workflow diagram SVG
  */
 export function useWorkflowDiagram() {
@@ -66,6 +84,52 @@ export function useAddNote(taskId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId, 'notes'] })
+    },
+  })
+}
+
+/**
+ * Hook to implement fixes for a specific review
+ */
+export function useImplementReview() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (reviewNumber: number) => {
+      return apiRequest<{ success: boolean; message: string; review_number: number }>(
+        `/workflow/implement/review/${reviewNumber}`,
+        { method: 'POST' }
+      )
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: ['task', 'active'] })
+      queryClient.refetchQueries({ queryKey: ['status'] })
+    },
+  })
+}
+
+interface SpecificationDiffRequest {
+  specNumber: number
+  filePath: string
+  context?: number
+}
+
+/**
+ * Hook to fetch unified diff for a specification implemented file
+ */
+export function useSpecificationFileDiff(taskId?: string) {
+  return useMutation({
+    mutationFn: async ({
+      specNumber,
+      filePath,
+      context = 3,
+    }: SpecificationDiffRequest): Promise<SpecificationDiffResponse> => {
+      const query = new URLSearchParams({
+        file: filePath,
+        context: String(context),
+      })
+
+      return apiRequest<SpecificationDiffResponse>(`/tasks/${taskId}/specs/${specNumber}/diff?${query}`)
     },
   })
 }

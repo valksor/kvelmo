@@ -88,6 +88,31 @@ export interface CloseRequest {
   tab_id: string
 }
 
+export interface SwitchRequest {
+  tab_id: string
+}
+
+export interface BrowserCookie {
+  name: string
+  value: string
+  domain: string
+  path: string
+  secure: boolean
+  http_only: boolean
+  same_site?: string
+  expires?: number
+}
+
+export interface CookiesResponse {
+  success: boolean
+  cookies: BrowserCookie[]
+  count: number
+}
+
+export interface SetCookiesRequest {
+  cookies: BrowserCookie[]
+}
+
 export interface NavigateRequest {
   tab_id?: string
   url: string
@@ -374,6 +399,46 @@ export function useBrowserClose() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['browser'] })
     },
+  })
+}
+
+/**
+ * Hook for switching active tab
+ */
+export function useBrowserSwitch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: SwitchRequest) =>
+      apiRequest('/browser/switch', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['browser'] })
+    },
+  })
+}
+
+/**
+ * Hook for exporting browser cookies
+ */
+export function useBrowserCookies() {
+  return useQuery({
+    queryKey: ['browser', 'cookies'],
+    queryFn: () => apiRequest<CookiesResponse>('/browser/cookies'),
+  })
+}
+
+/**
+ * Hook for importing browser cookies
+ */
+export function useBrowserSetCookies() {
+  return useMutation({
+    mutationFn: (data: SetCookiesRequest) =>
+      apiRequest('/browser/cookies', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   })
 }
 

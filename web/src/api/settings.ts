@@ -12,7 +12,6 @@ export function useSettings(projectId?: string) {
     queryKey: ['settings', projectId],
     queryFn: () => apiRequest<WorkspaceConfig>(url),
     staleTime: 30_000, // Settings don't change often
-    enabled: projectId !== undefined || true, // Always enabled unless explicitly waiting for project selection
   })
 }
 
@@ -53,7 +52,7 @@ export function useTaskHistory(options: { enabled?: boolean } = {}) {
     queryKey: ['tasks', 'history'],
     queryFn: async () => {
       const response = await apiRequest<TaskHistoryResponse>('/tasks')
-      return response.tasks
+      return response.tasks ?? []
     },
     enabled: options.enabled ?? true,
   })

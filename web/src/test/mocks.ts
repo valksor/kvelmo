@@ -117,7 +117,7 @@ export function mockApiEndpoints(overrides: Record<string, unknown> = {}) {
   const defaults: Record<string, unknown> = {
     '/api/v1/status': mockProjectModeStatus,
     '/api/v1/task': mockNoActiveTask,
-    '/api/v1/tasks': mockTaskHistory,
+    '/api/v1/tasks': { tasks: mockTaskHistory, count: mockTaskHistory.length },
     '/api/v1/auth/csrf': { csrf_token: 'test-csrf-token' },
     '/api/v1/settings': mockSettings,
     '/api/v1/agents': { agents: [{ name: 'claude', type: 'cli', available: true }], count: 1 },
