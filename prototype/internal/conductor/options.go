@@ -18,7 +18,7 @@ type Options struct {
 	// Behavior
 	DryRun       bool // If true, don't apply file changes
 	Verbose      bool // Enable verbose output
-	CreateBranch bool // Create git branch for task
+	NoBranch     bool // Skip branch creation (--no-branch)
 	UseWorktree  bool // Create git worktree for task
 	StashChanges bool // Stash uncommitted changes before creating branch
 	AutoPopStash bool // Automatically pop stash after branch creation (default: true)
@@ -91,10 +91,11 @@ type Option func(*Options)
 // DefaultOptions returns default options.
 func DefaultOptions() Options {
 	return Options{
-		AgentName:         "", // Auto-detect
-		Timeout:           30 * time.Minute,
-		DryRun:            false,
-		Verbose:           false,
+		AgentName: "", // Auto-detect
+		Timeout:   30 * time.Minute,
+		DryRun:    false,
+		Verbose:   false,
+		// NoBranch defaults to false (zero value) = branches created by default
 		Stdout:            os.Stdout,
 		Stderr:            os.Stderr,
 		WorkDir:           ".",
@@ -141,10 +142,10 @@ func WithVerbose(enabled bool) Option {
 	}
 }
 
-// WithCreateBranch enables git branch creation.
-func WithCreateBranch(enabled bool) Option {
+// WithNoBranch skips git branch creation (--no-branch).
+func WithNoBranch(enabled bool) Option {
 	return func(o *Options) {
-		o.CreateBranch = enabled
+		o.NoBranch = enabled
 	}
 }
 
@@ -154,7 +155,7 @@ func WithUseWorktree(enabled bool) Option {
 		o.UseWorktree = enabled
 		// Worktree implies branch creation
 		if enabled {
-			o.CreateBranch = true
+			o.NoBranch = false
 		}
 	}
 }

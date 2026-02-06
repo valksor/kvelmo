@@ -107,7 +107,7 @@ func TestCreateQueueTaskFromSource(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	c, err := New(WithWorkDir(tmpDir), WithCreateBranch(false), WithAgent("mock"))
+	c, err := New(WithWorkDir(tmpDir), WithNoBranch(true), WithAgent("mock"))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -218,5 +218,9 @@ func (a *sourceTaskAgent) WithEnv(key, value string) agent.Agent {
 }
 
 func (a *sourceTaskAgent) WithArgs(args ...string) agent.Agent {
+	return a
+}
+
+func (a *sourceTaskAgent) WithRetries(_ int) agent.Agent {
 	return a
 }

@@ -123,7 +123,7 @@ func (c *Conductor) generateUniqueBranchName(ctx context.Context, baseName strin
 
 // createBranchOrWorktree creates a git branch or worktree for the task.
 func (c *Conductor) createBranchOrWorktree(ctx context.Context, taskID string, ni *namingInfo) (*gitInfo, error) {
-	if c.git == nil || !c.opts.CreateBranch {
+	if c.git == nil || c.opts.NoBranch {
 		return &gitInfo{}, nil
 	}
 

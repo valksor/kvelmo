@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
+	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
@@ -79,12 +80,12 @@ func TestWithVerbose(t *testing.T) {
 	}
 }
 
-func TestWithCreateBranch(t *testing.T) {
+func TestWithNoBranch(t *testing.T) {
 	opts := DefaultOptions()
-	WithCreateBranch(true)(&opts)
+	WithNoBranch(true)(&opts)
 
-	if opts.CreateBranch != true {
-		t.Errorf("CreateBranch = %v, want true", opts.CreateBranch)
+	if opts.NoBranch != true {
+		t.Errorf("NoBranch = %v, want true", opts.NoBranch)
 	}
 }
 
@@ -286,13 +287,12 @@ func TestTaskStatusStruct(t *testing.T) {
 
 func TestOptionsStruct(t *testing.T) {
 	opts := Options{
-		AgentName:    "claude",
-		Timeout:      15 * time.Minute,
-		DryRun:       true,
-		Verbose:      true,
-		CreateBranch: true,
-		AutoInit:     true,
-		WorkDir:      "/tmp/work",
+		AgentName: "claude",
+		Timeout:   15 * time.Minute,
+		DryRun:    true,
+		Verbose:   true,
+		AutoInit:  true,
+		WorkDir:   "/tmp/work",
 	}
 
 	if opts.AgentName != "claude" {
@@ -303,9 +303,6 @@ func TestOptionsStruct(t *testing.T) {
 	}
 	if opts.DryRun != true {
 		t.Errorf("DryRun = %v, want true", opts.DryRun)
-	}
-	if opts.CreateBranch != true {
-		t.Errorf("CreateBranch = %v, want true", opts.CreateBranch)
 	}
 	if opts.AutoInit != true {
 		t.Errorf("AutoInit = %v, want true", opts.AutoInit)
@@ -531,6 +528,38 @@ func TestPublishProgress_WithCallback(t *testing.T) {
 	}
 	if capturedPercent != 75 {
 		t.Errorf("percent = %d, want 75", capturedPercent)
+	}
+}
+
+func TestPublishProgress_IncludesTaskID(t *testing.T) {
+	c, err := New()
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	c.activeTask = &storage.ActiveTask{
+		ID:    "task-123",
+		State: "planning",
+	}
+
+	eventCh := make(chan eventbus.Event, 1)
+	subID := c.eventBus.SubscribeAll(func(e eventbus.Event) {
+		if e.Type == events.TypeProgress {
+			eventCh <- e
+		}
+	})
+	defer c.eventBus.Unsubscribe(subID)
+
+	c.publishProgress("test message", 42)
+
+	select {
+	case e := <-eventCh:
+		gotTaskID, _ := e.Data["task_id"].(string)
+		if gotTaskID != "task-123" {
+			t.Errorf("task_id = %q, want %q", gotTaskID, "task-123")
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for progress event")
 	}
 }
 
@@ -2040,6 +2069,10 @@ func (a *testAgent) WithArgs(args ...string) agent.Agent {
 	return a
 }
 
+func (a *testAgent) WithRetries(_ int) agent.Agent {
+	return a
+}
+
 // Tests for DeleteWork tri-state behavior
 
 func TestBoolPtr(t *testing.T) {
@@ -2392,6 +2425,145 @@ func TestOrchestrationOptions(t *testing.T) {
 			}
 			if c.opts.ParallelCount != tt.parallelCount {
 				t.Errorf("ParallelCount = %q, want %q", c.opts.ParallelCount, tt.parallelCount)
+			}
+		})
+	}
+}
+
+func TestCheckActiveTaskConflict_SyncsWithDisk(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupMemory    bool
+		setupDisk      bool
+		memoryTaskID   string
+		diskTaskID     string
+		wantConflict   bool
+		wantActiveTask bool
+		wantTaskID     string // expected activeTask.ID after sync (empty = don't check)
+	}{
+		{
+			name:           "task abandoned externally clears stale state",
+			setupMemory:    true,
+			memoryTaskID:   "stale-task-123",
+			setupDisk:      false,
+			wantConflict:   false,
+			wantActiveTask: false,
+		},
+		{
+			name:           "task started externally loads from disk",
+			setupMemory:    false,
+			setupDisk:      true,
+			diskTaskID:     "new-task-456",
+			wantConflict:   true,
+			wantActiveTask: true,
+			wantTaskID:     "new-task-456",
+		},
+		{
+			name:           "no task anywhere returns no conflict",
+			setupMemory:    false,
+			setupDisk:      false,
+			wantConflict:   false,
+			wantActiveTask: false,
+		},
+		{
+			name:           "in sync returns conflict",
+			setupMemory:    true,
+			memoryTaskID:   "task-789",
+			setupDisk:      true,
+			diskTaskID:     "task-789",
+			wantConflict:   true,
+			wantActiveTask: true,
+			wantTaskID:     "task-789",
+		},
+		{
+			name:           "ID mismatch reloads from disk",
+			setupMemory:    true,
+			memoryTaskID:   "old-task",
+			setupDisk:      true,
+			diskTaskID:     "new-task",
+			wantConflict:   true,
+			wantActiveTask: true,
+			wantTaskID:     "new-task",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			ctx := context.Background()
+
+			ws := openTestWorkspace(t, tmpDir)
+			if err := ws.EnsureInitialized(); err != nil {
+				t.Fatalf("EnsureInitialized: %v", err)
+			}
+
+			c, err := New(WithWorkDir(tmpDir))
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			c.workspace = ws
+
+			// Set up in-memory state
+			if tt.setupMemory {
+				c.activeTask = &storage.ActiveTask{
+					ID:    tt.memoryTaskID,
+					State: "idle",
+				}
+
+				// Create work so ClearStaleTask doesn't interfere
+				work, wErr := ws.CreateWork(tt.memoryTaskID, storage.SourceInfo{
+					Type: "file", Ref: "task.md",
+				})
+				if wErr != nil {
+					t.Fatalf("CreateWork for memory task: %v", wErr)
+				}
+				c.taskWork = work
+			}
+
+			// Set up disk state
+			if tt.setupDisk {
+				// Create work directory for the disk task
+				if _, wErr := ws.CreateWork(tt.diskTaskID, storage.SourceInfo{
+					Type: "file", Ref: "task.md",
+				}); wErr != nil {
+					t.Fatalf("CreateWork for disk task: %v", wErr)
+				}
+
+				diskActive := storage.NewActiveTask(tt.diskTaskID, "file:task.md",
+					ws.EffectiveWorkDir(tt.diskTaskID, storage.NewDefaultWorkspaceConfig()))
+				if err := ws.SaveActiveTask(diskActive); err != nil {
+					t.Fatalf("SaveActiveTask: %v", err)
+				}
+			}
+
+			conflict := c.CheckActiveTaskConflict(ctx)
+
+			if tt.wantConflict && conflict == nil {
+				t.Error("CheckActiveTaskConflict() = nil, want conflict")
+			}
+			if !tt.wantConflict && conflict != nil {
+				t.Errorf("CheckActiveTaskConflict() = %+v, want nil", conflict)
+			}
+
+			if tt.wantActiveTask && c.activeTask == nil {
+				t.Error("activeTask is nil after sync, want non-nil")
+			}
+			if !tt.wantActiveTask && c.activeTask != nil {
+				t.Errorf("activeTask = %+v after sync, want nil", c.activeTask)
+			}
+
+			if tt.wantTaskID != "" && c.activeTask != nil {
+				if c.activeTask.ID != tt.wantTaskID {
+					t.Errorf("activeTask.ID = %q, want %q", c.activeTask.ID, tt.wantTaskID)
+				}
+			}
+
+			// Verify machine is reset when task was cleared
+			if !tt.wantActiveTask && tt.setupMemory {
+				if c.machine.State() != workflow.StateIdle {
+					t.Errorf("machine state = %q after clearing stale task, want %q",
+						c.machine.State(), workflow.StateIdle)
+				}
 			}
 		})
 	}
