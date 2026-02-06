@@ -415,7 +415,7 @@ func TestHandler_WorkflowAnswer_FormEncoded_NoConductor(t *testing.T) {
 	ctx := context.Background()
 	client := testHTTPClient()
 
-	// Test form-urlencoded submission (how HTMX forms send data)
+	// Test form-urlencoded submission
 	body := bytes.NewBufferString("answer=test+response")
 	resp, err := doPostForm(ctx, client, srv.URL()+"/api/v1/workflow/answer", body)
 	require.NoError(t, err)

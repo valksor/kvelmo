@@ -468,11 +468,11 @@ type BrowserTabData struct {
 type MemoryData struct {
 	PageData
 
-	// Search results (populated via HTMX)
+	// Search results
 	Results []MemoryResultData
 	Query   string
 
-	// Stats (populated via HTMX)
+	// Stats
 	Stats *MemoryStatsData
 
 	// Whether memory system is available
@@ -758,11 +758,11 @@ type GuideActionData struct {
 type LinksData struct {
 	PageData
 
-	// Search results (populated via HTMX)
+	// Search results
 	Entities []LinkedEntityData
 	Query    string
 
-	// Stats (populated via HTMX)
+	// Stats
 	Stats *LinksStatsData
 
 	// Whether links system is available
@@ -828,7 +828,7 @@ type HierarchyData struct {
 type LibraryData struct {
 	PageData
 
-	// Collections (populated via HTMX)
+	// Collections
 	Collections []LibraryCollectionData
 	Query       string
 

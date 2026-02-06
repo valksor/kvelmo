@@ -265,7 +265,7 @@ mehr agents | providers | templates | update | generate-secret
 | CLI               | `cmd/mehr/main.go` → `commands.Execute()` → Cobra handlers     |
 | Interactive CLI   | → `interactive` → REPL → command dispatcher                    |
 | Web UI            | → `serve` → `internal/server/server.go` → handlers → templates |
-| Interactive Web   | → `/interactive` handler → SSE + HTMX                          |
+| Interactive Web   | → `/interactive` handler → REST API + SSE                      |
 | JetBrains Plugin  | → `ide/jetbrains/` → Kotlin plugin → REST API + SSE            |
 | VS Code Extension | → `ide/vscode/` → TypeScript extension → REST API + SSE        |
 

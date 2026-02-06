@@ -278,7 +278,7 @@ type selectProjectRequest struct {
 func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 	var projectPath string
 
-	// Check if JSON request (API client) or form (HTMX)
+	// Check if JSON request or form-encoded
 	contentType := r.Header.Get("Content-Type")
 	if contentType == "application/json" {
 		var req selectProjectRequest
@@ -290,7 +290,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 
 		projectPath = req.Path
 	} else {
-		// Form data (HTMX)
+		// Form-encoded
 		if err := r.ParseForm(); err != nil {
 			s.writeError(w, http.StatusBadRequest, "invalid form data")
 
@@ -315,7 +315,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("switched to project mode", "path", projectPath)
 
-	// Return JSON for API clients, redirect for HTMX
+	// Return JSON for API clients, redirect for browser
 	if contentType == "application/json" {
 		s.writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -325,7 +325,7 @@ func (s *Server) handleSelectProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect for HTMX/browser
+	// Redirect for browser
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

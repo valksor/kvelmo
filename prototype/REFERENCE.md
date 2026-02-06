@@ -667,7 +667,7 @@ Browser POST /api/v1/workflow/plan
   → events.Bus publishes progress events
   → internal/server/handlers_stream.go picks up events
   → SSE stream: data: {"type": "progress", "message": "..."}
-  → Browser (HTMX) updates UI reactively
+  → React frontend updates UI via SSE events
 ```
 
 ### MCP Tool Call → Result

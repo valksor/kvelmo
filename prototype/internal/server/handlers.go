@@ -83,7 +83,7 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 		}
 		ref = taskRef
 	} else if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
-		// Handle form submission (from HTMX)
+		// Handle form submission
 		if err := r.ParseForm(); err != nil {
 			s.writeError(w, http.StatusBadRequest, "invalid form data: "+err.Error())
 
