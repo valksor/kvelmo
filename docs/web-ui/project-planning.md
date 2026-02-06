@@ -6,11 +6,8 @@ The project planning interface provides a complete workflow for breaking down la
 
 Project planning lets you:
 - **Create task breakdowns** from source files, directories, or external providers
-- **View task queues** with status, priority, and dependencies
-- **Edit task properties** inline
-- **Reorder tasks** with AI assistance or manual control
-- **Submit to providers** (GitHub, Jira, Wrike, etc.)
-- **Start implementation** of individual tasks
+- **Manage queues** (list, select, delete)
+- **Route queue task execution** through the dashboard
 
 ## Accessing in the Web UI
 
@@ -67,146 +64,21 @@ To disable schema-driven extraction, uncheck the **"Use schema-driven extraction
 
 **Note:** Schema extraction is enabled by default and recommended for most use cases. Only disable it if you encounter specific issues or need faster processing.
 
-### Viewing the Task Queue
+### Queue Task Management Location
 
-After creating a breakdown, you'll see a table of all tasks:
+Queue task operations are intentionally centralized in one place:
+- Open the **Dashboard**
+- Go to **Tasks**
+- Switch to the **Queue** view
 
-| Column     | Description                             |
-|------------|-----------------------------------------|
-| ID         | Task identifier (indented for subtasks) |
-| Title      | Task name                               |
-| Status     | `ready`, `blocked`, `submitted`         |
-| Priority   | 1 (high) to 5 (low)                     |
-| Parent     | Parent task ID (if this is a subtask)   |
-| Depends On | List of task IDs this task requires     |
+From that single view, you can:
+- Inspect queue tasks and dependency structure
+- Edit task properties
+- Reorder tasks with AI
+- Submit tasks to providers
+- Start implementation
 
-**Dependency Visualization:**
-- Enable **"Show Dependencies"** to see the task relationship graph
-- Blocked tasks are visually distinct
-- Subtasks show with a tree indicator (└) next to their ID
-- Click a task ID to jump to its dependencies
-
-### Editing Tasks
-
-Modify any task property:
-
-1. Find the task in the queue
-2. Click **"Edit"** or click directly on the field
-3. Modify:
-   - **Title** - Task name
-   - **Description** - Full task details
-   - **Priority** - 1-5 scale
-   - **Status** - `ready`, `blocked`, `submitted`
-   - **Parent** - Parent task ID (makes this a subtask; leave empty for top-level)
-   - **Dependencies** - Comma-separated task IDs
-   - **Labels** - Task tags
-   - **Assignee** - Task owner (for providers)
-4. Click **"Save"**
-
-**Parent vs Dependencies:**
-
-- **Parent** (hierarchical): Organizational grouping in providers (e.g., Wrike subtasks, Jira sub-issues)
-- **Dependencies** (execution order): Task B cannot start until task A completes
-
-A task can have BOTH a parent AND dependencies. For example, a subtask under "Authentication" might depend on "Database Schema" being completed first.
-
-### Reordering Tasks
-
-Use AI to optimize task order, or manually arrange tasks:
-
-**AI Reordering:**
-1. Click **"Auto Reorder"**
-2. The AI analyzes:
-   - Dependencies (blocking tasks go first)
-   - Priorities (higher priority preferred)
-   - Logical grouping (related tasks kept together)
-3. Review the suggested order
-4. Click **"Apply"** or **"Discard"**
-
-**Manual Reordering:**
-1. Click **"Reorder"** on a task
-2. Choose:
-   - **"Move before [task]"** - Reposition above another task
-   - **"Move after [task]"** - Reposition below another task
-3. Repeat until satisfied
-
-### Submitting to Providers
-
-Submit tasks to external project management systems:
-
-1. Click **"Submit to Provider"**
-2. Choose provider:
-   - GitHub (creates issues/epics)
-   - GitLab (creates issues/epics)
-   - Jira (creates issues with links)
-   - Wrike (creates tasks with dependencies)
-   - Linear, Asana, ClickUp, and more
-3. Configure:
-   - **Create Epic** - Group tasks under a parent
-   - **Additional Labels** - Add tags to all tasks
-   - **Dry Run** - Preview without creating
-   - **Select Tasks** - Choose specific tasks for selective submit (optional)
-4. Click **"Submit"**
-
-**Selective Submit:**
-
-You can submit specific tasks instead of the entire queue:
-- Select individual tasks using checkboxes
-- Or specify task IDs in the **"Task IDs"** field (comma-separated)
-- Leave empty to submit all tasks
-
-This is useful when:
-- You want to review tasks before submitting in batches
-- Some tasks need more work before being ready
-- You're working with a provider that has rate limits
-
-**Dependency and Subtask Support by Provider:**
-
-| Provider    | Dependencies                       | Subtasks              |
-|-------------|------------------------------------|-----------------------|
-| **Wrike**   | Native FinishToStart               | Native subtasks       |
-| **GitHub**  | Task lists in epic body            | Issues with milestone |
-| **GitLab**  | Task lists in description          | Task notes            |
-| **Jira**    | Issue links (blocks/is-blocked-by) | Native sub-issues     |
-| **Asana**   | Native dependencies                | Native subtasks       |
-| **ClickUp** | Native dependencies                | Native subtasks       |
-| **Linear**  | Description-based                  | Sub-issues            |
-
-When submitting tasks with parent relationships, parents are automatically created first and subtasks include the provider's parent ID.
-
-### Starting Implementation
-
-Begin working on a task from your queue:
-
-1. Select a task with status `ready`
-2. Click **"Start Task"**
-3. The task loads into the main Mehrhof workflow
-4. Proceed with planning, implementation, and completion
-
-**After starting:**
-- Task status changes to `in_progress`
-- Other tasks dependent on it become `blocked`
-- Navigate back to project planning to start the next task
-
-### Task Status Flow
-
-```
-┌─────────┐     submit       ┌───────────┐
-│  ready  │ ────────────────>│ submitted │
-└────┬────┘                  └───────────┘
-     │                            │
-     │ start                      │
-     ▼                            │
-┌───────────┐                     │
-│in_progress│ ────────────────────┘
-└───────────┘
-     │
-     │ finish
-     ▼
-┌─────────┐
-│  done   │
-└─────────┘
-```
+The **Project Planning** page focuses on queue creation and queue-level management.
 
 ## Common Workflows
 

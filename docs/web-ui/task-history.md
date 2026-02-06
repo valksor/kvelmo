@@ -4,7 +4,11 @@ Browse, search, filter, and resume past tasks from the Task History section.
 
 ## Accessing Task History
 
-The **Task History** section appears on the dashboard showing all tasks in your workspace. At the top, you'll find a search box to filter tasks by title and a dropdown to filter by state. Below that, task cards are displayed in a scrollable list, each showing the task title, state badge, git branch, and creation time. Each card has **View** and **Load** buttons. A summary at the bottom shows how many tasks are displayed out of the total.
+Open **Task History** from:
+- The dashboard **Tasks** block using **Recent → View All**
+- Direct navigation to `/history`
+
+Task History provides full list management with search, state filtering, sorting, and direct links to task details.
 
 ## Task Card Information
 

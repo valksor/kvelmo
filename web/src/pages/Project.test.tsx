@@ -33,13 +33,12 @@ describe('Project Page', () => {
       })
     })
 
-    it('renders tab navigation with Create Plan, Queues, and Tasks', async () => {
+    it('renders tab navigation with Create Plan and Queues', async () => {
       render(<Project />)
 
       await waitFor(() => {
         expect(getCreatePlanTab()).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /queues/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /tasks/i })).toBeInTheDocument()
       })
     })
 
@@ -59,12 +58,18 @@ describe('Project Page', () => {
       })
     })
 
-    it('Tasks tab is disabled when no queue is selected', async () => {
+    it('shows dashboard queue management hint in queues tab', async () => {
+      const user = userEvent.setup()
       render(<Project />)
 
       await waitFor(() => {
-        const tasksTab = screen.getByRole('button', { name: /tasks/i })
-        expect(tasksTab).toBeDisabled()
+        expect(screen.getByRole('button', { name: /queues/i })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: /queues/i }))
+
+      await waitFor(() => {
+        expect(screen.getByText(/dashboard - tasks - queue/i)).toBeInTheDocument()
       })
     })
   })

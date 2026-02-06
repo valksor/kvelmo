@@ -1,6 +1,6 @@
 # Dashboard
 
-The dashboard is the main landing page for the Web UI, providing quick access to task creation, active task status, and recent work.
+The dashboard is the main landing page for the Web UI, providing quick access to task creation, active task status, and task activity.
 
 ## Accessing the Dashboard
 
@@ -16,7 +16,7 @@ When the server is started from a project directory, the dashboard shows:
 - **Active Task Summary** — Current task status with a link to full details
 - **Task Creation** — Tabs for starting tasks (Quick Start, Quick Tasks, Planning)
 - **Budget Overview** — Cost tracking (if budget is enabled)
-- **Recent Tasks** — Your recent task history with quick access
+- **Tasks** — A unified task block with **Recent** and **Queue** views
 
 ### Global Mode
 
@@ -56,14 +56,35 @@ If monthly budget tracking is enabled in [Settings](/web-ui/settings.md), this s
 - Budget limit and remaining
 - Warning indicators when approaching limits
 
-### Recent Tasks
+### Tasks
 
-A list of your recent tasks with:
-- Task title and state
+The Tasks block combines two views in one place:
+
+| View | Purpose |
+|------|---------|
+| **Recent** | Quick access to your latest workflow tasks |
+| **Queue** | Project planning queue tasks with dependencies and execution actions |
+
+#### Recent View
+
+Shows your latest tasks with:
+- Task title and workflow state
 - Creation date
-- Quick links to view or resume
+- Worktree indicator (when applicable)
+- Quick link to task details
+- **View All** link to [Task History](/web-ui/task-history.md)
 
-See [Task History](/web-ui/task-history.md) for full filtering and search capabilities.
+#### Queue View
+
+Shows planning queues and tasks with:
+- Queue selector
+- Task tree (including subtasks and dependencies)
+- Task editing
+- AI reorder
+- Provider submission
+- Start implementation
+
+For a dedicated planning workspace, see [Project Planning](/web-ui/project-planning.md).
 
 ## Task Detail Page
 

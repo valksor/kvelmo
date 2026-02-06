@@ -7,7 +7,7 @@ import { ProjectSelector } from '@/components/project/ProjectSelector'
 import { TaskSummaryCard } from '@/components/project/TaskSummaryCard'
 import { ProjectCostsCard } from '@/components/project/ProjectCostsCard'
 import { TaskCreationTabs } from '@/components/project/TaskCreationTabs'
-import { RecentTasksCard } from '@/components/project/RecentTasksCard'
+import { DashboardTasksCard } from '@/components/project/DashboardTasksCard'
 import { Loader2, Wifi, WifiOff } from 'lucide-react'
 
 export default function Dashboard() {
@@ -84,8 +84,8 @@ export default function Dashboard() {
         {budgetEnabled && <ProjectCostsCard />}
       </div>
 
-      {/* Recent tasks */}
-      <RecentTasksCard tasks={tasksHistory} isLoading={historyLoading} />
+      {/* Tasks (recent + queue views) */}
+      <DashboardTasksCard tasks={tasksHistory} isHistoryLoading={historyLoading} />
     </div>
   )
 }

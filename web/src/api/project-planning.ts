@@ -84,10 +84,11 @@ export interface StartImplementationRequest {
 /**
  * Hook to fetch all queues
  */
-export function useQueues() {
+export function useQueues(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['project', 'queues'],
     queryFn: () => apiRequest<QueuesResponse>('/project/queues'),
+    enabled: options.enabled ?? true,
   })
 }
 
