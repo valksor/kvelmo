@@ -185,6 +185,12 @@ func (a *AgentAdapter) WithArgs(args ...string) agent.Agent {
 	return a
 }
 
+// WithRetries sets the retry count. Plugin agents don't support retries, so this is a no-op.
+func (a *AgentAdapter) WithRetries(_ int) agent.Agent {
+	// Plugin agents don't support retries - they handle their own protocol
+	return a
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MetadataProvider interface
 // ─────────────────────────────────────────────────────────────────────────────

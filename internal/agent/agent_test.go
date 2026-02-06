@@ -52,6 +52,10 @@ func (m *mockAgent) WithArgs(args ...string) Agent {
 	return m
 }
 
+func (m *mockAgent) WithRetries(_ int) Agent {
+	return m
+}
+
 func TestNewConfig(t *testing.T) {
 	cfg := NewConfig()
 

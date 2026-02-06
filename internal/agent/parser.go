@@ -197,6 +197,34 @@ func (p *YAMLBlockParser) extractQuestion(input map[string]any) *Question {
 	return q
 }
 
+// extractFileChangeFromToolCall extracts a FileChange from Write/Edit tool calls.
+// Claude uses native tools instead of YAML blocks, so we track files from tool calls.
+func (p *YAMLBlockParser) extractFileChangeFromToolCall(tc *ToolCall) *FileChange {
+	if tc == nil || tc.Input == nil {
+		return nil
+	}
+
+	path, ok := tc.Input["file_path"].(string)
+	if !ok || path == "" {
+		return nil
+	}
+
+	switch tc.Name {
+	case "Write":
+		return &FileChange{
+			Path:      path,
+			Operation: FileOpCreate,
+		}
+	case "Edit":
+		return &FileChange{
+			Path:      path,
+			Operation: FileOpUpdate,
+		}
+	}
+
+	return nil
+}
+
 // clarificationPatterns are conservative patterns that indicate an agent is asking
 // for clarification in plain text (fallback when AskUserQuestion tool isn't used).
 var clarificationPatterns = []string{
@@ -370,6 +398,13 @@ func (p *YAMLBlockParser) Parse(events []Event) (*Response, error) {
 						response.Question = q
 					}
 				}
+			}
+		}
+
+		// Track files from Write/Edit tool calls (Claude uses native tools, not YAML blocks)
+		if event.ToolCall != nil {
+			if fc := p.extractFileChangeFromToolCall(event.ToolCall); fc != nil {
+				response.Files = append(response.Files, *fc)
 			}
 		}
 

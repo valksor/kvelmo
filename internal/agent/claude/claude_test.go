@@ -394,3 +394,67 @@ func TestWithArgs_OriginalUnmodified(t *testing.T) {
 		t.Errorf("New agent has wrong arg count (len = %d, want %d)", len(typedNew.config.Args), originalLen+1)
 	}
 }
+
+func TestWithCommand(t *testing.T) {
+	a := New()
+	result := a.WithCommand("/custom/path/to/claude")
+
+	typed, ok := result.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+	if typed.config.Command[0] != "/custom/path/to/claude" {
+		t.Errorf("Command[0] = %q, want %q", typed.config.Command[0], "/custom/path/to/claude")
+	}
+	if len(typed.config.Command) != 1 {
+		t.Errorf("Command length = %d, want 1", len(typed.config.Command))
+	}
+}
+
+func TestWithCommand_OriginalUnmodified(t *testing.T) {
+	originalAgent := New()
+	originalCommand := originalAgent.config.Command[0]
+
+	// WithCommand should return a new agent, not modify the original
+	newAgent := originalAgent.WithCommand("/new/path")
+
+	if originalAgent.config.Command[0] != originalCommand {
+		t.Errorf("Original agent was modified (command = %q, want %q)", originalAgent.config.Command[0], originalCommand)
+	}
+
+	typedNew, ok := newAgent.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+	if typedNew.config.Command[0] != "/new/path" {
+		t.Errorf("New agent command = %q, want %q", typedNew.config.Command[0], "/new/path")
+	}
+}
+
+func TestWithCommand_PreservesOtherConfig(t *testing.T) {
+	cfg := agent.Config{
+		Command:     []string{"claude"},
+		Environment: map[string]string{"KEY": "value"},
+		Args:        []string{"--model", "opus"},
+	}
+	originalAgent := NewWithConfig(cfg)
+	newAgent := originalAgent.WithCommand("/custom/claude")
+
+	typed, ok := newAgent.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+
+	// Command should be updated
+	if typed.config.Command[0] != "/custom/claude" {
+		t.Errorf("Command[0] = %q, want %q", typed.config.Command[0], "/custom/claude")
+	}
+
+	// Other config should be preserved
+	if typed.config.Environment["KEY"] != "value" {
+		t.Error("Environment was not preserved")
+	}
+	if len(typed.config.Args) != 2 || typed.config.Args[0] != "--model" {
+		t.Error("Args were not preserved")
+	}
+}

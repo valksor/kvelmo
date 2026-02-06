@@ -282,6 +282,9 @@ func (a *Agent) executeStreamOnce(ctx context.Context, prompt string, eventCh ch
 	defer scannerBufferPool.Put(buf)
 	scanner.Buffer(*buf, scannerBufferSize)
 
+	// Track if agent signaled completion (for exit code handling)
+	var receivedComplete bool
+
 	for scanner.Scan() {
 		select {
 		case <-timeoutCtx.Done():
@@ -307,6 +310,8 @@ func (a *Agent) executeStreamOnce(ctx context.Context, prompt string, eventCh ch
 
 		// Check for completion
 		if event.Type == agent.EventComplete {
+			receivedComplete = true
+
 			break
 		}
 	}
@@ -328,6 +333,15 @@ func (a *Agent) executeStreamOnce(ctx context.Context, prompt string, eventCh ch
 		// Check if it's just a non-zero exit (which might be okay)
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
+			// If agent signaled completion, ignore non-zero exit codes.
+			// Claude Code in plan mode exits with non-zero after ExitPlanMode,
+			// which would otherwise trigger retry logic incorrectly.
+			if receivedComplete {
+				slog.Debug("ignoring non-zero exit code after successful completion",
+					"exit_code", exitErr.ExitCode())
+
+				return nil
+			}
 			if exitErr.ExitCode() != 0 {
 				if stderrBytes != "" {
 					return fmt.Errorf("claude exited with code %d: %s", exitErr.ExitCode(), stderrBytes)
@@ -437,6 +451,33 @@ func (a *Agent) WithArgs(args ...string) agent.Agent {
 	newArgs := make([]string, len(a.config.Args), len(a.config.Args)+len(args))
 	copy(newArgs, a.config.Args)
 	newConfig.Args = append(newArgs, args...)
+
+	return &Agent{
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
+// WithCommand sets a custom binary path for the agent.
+// Returns a new Agent instance with the updated config to avoid data races.
+func (a *Agent) WithCommand(command string) agent.Agent {
+	newConfig := a.config
+	newConfig.Command = []string{command}
+
+	return &Agent{
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
+// WithRetries sets the retry count for the agent.
+// Returns a new Agent instance with the updated config to avoid data races.
+// Use 0 to disable retries entirely (single attempt).
+func (a *Agent) WithRetries(n int) agent.Agent {
+	newConfig := a.config
+	newConfig.RetryCount = n
 
 	return &Agent{
 		config:        newConfig,

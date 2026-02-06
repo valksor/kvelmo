@@ -151,6 +151,11 @@ func (m *MockAgent) WithArgs(args ...string) agent.Agent {
 	}
 }
 
+// WithRetries sets the retry count. MockAgent ignores this.
+func (m *MockAgent) WithRetries(_ int) agent.Agent {
+	return m
+}
+
 // WithResponse configures the response to return.
 func (m *MockAgent) WithResponse(resp *agent.Response) *MockAgent {
 	m.Response = resp

@@ -26,6 +26,11 @@ type Agent interface {
 	// WithArgs adds CLI arguments to pass to the agent process.
 	// Returns the agent for method chaining.
 	WithArgs(args ...string) Agent
+
+	// WithRetries sets the retry count for the agent.
+	// Returns the agent for method chaining.
+	// Use 0 to disable retries entirely.
+	WithRetries(n int) Agent
 }
 
 // StreamCallback is called for each streaming event.
