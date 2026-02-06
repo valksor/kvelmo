@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight, Loader2, FolderGit2 } from 'lucide-react'
 import type { TaskHistoryItem } from '@/types/api'
-import { getStateConfig } from '@/constants/stateConfig'
+import { getStateConfigWithProgress } from '@/constants/stateConfig'
 
 interface RecentTasksCardProps {
   tasks?: TaskHistoryItem[]
@@ -52,7 +52,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task }: TaskRowProps) {
-  const config = getStateConfig(task.state)
+  const { displayState, ...config } = getStateConfigWithProgress(task.state, task.progress_phase)
 
   return (
     <Link
@@ -77,7 +77,7 @@ function TaskRow({ task }: TaskRowProps) {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`badge ${config.badge} badge-sm capitalize`}>{task.state}</span>
+        <span className={`badge ${config.badge} badge-sm capitalize`}>{displayState}</span>
         <ChevronRight size={16} className="text-base-content/40 group-hover:text-primary transition-colors" />
       </div>
     </Link>

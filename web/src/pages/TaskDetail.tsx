@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useActiveTask } from '@/api/workflow'
-import { useTaskSpecs, useTaskNotes } from '@/api/task'
+import { useTaskSpecs, useTaskNotes, useAgentLogsHistory } from '@/api/task'
 import { useWorkflowSSE, type AgentMessage } from '@/hooks/useWorkflowSSE'
 import { ActiveWorkCard } from '@/components/task/ActiveWorkCard'
 import { WorkflowActions } from '@/components/workflow/WorkflowActions'
@@ -13,13 +13,14 @@ import { WorkflowDiagram } from '@/components/task/WorkflowDiagram'
 import { AgentTerminal } from '@/components/task/AgentTerminal'
 import { QuickQuestion } from '@/components/task/QuickQuestion'
 import { CostsCard } from '@/components/task/CostsCard'
-import { Loader2, ArrowLeft, Wifi, WifiOff } from 'lucide-react'
+import { ArrowLeft, Wifi, WifiOff } from 'lucide-react'
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
 
   // Agent terminal messages (local state, not persisted)
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([])
+  const [historySuppressed, setHistorySuppressed] = useState(false)
 
   const handleAgentMessage = useCallback((message: AgentMessage) => {
     setAgentMessages((prev) => [...prev, message])
@@ -27,35 +28,72 @@ export default function TaskDetail() {
 
   const clearAgentMessages = useCallback(() => {
     setAgentMessages([])
+    setHistorySuppressed(true)
   }, [])
+
+  useEffect(() => {
+    setAgentMessages([])
+    setHistorySuppressed(false)
+  }, [id])
 
   // SSE connection for real-time updates
   const { connected } = useWorkflowSSE({
+    taskId: id,
     onAgentMessage: handleAgentMessage,
   })
 
-  // Fetch task data
+  // Fetch task data - all queries run in parallel
   const { data: taskData, isLoading: taskLoading } = useActiveTask()
   const { data: specsData, isLoading: specsLoading } = useTaskSpecs(id)
   const { data: notesData } = useTaskNotes(id)
+  const { data: agentLogsHistory } = useAgentLogsHistory(id)
 
-  if (taskLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  const historyMessages = useMemo<AgentMessage[]>(() => {
+    if (historySuppressed || !agentLogsHistory?.logs?.length) {
+      return []
+    }
+
+    return agentLogsHistory.logs.map((entry) => ({
+      content: entry.message,
+      timestamp: entry.started_at || new Date(entry.index * 1000).toISOString(),
+      type: entry.type || 'output',
+      taskId: id,
+    }))
+  }, [agentLogsHistory, historySuppressed, id])
+
+  const terminalMessages = useMemo(() => {
+    if (historyMessages.length === 0) {
+      return agentMessages
+    }
+
+    // Merge history + live stream and deduplicate identical lines.
+    const seen = new Set<string>()
+    const merged: AgentMessage[] = []
+    const pushUnique = (message: AgentMessage) => {
+      const key = `${message.timestamp}:${message.type || 'output'}:${message.content}`
+      if (seen.has(key)) {
+        return
+      }
+      seen.add(key)
+      merged.push(message)
+    }
+
+    historyMessages.forEach(pushUnique)
+    agentMessages.forEach(pushUnique)
+
+    return merged
+  }, [historyMessages, agentMessages])
 
   // Check if this is the active task
   const isActiveTask = taskData?.task?.id === id
   const task = isActiveTask ? taskData?.task : undefined
   const work = isActiveTask ? taskData?.work : undefined
   const state = task?.state || 'idle'
+  const progressPhase = task?.progress_phase
   const hasTask = isActiveTask && taskData?.active === true
 
-  // If no task data and not active, show not found
-  if (!task) {
+  // Show not found only after loading completes and task doesn't exist
+  if (!taskLoading && !task) {
     return (
       <div className="space-y-4">
         <Link to="/" className="btn btn-ghost gap-2">
@@ -101,16 +139,27 @@ export default function TaskDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: Task info */}
         <div className="lg:col-span-2 space-y-6">
-          <ActiveWorkCard task={task} work={work} />
+          {/* ActiveWorkCard with loading skeleton */}
+          {taskLoading ? (
+            <div className="card bg-base-100 shadow-sm animate-pulse">
+              <div className="card-body">
+                <div className="h-6 bg-base-300 rounded w-1/3 mb-4"></div>
+                <div className="h-4 bg-base-300 rounded w-2/3 mb-2"></div>
+                <div className="h-4 bg-base-300 rounded w-1/2"></div>
+              </div>
+            </div>
+          ) : task ? (
+            <ActiveWorkCard task={task} work={work} progressPhase={progressPhase} />
+          ) : null}
 
           {/* Quick question input (during active states) */}
-          <QuickQuestion state={state} taskId={id} />
+          {!taskLoading && <QuickQuestion state={state} taskId={id} />}
 
           {/* Pending question from agent */}
           {taskData?.pending_question && <QuestionPrompt question={taskData.pending_question} />}
 
-          {/* Specifications */}
-          <SpecificationsList specs={specsData?.specifications} isLoading={specsLoading} />
+          {/* Specifications - has its own loading state */}
+          <SpecificationsList specs={specsData?.specifications} isLoading={specsLoading} taskId={id} />
 
           {/* Reviews */}
           <ReviewsList reviews={work?.reviews} />
@@ -119,13 +168,19 @@ export default function TaskDetail() {
           <NotesCard notes={notesData?.notes} taskId={id} />
 
           {/* Agent Terminal */}
-          <AgentTerminal messages={agentMessages} onClear={clearAgentMessages} />
+          <AgentTerminal messages={terminalMessages} onClear={clearAgentMessages} />
         </div>
 
         {/* Right column: Actions + Workflow + Costs */}
         <div className="space-y-6">
-          <WorkflowActions state={state} hasTask={hasTask} />
-          <WorkflowDiagram currentState={state} />
+          <WorkflowActions
+            state={state}
+            hasTask={hasTask}
+            taskId={task?.id}
+            progressPhase={progressPhase}
+            specs={specsData?.specifications}
+          />
+          <WorkflowDiagram currentState={state} progressPhase={progressPhase} />
           <CostsCard taskId={id} />
         </div>
       </div>

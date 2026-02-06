@@ -1,10 +1,34 @@
-import { Play, Code, CheckCircle, Flag, Undo2, Redo2, X, RotateCcw } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import {
+  Play,
+  Code,
+  CheckCircle,
+  Flag,
+  RefreshCw,
+  Undo2,
+  Redo2,
+  X,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useWorkflowAction } from '@/api/workflow'
-import type { WorkflowState, WorkflowAction } from '@/types/api'
+import type {
+  WorkflowState,
+  WorkflowAction,
+  Specification,
+  ImplementOptions,
+  ProgressPhase,
+  WorkflowSyncResponse,
+} from '@/types/api'
 
 interface WorkflowActionsProps {
   state?: WorkflowState
   hasTask: boolean
+  taskId?: string
+  progressPhase?: ProgressPhase
+  specs?: Specification[]
 }
 
 interface ActionConfig {
@@ -12,10 +36,12 @@ interface ActionConfig {
   label: string
   icon: React.ReactNode
   className: string
-  disabled: (state: WorkflowState, hasTask: boolean) => boolean
+  disabled: (state: WorkflowState, hasTask: boolean, phase: ProgressPhase) => boolean
   dangerous?: boolean
   confirm?: string
 }
+
+const isActive = (s: WorkflowState) => s.endsWith('ing')
 
 const actions: ActionConfig[] = [
   {
@@ -23,32 +49,35 @@ const actions: ActionConfig[] = [
     label: 'Plan',
     icon: <Play size={16} />,
     className: 'btn-info',
-    // Plan always enabled when there's a task
-    disabled: (_, hasTask) => !hasTask,
+    disabled: (state, hasTask) => !hasTask || isActive(state),
   },
   {
     action: 'implement',
     label: 'Implement',
     icon: <Code size={16} />,
     className: 'btn-primary',
-    // Implement disabled in idle (need to plan first)
-    disabled: (state, hasTask) => !hasTask || state === 'idle',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'review',
     label: 'Review',
     icon: <CheckCircle size={16} />,
     className: 'btn-secondary',
-    // Review disabled until after implementing
-    disabled: (state, hasTask) => !hasTask || state === 'idle' || state === 'planning',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
   },
   {
     action: 'finish',
     label: 'Finish',
     icon: <Flag size={16} />,
     className: 'btn-success',
-    // Finish after implementing (review is optional)
-    disabled: (state, hasTask) => !hasTask || state === 'idle' || state === 'planning',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
+  },
+  {
+    action: 'sync',
+    label: 'Sync',
+    icon: <RefreshCw size={16} />,
+    className: 'btn-outline',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
 ]
 
@@ -58,24 +87,21 @@ const secondaryActions: ActionConfig[] = [
     label: 'Undo',
     icon: <Undo2 size={16} />,
     className: 'btn-ghost btn-sm',
-    // Undo disabled in idle (nothing to undo)
-    disabled: (state, hasTask) => !hasTask || state === 'idle',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'redo',
     label: 'Redo',
     icon: <Redo2 size={16} />,
     className: 'btn-ghost btn-sm',
-    // Redo available same as undo (disabled in idle)
-    disabled: (state, hasTask) => !hasTask || state === 'idle',
+    disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'abandon',
     label: 'Abandon',
     icon: <X size={16} />,
     className: 'btn-ghost btn-sm text-error',
-    // Abandon enabled whenever there's a task
-    disabled: (_, hasTask) => !hasTask,
+    disabled: (state, hasTask) => !hasTask || isActive(state),
     dangerous: true,
     confirm: 'Are you sure you want to abandon this task?',
   },
@@ -84,20 +110,82 @@ const secondaryActions: ActionConfig[] = [
     label: 'Reset',
     icon: <RotateCcw size={16} />,
     className: 'btn-ghost btn-sm',
-    // Reset disabled in idle
-    disabled: (state, hasTask) => !hasTask || state === 'idle',
+    disabled: (state, hasTask) => !hasTask || isActive(state) || state === 'idle',
   },
 ]
 
-export function WorkflowActions({ state = 'idle', hasTask }: WorkflowActionsProps) {
-  const { mutate: executeAction, isPending } = useWorkflowAction()
+function isSyncResponse(data: unknown): data is WorkflowSyncResponse {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+  const value = data as Record<string, unknown>
+  return typeof value.message === 'string' && typeof value.has_changes === 'boolean'
+}
 
-  const handleAction = (config: ActionConfig) => {
+export function WorkflowActions({
+  state = 'idle',
+  hasTask,
+  taskId,
+  progressPhase = 'started',
+  specs = [],
+}: WorkflowActionsProps) {
+  const { mutate: executeAction, isPending } = useWorkflowAction()
+  const navigate = useNavigate()
+  const [syncResult, setSyncResult] = useState<WorkflowSyncResponse | null>(null)
+
+  // Implementation options state
+  const [showImplementOptions, setShowImplementOptions] = useState(false)
+  const [selectedComponent, setSelectedComponent] = useState('')
+  const [parallelCount, setParallelCount] = useState(0)
+
+  // Extract unique components from specs
+  const components = useMemo(() => {
+    const safeSpecs = specs ?? []
+    const uniqueComponents = new Set(
+      safeSpecs.map((s) => s.component).filter(Boolean)
+    )
+    return Array.from(uniqueComponents).sort()
+  }, [specs])
+
+  const handleAction = (config: ActionConfig, implementOptions?: ImplementOptions) => {
+    if (config.action === 'sync' && !taskId) {
+      return
+    }
     if (config.dangerous && config.confirm) {
       if (!window.confirm(config.confirm)) return
     }
-    executeAction({ action: config.action })
+    const options: Record<string, unknown> | undefined =
+      config.action === 'sync' ? { task_id: taskId } : undefined
+    executeAction(
+      { action: config.action, options, implementOptions },
+      {
+        onSuccess: (data: unknown) => {
+          if (config.action === 'sync') {
+            setSyncResult(isSyncResponse(data) ? data : null)
+          } else {
+            setSyncResult(null)
+          }
+          if (config.action === 'abandon' || config.action === 'finish') {
+            navigate('/')
+          }
+        },
+      }
+    )
   }
+
+  const handleImplementWithOptions = () => {
+    const options: ImplementOptions = {}
+    if (selectedComponent) {
+      options.component = selectedComponent
+    }
+    if (parallelCount > 0) {
+      options.parallel = parallelCount
+    }
+    executeAction({ action: 'implement', implementOptions: options })
+  }
+
+  const implementConfig = actions.find((a) => a.action === 'implement')!
+  const isImplementDisabled = isPending || implementConfig.disabled(state, hasTask, progressPhase)
 
   return (
     <div className="card bg-base-100 shadow-sm">
@@ -105,20 +193,128 @@ export function WorkflowActions({ state = 'idle', hasTask }: WorkflowActionsProp
         <h3 className="font-medium text-sm text-base-content/60 uppercase tracking-wide mb-3">
           Actions
         </h3>
+        {syncResult && (
+          <div className={`alert mb-3 ${syncResult.has_changes ? 'alert-info' : 'alert-success'}`}>
+            <div className="space-y-1 text-sm">
+              <div>{syncResult.message}</div>
+              {syncResult.spec_generated && (
+                <div>
+                  Delta specification: <code>{syncResult.spec_generated}</code>
+                </div>
+              )}
+              {syncResult.changes_summary && <div>Summary: {syncResult.changes_summary}</div>}
+              {typeof syncResult.source_updated === 'boolean' && (
+                <div>Source updated: {syncResult.source_updated ? 'yes' : 'no'}</div>
+              )}
+              {syncResult.previous_snapshot_path && (
+                <div>
+                  Previous snapshot: <code>{syncResult.previous_snapshot_path}</code>
+                </div>
+              )}
+              {syncResult.diff_path && (
+                <div>
+                  Diff file: <code>{syncResult.diff_path}</code>
+                </div>
+              )}
+              {syncResult.warnings && syncResult.warnings.length > 0 && (
+                <div>
+                  Warnings: {syncResult.warnings.join(' | ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Primary actions */}
         <div className="flex flex-col gap-2">
-          {actions.map((config) => (
-            <button
-              key={config.action}
-              className={`btn ${config.className} justify-start gap-2`}
-              disabled={isPending || config.disabled(state, hasTask)}
-              onClick={() => handleAction(config)}
-            >
-              {config.icon}
-              {config.label}
-            </button>
-          ))}
+          {actions.map((config) => {
+            // Special handling for implement button
+            if (config.action === 'implement') {
+              return (
+                <div key={config.action} className="flex flex-col gap-1">
+                  <div className="flex gap-1">
+                    <button
+                      className={`btn ${config.className} justify-start gap-2 flex-1`}
+                      disabled={isImplementDisabled}
+                      onClick={() => handleAction(config)}
+                    >
+                      {config.icon}
+                      {config.label}
+                    </button>
+                    {/* Options toggle button */}
+                    <button
+                      className={`btn ${config.className} btn-square`}
+                      disabled={isImplementDisabled}
+                      onClick={() => setShowImplementOptions(!showImplementOptions)}
+                      title="Implementation options"
+                    >
+                      {showImplementOptions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  </div>
+
+                  {/* Implementation options panel */}
+                  {showImplementOptions && (
+                    <div className="p-3 bg-base-200/50 rounded-lg space-y-3 mt-1">
+                      <div>
+                        <label className="block text-xs font-medium text-base-content/60 mb-1">
+                          Component
+                        </label>
+                        <select
+                          value={selectedComponent}
+                          onChange={(e) => setSelectedComponent(e.target.value)}
+                          className="select select-bordered select-sm w-full"
+                          disabled={isPending}
+                        >
+                          <option value="">All components</option>
+                          {components.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-base-content/60 mb-1">
+                          Parallel workers
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10}
+                          value={parallelCount}
+                          onChange={(e) => setParallelCount(Number(e.target.value))}
+                          placeholder="0 = default"
+                          className="input input-bordered input-sm w-full"
+                          disabled={isPending}
+                        />
+                        <p className="text-xs text-base-content/40 mt-1">0 = sequential execution</p>
+                      </div>
+                      <button
+                        className="btn btn-primary btn-sm w-full"
+                        onClick={handleImplementWithOptions}
+                        disabled={isImplementDisabled}
+                      >
+                        Implement with options
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            // Regular button for other actions
+            return (
+              <button
+                key={config.action}
+                className={`btn ${config.className} justify-start gap-2`}
+                disabled={isPending || config.disabled(state, hasTask, progressPhase)}
+                onClick={() => handleAction(config)}
+              >
+                {config.icon}
+                {config.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Secondary actions */}
@@ -128,7 +324,7 @@ export function WorkflowActions({ state = 'idle', hasTask }: WorkflowActionsProp
             <button
               key={config.action}
               className={`btn ${config.className}`}
-              disabled={isPending || config.disabled(state, hasTask)}
+              disabled={isPending || config.disabled(state, hasTask, progressPhase)}
               onClick={() => handleAction(config)}
               title={config.label}
             >

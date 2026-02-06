@@ -67,7 +67,13 @@ export default function Dashboard() {
       </div>
 
       {/* Active task summary (links to task page) */}
-      {hasActiveTask && <TaskSummaryCard task={taskData.task} work={taskData.work} />}
+      {hasActiveTask && (
+        <TaskSummaryCard
+          task={taskData.task}
+          work={taskData.work}
+          progressPhase={taskData.task?.progress_phase}
+        />
+      )}
 
       {/* Two column layout: Task creation + Budget (or full width if no budget) */}
       <div className={`grid grid-cols-1 ${budgetEnabled ? 'lg:grid-cols-2' : ''} gap-6`}>

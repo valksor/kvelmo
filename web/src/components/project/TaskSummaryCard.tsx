@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, GitBranch, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import type { WorkflowState } from '@/types/api'
-import { getStateConfig } from '@/constants/stateConfig'
+import type { WorkflowState, ProgressPhase } from '@/types/api'
+import { getStateConfigWithProgress } from '@/constants/stateConfig'
 
 interface TaskSummaryCardProps {
   task?: {
@@ -16,15 +16,16 @@ interface TaskSummaryCardProps {
     title?: string
     external_key?: string
   }
+  progressPhase?: ProgressPhase
 }
 
-export function TaskSummaryCard({ task, work }: TaskSummaryCardProps) {
+export function TaskSummaryCard({ task, work, progressPhase }: TaskSummaryCardProps) {
   if (!task) {
     return null
   }
 
   const state = task.state
-  const config = getStateConfig(state)
+  const { displayState, ...config } = getStateConfigWithProgress(state, progressPhase)
   const title = work?.title || task.ref || task.id
 
   const startedAgo = task.started
@@ -60,7 +61,7 @@ export function TaskSummaryCard({ task, work }: TaskSummaryCardProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`badge ${config.badge} capitalize`}>{state}</span>
+            <span className={`badge ${config.badge} capitalize`}>{displayState}</span>
             <Link
               to={`/task/${task.id}`}
               className="btn btn-sm btn-primary gap-1"
