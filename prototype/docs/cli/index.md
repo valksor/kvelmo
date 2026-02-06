@@ -163,13 +163,13 @@ mehr <command> --help
 
 The help output adapts to your current workspace state. Commands are grouped into:
 
-- **Available Now** - Commands that can be run in the current context
+- **Available in Context** - Commands that can be run in the current context
 - **Other Commands** - Commands that require additional context (with reasons why)
 
 Example output without an active task:
 
 ```
-Available Now:
+Available in Context:
   start       Start a new task
   auto        Full automation
   list        List all tasks

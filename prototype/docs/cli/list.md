@@ -17,7 +17,7 @@ The `list` command displays all tasks in the workspace with their worktree paths
 - Shows all tasks regardless of which directory you're in
 - Displays worktree paths for parallel task management
 - Indicates which task is active in the main repo (`*`)
-- Indicates which worktree you're currently in (`→`)
+- Indicates which worktree you're in (`→`)
 
 ## Flags
 

@@ -133,7 +133,7 @@ Fetch Previous Comment → ExtractStateFromComment → VerifyState → ComputeRe
 ```go
 type ReviewDelta struct {
     NewIssues   []ReviewIssue // Issues not seen before → POST
-    FixedIssues []ReviewIssue // Issues that existed before but now gone → ACKNOWLEDGE
+    FixedIssues []ReviewIssue // Issues that existed before but are resolved → ACKNOWLEDGE
     Unchanged   []ReviewIssue // Issues still present → SKIP
 }
 ```

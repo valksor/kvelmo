@@ -12,7 +12,7 @@ mehr q [message]
 
 ## Description
 
-The `question` command sends a question to the currently active AI agent and receives a response. Unlike `note` (which only saves text), the `question` command runs the AI agent to get an intelligent response based on:
+The `question` command sends a question to the active AI agent and receives a response. Unlike `note` (which only saves text), the `question` command runs the AI agent to get an intelligent response based on:
 
 - Current task title and state
 - Latest specification content

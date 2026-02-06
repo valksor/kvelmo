@@ -41,9 +41,9 @@ When a parent feature merges, its children need rebasing. Click **"Preview Rebas
 
 ### Preview Modal
 
-Clicking **"Preview Rebase"** opens a modal showing the conflict status. If no conflicts are detected, it shows how many tasks can be safely rebased and lists each branch with its target. Action buttons include **Cancel** and **Rebase Now**.
+Clicking **"Preview Rebase"** opens a modal showing the conflict status. If no conflicts are detected, it shows how many tasks can be safely rebased and lists each branch with its target. Action buttons include **Cancel** and **Rebase**.
 
-If conflicts are detected, the modal shows which tasks have conflicts and lists the conflicting files. The **Rebase Now** button is disabled until conflicts are resolved manually.
+If conflicts are detected, the modal shows which tasks have conflicts and lists the conflicting files. The **Rebase** button is disabled until conflicts are resolved manually.
 
 ### Rebase Progress
 

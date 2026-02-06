@@ -130,7 +130,7 @@ mehr (quick) > Should run before the form submission handlers
 mehr (quick) > exit
 ```
 
-Now optimize the task — AI improves the title, expands the description with your notes, and suggests labels:
+Optimize the task — AI improves the title, expands the description with your notes, and suggests labels:
 
 ```bash
 mehr optimize --task=quick-tasks/task-1

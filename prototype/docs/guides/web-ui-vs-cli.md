@@ -199,8 +199,8 @@ Both interfaces have access to the same features:
 | Task history     | ✅ History section            | ✅ `mehr list`             |
 | Cost tracking    | ✅ Costs section              | ✅ `mehr cost`             |
 | Settings         | ✅ Settings page              | ✅ Edit config files       |
-| Agents info      | ✅ Settings (Agents tab)      | ✅ `mehr agents list`      |
-| Providers info   | ✅ Settings (Providers tab)   | ✅ `mehr providers list`   |
+| Agents info      | ✅ Settings (Work/Advanced)   | ✅ `mehr agents list`      |
+| Providers info   | ✅ Settings (Work section)    | ✅ `mehr providers list`   |
 | Provider health  | ✅ Settings (Provider Health) | ✅ `mehr providers status` |
 | Provider login   | ✅ Settings form              | ✅ `mehr <provider> login` |
 

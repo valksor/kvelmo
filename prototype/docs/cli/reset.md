@@ -41,7 +41,7 @@ About to reset workflow state from 'planning' to 'idle'
 Continue? [y/N] y
 State reset to idle
 
-You can now retry the step:
+Retry the step:
   mehr plan - Create specifications
   mehr implement - Implement specifications
   mehr review - Review changes

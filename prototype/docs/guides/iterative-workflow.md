@@ -73,7 +73,7 @@ Check the updated spec:
 cat ~/.valksor/mehrhof/workspaces/*/work/*/specifications/specification-*.md
 ```
 
-Now it should mention stateless JWT.
+The updated spec should mention stateless JWT.
 
 ### Implement Again
 

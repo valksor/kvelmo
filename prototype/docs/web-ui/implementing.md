@@ -61,7 +61,7 @@ Click any file to see the full diff.
 
 In the **Task Detail** page, expand a specification and go to **Implemented Files**.
 
-Each file now has a **View Diff** action that opens a read-only modal with:
+Each file includes a **View Diff** action that opens a read-only modal with:
 - A **Visual** split view (Before vs After) with line numbers and color highlighting
 - A **Raw** tab with the original unified patch text
 

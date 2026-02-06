@@ -20,7 +20,7 @@ Memory features are available through:
 | Feature                  | Location                             |
 |--------------------------|--------------------------------------|
 | **Memory Search**        | Tools → Memory                       |
-| **Memory Configuration** | Settings → Features → Memory System  |
+| **Memory Configuration** | Settings → Advanced → Memory System  |
 
 Memory search results appear automatically in the dashboard when starting similar tasks.
 
@@ -60,7 +60,7 @@ Each search result shows:
 
 ### Configuring Memory
 
-Memory is configured in **Settings → Features → Memory System**:
+Memory is configured in **Settings → Advanced → Memory System**:
 
 ```yaml
 memory:
