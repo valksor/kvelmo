@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit
  *
  * All methods are blocking and should be called from a background thread.
  */
-@Suppress("TooManyFunctions") // API client: each method maps to one endpoint
 class MehrhofApiClient(
     private val baseUrl: String
 ) {
@@ -268,299 +267,10 @@ class MehrhofApiClient(
     fun getProviders(): Result<ProvidersListResponse> = get("/api/v1/providers")
 
     // ========================================================================
-    // Queue Task Endpoints (via Interactive API)
-    // ========================================================================
-
-    /**
-     * Create a quick task.
-     * POST /api/v1/interactive/command
-     */
-    fun createQuickTask(description: String): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("quick", listOf(description)))
-
-    /**
-     * Delete a queue task.
-     * POST /api/v1/interactive/command
-     */
-    fun deleteQueueTask(
-        queueId: String,
-        taskId: String
-    ): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("delete", listOf("$queueId/$taskId")))
-
-    /**
-     * Export a queue task to markdown.
-     * POST /api/v1/interactive/command
-     */
-    fun exportQueueTask(
-        queueId: String,
-        taskId: String
-    ): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("export", listOf("$queueId/$taskId")))
-
-    /**
-     * AI optimize a queue task.
-     * POST /api/v1/interactive/command
-     */
-    fun optimizeQueueTask(
-        queueId: String,
-        taskId: String
-    ): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("optimize", listOf("$queueId/$taskId")))
-
-    /**
-     * Submit a queue task to a provider.
-     * POST /api/v1/interactive/command
-     */
-    fun submitQueueTask(
-        queueId: String,
-        taskId: String,
-        provider: String
-    ): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("submit", listOf("$queueId/$taskId", provider)))
-
-    /**
-     * Sync task from provider.
-     * POST /api/v1/interactive/command
-     */
-    fun syncTask(): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("sync", emptyList()))
-
-    // ========================================================================
-    // Find & Search Endpoints
-    // ========================================================================
-
-    /**
-     * Search the codebase.
-     * GET /api/v1/find?q={query}
-     */
-    fun find(query: String): Result<FindSearchResponse> =
-        get("/api/v1/find?q=${java.net.URLEncoder.encode(query, "UTF-8")}")
-
-    // ========================================================================
-    // Memory Endpoints
-    // ========================================================================
-
-    /**
-     * Search memory for similar tasks.
-     * GET /api/v1/memory/search?q={query}
-     */
-    fun memorySearch(query: String): Result<MemorySearchResponse> =
-        get("/api/v1/memory/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}&limit=10")
-
-    /**
-     * Index a task to memory.
-     * POST /api/v1/memory/index
-     */
-    fun memoryIndex(taskId: String): Result<MemoryIndexResponse> =
-        post("/api/v1/memory/index", MemoryIndexRequest(taskId))
-
-    /**
-     * Get memory statistics.
-     * GET /api/v1/memory/stats
-     */
-    fun memoryStats(): Result<MemoryStatsResponse> = get("/api/v1/memory/stats")
-
-    // ========================================================================
-    // Library Endpoints
-    // ========================================================================
-
-    /**
-     * List documentation collections.
-     * GET /api/v1/library
-     */
-    fun libraryList(): Result<LibraryListResponse> = get("/api/v1/library")
-
-    /**
-     * Show a specific collection.
-     * GET /api/v1/library/{nameOrId}
-     */
-    fun libraryShow(nameOrId: String): Result<LibraryShowResponse> =
-        get("/api/v1/library/${java.net.URLEncoder.encode(nameOrId, "UTF-8")}")
-
-    /**
-     * Get library statistics.
-     * GET /api/v1/library/stats
-     */
-    fun libraryStats(): Result<LibraryStatsResponse> = get("/api/v1/library/stats")
-
-    /**
-     * Pull a documentation collection.
-     * POST /api/v1/interactive/command
-     */
-    fun libraryPull(
-        source: String,
-        name: String? = null,
-        shared: Boolean = false
-    ): Result<InteractiveCommandResponse> {
-        val args = mutableListOf("pull", source)
-        if (name != null) {
-            args.add("--name")
-            args.add(name)
-        }
-        if (shared) {
-            args.add("--shared")
-        }
-        return post("/api/v1/interactive/command", InteractiveCommandRequest("library", args))
-    }
-
-    /**
-     * Remove a documentation collection.
-     * POST /api/v1/interactive/command
-     */
-    fun libraryRemove(nameOrId: String): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("library", listOf("remove", nameOrId)))
-
-    // ========================================================================
-    // Links Endpoints
-    // ========================================================================
-
-    /**
-     * List all links.
-     * GET /api/v1/links
-     */
-    fun linksList(): Result<LinksListResponse> = get("/api/v1/links")
-
-    /**
-     * Get links for a specific entity.
-     * GET /api/v1/links/{entityId}
-     */
-    fun linksGet(entityId: String): Result<EntityLinksResponse> =
-        get("/api/v1/links/${java.net.URLEncoder.encode(entityId, "UTF-8")}")
-
-    /**
-     * Search for entities.
-     * GET /api/v1/links/search?q={query}
-     */
-    fun linksSearch(query: String): Result<LinksSearchResponse> =
-        get("/api/v1/links/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}")
-
-    /**
-     * Get links statistics.
-     * GET /api/v1/links/stats
-     */
-    fun linksStats(): Result<LinksStatsResponse> = get("/api/v1/links/stats")
-
-    /**
-     * Rebuild links index.
-     * POST /api/v1/interactive/command
-     */
-    fun linksRebuild(): Result<InteractiveCommandResponse> =
-        post("/api/v1/interactive/command", InteractiveCommandRequest("links", listOf("rebuild")))
-
-    // ========================================================================
-    // Browser Endpoints
-    // ========================================================================
-
-    /**
-     * Get browser status.
-     * GET /api/v1/browser/status
-     */
-    fun browserStatus(): Result<BrowserStatusResponse> = get("/api/v1/browser/status")
-
-    /**
-     * List browser tabs.
-     * GET /api/v1/browser/tabs
-     */
-    fun browserTabs(): Result<BrowserTabsResponse> = get("/api/v1/browser/tabs")
-
-    /**
-     * Open a URL in a new browser tab.
-     * POST /api/v1/browser/goto
-     */
-    fun browserGoto(url: String): Result<BrowserGotoResponse> = post("/api/v1/browser/goto", BrowserGotoRequest(url))
-
-    /**
-     * Navigate current tab to a URL.
-     * POST /api/v1/browser/navigate
-     */
-    fun browserNavigate(
-        url: String,
-        tabId: String? = null
-    ): Result<BrowserNavigateResponse> = post("/api/v1/browser/navigate", BrowserNavigateRequest(tabId, url))
-
-    /**
-     * Click an element by CSS selector.
-     * POST /api/v1/browser/click
-     */
-    fun browserClick(
-        selector: String,
-        tabId: String? = null
-    ): Result<BrowserClickResponse> = post("/api/v1/browser/click", BrowserClickRequest(tabId, selector))
-
-    /**
-     * Type text into an element.
-     * POST /api/v1/browser/type
-     */
-    fun browserType(
-        selector: String,
-        text: String,
-        tabId: String? = null,
-        clear: Boolean = false
-    ): Result<BrowserTypeResponse> = post("/api/v1/browser/type", BrowserTypeRequest(tabId, selector, text, clear))
-
-    /**
-     * Evaluate JavaScript in the browser.
-     * POST /api/v1/browser/eval
-     */
-    fun browserEval(
-        expression: String,
-        tabId: String? = null
-    ): Result<BrowserEvalResponse> = post("/api/v1/browser/eval", BrowserEvalRequest(tabId, expression))
-
-    /**
-     * Take a screenshot.
-     * POST /api/v1/browser/screenshot
-     */
-    fun browserScreenshot(
-        tabId: String? = null,
-        format: String? = null,
-        fullPage: Boolean = false
-    ): Result<BrowserScreenshotResponse> =
-        post("/api/v1/browser/screenshot", BrowserScreenshotRequest(tabId, format, null, fullPage))
-
-    /**
-     * Reload the page.
-     * POST /api/v1/browser/reload
-     */
-    fun browserReload(
-        tabId: String? = null,
-        hard: Boolean = false
-    ): Result<BrowserReloadResponse> = post("/api/v1/browser/reload", BrowserReloadRequest(tabId, hard))
-
-    /**
-     * Close a browser tab.
-     * POST /api/v1/browser/close
-     */
-    fun browserClose(tabId: String): Result<BrowserCloseResponse> =
-        post("/api/v1/browser/close", BrowserCloseRequest(tabId))
-
-    /**
-     * Get console messages.
-     * POST /api/v1/browser/console
-     */
-    fun browserConsole(
-        tabId: String? = null,
-        duration: Int? = null,
-        level: String? = null
-    ): Result<BrowserConsoleResponse> = post("/api/v1/browser/console", BrowserConsoleRequest(tabId, duration, level))
-
-    /**
-     * Get network requests.
-     * POST /api/v1/browser/network
-     */
-    fun browserNetwork(
-        tabId: String? = null,
-        duration: Int? = null,
-        captureBody: Boolean = false
-    ): Result<BrowserNetworkResponse> =
-        post("/api/v1/browser/network", BrowserNetworkRequest(tabId, duration, captureBody, null))
-
-    // ========================================================================
     // HTTP Helpers
     // ========================================================================
 
-    private inline fun <reified T> get(path: String): Result<T> {
+    internal inline fun <reified T> get(path: String): Result<T> {
         val requestBuilder =
             Request
                 .Builder()
@@ -573,7 +283,7 @@ class MehrhofApiClient(
         return executeRequest(requestBuilder.build())
     }
 
-    private inline fun <reified T> post(
+    internal inline fun <reified T> post(
         path: String,
         body: Any
     ): Result<T> {
@@ -592,7 +302,7 @@ class MehrhofApiClient(
         return executeRequest(requestBuilder.build())
     }
 
-    private inline fun <reified T> executeRequest(request: Request): Result<T> =
+    internal inline fun <reified T> executeRequest(request: Request): Result<T> =
         try {
             client.newCall(request).execute().use { response ->
                 extractSessionCookie(response)
@@ -604,13 +314,13 @@ class MehrhofApiClient(
             Result.failure(ApiException(0, "Unexpected error: ${e.message}"))
         }
 
-    private fun extractSessionCookie(response: okhttp3.Response) {
+    internal fun extractSessionCookie(response: okhttp3.Response) {
         val setCookie = response.header("Set-Cookie") ?: return
         val match = Regex("mehr_session=([^;]+)").find(setCookie) ?: return
         sessionCookie = "mehr_session=${match.groupValues[1]}"
     }
 
-    private inline fun <reified T> processResponse(response: okhttp3.Response): Result<T> {
+    internal inline fun <reified T> processResponse(response: okhttp3.Response): Result<T> {
         val body = response.body?.string()
 
         if (!response.isSuccessful) {
@@ -625,7 +335,7 @@ class MehrhofApiClient(
         return parseResponseBody(body)
     }
 
-    private fun parseErrorMessage(
+    internal fun parseErrorMessage(
         body: String?,
         code: Int,
         message: String
@@ -636,7 +346,7 @@ class MehrhofApiClient(
             null
         } ?: "HTTP $code: $message"
 
-    private inline fun <reified T> parseResponseBody(body: String): Result<T> =
+    internal inline fun <reified T> parseResponseBody(body: String): Result<T> =
         try {
             val result = gson.fromJson(body, T::class.java)
             Result.success(result)
