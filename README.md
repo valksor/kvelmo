@@ -268,6 +268,18 @@ make install
 
 **Starting from scratch?** See [INSTALL.md](INSTALL.md) for complete instructions including WSL setup, Git, Go, and agent CLI installation.
 
+### ONNX Semantic Embeddings Platform Support
+
+For semantic memory (`embedding_model: onnx`), the `mehr-embedder` sidecar is available on:
+
+| Platform | Architecture |
+|----------|--------------|
+| Linux    | `amd64`, `arm64` |
+| macOS    | `arm64`, `amd64` |
+| Windows  | WSL2 only (use Linux `amd64`/`arm64` build based on WSL architecture) |
+
+Native Windows binaries are not supported. Use WSL2 and install inside the Linux shell with the standard install script.
+
 ---
 
 ## Verifying Binary Authenticity
@@ -277,7 +289,7 @@ All stable releases are signed with [Minisign](https://github.com/jedisct1/minis
 **Public Key**: `RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVpPw2`
 
 ```bash
-# Download and verify
+# Download and verify (replace asset name with your platform, e.g. mehr-darwin-amd64)
 curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/mehr-linux-amd64
 curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/checksums.txt
 curl -L -O https://github.com/valksor/go-mehrhof/releases/latest/download/checksums.txt.minisig

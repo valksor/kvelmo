@@ -72,10 +72,10 @@ memory:
 | linux-amd64  | Available       | Native ONNX support             |
 | linux-arm64  | Available       | Native ONNX support             |
 | darwin-arm64 | Available       | Apple Silicon                   |
-| darwin-amd64 | Hash fallback   | No CI runner; build from source |
-| windows      | Hash fallback   | Not currently supported         |
+| darwin-amd64 | Available       | Intel Macs                      |
+| windows      | WSL only        | Use Linux binary (`amd64`/`arm64`) inside WSL2 |
 
-On unsupported platforms, Mehrhof falls back to hash-based embeddings automatically. No error is raised; semantic search simply uses keyword matching instead.
+On unsupported native platforms or architectures, Mehrhof falls back to hash-based embeddings automatically. No error is raised; semantic search uses keyword matching in that mode.
 
 ## Integration with Library
 
@@ -90,7 +90,7 @@ This avoids spawning multiple sidecar processes and ensures consistent scoring b
 
 ## Building from Source
 
-For platforms without prebuilt binaries:
+Use this when you need a custom local build:
 
 ```bash
 # Requires ONNX Runtime installed locally
@@ -129,11 +129,24 @@ sudo ldconfig
 Check network connectivity to GitHub releases. Manually download:
 
 ```bash
+# Ensure mehr is installed with the platform-aware installer first
+curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
+
 # Get the release tag matching your mehr version
 VERSION=$(mehr version --short)
+TAG=${VERSION#v}
+if [ "$TAG" = "nightly" ]; then TAG=nightly; else TAG="v${TAG}"; fi
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+
+case "$ARCH" in
+  x86_64|amd64) ARCH=amd64 ;;
+  arm64|aarch64) ARCH=arm64 ;;
+  *) echo "Unsupported architecture: $ARCH" && exit 1 ;;
+esac
 
 curl -L -o ~/.valksor/mehrhof/bin/mehr-embedder \
-  "https://github.com/valksor/go-mehrhof/releases/download/v${VERSION}/mehr-embedder-linux-amd64"
+  "https://github.com/valksor/go-mehrhof/releases/download/${TAG}/mehr-embedder-${OS}-${ARCH}"
 
 chmod +x ~/.valksor/mehrhof/bin/mehr-embedder
 ```
