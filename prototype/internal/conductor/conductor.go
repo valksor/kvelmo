@@ -642,21 +642,9 @@ func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRR
 	var agentInst agent.Agent
 	agentInst, err = c.GetAgentForStep(ctx, workflow.StepPRReview)
 	if err != nil {
-		// Fall back to opts.AgentName for backward compatibility
-		if opts.AgentName != "" {
-			c.logVerbosef("Getting agent '%s'...", opts.AgentName)
-			c.mu.RLock()
-			agentInst, err = c.agents.Get(opts.AgentName)
-			c.mu.RUnlock()
-			if err != nil {
-				return nil, fmt.Errorf("get agent %q: %w", opts.AgentName, err)
-			}
-		} else {
-			return nil, fmt.Errorf("get agent for pr_review step: %w", err)
-		}
-	} else {
-		c.logVerbosef("Using agent for pr_review step")
+		return nil, fmt.Errorf("get agent for pr_review step: %w", err)
 	}
+	c.logVerbosef("Using agent for pr_review step")
 
 	// 8. Build review prompt
 	c.logVerbosef("Building review prompt...")

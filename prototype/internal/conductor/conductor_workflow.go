@@ -682,7 +682,6 @@ func (c *Conductor) buildWorkUnit() *workflow.WorkUnit {
 		Title:      c.taskWork.Metadata.Title,
 		Source: &workflow.Source{
 			Reference: c.taskWork.Source.Ref,
-			Content:   c.taskWork.Source.Content,
 		},
 	}
 

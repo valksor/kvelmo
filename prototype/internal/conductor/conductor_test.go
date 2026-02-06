@@ -1940,8 +1940,7 @@ func TestBuildWorkUnit_WithSpecs(t *testing.T) {
 					ExternalKey: "KEY-123",
 				},
 				Source: storage.SourceInfo{
-					Ref:     "task.md",
-					Content: "task content",
+					Ref: "task.md",
 				},
 			},
 			specifications: []int{1, 2, 3},
@@ -1959,8 +1958,7 @@ func TestBuildWorkUnit_WithSpecs(t *testing.T) {
 					ExternalKey: "KEY-456",
 				},
 				Source: storage.SourceInfo{
-					Ref:     "another.md",
-					Content: "another content",
+					Ref: "another.md",
 				},
 			},
 			specifications: []int{},
