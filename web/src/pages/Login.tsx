@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { login } from '@/api/auth'
-import { Loader2, Lock, User, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -53,39 +53,33 @@ export default function Login() {
               <label className="label" htmlFor="username">
                 <span className="label-text">Username</span>
               </label>
-              <label className="input input-bordered flex items-center gap-2">
-                <User size={16} className="text-base-content/40" />
-                <input
-                  id="username"
-                  type="text"
-                  placeholder="Enter username"
-                  className="grow"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  autoFocus
-                  disabled={isLoading}
-                />
-              </label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Enter username"
+                className="input input-bordered w-full"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+                disabled={isLoading}
+              />
             </div>
 
             <div className="form-control">
               <label className="label" htmlFor="password">
                 <span className="label-text">Password</span>
               </label>
-              <label className="input input-bordered flex items-center gap-2">
-                <Lock size={16} className="text-base-content/40" />
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter password"
-                  className="grow"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                className="input input-bordered w-full"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
             </div>
 
             <button
