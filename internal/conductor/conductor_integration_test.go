@@ -722,9 +722,8 @@ func TestBuildWorkUnit_WithTaskWork(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("test-task", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "Task content here",
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
