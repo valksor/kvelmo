@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -339,23 +340,34 @@ func (w *Workspace) UpdateSpecificationStatus(taskID string, number int, status 
 }
 
 // ListSpecificationsWithStatus returns all specifications with their parsed status.
+// Uses parallel file loading for improved performance with multiple specifications.
 func (w *Workspace) ListSpecificationsWithStatus(taskID string) ([]*Specification, error) {
 	numbers, err := w.ListSpecifications(taskID)
 	if err != nil {
 		return nil, err
 	}
 
-	specifications := make([]*Specification, 0, len(numbers))
-	for _, num := range numbers {
-		specification, err := w.ParseSpecification(taskID, num)
-		if err != nil {
-			// Include specification with error status
-			specifications = append(specifications, &Specification{Number: num, Status: "error"})
-
-			continue
-		}
-		specifications = append(specifications, specification)
+	if len(numbers) == 0 {
+		return []*Specification{}, nil
 	}
+
+	// Pre-allocate slice with exact size for thread-safe indexed writes
+	specifications := make([]*Specification, len(numbers))
+
+	var wg sync.WaitGroup
+	for i, num := range numbers {
+		wg.Go(func() {
+			spec, parseErr := w.ParseSpecification(taskID, num)
+			if parseErr != nil {
+				// Include specification with error status
+				specifications[i] = &Specification{Number: num, Status: "error"}
+
+				return
+			}
+			specifications[i] = spec
+		})
+	}
+	wg.Wait()
 
 	return specifications, nil
 }

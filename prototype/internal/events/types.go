@@ -15,6 +15,7 @@ const (
 	TypeAgentMessage   = "agent_message"
 	TypeCheckpoint     = "checkpoint"
 	TypeBlueprintReady = "blueprint_ready"
+	TypeSpecUpdated    = "spec_updated"
 
 	// GitHub-related events.
 	TypeBranchCreated = "branch_created"
