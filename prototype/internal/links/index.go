@@ -153,6 +153,10 @@ func (m *Manager) Save() error {
 
 // saveUnsafe saves without locking (internal use only, caller must hold lock).
 func (m *Manager) saveUnsafe() error {
+	if err := os.MkdirAll(m.linksDir, 0o755); err != nil {
+		return fmt.Errorf("create links directory: %w", err)
+	}
+
 	// Save index
 	indexData := IndexData{
 		Version:   IndexVersion,
@@ -167,11 +171,34 @@ func (m *Manager) saveUnsafe() error {
 		return fmt.Errorf("marshal index: %w", err)
 	}
 
-	// Write to temporary file first
+	// Write to a unique temporary file first so concurrent saves from
+	// separate manager instances cannot clobber each other.
 	indexPath := filepath.Join(m.linksDir, IndexFileName)
-	tmpPath := indexPath + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
+	tmpFile, err := os.CreateTemp(m.linksDir, IndexFileName+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("create index temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		//nolint:errcheck // Best-effort cleanup on write failure
+		os.Remove(tmpPath)
+
 		return fmt.Errorf("write index temp file: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		//nolint:errcheck // Best-effort cleanup on close failure
+		os.Remove(tmpPath)
+
+		return fmt.Errorf("close index temp file: %w", err)
+	}
+
+	// Ensure expected file mode for the persisted index.
+	if err := os.Chmod(tmpPath, 0o644); err != nil {
+		//nolint:errcheck // Best-effort cleanup on chmod failure
+		os.Remove(tmpPath)
+
+		return fmt.Errorf("chmod index temp file: %w", err)
 	}
 
 	// Atomic rename
