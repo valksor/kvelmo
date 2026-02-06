@@ -60,6 +60,17 @@ jobs:
             -   name: Install gofumpt
                 run: go install mvdan.cc/gofumpt@latest
 
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Build React Frontend
+                working-directory: web
+                run: |
+                    bun install
+                    bun run build
+
             -   name: Verify dependencies
                 run: |
                     go mod tidy
@@ -225,6 +236,15 @@ jobs:
                 working-directory: web
                 run: bun run test:coverage
 
+            -   name: Build Production Bundle
+                working-directory: web
+                run: bun run build
+
+            -   name: Verify Build Artifacts
+                run: |
+                    test -f internal/server/static/app/index.html || (echo "Build failed: index.html missing" && exit 1)
+                    test -d internal/server/static/app/assets || (echo "Build failed: assets/ missing" && exit 1)
+
             -   name: Upload React coverage to Coveralls
                 if: github.event_name != 'pull_request'
                 uses: coverallsapp/github-action@v2
@@ -241,6 +261,7 @@ jobs:
     embedder:
         if: >-
             !contains(github.event.head_commit.message, '[skip test]') &&
+            !contains(github.event.head_commit.message, '[skip embedder]') &&
             (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
         strategy:
             matrix:
@@ -308,7 +329,14 @@ jobs:
     coverage-finish:
         needs: [test, jetbrains, vscode, web, embedder]
         runs-on: ubuntu-amd
-        if: github.event_name != 'pull_request'
+        if: >-
+            github.event_name != 'pull_request' &&
+            always() &&
+            needs.test.result == 'success' &&
+            needs.jetbrains.result == 'success' &&
+            needs.vscode.result == 'success' &&
+            needs.web.result == 'success' &&
+            (needs.embedder.result == 'success' || needs.embedder.result == 'skipped')
         steps:
             -   name: Finish Coveralls parallel build
                 uses: coverallsapp/github-action@v2

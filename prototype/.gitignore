@@ -19,3 +19,7 @@ node_modules/
 .mehrhof/browser.json
 .playwright-mcp
 /web/coverage
+# React build artifacts (built in CI and locally via `make build`)
+internal/server/static/app/*
+!internal/server/static/app/.gitkeep
+!internal/server/static/app/assets/.gitkeep

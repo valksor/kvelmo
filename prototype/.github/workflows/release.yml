@@ -161,6 +161,17 @@ jobs:
                     echo "${{ secrets.MINISIGN_PRIVATE_KEY }}" | base64 -d > /tmp/minisign.key
                     chmod 600 /tmp/minisign.key
 
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Build React Frontend
+                working-directory: web
+                run: |
+                    bun install
+                    bun run build
+
             -   name: Save release title
                 id: release-title
                 env:
@@ -220,19 +231,23 @@ jobs:
                     cp dist/mehr_linux_amd64_v1/mehr dist/mehr-linux-amd64
                     cp dist/mehr_linux_arm64_v8.0/mehr dist/mehr-linux-arm64
                     cp dist/mehr_darwin_arm64_v8.0/mehr dist/mehr-darwin-arm64
+                    cp dist/mehr_darwin_amd64_v1/mehr dist/mehr-darwin-amd64
                     # Upload all artifacts
                     gh release upload "$RELEASE_TAG" \
                         dist/mehr-linux-amd64 \
                         dist/mehr-linux-arm64 \
                         dist/mehr-darwin-arm64 \
+                        dist/mehr-darwin-amd64 \
                         dist/checksums.txt \
                         dist/checksums.txt.minisig \
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
+                        dist/mehr-darwin-amd64.sha256 \
                         dist/mehr-linux-amd64.sbom.spdx.json \
                         dist/mehr-linux-arm64.sbom.spdx.json \
                         dist/mehr-darwin-arm64.sbom.spdx.json \
+                        dist/mehr-darwin-amd64.sbom.spdx.json \
                         --clobber
 
             -   name: Upload individual checksums (stable)
@@ -245,11 +260,15 @@ jobs:
                         dist/mehr-linux-amd64.sha256 \
                         dist/mehr-linux-arm64.sha256 \
                         dist/mehr-darwin-arm64.sha256 \
+                        dist/mehr-darwin-amd64.sha256 \
                         --clobber
 
     # Build mehr-embedder (ONNX sidecar) on native runners
     # Requires CGO and ONNX Runtime, so can't cross-compile
     embedder:
+        if: >-
+            !contains(github.event.release.name, '[skip embedder]') &&
+            !contains(github.event.release.body, '[skip embedder]')
         strategy:
             matrix:
                 include:
@@ -264,6 +283,10 @@ jobs:
                     -   goos: darwin
                         goarch: arm64
                         runner: macos-arm
+                    -   goos: darwin
+                        goarch: amd64
+                        runner: macos-15-intel
+                        onnx_arch: x64
         runs-on: ${{ matrix.runner }}
 
         env:
@@ -310,7 +333,11 @@ jobs:
 
             -   name: Generate checksum
                 run: |
-                    sha256sum "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" > "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256"
+                    if [ "${{ matrix.goos }}" = "darwin" ]; then
+                        shasum -a 256 "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" > "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256"
+                    else
+                        sha256sum "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" > "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256"
+                    fi
 
             -   name: Upload embedder to release
                 env:
@@ -321,4 +348,3 @@ jobs:
                         "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" \
                         "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256" \
                         --clobber
-
