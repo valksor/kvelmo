@@ -3,10 +3,8 @@ package commands
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/display"
 )
 
@@ -78,35 +76,4 @@ func runSync(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  3. Run %s to apply the changes\n", display.Bold("mehr implement"))
 
 	return nil
-}
-
-// extractContent extracts displayable text from a work unit for legacy CLI tests.
-func extractContent(wu *provider.WorkUnit) string {
-	var content strings.Builder
-
-	if wu.Title != "" {
-		content.WriteString("# ")
-		content.WriteString(wu.Title)
-		content.WriteString("\n\n")
-	}
-	if wu.Description != "" {
-		content.WriteString(wu.Description)
-		content.WriteString("\n")
-	}
-	if len(wu.Comments) > 0 {
-		content.WriteString("\n## Comments\n\n")
-		for _, comment := range wu.Comments {
-			author := provider.ResolveAuthor(comment)
-			if author == "" {
-				author = comment.Author.ID
-			}
-			content.WriteString("### ")
-			content.WriteString(author)
-			content.WriteString("\n\n")
-			content.WriteString(comment.Body)
-			content.WriteString("\n\n")
-		}
-	}
-
-	return content.String()
 }
