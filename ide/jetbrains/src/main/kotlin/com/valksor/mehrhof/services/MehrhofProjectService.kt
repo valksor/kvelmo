@@ -7,7 +7,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.util.EnvironmentUtil
 import com.valksor.mehrhof.api.EventStreamClient
 import com.valksor.mehrhof.api.EventType
 import com.valksor.mehrhof.api.MehrhofApiClient
@@ -15,11 +14,11 @@ import com.valksor.mehrhof.api.models.TaskInfo
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.settings.MehrhofSettings
 import com.valksor.mehrhof.util.CommandParser
+import com.valksor.mehrhof.util.EventParser
+import com.valksor.mehrhof.util.ReconnectionPolicy
 import kotlinx.coroutines.*
-import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Per-project service managing Mehrhof server connection and state.
@@ -37,15 +36,30 @@ class MehrhofProjectService(
     private val log = Logger.getInstance(MehrhofProjectService::class.java)
     private val settings = MehrhofSettings.getInstance()
 
+    // Coroutine scope for background tasks
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // State change listeners
+    private val stateListeners = CopyOnWriteArrayList<StateListener>()
+
     // Connection state
     private val connected = AtomicBoolean(false)
     private val connecting = AtomicBoolean(false)
-    private val reconnectAttempts = AtomicInteger(0)
+    private val reconnectionPolicy =
+        ReconnectionPolicy(
+            maxAttempts = settings.maxReconnectAttempts,
+            delaySeconds = settings.reconnectDelaySeconds
+        )
 
-    // Server process management
-    private var serverProcess: Process? = null
-    private var serverPort: Int? = null
-    private var serverOutputJob: Job? = null
+    // Server process management (delegated)
+    private val serverManager =
+        MehrhofServerManager(
+            scope = scope,
+            onServerReady = { url -> connectToUrl(url) },
+            onError = { message -> notifyError(message) },
+            onInfo = { message -> notifyInfo(message) },
+            onProcessExited = { stateListeners.forEach { it.onConnectionChanged(false) } }
+        )
 
     // API clients
     private var apiClient: MehrhofApiClient? = null
@@ -71,12 +85,6 @@ class MehrhofProjectService(
     @Volatile
     var pendingQuestionOptions: List<String>? = null
         private set
-
-    // Coroutine scope for background tasks
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    // State change listeners
-    private val stateListeners = CopyOnWriteArrayList<StateListener>()
 
     /**
      * Listener interface for state changes.
@@ -129,195 +137,31 @@ class MehrhofProjectService(
     /**
      * Check if the server process is running.
      */
-    fun isServerRunning(): Boolean = serverProcess?.isAlive == true
+    fun isServerRunning(): Boolean = serverManager.isRunning()
 
     /**
      * Get the server port, or null if not running.
      */
-    fun getServerPort(): Int? = serverPort
+    fun getServerPort(): Int? = serverManager.getServerPort()
 
     /**
      * Get the API client, or null if not connected.
      */
     fun getApiClient(): MehrhofApiClient? = apiClient
 
-    // ========================================================================
-    // Server Process Management
-    // ========================================================================
-
-    /**
-     * Find the mehr binary, checking user config then default install locations.
-     */
-    private fun findMehrBinary(): String {
-        // User configured path takes priority
-        val configured = settings.mehrExecutable
-        if (configured.isNotEmpty() && File(configured).canExecute()) {
-            return configured
-        }
-
-        // Try default install locations
-        val home = System.getProperty("user.home")
-        val candidates =
-            listOf(
-                "$home/.local/bin/mehr",
-                "$home/bin/mehr",
-                "/usr/local/bin/mehr"
-            )
-
-        for (path in candidates) {
-            if (File(path).canExecute()) {
-                return path
-            }
-        }
-
-        throw IllegalStateException(
-            "mehr not found. Install with 'curl -fsSL https://valksor.com/install | bash' " +
-                "or configure path in Settings → Tools → Mehrhof"
-        )
-    }
-
     /**
      * Start the Mehrhof server for this project.
-     * Spawns `mehr serve` and captures the port from output.
+     * Delegates to [MehrhofServerManager] which spawns `mehr serve --api`.
      */
     fun startServer() {
-        if (serverProcess?.isAlive == true) {
-            log.info("Server already running")
-            return
-        }
-
-        val projectPath = project.basePath
-        if (projectPath == null) {
-            notifyError("Cannot start server: no project path")
-            return
-        }
-
-        val mehrBinary: String
-        try {
-            mehrBinary = findMehrBinary()
-        } catch (e: IllegalStateException) {
-            notifyError(e.message ?: "mehr not found")
-            return
-        }
-
-        log.info("Starting Mehrhof server in $projectPath using $mehrBinary")
-
-        try {
-            // Use IntelliJ's EnvironmentUtil to get user's shell environment
-            // This loads PATH and other variables from user's login shell (bash, zsh, fish, etc.)
-            // Start server in API-only mode (no web UI needed for IDE plugin)
-            val processBuilder =
-                ProcessBuilder(mehrBinary, "serve", "--api")
-                    .directory(File(projectPath))
-                    .redirectErrorStream(true)
-
-            // Apply user's shell environment from EnvironmentUtil
-            val env = processBuilder.environment()
-            env.putAll(EnvironmentUtil.getEnvironmentMap())
-
-            serverProcess = processBuilder.start()
-
-            // Read stdout in background, parse for port
-            serverOutputJob =
-                scope.launch(Dispatchers.IO) {
-                    val output = StringBuilder()
-                    val process = serverProcess ?: return@launch
-
-                    try {
-                        process.inputStream?.bufferedReader()?.useLines { lines ->
-                            for (line in lines) {
-                                output.appendLine(line)
-                                log.info("Server: $line")
-
-                                // Parse: "Server running at: http://localhost:XXXXX" or similar
-                                val match = Regex("""Server running at: https?://[^:]+:(\d+)""").find(line)
-                                if (match != null) {
-                                    val port = match.groupValues[1].toIntOrNull()
-                                    if (port != null) {
-                                        serverPort = port
-                                        val url = "http://localhost:$port"
-                                        log.info("Server started on port $port")
-
-                                        withContext(Dispatchers.Main) {
-                                            notifyInfo("Server started on port $port")
-                                            stateListeners.forEach { it.onConnectionChanged(false) }
-                                        }
-
-                                        // Connect to the server
-                                        connectToUrl(url)
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        if (e !is CancellationException) {
-                            log.warn("Error reading server output: ${e.message}")
-                        }
-                    }
-
-                    // Process ended - capture exit code
-                    val exitCode =
-                        try {
-                            process.waitFor()
-                        } catch (_: Exception) {
-                            -1
-                        }
-                    val capturedPort = serverPort
-
-                    withContext(Dispatchers.Main) {
-                        if (capturedPort == null) {
-                            // Server failed to start - show error with output
-                            val lastOutput = output.toString().takeLast(500)
-                            notifyError("Server exited (code $exitCode):\n$lastOutput")
-                        }
-                        serverProcess = null
-                        serverPort = null
-                        stateListeners.forEach { it.onConnectionChanged(false) }
-                    }
-                }
-        } catch (e: Exception) {
-            log.error("Failed to start server: ${e.message}")
-            notifyError("Failed to start server: ${e.message}")
-            serverProcess = null
-        }
+        serverManager.startServer(project, settings)
     }
 
     /**
      * Stop the Mehrhof server process.
      */
     fun stopServer() {
-        log.info("Stopping Mehrhof server")
-
-        // Disconnect first
-        disconnect()
-
-        // Cancel output reading job
-        serverOutputJob?.cancel()
-        serverOutputJob = null
-
-        // Destroy the process
-        serverProcess?.let { process ->
-            process.destroy()
-            // Wait a bit for graceful shutdown
-            scope.launch(Dispatchers.IO) {
-                try {
-                    withTimeout(5000) {
-                        while (process.isAlive) {
-                            delay(100)
-                        }
-                    }
-                } catch (_: TimeoutCancellationException) {
-                    // Force kill if still alive
-                    process.destroyForcibly()
-                }
-            }
-        }
-
-        serverProcess = null
-        serverPort = null
-
-        // Note: disconnect() already notifies listeners, no need to do it again
-        notifyInfo("Server stopped")
+        serverManager.stopServer(preShutdown = { disconnect() })
     }
 
     /**
@@ -363,7 +207,7 @@ class MehrhofProjectService(
 
         apiClient = client
         connected.set(true)
-        reconnectAttempts.set(0)
+        reconnectionPolicy.reset()
 
         // Notify listeners
         withContext(Dispatchers.Main) {
@@ -388,8 +232,9 @@ class MehrhofProjectService(
      */
     fun connect() {
         // If server is already running (started by plugin), we should already be connected
-        if (serverProcess?.isAlive == true && serverPort != null) {
-            connectToUrl("http://localhost:$serverPort")
+        val port = serverManager.getServerPort()
+        if (serverManager.isRunning() && port != null) {
+            connectToUrl("http://localhost:$port")
             return
         }
 
@@ -439,68 +284,61 @@ class MehrhofProjectService(
         data: JsonObject
     ) {
         scope.launch {
-            when (eventType) {
-                EventType.WORKFLOW_STATE_CHANGED -> {
-                    val newState = data.get("state")?.asString ?: return@launch
+            when (val parsed = EventParser.parse(eventType, data)) {
+                is EventParser.ParsedEvent.WorkflowStateChanged -> {
                     val previousState = workflowState
-                    workflowState = newState
+                    workflowState = parsed.newState
 
                     withContext(Dispatchers.Main) {
                         stateListeners.forEach {
-                            it.onWorkflowStateChanged(newState, previousState)
+                            it.onWorkflowStateChanged(parsed.newState, previousState)
                         }
                     }
                 }
 
-                EventType.TASK_STARTED, EventType.TASK_COMPLETED, EventType.TASK_FAILED -> {
+                is EventParser.ParsedEvent.TaskLifecycleEvent -> {
                     refreshState()
                 }
 
-                EventType.QUESTION_ASKED -> {
-                    val question = data.get("question")?.asString ?: return@launch
-                    val options = data.getAsJsonArray("options")?.map { it.asString }
-                    pendingQuestion = question
-                    pendingQuestionOptions = options
+                is EventParser.ParsedEvent.QuestionAsked -> {
+                    pendingQuestion = parsed.question
+                    pendingQuestionOptions = parsed.options
 
                     withContext(Dispatchers.Main) {
-                        stateListeners.forEach { it.onQuestionReceived(question, options) }
+                        stateListeners.forEach {
+                            it.onQuestionReceived(parsed.question, parsed.options)
+                        }
                     }
 
                     if (settings.showNotifications) {
-                        notifyQuestion(question)
+                        notifyQuestion(parsed.question)
                     }
                 }
 
-                EventType.ANSWER_PROVIDED -> {
+                is EventParser.ParsedEvent.AnswerProvided -> {
                     pendingQuestion = null
                     pendingQuestionOptions = null
                 }
 
-                EventType.AGENT_MESSAGE -> {
-                    val content = data.get("content")?.asString ?: return@launch
-                    val type = data.get("type")?.asString
-
+                is EventParser.ParsedEvent.AgentMessage -> {
                     withContext(Dispatchers.Main) {
-                        stateListeners.forEach { it.onAgentMessage(content, type) }
+                        stateListeners.forEach {
+                            it.onAgentMessage(parsed.content, parsed.type)
+                        }
                     }
                 }
 
-                EventType.ERROR -> {
-                    val error =
-                        data.get("error")?.asString
-                            ?: data.get("message")?.asString
-                            ?: "Unknown error"
-
+                is EventParser.ParsedEvent.Error -> {
                     withContext(Dispatchers.Main) {
-                        stateListeners.forEach { it.onError(error) }
+                        stateListeners.forEach { it.onError(parsed.message) }
                     }
 
                     if (settings.showNotifications) {
-                        notifyError(error)
+                        notifyError(parsed.message)
                     }
                 }
 
-                else -> {
+                is EventParser.ParsedEvent.Ignored -> {
                     // Ignore other events
                 }
             }
@@ -598,8 +436,8 @@ class MehrhofProjectService(
     }
 
     private fun scheduleReconnect() {
-        val attempts = reconnectAttempts.incrementAndGet()
-        if (attempts > settings.maxReconnectAttempts) {
+        val attempts = reconnectionPolicy.recordAttempt()
+        if (!reconnectionPolicy.shouldReconnect()) {
             log.warn("Max reconnect attempts reached")
             notifyError("Failed to reconnect to Mehrhof server after $attempts attempts")
             return
@@ -608,12 +446,13 @@ class MehrhofProjectService(
         log.info("Scheduling reconnect attempt $attempts in ${settings.reconnectDelaySeconds}s")
 
         scope.launch {
-            delay(settings.reconnectDelaySeconds * 1000L)
+            delay(reconnectionPolicy.nextDelayMs())
             if (!connected.get()) {
                 // Reconnect to the appropriate URL
+                val managerPort = serverManager.getServerPort()
                 val url =
                     when {
-                        serverPort != null -> "http://localhost:$serverPort"
+                        managerPort != null -> "http://localhost:$managerPort"
                         settings.serverUrl.isNotEmpty() -> settings.serverUrl
                         else -> return@launch // No URL to reconnect to
                     }
@@ -621,10 +460,6 @@ class MehrhofProjectService(
             }
         }
     }
-
-    // ========================================================================
-    // Notifications
-    // ========================================================================
 
     private fun notifyInfo(message: String) {
         if (!settings.showNotifications) return
@@ -652,17 +487,8 @@ class MehrhofProjectService(
             .notify(project)
     }
 
-    // ========================================================================
-    // Disposable
-    // ========================================================================
-
     override fun dispose() {
-        // Stop server if running
-        serverOutputJob?.cancel()
-        serverProcess?.destroy()
-        serverProcess = null
-        serverPort = null
-
+        serverManager.dispose()
         disconnect()
         scope.cancel()
         stateListeners.clear()
