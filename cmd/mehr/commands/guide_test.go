@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/paths"
 )
@@ -125,9 +124,8 @@ func TestRunGuide_IdleNoSpecs(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Test Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -164,9 +162,8 @@ func TestRunGuide_Planning(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Planning Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -203,9 +200,8 @@ func TestRunGuide_Implementing(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Implementing Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -240,9 +236,8 @@ func TestRunGuide_Reviewing(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Reviewing Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -277,9 +272,8 @@ func TestRunGuide_Done(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Done Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -312,9 +306,8 @@ func TestRunGuide_Waiting(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Waiting Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -347,9 +340,8 @@ func TestRunGuide_Paused(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Paused Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -382,9 +374,8 @@ func TestRunGuide_Failed(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Failed Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)

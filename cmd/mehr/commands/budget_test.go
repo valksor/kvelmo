@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/paths"
 )
@@ -237,9 +236,8 @@ func TestRunBudgetStatus_WithTask(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Budget Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -351,9 +349,8 @@ func TestRunBudgetTaskSet_WithTask(t *testing.T) {
 	}
 
 	work, err := ws.CreateWork("task-1", storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent("Budget Task"),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)

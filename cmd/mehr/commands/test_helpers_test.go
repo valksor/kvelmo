@@ -190,9 +190,8 @@ func (tc *TestContext) CreateActiveTask(taskID, ref string) *storage.ActiveTask 
 // CreateTaskWork creates a task work directory and files.
 func (tc *TestContext) CreateTaskWork(taskID, title string) *storage.TaskWork {
 	work, err := tc.Workspace.CreateWork(taskID, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: helper_test.SampleTaskContent(title),
+		Type: "file",
+		Ref:  "task.md",
 	})
 	if err != nil {
 		tc.T.Fatalf("Create work: %v", err)
