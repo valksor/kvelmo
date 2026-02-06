@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/go-mehrhof/internal/helper_test"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/paths"
 )
@@ -315,7 +314,7 @@ func createLabelTestTask(t *testing.T, ws *storage.Workspace) {
 		t.Fatalf("SaveActiveTask: %v", err)
 	}
 	work, err := ws.CreateWork(taskID, storage.SourceInfo{
-		Type: "file", Ref: "task.md", Content: helper_test.SampleTaskContent(title),
+		Type: "file", Ref: "task.md",
 	})
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
