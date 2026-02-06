@@ -158,18 +158,6 @@ func GetStateDescription(state workflow.State) string {
 	return ""
 }
 
-// GetStateDescriptionWithContext returns a state description with additional context.
-//
-// Deprecated: Use GetStateDescriptionWithProgress for full progress awareness.
-func GetStateDescriptionWithContext(state workflow.State, hasImplementedFiles bool) string {
-	// Special case: idle state after implementation has completed
-	if state == workflow.StateIdle && hasImplementedFiles {
-		return "Implementation complete - ready for review or finish"
-	}
-
-	return GetStateDescription(state)
-}
-
 // ──────────────────────────────────────────────────────────────────────────────
 // Progress-aware state formatting
 // ──────────────────────────────────────────────────────────────────────────────
