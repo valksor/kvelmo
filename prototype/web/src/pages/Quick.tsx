@@ -53,6 +53,7 @@ export default function Quick() {
   const [submitTaskId, setSubmitTaskId] = useState<string | null>(null)
   const [submitProvider, setSubmitProvider] = useState('github')
   const [submitDryRun, setSubmitDryRun] = useState(false)
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
 
   // Queries and mutations
   const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useQuickTasks()
@@ -129,9 +130,14 @@ export default function Quick() {
     await startMutation.mutateAsync(taskId)
   }
 
-  const handleDelete = async (taskId: string) => {
-    if (!confirm('Delete this task?')) return
-    await deleteMutation.mutateAsync(taskId)
+  const handleDelete = (taskId: string) => {
+    setDeleteTaskId(taskId)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTaskId) return
+    await deleteMutation.mutateAsync(deleteTaskId)
+    setDeleteTaskId(null)
   }
 
   const handleExport = async (taskId: string) => {
@@ -647,6 +653,35 @@ export default function Quick() {
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setSubmitTaskId(null)} />
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTaskId && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Delete Task</h3>
+            <p className="py-4 text-base-content/60">
+              This removes the quick task permanently.
+            </p>
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={() => setDeleteTaskId(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setDeleteTaskId(null)} />
         </div>
       )}
 
