@@ -290,7 +290,7 @@ export default function Automation() {
 
               {/* Status Filter */}
               <select
-                className="select select-bordered select-sm"
+                className="select select-bordered"
                 value={statusFilter || ''}
                 onChange={(e) => setStatusFilter((e.target.value || undefined) as JobStatus | undefined)}
               >

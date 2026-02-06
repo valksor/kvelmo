@@ -173,7 +173,7 @@ export default function Library() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search in collection..."
-                  className="input input-bordered w-full pl-10 input-sm"
+                  className="input input-bordered w-full pl-10"
                 />
               </div>
 
