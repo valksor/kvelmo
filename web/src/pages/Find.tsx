@@ -46,29 +46,38 @@ export default function Find() {
         </p>
       </div>
 
-      {/* Search form */}
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="flex-1 relative">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
-          />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search code... (min 3 characters)"
-            className="input input-bordered w-full pl-10"
-          />
+      <div className="card bg-base-100 shadow-sm border border-base-300/70">
+        <div className="card-body">
+          <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="form-control flex-1">
+              <label className="label py-1" htmlFor="find-query">
+                <span className="label-text">Search query</span>
+              </label>
+              <div className="relative">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
+                />
+                <input
+                  id="find-query"
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search code... (min 3 characters)"
+                  className="input input-bordered w-full pl-10"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={query.trim().length < 3 || isLoading}
+            >
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Search'}
+            </button>
+          </form>
         </div>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={query.trim().length < 3 || isLoading}
-        >
-          {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Search'}
-        </button>
-      </form>
+      </div>
 
       {/* Results */}
       {error && (
