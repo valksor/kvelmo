@@ -24,6 +24,7 @@ func (s *Server) handleLibraryList(w http.ResponseWriter, r *http.Request) {
 	lib := s.getLibrary()
 	if lib == nil {
 		s.writeJSON(w, http.StatusOK, libraryListResponse{
+			Enabled:     false,
 			Collections: []libraryCollectionResponse{},
 			Count:       0,
 		})
@@ -73,6 +74,7 @@ func (s *Server) handleLibraryList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeJSON(w, http.StatusOK, libraryListResponse{
+		Enabled:     true,
 		Collections: response,
 		Count:       len(response),
 	})
@@ -120,6 +122,63 @@ func (s *Server) handleLibraryShow(w http.ResponseWriter, r *http.Request) {
 			Paths:       collection.Paths,
 		},
 		Pages: pages,
+	})
+}
+
+// handleLibraryItems returns page items (metadata + content) for a collection.
+func (s *Server) handleLibraryItems(w http.ResponseWriter, r *http.Request) {
+	lib := s.getLibrary()
+	if lib == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "library system not available")
+
+		return
+	}
+
+	collectionID := r.PathValue("id")
+	if collectionID == "" {
+		s.writeError(w, http.StatusBadRequest, "collection id is required")
+
+		return
+	}
+
+	collection, err := lib.Show(r.Context(), collectionID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, "collection not found: "+err.Error())
+
+		return
+	}
+
+	pagePaths, err := lib.ListPages(r.Context(), collection.ID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to list pages: "+err.Error())
+
+		return
+	}
+
+	items := make([]libraryItemResponse, 0, len(pagePaths))
+	for _, pagePath := range pagePaths {
+		page, content, showErr := lib.ShowPage(r.Context(), collection.ID, pagePath)
+		if showErr != nil {
+			continue
+		}
+
+		title := pagePath
+		if page != nil && page.Title != "" {
+			title = page.Title
+		}
+
+		items = append(items, libraryItemResponse{
+			ID:         pagePath,
+			Title:      title,
+			Content:    content,
+			Collection: collection.ID,
+		})
+	}
+
+	s.writeJSON(w, http.StatusOK, libraryItemsResponse{
+		Collection: collection.ID,
+		Items:      items,
+		Count:      len(items),
 	})
 }
 
@@ -204,6 +263,7 @@ func (s *Server) handleLibraryStats(w http.ResponseWriter, r *http.Request) {
 // Response types for library handlers.
 
 type libraryListResponse struct {
+	Enabled     bool                        `json:"enabled"`
 	Collections []libraryCollectionResponse `json:"collections"`
 	Count       int                         `json:"count"`
 }
@@ -225,6 +285,20 @@ type libraryCollectionResponse struct {
 type libraryShowResponse struct {
 	Collection libraryCollectionResponse `json:"collection"`
 	Pages      []string                  `json:"pages"`
+}
+
+type libraryItemResponse struct {
+	ID         string   `json:"id"`
+	Title      string   `json:"title"`
+	Content    string   `json:"content"`
+	Collection string   `json:"collection"`
+	Tags       []string `json:"tags,omitempty"`
+}
+
+type libraryItemsResponse struct {
+	Collection string                `json:"collection"`
+	Items      []libraryItemResponse `json:"items"`
+	Count      int                   `json:"count"`
 }
 
 type libraryStatsResponse struct {

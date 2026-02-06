@@ -442,18 +442,9 @@ func (s *Server) handleWorkflowQuestion(w http.ResponseWriter, r *http.Request) 
 			if !ok {
 				return
 			}
-			if eventData, ok := e.Data["event"].(map[string]any); ok {
-				if eventType, ok := eventData["type"].(string); ok {
-					switch eventType {
-					case "content":
-						if text, ok := eventData["text"].(string); ok {
-							sendSSE(w, "", "{\"event\":\"content\",\"text\":\""+escapeJSON(text)+"\"}")
-						}
-					case "question":
-						if text, ok := eventData["text"].(string); ok {
-							sendSSE(w, "", "{\"event\":\"question\",\"text\":\""+escapeJSON(text)+"\"}")
-						}
-					}
+			if eventType, ok := e.Data["type"].(string); ok && eventType == "text" {
+				if text, ok := e.Data["content"].(string); ok && text != "" {
+					sendSSE(w, "", "{\"event\":\"content\",\"text\":\""+escapeJSON(text)+"\"}")
 				}
 			}
 		}

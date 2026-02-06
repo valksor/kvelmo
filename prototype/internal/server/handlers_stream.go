@@ -1,9 +1,10 @@
 package server
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/rs/xid"
@@ -124,28 +125,44 @@ func (s *Server) handleAgentLogsHistory(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Get sessions for the task
-	sessions, err := ws.ListSessions(taskID)
+	transcripts, err := ws.ListTranscripts(taskID)
 	if err != nil {
 		s.writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": "failed to load sessions",
+			"error": "failed to load transcripts",
 		})
 
 		return
 	}
 
-	// For now, return session metadata
-	// In a real implementation, you'd store and retrieve actual log lines
+	sort.Strings(transcripts)
+
+	// Return transcript lines as agent log history so UI can hydrate terminal output.
 	var logs []map[string]any
-	for i, session := range sessions {
-		logs = append(logs, map[string]any{
-			"index":      i,
-			"kind":       session.Kind,
-			"started_at": session.Metadata.StartedAt,
-			"agent":      session.Metadata.Agent,
-			"state":      session.Metadata.State,
-			"status":     "completed",
-			"message":    fmt.Sprintf("Session %d completed", i+1),
-		})
+	lineIndex := 0
+	for _, transcriptFile := range transcripts {
+		content, loadErr := ws.LoadTranscript(taskID, transcriptFile)
+		if loadErr != nil {
+			continue
+		}
+
+		kind, startedAt := parseTranscriptMetadata(transcriptFile)
+		lines := strings.Split(content, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			logs = append(logs, map[string]any{
+				"index":      lineIndex,
+				"kind":       kind,
+				"started_at": startedAt,
+				"file":       transcriptFile,
+				"type":       "output",
+				"message":    line,
+			})
+			lineIndex++
+		}
 	}
 
 	s.writeJSON(w, http.StatusOK, map[string]any{
@@ -153,4 +170,23 @@ func (s *Server) handleAgentLogsHistory(w http.ResponseWriter, r *http.Request) 
 		"task_id": taskID,
 		"count":   len(logs),
 	})
+}
+
+func parseTranscriptMetadata(filename string) (string, string) {
+	kind := "unknown"
+	startedAt := ""
+
+	trimmed := strings.TrimSuffix(filename, ".log")
+	lastDash := strings.LastIndex(trimmed, "-")
+	if lastDash <= 0 || lastDash >= len(trimmed)-1 {
+		return kind, startedAt
+	}
+
+	timestampPart := trimmed[:lastDash]
+	kind = trimmed[lastDash+1:]
+	if parsed, err := time.Parse("2006-01-02T15-04-05", timestampPart); err == nil {
+		startedAt = parsed.Format(time.RFC3339)
+	}
+
+	return kind, startedAt
 }

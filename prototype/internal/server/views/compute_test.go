@@ -251,7 +251,7 @@ func TestClearStaleTask(t *testing.T) {
 		conductor.WithWorkDir(tmpDir),
 		conductor.WithHomeDir(homeDir),
 		conductor.WithAutoInit(true),
-		conductor.WithCreateBranch(false),
+		conductor.WithNoBranch(true),
 		conductor.WithAgent("mock"), // Use mock agent
 	)
 	require.NoError(t, err)

@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/server/static"
+	"github.com/valksor/go-mehrhof/internal/server/views"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/eventbus"
 )
@@ -53,12 +56,14 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/task", s.handleGetTask)
 		mux.HandleFunc("GET /api/v1/tasks", s.handleListTasks)
 		mux.HandleFunc("GET /api/v1/tasks/{id}/specs", s.handleGetSpecifications)
+		mux.HandleFunc("GET /api/v1/tasks/{id}/specs/{number}/diff", s.handleGetSpecificationDiff)
 		mux.HandleFunc("GET /api/v1/tasks/{id}/sessions", s.handleGetSessions)
 
 		// Workflow action endpoints
 		mux.HandleFunc("POST /api/v1/workflow/start", s.handleWorkflowStart)
 		mux.HandleFunc("POST /api/v1/workflow/plan", s.handleWorkflowPlan)
 		mux.HandleFunc("POST /api/v1/workflow/implement", s.handleWorkflowImplement)
+		mux.HandleFunc("POST /api/v1/workflow/implement/review/{n}", s.handleWorkflowImplementReview)
 		mux.HandleFunc("POST /api/v1/workflow/review", s.handleWorkflowReview)
 		mux.HandleFunc("POST /api/v1/workflow/finish", s.handleWorkflowFinish)
 		mux.HandleFunc("POST /api/v1/workflow/undo", s.handleWorkflowUndo)
@@ -105,6 +110,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/browser/tabs", s.handleBrowserTabs)
 		mux.HandleFunc("POST /api/v1/browser/goto", s.handleBrowserGoto)
 		mux.HandleFunc("POST /api/v1/browser/navigate", s.handleBrowserNavigate)
+		mux.HandleFunc("POST /api/v1/browser/switch", s.handleBrowserSwitch)
 		mux.HandleFunc("POST /api/v1/browser/screenshot", s.handleBrowserScreenshot)
 		mux.HandleFunc("POST /api/v1/browser/click", s.handleBrowserClick)
 		mux.HandleFunc("POST /api/v1/browser/type", s.handleBrowserType)
@@ -112,6 +118,8 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/browser/dom", s.handleBrowserDOM)
 		mux.HandleFunc("POST /api/v1/browser/reload", s.handleBrowserReload)
 		mux.HandleFunc("POST /api/v1/browser/close", s.handleBrowserClose)
+		mux.HandleFunc("GET /api/v1/browser/cookies", s.handleBrowserCookiesGet)
+		mux.HandleFunc("POST /api/v1/browser/cookies", s.handleBrowserCookiesSet)
 
 		// Browser DevTools endpoints
 		mux.HandleFunc("POST /api/v1/browser/network", s.handleBrowserNetwork)
@@ -135,6 +143,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
 		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
 		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
+		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleLibraryItems)
 		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
 		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
 
@@ -255,6 +264,7 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
 		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
 		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
+		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleLibraryItems)
 		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
 		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
 	}
@@ -411,8 +421,16 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activeTask := s.config.Conductor.GetActiveTask()
-	if activeTask == nil {
+	ws := s.config.Conductor.GetWorkspace()
+	if ws == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
+
+		return
+	}
+
+	// Read from disk (same as CLI's mehr status) to avoid stale in-memory state
+	// when CLI operations modify .active_task in a separate process.
+	if !ws.HasActiveTask() {
 		s.writeJSON(w, http.StatusOK, map[string]any{
 			"active": false,
 		})
@@ -420,32 +438,66 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	taskWork := s.config.Conductor.GetTaskWork()
+	activeTask, err := ws.LoadActiveTask()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load active task: "+err.Error())
+
+		return
+	}
+
+	taskWork, err := ws.LoadWork(activeTask.ID)
+	if err != nil {
+		taskWork = nil
+	}
+
+	// Compute progress phase for context-aware state display (matches CLI behavior)
+	progressPhase := computeProgressPhase(ws, activeTask.ID)
 
 	response := map[string]any{
 		"active": true,
 		"task": map[string]any{
-			"id":            activeTask.ID,
-			"state":         activeTask.State,
-			"ref":           activeTask.Ref,
-			"branch":        activeTask.Branch,
-			"worktree_path": activeTask.WorktreePath,
-			"started":       activeTask.Started,
+			"id":             activeTask.ID,
+			"state":          activeTask.State,
+			"progress_phase": string(progressPhase),
+			"ref":            activeTask.Ref,
+			"branch":         activeTask.Branch,
+			"worktree_path":  activeTask.WorktreePath,
+			"started":        activeTask.Started,
 		},
 	}
 
 	if taskWork != nil {
-		response["work"] = map[string]any{
+		workResponse := map[string]any{
 			"title":        taskWork.Metadata.Title,
 			"external_key": taskWork.Metadata.ExternalKey,
 			"created_at":   taskWork.Metadata.CreatedAt,
 			"updated_at":   taskWork.Metadata.UpdatedAt,
 			"costs":        taskWork.Costs,
 		}
+
+		// Include source content as description for task detail view
+		if content, err := ws.GetSourceContent(activeTask.ID); err == nil && content != "" {
+			workResponse["description"] = content
+		}
+
+		// Include reviews if available
+		if reviewsData := views.ComputeReviews(ws, activeTask.ID); reviewsData != nil {
+			reviewList := make([]map[string]any, 0, len(reviewsData.Items))
+			for _, item := range reviewsData.Items {
+				reviewList = append(reviewList, map[string]any{
+					"number":      item.Number,
+					"status":      strings.ToLower(item.Status),
+					"summary":     item.Summary,
+					"issue_count": item.IssueCount,
+				})
+			}
+			workResponse["reviews"] = reviewList
+		}
+
+		response["work"] = workResponse
 	}
 
 	// Add pending question if present
-	ws := s.config.Conductor.GetWorkspace()
 	if ws != nil {
 		enhanceTaskResponseWithPendingQuestion(response, ws, activeTask.ID)
 	}
@@ -475,8 +527,11 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get active task to use its live state (persisted state may be stale)
-	activeTask := s.config.Conductor.GetActiveTask()
+	// Read active task from disk to avoid stale in-memory state
+	var activeTask *storage.ActiveTask
+	if ws.HasActiveTask() {
+		activeTask, _ = ws.LoadActiveTask()
+	}
 
 	var tasks []map[string]any
 	for _, id := range taskIDs {
@@ -491,11 +546,15 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 			state = activeTask.State
 		}
 
+		// Compute progress phase for context-aware state display
+		progressPhase := computeProgressPhase(ws, id)
+
 		task := map[string]any{
-			"id":         id,
-			"title":      work.Metadata.Title,
-			"state":      state,
-			"created_at": work.Metadata.CreatedAt,
+			"id":             id,
+			"title":          work.Metadata.Title,
+			"state":          state,
+			"progress_phase": string(progressPhase),
+			"created_at":     work.Metadata.CreatedAt,
 		}
 
 		// Check for worktree
@@ -727,4 +786,38 @@ func (s *Server) runSSEEventLoop(w http.ResponseWriter, flusher http.Flusher, ct
 			}
 		}
 	}
+}
+
+// computeProgressPhase determines the progress phase for a task.
+// This matches the CLI's display logic so Web UI shows consistent state names.
+func computeProgressPhase(ws *storage.Workspace, taskID string) display.ProgressPhase {
+	if ws == nil {
+		return display.PhaseStarted
+	}
+
+	hasSpecs := false
+	hasImplementedFiles := false
+	hasReviews := false
+
+	// Check for specifications and implemented files
+	if specs, err := ws.ListSpecifications(taskID); err == nil && len(specs) > 0 {
+		hasSpecs = true
+		// Check for implemented files in any specification
+		for _, specNum := range specs {
+			if spec, err := ws.ParseSpecification(taskID, specNum); err == nil {
+				if len(spec.ImplementedFiles) > 0 {
+					hasImplementedFiles = true
+
+					break
+				}
+			}
+		}
+	}
+
+	// Check for reviews
+	if reviews, err := ws.ListReviews(taskID); err == nil && len(reviews) > 0 {
+		hasReviews = true
+	}
+
+	return display.DetectProgressPhase(hasSpecs, hasImplementedFiles, hasReviews)
 }

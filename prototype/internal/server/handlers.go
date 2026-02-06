@@ -1,13 +1,16 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
@@ -151,10 +154,14 @@ func (s *Server) handleWorkflowStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSON(w, http.StatusOK, map[string]any{
+	response := map[string]any{
 		"success": true,
 		"message": "task started",
-	})
+	}
+	if activeTask := s.config.Conductor.GetActiveTask(); activeTask != nil {
+		response["task_id"] = activeTask.ID
+	}
+	s.writeJSON(w, http.StatusOK, response)
 }
 
 // handleFileUpload processes file upload and returns a file: ref.
@@ -326,6 +333,9 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Publish state change event immediately so UI updates
+	s.publishStateChangeEvent(r.Context())
+
 	// Run planning
 	if err := s.config.Conductor.RunPlanning(r.Context()); err != nil {
 		if s.handleNonFatalWorkflowError(w, err, "planning") {
@@ -373,6 +383,9 @@ func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Publish state change event immediately so UI updates
+	s.publishStateChangeEvent(r.Context())
+
 	// Run implementation
 	if err := s.config.Conductor.RunImplementation(r.Context()); err != nil {
 		if s.handleNonFatalWorkflowError(w, err, "implementing") {
@@ -386,6 +399,62 @@ func (s *Server) handleWorkflowImplement(w http.ResponseWriter, r *http.Request)
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "implementation completed",
+	})
+}
+
+// handleWorkflowImplementReview triggers implementation fixes for a specific review.
+func (s *Server) handleWorkflowImplementReview(w http.ResponseWriter, r *http.Request) {
+	if s.isViewer(r) {
+		s.writeError(w, http.StatusForbidden, "viewers cannot modify workflow")
+
+		return
+	}
+
+	if s.config.Conductor == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+		return
+	}
+
+	// Parse review number from path
+	nStr := r.PathValue("n")
+	if nStr == "" {
+		s.writeError(w, http.StatusBadRequest, "review number is required")
+
+		return
+	}
+
+	reviewNumber, err := strconv.Atoi(nStr)
+	if err != nil || reviewNumber <= 0 {
+		s.writeError(w, http.StatusBadRequest, "invalid review number: must be a positive integer")
+
+		return
+	}
+
+	// Enter implementing phase for review fixes
+	if err := s.config.Conductor.ImplementReview(r.Context(), reviewNumber); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to enter implementing for review: "+err.Error())
+
+		return
+	}
+
+	// Publish state change event immediately so UI updates
+	s.publishStateChangeEvent(r.Context())
+
+	// Run review implementation
+	if err := s.config.Conductor.RunReviewImplementation(r.Context(), reviewNumber); err != nil {
+		if s.handleNonFatalWorkflowError(w, err, "implementing review") {
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, "review implementation failed: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"success":       true,
+		"message":       "review implementation completed",
+		"review_number": reviewNumber,
 	})
 }
 
@@ -409,6 +478,9 @@ func (s *Server) handleWorkflowReview(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	// Publish state change event immediately so UI updates
+	s.publishStateChangeEvent(r.Context())
 
 	// Run review
 	if err := s.config.Conductor.RunReview(r.Context()); err != nil {
@@ -650,14 +722,18 @@ func (s *Server) handleGetSpecifications(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var specList []map[string]any
+	specList := []map[string]any{}
 	for _, spec := range specs {
 		specList = append(specList, map[string]any{
-			"number":       spec.Number,
-			"title":        spec.Title,
-			"status":       spec.Status,
-			"created_at":   spec.CreatedAt,
-			"completed_at": spec.CompletedAt,
+			"number":            spec.Number,
+			"name":              fmt.Sprintf("spec-%d", spec.Number),
+			"title":             spec.Title,
+			"description":       spec.Content,
+			"component":         spec.Component,
+			"status":            spec.Status,
+			"created_at":        spec.CreatedAt,
+			"completed_at":      spec.CompletedAt,
+			"implemented_files": spec.ImplementedFiles,
 		})
 	}
 
@@ -1115,5 +1191,36 @@ func (s *Server) handleListLabels(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, map[string]any{
 		"labels": labels,
 		"count":  len(labels),
+	})
+}
+
+// publishStateChangeEvent publishes an SSE event for workflow state changes.
+// This ensures the UI updates immediately when entering a new workflow phase.
+// Includes progress_phase for context-aware display (e.g., "Planned" instead of "idle").
+func (s *Server) publishStateChangeEvent(ctx context.Context) {
+	if s.config.EventBus == nil || s.config.Conductor == nil {
+		return
+	}
+
+	status, err := s.config.Conductor.Status(ctx)
+	if err != nil {
+		return
+	}
+
+	// Compute progress phase for context-aware state display
+	// This allows the frontend to show "Planned" when state is "idle" but specs exist
+	var progressPhase string
+	if ws := s.config.Conductor.GetWorkspace(); ws != nil && status.TaskID != "" {
+		phase := computeProgressPhase(ws, status.TaskID)
+		progressPhase = string(phase)
+	}
+
+	s.config.EventBus.PublishRaw(eventbus.Event{
+		Type: views.EventWorkflowStateChanged,
+		Data: map[string]any{
+			"state":          status.State,
+			"task_id":        status.TaskID,
+			"progress_phase": progressPhase,
+		},
 	})
 }

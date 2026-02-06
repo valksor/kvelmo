@@ -400,18 +400,14 @@ func (s *Server) handleStandaloneSimplifySSE(w http.ResponseWriter, r *http.Requ
 
 // streamEvent streams an event to the SSE client.
 func (s *Server) streamEvent(w http.ResponseWriter, e eventbus.Event) {
-	if eventData, ok := e.Data["event"].(map[string]any); ok {
-		if eventType, ok := eventData["type"].(string); ok {
-			switch eventType {
-			case "content":
-				if text, ok := eventData["text"].(string); ok {
-					sendSSE(w, "", fmt.Sprintf(`{"event":"content","text":"%s"}`, escapeJSON(text)))
-				}
-			case "progress":
-				if msg, ok := eventData["message"].(string); ok {
-					sendSSE(w, "", fmt.Sprintf(`{"event":"progress","message":"%s"}`, escapeJSON(msg)))
-				}
-			}
+	switch e.Type {
+	case events.TypeAgentMessage:
+		if text, ok := e.Data["content"].(string); ok && text != "" {
+			sendSSE(w, "", fmt.Sprintf(`{"event":"content","text":"%s"}`, escapeJSON(text)))
+		}
+	case events.TypeProgress:
+		if msg, ok := e.Data["message"].(string); ok {
+			sendSSE(w, "", fmt.Sprintf(`{"event":"progress","message":"%s"}`, escapeJSON(msg)))
 		}
 	}
 }

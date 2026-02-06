@@ -262,7 +262,10 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		// Stream event via SSE to connected clients
 		s.config.EventBus.PublishRaw(eventbus.Event{
 			Type: events.TypeAgentMessage,
-			Data: map[string]any{"event": event},
+			Data: map[string]any{
+				"content": event.Text,
+				"type":    string(event.Type),
+			},
 		})
 
 		return nil

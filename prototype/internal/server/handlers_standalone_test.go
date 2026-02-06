@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -355,45 +356,44 @@ func TestStreamEvent(t *testing.T) {
 	s := &Server{}
 
 	tests := []struct {
-		name   string
-		data   map[string]any
-		expect string
+		name      string
+		eventType string
+		data      map[string]any
+		expect    string
 	}{
 		{
-			name: "content event",
+			name:      "content event",
+			eventType: events.TypeAgentMessage,
 			data: map[string]any{
-				"event": map[string]any{
-					"type": "content",
-					"text": "Hello world",
-				},
+				"content": "Hello world",
+				"type":    "text",
 			},
 			expect: `{"event":"content","text":"Hello world"}`,
 		},
 		{
-			name: "progress event",
+			name:      "progress event",
+			eventType: events.TypeProgress,
 			data: map[string]any{
-				"event": map[string]any{
-					"type":    "progress",
-					"message": "Processing...",
-				},
+				"message": "Processing...",
 			},
 			expect: `{"event":"progress","message":"Processing..."}`,
 		},
 		{
-			name: "unknown event type",
+			name:      "unknown event type",
+			eventType: "unknown",
 			data: map[string]any{
-				"event": map[string]any{
-					"type": "unknown",
-				},
+				"content": "text",
 			},
 			expect: "", // Should not output anything
 		},
 		{
-			name: "missing event field",
+			name:      "empty content",
+			eventType: events.TypeAgentMessage,
 			data: map[string]any{
-				"other": "data",
+				"content": "",
+				"type":    "text",
 			},
-			expect: "", // Should not output anything
+			expect: "", // Should not output anything for empty content
 		},
 	}
 
@@ -401,7 +401,7 @@ func TestStreamEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &responseWriterRecorder{header: make(http.Header)}
 			e := eventbus.Event{
-				Type: "test",
+				Type: eventbus.Type(tt.eventType),
 				Data: tt.data,
 			}
 			s.streamEvent(w, e)

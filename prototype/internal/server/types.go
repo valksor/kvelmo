@@ -231,6 +231,11 @@ type browserNavigateRequest struct {
 	URL   string `json:"url"`
 }
 
+// browserSwitchRequest is the request body for POST /api/v1/browser/switch.
+type browserSwitchRequest struct {
+	TabID string `json:"tab_id"`
+}
+
 // browserClickRequest is the request body for POST /api/v1/browser/click.
 type browserClickRequest struct {
 	TabID    string `json:"tab_id,omitempty"`
@@ -364,11 +369,15 @@ type syncRequest struct {
 
 // syncResponse is the response for POST /api/v1/workflow/sync.
 type syncResponse struct {
-	Success        bool   `json:"success"`
-	HasChanges     bool   `json:"has_changes"`
-	ChangesSummary string `json:"changes_summary,omitempty"`
-	SpecGenerated  string `json:"spec_generated,omitempty"`
-	Message        string `json:"message"`
+	Success              bool     `json:"success"`
+	HasChanges           bool     `json:"has_changes"`
+	ChangesSummary       string   `json:"changes_summary,omitempty"`
+	SpecGenerated        string   `json:"spec_generated,omitempty"`
+	SourceUpdated        bool     `json:"source_updated,omitempty"`
+	PreviousSnapshotPath string   `json:"previous_snapshot_path,omitempty"`
+	DiffPath             string   `json:"diff_path,omitempty"`
+	Warnings             []string `json:"warnings,omitempty"`
+	Message              string   `json:"message"`
 }
 
 // simplifyRequest is the request body for POST /api/v1/workflow/simplify.
