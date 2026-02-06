@@ -28,7 +28,6 @@ Examples:
   mehr list                   # List all tasks
   mehr list --worktrees       # Show only tasks with worktrees
   mehr list --running         # Show running parallel tasks (in-memory)
-  mehr list --json            # Output as JSON
   mehr list --search "api"    # Search tasks by title
   mehr list --filter state:done  # Filter by state
   mehr list --sort cost        # Sort by cost (highest first)
@@ -42,7 +41,6 @@ var (
 	listFilter        string
 	listSort          string
 	listFormat        string
-	listJSON          bool
 	listLabelFilter   string
 	listLabelAny      []string
 	listNoLabel       bool
@@ -57,7 +55,6 @@ func init() {
 	listCmd.Flags().StringVar(&listFilter, "filter", "", "Filter tasks (format: key:value, e.g., state:done)")
 	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort tasks (date, cost, duration)")
 	listCmd.Flags().StringVar(&listFormat, "format", "table", "Output format (table, json, csv)")
-	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON (deprecated, use --format json)")
 	listCmd.Flags().StringVar(&listLabelFilter, "label", "", "Filter by label (e.g., --label=priority:high)")
 	listCmd.Flags().StringSliceVar(&listLabelAny, "label-any", nil, "Filter by any label (OR logic)")
 	listCmd.Flags().BoolVar(&listNoLabel, "no-label", false, "Show only tasks without labels")
@@ -66,11 +63,6 @@ func init() {
 
 func runList(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
-
-	// Handle legacy --json flag (map to --format json)
-	if listJSON {
-		listFormat = "json"
-	}
 
 	// Handle --running flag to show parallel running tasks
 	if listRunning {
