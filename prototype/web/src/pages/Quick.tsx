@@ -371,7 +371,7 @@ export default function Quick() {
                       type="checkbox"
                       checked={sourceOptimize}
                       onChange={(e) => setSourceOptimize(e.target.checked)}
-                      className="checkbox checkbox-sm"
+                      className="checkbox checkbox-primary"
                     />
                     <span className="label-text">Optimize with AI after import</span>
                   </label>
@@ -542,21 +542,27 @@ export default function Quick() {
 
                     {expandedTaskId === task.id && (
                       <div className="mt-2 space-y-2">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newNote}
-                            onChange={(e) => setNewNote(e.target.value)}
-                            placeholder="Add a note..."
-                            className="input input-bordered input-sm flex-1"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleAddNote(task.id)
-                              }
-                            }}
-                          />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                          <div className="form-control flex-1">
+                            <label className="label py-1" htmlFor={`quick-task-note-${task.id}`}>
+                              <span className="label-text">New note</span>
+                            </label>
+                            <input
+                              id={`quick-task-note-${task.id}`}
+                              type="text"
+                              value={newNote}
+                              onChange={(e) => setNewNote(e.target.value)}
+                              placeholder="Add a note..."
+                              className="input input-bordered w-full"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleAddNote(task.id)
+                                }
+                              }}
+                            />
+                          </div>
                           <button
-                            className="btn btn-sm btn-primary"
+                            className="btn btn-primary"
                             onClick={() => handleAddNote(task.id)}
                             disabled={!newNote.trim() || addNoteMutation.isPending}
                           >
@@ -604,7 +610,7 @@ export default function Quick() {
                   type="checkbox"
                   checked={submitDryRun}
                   onChange={(e) => setSubmitDryRun(e.target.checked)}
-                  className="checkbox checkbox-sm"
+                  className="checkbox checkbox-primary"
                 />
                 <span className="label-text">Dry run (preview only)</span>
               </label>

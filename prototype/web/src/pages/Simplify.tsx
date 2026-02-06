@@ -3,6 +3,7 @@ import { Loader2, AlertCircle, Sparkles, FileText, Plus, Pencil, Trash2, CheckCi
 import { useStandaloneSimplify, type StandaloneMode } from '@/api/standalone'
 import { useStatus } from '@/api/workflow'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
+import { Checkbox, FormField, TextArea, TextInput } from '@/components/settings/FormField'
 
 export default function Simplify() {
   const { data: status, isLoading: statusLoading } = useStatus()
@@ -93,134 +94,102 @@ export default function Simplify() {
         <div className="card-body">
           <h3 className="font-medium mb-4">Simplify Configuration</h3>
 
-          {/* Mode Selection */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Target Mode</span>
-            </label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as StandaloneMode)}
-              className="select select-bordered"
-            >
-              <option value="uncommitted">Uncommitted Changes</option>
-              <option value="branch">Branch Comparison</option>
-              <option value="range">Commit Range</option>
-              <option value="files">Specific Files</option>
-            </select>
-          </div>
-
-          {/* Mode-specific inputs */}
-          {mode === 'branch' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Base Branch</span>
-              </label>
-              <input
-                type="text"
-                value={baseBranch}
-                onChange={(e) => setBaseBranch(e.target.value)}
-                placeholder="main"
-                className="input input-bordered"
-              />
-            </div>
-          )}
-
-          {mode === 'range' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Commit Range</span>
-              </label>
-              <input
-                type="text"
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-                placeholder="HEAD~3..HEAD"
-                className="input input-bordered"
-              />
-            </div>
-          )}
-
-          {mode === 'files' && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">File Paths (comma-separated)</span>
-              </label>
-              <textarea
-                value={files}
-                onChange={(e) => setFiles(e.target.value)}
-                placeholder="src/main.go, internal/handler.go"
-                className="textarea textarea-bordered h-24"
-              />
-            </div>
-          )}
-
-          {/* Context lines */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Context Lines</span>
-              <span className="label-text-alt">{context} lines</span>
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={10}
-              value={context}
-              onChange={(e) => setContext(parseInt(e.target.value, 10))}
-              className="range range-sm range-primary"
-            />
-            <div className="w-full flex justify-between text-xs px-2 mt-1">
-              <span>0</span>
-              <span>5</span>
-              <span>10</span>
-            </div>
-          </div>
-
-          {/* Agent override */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Agent (optional)</span>
-            </label>
-            <input
-              type="text"
-              value={agent}
-              onChange={(e) => setAgent(e.target.value)}
-              placeholder="Leave empty for default"
-              className="input input-bordered"
-            />
-          </div>
-
-          {/* Checkpoint toggle */}
-          <div className="form-control">
-            <label className="label cursor-pointer justify-start gap-3">
-              <input
-                type="checkbox"
-                checked={createCheckpoint}
-                onChange={(e) => setCreateCheckpoint(e.target.checked)}
-                className="checkbox checkbox-sm"
-              />
-              <span className="label-text">Create checkpoint before simplifying (recommended)</span>
-            </label>
-          </div>
-
-          {/* Run button */}
-          <button
-            onClick={handleRun}
-            disabled={simplifyMutation.isPending}
-            className="btn btn-primary mt-4"
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void handleRun()
+            }}
           >
-            {simplifyMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Simplifying...
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} />
-                Run Simplify
-              </>
+            <FormField label="Target Mode">
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as StandaloneMode)}
+                className="select select-bordered w-full"
+              >
+                <option value="uncommitted">Uncommitted Changes</option>
+                <option value="branch">Branch Comparison</option>
+                <option value="range">Commit Range</option>
+                <option value="files">Specific Files</option>
+              </select>
+            </FormField>
+
+            {mode === 'branch' && (
+              <TextInput
+                label="Base Branch"
+                value={baseBranch}
+                onChange={setBaseBranch}
+                placeholder="main"
+              />
             )}
-          </button>
+
+            {mode === 'range' && (
+              <TextInput
+                label="Commit Range"
+                value={range}
+                onChange={setRange}
+                placeholder="HEAD~3..HEAD"
+              />
+            )}
+
+            {mode === 'files' && (
+              <TextArea
+                label="File Paths"
+                hint="Comma-separated paths"
+                value={files}
+                onChange={setFiles}
+                placeholder="src/main.go, internal/handler.go"
+                rows={4}
+              />
+            )}
+
+            <FormField label="Context Lines" hint={`${context} lines (0 to 10)`}>
+              <input
+                type="range"
+                min={0}
+                max={10}
+                value={context}
+                onChange={(e) => setContext(parseInt(e.target.value, 10))}
+                className="range range-primary"
+              />
+              <div className="w-full flex justify-between text-xs px-2 mt-1 text-base-content/60">
+                <span>0</span>
+                <span>5</span>
+                <span>10</span>
+              </div>
+            </FormField>
+
+            <TextInput
+              label="Agent (optional)"
+              value={agent}
+              onChange={setAgent}
+              placeholder="Leave empty for default"
+            />
+
+            <Checkbox
+              label="Create checkpoint before simplifying (recommended)"
+              checked={createCheckpoint}
+              onChange={setCreateCheckpoint}
+            />
+
+            <button
+              type="submit"
+              disabled={simplifyMutation.isPending}
+              className="btn btn-primary w-full"
+            >
+              {simplifyMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Simplifying...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  Run Simplify
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </div>
 

@@ -36,21 +36,47 @@ export default function Project() {
         <h1 className="text-2xl font-bold">Project Planning</h1>
       </div>
 
-      <div className="tabs tabs-boxed bg-base-200 p-1 inline-flex">
-        <button
-          className={`tab gap-2 ${activeTab === 'create' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('create')}
-        >
-          <FilePlus2 size={16} />
-          Create Plan
-        </button>
-        <button
-          className={`tab gap-2 ${activeTab === 'queues' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('queues')}
-        >
-          <FolderKanban size={16} />
-          Queues
-        </button>
+      <div className="card bg-base-100 shadow-sm border border-base-300/70">
+        <div className="card-body p-2 sm:p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              className={`tab h-auto rounded-xl border px-4 py-3 text-left transition-colors ${
+                activeTab === 'create'
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : 'border-base-300 bg-base-100 hover:bg-base-200/60'
+              }`}
+              onClick={() => setActiveTab('create')}
+              aria-pressed={activeTab === 'create'}
+            >
+              <div className="flex items-start gap-3">
+                <FilePlus2 size={18} className={activeTab === 'create' ? 'text-primary' : 'text-base-content/60'} />
+                <div className="space-y-1">
+                  <p className="font-semibold">Create Plan</p>
+                  <p className="text-xs text-base-content/65">Start from files, directories, or providers</p>
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`tab h-auto rounded-xl border px-4 py-3 text-left transition-colors ${
+                activeTab === 'queues'
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : 'border-base-300 bg-base-100 hover:bg-base-200/60'
+              }`}
+              onClick={() => setActiveTab('queues')}
+              aria-pressed={activeTab === 'queues'}
+            >
+              <div className="flex items-start gap-3">
+                <FolderKanban size={18} className={activeTab === 'queues' ? 'text-primary' : 'text-base-content/60'} />
+                <div className="space-y-1">
+                  <p className="font-semibold">Queues</p>
+                  <p className="text-xs text-base-content/65">Browse and manage existing plan queues</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="card bg-base-100 shadow-sm">
