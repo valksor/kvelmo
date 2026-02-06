@@ -10,7 +10,7 @@ git:
   commit_prefix: "[{key}]"
   branch_pattern: "{type}/{key}--{slug}"
   sign_commits: false
-  stash_on_start: false
+  stash_on_start: true
   auto_pop_stash: true
 ```
 
@@ -20,26 +20,25 @@ git:
 | `commit_prefix`  | `[{key}]`              | Commit message prefix template                 |
 | `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template                         |
 | `sign_commits`   | `false`                | GPG-sign commits                               |
-| `stash_on_start` | `false`                | Auto-stash changes before creating task branch |
+| `stash_on_start` | `true`                 | Kept for backward compatibility (always enabled) |
 | `auto_pop_stash` | `true`                 | Auto-pop stash after branch creation           |
 
 ## Stash Behavior
 
-When `stash_on_start` is enabled, Mehrhof automatically stashes uncommitted changes (including untracked files) before creating a new task branch. The `auto_pop_stash` setting controls whether the stash is automatically restored:
+Mehrhof automatically stashes uncommitted changes (including untracked files) before creating a new task branch. The `auto_pop_stash` setting controls whether the stash is automatically restored:
 
 - `auto_pop_stash: true` (default) - Stash is automatically restored after branch creation
 - `auto_pop_stash: false` - Stash is preserved for manual restoration (use `git stash pop`)
 
-This is useful when you have work-in-progress changes that aren't ready to commit.
-
 ```yaml
 git:
-  stash_on_start: true  # Auto-stash changes before creating branch
   auto_pop_stash: true  # Auto-pop stash after branch (default: true)
   # Set to false to preserve stash for manual restoration
 ```
 
-See [`mehr start --stash`](/cli/start.md#start-with-stash-uncommitted-changes) for CLI usage.
+Use `--no-branch` to skip branch creation entirely (no stashing needed).
+
+See [`mehr start`](/cli/start.md#uncommitted-changes-auto-stash) for CLI usage.
 
 ## Template Variables
 

@@ -57,6 +57,16 @@ The **File Changes** section lists all files that were created or modified, with
 
 Click any file to see the full diff.
 
+## Viewing Diffs From Specifications
+
+In the **Task Detail** page, expand a specification and go to **Implemented Files**.
+
+Each file now has a **View Diff** action that opens a read-only modal with:
+- A **Visual** split view (Before vs After) with line numbers and color highlighting
+- A **Raw** tab with the original unified patch text
+
+This is useful when you want to inspect exactly what changed for one implemented file without starting a review workflow.
+
 ## Adding Notes Before Implementation
 
 You can add notes right before implementing to provide additional guidance:

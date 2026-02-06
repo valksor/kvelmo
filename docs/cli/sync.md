@@ -56,9 +56,10 @@ If no changes:
 
 ## Generated Files
 
-- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/specifications/specification-N.md` - Delta specification with update instructions
-- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/source/<provider>.previous` - Backup of original source
-- `~/.valksor/mehrhof/workspaces/<project-id>/work/<task-id>/source/changes.txt` - Human-readable change summary
+- `<workspace>/work/<task-id>/specifications/specification-N.md` - Delta specification with update instructions
+- `<workspace>/work/<task-id>/source/<provider>.txt` - Updated source snapshot
+- `<workspace>/work/<task-id>/source/wrike_previous.txt` - Previous Wrike source snapshot (Wrike only)
+- `<workspace>/work/<task-id>/source/wrike_diff.txt` - Wrike diff summary (Wrike only)
 
 ## Change Detection
 
@@ -117,10 +118,10 @@ providers:
 
 ## Web UI
 
-Prefer a visual interface? See the Sync from Provider feature in [Project Planning](/web-ui/project-planning.md).
+Prefer a visual interface? See [Web UI: Syncing](/web-ui/sync.md).
 
 ## See Also
 
-- [mehr start](start.md) - Create a new task
-- [mehr continue](continue.md) - Resume work on a task
-- [mehr status](status.md) - Check task status
+- [mehr start](/cli/start.md) - Create a new task
+- [mehr continue](/cli/continue.md) - Resume work on a task
+- [mehr status](/cli/status.md) - Check task status

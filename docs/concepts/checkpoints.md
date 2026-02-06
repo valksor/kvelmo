@@ -118,11 +118,19 @@ mehr finish
 
 ## Git Integration
 
-Checkpoints are implemented as git commits:
+Checkpoints are implemented as git commits plus internal git references:
 
 ```bash
 git log --oneline
 ```
+
+Mehrhof records checkpoint pointers in internal refs under:
+
+```text
+refs/mehrhof/checkpoints/<task-id>/<number>
+```
+
+These are internal pointers used for undo/redo navigation. They are not Git tags.
 
 Commit messages include:
 
@@ -160,7 +168,7 @@ agent:
       name: claude-sonnet  # Use faster model for commit messages
 ```
 
-## Manual Checkpoints
+## Manual Commits
 
 While Mehrhof creates checkpoints automatically, you can also make manual commits:
 
@@ -169,7 +177,7 @@ git add .
 git commit -m "manual: added tests"
 ```
 
-These integrate with the checkpoint system.
+Manual commits remain in your Git history, but they are not checkpoint entries in Mehrhof's undo/redo stack.
 
 ## Limitations
 

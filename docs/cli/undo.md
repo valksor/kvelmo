@@ -73,7 +73,7 @@ Checkpoints:
 ### Cannot Undo When:
 
 - No checkpoints exist (task is at initial state)
-- Manual git commits were made (not checkpoints)
+- Current `HEAD` is not on a Mehrhof checkpoint commit
 - Undo stack is empty
 
 ### Error Messages
