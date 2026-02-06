@@ -170,12 +170,15 @@ func GetEmbedderAssetName() string {
 
 // IsEmbedderAvailable checks if the embedder binary is available for this platform.
 func IsEmbedderAvailable() bool {
-	// Check supported platforms (same as release matrix)
-	switch runtime.GOOS {
-	case "linux":
-		return runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64"
-	case "darwin":
-		return runtime.GOARCH == "arm64" // No darwin/amd64 embedder
+	return isEmbedderAvailable(runtime.GOOS, runtime.GOARCH)
+}
+
+func isEmbedderAvailable(goos, goarch string) bool {
+	// Native embedder binaries are published for Linux/macOS on amd64/arm64.
+	// Windows native binaries are not published; WSL uses Linux binaries.
+	switch goos {
+	case "linux", "darwin":
+		return goarch == "amd64" || goarch == "arm64"
 	default:
 		return false
 	}
