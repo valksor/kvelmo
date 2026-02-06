@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Loader2, StopCircle, Trash2, AlertCircle, Terminal, MessageSquare } from 'lucide-react'
+import { Send, Loader2, StopCircle, Trash2, Terminal, MessageSquare } from 'lucide-react'
 import { apiRequest } from '@/api/client'
 
 interface Message {
@@ -24,6 +24,14 @@ interface CommandResponse {
   success: boolean
   message?: string
   state?: string
+  commands?: CommandInfo[]
+}
+
+interface CommandInfo {
+  name: string
+  aliases?: string[]
+  description: string
+  requires_task: boolean
 }
 
 // Known workflow commands that should be routed to the command handler
@@ -34,11 +42,31 @@ const WORKFLOW_COMMANDS = new Set([
   'chat', 'answer', 'help', 'library', 'question',
 ])
 
+function formatCommandMessage(response: CommandResponse): string {
+  if (response.commands && response.commands.length > 0) {
+    const header = response.message ?? 'Available commands'
+    const normalizedHeader = header.endsWith(':') ? header : `${header}:`
+    const commandLines = [...response.commands]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((cmd) => {
+        const aliases = cmd.aliases && cmd.aliases.length > 0
+          ? ` (aliases: ${cmd.aliases.join(', ')})`
+          : ''
+        const requiresTask = cmd.requires_task ? ' [active task required]' : ''
+
+        return `- ${cmd.name}${aliases}: ${cmd.description}${requiresTask}`
+      })
+
+    return `${normalizedHeader}\n${commandLines.join('\n')}`
+  }
+
+  return response.message || (response.success ? 'Command executed' : 'Command failed')
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -76,7 +104,6 @@ export default function Chat() {
     const trimmedInput = input.trim()
     if (!trimmedInput || isLoading) return
 
-    setError(null)
     const userMessage: Message = {
       id: generateId(),
       role: 'user',
@@ -103,7 +130,7 @@ export default function Chat() {
         const systemMessage: Message = {
           id: generateId(),
           role: 'system',
-          content: response.message || (response.success ? 'Command executed' : 'Command failed'),
+          content: formatCommandMessage(response),
           timestamp: new Date(),
         }
         setMessages(prev => [...prev, systemMessage])
@@ -173,7 +200,6 @@ export default function Chat() {
           content: errorMessage,
           timestamp: new Date(),
         }])
-        setError(errorMessage)
       }
     } finally {
       setIsLoading(false)
@@ -195,7 +221,6 @@ export default function Chat() {
 
   const clearMessages = () => {
     setMessages([])
-    setError(null)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -251,17 +276,6 @@ export default function Chat() {
           </>
         )}
       </div>
-
-      {/* Error display */}
-      {error && (
-        <div className="alert alert-error mt-2">
-          <AlertCircle size={16} />
-          <span className="text-sm">{error}</span>
-          <button className="btn btn-ghost btn-xs" onClick={() => setError(null)}>
-            Dismiss
-          </button>
-        </div>
-      )}
 
       {/* Input area */}
       <div className="mt-4 flex gap-2">
