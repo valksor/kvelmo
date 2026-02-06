@@ -17,12 +17,20 @@ export type WorkflowState =
   | 'failed'
 
 // /api/v1/status response
+export interface StatusProject {
+  id?: string
+  name: string
+  path: string
+  remote_url?: string
+}
+
 export interface StatusResponse {
   mode: string
   running: boolean
   port: number
   state?: WorkflowState
   canSwitchToGlobal?: boolean
+  project?: StatusProject
 }
 
 // Progress phases for context-aware state display (matches internal/display/display.go)
