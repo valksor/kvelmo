@@ -43,10 +43,13 @@ export function NotificationCenter() {
       }
     },
     onQuestion: (question: QuestionData) => {
+      const preview = question.question?.trim()
       addNotification({
         type: 'question',
         title: 'Question Pending',
-        message: question.question?.slice(0, 100) + (question.question && question.question.length > 100 ? '...' : ''),
+        message: preview
+          ? preview.slice(0, 100) + (preview.length > 100 ? '...' : '')
+          : 'A response is required to continue.',
       })
     },
     onError: (error: string) => {

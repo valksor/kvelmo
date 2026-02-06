@@ -192,15 +192,14 @@ describe('TextArea', () => {
 })
 
 describe('CollapseSection', () => {
-  it('renders title and children', () => {
+  it('renders title button', () => {
     render(
       <CollapseSection title="Section Title">
         <p>Section content</p>
       </CollapseSection>
     )
 
-    expect(screen.getByText('Section Title')).toBeInTheDocument()
-    expect(screen.getByText('Section content')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Section Title' })).toBeInTheDocument()
   })
 
   it('is collapsed by default', () => {
@@ -210,8 +209,8 @@ describe('CollapseSection', () => {
       </CollapseSection>
     )
 
-    const checkbox = document.querySelector('input[type="checkbox"]')
-    expect(checkbox).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Section' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Content')).not.toBeInTheDocument()
   })
 
   it('is open when defaultOpen is true', () => {
@@ -221,7 +220,25 @@ describe('CollapseSection', () => {
       </CollapseSection>
     )
 
-    const checkbox = document.querySelector('input[type="checkbox"]')
-    expect(checkbox).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Section' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Content')).toBeInTheDocument()
+  })
+
+  it('toggles content visibility when clicked', async () => {
+    const user = userEvent.setup()
+    render(
+      <CollapseSection title="Section">
+        <p>Content</p>
+      </CollapseSection>
+    )
+
+    const button = screen.getByRole('button', { name: 'Section' })
+    await user.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Content')).toBeInTheDocument()
+
+    await user.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Content')).not.toBeInTheDocument()
   })
 })

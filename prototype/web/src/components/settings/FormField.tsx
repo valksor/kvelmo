@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { ChevronRight } from 'lucide-react'
+import { useId, useState, type ReactNode } from 'react'
 
 interface FormFieldProps {
   label: string
@@ -189,13 +190,33 @@ interface CollapseSectionProps {
 }
 
 export function CollapseSection({ title, defaultOpen, children }: CollapseSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false)
+  const contentID = useId()
+
   return (
-    <div className="collapse collapse-arrow bg-base-200">
-      <input type="checkbox" defaultChecked={defaultOpen} />
-      <div className="collapse-title font-medium">{title}</div>
-      <div className="collapse-content">
-        <div className="pt-2 space-y-4">{children}</div>
-      </div>
-    </div>
+    <section className="rounded-xl border border-base-300/70 bg-base-100 shadow-sm overflow-hidden">
+      <button
+        type="button"
+        className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-base-200/60 transition-colors"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+        aria-controls={contentID}
+      >
+        <span className="font-medium text-base-content">{title}</span>
+        <span className="inline-flex items-center justify-center rounded-md bg-base-200 px-1.5 py-1 text-base-content/70">
+          <ChevronRight
+            size={16}
+            className={`transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+            aria-hidden="true"
+          />
+        </span>
+      </button>
+
+      {isOpen && (
+        <div id={contentID} className="border-t border-base-300/70 px-4 pb-4">
+          <div className="pt-4 space-y-4">{children}</div>
+        </div>
+      )}
+    </section>
   )
 }
