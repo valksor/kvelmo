@@ -47,7 +47,7 @@ coverage-html: coverage ## Generate HTML coverage report
 quality: ## Run linter (golangci-lint)
 	${MAKE} fmt
 	golangci-lint run ./... --fix
-	#govulncheck ./...
+	##govulncheck ./...
 	${MAKE} check-alias
 
 fmt: ## Format code with go fmt, goimports, and gofumpt
