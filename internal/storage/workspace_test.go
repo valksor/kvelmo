@@ -442,10 +442,9 @@ func TestCreateWork(t *testing.T) {
 	}
 
 	source := SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "Test task content",
-		ReadAt:  time.Now(),
+		Type:   "file",
+		Ref:    "task.md",
+		ReadAt: time.Now(),
 	}
 
 	work, err := ws.CreateWork("test123", source)
@@ -487,9 +486,8 @@ func TestLoadAndSaveWork(t *testing.T) {
 	}
 
 	source := SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "Test content",
+		Type: "file",
+		Ref:  "task.md",
 	}
 
 	work, _ := ws.CreateWork("test123", source)
@@ -507,8 +505,8 @@ func TestLoadAndSaveWork(t *testing.T) {
 	if loaded.Metadata.Title != "Test Task" {
 		t.Errorf("loaded Title = %q, want %q", loaded.Metadata.Title, "Test Task")
 	}
-	if loaded.Source.Content != "Test content" {
-		t.Errorf("loaded Source.Content = %q, want %q", loaded.Source.Content, "Test content")
+	if loaded.Source.Ref != "task.md" {
+		t.Errorf("loaded Source.Ref = %q, want %q", loaded.Source.Ref, "task.md")
 	}
 }
 
@@ -1730,11 +1728,10 @@ func TestGetSourceContent(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	// Test single file source (embedded content for backwards compat)
+	// Test source with no files returns empty content
 	source := SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "Single file content",
+		Type: "file",
+		Ref:  "task.md",
 	}
 	if _, err := ws.CreateWork("test1", source); err != nil {
 		t.Fatalf("CreateWork(test1): %v", err)
@@ -1744,8 +1741,8 @@ func TestGetSourceContent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSourceContent failed: %v", err)
 	}
-	if content != "Single file content" {
-		t.Errorf("content = %q, want %q", content, "Single file content")
+	if content != "" {
+		t.Errorf("content = %q, want empty string for source with no files", content)
 	}
 
 	// Test directory source with actual files (new hybrid storage)
@@ -1924,9 +1921,8 @@ func TestNewActiveTask(t *testing.T) {
 
 func TestNewTaskWork(t *testing.T) {
 	source := SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "Test content",
+		Type: "file",
+		Ref:  "task.md",
 	}
 	work := NewTaskWork("work123", source)
 
@@ -2577,10 +2573,9 @@ func TestTaskWorkStruct(t *testing.T) {
 			Slug:        "test-task",
 		},
 		Source: SourceInfo{
-			Type:    "directory",
-			Ref:     ".mehrhof/plans/my-plan",
-			ReadAt:  now,
-			Content: "# Plan",
+			Type:   "directory",
+			Ref:    ".mehrhof/plans/my-plan",
+			ReadAt: now,
 		},
 		Git: GitInfo{
 			Branch:        "feature/FEAT-123--test-task",
@@ -2823,7 +2818,7 @@ func TestCreateWork_WorkPath(t *testing.T) {
 		t.Fatalf("EnsureInitialized: %v", err)
 	}
 
-	source := SourceInfo{Type: "file", Ref: "task.md", Content: "test"}
+	source := SourceInfo{Type: "file", Ref: "task.md"}
 	work, err := ws.CreateWork("task123", source)
 	if err != nil {
 		t.Fatalf("CreateWork: %v", err)
@@ -3458,9 +3453,8 @@ planned 2024-01-01 12:00
 			// Create a test task
 			taskID := "test-task"
 			source := SourceInfo{
-				Type:    "file",
-				Ref:     "test.md",
-				Content: "Test task",
+				Type: "file",
+				Ref:  "test.md",
 			}
 			_, err := ws.CreateWork(taskID, source)
 			if err != nil {
