@@ -245,3 +245,23 @@ func TestProjectRegistry_EmptyFields(t *testing.T) {
 	assert.Equal(t, "", meta.RemoteURL)
 	assert.Equal(t, "", meta.Name)
 }
+
+func TestProjectRegistry_Register_RedactsRemoteCredentials(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	registry, err := LoadRegistryWithOverride(tmpDir)
+	require.NoError(t, err)
+
+	err = registry.Register(
+		"project-1",
+		"/path",
+		"https://ghp_secret123@github.com/user/repo.git",
+		"Project",
+	)
+	require.NoError(t, err)
+
+	meta := registry.Lookup("project-1")
+	require.NotNil(t, meta)
+	assert.Equal(t, "https://github.com/user/repo.git", meta.RemoteURL)
+	assert.NotContains(t, meta.RemoteURL, "ghp_secret123")
+}
