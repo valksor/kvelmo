@@ -28,9 +28,8 @@ func (s *Server) handleAddNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := req.getContent()
-	if content == "" {
-		s.writeError(w, http.StatusBadRequest, "content is required")
+	if req.Note == "" {
+		s.writeError(w, http.StatusBadRequest, "note is required")
 
 		return
 	}
@@ -54,7 +53,7 @@ func (s *Server) handleAddNote(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Save as a Q&A pair in notes
-		note := "**Q:** " + q.Question + "\n\n**A:** " + content
+		note := "**Q:** " + q.Question + "\n\n**A:** " + req.Note
 		if err := ws.AppendNote(taskID, note, "answer"); err != nil {
 			s.writeError(w, http.StatusInternalServerError, "failed to save answer: "+err.Error())
 
@@ -78,7 +77,7 @@ func (s *Server) handleAddNote(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Append as regular note
-		if err := ws.AppendNote(taskID, content, state); err != nil {
+		if err := ws.AppendNote(taskID, req.Note, state); err != nil {
 			s.writeError(w, http.StatusInternalServerError, "failed to append note: "+err.Error())
 
 			return

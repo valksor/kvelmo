@@ -47,7 +47,6 @@ func defaultFuncMap() template.FuncMap {
 		"formatNumber":   FormatNumber,
 		"formatBytes":    FormatBytes,
 		"formatPercent":  FormatPercent,
-		"formatPct":      FormatPercent, // Alias for backward compatibility
 		"timeAgo":        FormatTimeAgo,
 		"formatDate":     FormatDate,
 		"formatDuration": FormatDuration,
