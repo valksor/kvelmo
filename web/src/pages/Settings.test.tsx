@@ -21,14 +21,13 @@ describe('Settings Page', () => {
     })
   })
 
-  it('renders tab navigation with all sections', async () => {
+  it('renders section navigation grouped by menu structure', async () => {
     render(<Settings />)
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /core/i })).toBeInTheDocument()
-      expect(screen.getByRole('tab', { name: /providers/i })).toBeInTheDocument()
-      expect(screen.getByRole('tab', { name: /features/i })).toBeInTheDocument()
-      expect(screen.getByRole('tab', { name: /automation/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /work settings section/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /advanced settings section/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /admin settings section/i })).toBeInTheDocument()
     })
   })
 
@@ -41,20 +40,18 @@ describe('Settings Page', () => {
     })
   })
 
-  it('switches to Providers tab when clicked', async () => {
+  it('switches to Advanced section when clicked', async () => {
     const user = userEvent.setup()
     render(<Settings />)
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /providers/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /advanced settings section/i })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('tab', { name: /providers/i }))
+    await user.click(screen.getByRole('button', { name: /advanced settings section/i }))
 
-    // Should show provider-related content - use getAllByText since GitHub appears multiple times
     await waitFor(() => {
-      const githubElements = screen.getAllByText(/github/i)
-      expect(githubElements.length).toBeGreaterThan(0)
+      expect(screen.getByText('Browser Automation')).toBeInTheDocument()
     })
   })
 
