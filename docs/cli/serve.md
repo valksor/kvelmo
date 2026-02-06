@@ -168,7 +168,6 @@ mehr serve --api --host 0.0.0.0 --port 8080
 **What's disabled in API-only mode:**
 - ❌ Web UI pages (`/`, `/project`, `/interactive`, etc.)
 - ❌ Static assets (`/static/*`)
-- ❌ UI partials (`/ui/partials/*`)
 
 **Use case:** IDE plugins connect via API endpoints and don't require the web UI.
 

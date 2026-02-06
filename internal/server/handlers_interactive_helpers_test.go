@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -178,63 +177,6 @@ func TestRouterResultToJSON(t *testing.T) {
 	}
 }
 
-func TestInteractiveHelpersAndRendering(t *testing.T) {
-	if got := escapeHTML(`<a "b" 'c'&>`); got != "&lt;a &quot;b&quot; &#39;c&#39;&amp;&gt;" {
-		t.Fatalf("escapeHTML mismatch: %q", got)
-	}
-	if got := truncateURL("https://example.com/very/long/path", 16); len(got) != 16 {
-		t.Fatalf("truncateURL length = %d", len(got))
-	}
-	if got := truncateStr("abcdef", 4); got != "a..." {
-		t.Fatalf("truncateStr = %q", got)
-	}
-	if got := getProviderInfoText("gh"); !strings.Contains(got, "Provider: GitHub") {
-		t.Fatalf("provider alias lookup failed: %q", got)
-	}
-	if got := getProviderInfoText("unknown"); got != "" {
-		t.Fatalf("unknown provider should return empty, got %q", got)
-	}
-}
-
-func TestExecuteInteractiveChatAndCommandFallbacks(t *testing.T) {
-	t.Run("chat without conductor", func(t *testing.T) {
-		srv, err := New(Config{Mode: ModeProject})
-		if err != nil {
-			t.Fatalf("New server failed: %v", err)
-		}
-		html := srv.executeInteractiveChat(context.Background(), "hello")
-		if !strings.Contains(html, "Conductor not initialized") {
-			t.Fatalf("expected conductor error html, got %q", html)
-		}
-	})
-
-	t.Run("chat with conductor but no active agent", func(t *testing.T) {
-		cond, err := conductor.New()
-		if err != nil {
-			t.Fatalf("conductor.New failed: %v", err)
-		}
-		srv, err := New(Config{Mode: ModeProject, Conductor: cond})
-		if err != nil {
-			t.Fatalf("New server failed: %v", err)
-		}
-		html := srv.executeInteractiveChat(context.Background(), "hello")
-		if !strings.Contains(html, "No active agent") {
-			t.Fatalf("expected no-agent html, got %q", html)
-		}
-	})
-
-	t.Run("command without conductor", func(t *testing.T) {
-		srv, err := New(Config{Mode: ModeProject})
-		if err != nil {
-			t.Fatalf("New server failed: %v", err)
-		}
-		html := srv.executeInteractiveCommand(context.Background(), "status", nil, "status")
-		if !strings.Contains(html, "Conductor not initialized") {
-			t.Fatalf("expected conductor error html, got %q", html)
-		}
-	})
-}
-
 func TestBuildChatPromptAndInteractiveRoutes(t *testing.T) {
 	cond, err := conductor.New()
 	if err != nil {
@@ -249,30 +191,6 @@ func TestBuildChatPromptAndInteractiveRoutes(t *testing.T) {
 	if !strings.Contains(prompt, "You are an AI assistant") || !strings.Contains(prompt, "User message: hello") {
 		t.Fatalf("unexpected prompt: %q", prompt)
 	}
-
-	t.Run("handleInteractiveSend wrong method", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/ui/interactive/send", nil)
-		rr := httptest.NewRecorder()
-		srv.handleInteractiveSend(rr, req)
-		if rr.Code != http.StatusMethodNotAllowed {
-			t.Fatalf("status = %d, want 405", rr.Code)
-		}
-	})
-
-	t.Run("handleInteractiveSend empty message", func(t *testing.T) {
-		form := url.Values{}
-		form.Set("message", "   ")
-		req := httptest.NewRequest(http.MethodPost, "/ui/interactive/send", bytes.NewBufferString(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		rr := httptest.NewRecorder()
-		srv.handleInteractiveSend(rr, req)
-		if rr.Code != http.StatusOK {
-			t.Fatalf("status = %d, want 200", rr.Code)
-		}
-		if rr.Body.Len() != 0 {
-			t.Fatalf("expected empty response for empty input, got %q", rr.Body.String())
-		}
-	})
 }
 
 func TestInteractiveCommandsEndpointDirect(t *testing.T) {
