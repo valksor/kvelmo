@@ -1,19 +1,16 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useStatus } from '@/api/workflow'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
 import { QueuesPanel } from '@/components/project/QueuesPanel'
-import { TasksPanel } from '@/components/project/TasksPanel'
-import { EditTaskModal } from '@/components/project/EditTaskModal'
-import { FolderKanban, ListTree, FilePlus2, Loader2 } from 'lucide-react'
-import type { PlanTask } from '@/api/project-planning'
+import { FolderKanban, FilePlus2, Loader2 } from 'lucide-react'
 
-type Tab = 'create' | 'queues' | 'tasks'
+type Tab = 'create' | 'queues'
 
 export default function Project() {
   const { data: status, isLoading: statusLoading } = useStatus()
   const [activeTab, setActiveTab] = useState<Tab>('create')
   const [selectedQueueId, setSelectedQueueId] = useState<string | undefined>()
-  const [editingTask, setEditingTask] = useState<PlanTask | null>(null)
 
   if (statusLoading) {
     return (
@@ -35,7 +32,6 @@ export default function Project() {
 
   const handleSelectQueue = (queueId: string) => {
     setSelectedQueueId(queueId)
-    setActiveTab('tasks')
   }
 
   return (
@@ -61,14 +57,6 @@ export default function Project() {
           <FolderKanban size={16} />
           Queues
         </button>
-        <button
-          className={`tab gap-2 ${activeTab === 'tasks' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
-          disabled={!selectedQueueId}
-        >
-          <ListTree size={16} />
-          Tasks
-        </button>
       </div>
 
       {/* Tab content */}
@@ -86,26 +74,22 @@ export default function Project() {
           )}
 
           {activeTab === 'queues' && (
-            <QueuesPanel
-              onSelectQueue={handleSelectQueue}
-              selectedQueueId={selectedQueueId}
-            />
-          )}
-
-          {activeTab === 'tasks' && (
-            <TasksPanel
-              queueId={selectedQueueId}
-              onEditTask={setEditingTask}
-            />
+            <div className="space-y-4">
+              <div className="alert alert-info">
+                Manage queue tasks in{' '}
+                <Link to="/" className="link link-primary">
+                  Dashboard - Tasks - Queue
+                </Link>
+                .
+              </div>
+              <QueuesPanel
+                onSelectQueue={handleSelectQueue}
+                selectedQueueId={selectedQueueId}
+              />
+            </div>
           )}
         </div>
       </div>
-
-      {/* Edit task modal */}
-      <EditTaskModal
-        task={editingTask}
-        onClose={() => setEditingTask(null)}
-      />
     </div>
   )
 }

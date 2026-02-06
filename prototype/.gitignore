@@ -23,3 +23,5 @@ node_modules/
 internal/server/static/app/*
 !internal/server/static/app/.gitkeep
 !internal/server/static/app/assets/.gitkeep
+*.log
+*.salive

@@ -43,14 +43,14 @@ Once started, your browser will open automatically to `http://localhost:XXXX`.
 └───────────┘ └────────┘ └───────┘ └──────────┘ └──────────┘
 ```
 
-The dashboard displays several sections: an **Active Task Card** (showing "No active task" initially with a **Create Task** button), **Task History** (empty at first), **Quick Actions**, and **Settings**. A dark mode toggle appears in the top right corner.
+The dashboard displays several sections: an **Active Task Card**, **Task Creation**, a unified **Tasks** block (with **Recent** and **Queue** views), and **Settings**. A dark mode toggle appears in the top right corner.
 
 | Section              | What It Does                                                              |
 |----------------------|---------------------------------------------------------------------------|
 | **Active Task**      | Shows your current task (or "No active task")                             |
 | **Workflow Diagram** | Visual state machine showing current workflow state and valid transitions |
 | **Quick Actions**    | Buttons to continue, undo, redo                                           |
-| **Task History**     | List of all past tasks                                                    |
+| **Tasks**            | Recent activity view plus queue-based planning tasks                      |
 | **Settings**         | Configure agents, providers, and workflow                                 |
 | **Dark Mode Toggle** | Switch between light/dark theme (top right)                               |
 

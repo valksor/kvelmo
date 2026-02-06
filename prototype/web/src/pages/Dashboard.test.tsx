@@ -39,11 +39,13 @@ describe('Dashboard', () => {
       })
     })
 
-    it('shows recent tasks section', async () => {
+    it('shows unified tasks section', async () => {
       render(<Dashboard />)
 
       await waitFor(() => {
-        expect(screen.getByText(/recent tasks/i)).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /^tasks$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /recent/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /queue/i })).toBeInTheDocument()
       })
     })
   })
