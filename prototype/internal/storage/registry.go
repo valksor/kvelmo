@@ -77,6 +77,13 @@ func LoadRegistryWithOverride(homeDirOverride string) (*ProjectRegistry, error) 
 	if registry.Projects == nil {
 		registry.Projects = make(map[string]ProjectMetadata)
 	}
+
+	// Never expose stored credentials in remote URLs.
+	for id, meta := range registry.Projects {
+		meta.RemoteURL = SanitizeRemoteURL(meta.RemoteURL)
+		registry.Projects[id] = meta
+	}
+
 	registry.path = path
 
 	return registry, nil
@@ -122,12 +129,13 @@ func (r *ProjectRegistry) Register(id, path, remoteURL, name string) error {
 	defer r.mu.Unlock()
 
 	now := time.Now()
+	sanitizedRemoteURL := SanitizeRemoteURL(remoteURL)
 
 	existing, exists := r.Projects[id]
 	if exists {
 		// Update existing entry
 		existing.Path = path
-		existing.RemoteURL = remoteURL
+		existing.RemoteURL = sanitizedRemoteURL
 		existing.Name = name
 		existing.LastAccess = now
 		r.Projects[id] = existing
@@ -136,7 +144,7 @@ func (r *ProjectRegistry) Register(id, path, remoteURL, name string) error {
 		r.Projects[id] = ProjectMetadata{
 			ID:           id,
 			Path:         path,
-			RemoteURL:    remoteURL,
+			RemoteURL:    sanitizedRemoteURL,
 			Name:         name,
 			RegisteredAt: now,
 			LastAccess:   now,

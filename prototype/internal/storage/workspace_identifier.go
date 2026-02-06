@@ -54,24 +54,26 @@ func GenerateProjectID(ctx context.Context, repoRoot string) (string, error) {
 //	https://github.com/user/repo.git -> github.com-user-repo
 //	git@github.com:user/repo.git -> github.com-user-repo
 //	https://gitlab.com/group/subgroup/project.git -> gitlab.com-group-subgroup-project
-func urlToProjectID(url string) string {
+func urlToProjectID(remoteURL string) string {
+	remoteURL = SanitizeRemoteURL(remoteURL)
+
 	// Remove protocol
-	url = strings.TrimPrefix(url, "https://")
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "git@")
-	url = strings.TrimPrefix(url, "ssh://")
+	remoteURL = strings.TrimPrefix(remoteURL, "https://")
+	remoteURL = strings.TrimPrefix(remoteURL, "http://")
+	remoteURL = strings.TrimPrefix(remoteURL, "git@")
+	remoteURL = strings.TrimPrefix(remoteURL, "ssh://")
 
 	// Remove .git suffix
-	url = strings.TrimSuffix(url, ".git")
+	remoteURL = strings.TrimSuffix(remoteURL, ".git")
 
 	// Replace : with / (for SSH URLs like git@github.com:user/repo)
-	url = strings.ReplaceAll(url, ":", "/")
+	remoteURL = strings.ReplaceAll(remoteURL, ":", "/")
 
 	// Split by / and take host + path parts
-	parts := strings.Split(url, "/")
+	parts := strings.Split(remoteURL, "/")
 	if len(parts) < 2 {
 		// Malformed URL, fall back to hash
-		hash := sha256.Sum256([]byte(url))
+		hash := sha256.Sum256([]byte(remoteURL))
 
 		return fmt.Sprintf("unknown-%x", hash)[:16]
 	}

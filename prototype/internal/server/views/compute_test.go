@@ -574,6 +574,24 @@ func TestComputeSettingsProjects_Empty(t *testing.T) {
 	assert.Empty(t, result)
 }
 
+func TestComputeSettingsProjects_RedactsRemoteCredentials(t *testing.T) {
+	projects := []storage.ProjectMetadata{
+		{
+			ID:         "proj-1",
+			Name:       "Project 1",
+			Path:       "/path/to/proj1",
+			RemoteURL:  "https://ghp_secret123@github.com/user/repo1.git",
+			LastAccess: time.Now(),
+		},
+	}
+
+	result := ComputeSettingsProjects(projects)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "https://github.com/user/repo1.git", result[0].RemoteURL)
+	assert.NotContains(t, result[0].RemoteURL, "ghp_secret123")
+}
+
 func TestComputeSpecifications_NilWorkspace(t *testing.T) {
 	result := ComputeSpecifications(nil, "task-1")
 

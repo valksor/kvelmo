@@ -813,7 +813,7 @@ func ComputeProjects() []ProjectData {
 			ID:         p.ID,
 			Name:       p.Name,
 			Path:       p.Path,
-			RemoteURL:  p.RemoteURL,
+			RemoteURL:  storage.SanitizeRemoteURL(p.RemoteURL),
 			LastAccess: FormatTimeAgo(p.LastAccess),
 		})
 	}
@@ -897,7 +897,7 @@ func ComputeSettingsProjects(projects []storage.ProjectMetadata) []ProjectData {
 			ID:         p.ID,
 			Name:       p.Name,
 			Path:       p.Path,
-			RemoteURL:  p.RemoteURL,
+			RemoteURL:  storage.SanitizeRemoteURL(p.RemoteURL),
 			LastAccess: FormatTimeAgo(p.LastAccess),
 		})
 	}

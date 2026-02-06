@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -129,6 +130,66 @@ func TestServer_StatusEndpoint(t *testing.T) {
 
 	assert.Equal(t, "global", result["mode"])
 	assert.Equal(t, true, result["running"])
+}
+
+func TestServer_StatusEndpoint_ProjectMetadata(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	projectPath := filepath.Join(tmpDir, "workspace", "repo")
+
+	registry, err := storage.LoadRegistryWithOverride(tmpDir)
+	require.NoError(t, err)
+	require.NoError(t, registry.Register(
+		"github.com-acme-repo",
+		projectPath,
+		"https://x-access-token:secret@github.com/acme/repo.git",
+		"acme/repo",
+	))
+	require.NoError(t, registry.Save())
+
+	cfg := Config{
+		Port:          0,
+		Mode:          ModeProject,
+		WorkspaceRoot: projectPath,
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		_ = srv.Start(ctx) // Error intentionally ignored in test goroutine
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	client := testHTTPClient()
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/status")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result struct {
+		Mode    string `json:"mode"`
+		Project struct {
+			ID        string `json:"id"`
+			Name      string `json:"name"`
+			Path      string `json:"path"`
+			RemoteURL string `json:"remote_url"`
+		} `json:"project"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+	assert.Equal(t, "project", result.Mode)
+	assert.Equal(t, "github.com-acme-repo", result.Project.ID)
+	assert.Equal(t, "acme/repo", result.Project.Name)
+	assert.Equal(t, projectPath, result.Project.Path)
+	assert.Equal(t, "https://github.com/acme/repo.git", result.Project.RemoteURL)
+	assert.NotContains(t, result.Project.RemoteURL, "secret")
 }
 
 func TestServer_IndexPage(t *testing.T) {
@@ -263,6 +324,58 @@ func TestServer_GlobalMode_ProjectsEndpoint(t *testing.T) {
 	assert.True(t, hasProjects)
 	_, hasCount := result["count"]
 	assert.True(t, hasCount)
+}
+
+func TestServer_GlobalMode_ProjectsEndpoint_RedactsRemoteCredentials(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	registry, err := storage.LoadRegistryWithOverride(tmpDir)
+	require.NoError(t, err)
+	require.NoError(t, registry.Register(
+		"proj-1",
+		"/tmp/proj-1",
+		"https://ghp_secret123@github.com/user/repo.git",
+		"proj-1",
+	))
+	require.NoError(t, registry.Save())
+
+	cfg := Config{
+		Port: 0,
+		Mode: ModeGlobal,
+	}
+
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		_ = srv.Start(ctx) // Error intentionally ignored in test goroutine
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	client := testHTTPClient()
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/projects")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result struct {
+		Projects []struct {
+			RemoteURL string `json:"remote_url"`
+		} `json:"projects"`
+	}
+	require.NoError(t, json.Unmarshal(body, &result))
+	require.Len(t, result.Projects, 1)
+	assert.Equal(t, "https://github.com/user/repo.git", result.Projects[0].RemoteURL)
+	assert.NotContains(t, result.Projects[0].RemoteURL, "ghp_secret123")
 }
 
 func TestServer_SSE_Events(t *testing.T) {

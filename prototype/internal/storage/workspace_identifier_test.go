@@ -37,6 +37,11 @@ func TestUrlToProjectID(t *testing.T) {
 			url:      "https://gitlab.com/group/subgroup/subsubgroup/project.git",
 			expected: "gitlab.com-group-subgroup-subsubgroup-project",
 		},
+		{
+			name:     "HTTPS URL with token userinfo",
+			url:      "https://ghp_secret123@github.com/user/repo.git",
+			expected: "github.com-user-repo",
+		},
 	}
 
 	for _, tt := range tests {
