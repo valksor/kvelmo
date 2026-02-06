@@ -1,0 +1,3 @@
+[test]
+preload = ["./test/helpers/bunSetup.ts"]
+root = "./test/unit"

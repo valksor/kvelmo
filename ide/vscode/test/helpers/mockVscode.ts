@@ -239,6 +239,9 @@ export function createMockExtensionContext(): MockExtensionContext {
 export interface MockWorkspace {
   workspaceFolders: { uri: { fsPath: string }; name: string; index: number }[] | undefined;
   getConfiguration(section?: string): MockConfiguration;
+  openTextDocument(
+    options?: unknown
+  ): Promise<{ getText: () => string; lineCount: number; uri: unknown }>;
   onDidChangeConfiguration: (
     handler: (e: { affectsConfiguration: (section: string) => boolean }) => void
   ) => { dispose: () => void };
@@ -270,6 +273,8 @@ export function createMockWorkspace(
       }
       return configurations.get(section)!;
     },
+    openTextDocument: () =>
+      Promise.resolve({ getText: () => '', lineCount: 0, uri: { fsPath: '', scheme: 'file' } }),
     onDidChangeConfiguration: (handler) => {
       workspace._configChangeHandler = handler;
       return { dispose: () => {} };
@@ -286,6 +291,7 @@ export interface MockWindow {
   showErrorMessage: (...args: unknown[]) => Promise<string | undefined>;
   showQuickPick: (items: unknown[], options?: unknown) => Promise<unknown>;
   showInputBox: (options?: unknown) => Promise<string | undefined>;
+  showTextDocument: (doc: unknown, options?: unknown) => Promise<unknown>;
   createOutputChannel: (name: string) => MockOutputChannel;
   createStatusBarItem: (alignment?: number, priority?: number) => MockStatusBarItem;
   registerTreeDataProvider: (viewId: string, provider: unknown) => { dispose: () => void };
@@ -308,6 +314,7 @@ export function createMockWindow(): MockWindow {
     showErrorMessage: () => Promise.resolve(undefined),
     showQuickPick: () => Promise.resolve(undefined),
     showInputBox: () => Promise.resolve(undefined),
+    showTextDocument: () => Promise.resolve({}),
     createOutputChannel: (name: string) => {
       const channel = createMockOutputChannel(name);
       outputChannels.push(channel);
@@ -368,6 +375,42 @@ export function createMockCommands(): MockCommands {
     getCommands: () => Promise.resolve(Array.from(registeredCommands.keys())),
   };
 }
+
+// Mock Range
+export class Range {
+  constructor(
+    public readonly startLine: number,
+    public readonly startCharacter: number,
+    public readonly endLine: number,
+    public readonly endCharacter: number
+  ) {}
+}
+
+// Mock Disposable
+export class Disposable {
+  private readonly callOnDispose: () => void;
+
+  constructor(callOnDispose: () => void) {
+    this.callOnDispose = callOnDispose;
+  }
+
+  static from(...disposableLikes: { dispose: () => unknown }[]): Disposable {
+    return new Disposable(() => {
+      disposableLikes.forEach((d) => d.dispose());
+    });
+  }
+
+  dispose(): void {
+    this.callOnDispose();
+  }
+}
+
+// ConfigurationTarget enum
+export const ConfigurationTarget = {
+  Global: 1,
+  Workspace: 2,
+  WorkspaceFolder: 3,
+};
 
 // Mock Uri
 export const Uri = {
@@ -436,30 +479,21 @@ export function resetMocks(): void {
 }
 
 // Complete mock vscode module
-export function createMockVscode(workspaceFolders: { path: string; name?: string }[] = []): {
-  window: MockWindow;
-  workspace: MockWorkspace;
-  commands: MockCommands;
-  Uri: typeof Uri;
-  ThemeIcon: typeof ThemeIcon;
-  ThemeColor: typeof ThemeColor;
-  TreeItem: typeof TreeItem;
-  TreeItemCollapsibleState: typeof TreeItemCollapsibleState;
-  StatusBarAlignment: typeof StatusBarAlignment;
-  ProgressLocation: typeof ProgressLocation;
-  EventEmitter: typeof MockEventEmitter;
-} {
+export function createMockVscode(workspaceFolders: { path: string; name?: string }[] = []) {
   return {
     window: createMockWindow(),
     workspace: createMockWorkspace(workspaceFolders),
     commands: createMockCommands(),
     Uri,
+    Range,
+    Disposable,
     ThemeIcon,
     ThemeColor,
     TreeItem,
     TreeItemCollapsibleState,
     StatusBarAlignment,
     ProgressLocation,
+    ConfigurationTarget,
     EventEmitter: MockEventEmitter,
   };
 }
