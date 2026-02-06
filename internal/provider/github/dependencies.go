@@ -59,7 +59,7 @@ func (p *Provider) CreateDependency(ctx context.Context, predecessorID, successo
 	}
 
 	// Update the issue
-	updateReq := &IssueRequest{
+	updateReq := &github.IssueRequest{
 		Body: &body,
 	}
 
@@ -120,6 +120,3 @@ func parseDependencies(body string) []string {
 
 	return deps
 }
-
-// IssueRequest wraps GitHub issue request for editing.
-type IssueRequest = github.IssueRequest
