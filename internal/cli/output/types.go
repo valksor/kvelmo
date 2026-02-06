@@ -74,11 +74,12 @@ type Session struct {
 
 // Specification represents a task specification/step.
 type Specification struct {
-	Number      int    `json:"number"`
-	Title       string `json:"title"`
-	Status      string `json:"status"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	CompletedAt string `json:"completed_at,omitempty"`
+	Number           int      `json:"number"`
+	Title            string   `json:"title"`
+	Status           string   `json:"status"`
+	CreatedAt        string   `json:"created_at,omitempty"`
+	CompletedAt      string   `json:"completed_at,omitempty"`
+	ImplementedFiles []string `json:"implemented_files,omitempty"`
 }
 
 // WriteJSON writes the value as indented JSON to stdout.

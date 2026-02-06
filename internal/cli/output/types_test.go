@@ -3,6 +3,7 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -207,11 +208,12 @@ func TestSession_JSONMarshaling(t *testing.T) {
 
 func TestSpecification_JSONMarshaling(t *testing.T) {
 	spec := Specification{
-		Number:      1,
-		Title:       "Add user authentication",
-		Status:      "implementing",
-		CreatedAt:   "2024-01-15T10:30:00Z",
-		CompletedAt: "",
+		Number:           1,
+		Title:            "Add user authentication",
+		Status:           "implementing",
+		CreatedAt:        "2024-01-15T10:30:00Z",
+		CompletedAt:      "",
+		ImplementedFiles: []string{"internal/auth/service.go", "internal/auth/service_test.go"},
 	}
 
 	data, err := json.Marshal(spec)
@@ -224,7 +226,7 @@ func TestSpecification_JSONMarshaling(t *testing.T) {
 		t.Fatalf("json.Unmarshal() error = %v", err)
 	}
 
-	if decoded != spec {
+	if !reflect.DeepEqual(decoded, spec) {
 		t.Errorf("Round-trip failed: got %+v, want %+v", decoded, spec)
 	}
 }

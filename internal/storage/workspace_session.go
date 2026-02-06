@@ -236,6 +236,7 @@ type PendingQuestion struct {
 // QuestionOption represents an answer option.
 type QuestionOption struct {
 	Label       string `yaml:"label"`
+	Value       string `yaml:"value,omitempty"`
 	Description string `yaml:"description,omitempty"`
 }
 

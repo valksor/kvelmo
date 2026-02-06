@@ -149,8 +149,8 @@ func (e *Executor) executeIssueFix(ctx context.Context, job *WebhookJob) error {
 
 	// Create conductor for this worktree.
 	cond, err := e.conductorFactory(ctx, workDir, conductor.Options{
-		CreateBranch: true,
-		UseWorktree:  false, // Worktree already created
+		UseWorktree: false, // Worktree already created
+		// NoBranch defaults to false = branches created
 	})
 	if err != nil {
 		return fmt.Errorf("create conductor: %w", err)

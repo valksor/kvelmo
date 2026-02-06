@@ -411,6 +411,7 @@ type MLPredictionsConfig struct {
 // with custom environment variables and CLI arguments.
 type AgentAliasConfig struct {
 	Extends     string            `yaml:"extends" json:"extends"`                             // Base agent name to wrap
+	BinaryPath  string            `yaml:"binary_path,omitempty" json:"binary_path,omitempty"` // Custom binary path (overrides base agent's default)
 	Description string            `yaml:"description,omitempty" json:"description,omitempty"` // Human-readable description
 	Components  []string          `yaml:"components,omitempty" json:"components,omitempty"`   // Components this agent handles (e.g., backend, frontend, tests)
 	Env         map[string]string `yaml:"env,omitempty" json:"env,omitempty"`                 // Environment variables to pass
@@ -476,6 +477,7 @@ type WorkflowSettings struct {
 
 // BudgetSettings holds budget configuration for costs and tokens.
 type BudgetSettings struct {
+	Enabled       bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Enable budget tracking (default: false)
 	PerTask       BudgetConfig          `yaml:"per_task,omitempty" json:"per_task,omitempty"`             // Default budget for tasks
 	Monthly       MonthlyBudgetSettings `yaml:"monthly,omitempty" json:"monthly,omitempty"`               // Monthly workspace budget
 	ExchangeRates map[string]float64    `yaml:"exchange_rates,omitempty" json:"exchange_rates,omitempty"` // Currency conversion rates (to USD)
@@ -483,7 +485,6 @@ type BudgetSettings struct {
 
 // MonthlyBudgetSettings defines a workspace monthly budget.
 type MonthlyBudgetSettings struct {
-	Enabled   bool    `yaml:"enabled,omitempty" json:"enabled,omitempty"` // Enable monthly budget tracking (default: false)
 	MaxCost   float64 `yaml:"max_cost,omitempty" json:"max_cost,omitempty"`
 	Currency  string  `yaml:"currency,omitempty" json:"currency,omitempty"`
 	WarningAt float64 `yaml:"warning_at,omitempty" json:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
