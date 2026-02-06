@@ -18,6 +18,7 @@ import {
   useCreateSource,
   useSubmitSource,
 } from '@/api/project'
+import { apiRequest } from '@/api/client'
 
 type MainTab = 'start' | 'quick' | 'plan'
 
@@ -134,17 +135,10 @@ function StartTaskForm() {
       title?: string
       depends_on?: string
     }) => {
-      const response = await fetch('/api/v1/workflow/start', {
+      return apiRequest<{ task_id: string }>('/workflow/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(params),
       })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to start task')
-      }
-      return response.json()
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['task'] })

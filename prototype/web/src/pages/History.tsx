@@ -2,11 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Loader2,
-  Clock,
   AlertCircle,
-  CheckCircle,
-  XCircle,
-  Play,
   RefreshCw,
   Search,
   Filter,
@@ -15,7 +11,7 @@ import {
 import { useTaskHistory } from '@/api/settings'
 import { formatDistanceToNow } from 'date-fns'
 import type { WorkflowState, TaskHistoryItem } from '@/types/api'
-import { getStateConfig } from '@/constants/stateConfig'
+import { getStateConfigWithProgress } from '@/constants/stateConfig'
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -49,20 +45,6 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'title-asc', label: 'Title A-Z' },
   { value: 'title-desc', label: 'Title Z-A' },
 ]
-
-// Lucide React icons for this page (different visual style than emoji icons)
-const stateIcons: Record<WorkflowState, React.ReactNode> = {
-  idle: <Clock size={14} />,
-  planning: <Play size={14} />,
-  implementing: <Play size={14} />,
-  reviewing: <RefreshCw size={14} />,
-  waiting: <Clock size={14} />,
-  checkpointing: <RefreshCw size={14} />,
-  reverting: <RefreshCw size={14} />,
-  restoring: <RefreshCw size={14} />,
-  done: <CheckCircle size={14} />,
-  failed: <XCircle size={14} />,
-}
 
 export default function History() {
   const { data: tasks, isLoading, error, refetch } = useTaskHistory()
@@ -257,8 +239,7 @@ export default function History() {
 }
 
 function TaskRow({ task }: { task: TaskHistoryItem }) {
-  const config = getStateConfig(task.state)
-  const icon = stateIcons[task.state] || stateIcons.idle
+  const { displayState, icon, ...config } = getStateConfigWithProgress(task.state, task.progress_phase)
   const createdAgo = task.created_at
     ? formatDistanceToNow(new Date(task.created_at), { addSuffix: true })
     : 'unknown'
@@ -268,7 +249,7 @@ function TaskRow({ task }: { task: TaskHistoryItem }) {
       <td>
         <div className="flex flex-col">
           <Link
-            to={`/app/task/${task.id}`}
+            to={`/task/${task.id}`}
             className="font-medium hover:underline"
           >
             {task.title || task.id}
@@ -279,12 +260,12 @@ function TaskRow({ task }: { task: TaskHistoryItem }) {
       <td>
         <span className={`badge gap-1 ${config.badge}`}>
           {icon}
-          {task.state}
+          {displayState}
         </span>
       </td>
       <td className="text-sm text-base-content/60">{createdAgo}</td>
       <td>
-        <Link to={`/app/task/${task.id}`} className="btn btn-ghost btn-xs">
+        <Link to={`/task/${task.id}`} className="btn btn-ghost btn-xs">
           View
         </Link>
       </td>

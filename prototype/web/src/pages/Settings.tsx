@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Loader2, Save, AlertCircle, CheckCircle, Folder } from 'lucide-react'
+import { Loader2, Save, AlertCircle, CheckCircle, Folder, Plus, Trash2 } from 'lucide-react'
 import { useSettings, useSaveSettings, useAgents } from '@/api/settings'
 import { useStatus } from '@/api/workflow'
 import { useProjects } from '@/api/projects'
@@ -336,6 +336,75 @@ function CoreSettings({ data, agentOptions, updateField }: CoreSettingsProps) {
         />
       </CollapseSection>
 
+      {/* Agent Aliases */}
+      <CollapseSection title="Agent Aliases">
+        <p className="text-sm text-base-content/60 mb-4">
+          Create aliases for agents with custom binary paths, environment variables, or CLI arguments.
+        </p>
+        {Object.entries(data.agents ?? {}).map(([name, alias]) => (
+          <div key={name} className="card bg-base-200 mb-3">
+            <div className="card-body p-4">
+              <div className="flex justify-between items-start">
+                <h4 className="font-medium">{name}</h4>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs text-error"
+                  onClick={() => {
+                    const newAgents = { ...data.agents }
+                    delete newAgents[name]
+                    updateField(['agents'], Object.keys(newAgents).length > 0 ? newAgents : undefined)
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                <Select
+                  label="Extends"
+                  hint="Base agent to wrap"
+                  value={alias.extends}
+                  onChange={(v) => updateField(['agents', name, 'extends'], v)}
+                  options={agentOptions}
+                />
+                <TextInput
+                  label="Binary Path"
+                  hint="Custom binary path (optional)"
+                  value={alias.binary_path}
+                  onChange={(v) => updateField(['agents', name, 'binary_path'], v || undefined)}
+                  placeholder="/path/to/binary"
+                />
+                <TextInput
+                  label="Description"
+                  hint="Human-readable description"
+                  value={alias.description}
+                  onChange={(v) => updateField(['agents', name, 'description'], v || undefined)}
+                />
+                <TextInput
+                  label="Args"
+                  hint="CLI arguments (space-separated)"
+                  value={alias.args?.join(' ')}
+                  onChange={(v) => updateField(['agents', name, 'args'], v ? v.split(/\s+/).filter(Boolean) : undefined)}
+                  placeholder="--model opus"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn-outline btn-sm gap-2"
+          onClick={() => {
+            const name = prompt('Alias name:')
+            if (name && name.trim()) {
+              updateField(['agents', name.trim()], { extends: 'claude' })
+            }
+          }}
+        >
+          <Plus size={16} />
+          Add Alias
+        </button>
+      </CollapseSection>
+
       {/* Workflow Settings */}
       <CollapseSection title="Workflow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -372,69 +441,73 @@ function CoreSettings({ data, agentOptions, updateField }: CoreSettingsProps) {
 
       {/* Budget Settings */}
       <CollapseSection title="Budget">
-        <h4 className="font-medium text-sm text-base-content/70 mb-2">Per Task</h4>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <NumberInput
-            label="Max Cost ($)"
-            value={data.budget?.per_task?.max_cost}
-            onChange={(v) => updateField(['budget', 'per_task', 'max_cost'], v)}
-            min={0}
-            step={0.01}
-          />
-          <NumberInput
-            label="Max Tokens"
-            value={data.budget?.per_task?.max_tokens}
-            onChange={(v) => updateField(['budget', 'per_task', 'max_tokens'], v)}
-            min={0}
-            step={1000}
-          />
-          <Select
-            label="On Limit"
-            value={data.budget?.per_task?.on_limit}
-            onChange={(v) => updateField(['budget', 'per_task', 'on_limit'], v)}
-            options={[
-              { value: 'warn', label: 'Warn' },
-              { value: 'pause', label: 'Pause' },
-              { value: 'stop', label: 'Stop' },
-            ]}
-          />
-          <NumberInput
-            label="Warning At (%)"
-            hint="0-100"
-            value={(data.budget?.per_task?.warning_at ?? 0.8) * 100}
-            onChange={(v) => updateField(['budget', 'per_task', 'warning_at'], v / 100)}
-            min={0}
-            max={100}
-          />
-        </div>
-        <h4 className="font-medium text-sm text-base-content/70 mb-2 mt-4">Monthly</h4>
         <Checkbox
-          label="Enable Monthly Budget"
-          hint="Track spending across the workspace"
-          checked={data.budget?.monthly?.enabled ?? false}
-          onChange={(v) => updateField(['budget', 'monthly', 'enabled'], v)}
+          label="Enable Budget Tracking"
+          hint="Track costs per task and monthly"
+          checked={data.budget?.enabled ?? false}
+          onChange={(v) => updateField(['budget', 'enabled'], v)}
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-          <NumberInput
-            label="Max Cost ($)"
-            value={data.budget?.monthly?.max_cost}
-            onChange={(v) => updateField(['budget', 'monthly', 'max_cost'], v)}
-            min={0}
-            step={1}
-          />
-          <TextInput
-            label="Currency"
-            value={data.budget?.monthly?.currency}
-            onChange={(v) => updateField(['budget', 'monthly', 'currency'], v)}
-          />
-          <NumberInput
-            label="Warning At (%)"
-            value={(data.budget?.monthly?.warning_at ?? 0.8) * 100}
-            onChange={(v) => updateField(['budget', 'monthly', 'warning_at'], v / 100)}
-            min={0}
-            max={100}
-          />
-        </div>
+        {(data.budget?.enabled ?? false) && (
+          <>
+            <h4 className="font-medium text-sm text-base-content/70 mb-2 mt-4">Per Task</h4>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <NumberInput
+                label="Max Cost ($)"
+                value={data.budget?.per_task?.max_cost}
+                onChange={(v) => updateField(['budget', 'per_task', 'max_cost'], v)}
+                min={0}
+                step={0.01}
+              />
+              <NumberInput
+                label="Max Tokens"
+                value={data.budget?.per_task?.max_tokens}
+                onChange={(v) => updateField(['budget', 'per_task', 'max_tokens'], v)}
+                min={0}
+                step={1000}
+              />
+              <Select
+                label="On Limit"
+                value={data.budget?.per_task?.on_limit}
+                onChange={(v) => updateField(['budget', 'per_task', 'on_limit'], v)}
+                options={[
+                  { value: 'warn', label: 'Warn' },
+                  { value: 'pause', label: 'Pause' },
+                  { value: 'stop', label: 'Stop' },
+                ]}
+              />
+              <NumberInput
+                label="Warning At (%)"
+                hint="0-100"
+                value={(data.budget?.per_task?.warning_at ?? 0.8) * 100}
+                onChange={(v) => updateField(['budget', 'per_task', 'warning_at'], v / 100)}
+                min={0}
+                max={100}
+              />
+            </div>
+            <h4 className="font-medium text-sm text-base-content/70 mb-2 mt-4">Monthly</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <NumberInput
+                label="Max Cost ($)"
+                value={data.budget?.monthly?.max_cost}
+                onChange={(v) => updateField(['budget', 'monthly', 'max_cost'], v)}
+                min={0}
+                step={1}
+              />
+              <TextInput
+                label="Currency"
+                value={data.budget?.monthly?.currency}
+                onChange={(v) => updateField(['budget', 'monthly', 'currency'], v)}
+              />
+              <NumberInput
+                label="Warning At (%)"
+                value={(data.budget?.monthly?.warning_at ?? 0.8) * 100}
+                onChange={(v) => updateField(['budget', 'monthly', 'warning_at'], v / 100)}
+                min={0}
+                max={100}
+              />
+            </div>
+          </>
+        )}
       </CollapseSection>
 
       {/* Project & Storage */}

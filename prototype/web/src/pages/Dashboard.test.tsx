@@ -19,7 +19,7 @@ describe('Dashboard', () => {
     beforeEach(() => {
       mockApiEndpoints({
         '/api/v1/status': mockProjectModeStatus,
-        '/api/v1/tasks': mockTaskHistory,
+        '/api/v1/tasks': { tasks: mockTaskHistory, count: mockTaskHistory.length },
       })
     })
 
