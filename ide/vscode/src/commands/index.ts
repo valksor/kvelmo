@@ -1038,7 +1038,7 @@ export function registerCommands(
       }
 
       await withProgress('Opening URL...', async () => {
-        const response = await service.client!.browserGoto({ url });
+        const response = await service.client!.browserGoto(url);
         if (response.success && response.tab) {
           void vscode.window.showInformationMessage(
             `Opened: ${response.tab.title || response.tab.url}`
@@ -1065,7 +1065,7 @@ export function registerCommands(
       }
 
       await withProgress('Navigating...', async () => {
-        const response = await service.client!.browserNavigate({ url });
+        const response = await service.client!.browserNavigate(url);
         if (!response.success) {
           throw new Error('Navigation failed');
         }
@@ -1130,7 +1130,7 @@ export function registerCommands(
       }
 
       await withProgress('Clicking element...', async () => {
-        const response = await service.client!.browserClick({ selector });
+        const response = await service.client!.browserClick(selector);
         if (!response.success) {
           throw new Error('Click failed');
         }
@@ -1165,7 +1165,7 @@ export function registerCommands(
       }
 
       await withProgress('Typing...', async () => {
-        const response = await service.client!.browserType({ selector, text });
+        const response = await service.client!.browserType(selector, text);
         if (!response.success) {
           throw new Error('Type failed');
         }
@@ -1191,7 +1191,7 @@ export function registerCommands(
       }
 
       await withProgress('Evaluating...', async () => {
-        const response = await service.client!.browserEval({ expression });
+        const response = await service.client!.browserEval(expression);
         if (!response.success) {
           throw new Error('Evaluation failed');
         }
