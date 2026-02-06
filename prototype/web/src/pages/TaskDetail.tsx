@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useActiveTask } from '@/api/workflow'
 import { useTaskSpecs, useTaskNotes, useAgentLogsHistory } from '@/api/task'
@@ -18,6 +18,11 @@ import { ArrowLeft, Wifi, WifiOff } from 'lucide-react'
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
 
+  return <TaskDetailView key={id ?? 'unknown-task'} id={id} />
+}
+
+function TaskDetailView({ id }: { id?: string }) {
+
   // Agent terminal messages (local state, not persisted)
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([])
   const [historySuppressed, setHistorySuppressed] = useState(false)
@@ -30,11 +35,6 @@ export default function TaskDetail() {
     setAgentMessages([])
     setHistorySuppressed(true)
   }, [])
-
-  useEffect(() => {
-    setAgentMessages([])
-    setHistorySuppressed(false)
-  }, [id])
 
   // SSE connection for real-time updates
   const { connected } = useWorkflowSSE({

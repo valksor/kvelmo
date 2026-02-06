@@ -23,6 +23,7 @@ interface SpecificationsListProps {
 
 export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsListProps) {
   const [expandedSpecs, setExpandedSpecs] = useState<Set<number>>(new Set())
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
   const [diffTarget, setDiffTarget] = useState<{ specNumber: number; filePath: string } | null>(null)
   const [diffContent, setDiffContent] = useState('')
   const [diffError, setDiffError] = useState('')
@@ -47,8 +48,10 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
         <div className="card-body">
           <h3 className="text-lg font-bold text-base-content">Specifications</h3>
           <p className="text-base-content/60 text-center py-8">
-            No specifications yet. Run <code className="px-2 py-1 bg-base-200 rounded">plan</code> to
-            generate them.
+            No specifications yet. Start planning to generate them.
+            <span className="block mt-1 text-xs">
+              Technical: <code className="px-2 py-1 bg-base-200 rounded">plan</code>
+            </span>
           </p>
         </div>
       </div>
@@ -142,12 +145,23 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
           </div>
 
           {/* Specification list */}
+          <div className="flex justify-end mb-3">
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs"
+              onClick={() => setShowTechnicalDetails((prev) => !prev)}
+            >
+              {showTechnicalDetails ? 'Hide technical details' : 'Show technical details'}
+            </button>
+          </div>
+
           <div className="space-y-4">
             {specs.map((spec) => (
               <SpecificationItem
                 key={spec.number}
                 spec={spec}
                 expanded={expandedSpecs.has(spec.number)}
+                showTechnicalDetails={showTechnicalDetails}
                 onToggle={() => toggleSpec(spec.number)}
                 onOpenDiff={handleOpenDiff}
               />
@@ -224,11 +238,18 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
 interface SpecificationItemProps {
   spec: Specification
   expanded: boolean
+  showTechnicalDetails: boolean
   onToggle: () => void
   onOpenDiff: (specNumber: number, filePath: string) => void
 }
 
-function SpecificationItem({ spec, expanded, onToggle, onOpenDiff }: SpecificationItemProps) {
+function SpecificationItem({
+  spec,
+  expanded,
+  showTechnicalDetails,
+  onToggle,
+  onOpenDiff,
+}: SpecificationItemProps) {
   const [copied, setCopied] = useState(false)
 
   const statusIcon =
@@ -350,7 +371,7 @@ function SpecificationItem({ spec, expanded, onToggle, onOpenDiff }: Specificati
             </div>
           )}
 
-          {spec.implemented_files && spec.implemented_files.length > 0 && (
+          {showTechnicalDetails && spec.implemented_files && spec.implemented_files.length > 0 && (
             <div className="mt-3 pt-3 border-t border-base-200">
               <span className="text-xs font-medium text-base-content/60 uppercase">
                 Implemented Files ({spec.implemented_files.length})

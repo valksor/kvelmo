@@ -11,7 +11,7 @@ type Tab = 'create' | 'queues' | 'tasks'
 
 export default function Project() {
   const { data: status, isLoading: statusLoading } = useStatus()
-  const [activeTab, setActiveTab] = useState<Tab>('queues')
+  const [activeTab, setActiveTab] = useState<Tab>('create')
   const [selectedQueueId, setSelectedQueueId] = useState<string | undefined>()
   const [editingTask, setEditingTask] = useState<PlanTask | null>(null)
 
@@ -132,6 +132,7 @@ const PROVIDERS = [
 
 function ProjectPlanForm() {
   const [sourceType, setSourceType] = useState<PlanSourceType>('file')
+  const [showAdvancedSources, setShowAdvancedSources] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [dirPath, setDirPath] = useState('')
   const [researchPath, setResearchPath] = useState('')
@@ -210,32 +211,51 @@ function ProjectPlanForm() {
       {/* Source Type Selector */}
       <div>
         <label className="block text-sm font-medium text-base-content/80 mb-2">Source Type</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           <SourceTypeButton
             active={sourceType === 'file'}
             onClick={() => setSourceType('file')}
             icon={<Upload size={16} />}
             label="File"
           />
-          <SourceTypeButton
-            active={sourceType === 'dir'}
-            onClick={() => setSourceType('dir')}
-            icon={<FolderOpen size={16} />}
-            label="Directory"
-          />
-          <SourceTypeButton
-            active={sourceType === 'research'}
-            onClick={() => setSourceType('research')}
-            icon={<Search size={16} />}
-            label="Research"
-          />
-          <SourceTypeButton
-            active={sourceType === 'provider'}
-            onClick={() => setSourceType('provider')}
-            icon={<Puzzle size={16} />}
-            label="Provider"
-          />
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            const next = !showAdvancedSources
+            setShowAdvancedSources(next)
+            if (!next && sourceType !== 'file') {
+              setSourceType('file')
+            }
+          }}
+          className="text-sm text-primary hover:underline mt-2"
+        >
+          {showAdvancedSources ? '▼ Hide advanced source types' : '▶ Show advanced source types'}
+        </button>
+
+        {showAdvancedSources && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <SourceTypeButton
+              active={sourceType === 'dir'}
+              onClick={() => setSourceType('dir')}
+              icon={<FolderOpen size={16} />}
+              label="Directory"
+            />
+            <SourceTypeButton
+              active={sourceType === 'research'}
+              onClick={() => setSourceType('research')}
+              icon={<Search size={16} />}
+              label="Research"
+            />
+            <SourceTypeButton
+              active={sourceType === 'provider'}
+              onClick={() => setSourceType('provider')}
+              icon={<Puzzle size={16} />}
+              label="Provider"
+            />
+          </div>
+        )}
       </div>
 
       {/* Source Input */}

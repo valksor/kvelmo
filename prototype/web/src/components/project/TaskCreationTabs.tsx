@@ -45,41 +45,57 @@ const TEMPLATES = [
 
 export function TaskCreationTabs() {
   const [activeTab, setActiveTab] = useState<MainTab>('start')
+  const [showMoreStartModes, setShowMoreStartModes] = useState(false)
 
   return (
     <div className="card bg-base-100 shadow-sm">
-      {/* Main Tab Navigation */}
-      <div className="px-4 pt-4">
-        <div className="flex items-center justify-between">
-          {/* Primary: Start Task - the main feature */}
+      <div className="px-4 pt-4 space-y-3">
+        {/* Primary entrypoint: Start task */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('start')}
+          className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
+            activeTab === 'start'
+              ? 'bg-primary text-primary-content shadow-md'
+              : 'bg-base-200 text-base-content hover:bg-base-300'
+          }`}
+        >
+          <Zap size={18} />
+          <span>Start Task</span>
+        </button>
+
+        {/* Secondary modes are available but hidden by default */}
+        <div>
           <button
             type="button"
-            onClick={() => setActiveTab('start')}
-            className={`px-4 py-2.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${
-              activeTab === 'start'
-                ? 'bg-primary text-primary-content shadow-md'
-                : 'bg-base-200 text-base-content hover:bg-base-300'
-            }`}
+            onClick={() => {
+              const next = !showMoreStartModes
+              setShowMoreStartModes(next)
+              if (!next && activeTab !== 'start') {
+                setActiveTab('start')
+              }
+            }}
+            className="text-sm text-primary hover:underline"
           >
-            <Zap size={18} />
-            <span>Start Task</span>
+            {showMoreStartModes ? '▼ Hide more ways to start' : '▶ More ways to start'}
           </button>
 
-          {/* Secondary: Quick + Plan (right side) */}
-          <div className="inline-flex p-1 bg-base-200 rounded-lg">
-            <MainTabButton
-              active={activeTab === 'quick'}
-              onClick={() => setActiveTab('quick')}
-              icon={<ListTodo size={14} />}
-              label="Quick"
-            />
-            <MainTabButton
-              active={activeTab === 'plan'}
-              onClick={() => setActiveTab('plan')}
-              icon={<FolderTree size={14} />}
-              label="Plan"
-            />
-          </div>
+          {showMoreStartModes && (
+            <div className="inline-flex p-1 bg-base-200 rounded-lg mt-2">
+              <MainTabButton
+                active={activeTab === 'quick'}
+                onClick={() => setActiveTab('quick')}
+                icon={<ListTodo size={14} />}
+                label="Quick"
+              />
+              <MainTabButton
+                active={activeTab === 'plan'}
+                onClick={() => setActiveTab('plan')}
+                icon={<FolderTree size={14} />}
+                label="Plan"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -264,7 +280,7 @@ function StartTaskForm() {
         onClick={() => setShowOptions(!showOptions)}
         className="text-sm text-primary hover:underline"
       >
-        {showOptions ? '▼ Hide options' : '▶ Show options'}
+        {showOptions ? '▼ Hide advanced options' : '▶ Show advanced options'}
       </button>
 
       {/* Options Panel */}

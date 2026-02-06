@@ -17,7 +17,6 @@ import {
   Bot,
   ArrowLeft,
   Layers,
-  MoreHorizontal,
 } from 'lucide-react'
 import { useRef, useEffect, type ComponentType } from 'react'
 import { useStatus } from '@/api/workflow'
@@ -115,35 +114,36 @@ const globalNavItems: NavEntry[] = [
   adminDropdown,
 ]
 
-// Project mode navigation (code tools visible, rest in dropdowns)
+const workDropdown: NavDropdown = {
+  label: 'Work',
+  icon: Layers,
+  items: [
+    { to: '/project', icon: FolderKanban, label: 'Project' },
+    { to: '/quick', icon: Zap, label: 'Quick' },
+    { to: '/history', icon: History, label: 'History' },
+  ],
+}
+
+const advancedDropdown: NavDropdown = {
+  label: 'Advanced',
+  icon: Wrench,
+  items: [
+    { to: '/find', icon: Search, label: 'Find' },
+    { to: '/review', icon: Eye, label: 'Review' },
+    { to: '/commit', icon: GitCommit, label: 'Commit' },
+    { to: '/simplify', icon: Sparkles, label: 'Simplify' },
+    { to: '/chat', icon: MessageSquare, label: 'Chat' },
+    { to: '/library', icon: BookOpen, label: 'Library' },
+    { to: '/links', icon: Link2, label: 'Links' },
+    { to: '/tools', icon: Wrench, label: 'Tools' },
+  ],
+}
+
+// Project mode navigation (work-first, advanced hidden under dropdown)
 const projectNavItems: NavEntry[] = [
   { to: '/', icon: Home, label: 'Dashboard' },
-  // Direct access - code tools (user priority)
-  { to: '/find', icon: Search, label: 'Find' },
-  { to: '/review', icon: Eye, label: 'Review' },
-  { to: '/commit', icon: GitCommit, label: 'Commit' },
-  { to: '/simplify', icon: Sparkles, label: 'Simplify' },
-  // Workflow dropdown
-  {
-    label: 'Workflow',
-    icon: Layers,
-    items: [
-      { to: '/project', icon: FolderKanban, label: 'Project' },
-      { to: '/chat', icon: MessageSquare, label: 'Chat' },
-      { to: '/quick', icon: Zap, label: 'Quick' },
-      { to: '/history', icon: History, label: 'History' },
-    ],
-  },
-  // Resources dropdown
-  {
-    label: 'More',
-    icon: MoreHorizontal,
-    items: [
-      { to: '/library', icon: BookOpen, label: 'Library' },
-      { to: '/links', icon: Link2, label: 'Links' },
-      { to: '/tools', icon: Wrench, label: 'Tools' },
-    ],
-  },
+  workDropdown,
+  advancedDropdown,
   // Admin dropdown
   adminDropdown,
 ]
