@@ -307,7 +307,7 @@ jobs:
                 run: |
                     curl -L "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-${{ matrix.onnx_arch }}-${ONNX_VERSION}.tgz" | tar xz
                     sudo mkdir -p /usr/local/lib
-                    sudo cp onnxruntime-linux-*/lib/* /usr/local/lib/
+                    sudo cp -a onnxruntime-linux-*/lib/. /usr/local/lib/
                     sudo ldconfig
 
             -   name: Install ONNX Runtime (macOS)
