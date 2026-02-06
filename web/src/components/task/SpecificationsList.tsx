@@ -1,14 +1,33 @@
 import { useState } from 'react'
-import { CheckCircle, Circle, Loader2, ChevronDown, ChevronRight, Copy, Check, ChevronsUpDown } from 'lucide-react'
+import {
+  CheckCircle,
+  Circle,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+  ChevronsUpDown,
+  FileDiff,
+  X,
+} from 'lucide-react'
+import { useSpecificationFileDiff } from '@/api/task'
+import { VisualUnifiedDiff } from '@/components/task/VisualUnifiedDiff'
 import type { Specification } from '@/types/api'
 
 interface SpecificationsListProps {
   specs?: Specification[]
   isLoading?: boolean
+  taskId?: string
 }
 
-export function SpecificationsList({ specs, isLoading }: SpecificationsListProps) {
+export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsListProps) {
   const [expandedSpecs, setExpandedSpecs] = useState<Set<number>>(new Set())
+  const [diffTarget, setDiffTarget] = useState<{ specNumber: number; filePath: string } | null>(null)
+  const [diffContent, setDiffContent] = useState('')
+  const [diffError, setDiffError] = useState('')
+  const [diffMode, setDiffMode] = useState<'visual' | 'raw'>('visual')
+  const { mutateAsync: fetchDiff, isPending: isLoadingDiff } = useSpecificationFileDiff(taskId)
 
   if (isLoading) {
     return (
@@ -62,50 +81,143 @@ export function SpecificationsList({ specs, isLoading }: SpecificationsListProps
 
   const allExpanded = expandedSpecs.size === specs.length
 
+  const closeDiff = () => {
+    setDiffTarget(null)
+    setDiffContent('')
+    setDiffError('')
+    setDiffMode('visual')
+  }
+
+  const handleOpenDiff = async (specNumber: number, filePath: string) => {
+    if (!taskId) {
+      setDiffTarget({ specNumber, filePath })
+      setDiffContent('')
+      setDiffError('Task ID is missing, cannot load diff.')
+      return
+    }
+
+    setDiffTarget({ specNumber, filePath })
+    setDiffContent('')
+    setDiffError('')
+    setDiffMode('visual')
+
+    try {
+      const response = await fetchDiff({ specNumber, filePath })
+      setDiffContent(response.diff)
+    } catch (error) {
+      setDiffError(error instanceof Error ? error.message : 'Failed to load diff')
+    }
+  }
+
   return (
-    <div className="card bg-base-100 shadow-sm">
-      <div className="card-body">
-        {/* Header with count and expand/collapse all */}
-        <div className="flex items-center justify-between pb-4 border-b border-base-200">
-          <h3 className="text-lg font-bold text-base-content">Specifications</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-base-content/60">
-              {completed}/{total} complete
-            </span>
-            <button
-              onClick={allExpanded ? collapseAll : expandAll}
-              className="btn btn-ghost btn-xs"
-              title={allExpanded ? 'Collapse all' : 'Expand all'}
-            >
-              <ChevronsUpDown size={14} />
-            </button>
+    <>
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body">
+          {/* Header with count and expand/collapse all */}
+          <div className="flex items-center justify-between pb-4 border-b border-base-200">
+            <h3 className="text-lg font-bold text-base-content">Specifications</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-base-content/60">
+                {completed}/{total} complete
+              </span>
+              <button
+                onClick={allExpanded ? collapseAll : expandAll}
+                className="btn btn-ghost btn-xs"
+                title={allExpanded ? 'Collapse all' : 'Expand all'}
+              >
+                <ChevronsUpDown size={14} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Progress bar */}
-        <div className="mt-4 mb-6">
-          <div className="h-2 bg-base-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-success to-success/80 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
+          {/* Progress bar */}
+          <div className="mt-4 mb-6">
+            <div className="h-2 bg-base-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-success to-success/80 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs text-base-content/60 mt-1">{Math.round(progress)}% complete</p>
           </div>
-          <p className="text-xs text-base-content/60 mt-1">{Math.round(progress)}% complete</p>
-        </div>
 
-        {/* Specification list */}
-        <div className="space-y-4">
-          {specs.map((spec) => (
-            <SpecificationItem
-              key={spec.number}
-              spec={spec}
-              expanded={expandedSpecs.has(spec.number)}
-              onToggle={() => toggleSpec(spec.number)}
-            />
-          ))}
+          {/* Specification list */}
+          <div className="space-y-4">
+            {specs.map((spec) => (
+              <SpecificationItem
+                key={spec.number}
+                spec={spec}
+                expanded={expandedSpecs.has(spec.number)}
+                onToggle={() => toggleSpec(spec.number)}
+                onOpenDiff={handleOpenDiff}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+      {diffTarget && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-5xl">
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div>
+                <h3 className="text-lg font-bold">File Diff</h3>
+                <p className="text-xs text-base-content/60 mt-1">
+                  specification-{diffTarget.specNumber} ·{' '}
+                  <span className="font-mono">{diffTarget.filePath}</span>
+                </p>
+              </div>
+              <button onClick={closeDiff} className="btn btn-ghost btn-sm btn-circle" title="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            {!isLoadingDiff && !diffError && diffContent && (
+              <div className="flex justify-end mb-3">
+                <div className="join">
+                  <button
+                    className={`btn btn-sm join-item ${diffMode === 'visual' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setDiffMode('visual')}
+                  >
+                    Visual
+                  </button>
+                  <button
+                    className={`btn btn-sm join-item ${diffMode === 'raw' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setDiffMode('raw')}
+                  >
+                    Raw
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-base-200/60 rounded-lg p-3 max-h-[70vh] overflow-auto">
+              {isLoadingDiff ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              ) : diffError ? (
+                <p className="text-sm text-error whitespace-pre-wrap">{diffError}</p>
+              ) : diffContent ? (
+                diffMode === 'visual' ? (
+                  <VisualUnifiedDiff diff={diffContent} />
+                ) : (
+                  <pre className="text-xs font-mono whitespace-pre-wrap">{diffContent}</pre>
+                )
+              ) : (
+                <p className="text-sm text-base-content/60">No diff found for this file.</p>
+              )}
+            </div>
+
+            <div className="modal-action">
+              <button onClick={closeDiff} className="btn">
+                Close
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={closeDiff} />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -113,9 +225,10 @@ interface SpecificationItemProps {
   spec: Specification
   expanded: boolean
   onToggle: () => void
+  onOpenDiff: (specNumber: number, filePath: string) => void
 }
 
-function SpecificationItem({ spec, expanded, onToggle }: SpecificationItemProps) {
+function SpecificationItem({ spec, expanded, onToggle, onOpenDiff }: SpecificationItemProps) {
   const [copied, setCopied] = useState(false)
 
   const statusIcon =
@@ -184,6 +297,12 @@ function SpecificationItem({ spec, expanded, onToggle }: SpecificationItemProps)
       {!expanded && spec.description && (
         <div className="px-4 pb-4 -mt-2">
           <p className="text-sm text-base-content/60 line-clamp-2 pl-9">{spec.description}</p>
+          {spec.implemented_files && spec.implemented_files.length > 0 && (
+            <p className="text-xs text-success mt-2 pl-9">
+              {spec.implemented_files.length} implemented file
+              {spec.implemented_files.length === 1 ? '' : 's'}
+            </p>
+          )}
         </div>
       )}
 
@@ -228,6 +347,27 @@ function SpecificationItem({ spec, expanded, onToggle }: SpecificationItemProps)
                   Completed: {new Date(spec.completed_at).toLocaleDateString()}
                 </span>
               )}
+            </div>
+          )}
+
+          {spec.implemented_files && spec.implemented_files.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-base-200">
+              <span className="text-xs font-medium text-base-content/60 uppercase">
+                Implemented Files ({spec.implemented_files.length})
+              </span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {spec.implemented_files.map((filePath) => (
+                  <button
+                    key={filePath}
+                    className="px-2 py-1 text-xs rounded bg-success/10 text-success font-mono hover:bg-success/20 transition-colors inline-flex items-center gap-1"
+                    title={filePath}
+                    onClick={() => onOpenDiff(spec.number, filePath)}
+                  >
+                    <FileDiff size={12} />
+                    {filePath}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

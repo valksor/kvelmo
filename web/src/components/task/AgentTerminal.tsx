@@ -11,11 +11,12 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [autoScroll, setAutoScroll] = useState(true)
   const terminalRef = useRef<HTMLDivElement>(null)
+  const displayMessages = [...messages].reverse()
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to top when new messages arrive (newest-first view)
   useEffect(() => {
     if (autoScroll && terminalRef.current && messages.length > 0) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+      terminalRef.current.scrollTop = 0
     }
   }, [messages, autoScroll])
 
@@ -35,7 +36,7 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Terminal size={16} className="text-base-content/70" />
-            <span className="text-sm font-medium text-base-content/80">Agent Output</span>
+            <span className="text-sm font-medium text-base-content/80">Live Updates</span>
             {messageCount > 0 && (
               <span className="badge badge-sm badge-ghost">{messageCount}</span>
             )}
@@ -61,10 +62,10 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
                 e.stopPropagation()
                 toggleAutoScroll()
               }}
-              title={autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}
+              title={autoScroll ? 'Auto-follow enabled' : 'Auto-follow disabled'}
             >
               <ArrowDownToLine size={14} />
-              Auto-scroll
+              Auto-follow
             </button>
             <button
               className="btn btn-ghost btn-xs gap-1"
@@ -85,9 +86,9 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
             className="bg-base-300 rounded-lg p-3 font-mono text-xs max-h-64 overflow-y-auto"
           >
             {messages.length === 0 ? (
-              <span className="text-base-content/40">No output yet...</span>
+              <span className="text-base-content/40">No updates yet...</span>
             ) : (
-              messages.map((msg, idx) => (
+              displayMessages.map((msg, idx) => (
                 <TerminalLine key={idx} message={msg} />
               ))
             )}

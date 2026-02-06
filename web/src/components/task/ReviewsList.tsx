@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Eye, Wrench, ChevronDown, ChevronRight, ChevronsUpDown } from 'lucide-react'
 import type { Review } from '@/types/api'
 import { useWorkflowAction } from '@/api/workflow'
+import { useImplementReview } from '@/api/task'
 
 interface ReviewsListProps {
   reviews?: Review[]
@@ -87,7 +88,9 @@ interface ReviewItemProps {
 }
 
 function ReviewItem({ review, expanded, onToggle }: ReviewItemProps) {
-  const { mutate: executeAction, isPending } = useWorkflowAction()
+  const { mutate: executeAction, isPending: isActionPending } = useWorkflowAction()
+  const { mutate: implementReview, isPending: isImplementPending } = useImplementReview()
+  const isPending = isActionPending || isImplementPending
 
   const statusIcon =
     review.status === 'passed' ? (
@@ -171,10 +174,7 @@ function ReviewItem({ review, expanded, onToggle }: ReviewItemProps) {
                 className="btn btn-sm btn-primary gap-1"
                 onClick={(e) => {
                   e.stopPropagation()
-                  executeAction({
-                    action: 'implement',
-                    options: { mode: 'review', review_number: review.number },
-                  })
+                  implementReview(review.number)
                 }}
                 disabled={isPending}
               >

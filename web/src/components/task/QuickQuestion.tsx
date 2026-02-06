@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { MessageCircleQuestion, Send, Loader2 } from 'lucide-react'
 import type { WorkflowState } from '@/types/api'
+import { apiRequest } from '@/api/client'
 
 interface QuickQuestionProps {
   state: WorkflowState
@@ -17,17 +18,10 @@ export function QuickQuestion({ state, taskId }: QuickQuestionProps) {
 
   const askQuestion = useMutation({
     mutationFn: async (text: string) => {
-      const response = await fetch('/api/v1/workflow/question', {
+      return apiRequest('/workflow/question', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ question: text }),
       })
-      if (!response.ok) {
-        const err = await response.text()
-        throw new Error(err || 'Failed to send question')
-      }
-      return response.json()
     },
     onSuccess: () => {
       setQuestion('')
