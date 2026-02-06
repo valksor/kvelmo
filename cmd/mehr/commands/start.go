@@ -188,14 +188,13 @@ func runStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine branch behavior
-	// Branch creation is default, --no-branch disables it
-	// --worktree forces branch creation (even with --no-branch)
-	createBranch := !startNoBranch || startWorktree
+	// Branches are created by default; --no-branch disables; --worktree overrides --no-branch
+	noBranch := startNoBranch && !startWorktree
 
 	// Build conductor options
 	opts := []conductor.Option{
 		conductor.WithVerbose(verbose),
-		conductor.WithCreateBranch(createBranch),
+		conductor.WithNoBranch(noBranch),
 		conductor.WithUseWorktree(startWorktree),
 		conductor.WithStashChanges(startStash),
 		conductor.WithAutoInit(true),
@@ -555,7 +554,6 @@ func runStartParallel(ctx context.Context, references []string) error {
 		conductor.WithBaseOptions(
 			conductor.WithVerbose(verbose),
 			conductor.WithUseWorktree(true),
-			conductor.WithCreateBranch(true),
 			conductor.WithAutoInit(true),
 		),
 		conductor.WithRegistrationFunc(func(cond *conductor.Conductor) error {
