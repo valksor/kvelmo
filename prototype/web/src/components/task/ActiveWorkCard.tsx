@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { GitBranch, Clock, FolderGit2, ExternalLink, HelpCircle, Eye } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import type { WorkflowState } from '@/types/api'
+import type { WorkflowState, ProgressPhase } from '@/types/api'
 import { TaskContentModal } from './TaskContentModal'
-import { getStateConfig } from '@/constants/stateConfig'
+import { getStateConfigWithProgress } from '@/constants/stateConfig'
 
 interface ActiveWorkCardProps {
   task?: {
@@ -19,9 +19,10 @@ interface ActiveWorkCardProps {
     external_key?: string
     description?: string
   }
+  progressPhase?: ProgressPhase
 }
 
-export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
+export function ActiveWorkCard({ task, work, progressPhase }: ActiveWorkCardProps) {
   const [showModal, setShowModal] = useState(false)
 
   if (!task) {
@@ -29,7 +30,8 @@ export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
   }
 
   const state = task.state
-  const config = getStateConfig(state)
+  // Use progress-aware state config (matches CLI behavior)
+  const { displayState, ...config } = getStateConfigWithProgress(state, progressPhase)
 
   const startedAgo = task.started
     ? formatDistanceToNow(new Date(task.started), { addSuffix: true })
@@ -46,7 +48,7 @@ export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
             <span className="text-2xl">{config.icon}</span>
             <div>
               <span className="text-sm font-semibold uppercase tracking-wide">
-                {state.replace('_', ' ')}
+                {displayState.replace('_', ' ')}
               </span>
             </div>
           </div>
@@ -73,7 +75,7 @@ export function ActiveWorkCard({ task, work }: ActiveWorkCardProps) {
                 <Eye size={16} />
                 View
               </button>
-              <span className={`badge ${config.badge} capitalize`}>{state}</span>
+              <span className={`badge ${config.badge} capitalize`}>{displayState}</span>
             </div>
           </div>
 

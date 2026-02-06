@@ -6,6 +6,7 @@ export interface AgentMessage {
   content: string
   timestamp: string
   type?: 'output' | 'error' | 'info'
+  taskId?: string
 }
 
 export interface QuestionData {
@@ -15,6 +16,7 @@ export interface QuestionData {
 
 interface UseWorkflowSSEOptions {
   enabled?: boolean
+  taskId?: string
   onStateChange?: (state: string) => void
   onAgentMessage?: (message: AgentMessage) => void
   onQuestion?: (data: QuestionData) => void
@@ -29,7 +31,7 @@ interface UseWorkflowSSEOptions {
  * when callbacks change between renders.
  */
 export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
-  const { enabled = true, onStateChange, onAgentMessage, onQuestion, onError } = options
+  const { enabled = true, taskId, onStateChange, onAgentMessage, onQuestion, onError } = options
   const queryClient = useQueryClient()
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<number | undefined>(undefined)
@@ -41,6 +43,7 @@ export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
   const onQuestionRef = useRef(onQuestion)
   const onErrorRef = useRef(onError)
   const enabledRef = useRef(enabled)
+  const taskIDRef = useRef(taskId)
 
   // Update refs when callbacks change (doesn't trigger reconnection)
   useEffect(() => {
@@ -49,14 +52,19 @@ export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
     onQuestionRef.current = onQuestion
     onErrorRef.current = onError
     enabledRef.current = enabled
+    taskIDRef.current = taskId
   })
 
   const handleEvent = useCallback(
     (eventType: SSEEventType) => {
       switch (eventType) {
         case 'state_changed':
-          queryClient.invalidateQueries({ queryKey: ['status'] })
-          queryClient.invalidateQueries({ queryKey: ['task', 'active'] })
+          // Force immediate refetch for responsive UI on state changes.
+          // Use ['task'] prefix to refetch ALL task queries (active, specs, notes, costs),
+          // and refetch workflow diagram SVG so state highlight updates immediately.
+          queryClient.refetchQueries({ queryKey: ['status'] })
+          queryClient.refetchQueries({ queryKey: ['task'] })
+          queryClient.refetchQueries({ queryKey: ['workflow', 'diagram'] })
           break
         case 'progress':
         case 'agent_message':
@@ -66,10 +74,11 @@ export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
           queryClient.invalidateQueries({ queryKey: ['task', 'active'] })
           break
         case 'spec_updated':
-          queryClient.invalidateQueries({ queryKey: ['specifications'] })
+          // Also refetch specs immediately so Implement button enables
+          queryClient.refetchQueries({ queryKey: ['task'] })
           break
         case 'question_asked':
-          queryClient.invalidateQueries({ queryKey: ['task', 'active'] })
+          queryClient.refetchQueries({ queryKey: ['task', 'active'] })
           break
       }
     },
@@ -101,39 +110,60 @@ export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
       setConnected(true)
     }
 
-    es.onmessage = (event) => {
+    // Helper to handle events - parses data and triggers callbacks
+    const createEventHandler = (eventType: string) => (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as {
-          type: SSEEventType
+          from?: string
+          to?: string
           state?: string
           content?: string
           message?: string
+          text?: string
           error?: string
+          question?: string
+          options?: string[]
+          task_id?: string
+          timestamp?: string
         }
-        handleEvent(data.type)
+
+        // Trigger query invalidation/refetch based on event type
+        handleEvent(eventType as SSEEventType)
+
+        const scopedTaskID = taskIDRef.current
+        const eventTaskID = data.task_id
+        const matchesTask = !scopedTaskID || !eventTaskID || scopedTaskID === eventTaskID
 
         // Callback for state changes (using ref for stable reference)
-        if (data.type === 'state_changed' && data.state && onStateChangeRef.current) {
-          onStateChangeRef.current(data.state)
+        // Backend sends { from, to, event, task_id } for state_changed
+        if (eventType === 'state_changed' && matchesTask && onStateChangeRef.current) {
+          const newState = data.to || data.state
+          if (newState) {
+            onStateChangeRef.current(newState)
+          }
         }
 
-        // Callback for agent messages (using ref for stable reference)
-        if (data.type === 'agent_message' && onAgentMessageRef.current) {
-          const content = data.content || data.message || ''
+        // Callback for terminal output (agent events + progress updates)
+        if ((eventType === 'agent_message' || eventType === 'progress') && matchesTask && onAgentMessageRef.current) {
+          const content =
+            eventType === 'progress'
+              ? (data.message || '').trim()
+              : (data.content || data.message || data.text || '').trim()
           if (content) {
             onAgentMessageRef.current({
               content,
-              timestamp: new Date().toISOString(),
-              type: data.error ? 'error' : 'output',
+              timestamp: data.timestamp || new Date().toISOString(),
+              taskId: eventTaskID,
+              type: eventType === 'progress' ? 'info' : data.error ? 'error' : 'output',
             })
           }
         }
 
         // Callback for questions (using ref for stable reference)
-        if (data.type === 'question_asked' && onQuestionRef.current) {
+        if (eventType === 'question_asked' && onQuestionRef.current) {
           onQuestionRef.current({
-            question: (data as { question?: string }).question,
-            options: (data as { options?: string[] }).options,
+            question: data.question,
+            options: data.options,
           })
         }
 
@@ -145,6 +175,24 @@ export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
         // Ignore parse errors
       }
     }
+
+    // Listen for specific SSE event types (NOT onmessage which only handles "message" events!)
+    // The backend sends named events like "event: state_changed\ndata: {...}"
+    const eventTypes = [
+      'state_changed',
+      'progress',
+      'agent_message',
+      'costs_updated',
+      'spec_updated',
+      'question_asked',
+      'heartbeat',
+      'connected',
+      'error',
+    ]
+
+    eventTypes.forEach((eventType) => {
+      es.addEventListener(eventType, createEventHandler(eventType))
+    })
 
     es.onerror = () => {
       es.close()
