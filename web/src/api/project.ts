@@ -5,28 +5,6 @@ import { apiRequest, getCsrfToken } from './client'
 // Types
 // ============================================================================
 
-export interface QuickTask {
-  id: string
-  title: string
-  description: string
-  priority: number
-  labels: string[]
-  status: string
-  created_at: string
-}
-
-export interface QuickTasksResponse {
-  tasks: QuickTask[]
-  count: number
-}
-
-export interface CreateQuickTaskRequest {
-  description: string
-  title?: string
-  priority?: number
-  labels?: string[]
-}
-
 export interface Queue {
   id: string
   title: string
@@ -77,69 +55,6 @@ export interface SourceResponse {
 export interface UploadResponse {
   source: string
   filename: string
-}
-
-export interface SubmitSourceRequest {
-  source: string
-  provider: string
-  title?: string
-  instructions?: string
-  notes?: string[]
-  labels?: string[]
-  optimize?: boolean
-  dry_run?: boolean
-}
-
-// ============================================================================
-// Quick Tasks Hooks
-// ============================================================================
-
-/**
- * Hook for fetching quick tasks list
- */
-export function useQuickTasks() {
-  return useQuery({
-    queryKey: ['quick', 'tasks'],
-    queryFn: () => apiRequest<QuickTasksResponse>('/quick'),
-  })
-}
-
-/**
- * Hook to create a quick task
- */
-export function useCreateQuickTask() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: CreateQuickTaskRequest) => {
-      return apiRequest<QuickTask>('/quick', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quick', 'tasks'] })
-    },
-  })
-}
-
-/**
- * Hook to submit from source (quick task mode)
- */
-export function useSubmitSource() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: SubmitSourceRequest) => {
-      return apiRequest<{ status: string }>('/quick/submit-source', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quick', 'tasks'] })
-    },
-  })
 }
 
 // ============================================================================

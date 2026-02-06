@@ -4,12 +4,9 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   useCreatePlan,
-  useCreateQuickTask,
   useCreateSource,
   useQueues,
-  useQuickTasks,
   useStartTask,
-  useSubmitSource,
   useUploadFile,
 } from './project'
 
@@ -38,11 +35,9 @@ describe('project api hooks', () => {
   it('query hooks call expected endpoints', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-    renderHook(() => useQuickTasks(), { wrapper: createWrapper(queryClient) })
     renderHook(() => useQueues(), { wrapper: createWrapper(queryClient) })
 
     await waitFor(() => {
-      expect(apiRequestMock).toHaveBeenCalledWith('/quick')
       expect(apiRequestMock).toHaveBeenCalledWith('/project/queues')
     })
   })
@@ -51,12 +46,6 @@ describe('project api hooks', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-    const createQuickTask = renderHook(() => useCreateQuickTask(), {
-      wrapper: createWrapper(queryClient),
-    })
-    const submitSource = renderHook(() => useSubmitSource(), {
-      wrapper: createWrapper(queryClient),
-    })
     const createPlan = renderHook(() => useCreatePlan(), {
       wrapper: createWrapper(queryClient),
     })
@@ -65,20 +54,10 @@ describe('project api hooks', () => {
     })
 
     await act(async () => {
-      await createQuickTask.result.current.mutateAsync({ description: 'new task', priority: 2 })
-      await submitSource.result.current.mutateAsync({ source: 'src', provider: 'github' })
       await createPlan.result.current.mutateAsync({ source: 'file:task.md', use_schema: true })
       await createSource.result.current.mutateAsync({ type: 'text', value: 'task text' })
     })
 
-    expect(apiRequestMock).toHaveBeenCalledWith('/quick', {
-      method: 'POST',
-      body: JSON.stringify({ description: 'new task', priority: 2 }),
-    })
-    expect(apiRequestMock).toHaveBeenCalledWith('/quick/submit-source', {
-      method: 'POST',
-      body: JSON.stringify({ source: 'src', provider: 'github' }),
-    })
     expect(apiRequestMock).toHaveBeenCalledWith('/project/plan', {
       method: 'POST',
       body: JSON.stringify({ source: 'file:task.md', use_schema: true }),
@@ -88,7 +67,6 @@ describe('project api hooks', () => {
       body: JSON.stringify({ type: 'text', value: 'task text' }),
     })
 
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['quick', 'tasks'] })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['project', 'queues'] })
   })
 
