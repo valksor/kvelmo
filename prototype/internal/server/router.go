@@ -34,13 +34,13 @@ func (s *Server) setupRouter() http.Handler {
 	// Health check (public)
 	mux.HandleFunc("GET /health", s.handleHealth)
 
-	// Auth routes (public)
-	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
-	mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
+	// DISABLED: remote serve temporarily unavailable
+	// mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
+	// mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/v1/auth/csrf", s.handleCSRFToken)
-	if !s.config.APIOnly {
-		mux.HandleFunc("GET /logout", s.handleLogout)
-	}
+	// if !s.config.APIOnly {
+	// 	mux.HandleFunc("GET /logout", s.handleLogout)
+	// }
 
 	// API routes
 	mux.HandleFunc("GET /api/v1/status", s.handleStatus)
@@ -273,15 +273,14 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/projects/switch", s.handleSwitchProject)
 	}
 
-	// Automation endpoints (webhook processing)
-	// Webhook endpoint is always registered but returns error if automation not enabled
-	mux.HandleFunc("POST /api/v1/webhooks/{provider}", s.handleWebhook)
-	mux.HandleFunc("GET /api/v1/automation/status", s.handleAutomationStatus)
-	mux.HandleFunc("GET /api/v1/automation/jobs", s.handleAutomationJobs)
-	mux.HandleFunc("GET /api/v1/automation/jobs/{id}", s.handleAutomationJob)
-	mux.HandleFunc("POST /api/v1/automation/jobs/{id}/cancel", s.handleAutomationJobCancel)
-	mux.HandleFunc("POST /api/v1/automation/jobs/{id}/retry", s.handleAutomationJobRetry)
-	mux.HandleFunc("GET /api/v1/automation/config", s.handleAutomationConfig)
+	// DISABLED: automation temporarily unavailable (requires remote serve)
+	// mux.HandleFunc("POST /api/v1/webhooks/{provider}", s.handleWebhook)
+	// mux.HandleFunc("GET /api/v1/automation/status", s.handleAutomationStatus)
+	// mux.HandleFunc("GET /api/v1/automation/jobs", s.handleAutomationJobs)
+	// mux.HandleFunc("GET /api/v1/automation/jobs/{id}", s.handleAutomationJob)
+	// mux.HandleFunc("POST /api/v1/automation/jobs/{id}/cancel", s.handleAutomationJobCancel)
+	// mux.HandleFunc("POST /api/v1/automation/jobs/{id}/retry", s.handleAutomationJobRetry)
+	// mux.HandleFunc("GET /api/v1/automation/config", s.handleAutomationConfig)
 
 	// SSE events endpoint
 	mux.HandleFunc("GET /api/v1/events", s.handleEvents)
@@ -376,6 +375,10 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"running":           s.IsRunning(),
 		"port":              s.Port(),
 		"canSwitchToGlobal": s.startedInGlobalMode,
+	}
+
+	if project := s.currentProjectStatusInfo(); project != nil {
+		response["project"] = project
 	}
 
 	if s.config.Mode == ModeProject && s.config.Conductor != nil {
@@ -588,7 +591,7 @@ func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 			"id":          p.ID,
 			"name":        p.Name,
 			"path":        p.Path,
-			"remote_url":  p.RemoteURL,
+			"remote_url":  storage.SanitizeRemoteURL(p.RemoteURL),
 			"last_access": p.LastAccess,
 		})
 	}

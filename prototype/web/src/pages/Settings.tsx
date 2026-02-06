@@ -6,20 +6,21 @@ import {
   Layers,
   Loader2,
   Save,
-  Shield,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import { useProjects } from '@/api/projects'
 import { useAgents, useSaveSettings, useSettings } from '@/api/settings'
 import { useStatus } from '@/api/workflow'
-import { AutomationSettings } from '@/components/settings/sections/AutomationSettings'
+// DISABLED: automation temporarily unavailable (requires remote serve)
+// import { AutomationSettings } from '@/components/settings/sections/AutomationSettings'
 import { CoreSettings } from '@/components/settings/sections/CoreSettings'
 import { FeatureSettings } from '@/components/settings/sections/FeatureSettings'
 import { ProviderSettings } from '@/components/settings/sections/ProviderSettings'
 import type { WorkspaceConfig } from '@/types/api'
 
-type SectionID = 'work' | 'advanced' | 'admin'
+// DISABLED: automation temporarily unavailable — 'admin' section removed
+type SectionID = 'work' | 'advanced'
 
 interface SectionMeta {
   id: SectionID
@@ -41,12 +42,13 @@ const sectionNavigation: SectionMeta[] = [
     description: 'Memory, security, browser, sandbox, and power features',
     icon: Wrench,
   },
-  {
-    id: 'admin',
-    label: 'Admin',
-    description: 'Automation controls and webhook behavior',
-    icon: Shield,
-  },
+  // DISABLED: automation temporarily unavailable (requires remote serve)
+  // {
+  //   id: 'admin',
+  //   label: 'Admin',
+  //   description: 'Automation controls and webhook behavior',
+  //   icon: Shield,
+  // },
 ]
 
 export default function Settings() {
@@ -228,7 +230,7 @@ export default function Settings() {
 
       <div className="card bg-base-100 shadow-sm border border-base-300/70">
         <div className="card-body p-2 sm:p-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {sectionNavigation.map(({ id, label, description, icon: Icon }) => (
               <button
                 key={id}
@@ -280,9 +282,10 @@ export default function Settings() {
           </>
         )}
 
-        {activeSection === 'admin' && (
+        {/* DISABLED: automation temporarily unavailable (requires remote serve) */}
+        {/* {activeSection === 'admin' && (
           <AutomationSettings data={formData} updateField={updateField} />
-        )}
+        )} */}
       </div>
     </div>
   )

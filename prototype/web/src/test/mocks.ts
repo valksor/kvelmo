@@ -15,6 +15,12 @@ export const mockProjectModeStatus: StatusResponse = {
   running: true,
   port: 8080,
   state: 'idle',
+  project: {
+    id: 'github.com-acme-repo',
+    name: 'acme/repo',
+    path: '/tmp/acme/repo',
+    remote_url: 'https://github.com/acme/repo.git',
+  },
 }
 
 export const mockGlobalModeStatus: StatusResponse = {

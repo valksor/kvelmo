@@ -4,7 +4,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"strings"
 
@@ -24,28 +23,29 @@ func (s *Server) handleReactApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Public routes that don't require authentication
-	publicPaths := map[string]bool{
-		"/login":  true,
-		"/logout": true,
-	}
+	// publicPaths := map[string]bool{
+	//	// DISABLED: remote serve temporarily unavailable
+	//	// "/login":  true,
+	//	//"/logout": true,
+	//}
 
 	// Check auth if auth store is configured (non-localhost mode)
 	// Skip auth check for public paths and static assets
-	isStaticAsset := strings.HasPrefix(r.URL.Path, "/assets/") ||
-		strings.HasSuffix(r.URL.Path, ".svg") ||
-		strings.HasSuffix(r.URL.Path, ".ico") ||
-		strings.HasSuffix(r.URL.Path, ".png")
+	// isStaticAsset := strings.HasPrefix(r.URL.Path, "/assets/") ||
+	//	strings.HasSuffix(r.URL.Path, ".svg") ||
+	//	strings.HasSuffix(r.URL.Path, ".ico") ||
+	//	strings.HasSuffix(r.URL.Path, ".png")
 
-	if s.config.AuthStore != nil && !publicPaths[r.URL.Path] && !isStaticAsset {
-		session := s.getSessionFromRequest(r)
-		if session == nil {
-			// Redirect to login with return URL
-			redirectURL := "/login?next=" + url.QueryEscape(r.URL.Path)
-			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-
-			return
-		}
-	}
+	// if s.config.AuthStore != nil && !publicPaths[r.URL.Path] && !isStaticAsset {
+	//	session := s.getSessionFromRequest(r)
+	//	if session == nil {
+	//		// Redirect to login with return URL
+	//		redirectURL := "/login?next=" + url.QueryEscape(r.URL.Path)
+	//		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	//
+	//		return
+	//	}
+	//}
 
 	// Try to serve static file from React app bundle
 	reactFS := static.ReactApp()

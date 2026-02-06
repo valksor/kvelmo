@@ -117,6 +117,14 @@ func (s *Server) handleGetSessions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// DISABLED: remote serve temporarily unavailable
+// Blank references prevent "unused" lint errors for disabled code.
+var (
+	_ = (*Server).handleLogin
+	_ = (*Server).handleLogout
+	_ = (*Server).handleLoginPage
+)
+
 // handleLogin processes login requests.
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {

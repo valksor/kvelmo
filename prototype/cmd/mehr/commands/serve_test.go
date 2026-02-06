@@ -40,12 +40,6 @@ func TestServeCommand_Flags(t *testing.T) {
 			defaultValue: "0",
 		},
 		{
-			name:         "host flag",
-			flagName:     "host",
-			shorthand:    "",
-			defaultValue: "localhost",
-		},
-		{
 			name:         "global flag",
 			flagName:     "global",
 			shorthand:    "",
@@ -54,12 +48,6 @@ func TestServeCommand_Flags(t *testing.T) {
 		{
 			name:         "open flag",
 			flagName:     "open",
-			shorthand:    "",
-			defaultValue: "false",
-		},
-		{
-			name:         "tunnel-info flag",
-			flagName:     "tunnel-info",
 			shorthand:    "",
 			defaultValue: "false",
 		},
@@ -97,7 +85,8 @@ func TestServeCommand_Flags(t *testing.T) {
 func TestServeCommand_Subcommands(t *testing.T) {
 	subcommands := serveCmd.Commands()
 
-	expectedNames := []string{"register", "unregister", "auth"}
+	// Register/unregister should be present (needed for global mode)
+	expectedNames := []string{"register", "unregister"}
 	for _, name := range expectedNames {
 		found := false
 		for _, cmd := range subcommands {
@@ -111,9 +100,18 @@ func TestServeCommand_Subcommands(t *testing.T) {
 			t.Errorf("serve command missing %q subcommand", name)
 		}
 	}
+
+	// Auth subcommand is disabled (remote serve)
+	for _, cmd := range subcommands {
+		if cmd.Name() == "auth" {
+			t.Error("serve command should not have \"auth\" subcommand (remote serve disabled)")
+		}
+	}
 }
 
 func TestServeAuthCommand_Subcommands(t *testing.T) {
+	t.Skip("remote serve temporarily disabled")
+
 	subcommands := serveAuthCmd.Commands()
 
 	expectedNames := []string{"add", "list", "remove", "passwd", "role"}
@@ -352,6 +350,8 @@ func TestSplitAny(t *testing.T) {
 }
 
 func TestRunServe_TunnelInfo(t *testing.T) {
+	t.Skip("remote serve temporarily disabled")
+
 	// Save and restore flag
 	origTunnelInfo := serveTunnelInfo
 	origPort := servePort
