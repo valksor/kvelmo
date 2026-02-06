@@ -53,7 +53,10 @@ class MehrhofServerManager(
      * Start the Mehrhof server for the given project.
      * Spawns `mehr serve --api` and captures the port from output.
      */
-    fun startServer(project: Project, settings: MehrhofSettings) {
+    fun startServer(
+        project: Project,
+        settings: MehrhofSettings
+    ) {
         if (serverProcess?.isAlive == true) {
             log.info("Server already running")
             return
