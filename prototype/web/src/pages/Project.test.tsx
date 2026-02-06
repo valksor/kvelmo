@@ -4,6 +4,18 @@ import userEvent from '@testing-library/user-event'
 import { mockApiEndpoints, mockProjectModeStatus, mockGlobalModeStatus } from '@/test/mocks'
 import Project from './Project'
 
+function getCreatePlanTab(): HTMLButtonElement {
+  const tab = screen
+    .getAllByRole('button', { name: /create plan/i })
+    .find((button): button is HTMLButtonElement => button.className.includes('tab'))
+
+  if (!tab) {
+    throw new Error('Create Plan tab not found')
+  }
+
+  return tab
+}
+
 describe('Project Page', () => {
   describe('Project Mode', () => {
     beforeEach(() => {
@@ -25,7 +37,7 @@ describe('Project Page', () => {
       render(<Project />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /create plan/i })).toBeInTheDocument()
+        expect(getCreatePlanTab()).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /queues/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /tasks/i })).toBeInTheDocument()
       })
@@ -36,10 +48,10 @@ describe('Project Page', () => {
       render(<Project />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /create plan/i })).toBeInTheDocument()
+        expect(getCreatePlanTab()).toBeInTheDocument()
       })
 
-      await user.click(screen.getByRole('button', { name: /create plan/i }))
+      await user.click(getCreatePlanTab())
 
       // Create plan tab should show source type selector
       await waitFor(() => {
