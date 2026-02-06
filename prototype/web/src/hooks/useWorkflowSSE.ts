@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { SSEEventType } from '@/types/api'
 
 export interface AgentMessage {
@@ -23,205 +23,284 @@ interface UseWorkflowSSEOptions {
   onError?: (error: string) => void
 }
 
+interface ParsedEventData {
+  from?: string
+  to?: string
+  state?: string
+  content?: string
+  message?: string
+  text?: string
+  error?: string
+  question?: string
+  options?: string[]
+  task_id?: string
+  timestamp?: string
+}
+
+interface WorkflowSubscriber {
+  setConnected: (connected: boolean) => void
+  enabledRef: MutableRefObject<boolean>
+  taskIDRef: MutableRefObject<string | undefined>
+  onStateChangeRef: MutableRefObject<UseWorkflowSSEOptions['onStateChange']>
+  onAgentMessageRef: MutableRefObject<UseWorkflowSSEOptions['onAgentMessage']>
+  onQuestionRef: MutableRefObject<UseWorkflowSSEOptions['onQuestion']>
+  onErrorRef: MutableRefObject<UseWorkflowSSEOptions['onError']>
+}
+
+let nextSubscriberID = 0
+const subscribers = new Map<number, WorkflowSubscriber>()
+
+let sharedQueryClient: QueryClient | null = null
+let sharedEventSource: EventSource | null = null
+let reconnectTimeoutID: number | undefined
+let isSharedConnected = false
+
+function hasEnabledSubscribers(): boolean {
+  for (const subscriber of subscribers.values()) {
+    if (subscriber.enabledRef.current) {
+      return true
+    }
+  }
+  return false
+}
+
+function broadcastConnected(connected: boolean) {
+  isSharedConnected = connected
+  subscribers.forEach((subscriber) => {
+    subscriber.setConnected(connected)
+  })
+}
+
+function refreshQueriesForEvent(eventType: SSEEventType) {
+  if (!sharedQueryClient) {
+    return
+  }
+
+  switch (eventType) {
+    case 'state_changed':
+      sharedQueryClient.refetchQueries({ queryKey: ['status'] })
+      sharedQueryClient.refetchQueries({ queryKey: ['task'] })
+      sharedQueryClient.refetchQueries({ queryKey: ['workflow', 'diagram'] })
+      break
+    case 'progress':
+    case 'agent_message':
+      sharedQueryClient.invalidateQueries({ queryKey: ['task', 'active'] })
+      break
+    case 'costs_updated':
+      sharedQueryClient.invalidateQueries({ queryKey: ['task', 'active'] })
+      break
+    case 'spec_updated':
+      sharedQueryClient.refetchQueries({ queryKey: ['task'] })
+      break
+    case 'question_asked':
+      sharedQueryClient.refetchQueries({ queryKey: ['task', 'active'] })
+      break
+  }
+}
+
+function notifySubscribers(eventType: string, data: ParsedEventData) {
+  const eventTaskID = data.task_id
+
+  subscribers.forEach((subscriber) => {
+    if (!subscriber.enabledRef.current) {
+      return
+    }
+
+    const scopedTaskID = subscriber.taskIDRef.current
+    const matchesTask = !scopedTaskID || !eventTaskID || scopedTaskID === eventTaskID
+
+    if (eventType === 'state_changed' && matchesTask && subscriber.onStateChangeRef.current) {
+      const newState = data.to || data.state
+      if (newState) {
+        subscriber.onStateChangeRef.current(newState)
+      }
+    }
+
+    if ((eventType === 'agent_message' || eventType === 'progress') && matchesTask && subscriber.onAgentMessageRef.current) {
+      const content =
+        eventType === 'progress'
+          ? (data.message || '').trim()
+          : (data.content || data.message || data.text || '').trim()
+
+      if (content) {
+        subscriber.onAgentMessageRef.current({
+          content,
+          timestamp: data.timestamp || new Date().toISOString(),
+          taskId: eventTaskID,
+          type: eventType === 'progress' ? 'info' : data.error ? 'error' : 'output',
+        })
+      }
+    }
+
+    if (eventType === 'question_asked' && subscriber.onQuestionRef.current) {
+      subscriber.onQuestionRef.current({
+        question: data.question,
+        options: data.options,
+      })
+    }
+
+    if (subscriber.onErrorRef.current && data.error) {
+      subscriber.onErrorRef.current(data.error)
+    }
+  })
+}
+
+function handleIncomingEvent(eventType: string, event: MessageEvent) {
+  let data: ParsedEventData = {}
+  try {
+    data = JSON.parse(event.data) as ParsedEventData
+  } catch {
+    return
+  }
+
+  refreshQueriesForEvent(eventType as SSEEventType)
+  notifySubscribers(eventType, data)
+}
+
+function closeSharedConnection() {
+  if (reconnectTimeoutID) {
+    clearTimeout(reconnectTimeoutID)
+    reconnectTimeoutID = undefined
+  }
+
+  if (sharedEventSource) {
+    sharedEventSource.close()
+    sharedEventSource = null
+  }
+
+  broadcastConnected(false)
+}
+
+function connectShared() {
+  if (sharedEventSource || !sharedQueryClient || !hasEnabledSubscribers()) {
+    return
+  }
+
+  const source = new EventSource('/api/v1/events')
+  sharedEventSource = source
+
+  source.onopen = () => {
+    broadcastConnected(true)
+  }
+
+  const eventTypes: string[] = [
+    'state_changed',
+    'progress',
+    'agent_message',
+    'costs_updated',
+    'spec_updated',
+    'question_asked',
+    'heartbeat',
+    'connected',
+    'error',
+  ]
+
+  eventTypes.forEach((eventType) => {
+    source.addEventListener(eventType, (event) => {
+      handleIncomingEvent(eventType, event as MessageEvent)
+    })
+  })
+
+  source.onerror = () => {
+    source.close()
+    if (sharedEventSource === source) {
+      sharedEventSource = null
+    }
+
+    broadcastConnected(false)
+
+    if (reconnectTimeoutID) {
+      clearTimeout(reconnectTimeoutID)
+    }
+
+    reconnectTimeoutID = window.setTimeout(() => {
+      reconnectTimeoutID = undefined
+      if (hasEnabledSubscribers()) {
+        connectShared()
+      }
+    }, 2000)
+  }
+}
+
+function syncConnection() {
+  if (hasEnabledSubscribers()) {
+    connectShared()
+    return
+  }
+
+  closeSharedConnection()
+}
+
 /**
  * Hook for SSE connection to receive real-time workflow updates.
- * Only use this on pages that need real-time updates (Dashboard, Task Detail).
- *
- * Uses refs for callback functions to prevent unnecessary reconnections
- * when callbacks change between renders.
+ * Uses a shared singleton EventSource to avoid opening duplicate connections.
  */
 export function useWorkflowSSE(options: UseWorkflowSSEOptions = {}) {
   const { enabled = true, taskId, onStateChange, onAgentMessage, onQuestion, onError } = options
-  const queryClient = useQueryClient()
-  const eventSourceRef = useRef<EventSource | null>(null)
-  const reconnectTimeoutRef = useRef<number | undefined>(undefined)
-  const [connected, setConnected] = useState(false)
 
-  // Store callbacks in refs to avoid dependency changes that would cause reconnections
+  const queryClient = useQueryClient()
+  const [connected, setConnected] = useState(isSharedConnected)
+
+  const enabledRef = useRef(enabled)
+  const taskIDRef = useRef(taskId)
   const onStateChangeRef = useRef(onStateChange)
   const onAgentMessageRef = useRef(onAgentMessage)
   const onQuestionRef = useRef(onQuestion)
   const onErrorRef = useRef(onError)
-  const enabledRef = useRef(enabled)
-  const taskIDRef = useRef(taskId)
+  const subscriberIDRef = useRef<number | null>(null)
 
-  // Update refs when callbacks change (doesn't trigger reconnection)
   useEffect(() => {
+    enabledRef.current = enabled
+    taskIDRef.current = taskId
     onStateChangeRef.current = onStateChange
     onAgentMessageRef.current = onAgentMessage
     onQuestionRef.current = onQuestion
     onErrorRef.current = onError
-    enabledRef.current = enabled
-    taskIDRef.current = taskId
   })
 
-  const handleEvent = useCallback(
-    (eventType: SSEEventType) => {
-      switch (eventType) {
-        case 'state_changed':
-          // Force immediate refetch for responsive UI on state changes.
-          // Use ['task'] prefix to refetch ALL task queries (active, specs, notes, costs),
-          // and refetch workflow diagram SVG so state highlight updates immediately.
-          queryClient.refetchQueries({ queryKey: ['status'] })
-          queryClient.refetchQueries({ queryKey: ['task'] })
-          queryClient.refetchQueries({ queryKey: ['workflow', 'diagram'] })
-          break
-        case 'progress':
-        case 'agent_message':
-          queryClient.invalidateQueries({ queryKey: ['task', 'active'] })
-          break
-        case 'costs_updated':
-          queryClient.invalidateQueries({ queryKey: ['task', 'active'] })
-          break
-        case 'spec_updated':
-          // Also refetch specs immediately so Implement button enables
-          queryClient.refetchQueries({ queryKey: ['task'] })
-          break
-        case 'question_asked':
-          queryClient.refetchQueries({ queryKey: ['task', 'active'] })
-          break
-      }
-    },
-    [queryClient]
-  )
+  useEffect(() => {
+    sharedQueryClient = queryClient
 
-  const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = undefined
-    }
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close()
-      eventSourceRef.current = null
-    }
-    setConnected(false)
-  }, [])
+    const subscriberID = ++nextSubscriberID
+    subscriberIDRef.current = subscriberID
 
-  // Ref to hold the connect function for recursive reconnection
-  const connectRef = useRef<() => void>(() => {})
-
-  const connect = useCallback(() => {
-    if (eventSourceRef.current) return
-
-    const es = new EventSource('/api/v1/events')
-    eventSourceRef.current = es
-
-    es.onopen = () => {
-      setConnected(true)
-    }
-
-    // Helper to handle events - parses data and triggers callbacks
-    const createEventHandler = (eventType: string) => (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data) as {
-          from?: string
-          to?: string
-          state?: string
-          content?: string
-          message?: string
-          text?: string
-          error?: string
-          question?: string
-          options?: string[]
-          task_id?: string
-          timestamp?: string
-        }
-
-        // Trigger query invalidation/refetch based on event type
-        handleEvent(eventType as SSEEventType)
-
-        const scopedTaskID = taskIDRef.current
-        const eventTaskID = data.task_id
-        const matchesTask = !scopedTaskID || !eventTaskID || scopedTaskID === eventTaskID
-
-        // Callback for state changes (using ref for stable reference)
-        // Backend sends { from, to, event, task_id } for state_changed
-        if (eventType === 'state_changed' && matchesTask && onStateChangeRef.current) {
-          const newState = data.to || data.state
-          if (newState) {
-            onStateChangeRef.current(newState)
-          }
-        }
-
-        // Callback for terminal output (agent events + progress updates)
-        if ((eventType === 'agent_message' || eventType === 'progress') && matchesTask && onAgentMessageRef.current) {
-          const content =
-            eventType === 'progress'
-              ? (data.message || '').trim()
-              : (data.content || data.message || data.text || '').trim()
-          if (content) {
-            onAgentMessageRef.current({
-              content,
-              timestamp: data.timestamp || new Date().toISOString(),
-              taskId: eventTaskID,
-              type: eventType === 'progress' ? 'info' : data.error ? 'error' : 'output',
-            })
-          }
-        }
-
-        // Callback for questions (using ref for stable reference)
-        if (eventType === 'question_asked' && onQuestionRef.current) {
-          onQuestionRef.current({
-            question: data.question,
-            options: data.options,
-          })
-        }
-
-        // Callback for errors (using ref for stable reference)
-        if (onErrorRef.current && data.error) {
-          onErrorRef.current(data.error)
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
-    // Listen for specific SSE event types (NOT onmessage which only handles "message" events!)
-    // The backend sends named events like "event: state_changed\ndata: {...}"
-    const eventTypes = [
-      'state_changed',
-      'progress',
-      'agent_message',
-      'costs_updated',
-      'spec_updated',
-      'question_asked',
-      'heartbeat',
-      'connected',
-      'error',
-    ]
-
-    eventTypes.forEach((eventType) => {
-      es.addEventListener(eventType, createEventHandler(eventType))
+    subscribers.set(subscriberID, {
+      setConnected,
+      enabledRef,
+      taskIDRef,
+      onStateChangeRef,
+      onAgentMessageRef,
+      onQuestionRef,
+      onErrorRef,
     })
 
-    es.onerror = () => {
-      es.close()
-      eventSourceRef.current = null
-      setConnected(false)
+    syncConnection()
 
-      // Reconnect after 2 seconds if still enabled (using ref for current value)
-      reconnectTimeoutRef.current = window.setTimeout(() => {
-        if (enabledRef.current) connectRef.current()
-      }, 2000)
+    return () => {
+      subscribers.delete(subscriberID)
+      subscriberIDRef.current = null
+
+      if (subscribers.size === 0) {
+        sharedQueryClient = null
+      }
+
+      syncConnection()
     }
-  }, [handleEvent]) // Only depends on handleEvent (which only depends on queryClient)
+  }, [queryClient])
 
-  // Keep connectRef in sync with connect
   useEffect(() => {
-    connectRef.current = connect
-  })
-
-  // Main effect: only re-runs when `enabled` changes
-  useEffect(() => {
-    if (enabled) {
-      connect()
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- valid cleanup pattern
-      disconnect()
+    const subscriberID = subscriberIDRef.current
+    if (!subscriberID) {
+      return
     }
 
-    return disconnect
-  }, [enabled, connect, disconnect])
+    const subscriber = subscribers.get(subscriberID)
+    if (subscriber) {
+      subscriber.enabledRef.current = enabled
+    }
+
+    syncConnection()
+  }, [enabled])
 
   return { connected }
 }

@@ -138,4 +138,24 @@ describe('useWorkflowSSE', () => {
       )
     })
   })
+
+  it('shares a single EventSource across multiple hook instances', () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
+
+    const wrapper = createWrapper(queryClient)
+
+    const first = renderHook(() => useWorkflowSSE(), { wrapper })
+    const second = renderHook(() => useWorkflowSSE(), { wrapper })
+
+    expect(MockEventSource.instances).toHaveLength(1)
+
+    first.unmount()
+    expect(MockEventSource.instances).toHaveLength(1)
+
+    second.unmount()
+  })
 })
