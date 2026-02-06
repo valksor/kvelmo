@@ -44,7 +44,15 @@ describe('Layout', () => {
   it('renders project navigation and supports switch to global', async () => {
     const user = userEvent.setup()
     useStatusMock.mockReturnValue({
-      data: { mode: 'project', canSwitchToGlobal: true },
+      data: {
+        mode: 'project',
+        canSwitchToGlobal: true,
+        project: {
+          name: 'acme/repo',
+          path: '/work/acme/repo',
+          remote_url: 'https://github.com/acme/repo.git',
+        },
+      },
       isLoading: false,
     })
 
@@ -52,6 +60,8 @@ describe('Layout', () => {
 
     expect(screen.getByText('Work')).toBeInTheDocument()
     expect(screen.getByText('Advanced')).toBeInTheDocument()
+    expect(screen.getByText('acme/repo')).toBeInTheDocument()
+    expect(screen.getByText('https://github.com/acme/repo.git')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /projects/i })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /projects/i }))
