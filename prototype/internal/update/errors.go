@@ -24,4 +24,7 @@ var (
 	// ErrSignatureVerificationFailed is returned when Minisign signature verification fails.
 	// This indicates the checksums file may have been tampered with.
 	ErrSignatureVerificationFailed = errors.New("update: signature verification failed")
+
+	// ErrReleaseNotFound is returned when a specific release tag cannot be found.
+	ErrReleaseNotFound = errors.New("update: release not found")
 )

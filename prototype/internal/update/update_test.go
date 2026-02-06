@@ -2,6 +2,11 @@ package update
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -338,6 +343,7 @@ func TestUpdateErrors(t *testing.T) {
 		{ErrInstallFailed, "ErrInstallFailed"},
 		{ErrAssetNotFound, "ErrAssetNotFound"},
 		{ErrDevBuild, "ErrDevBuild"},
+		{ErrReleaseNotFound, "ErrReleaseNotFound"},
 	}
 
 	for _, tt := range tests {
@@ -346,6 +352,122 @@ func TestUpdateErrors(t *testing.T) {
 				t.Error("Expected non-nil error")
 			}
 		})
+	}
+}
+
+func TestCheckerCheck_DevBuildCanUpdateToLatestStable(t *testing.T) {
+	assetName := "mehr-" + runtime.GOOS + "-" + runtime.GOARCH
+	checker, closeFn := newTestChecker(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/valksor/go-mehrhof/releases" {
+			http.NotFound(w, r)
+
+			return
+		}
+
+		releases := []map[string]any{
+			{
+				"tag_name":   "v1.2.3",
+				"draft":      false,
+				"prerelease": false,
+				"html_url":   "https://example.test/releases/v1.2.3",
+				"assets": []map[string]any{
+					{
+						"name":                 assetName,
+						"browser_download_url": "https://example.test/download/" + assetName,
+						"size":                 12345,
+					},
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(releases)
+	})
+	defer closeFn()
+
+	status, err := checker.Check(context.Background(), CheckOptions{
+		CurrentVersion: "dev",
+	})
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status == nil {
+		t.Fatal("Check() returned nil status")
+	}
+	if status.LatestVersion != "v1.2.3" {
+		t.Fatalf("LatestVersion = %q, want %q", status.LatestVersion, "v1.2.3")
+	}
+}
+
+func TestCheckerCheck_TargetTagNightly(t *testing.T) {
+	assetName := "mehr-" + runtime.GOOS + "-" + runtime.GOARCH
+	checker, closeFn := newTestChecker(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/valksor/go-mehrhof/releases/tags/nightly" {
+			http.NotFound(w, r)
+
+			return
+		}
+
+		release := map[string]any{
+			"tag_name":   "nightly",
+			"draft":      false,
+			"prerelease": true,
+			"html_url":   "https://example.test/releases/nightly",
+			"assets": []map[string]any{
+				{
+					"name":                 assetName,
+					"browser_download_url": "https://example.test/download/" + assetName,
+					"size":                 54321,
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(release)
+	})
+	defer closeFn()
+
+	status, err := checker.Check(context.Background(), CheckOptions{
+		CurrentVersion: "v1.0.0",
+		TargetTag:      "nightly",
+	})
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if status == nil {
+		t.Fatal("Check() returned nil status")
+	}
+	if status.LatestVersion != "nightly" {
+		t.Fatalf("LatestVersion = %q, want %q", status.LatestVersion, "nightly")
+	}
+}
+
+func TestCheckerCheck_TargetTagNotFound(t *testing.T) {
+	checker, closeFn := newTestChecker(t, func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
+	defer closeFn()
+
+	_, err := checker.Check(context.Background(), CheckOptions{
+		CurrentVersion: "v1.0.0",
+		TargetTag:      "v9.9.9",
+	})
+	if !errors.Is(err, ErrReleaseNotFound) {
+		t.Fatalf("Check() error = %v, want ErrReleaseNotFound", err)
+	}
+}
+
+func newTestChecker(t *testing.T, handler http.HandlerFunc) (*Checker, func()) {
+	t.Helper()
+
+	server := httptest.NewServer(handler)
+	checker := NewChecker(context.Background(), "", "valksor", "go-mehrhof")
+	baseURL, err := url.Parse(server.URL + "/")
+	if err != nil {
+		server.Close()
+		t.Fatalf("parse test server URL: %v", err)
+	}
+	checker.ghClient.BaseURL = baseURL
+	checker.ghClient.UploadURL = baseURL
+
+	return checker, func() {
+		server.Close()
 	}
 }
 

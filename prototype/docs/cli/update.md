@@ -12,7 +12,13 @@ mehr update [flags]
 
 ## Description
 
-The `update` command checks for new releases on GitHub and updates the installed binary to the latest version. It supports:
+The `update` command checks for new releases on GitHub and updates the installed binary:
+
+- Without flags: installs latest stable release when newer than current
+- With `--nightly`: installs the newest release across stable + pre-releases
+- With `--version`: installs the exact release tag you requested
+
+It supports:
 
 - Automatic platform detection (linux/darwin, amd64/arm64)
 - Minisign signature verification (if available)
@@ -43,7 +49,8 @@ On Unix systems (Linux/macOS), the binary replacement is atomic using `os.Rename
 
 | Flag            | Description                              | Default |
 |-----------------|------------------------------------------|---------|
-| `-n, --nightly` | Include nightly/pre-release versions     | `false` |
+| `-n, --nightly` | Install latest stable/pre-release         | `false` |
+| `-v, --version` | Install specific release tag             | `""`    |
 | `--check`       | Check for updates without installing     | `false` |
 | `-y, --yes`     | Skip confirmation prompt                 | `false` |
 
@@ -88,6 +95,12 @@ mehr update --check
 
 ```bash
 mehr update --nightly
+```
+
+### Install Specific Version
+
+```bash
+mehr update --version v1.2.3
 ```
 
 ### Skip Confirmation
@@ -160,14 +173,6 @@ GitHub token resolution (for higher rate limits):
 2. `GITHUB_TOKEN` environment variable
 3. `gh auth token` (GitHub CLI)
 4. Anonymous access (works for public repos, rate-limited)
-
-## Dev Builds
-
-Update checks are disabled for dev builds (when version is "dev"). To test the update mechanism during development, build with a version tag:
-
-```bash
-make build
-```
 
 ## See Also
 

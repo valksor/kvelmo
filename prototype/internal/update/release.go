@@ -43,6 +43,7 @@ const MinisignPublicKey = "RWTFiZ4b+sgoFLiIMuMrTZr1mmropNlDsnwKl5RfoUtyUWUk4zyVp
 type CheckOptions struct {
 	CurrentVersion string // Current version (e.g., "v1.2.3" or "dev")
 	IncludeNightly bool   // If true, consider nightly/pre-release versions
+	TargetTag      string // If set, install this exact release tag (e.g., "nightly", "v1.2.3")
 	Owner          string // GitHub repo owner (default: "valksor")
 	Repo           string // GitHub repo name (default: "go-mehrhof")
 }
