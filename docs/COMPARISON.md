@@ -95,7 +95,6 @@ Mehrhof is a **CLI + Web UI + IDE** tool focused on **structured workflows** wit
 - Bidirectional undo/redo via git checkpoints
 - Multi-agent orchestration: parallel, sequential, consensus modes
 - Per-task cost budgets with token tracking
-- Webhook automation for GitHub/GitLab
 - Semantic memory with vector embeddings
 - Human review required at every phase
 
