@@ -18,16 +18,7 @@ import {
   useStartImplementation,
   type PlanTask,
 } from '@/api/project-planning'
-
-const PROVIDERS = [
-  { value: 'github', label: 'GitHub' },
-  { value: 'gitlab', label: 'GitLab' },
-  { value: 'jira', label: 'Jira' },
-  { value: 'linear', label: 'Linear' },
-  { value: 'wrike', label: 'Wrike' },
-  { value: 'asana', label: 'Asana' },
-  { value: 'clickup', label: 'ClickUp' },
-]
+import { TASK_SUBMISSION_PROVIDERS } from '@/constants/taskOptions'
 
 interface TasksPanelProps {
   queueId?: string
@@ -168,7 +159,7 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
                 >
-                  {PROVIDERS.map((p) => (
+                  {TASK_SUBMISSION_PROVIDERS.map((p) => (
                     <option key={p.value} value={p.value}>
                       {p.label}
                     </option>
