@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 	"time"
@@ -46,13 +47,7 @@ func NewChecker(ctx context.Context, token, owner, repo string) *Checker {
 
 // Check looks for available updates and returns the status.
 // It returns ErrNoUpdateAvailable if the current version is up to date.
-// It returns ErrDevBuild if the current version is "dev".
 func (c *Checker) Check(ctx context.Context, opts CheckOptions) (*UpdateStatus, error) {
-	// Handle dev builds - always indicate an update is available
-	if opts.CurrentVersion == "dev" || opts.CurrentVersion == "none" {
-		return nil, ErrDevBuild
-	}
-
 	// Set owner/repo from options if provided
 	if opts.Owner != "" {
 		c.owner = opts.Owner
@@ -61,30 +56,19 @@ func (c *Checker) Check(ctx context.Context, opts CheckOptions) (*UpdateStatus, 
 		c.repo = opts.Repo
 	}
 
-	// List releases to find the latest
-	releases, _, err := c.ghClient.Repositories.ListReleases(ctx, c.owner, c.repo, &github.ListOptions{
-		PerPage: 10, // Get last 10 releases
-	})
-	if err != nil {
-		return nil, fmt.Errorf("fetch releases: %w", err)
-	}
-
-	if len(releases) == 0 {
-		return nil, errors.New("no releases found")
-	}
-
-	// Find the latest release (stable or pre-release based on options)
 	var latestRelease *github.RepositoryRelease
-	for _, r := range releases {
-		if r.GetDraft() {
-			continue // Skip draft releases
-		}
-		if !opts.IncludeNightly && r.GetPrerelease() {
-			continue // Skip nightly/pre-releases if not requested
-		}
-		latestRelease = r
+	var err error
 
-		break // First matching release is the latest (API returns in descending order)
+	if opts.TargetTag != "" {
+		latestRelease, err = c.findReleaseByTag(ctx, opts.TargetTag)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		latestRelease, err = c.findLatestRelease(ctx, opts.IncludeNightly)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if latestRelease == nil {
@@ -95,14 +79,20 @@ func (c *Checker) Check(ctx context.Context, opts CheckOptions) (*UpdateStatus, 
 	latestVersion := strings.TrimPrefix(latestRelease.GetTagName(), "v")
 	currentVersion := strings.TrimPrefix(opts.CurrentVersion, "v")
 
-	// If current is same or newer than latest, no update needed
-	if currentVersion == latestVersion || versionNewer(currentVersion, latestVersion) {
-		return &UpdateStatus{
-			CurrentVersion: opts.CurrentVersion,
-			LatestVersion:  latestRelease.GetTagName(),
-			IsNewer:        false,
-			IsPreRelease:   latestRelease.GetPrerelease(),
-		}, ErrNoUpdateAvailable
+	// For explicit targets, install the requested version even if already installed.
+	if opts.TargetTag == "" {
+		// For dev/none builds, always offer installing the latest release.
+		if opts.CurrentVersion != "dev" && opts.CurrentVersion != "none" {
+			// If current is same or newer than latest, no update needed.
+			if currentVersion == latestVersion || versionNewer(currentVersion, latestVersion) {
+				return &UpdateStatus{
+					CurrentVersion: opts.CurrentVersion,
+					LatestVersion:  latestRelease.GetTagName(),
+					IsNewer:        false,
+					IsPreRelease:   latestRelease.GetPrerelease(),
+				}, ErrNoUpdateAvailable
+			}
+		}
 	}
 
 	// Find the matching asset for this platform
@@ -145,6 +135,56 @@ func (c *Checker) Check(ctx context.Context, opts CheckOptions) (*UpdateStatus, 
 	}
 
 	return status, nil
+}
+
+func (c *Checker) findLatestRelease(ctx context.Context, includeNightly bool) (*github.RepositoryRelease, error) {
+	releases, _, err := c.ghClient.Repositories.ListReleases(ctx, c.owner, c.repo, &github.ListOptions{
+		PerPage: 30,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("fetch releases: %w", err)
+	}
+
+	if len(releases) == 0 {
+		return nil, errors.New("no releases found")
+	}
+
+	for _, r := range releases {
+		if r.GetDraft() {
+			continue
+		}
+		if !includeNightly && r.GetPrerelease() {
+			continue
+		}
+
+		return r, nil
+	}
+
+	return nil, errors.New("no suitable release found")
+}
+
+func (c *Checker) findReleaseByTag(ctx context.Context, tag string) (*github.RepositoryRelease, error) {
+	tags := []string{tag}
+	// Accept either "vX.Y.Z" or "X.Y.Z" for convenience.
+	if strings.HasPrefix(tag, "v") {
+		tags = append(tags, strings.TrimPrefix(tag, "v"))
+	} else if tag != "nightly" {
+		tags = append(tags, "v"+tag)
+	}
+
+	for _, candidate := range tags {
+		release, resp, err := c.ghClient.Repositories.GetReleaseByTag(ctx, c.owner, c.repo, candidate)
+		if err == nil {
+			return release, nil
+		}
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			continue
+		}
+
+		return nil, fmt.Errorf("get release by tag %q: %w", candidate, err)
+	}
+
+	return nil, fmt.Errorf("%w: %q", ErrReleaseNotFound, tag)
 }
 
 // fetchChecksum downloads and parses the checksums file to find the checksum for the given asset.

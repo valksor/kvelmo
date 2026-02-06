@@ -17,6 +17,7 @@ var (
 	updateNightly   bool
 	updateCheckOnly bool
 	updateYes       bool
+	updateVersion   string
 )
 
 var updateCmd = &cobra.Command{
@@ -41,7 +42,9 @@ After a successful update, restart mehr to use the new version.`,
 func init() {
 	rootCmd.AddCommand(updateCmd)
 	updateCmd.Flags().BoolVarP(&updateNightly, "nightly", "n", false,
-		"Include nightly/pre-release versions")
+		"Install latest available release including pre-releases")
+	updateCmd.Flags().StringVarP(&updateVersion, "version", "v", "",
+		"Install specific version tag (e.g. v1.2.3)")
 	updateCmd.Flags().BoolVar(&updateCheckOnly, "check", false,
 		"Check for updates without installing")
 	updateCmd.Flags().BoolVarP(&updateYes, "yes", "y", false,
@@ -49,6 +52,10 @@ func init() {
 }
 
 func runUpdate(cmd *cobra.Command, args []string) error {
+	if updateNightly && updateVersion != "" {
+		return errors.New("--nightly and --version are mutually exclusive")
+	}
+
 	// Resolve GitHub token (anonymous access works for public repos)
 	token, err := github.ResolveToken("")
 	if err != nil {
@@ -57,9 +64,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			display.Warning("→"))
 	}
 
+	targetTag := updateVersion
+
 	opts := update.CheckOptions{
 		CurrentVersion: Version,
 		IncludeNightly: updateNightly,
+		TargetTag:      targetTag,
 	}
 
 	// Show checking message
@@ -80,13 +90,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 			return nil
 		}
-		if errors.Is(err, update.ErrDevBuild) {
-			fmt.Printf(display.Warning("⚠")+" Dev build detected (%s)\n", Version)
-			fmt.Println("Update checks are not available for dev builds.")
-			fmt.Println("Install a release version to enable updates:")
-			fmt.Println("  https://github.com/valksor/go-mehrhof/releases")
-
-			return nil
+		if errors.Is(err, update.ErrReleaseNotFound) {
+			return fmt.Errorf("requested release not found: %w", err)
 		}
 
 		return fmt.Errorf("check for updates: %w", err)

@@ -42,6 +42,12 @@ func TestUpdateCommand_Flags(t *testing.T) {
 			defaultValue: "false",
 		},
 		{
+			name:         "version flag",
+			flagName:     "version",
+			shorthand:    "v",
+			defaultValue: "",
+		},
+		{
 			name:         "check flag",
 			flagName:     "check",
 			shorthand:    "",
@@ -150,6 +156,18 @@ func TestUpdateCommand_YesFlagShorthand(t *testing.T) {
 	}
 	if flag.Shorthand != "y" {
 		t.Errorf("yes flag shorthand = %q, want 'y'", flag.Shorthand)
+	}
+}
+
+func TestUpdateCommand_VersionFlagShorthand(t *testing.T) {
+	flag := updateCmd.Flags().Lookup("version")
+	if flag == nil {
+		t.Fatal("version flag not found")
+
+		return
+	}
+	if flag.Shorthand != "v" {
+		t.Errorf("version flag shorthand = %q, want 'v'", flag.Shorthand)
 	}
 }
 
