@@ -176,6 +176,7 @@ func showWorktreeTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) 
 				title = title[:47] + "..."
 			}
 			fmt.Printf("  %s specification-%d: %s [%s]\n", statusIcon, specification.Number, title, display.FormatSpecificationStatus(specification.Status))
+			printImplementedFilesSummary(specification.ImplementedFiles)
 		}
 	} else {
 		fmt.Printf("\nNo specifications yet. Run 'mehr plan' to create them.\n")
@@ -295,6 +296,7 @@ func showActiveTask(ctx context.Context, ws *storage.Workspace, git *vcs.Git) er
 				title = title[:47] + "..."
 			}
 			fmt.Printf("  %s specification-%d: %s [%s]\n", statusIcon, specification.Number, title, display.FormatSpecificationStatus(specification.Status))
+			printImplementedFilesSummary(specification.ImplementedFiles)
 		}
 
 		// Show a summary with user-friendly status names
@@ -500,6 +502,17 @@ func printSpecLegend() {
 	fmt.Println(tkdisplay.Muted("  ● = Completed"))
 }
 
+func printImplementedFilesSummary(files []string) {
+	if len(files) == 0 {
+		return
+	}
+
+	fmt.Printf("    Implemented files (%d):\n", len(files))
+	for _, filePath := range files {
+		fmt.Printf("      - %s\n", filePath)
+	}
+}
+
 // hasImplementedSpecifications checks if any specifications have implemented files.
 func hasImplementedSpecifications(ws *storage.Workspace, taskID string) bool {
 	specs, err := ws.ListSpecificationsWithStatus(taskID)
@@ -564,11 +577,12 @@ func buildJSONStatusTask(ctx context.Context, ws *storage.Workspace, git *vcs.Gi
 	specifications, _ := ws.ListSpecificationsWithStatus(active.ID)
 	for _, spec := range specifications {
 		task.Specifications = append(task.Specifications, output.Specification{
-			Number:      spec.Number,
-			Title:       spec.Title,
-			Status:      spec.Status,
-			CreatedAt:   spec.CreatedAt.Format("2006-01-02T15:04:05Z"),
-			CompletedAt: spec.CompletedAt.Format("2006-01-02T15:04:05Z"),
+			Number:           spec.Number,
+			Title:            spec.Title,
+			Status:           spec.Status,
+			CreatedAt:        spec.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			CompletedAt:      spec.CompletedAt.Format("2006-01-02T15:04:05Z"),
+			ImplementedFiles: spec.ImplementedFiles,
 		})
 	}
 

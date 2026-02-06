@@ -18,6 +18,11 @@ var (
 	specificationViewNumber int
 	specificationViewAll    bool
 	specificationViewOutput string
+
+	specificationDiffNumber  int
+	specificationDiffFile    string
+	specificationDiffContext int
+	specificationDiffOutput  string
 )
 
 var specificationViewCmd = &cobra.Command{
@@ -46,13 +51,35 @@ during the planning phase. Each specification contains what needs to
 be built and how to implement it.`,
 }
 
+var specificationDiffCmd = &cobra.Command{
+	Use:   "diff <number>",
+	Short: "View unified diff for an implemented file in a specification",
+	Long: `Display the actual git diff for a file listed in specification implemented_files.
+
+This is read-only output intended for inspection. It does not apply changes
+or trigger review workflows.
+
+Examples:
+  mehr specification diff 1 --file web/src/components/task/SpecificationsList.tsx
+  mehr specification diff 1 --file internal/server/handlers.go --context 5
+  mehr specification diff -n 1 -f internal/conductor/handlers.go -o spec.diff`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runSpecificationDiff,
+}
+
 func init() {
 	rootCmd.AddCommand(specificationCmd)
 	specificationCmd.AddCommand(specificationViewCmd)
+	specificationCmd.AddCommand(specificationDiffCmd)
 
 	specificationViewCmd.Flags().IntVarP(&specificationViewNumber, "number", "n", 0, "Specification number")
 	specificationViewCmd.Flags().BoolVarP(&specificationViewAll, "all", "a", false, "View all specifications")
 	specificationViewCmd.Flags().StringVarP(&specificationViewOutput, "output", "o", "", "Save to file instead of printing")
+
+	specificationDiffCmd.Flags().IntVarP(&specificationDiffNumber, "number", "n", 0, "Specification number")
+	specificationDiffCmd.Flags().StringVarP(&specificationDiffFile, "file", "f", "", "Implemented file path")
+	specificationDiffCmd.Flags().IntVarP(&specificationDiffContext, "context", "c", 3, "Diff context lines")
+	specificationDiffCmd.Flags().StringVarP(&specificationDiffOutput, "output", "o", "", "Save diff to file instead of printing")
 }
 
 func runSpecificationView(cmd *cobra.Command, args []string) error {
@@ -234,4 +261,59 @@ func formatSpecificationHeader(spec *storage.Specification) string {
 	sb.WriteString("\n\n")
 
 	return sb.String()
+}
+
+func runSpecificationDiff(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	cond, err := initializeConductor(ctx)
+	if err != nil {
+		return err
+	}
+
+	activeTask := cond.GetActiveTask()
+	if activeTask == nil {
+		return errors.New("no active task. Start a task first with 'mehr start'")
+	}
+
+	number := specificationDiffNumber
+	if number == 0 && len(args) > 0 {
+		num, parseErr := strconv.Atoi(args[0])
+		if parseErr != nil {
+			return fmt.Errorf("invalid specification number: %w", parseErr)
+		}
+		number = num
+	}
+
+	if number <= 0 {
+		return errors.New("specification number required. Use: mehr specification diff <number>")
+	}
+
+	if specificationDiffFile == "" {
+		return errors.New("file path required. Use: --file <path>")
+	}
+
+	diff, err := cond.GetSpecificationFileDiff(ctx, activeTask.ID, number, specificationDiffFile, specificationDiffContext)
+	if err != nil {
+		return err
+	}
+
+	if diff == "" {
+		fmt.Printf("No diff found for %s in specification-%d.\n", specificationDiffFile, number)
+
+		return nil
+	}
+
+	if specificationDiffOutput != "" {
+		if writeErr := os.WriteFile(specificationDiffOutput, []byte(diff), 0o644); writeErr != nil {
+			return fmt.Errorf("write diff file: %w", writeErr)
+		}
+		fmt.Printf("Diff saved to: %s\n", specificationDiffOutput)
+
+		return nil
+	}
+
+	fmt.Print(diff)
+
+	return nil
 }

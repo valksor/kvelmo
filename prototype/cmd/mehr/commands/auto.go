@@ -79,14 +79,14 @@ func runAuto(cmd *cobra.Command, args []string) error {
 	reference := args[0]
 
 	// Determine branch behavior
-	// Branch is created by default; --no-branch disables it; worktree implies branch
-	createBranch := !autoNoBranch || autoWorktree
+	// Branches are created by default; --no-branch disables; --worktree overrides --no-branch
+	noBranch := autoNoBranch && !autoWorktree
 
 	// Build conductor options with auto mode enabled
 	// Always use deduplicating stdout for auto since it displays progress unconditionally
 	opts := []conductor.Option{
 		conductor.WithVerbose(verbose),
-		conductor.WithCreateBranch(createBranch),
+		conductor.WithNoBranch(noBranch),
 		conductor.WithUseWorktree(autoWorktree),
 		conductor.WithAutoInit(true),
 		conductor.WithAutoMode(true),

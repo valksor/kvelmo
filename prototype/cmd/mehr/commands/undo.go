@@ -24,8 +24,9 @@ CHECKPOINT SYSTEM:
   - Before standalone simplify/review operations modify files
   - When explicitly requested via commands
 
-  Each checkpoint is a git commit tagged with the task ID. Undo/redo
-  navigates between these checkpoints without losing work.
+  Each checkpoint is stored as a git commit with internal checkpoint
+  references. Undo/redo navigates between these checkpoints without
+  losing work.
 
 HOW UNDO WORKS:
   • Moves HEAD to the previous checkpoint for the current task
