@@ -3,6 +3,8 @@ package server
 import (
 	"bufio"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -59,6 +61,70 @@ func TestHandleAgentLogs_RequiresTaskID(t *testing.T) {
 	if err == nil {
 		assert.Contains(t, line, "event: error")
 	}
+}
+
+func TestParseTranscriptMetadata(t *testing.T) {
+	t.Parallel()
+
+	kind, startedAt := parseTranscriptMetadata("2026-01-15T10-30-00-planning.log")
+	assert.Equal(t, "planning", kind)
+	assert.Equal(t, "2026-01-15T10:30:00Z", startedAt)
+
+	kind, startedAt = parseTranscriptMetadata("invalid.log")
+	assert.Equal(t, "unknown", kind)
+	assert.Equal(t, "", startedAt)
+}
+
+func TestHandleAgentLogsHistory_ReturnsTranscriptLines(t *testing.T) {
+	cond, _ := createTestConductor(t)
+	ws := cond.GetWorkspace()
+	require.NotNil(t, ws)
+
+	taskID := "task-history-1"
+	require.NoError(t, ws.SaveTranscript(taskID, "2026-01-15T10-30-00-planning.log", "line one\nline two\n"))
+	require.NoError(t, ws.SaveTranscript(taskID, "2026-01-15T10-40-00-review.log", "review line\n"))
+
+	cfg := Config{
+		Port:      0,
+		Mode:      ModeProject,
+		Conductor: cond,
+		EventBus:  cond.GetEventBus(),
+	}
+
+	srv, cleanup := startTestServer(t, cfg)
+	defer cleanup()
+
+	ctx := context.Background()
+	client := testHTTPClient()
+	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/agent/logs/history?task_id="+taskID)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result struct {
+		Logs []struct {
+			Kind      string `json:"kind"`
+			StartedAt string `json:"started_at"`
+			File      string `json:"file"`
+			Message   string `json:"message"`
+		} `json:"logs"`
+		TaskID string `json:"task_id"`
+		Count  int    `json:"count"`
+	}
+	require.NoError(t, json.Unmarshal(body, &result))
+
+	require.Len(t, result.Logs, 3)
+	assert.Equal(t, taskID, result.TaskID)
+	assert.Equal(t, 3, result.Count)
+	assert.Equal(t, "line one", result.Logs[0].Message)
+	assert.Equal(t, "planning", result.Logs[0].Kind)
+	assert.Equal(t, "2026-01-15T10:30:00Z", result.Logs[0].StartedAt)
+	assert.Equal(t, "review line", result.Logs[2].Message)
+	assert.Equal(t, "review", result.Logs[2].Kind)
 }
 
 func TestHandleEvents_SendsConnectedEvent(t *testing.T) {

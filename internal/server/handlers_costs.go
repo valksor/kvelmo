@@ -190,6 +190,11 @@ func buildBudgetInfo(work *storage.TaskWork, cfg *storage.WorkspaceConfig) *budg
 		return nil
 	}
 
+	// Check if budget tracking is enabled
+	if !cfg.Budget.Enabled {
+		return nil
+	}
+
 	budget := cfg.Budget.PerTask
 	if work.Budget != nil {
 		budget = *work.Budget

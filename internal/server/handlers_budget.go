@@ -45,7 +45,7 @@ func (s *Server) writeBudgetStatusJSON(w http.ResponseWriter, cfg *storage.Works
 	currency := "USD"
 
 	if cfg != nil {
-		enabled = cfg.Budget.Monthly.Enabled
+		enabled = cfg.Budget.Enabled
 		maxCost = cfg.Budget.Monthly.MaxCost
 		if cfg.Budget.Monthly.WarningAt > 0 {
 			warningAt = cfg.Budget.Monthly.WarningAt

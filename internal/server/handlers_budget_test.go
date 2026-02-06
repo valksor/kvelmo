@@ -58,7 +58,7 @@ func TestHandleBudgetMonthlyStatus_WithConfig(t *testing.T) {
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 100.0
 	wsConfig.Budget.Monthly.WarningAt = 0.8
-	wsConfig.Budget.Monthly.Enabled = true
+	wsConfig.Budget.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -115,7 +115,7 @@ func TestHandleBudgetMonthlyStatus_ExceededBudget(t *testing.T) {
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 50.0
 	wsConfig.Budget.Monthly.WarningAt = 0.8
-	wsConfig.Budget.Monthly.Enabled = true
+	wsConfig.Budget.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -164,8 +164,8 @@ func TestHandleBudgetMonthlyStatus_NoBudgetSet(t *testing.T) {
 
 	// Config with budget disabled
 	wsConfig := storage.NewDefaultWorkspaceConfig()
-	wsConfig.Budget.Monthly.MaxCost = 0     // Explicitly set to 0
-	wsConfig.Budget.Monthly.Enabled = false // Disabled
+	wsConfig.Budget.Monthly.MaxCost = 0 // Explicitly set to 0
+	wsConfig.Budget.Enabled = false     // Disabled
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 
@@ -299,7 +299,7 @@ func TestHandleBudgetMonthlyStatus_NilState(t *testing.T) {
 	// Set up budget config but no state
 	wsConfig := storage.NewDefaultWorkspaceConfig()
 	wsConfig.Budget.Monthly.MaxCost = 100.0
-	wsConfig.Budget.Monthly.Enabled = true
+	wsConfig.Budget.Enabled = true
 	err := ws.SaveConfig(wsConfig)
 	require.NoError(t, err)
 

@@ -603,3 +603,89 @@ func (s *Server) handleBrowserClose(w http.ResponseWriter, r *http.Request) {
 		"message": "tab closed",
 	})
 }
+
+// handleBrowserSwitch switches active tab by ID.
+func (s *Server) handleBrowserSwitch(w http.ResponseWriter, r *http.Request) {
+	ctrl := s.getBrowserController(w, r)
+	if ctrl == nil {
+		return
+	}
+
+	var req browserSwitchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+		return
+	}
+
+	if req.TabID == "" {
+		s.writeError(w, http.StatusBadRequest, "tab_id is required")
+
+		return
+	}
+
+	tab, err := ctrl.SwitchTab(r.Context(), req.TabID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to switch tab: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"tab": browserTabResponse{
+			ID:    tab.ID,
+			Title: tab.Title,
+			URL:   tab.URL,
+		},
+	})
+}
+
+// handleBrowserCookiesGet exports current browser cookies as JSON.
+func (s *Server) handleBrowserCookiesGet(w http.ResponseWriter, r *http.Request) {
+	ctrl := s.getBrowserController(w, r)
+	if ctrl == nil {
+		return
+	}
+
+	cookies, err := ctrl.GetCookies(r.Context())
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to get cookies: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"cookies": cookies,
+		"count":   len(cookies),
+	})
+}
+
+// handleBrowserCookiesSet imports browser cookies from JSON payload.
+func (s *Server) handleBrowserCookiesSet(w http.ResponseWriter, r *http.Request) {
+	ctrl := s.getBrowserController(w, r)
+	if ctrl == nil {
+		return
+	}
+
+	var req struct {
+		Cookies []browser.Cookie `json:"cookies"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+		return
+	}
+
+	if err := ctrl.SetCookies(r.Context(), req.Cookies); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to set cookies: "+err.Error())
+
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"count":   len(req.Cookies),
+	})
+}

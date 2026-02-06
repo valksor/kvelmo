@@ -446,13 +446,22 @@ func enhanceTaskResponseWithPendingQuestion(response map[string]any, ws *storage
 	if ws.HasPendingQuestion(taskID) {
 		q, err := ws.LoadPendingQuestion(taskID)
 		if err == nil && q != nil {
-			var options []string
+			var options []map[string]any
 			for _, opt := range q.Options {
-				options = append(options, opt.Label)
+				value := opt.Value
+				if value == "" {
+					value = opt.Label // Fallback: use label as value for older questions
+				}
+				options = append(options, map[string]any{
+					"label":       opt.Label,
+					"value":       value,
+					"description": opt.Description,
+				})
 			}
 			response["pending_question"] = map[string]any{
 				"question": q.Question,
 				"options":  options,
+				"task_id":  taskID,
 			}
 		}
 	}
