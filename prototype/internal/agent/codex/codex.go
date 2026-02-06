@@ -389,6 +389,33 @@ func (a *Agent) WithArgs(args ...string) agent.Agent {
 	}
 }
 
+// WithCommand sets a custom binary path for the agent.
+// Returns a new Agent instance with the updated config to avoid data races.
+func (a *Agent) WithCommand(command string) agent.Agent {
+	newConfig := a.config
+	newConfig.Command = []string{command}
+
+	return &Agent{
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
+// WithRetries sets the retry count for the agent.
+// Returns a new Agent instance with the updated config to avoid data races.
+// Use 0 to disable retries entirely (single attempt).
+func (a *Agent) WithRetries(n int) agent.Agent {
+	newConfig := a.config
+	newConfig.RetryCount = n
+
+	return &Agent{
+		config:        newConfig,
+		parser:        a.parser,
+		sandboxConfig: a.sandboxConfig,
+	}
+}
+
 // WithSandbox sets the sandbox configuration for the Codex agent.
 // When sandbox is enabled, the --yolo flag is added to skip confirmations.
 func (a *Agent) WithSandbox(cfg *sandbox.Config) agent.Agent {

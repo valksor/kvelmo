@@ -57,6 +57,10 @@ func (m *mockAgent) WithArgs(args ...string) agent.Agent {
 	return m
 }
 
+func (m *mockAgent) WithRetries(_ int) agent.Agent {
+	return m
+}
+
 // TestParseProjectPlanWithSchema_SchemaExtraction tests schema-driven extraction.
 func TestParseProjectPlanWithSchema_SchemaExtraction(t *testing.T) {
 	ctx := context.Background()

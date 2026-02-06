@@ -108,6 +108,11 @@ func (a *Agent) WithArgs(args ...string) agent.Agent {
 	}
 }
 
+// WithRetries returns the agent unchanged (noop doesn't retry).
+func (a *Agent) WithRetries(_ int) agent.Agent {
+	return a
+}
+
 // Register registers the noop agent with the given registry.
 func Register(registry *agent.Registry) error {
 	return registry.Register(New())

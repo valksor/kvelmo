@@ -44,6 +44,7 @@ type Question struct {
 // QuestionOption represents an answer option.
 type QuestionOption struct {
 	Label       string
+	Value       string // Distinct value for submission (defaults to Label if empty)
 	Description string
 }
 

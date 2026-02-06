@@ -800,3 +800,173 @@ func TestExtractQuestionParagraph(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractFileChangeFromToolCall(t *testing.T) {
+	parser := NewYAMLBlockParser()
+
+	tests := []struct {
+		name     string
+		toolCall *ToolCall
+		want     *FileChange
+	}{
+		{
+			name:     "nil tool call",
+			toolCall: nil,
+			want:     nil,
+		},
+		{
+			name: "nil input",
+			toolCall: &ToolCall{
+				Name:  "Write",
+				Input: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "Write tool creates file",
+			toolCall: &ToolCall{
+				Name: "Write",
+				Input: map[string]any{
+					"file_path": "/path/to/new-file.go",
+					"content":   "package main",
+				},
+			},
+			want: &FileChange{
+				Path:      "/path/to/new-file.go",
+				Operation: FileOpCreate,
+			},
+		},
+		{
+			name: "Edit tool updates file",
+			toolCall: &ToolCall{
+				Name: "Edit",
+				Input: map[string]any{
+					"file_path":  "/path/to/existing.go",
+					"old_string": "foo",
+					"new_string": "bar",
+				},
+			},
+			want: &FileChange{
+				Path:      "/path/to/existing.go",
+				Operation: FileOpUpdate,
+			},
+		},
+		{
+			name: "Read tool returns nil",
+			toolCall: &ToolCall{
+				Name: "Read",
+				Input: map[string]any{
+					"file_path": "/path/to/file.go",
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "missing file_path returns nil",
+			toolCall: &ToolCall{
+				Name:  "Write",
+				Input: map[string]any{},
+			},
+			want: nil,
+		},
+		{
+			name: "empty file_path returns nil",
+			toolCall: &ToolCall{
+				Name: "Write",
+				Input: map[string]any{
+					"file_path": "",
+				},
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parser.extractFileChangeFromToolCall(tt.toolCall)
+			if tt.want == nil {
+				if got != nil {
+					t.Errorf("extractFileChangeFromToolCall() = %v, want nil", got)
+				}
+
+				return
+			}
+			if got == nil {
+				t.Fatal("extractFileChangeFromToolCall() = nil, want non-nil")
+			}
+			if got.Path != tt.want.Path {
+				t.Errorf("Path = %q, want %q", got.Path, tt.want.Path)
+			}
+			if got.Operation != tt.want.Operation {
+				t.Errorf("Operation = %q, want %q", got.Operation, tt.want.Operation)
+			}
+		})
+	}
+}
+
+func TestParse_WithWriteEditToolCalls(t *testing.T) {
+	parser := NewYAMLBlockParser()
+
+	// Simulate events from Claude CLI with Write and Edit tool calls
+	events := []Event{
+		{
+			Type: EventToolUse,
+			ToolCall: &ToolCall{
+				Name: "Write",
+				Input: map[string]any{
+					"file_path": "/workspace/new-feature.go",
+					"content":   "package main\n\nfunc NewFeature() {}",
+				},
+			},
+		},
+		{
+			Type: EventToolUse,
+			ToolCall: &ToolCall{
+				Name: "Edit",
+				Input: map[string]any{
+					"file_path":  "/workspace/existing.go",
+					"old_string": "// TODO",
+					"new_string": "// Done",
+				},
+			},
+		},
+		{
+			Type: EventToolUse,
+			ToolCall: &ToolCall{
+				Name: "Read",
+				Input: map[string]any{
+					"file_path": "/workspace/other.go",
+				},
+			},
+		},
+		{
+			Type: EventComplete,
+		},
+	}
+
+	response, err := parser.Parse(events)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Should have 2 files tracked (Write and Edit, but not Read)
+	if len(response.Files) != 2 {
+		t.Fatalf("len(Files) = %d, want 2", len(response.Files))
+	}
+
+	// First file: Write creates
+	if response.Files[0].Path != "/workspace/new-feature.go" {
+		t.Errorf("Files[0].Path = %q, want %q", response.Files[0].Path, "/workspace/new-feature.go")
+	}
+	if response.Files[0].Operation != FileOpCreate {
+		t.Errorf("Files[0].Operation = %q, want %q", response.Files[0].Operation, FileOpCreate)
+	}
+
+	// Second file: Edit updates
+	if response.Files[1].Path != "/workspace/existing.go" {
+		t.Errorf("Files[1].Path = %q, want %q", response.Files[1].Path, "/workspace/existing.go")
+	}
+	if response.Files[1].Operation != FileOpUpdate {
+		t.Errorf("Files[1].Operation = %q, want %q", response.Files[1].Operation, FileOpUpdate)
+	}
+}

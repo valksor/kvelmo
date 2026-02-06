@@ -475,6 +475,70 @@ func TestWithArgs_OriginalUnmodified(t *testing.T) {
 	}
 }
 
+func TestWithCommand(t *testing.T) {
+	a := New()
+	result := a.WithCommand("/custom/path/to/codex")
+
+	typed, ok := result.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+	if typed.config.Command[0] != "/custom/path/to/codex" {
+		t.Errorf("Command[0] = %q, want %q", typed.config.Command[0], "/custom/path/to/codex")
+	}
+	if len(typed.config.Command) != 1 {
+		t.Errorf("Command length = %d, want 1", len(typed.config.Command))
+	}
+}
+
+func TestWithCommand_OriginalUnmodified(t *testing.T) {
+	originalAgent := New()
+	originalCommand := originalAgent.config.Command[0]
+
+	// WithCommand should return a new agent, not modify the original
+	newAgent := originalAgent.WithCommand("/new/path")
+
+	if originalAgent.config.Command[0] != originalCommand {
+		t.Errorf("Original agent was modified (command = %q, want %q)", originalAgent.config.Command[0], originalCommand)
+	}
+
+	typedNew, ok := newAgent.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+	if typedNew.config.Command[0] != "/new/path" {
+		t.Errorf("New agent command = %q, want %q", typedNew.config.Command[0], "/new/path")
+	}
+}
+
+func TestWithCommand_PreservesOtherConfig(t *testing.T) {
+	cfg := agent.Config{
+		Command:     []string{"codex"},
+		Environment: map[string]string{"KEY": "value"},
+		Args:        []string{"--json"},
+	}
+	originalAgent := NewWithConfig(cfg)
+	newAgent := originalAgent.WithCommand("/custom/codex")
+
+	typed, ok := newAgent.(*Agent)
+	if !ok {
+		t.Fatal("WithCommand did not return *Agent")
+	}
+
+	// Command should be updated
+	if typed.config.Command[0] != "/custom/codex" {
+		t.Errorf("Command[0] = %q, want %q", typed.config.Command[0], "/custom/codex")
+	}
+
+	// Other config should be preserved
+	if typed.config.Environment["KEY"] != "value" {
+		t.Error("Environment was not preserved")
+	}
+	if len(typed.config.Args) != 1 || typed.config.Args[0] != "--json" {
+		t.Error("Args were not preserved")
+	}
+}
+
 // TestStepArgs tests the StepArgsProvider interface implementation.
 func TestStepArgs(t *testing.T) {
 	a := New()

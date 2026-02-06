@@ -49,6 +49,10 @@ func (m *mockAgent) WithArgs(args ...string) agent.Agent {
 	return m
 }
 
+func (m *mockAgent) WithRetries(_ int) agent.Agent {
+	return m
+}
+
 // mockWorkspace is a test implementation of Workspace interface.
 type mockWorkspace struct {
 	config *storage.WorkspaceConfig

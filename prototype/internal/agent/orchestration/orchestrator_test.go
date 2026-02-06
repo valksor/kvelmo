@@ -46,6 +46,10 @@ func (m *mockAgent) WithArgs(args ...string) agent.Agent {
 	return m
 }
 
+func (m *mockAgent) WithRetries(_ int) agent.Agent {
+	return m
+}
+
 func (m *mockAgent) Configure(agent.Config) error {
 	return nil
 }
