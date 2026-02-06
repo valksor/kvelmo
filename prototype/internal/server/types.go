@@ -43,17 +43,7 @@ type autoResponse struct {
 
 // addNoteRequest is the request body for POST /api/v1/tasks/{id}/notes.
 type addNoteRequest struct {
-	Content string `json:"content,omitempty"` // Legacy field name
-	Note    string `json:"note,omitempty"`    // New field name (preferred)
-}
-
-// getContent returns the note content, checking both fields for backward compatibility.
-func (r *addNoteRequest) getContent() string {
-	if r.Note != "" {
-		return r.Note
-	}
-
-	return r.Content
+	Note string `json:"note"`
 }
 
 // noteResponse is the response for POST /api/v1/tasks/{id}/notes.

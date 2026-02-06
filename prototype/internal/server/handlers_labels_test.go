@@ -43,9 +43,8 @@ func createLabelTestConductor(t *testing.T) (*conductor.Conductor, string) {
 	ws := cond.GetWorkspace()
 	taskID := "test-label-task"
 	work, err := ws.CreateWork(taskID, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "# Test Task",
+		Type: "file",
+		Ref:  "task.md",
 	})
 	require.NoError(t, err)
 
@@ -189,9 +188,8 @@ func TestHandler_TaskLabels_Get_EmptyLabels(t *testing.T) {
 	ws := cond.GetWorkspace()
 	taskID := "test-empty-labels"
 	work, err := ws.CreateWork(taskID, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task.md",
-		Content: "# Test Task",
+		Type: "file",
+		Ref:  "task.md",
 	})
 	require.NoError(t, err)
 
@@ -546,9 +544,8 @@ func TestHandler_ListLabels_ReturnsAllLabelsWithCounts(t *testing.T) {
 	// Create second task with overlapping labels
 	taskID2 := "test-label-task-2"
 	work2, _ := ws.CreateWork(taskID2, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task2.md",
-		Content: "# Task 2",
+		Type: "file",
+		Ref:  "task2.md",
 	})
 	work2.Metadata.Labels = []string{"priority:high", "team:frontend"}
 	_ = ws.SaveWork(work2)
@@ -556,9 +553,8 @@ func TestHandler_ListLabels_ReturnsAllLabelsWithCounts(t *testing.T) {
 	// Create third task with unique label
 	taskID3 := "test-label-task-3"
 	work3, _ := ws.CreateWork(taskID3, storage.SourceInfo{
-		Type:    "file",
-		Ref:     "task3.md",
-		Content: "# Task 3",
+		Type: "file",
+		Ref:  "task3.md",
 	})
 	work3.Metadata.Labels = []string{"type:feature"}
 	_ = ws.SaveWork(work3)
@@ -970,9 +966,8 @@ func TestHandler_ListLabels_Sorting(t *testing.T) {
 	for i := range 5 {
 		taskID := "sort-task-" + strconv.Itoa(int(rune('A'+i)))
 		work, _ := ws.CreateWork(taskID, storage.SourceInfo{
-			Type:    "file",
-			Ref:     "task.md",
-			Content: "# Task",
+			Type: "file",
+			Ref:  "task.md",
 		})
 		work.Metadata.Labels = []string{"label:" + strconv.Itoa(int(rune('E'-i)))}
 		_ = ws.SaveWork(work)
