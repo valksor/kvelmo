@@ -6,11 +6,19 @@ Configure your workspace through the Web UI settings page without editing config
 
 From the navigation bar, click **Settings**. In global mode, you must first select a project.
 
-The Settings page has four tabs: **Core**, **Providers**, **Features**, and **Automation**. Make changes and click **Save** to apply.
+The Settings page is organized into three sections that match the top navigation structure:
 
-## Core Tab
+| Section | What it contains |
+|---------|------------------|
+| **Work** | Git, agent defaults, workflow, project storage, and provider connections |
+| **Advanced** | Agent aliases, budget, stack options, update patterns, memory, security, sandbox, and other advanced features |
+| **Admin** | Webhook automation and queue controls |
 
-Core settings control fundamental workflow behavior.
+Each settings block is collapsible. Use the chevron on the right side of each block header to expand or collapse details.
+
+## Work Section
+
+The **Work** section controls day-to-day workflow behavior.
 
 ### Git Settings
 
@@ -41,6 +49,7 @@ Configure AI agent behavior:
 ### Agent Aliases
 
 Create custom aliases that wrap base agents with additional configuration.
+Location: **Settings → Advanced**.
 
 | Field | Description |
 |-------|-------------|
@@ -65,6 +74,7 @@ Configure task lifecycle:
 ### Budget Settings
 
 Control spending limits:
+Location: **Settings → Advanced**.
 
 **Per Task:**
 - **Max Cost** — Maximum USD per task
@@ -91,6 +101,7 @@ Configure directory layout:
 ### Stack Settings
 
 Configure stacked feature branches:
+Location: **Settings → Advanced**.
 
 | Setting | Description |
 |---------|-------------|
@@ -99,6 +110,8 @@ Configure stacked feature branches:
 
 ### Updates & Patterns
 
+Location: **Settings → Advanced**.
+
 | Setting | Description |
 |---------|-------------|
 | **Enable Update Checks** | Check for new versions |
@@ -106,7 +119,7 @@ Configure stacked feature branches:
 | **Specification Pattern** | Filename pattern for specs |
 | **Review Pattern** | Filename pattern for reviews |
 
-## Providers Tab
+## Provider Settings (Work)
 
 Configure authentication and settings for external task providers.
 
@@ -163,7 +176,7 @@ Configure authentication and settings for external task providers.
 
 Additional providers available: Bitbucket, Azure DevOps, Asana, ClickUp, Trello, Wrike, YouTrack. Expand the **Other Providers** section to configure these.
 
-## Features Tab
+## Advanced Features
 
 Enable and configure optional features.
 
@@ -262,7 +275,7 @@ Isolate agent execution:
 | **Max Pages Per Prompt** | Pages per agent prompt |
 | **Max Token Budget** | Token limit for library content |
 
-## Automation Tab
+## Admin Section (Automation)
 
 Configure webhook automation for GitHub and GitLab.
 
