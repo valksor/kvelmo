@@ -315,7 +315,7 @@ mehr agents | providers | templates | update | generate-secret
 - Use `CodeRoot()` / `Conductor.CodeDir()` for anything that touches source code files
 
 **Security Middleware** (`internal/server/middleware.go`):
-- CSRF protection via `X-Csrf-Token` header (Synchronizer Token Pattern). Enforced on POST/PUT/DELETE when auth is enabled. Skipped in localhost mode.
+- CSRF protection via `X-Csrf-Token` header (Synchronizer Token Pattern). Enforced on POST/PUT/DELETE when auth is enabled. Authorization is skipped in localhost mode, CSRF ALWAYS enforced.
 - Per-IP rate limiting: 120 req/min general API, 10 req/min auth endpoints. Returns HTTP 429 when exceeded.
 - Both are automatically disabled in localhost mode (`AuthStore == nil`).
 
