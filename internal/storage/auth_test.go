@@ -271,26 +271,26 @@ func TestAuthStore_ListUsersDetails(t *testing.T) {
 	assert.Equal(t, RoleUser, usernames["user2"].Role)
 }
 
-func TestAuthStore_BackwardCompatibility(t *testing.T) {
+func TestAuthStore_NoRole(t *testing.T) {
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "auth.yaml")
 
-	// Create auth file without role field (old format)
-	oldContent := `
+	// Create auth file without role field
+	content := `
 users:
   admin:
     password_hash: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
     created_at: "2024-01-01T00:00:00Z"
 `
-	require.NoError(t, os.WriteFile(path, []byte(oldContent), 0o600))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
-	// Load should work and default to RoleUser
+	// Load should work, role will be empty string (zero value)
 	store, err := LoadAuthStoreFromPath(path)
 	require.NoError(t, err)
 
 	user, exists := store.GetUser("admin")
 	require.True(t, exists)
-	assert.Equal(t, RoleUser, user.Role, "users without role should default to RoleUser")
+	assert.Equal(t, Role(""), user.Role, "users without role should have empty role")
 }
 
 func TestValidRole(t *testing.T) {

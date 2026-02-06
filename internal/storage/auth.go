@@ -52,27 +52,6 @@ type User struct {
 	CreatedAt    time.Time `yaml:"created_at"`
 }
 
-// UnmarshalYAML implements custom YAML unmarshaling with backward compatibility.
-// If role is not set, it defaults to RoleUser.
-func (u *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Define an alias type to avoid infinite recursion
-	type userAlias User
-	alias := userAlias{Role: RoleUser} // Default to RoleUser
-
-	if err := unmarshal(&alias); err != nil {
-		return err
-	}
-
-	// Validate role if set
-	if alias.Role != "" && !ValidRole(string(alias.Role)) {
-		return fmt.Errorf("invalid role: %s", alias.Role)
-	}
-
-	*u = User(alias)
-
-	return nil
-}
-
 // AuthSession represents an active user session for web UI authentication.
 type AuthSession struct {
 	Token     string
