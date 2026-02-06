@@ -3,6 +3,7 @@ import { Loader2, GitCommit, AlertCircle, FileText, Plus, Minus, Check, RefreshC
 import { useChanges, useAnalyzeChanges, useApplyCommit } from '@/api/commit'
 import { useStatus } from '@/api/workflow'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
+import { Checkbox, TextArea } from '@/components/settings/FormField'
 
 export default function Commit() {
   const { data: status, isLoading: statusLoading } = useStatus()
@@ -83,15 +84,11 @@ export default function Commit() {
       {/* Options */}
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body py-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeUnstaged}
-              onChange={(e) => setIncludeUnstaged(e.target.checked)}
-              className="checkbox checkbox-sm"
-            />
-            <span className="text-sm">Include unstaged changes</span>
-          </label>
+          <Checkbox
+            label="Include unstaged changes"
+            checked={includeUnstaged}
+            onChange={setIncludeUnstaged}
+          />
         </div>
       </div>
 
@@ -206,11 +203,12 @@ export default function Commit() {
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body">
                 <h3 className="font-medium mb-3">Commit Message</h3>
-                <textarea
+                <TextArea
+                  label="Message"
                   value={commitMessage}
-                  onChange={(e) => setCommitMessage(e.target.value)}
-                  className="textarea textarea-bordered w-full h-32 font-mono"
+                  onChange={setCommitMessage}
                   placeholder="Enter commit message..."
+                  rows={6}
                 />
                 <div className="flex gap-2 mt-4">
                   <button
