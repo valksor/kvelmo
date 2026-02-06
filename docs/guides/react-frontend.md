@@ -53,7 +53,7 @@ Note the task ID from the output — you'll need it for stacking. Check with `me
 
 ## Step 2: Stack the Next Feature
 
-Now start the button component, branching from the theme branch (not main):
+Start the button component, branching from the theme branch (not main):
 
 ```bash
 mehr start button-component.md --depends-on abc12345
@@ -153,7 +153,7 @@ The `--worktree` flag creates an isolated git worktree — a separate checkout i
 
 ## Step 8: Theme PR Gets Merged — Rebase the Stack
 
-Your team merges the theme PR. Now the button branch needs to rebase onto the updated main:
+Your team merges the theme PR. The button branch needs to rebase onto the updated main:
 
 ```bash
 mehr stack sync
@@ -167,7 +167,7 @@ Syncing stack...
   feat/def67--button-component: needs rebase ⟳
 ```
 
-Now rebase:
+Rebase the stack:
 
 ```bash
 mehr stack rebase
@@ -179,7 +179,7 @@ Rebasing feat/def67--button-component onto main...
   Push required: git push --force-with-lease
 ```
 
-The button branch is now based on main (which includes the merged theme code). Force-push to update the PR.
+The button branch is based on main (which includes the merged theme code). Force-push to update the PR.
 
 ---
 

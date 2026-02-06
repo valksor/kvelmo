@@ -112,7 +112,7 @@ Higher match percentages indicate stronger semantic similarity.
 
 ### Configuration
 
-Memory settings are in [Settings → Features → Memory System](/web-ui/settings.md#memory-system).
+Memory settings are in [Settings → Advanced → Memory System](/web-ui/settings.md#memory-system).
 
 ## Security Tab
 
@@ -161,7 +161,7 @@ Each finding displays:
 
 ### Configuration
 
-Security settings are in [Settings → Features → Security Scanning](/web-ui/settings.md#security-scanning).
+Security settings are in [Settings → Advanced → Security Scanning](/web-ui/settings.md#security-scanning).
 
 ## Stack Tab
 
@@ -201,7 +201,7 @@ Each stack shows its tasks with:
 
 ### Configuration
 
-Stack settings are in [Settings → Core → Stack Settings](/web-ui/settings.md#stack-settings).
+Stack settings are in [Settings → Advanced → Stack Settings](/web-ui/settings.md#stack-settings).
 
 ---
 

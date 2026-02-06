@@ -407,7 +407,7 @@ Matched CSS rules for ".my-class":
 
 ### browser dom (extended)
 
-The `browser dom` command now supports a `--computed` flag to show key computed styles alongside element info:
+The `browser dom` command supports a `--computed` flag to show key computed styles alongside element info:
 
 ```bash
 mehr browser dom --selector "h1" --computed

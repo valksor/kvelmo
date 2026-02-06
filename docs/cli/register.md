@@ -19,7 +19,7 @@ The `register` and `unregister` subcommands manage a registry of projects that c
 - Organizing frequently used projects
 - Preparing for multi-project dashboards
 
-**Note**: The registry is currently used for future remote mode functionality. Local global mode (`mehr serve --global`) discovers all projects automatically without requiring registration.
+**Note**: The registry supports future remote mode functionality. Local global mode (`mehr serve --global`) discovers all projects automatically without requiring registration.
 
 ## Commands
 

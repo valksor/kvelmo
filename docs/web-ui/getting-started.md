@@ -360,7 +360,7 @@ Prefer working from the terminal? See [Getting Started with the CLI](/guides/fir
 
 ## Next Steps
 
-Now that you've completed your first task:
+After completing your first task:
 
 - [**Creating Tasks**](creating-tasks.md) - Learn different task creation workflows
 - [**Planning**](planning.md) - Deep dive into the planning phase

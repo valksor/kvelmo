@@ -110,7 +110,7 @@ providers:
   default: file  # or github, dir, etc.
 ```
 
-Now you can use bare references:
+You can use bare references:
 
 ```bash
 mehr start task.md

@@ -58,7 +58,7 @@ Direct access to workspace state:
 | `workspace_get_sessions`    | Get session history           | `task_id` (string)                                          |
 | `workspace_get_notes`       | Get task notes                | `task_id` (string)                                          |
 
-When `task_id` is omitted, workspace tools fall back to the currently active task.
+When `task_id` is omitted, workspace tools fall back to the active task.
 
 ### Registry Queries
 

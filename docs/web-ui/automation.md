@@ -21,10 +21,10 @@ When running `mehr serve` with automation enabled, the dashboard provides real-t
 
 The main dashboard displays an automation status widget showing:
 
-- **Enabled/Disabled** - Current automation state
+- **Enabled/Disabled** - Automation state
 - **Workers** - Number of concurrent job processors
 - **Queue depth** - Pending jobs waiting to process
-- **Running** - Currently executing jobs
+- **Running** - Jobs in progress
 
 ### Automation Page
 
@@ -151,7 +151,7 @@ Automation applies labels to track state:
 
 | Label                | Meaning                      |
 |----------------------|------------------------------|
-| `mehrhof-processing` | Job is currently running     |
+| `mehrhof-processing` | Job is in progress           |
 | `mehrhof-generated`  | PR was created by automation |
 | `mehrhof-failed`     | Job failed after all retries |
 

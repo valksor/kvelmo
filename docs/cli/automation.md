@@ -215,7 +215,7 @@ access_control:
 | Label                | Purpose                                      |
 |----------------------|----------------------------------------------|
 | `mehrhof-generated`  | PRs created by automation (skip self-review) |
-| `mehrhof-processing` | Job currently in progress                    |
+| `mehrhof-processing` | Job in progress                              |
 | `mehrhof-failed`     | Job failed after all retries                 |
 
 Labels are customizable in config. Set to empty string to disable:

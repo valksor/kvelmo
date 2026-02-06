@@ -22,7 +22,7 @@ Security and quality features are available from:
 |-----------------------|----------------------------------------|
 | **Run Scan**          | Tools → Security                       |
 | **Simplify**          | Simplify page (navigation bar)         |
-| **Security Settings** | Settings → Features → Security Scanning|
+| **Security Settings** | Settings → Advanced → Security Scanning|
 
 Scans run automatically during implementation and review if enabled in Settings.
 
@@ -159,7 +159,7 @@ Simplification creates a **git checkpoint** before modifying files, so you can a
 
 ### Security Configuration
 
-Enable and configure security scanning in **Settings → Security**:
+Enable and configure security scanning in **Settings → Advanced → Security Scanning**:
 
 ```yaml
 security:
@@ -189,7 +189,7 @@ security:
 
 ### Quality Configuration
 
-Configure quality checks in **Settings → Quality**:
+Configure quality checks in **Settings → Advanced → Quality & Linters**:
 
 ```yaml
 quality:
@@ -275,7 +275,7 @@ By default, Mehrhof auto-downloads tools. If download fails:
 ### Too Many Findings
 
 Adjust severity thresholds:
-- Go to **Settings → Security**
+- Go to **Settings → Advanced → Security Scanning**
 - Increase scanner severity level
 - Filter out lower-priority findings
 

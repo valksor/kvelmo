@@ -79,7 +79,7 @@ mehr implement
 
 ### Comparing
 
-Now compare both:
+Compare both:
 
 ```bash
 git diff HEAD~1

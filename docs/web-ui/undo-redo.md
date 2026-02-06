@@ -56,7 +56,7 @@ The **Redo Checkpoint** dialog shows which state you'll restore and lists the fi
 │ Implementation │ ──▶ │   Happy?   │                                                       Yes │
 └────────────────┘     └───────────┬┘                                                           │
                                    │                                                     ┌──────┴─────┐
-                              No   │                                                     │ Happy now? │
+                              No   │                                                     │ Happy?     │
                                    ▼                                                     └──────┬─────┘
                             ┌────────────┐     ┌──────────────────┐     ┌──────────┐     ┌──────┴──────────┐
                             │ Click Undo │ ──▶ │ Back to Planning │ ──▶ │ Add Note │ ──▶ │ Implement Again │
