@@ -67,34 +67,39 @@ export function QuestionPrompt({ question }: QuestionPromptProps) {
         )}
 
         {/* Free-form answer input */}
-        <form onSubmit={handleSubmit}>
-          <p className="text-sm font-medium text-base-content/70 mb-2">Or type a custom answer:</p>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              className="input input-bordered input-lg flex-1"
-              placeholder="Type your answer..."
-              value={answer}
-              onChange={(e) => {
-                setAnswer(e.target.value)
-                setSelectedOption(null)
-              }}
-              disabled={isPending}
-            />
-            <button
-              type="submit"
-              className="btn btn-warning btn-lg"
-              disabled={isPending || (!answer.trim() && !selectedOption)}
-            >
-              {isPending ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                <>
-                  <Send size={20} />
-                  Send
-                </>
-              )}
-            </button>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="form-control">
+            <label className="label py-1" htmlFor="workflow-question-answer">
+              <span className="label-text">Or type a custom answer</span>
+            </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <input
+                id="workflow-question-answer"
+                type="text"
+                className="input input-bordered flex-1"
+                placeholder="Type your answer..."
+                value={answer}
+                onChange={(e) => {
+                  setAnswer(e.target.value)
+                  setSelectedOption(null)
+                }}
+                disabled={isPending}
+              />
+              <button
+                type="submit"
+                className="btn btn-warning"
+                disabled={isPending || (!answer.trim() && !selectedOption)}
+              >
+                {isPending ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    <Send size={20} />
+                    Send
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
