@@ -44,9 +44,27 @@ interface ServerLibraryCollection {
 }
 
 interface ServerCollectionsResponse {
-  collections: ServerLibraryCollection[]
+  collections: ServerLibraryCollection[] | null
   count: number
   enabled: boolean
+}
+
+export function toCollectionsResponse(data: ServerCollectionsResponse): CollectionsResponse {
+  const collections = Array.isArray(data.collections) ? data.collections : []
+
+  return {
+    enabled: data.enabled,
+    count: data.count,
+    collections: collections.map((collection) => ({
+      id: collection.id,
+      name: collection.name,
+      description: collection.source_type
+        ? `${collection.source_type}: ${collection.source || ''}`
+        : undefined,
+      page_count: collection.page_count,
+      item_count: collection.page_count,
+    })),
+  }
 }
 
 // ============================================================================
@@ -61,19 +79,7 @@ export function useLibraryCollections() {
     queryKey: ['library', 'collections'],
     queryFn: async () => {
       const data = await apiRequest<ServerCollectionsResponse>('/library')
-      return {
-        enabled: data.enabled,
-        count: data.count,
-        collections: data.collections.map((collection) => ({
-          id: collection.id,
-          name: collection.name,
-          description: collection.source_type
-            ? `${collection.source_type}: ${collection.source || ''}`
-            : undefined,
-          page_count: collection.page_count,
-          item_count: collection.page_count,
-        })),
-      } satisfies CollectionsResponse
+      return toCollectionsResponse(data)
     },
   })
 }
