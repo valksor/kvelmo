@@ -33,7 +33,7 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Parse request (supports both JSON and form-encoded from HTMX)
+	// Parse request (supports both JSON and form-encoded)
 	req, err := parseCommandRequest(r)
 	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())

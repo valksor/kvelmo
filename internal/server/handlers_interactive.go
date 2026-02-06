@@ -55,7 +55,7 @@ type stateResponse struct {
 }
 
 // parseChatRequest parses chat request from either JSON or form data.
-// HTMX sends form-encoded by default, but JSON is also supported.
+// Supports both JSON and form-encoded requests.
 func parseChatRequest(r *http.Request) (chatRequest, error) {
 	contentType := r.Header.Get("Content-Type")
 	var req chatRequest
@@ -65,7 +65,7 @@ func parseChatRequest(r *http.Request) (chatRequest, error) {
 			return req, fmt.Errorf("invalid JSON: %w", err)
 		}
 	} else {
-		// Form-encoded (HTMX default)
+		// Form-encoded
 		if err := r.ParseForm(); err != nil {
 			return req, fmt.Errorf("invalid form data: %w", err)
 		}
@@ -76,7 +76,7 @@ func parseChatRequest(r *http.Request) (chatRequest, error) {
 }
 
 // parseCommandRequest parses command request from either JSON or form data.
-// HTMX sends form-encoded by default, but JSON is also supported.
+// Supports both JSON and form-encoded requests.
 func parseCommandRequest(r *http.Request) (commandRequest, error) {
 	contentType := r.Header.Get("Content-Type")
 	var req commandRequest
@@ -86,7 +86,7 @@ func parseCommandRequest(r *http.Request) (commandRequest, error) {
 			return req, fmt.Errorf("invalid JSON: %w", err)
 		}
 	} else {
-		// Form-encoded (HTMX default)
+		// Form-encoded
 		if err := r.ParseForm(); err != nil {
 			return req, fmt.Errorf("invalid form data: %w", err)
 		}
@@ -207,7 +207,7 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request (supports both JSON and form-encoded from HTMX)
+	// Parse request (supports both JSON and form-encoded)
 	req, err := parseChatRequest(r)
 	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
@@ -318,7 +318,7 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 
 // handleInteractiveSend processes input from the interactive UI and returns HTML.
 // POST /ui/interactive/send.
-// This handles both chat messages and workflow commands, returning HTML for HTMX.
+// This handles both chat messages and workflow commands.
 func (s *Server) handleInteractiveSend(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		s.writeHTML(w, http.StatusMethodNotAllowed, `<div class="text-red-500 p-2">Method not allowed</div>`)

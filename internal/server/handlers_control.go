@@ -121,7 +121,7 @@ func (s *Server) handleWorkflowAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle both form and JSON submissions (HTMX forms send form-urlencoded)
+	// Handle both form and JSON submissions
 	var answer string
 	contentType := r.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {

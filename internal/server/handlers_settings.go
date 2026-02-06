@@ -158,7 +158,7 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 
 	// Save config
 	if err := ws.SaveConfig(cfg); err != nil {
-		// For HTMX form submission, redirect with error
+		// For form submission, redirect with error
 		if contentType != "application/json" {
 			redirectURL := "/settings?error=" + err.Error()
 			if selectedProject != "" {
@@ -181,7 +181,7 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// For HTMX form submission, redirect with success
+	// For form submission, redirect with success
 	if contentType != "application/json" {
 		redirectURL := "/settings?success=Settings+saved+successfully"
 		if selectedProject != "" {

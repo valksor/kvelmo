@@ -92,7 +92,7 @@ func defaultFuncMap() template.FuncMap {
 			return template.HTML(html) //nolint:gosec // Content sanitized by bluemonday
 		},
 
-		// Constants - SSE event names for HTMX triggers
+		// Constants - SSE event names
 		"eventWorkflowStateChanged": func() string { return EventWorkflowStateChanged },
 		"eventSpecUpdated":          func() string { return EventSpecUpdated },
 		"eventQuestionAsked":        func() string { return EventQuestionAsked },

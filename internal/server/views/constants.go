@@ -16,7 +16,7 @@ const (
 	StatePaused       = "paused"
 )
 
-// SSE event names - used for server-sent events and HTMX triggers.
+// SSE event names - used for server-sent events.
 const (
 	EventWorkflowStateChanged = "state_changed"
 	EventSpecUpdated          = "spec_updated"

@@ -30,7 +30,7 @@ func (s *Server) handleSecurityScan(w http.ResponseWriter, r *http.Request) {
 			req = scanRequest{}
 		}
 	} else {
-		// Parse form data for HTMX requests
+		// Parse form data
 		if err := r.ParseForm(); err == nil {
 			scanners := r.Form["scanners"]
 			// Map UI values to scanner names
