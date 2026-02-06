@@ -268,7 +268,7 @@ export function WorkflowActions({
                         <select
                           value={selectedComponent}
                           onChange={(e) => setSelectedComponent(e.target.value)}
-                          className="select select-bordered select-sm w-full"
+                          className="select select-bordered w-full"
                           disabled={isPending}
                         >
                           <option value="">All components</option>
@@ -290,7 +290,7 @@ export function WorkflowActions({
                           value={parallelCount}
                           onChange={(e) => setParallelCount(Number(e.target.value))}
                           placeholder="0 = default"
-                          className="input input-bordered input-sm w-full"
+                          className="input input-bordered w-full"
                           disabled={isPending}
                         />
                         <p className="text-xs text-base-content/40 mt-1">0 = sequential execution</p>
