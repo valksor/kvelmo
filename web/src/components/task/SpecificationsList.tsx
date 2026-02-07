@@ -9,9 +9,9 @@ import {
   Check,
   ChevronsUpDown,
   FileDiff,
-  X,
 } from 'lucide-react'
 import { useSpecificationFileDiff } from '@/api/task'
+import { AccessibleModal } from '@/components/ui/AccessibleModal'
 import { VisualUnifiedDiff } from '@/components/task/VisualUnifiedDiff'
 import type { Specification } from '@/types/api'
 
@@ -127,6 +127,7 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
                 onClick={allExpanded ? collapseAll : expandAll}
                 className="btn btn-ghost btn-xs"
                 title={allExpanded ? 'Collapse all' : 'Expand all'}
+                aria-label={allExpanded ? 'Collapse all specifications' : 'Expand all specifications'}
               >
                 <ChevronsUpDown size={14} />
               </button>
@@ -169,25 +170,27 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
           </div>
         </div>
       </div>
-      {diffTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-5xl">
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <div>
-                <h3 className="text-lg font-bold">File Diff</h3>
-                <p className="text-xs text-base-content/60 mt-1">
-                  specification-{diffTarget.specNumber} ·{' '}
-                  <span className="font-mono">{diffTarget.filePath}</span>
-                </p>
-              </div>
-              <button onClick={closeDiff} className="btn btn-ghost btn-sm btn-circle" title="Close">
-                <X size={18} />
-              </button>
-            </div>
+      <AccessibleModal
+        isOpen={!!diffTarget}
+        onClose={closeDiff}
+        title="File Diff"
+        size="5xl"
+        actions={(
+          <button onClick={closeDiff} className="btn">
+            Close
+          </button>
+        )}
+      >
+        {diffTarget && (
+          <>
+            <p className="text-xs text-base-content/60 mb-3">
+              specification-{diffTarget.specNumber} ·{' '}
+              <span className="font-mono">{diffTarget.filePath}</span>
+            </p>
 
             {!isLoadingDiff && !diffError && diffContent && (
               <div className="flex justify-end mb-3">
-                <div className="join">
+                <div className="join" role="group" aria-label="Diff view mode">
                   <button
                     className={`btn btn-sm join-item ${diffMode === 'visual' ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setDiffMode('visual')}
@@ -221,16 +224,9 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
                 <p className="text-sm text-base-content/60">No diff found for this file.</p>
               )}
             </div>
-
-            <div className="modal-action">
-              <button onClick={closeDiff} className="btn">
-                Close
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={closeDiff} />
-        </div>
-      )}
+          </>
+        )}
+      </AccessibleModal>
     </>
   )
 }
