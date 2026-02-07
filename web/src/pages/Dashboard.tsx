@@ -37,7 +37,7 @@ export default function Dashboard() {
   if (statusLoading || (!isGlobalMode && taskLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -95,12 +95,12 @@ function ConnectionStatus({ connected }: { connected: boolean }) {
     <div className="flex items-center gap-2 text-sm">
       {connected ? (
         <>
-          <Wifi size={16} className="text-success" />
+          <Wifi size={16} aria-hidden="true" className="text-success" />
           <span className="text-base-content/60">Connected</span>
         </>
       ) : (
         <>
-          <WifiOff size={16} className="text-warning" />
+          <WifiOff size={16} aria-hidden="true" className="text-warning" />
           <span className="text-base-content/60">Reconnecting...</span>
         </>
       )}

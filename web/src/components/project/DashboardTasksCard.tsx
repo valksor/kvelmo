@@ -50,7 +50,7 @@ export function DashboardTasksCard({ tasks, isHistoryLoading }: DashboardTasksCa
                 className={`btn btn-xs gap-1 ${view === 'recent' ? 'btn-primary' : 'btn-ghost'}`}
                 onClick={() => setView('recent')}
               >
-                <History size={14} />
+                <History size={14} aria-hidden="true" />
                 Recent
               </button>
               <button
@@ -58,7 +58,7 @@ export function DashboardTasksCard({ tasks, isHistoryLoading }: DashboardTasksCa
                 className={`btn btn-xs gap-1 ${view === 'queue' ? 'btn-primary' : 'btn-ghost'}`}
                 onClick={() => setView('queue')}
               >
-                <ListTree size={14} />
+                <ListTree size={14} aria-hidden="true" />
                 Queue
               </button>
             </div>
@@ -88,7 +88,7 @@ function RecentView({ tasks, isLoading }: { tasks?: TaskHistoryItem[]; isLoading
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
@@ -133,7 +133,7 @@ function RecentTaskRow({ task }: { task: TaskHistoryItem }) {
             <span>{new Date(task.created_at).toLocaleDateString()}</span>
             {task.worktree_path && (
               <span className="flex items-center gap-1">
-                <FolderGit2 size={12} />
+                <FolderGit2 size={12} aria-hidden="true" />
                 Worktree
               </span>
             )}
@@ -142,7 +142,7 @@ function RecentTaskRow({ task }: { task: TaskHistoryItem }) {
       </div>
       <div className="flex items-center gap-2">
         <span className={`badge ${config.badge} badge-sm capitalize`}>{displayState}</span>
-        <ChevronRight size={16} className="text-base-content/40 group-hover:text-primary transition-colors" />
+        <ChevronRight size={16} className="text-base-content/40 group-hover:text-primary transition-colors" aria-hidden="true" />
       </div>
     </Link>
   )
@@ -168,7 +168,7 @@ function QueueView({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }

@@ -31,7 +31,7 @@ export function QuestionPrompt({ question }: QuestionPromptProps) {
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-warning/30 p-3 rounded-full">
-            <HelpCircle className="w-6 h-6 text-warning-content" />
+            <HelpCircle className="w-6 h-6 text-warning-content" aria-hidden="true" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-warning-content">Agent Needs Input</h3>
@@ -91,10 +91,10 @@ export function QuestionPrompt({ question }: QuestionPromptProps) {
                 disabled={isPending || (!answer.trim() && !selectedOption)}
               >
                 {isPending ? (
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={20} className="animate-spin" aria-hidden="true" />
                 ) : (
                   <>
-                    <Send size={20} />
+                    <Send size={20} aria-hidden="true" />
                     Send
                   </>
                 )}

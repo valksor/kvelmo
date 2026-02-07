@@ -12,7 +12,7 @@ export default function NotFound() {
 
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body items-center text-center py-16">
-          <FileQuestion className="w-16 h-16 text-base-content/30 mb-4" />
+          <FileQuestion aria-hidden="true" className="w-16 h-16 text-base-content/30 mb-4" />
           <h2 className="text-6xl font-bold text-primary mb-2">404</h2>
           <h3 className="text-xl font-medium mb-2">Page Not Found</h3>
           <p className="text-base-content/60 max-w-md mb-2">
@@ -22,7 +22,7 @@ export default function NotFound() {
             {location.pathname}
           </p>
           <Link to="/" className="btn btn-primary gap-2">
-            <Home size={18} />
+            <Home size={18} aria-hidden="true" />
             Back to Dashboard
           </Link>
         </div>
