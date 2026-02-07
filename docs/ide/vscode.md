@@ -12,6 +12,34 @@ The Mehrhof VS Code extension integrates structured creation workflows directly 
 - Node.js 24 or later
 - [Bun](https://bun.sh/) package manager
 
+## Windows (WSL)
+
+Windows users run Mehrhof inside WSL2. VS Code's WSL extension makes this seamless — the extension server runs inside WSL, so terminals, file access, and the Mehrhof plugin all work natively.
+
+### Setup
+
+1. Install the [WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) in VS Code
+2. Open your project from the WSL terminal:
+   ```bash
+   cd ~/projects/your-project
+   code .
+   ```
+   Or from VS Code: **Command Palette > WSL: Connect to WSL**, then open your project folder
+3. Install the Mehrhof extension inside the WSL environment (VS Code prompts you to install workspace extensions in WSL)
+4. The extension detects `mehr` from WSL's PATH automatically
+
+### How It Works
+
+When connected to WSL, VS Code runs its extension host inside Linux. The Mehrhof extension starts `mehr serve`, connects via localhost, and everything operates as if you were on a native Linux machine. No special configuration is needed.
+
+### Tips
+
+- **Always open projects from the Linux filesystem** (`~/projects/`), not `/mnt/c/`. See [Windows & WSL2 Guide](/guides/windows-wsl.md#project-location-important) for details.
+- The `mehrhof.mehrExecutable` setting auto-detects from WSL's PATH. Only set it manually if `mehr` is installed in a non-standard location.
+- If `mehr serve` starts but the Web UI doesn't load in the VS Code Simple Browser, use your Windows browser at `http://localhost:8080` instead.
+
+For more WSL tips, see the [Windows & WSL2 Guide](/guides/windows-wsl.md).
+
 ## Installation
 
 ### From VSIX (Recommended)

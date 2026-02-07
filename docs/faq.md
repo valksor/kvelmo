@@ -72,7 +72,11 @@ Mehrhof is language-agnostic. It works with any codebase — Go, Python, JavaScr
 
 ### Does it work on Windows?
 
-Mehrhof requires a Unix-like environment. On Windows, use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux) and install Mehrhof inside the Linux shell.
+Yes, via [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux). Mehrhof runs as a native Linux binary inside WSL2, giving you full feature parity with Linux and macOS. Performance inside WSL2 is near-native — the key is storing projects on the Linux filesystem (`~/projects/`) rather than the mounted Windows drive.
+
+Both VS Code (via the WSL extension) and JetBrains IDEs (2025.1+) integrate seamlessly with WSL, so your IDE runs on Windows while Mehrhof operates inside Linux.
+
+See the [Windows & WSL2 Guide](/guides/windows-wsl.md) for setup instructions, best practices, and IDE integration.
 
 ### Can I use it on an existing project?
 
