@@ -19,7 +19,7 @@ export default function Review() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -51,11 +51,11 @@ export default function Review() {
   const getSeverityIcon = (severity: ReviewIssue['severity']) => {
     switch (severity) {
       case 'error':
-        return <AlertCircle size={16} className="text-error" />
+        return <AlertCircle size={16} aria-hidden="true" className="text-error" />
       case 'warning':
-        return <AlertTriangle size={16} className="text-warning" />
+        return <AlertTriangle size={16} aria-hidden="true" className="text-warning" />
       case 'info':
-        return <Info size={16} className="text-info" />
+        return <Info size={16} aria-hidden="true" className="text-info" />
     }
   }
 
@@ -159,12 +159,12 @@ export default function Review() {
             >
               {reviewMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                   Running Review...
                 </>
               ) : (
                 <>
-                  <Search size={18} />
+                  <Search size={18} aria-hidden="true" />
                   Run Review
                 </>
               )}
@@ -176,7 +176,7 @@ export default function Review() {
       {/* Error */}
       {reviewMutation.isError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>{reviewMutation.error.message}</span>
         </div>
       )}
@@ -218,7 +218,7 @@ export default function Review() {
           {issues.length === 0 ? (
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body text-center py-12">
-                <CheckCircle className="w-12 h-12 mx-auto text-success mb-4" />
+                <CheckCircle aria-hidden="true" className="w-12 h-12 mx-auto text-success mb-4" />
                 <h2 className="text-lg font-medium">No Issues Found</h2>
                 <p className="text-base-content/60 mt-2">
                   The review completed without finding any issues.
@@ -244,7 +244,7 @@ export default function Review() {
                         </div>
                         <p className="mt-1 text-sm">{issue.message}</p>
                         <div className="flex items-center gap-1 text-xs text-base-content/50 mt-2">
-                          <FileText size={12} />
+                          <FileText size={12} aria-hidden="true" />
                           <span className="font-mono">{issue.file}</span>
                           {issue.line && <span>:{issue.line}</span>}
                         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import {
   Upload,
   FileText,
@@ -109,6 +109,7 @@ export function TaskCreationTabs() {
 type StartSourceType = 'file' | 'text' | 'empty' | 'provider'
 
 function StartTaskForm() {
+  const id = useId()
   const [sourceType, setSourceType] = useState<StartSourceType>('text')
   const [file, setFile] = useState<File | null>(null)
   const [textContent, setTextContent] = useState('')
@@ -213,10 +214,10 @@ function StartTaskForm() {
 
       {/* Source Type Selector */}
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor={`${id}-source-type`}>
           <span className="label-text">Source</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div id={`${id}-source-type`} className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <SourceTypeButton
             active={sourceType === 'file'}
             onClick={() => setSourceType('file')}
@@ -260,7 +261,7 @@ function StartTaskForm() {
             placeholder="Optional: KEY-123 or task title"
             className="input input-bordered w-full"
           />
-          <label className="label py-1">
+          <label className="label py-1" htmlFor="task-empty-key">
             <span className="label-text-alt text-base-content/60">
               Start with an empty task. Optionally provide a key or title.
             </span>
@@ -320,10 +321,11 @@ function StartTaskForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-template`}>
                 <span className="label-text">Template</span>
               </label>
               <select
+                id={`${id}-template`}
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
                 className="select select-bordered w-full"
@@ -336,10 +338,11 @@ function StartTaskForm() {
               </select>
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-external-key`}>
                 <span className="label-text">External Key</span>
               </label>
               <input
+                id={`${id}-external-key`}
                 type="text"
                 value={externalKey}
                 onChange={(e) => setExternalKey(e.target.value)}
@@ -348,10 +351,11 @@ function StartTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-title-override`}>
                 <span className="label-text">Title Override</span>
               </label>
               <input
+                id={`${id}-title-override`}
                 type="text"
                 value={titleOverride}
                 onChange={(e) => setTitleOverride(e.target.value)}
@@ -360,10 +364,11 @@ function StartTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-depends-on`}>
                 <span className="label-text">Depends On</span>
               </label>
               <input
+                id={`${id}-depends-on`}
                 type="text"
                 value={dependsOn}
                 onChange={(e) => setDependsOn(e.target.value)}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Search, FileCode, Copy, Check, Loader2, AlertCircle } from 'lucide-react'
 import { useFindCode, type FindResult } from '@/api/find'
 import { useStatus } from '@/api/workflow'
@@ -6,6 +6,7 @@ import { ProjectSelector } from '@/components/project/ProjectSelector'
 
 export default function Find() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const id = useId()
   const [query, setQuery] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -14,7 +15,7 @@ export default function Find() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -50,16 +51,17 @@ export default function Find() {
         <div className="card-body">
           <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="form-control flex-1">
-              <label className="label py-1" htmlFor="find-query">
+              <label className="label py-1" htmlFor={`${id}-query`}>
                 <span className="label-text">Search query</span>
               </label>
               <div className="relative">
                 <Search
                   size={18}
+                  aria-hidden="true"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
                 />
                 <input
-                  id="find-query"
+                  id={`${id}-query`}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -73,7 +75,7 @@ export default function Find() {
               className="btn btn-primary"
               disabled={query.trim().length < 3 || isLoading}
             >
-              {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Search'}
+              {isLoading ? <Loader2 size={18} aria-hidden="true" className="animate-spin" /> : 'Search'}
             </button>
           </form>
         </div>
@@ -82,7 +84,7 @@ export default function Find() {
       {/* Results */}
       {error && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>Search failed: {error.message}</span>
         </div>
       )}
@@ -136,7 +138,7 @@ function ResultCard({ result }: { result: FindResult }) {
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <FileCode size={16} className="text-primary shrink-0" />
+            <FileCode size={16} aria-hidden="true" className="text-primary shrink-0" />
             <span className="font-mono text-sm truncate">{result.file}</span>
             <span className="text-xs text-base-content/50">:{result.line}</span>
           </div>
@@ -145,7 +147,7 @@ function ResultCard({ result }: { result: FindResult }) {
             onClick={copyPath}
             title="Copy path"
           >
-            {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+            {copied ? <Check size={14} aria-hidden="true" className="text-success" /> : <Copy size={14} aria-hidden="true" />}
           </button>
         </div>
 

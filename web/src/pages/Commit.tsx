@@ -18,7 +18,7 @@ export default function Commit() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -69,14 +69,14 @@ export default function Commit() {
           </p>
         </div>
         <button onClick={() => refetch()} className="btn btn-ghost btn-sm">
-          <RefreshCw size={16} />
+          <RefreshCw size={16} aria-hidden="true" />
           Refresh
         </button>
       </div>
 
       {changesError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>Failed to load changes: {changesError.message}</span>
         </div>
       )}
@@ -95,12 +95,12 @@ export default function Commit() {
       {/* Changes Summary */}
       {changesLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loader2 aria-hidden="true" className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : !hasChanges ? (
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body text-center py-12">
-            <GitCommit className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+            <GitCommit aria-hidden="true" className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
             <h2 className="text-lg font-medium">No Changes</h2>
             <p className="text-base-content/60 mt-2">
               {includeUnstaged
@@ -120,14 +120,14 @@ export default function Commit() {
             <div className="stat">
               <div className="stat-title">Additions</div>
               <div className="stat-value text-success flex items-center gap-2">
-                <Plus size={24} />
+                <Plus size={24} aria-hidden="true" />
                 {changesData?.total_additions || 0}
               </div>
             </div>
             <div className="stat">
               <div className="stat-title">Deletions</div>
               <div className="stat-value text-error flex items-center gap-2">
-                <Minus size={24} />
+                <Minus size={24} aria-hidden="true" />
                 {changesData?.total_deletions || 0}
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function Commit() {
                     className="flex items-center justify-between py-2 px-3 bg-base-200 rounded-lg"
                   >
                     <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-base-content/50" />
+                      <FileText size={16} aria-hidden="true" className="text-base-content/50" />
                       <span className="font-mono text-sm">{file.path}</span>
                       <span
                         className={`badge badge-sm ${
@@ -179,12 +179,12 @@ export default function Commit() {
             >
               {analyzeMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                   Analyzing...
                 </>
               ) : (
                 <>
-                  <GitCommit size={18} />
+                  <GitCommit size={18} aria-hidden="true" />
                   Analyze Changes
                 </>
               )}
@@ -193,7 +193,7 @@ export default function Commit() {
 
           {analyzeMutation.isError && (
             <div className="alert alert-error">
-              <AlertCircle size={18} />
+              <AlertCircle size={18} aria-hidden="true" />
               <span>Failed to analyze: {analyzeMutation.error.message}</span>
             </div>
           )}
@@ -218,12 +218,12 @@ export default function Commit() {
                   >
                     {applyMutation.isPending ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                         Committing...
                       </>
                     ) : (
                       <>
-                        <Check size={18} />
+                        <Check size={18} aria-hidden="true" />
                         Apply Commit
                       </>
                     )}
@@ -244,14 +244,14 @@ export default function Commit() {
 
           {applyMutation.isError && (
             <div className="alert alert-error">
-              <AlertCircle size={18} />
+              <AlertCircle size={18} aria-hidden="true" />
               <span>Failed to commit: {applyMutation.error.message}</span>
             </div>
           )}
 
           {applyMutation.isSuccess && (
             <div className="alert alert-success">
-              <Check size={18} />
+              <Check size={18} aria-hidden="true" />
               <span>
                 Commit created: <code className="font-mono">{applyMutation.data.commit_hash.slice(0, 7)}</code>
               </span>

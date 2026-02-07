@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useCreateQuickTask, useSubmitSource } from '@/api/quick'
 import { TASK_SOURCE_PROVIDERS } from '@/constants/taskOptions'
@@ -7,6 +7,7 @@ import { ErrorMessage } from '@/components/project/TaskFormShared'
 type QuickMode = 'simple' | 'source'
 
 export function QuickTaskForm() {
+  const id = useId()
   const [mode, setMode] = useState<QuickMode>('simple')
 
   const [description, setDescription] = useState('')
@@ -114,12 +115,13 @@ export function QuickTaskForm() {
       {mode === 'simple' ? (
         <>
           <div className="form-control">
-            <label className="label py-1">
+            <label className="label py-1" htmlFor={`${id}-description`}>
               <span className="label-text">
                 Description <span className="text-error">*</span>
               </span>
             </label>
             <textarea
+              id={`${id}-description`}
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -130,10 +132,11 @@ export function QuickTaskForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-title`}>
                 <span className="label-text">Title (optional)</span>
               </label>
               <input
+                id={`${id}-title`}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -142,10 +145,11 @@ export function QuickTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-priority`}>
                 <span className="label-text">Priority</span>
               </label>
               <select
+                id={`${id}-priority`}
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
                 className="select select-bordered w-full"
@@ -156,10 +160,11 @@ export function QuickTaskForm() {
               </select>
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-labels`}>
                 <span className="label-text">Labels</span>
               </label>
               <input
+                id={`${id}-labels`}
                 type="text"
                 value={labels}
                 onChange={(e) => setLabels(e.target.value)}
@@ -173,12 +178,13 @@ export function QuickTaskForm() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-source`}>
                 <span className="label-text">
                   Source <span className="text-error">*</span>
                 </span>
               </label>
               <input
+                id={`${id}-source`}
                 type="text"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
@@ -187,12 +193,13 @@ export function QuickTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-provider`}>
                 <span className="label-text">
                   Provider <span className="text-error">*</span>
                 </span>
               </label>
               <select
+                id={`${id}-provider`}
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
                 className="select select-bordered w-full"
@@ -208,10 +215,11 @@ export function QuickTaskForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-src-title`}>
                 <span className="label-text">Title (optional)</span>
               </label>
               <input
+                id={`${id}-src-title`}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -220,10 +228,11 @@ export function QuickTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-src-labels`}>
                 <span className="label-text">Labels</span>
               </label>
               <input
+                id={`${id}-src-labels`}
                 type="text"
                 value={labels}
                 onChange={(e) => setLabels(e.target.value)}
@@ -235,10 +244,11 @@ export function QuickTaskForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-notes`}>
                 <span className="label-text">Notes (one per line)</span>
               </label>
               <textarea
+                id={`${id}-notes`}
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -247,10 +257,11 @@ export function QuickTaskForm() {
               />
             </div>
             <div className="form-control">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${id}-instructions`}>
                 <span className="label-text">Instructions</span>
               </label>
               <textarea
+                id={`${id}-instructions`}
                 rows={3}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
@@ -286,7 +297,7 @@ export function QuickTaskForm() {
       {error && <ErrorMessage message={error} />}
 
       <button type="submit" className="btn btn-primary w-full" disabled={isPending}>
-        {isPending && <Loader2 size={16} className="animate-spin mr-2" />}
+        {isPending && <Loader2 size={16} className="animate-spin mr-2" aria-hidden="true" />}
         {mode === 'simple' ? 'Create Quick Task' : 'Submit From Source'}
       </button>
     </form>
