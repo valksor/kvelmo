@@ -35,6 +35,7 @@ export function ProjectPlanForm({
 
   const uploadFile = useUploadFile()
   const createPlan = useCreatePlan()
+  const id = useId()
   const fileInputID = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -109,14 +110,14 @@ export function ProjectPlanForm({
       </p>
 
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor={`${id}-source-type`}>
           <span className="label-text">Source Type</span>
         </label>
-        <div className="grid grid-cols-1 gap-2">
+        <div id={`${id}-source-type`} className="grid grid-cols-1 gap-2">
           <SourceTypeButton
             active={sourceType === 'file'}
             onClick={() => setSourceType('file')}
-            icon={<Upload size={16} />}
+            icon={<Upload size={16} aria-hidden="true" />}
             label="File"
           />
         </div>
@@ -144,19 +145,19 @@ export function ProjectPlanForm({
                 <SourceTypeButton
                   active={sourceType === 'dir'}
                   onClick={() => setSourceType('dir')}
-                  icon={<FolderOpen size={16} />}
+                  icon={<FolderOpen size={16} aria-hidden="true" />}
                   label="Directory"
                 />
                 <SourceTypeButton
                   active={sourceType === 'research'}
                   onClick={() => setSourceType('research')}
-                  icon={<Search size={16} />}
+                  icon={<Search size={16} aria-hidden="true" />}
                   label="Research"
                 />
                 <SourceTypeButton
                   active={sourceType === 'provider'}
                   onClick={() => setSourceType('provider')}
-                  icon={<Puzzle size={16} />}
+                  icon={<Puzzle size={16} aria-hidden="true" />}
                   label="Provider"
                 />
               </div>
@@ -167,8 +168,16 @@ export function ProjectPlanForm({
 
       {sourceType === 'file' && (
         <div
+          role="button"
+          tabIndex={0}
           className="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              fileInputRef.current?.click()
+            }
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault()
@@ -184,7 +193,7 @@ export function ProjectPlanForm({
             className="hidden"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
-          <Upload className="w-8 h-8 mx-auto text-base-content/40 mb-2" />
+          <Upload className="w-8 h-8 mx-auto text-base-content/40 mb-2" aria-hidden="true" />
           <p className="text-sm text-base-content/60">
             Drop file here or <span className="text-primary font-medium">browse</span>
           </p>
@@ -205,7 +214,7 @@ export function ProjectPlanForm({
             placeholder="./path/to/directory"
             className="input input-bordered w-full font-mono text-sm"
           />
-          <label className="label py-1">
+          <label className="label py-1" htmlFor="project-plan-dir-path">
             <span className="label-text-alt text-base-content/60">
               Reads ALL files in directory. Best for small codebases (&lt;50 files).
             </span>
@@ -226,7 +235,7 @@ export function ProjectPlanForm({
             placeholder="./path/to/docs"
             className="input input-bordered w-full font-mono text-sm"
           />
-          <label className="label py-1">
+          <label className="label py-1" htmlFor="project-plan-research-path">
             <span className="label-text-alt text-base-content/60">
               AI-guided research mode. Provides file manifest, AI selectively explores files.
             </span>
@@ -237,10 +246,11 @@ export function ProjectPlanForm({
       {sourceType === 'provider' && (
         <div className="grid grid-cols-2 gap-3">
           <div className="form-control">
-            <label className="label py-1">
+            <label className="label py-1" htmlFor={`${id}-provider`}>
               <span className="label-text">Provider</span>
             </label>
             <select
+              id={`${id}-provider`}
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
               className="select select-bordered w-full"
@@ -253,10 +263,11 @@ export function ProjectPlanForm({
             </select>
           </div>
           <div className="form-control">
-            <label className="label py-1">
+            <label className="label py-1" htmlFor={`${id}-reference`}>
               <span className="label-text">Reference</span>
             </label>
             <input
+              id={`${id}-reference`}
               type="text"
               value={referenceId}
               onChange={(e) => setReferenceId(e.target.value)}
@@ -268,10 +279,11 @@ export function ProjectPlanForm({
       )}
 
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor={`${id}-plan-title`}>
           <span className="label-text">Project Title (optional)</span>
         </label>
         <input
+          id={`${id}-plan-title`}
           type="text"
           value={planTitle}
           onChange={(e) => setPlanTitle(e.target.value)}
@@ -281,10 +293,11 @@ export function ProjectPlanForm({
       </div>
 
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor={`${id}-instructions`}>
           <span className="label-text">Instructions (optional)</span>
         </label>
         <textarea
+          id={`${id}-instructions`}
           rows={3}
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
@@ -307,7 +320,7 @@ export function ProjectPlanForm({
       {success && <div className="alert alert-success text-sm">{success}</div>}
 
       <button type="submit" className="btn btn-primary w-full" disabled={isPending}>
-        {isPending && <Loader2 size={16} className="animate-spin mr-2" />}
+        {isPending && <Loader2 size={16} className="animate-spin mr-2" aria-hidden="true" />}
         Create Plan
       </button>
     </form>

@@ -31,7 +31,17 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
       {/* Header */}
       <div
         className="card-body py-3 cursor-pointer select-none"
+        role="button"
+        tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setIsExpanded(!isExpanded)
+          }
+        }}
+        aria-expanded={isExpanded}
+        aria-label="Toggle live updates"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

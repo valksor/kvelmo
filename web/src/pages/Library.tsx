@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Loader2, BookOpen, FileText, AlertCircle, Search, Tag } from 'lucide-react'
 import { useLibraryCollections, useLibraryItems, type LibraryItem } from '@/api/library'
 import { useStatus } from '@/api/workflow'
@@ -6,6 +6,7 @@ import { ProjectSelector } from '@/components/project/ProjectSelector'
 
 export default function Library() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const collectionSearchInputID = useId()
   const [selectedCollection, setSelectedCollection] = useState<string | undefined>()
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -17,7 +18,7 @@ export default function Library() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -39,7 +40,7 @@ export default function Library() {
         <h1 className="text-2xl font-bold">Specification Library</h1>
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body text-center py-12">
-            <BookOpen className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+            <BookOpen aria-hidden="true" className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
             <h2 className="text-lg font-medium">Library Disabled</h2>
             <p className="text-base-content/60 mt-2">
               Enable the library feature in Settings to use specification storage.
@@ -74,7 +75,7 @@ export default function Library() {
 
       {collectionsError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>Failed to load library: {collectionsError.message}</span>
         </div>
       )}
@@ -88,7 +89,7 @@ export default function Library() {
               <h3 className="font-medium text-sm text-base-content/70 mb-2">Collections</h3>
               {collectionsLoading ? (
                 <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-5 h-5 animate-spin" />
                 </div>
               ) : collections.length === 0 ? (
                 <p className="text-sm text-base-content/50 text-center py-4">
@@ -137,7 +138,7 @@ export default function Library() {
                     <h2 className="text-xl font-bold">{selectedItem.title}</h2>
                     {selectedItem.tags && selectedItem.tags.length > 0 && (
                       <div className="flex items-center gap-1 mt-2">
-                        <Tag size={14} className="text-base-content/50" />
+                        <Tag size={14} aria-hidden="true" className="text-base-content/50" />
                         {selectedItem.tags.map((tag) => (
                           <span key={tag} className="badge badge-sm badge-ghost">
                             {tag}
@@ -164,11 +165,16 @@ export default function Library() {
             <div className="space-y-4">
               {/* Search within collection */}
               <div className="relative">
+                <label htmlFor={collectionSearchInputID} className="sr-only">
+                  Search items in selected collection
+                </label>
                 <Search
                   size={16}
+                  aria-hidden="true"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
                 />
                 <input
+                  id={collectionSearchInputID}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -179,12 +185,12 @@ export default function Library() {
 
               {itemsLoading ? (
                 <div className="flex justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <Loader2 aria-hidden="true" className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div className="card bg-base-100 shadow-sm">
                   <div className="card-body text-center py-12">
-                    <FileText className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
+                    <FileText aria-hidden="true" className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
                     <p className="text-base-content/60">
                       {searchQuery ? 'No matching items' : 'No items in this collection'}
                     </p>
@@ -195,8 +201,16 @@ export default function Library() {
                   {filteredItems.map((item) => (
                     <div
                       key={item.id}
+                      role="button"
+                      tabIndex={0}
                       className="card bg-base-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => setSelectedItem(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedItem(item)
+                        }
+                      }}
                     >
                       <div className="card-body py-3 px-4">
                         <div className="flex items-start justify-between">
@@ -207,7 +221,7 @@ export default function Library() {
                               {item.content.length > 150 ? '...' : ''}
                             </p>
                           </div>
-                          <FileText size={18} className="text-base-content/30 shrink-0" />
+                          <FileText size={18} aria-hidden="true" className="text-base-content/30 shrink-0" />
                         </div>
                       </div>
                     </div>
@@ -219,7 +233,7 @@ export default function Library() {
             // No collection selected
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body text-center py-12">
-                <BookOpen className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+                <BookOpen aria-hidden="true" className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
                 <p className="text-base-content/60">Select a collection to view its items</p>
               </div>
             </div>

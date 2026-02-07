@@ -95,10 +95,19 @@ function QueueCard({ queue, isSelected, onSelect, onDelete, isDeleting }: QueueC
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
       className={`card bg-base-100 shadow-sm cursor-pointer transition-all hover:shadow-md ${
         isSelected ? 'ring-2 ring-primary' : ''
       }`}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect()
+        }
+      }}
     >
       <div className="card-body py-3 px-4">
         <div className="flex items-start justify-between gap-2">
@@ -121,6 +130,7 @@ function QueueCard({ queue, isSelected, onSelect, onDelete, isDeleting }: QueueC
               className="btn btn-ghost btn-xs"
               onClick={onSelect}
               title="View tasks"
+              aria-label="View queue tasks"
             >
               <Eye size={14} />
             </button>
@@ -129,6 +139,7 @@ function QueueCard({ queue, isSelected, onSelect, onDelete, isDeleting }: QueueC
               onClick={onDelete}
               disabled={isDeleting}
               title="Delete queue"
+              aria-label="Delete queue"
             >
               <Trash2 size={14} />
             </button>

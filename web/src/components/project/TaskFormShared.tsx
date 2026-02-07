@@ -43,8 +43,16 @@ export function FileInput({ file, onFileChange }: FileInputProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
       onClick={() => fileInputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          fileInputRef.current?.click()
+        }
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
@@ -56,7 +64,7 @@ export function FileInput({ file, onFileChange }: FileInputProps) {
         className="hidden"
         onChange={(e) => onFileChange(e.target.files?.[0] || null)}
       />
-      <Upload className="w-10 h-10 mx-auto text-base-content/40 mb-2" />
+      <Upload className="w-10 h-10 mx-auto text-base-content/40 mb-2" aria-hidden="true" />
       <p className="text-sm text-base-content/60">
         Drop file here or <span className="text-primary font-medium">browse</span>
       </p>
@@ -85,9 +93,9 @@ export function TextInput({ value, onChange }: TextInputProps) {
         placeholder="# Task Title&#10;&#10;Describe what you want to accomplish...&#10;&#10;## Requirements&#10;- First requirement&#10;- Second requirement"
         className="textarea textarea-bordered w-full font-mono text-sm"
       />
-      <label className="label py-1">
+      <p className="label py-1">
         <span className="label-text-alt text-base-content/60">Use Markdown for better structure</span>
-      </label>
+      </p>
     </div>
   )
 }
@@ -108,10 +116,11 @@ export function ReferenceInput({
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor="ref-provider">
           <span className="label-text">Provider</span>
         </label>
         <select
+          id="ref-provider"
           value={provider}
           onChange={(e) => onProviderChange(e.target.value)}
           className="select select-bordered w-full"
@@ -124,10 +133,11 @@ export function ReferenceInput({
         </select>
       </div>
       <div className="form-control">
-        <label className="label py-1">
+        <label className="label py-1" htmlFor="ref-id">
           <span className="label-text">Reference ID</span>
         </label>
         <input
+          id="ref-id"
           type="text"
           value={referenceId}
           onChange={(e) => onReferenceIdChange(e.target.value)}
