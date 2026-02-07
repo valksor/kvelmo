@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Loader2, Link2, Search, FileText, ArrowRight } from 'lucide-react'
 import { useLinksStatus, useSearchLinks, useBacklinks } from '@/api/links'
 import { useStatus } from '@/api/workflow'
@@ -7,6 +7,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 
 export default function Links() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const searchInputID = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRef, setSelectedRef] = useState<string | null>(null)
   const debouncedQuery = useDebounce(searchQuery, 300)
@@ -18,7 +19,7 @@ export default function Links() {
   if (statusLoading || linksStatusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -40,7 +41,7 @@ export default function Links() {
         <h1 className="text-2xl font-bold">Knowledge Links</h1>
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body text-center py-12">
-            <Link2 className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+            <Link2 aria-hidden="true" className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
             <h2 className="text-lg font-medium">Links Disabled</h2>
             <p className="text-base-content/60 mt-2">
               Enable the links feature in Settings to use bidirectional linking.
@@ -70,8 +71,12 @@ export default function Links() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
+        <label htmlFor={searchInputID} className="sr-only">
+          Search knowledge links
+        </label>
+        <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
         <input
+          id={searchInputID}
           type="text"
           value={searchQuery}
           onChange={(e) => {
@@ -93,13 +98,13 @@ export default function Links() {
           {!debouncedQuery ? (
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body text-center py-12">
-                <Search className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
+                <Search aria-hidden="true" className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
                 <p className="text-base-content/60">Enter a search term to find links</p>
               </div>
             </div>
           ) : searchLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loader2 aria-hidden="true" className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : links.length === 0 ? (
             <div className="card bg-base-100 shadow-sm">
@@ -112,10 +117,19 @@ export default function Links() {
               {links.map((link, idx) => (
                 <div
                   key={`${link.ref}-${idx}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedRef === link.ref}
                   className={`card bg-base-100 shadow-sm cursor-pointer transition-all ${
                     selectedRef === link.ref ? 'ring-2 ring-primary' : 'hover:shadow-md'
                   }`}
                   onClick={() => setSelectedRef(link.ref)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setSelectedRef(link.ref)
+                    }
+                  }}
                 >
                   <div className="card-body py-3 px-4">
                     <div className="flex items-start justify-between">
@@ -128,12 +142,12 @@ export default function Links() {
                           <p className="text-sm font-medium mt-1">{link.title}</p>
                         )}
                         <div className="flex items-center gap-1 text-xs text-base-content/50 mt-1">
-                          <FileText size={12} />
+                          <FileText size={12} aria-hidden="true" />
                           <span className="font-mono">{link.file}</span>
                           {link.line && <span>:{link.line}</span>}
                         </div>
                       </div>
-                      <ArrowRight size={16} className="text-base-content/30" />
+                      <ArrowRight size={16} aria-hidden="true" className="text-base-content/30" />
                     </div>
                   </div>
                 </div>
@@ -156,13 +170,13 @@ export default function Links() {
           {!selectedRef ? (
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body text-center py-12">
-                <Link2 className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
+                <Link2 aria-hidden="true" className="w-10 h-10 mx-auto text-base-content/30 mb-2" />
                 <p className="text-base-content/60">Select a link to view its backlinks</p>
               </div>
             </div>
           ) : backlinksLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loader2 aria-hidden="true" className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : !backlinksData?.backlinks?.length ? (
             <div className="card bg-base-100 shadow-sm">
@@ -183,7 +197,7 @@ export default function Links() {
                       <p className="text-sm font-medium mt-1">{backlink.title}</p>
                     )}
                     <div className="flex items-center gap-1 text-xs text-base-content/50 mt-1">
-                      <FileText size={12} />
+                      <FileText size={12} aria-hidden="true" />
                       <span className="font-mono">{backlink.file}</span>
                       {backlink.line && <span>:{backlink.line}</span>}
                     </div>
