@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Bell, X, CheckCircle, AlertCircle, HelpCircle, Trash2 } from 'lucide-react'
 import { useWorkflowSSE, type QuestionData } from '@/hooks/useWorkflowSSE'
+import { useAnnouncer } from '@/components/ui/useAnnouncer'
 
 export interface Notification {
   id: string
@@ -14,6 +15,7 @@ export interface Notification {
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isOpen, setIsOpen] = useState(false)
+  const { announce } = useAnnouncer()
 
   const addNotification = useCallback((notif: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
@@ -23,7 +25,11 @@ export function NotificationCenter() {
       read: false,
     }
     setNotifications((prev) => [newNotification, ...prev].slice(0, 50)) // Keep max 50
-  }, [])
+
+    // Announce to screen readers
+    const priority = notif.type === 'error' ? 'assertive' as const : 'polite' as const
+    announce(`${notif.title}${notif.message ? ': ' + notif.message : ''}`, priority)
+  }, [announce])
 
   // Subscribe to SSE events
   useWorkflowSSE({
@@ -85,13 +91,13 @@ export function NotificationCenter() {
   const getIcon = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return <CheckCircle size={16} className="text-success" />
+        return <CheckCircle size={16} className="text-success" aria-hidden="true" />
       case 'error':
-        return <AlertCircle size={16} className="text-error" />
+        return <AlertCircle size={16} className="text-error" aria-hidden="true" />
       case 'question':
-        return <HelpCircle size={16} className="text-warning" />
+        return <HelpCircle size={16} className="text-warning" aria-hidden="true" />
       case 'info':
-        return <Bell size={16} className="text-info" />
+        return <Bell size={16} className="text-info" aria-hidden="true" />
     }
   }
 
@@ -116,10 +122,11 @@ export function NotificationCenter() {
         tabIndex={0}
         className="btn btn-ghost btn-sm btn-circle relative"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
       >
-        <Bell size={18} />
+        <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 badge badge-sm badge-error">
+          <span className="absolute -top-1 -right-1 badge badge-sm badge-error" aria-hidden="true">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -127,6 +134,8 @@ export function NotificationCenter() {
 
       {isOpen && (
         <div
+          role="menu"
+          aria-label="Notifications"
           tabIndex={0}
           className="dropdown-content z-[100] mt-2 w-80 bg-base-100 rounded-box shadow-lg border border-base-300"
         >
@@ -146,8 +155,9 @@ export function NotificationCenter() {
                 <button
                   onClick={clearAll}
                   className="btn btn-ghost btn-xs text-error"
+                  aria-label="Clear all notifications"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={14} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -157,7 +167,7 @@ export function NotificationCenter() {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-base-content/60">
-                <Bell size={24} className="mx-auto mb-2 opacity-50" />
+                <Bell size={24} className="mx-auto mb-2 opacity-50" aria-hidden="true" />
                 <p className="text-sm">No notifications</p>
               </div>
             ) : (
@@ -165,10 +175,18 @@ export function NotificationCenter() {
                 {notifications.map((notif) => (
                   <li
                     key={notif.id}
-                    className={`p-3 hover:bg-base-200 transition-colors ${
+                    role="menuitem"
+                    tabIndex={0}
+                    className={`p-3 hover:bg-base-200 transition-colors cursor-pointer ${
                       !notif.read ? 'bg-base-200/50' : ''
                     }`}
                     onClick={() => markAsRead(notif.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        markAsRead(notif.id)
+                      }
+                    }}
                   >
                     <div className="flex items-start gap-2">
                       {getIcon(notif.type)}
@@ -183,8 +201,9 @@ export function NotificationCenter() {
                               dismiss(notif.id)
                             }}
                             className="btn btn-ghost btn-xs opacity-50 hover:opacity-100"
+                            aria-label="Dismiss notification"
                           >
-                            <X size={12} />
+                            <X size={12} aria-hidden="true" />
                           </button>
                         </div>
                         {notif.message && (
