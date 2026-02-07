@@ -82,7 +82,7 @@ export default function License() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -125,7 +125,7 @@ export default function License() {
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body">
             <div className="flex items-center gap-2">
-              <FileText size={20} className="text-primary" />
+              <FileText size={20} aria-hidden="true" className="text-primary" />
               <h2 className="card-title">Mehrhof License</h2>
             </div>
             <pre className="bg-base-200 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap font-mono text-base-content/80 max-h-96 overflow-y-auto">
@@ -155,29 +155,40 @@ export default function License() {
 
       {/* License Groups */}
       <div className="space-y-3">
-        {[...groupedByLicense.entries()].map(([license, packages]) => {
+        {[...groupedByLicense.entries()].map(([license, packages], groupIndex) => {
           const isExpanded = expandedLicenses.has(license)
+          const contentID = `license-packages-${groupIndex}`
           return (
             <div key={license} className="card bg-base-100 shadow-sm">
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                aria-controls={contentID}
                 className="card-body py-3 px-4 cursor-pointer"
                 onClick={() => toggleLicense(license)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    toggleLicense(license)
+                  }
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {isExpanded ? (
-                      <ChevronDown size={20} className="text-base-content/50" />
+                      <ChevronDown size={20} aria-hidden="true" className="text-base-content/50" />
                     ) : (
-                      <ChevronRight size={20} className="text-base-content/50" />
+                      <ChevronRight size={20} aria-hidden="true" className="text-base-content/50" />
                     )}
-                    <Scale size={18} className="text-primary" />
+                    <Scale size={18} aria-hidden="true" className="text-primary" />
                     <span className="font-medium">{license}</span>
                     <span className="badge badge-sm badge-primary">{packages.length}</span>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-4 ml-9 space-y-2">
+                  <div id={contentID} className="mt-4 ml-9 space-y-2">
                     {packages.map((pkg, idx) => (
                       <div
                         key={`${pkg.path}-${idx}`}

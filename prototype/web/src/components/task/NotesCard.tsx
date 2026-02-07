@@ -52,8 +52,9 @@ export function NotesCard({ notes, taskId }: NotesCardProps) {
             type="submit"
             className="btn btn-primary"
             disabled={isPending || !newNote.trim() || !taskId}
+            aria-label="Send note"
           >
-            {isPending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            {isPending ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Send size={16} aria-hidden="true" />}
           </button>
         </form>
 

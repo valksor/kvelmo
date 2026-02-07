@@ -46,7 +46,7 @@ export function QuickQuestion({ state, taskId }: QuickQuestionProps) {
     <div className="card bg-base-100 shadow-sm">
       <div className="card-body py-4">
         <div className="flex items-center gap-2 text-sm font-medium text-base-content/80 mb-2">
-          <MessageCircleQuestion size={16} />
+          <MessageCircleQuestion size={16} aria-hidden="true" />
           Ask the Agent
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -68,11 +68,12 @@ export function QuickQuestion({ state, taskId }: QuickQuestionProps) {
             type="submit"
             className="btn btn-primary"
             disabled={!question.trim() || askQuestion.isPending}
+            aria-label="Send question"
           >
             {askQuestion.isPending ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
             ) : (
-              <Send size={16} />
+              <Send size={16} aria-hidden="true" />
             )}
           </button>
         </form>

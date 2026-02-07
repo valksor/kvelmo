@@ -107,7 +107,7 @@ export default function History() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -115,7 +115,7 @@ export default function History() {
   if (error) {
     return (
       <div className="alert alert-error">
-        <AlertCircle size={20} />
+        <AlertCircle size={20} aria-hidden="true" />
         <span>Failed to load task history: {error.message}</span>
       </div>
     )
@@ -127,7 +127,7 @@ export default function History() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Task History</h1>
         <button className="btn btn-ghost btn-sm" onClick={() => refetch()}>
-          <RefreshCw size={16} />
+          <RefreshCw size={16} aria-hidden="true" />
           Refresh
         </button>
       </div>
@@ -139,7 +139,7 @@ export default function History() {
             {/* Search */}
             <div className="flex-1">
               <label className="input input-bordered flex items-center gap-2">
-                <Search size={16} className="text-base-content/50" />
+                <Search size={16} aria-hidden="true" className="text-base-content/50" />
                 <input
                   type="text"
                   placeholder="Search by title or ID..."
@@ -152,7 +152,7 @@ export default function History() {
 
             {/* State filter */}
             <div className="flex items-center gap-2">
-              <Filter size={16} className="text-base-content/50" />
+              <Filter size={16} aria-hidden="true" className="text-base-content/50" />
               <select
                 className="select select-bordered"
                 value={stateFilter}
@@ -168,7 +168,7 @@ export default function History() {
 
             {/* Sort */}
             <div className="flex items-center gap-2">
-              <ArrowUpDown size={16} className="text-base-content/50" />
+              <ArrowUpDown size={16} aria-hidden="true" className="text-base-content/50" />
               <select
                 className="select select-bordered"
                 value={sortBy}
