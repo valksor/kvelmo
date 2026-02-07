@@ -103,8 +103,8 @@ export default function Settings() {
 
   if (statusLoading || (isGlobalMode && projectsLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
@@ -118,14 +118,14 @@ export default function Settings() {
 
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body">
-            <h3 className="card-title flex items-center gap-2">
-              <Folder size={20} />
+            <h2 className="card-title flex items-center gap-2">
+              <Folder size={20} aria-hidden="true" />
               Select Project
-            </h3>
+            </h2>
 
             {projects.length === 0 ? (
               <div className="text-center py-8">
-                <Folder className="w-12 h-12 mx-auto text-base-content/40 mb-4" />
+                <Folder className="w-12 h-12 mx-auto text-base-content/40 mb-4" aria-hidden="true" />
                 <p className="text-base-content/60">No projects registered yet.</p>
                 <p className="text-sm text-base-content/40 mt-2">
                   Register a project with <code className="kbd kbd-sm">mehr serve register</code>
@@ -153,16 +153,16 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="alert alert-error">
-        <AlertCircle size={20} />
+      <div className="alert alert-error" role="alert">
+        <AlertCircle size={20} aria-hidden="true" />
         <span>Failed to load settings: {error.message}</span>
       </div>
     )
@@ -188,7 +188,7 @@ export default function Settings() {
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body py-3 flex-row items-center justify-between">
             <div className="flex items-center gap-3">
-              <Folder size={18} className="text-primary" />
+              <Folder size={18} className="text-primary" aria-hidden="true" />
               <span className="font-medium">Editing: {selectedProject.name}</span>
               <span className="text-xs text-base-content/50 font-mono">{selectedProject.path}</span>
             </div>
@@ -208,13 +208,13 @@ export default function Settings() {
         </div>
         <div className="flex items-center gap-2">
           {isSuccess && (
-            <span className="text-success flex items-center gap-1 text-sm">
-              <CheckCircle size={16} /> Saved
+            <span className="text-success flex items-center gap-1 text-sm" role="status">
+              <CheckCircle size={16} aria-hidden="true" /> Saved
             </span>
           )}
           {isError && (
-            <span className="text-error flex items-center gap-1 text-sm">
-              <AlertCircle size={16} /> Failed to save
+            <span className="text-error flex items-center gap-1 text-sm" role="alert">
+              <AlertCircle size={16} aria-hidden="true" /> Failed to save
             </span>
           )}
           <button
@@ -222,7 +222,7 @@ export default function Settings() {
             onClick={() => saveSettings(formData)}
             disabled={isSaving || !hasChanges}
           >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {isSaving ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
             Save Changes
           </button>
         </div>
@@ -230,22 +230,24 @@ export default function Settings() {
 
       <div className="card bg-base-100 shadow-sm border border-base-300/70">
         <div className="card-body p-2 sm:p-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div role="tablist" aria-label="Settings sections" className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {sectionNavigation.map(({ id, label, description, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
+                role="tab"
+                id={`tab-settings-${id}`}
+                aria-selected={activeSection === id}
+                aria-controls={`tabpanel-settings-${id}`}
                 className={`rounded-xl border px-4 py-3 text-left transition-colors ${
                   activeSection === id
                     ? 'border-primary bg-primary/10 shadow-sm'
                     : 'border-base-300 bg-base-100 hover:bg-base-200/60'
                 }`}
                 onClick={() => setActiveSection(id)}
-                aria-pressed={activeSection === id}
-                aria-label={`${label} settings section`}
               >
                 <div className="flex items-start gap-3">
-                  <Icon size={18} className={activeSection === id ? 'text-primary' : 'text-base-content/60'} />
+                  <Icon size={18} className={activeSection === id ? 'text-primary' : 'text-base-content/60'} aria-hidden="true" />
                   <div className="space-y-1">
                     <p className="font-semibold">{label}</p>
                     <p className="text-xs text-base-content/65">{description}</p>
@@ -259,7 +261,7 @@ export default function Settings() {
 
       <div className="space-y-4">
         {activeSection === 'work' && (
-          <>
+          <div role="tabpanel" id="tabpanel-settings-work" aria-labelledby="tab-settings-work" className="space-y-4">
             <CoreSettings
               data={formData}
               agentOptions={agentOptions}
@@ -267,11 +269,11 @@ export default function Settings() {
               mode="work"
             />
             <ProviderSettings data={formData} updateField={updateField} />
-          </>
+          </div>
         )}
 
         {activeSection === 'advanced' && (
-          <>
+          <div role="tabpanel" id="tabpanel-settings-advanced" aria-labelledby="tab-settings-advanced" className="space-y-4">
             <CoreSettings
               data={formData}
               agentOptions={agentOptions}
@@ -279,7 +281,7 @@ export default function Settings() {
               mode="advanced"
             />
             <FeatureSettings data={formData} updateField={updateField} />
-          </>
+          </div>
         )}
 
         {/* DISABLED: automation temporarily unavailable (requires remote serve) */}
