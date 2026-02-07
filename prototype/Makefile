@@ -1,4 +1,4 @@
-.PHONY: build build-embedder test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-test web-test-coverage
+.PHONY: build build-embedder test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-a11y web-test web-test-coverage
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -164,8 +164,17 @@ quality-all: quality ide-quality
 web-install:
 	cd web && bun install
 
+## Run local web accessibility checks (skipped in CI)
+web-a11y:
+	@if [ -z "$$CI" ]; then \
+		echo "Running local web accessibility checks..."; \
+		cd web && bun run lint:a11y; \
+	else \
+		echo "Skipping local web accessibility checks in CI"; \
+	fi
+
 ## Build React frontend (outputs to internal/server/static/app/)
-web-build:
+web-build: web-a11y
 	cd web && bun run build
 
 ## Run React frontend dev server (with proxy to Go backend)
