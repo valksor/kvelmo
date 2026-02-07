@@ -146,7 +146,7 @@ function notifySubscribers(eventType: string, data: ParsedEventData) {
 }
 
 function handleIncomingEvent(eventType: string, event: MessageEvent) {
-  let data: ParsedEventData = {}
+  let data: ParsedEventData
   try {
     data = JSON.parse(event.data) as ParsedEventData
   } catch {
