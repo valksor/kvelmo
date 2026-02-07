@@ -43,6 +43,7 @@
     - [Notes](web-ui/notes.md)
     - [Quick Question](web-ui/questions.md)
     - [Find](web-ui/find.md)
+    - [Accessibility](web-ui/accessibility.md)
     - [Library](web-ui/library.md)
     - [Security & Quality](web-ui/security-quality.md)
     - [Memory](web-ui/memory.md)
