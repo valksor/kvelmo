@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import {
   Loader2,
   Edit2,
@@ -26,6 +26,7 @@ interface TasksPanelProps {
 }
 
 export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
+  const id = useId()
   const { data, isLoading, error } = useQueueTasks(queueId)
   const submitTasks = useSubmitTasks()
   const reorderTasks = useReorderTasks()
@@ -46,7 +47,7 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
@@ -140,9 +141,9 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
               disabled={reorderTasks.isPending}
             >
               {reorderTasks.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Sparkles size={14} />
+                <Sparkles size={14} aria-hidden="true" />
               )}
               AI Suggest Order
             </button>
@@ -153,8 +154,9 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
             <h4 className="text-sm font-medium mb-3">Submit to Provider</h4>
             <div className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="text-xs text-base-content/60">Provider</label>
+                <label className="text-xs text-base-content/60" htmlFor={`${id}-provider`}>Provider</label>
                 <select
+                  id={`${id}-provider`}
                   className="select select-bordered"
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
@@ -167,8 +169,9 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-base-content/60">Mention (optional)</label>
+                <label className="text-xs text-base-content/60" htmlFor={`${id}-mention`}>Mention (optional)</label>
                 <input
+                  id={`${id}-mention`}
                   type="text"
                   placeholder="@username"
                   className="input input-bordered w-32"
@@ -191,9 +194,9 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
                 disabled={submitTasks.isPending}
               >
                 {submitTasks.isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <Send size={14} />
+                  <Send size={14} aria-hidden="true" />
                 )}
                 Submit
               </button>
@@ -208,9 +211,9 @@ export function TasksPanel({ queueId, onEditTask }: TasksPanelProps) {
               disabled={startImpl.isPending}
             >
               {startImpl.isPending ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Play size={16} />
+                <Play size={16} aria-hidden="true" />
               )}
               Start Implementation
             </button>
@@ -232,11 +235,11 @@ function TaskRows({ task, depth, getChildren, onEdit }: TaskRowsProps) {
   const children = getChildren(task.id)
 
   const statusIcon = {
-    ready: <CheckCircle size={14} className="text-success" />,
-    pending: <Clock size={14} className="text-base-content/50" />,
-    blocked: <Lock size={14} className="text-warning" />,
-    submitted: <AlertCircle size={14} className="text-info" />,
-  }[task.status] || <Clock size={14} />
+    ready: <CheckCircle size={14} className="text-success" aria-hidden="true" />,
+    pending: <Clock size={14} className="text-base-content/50" aria-hidden="true" />,
+    blocked: <Lock size={14} className="text-warning" aria-hidden="true" />,
+    submitted: <AlertCircle size={14} className="text-info" aria-hidden="true" />,
+  }[task.status] || <Clock size={14} aria-hidden="true" />
 
   const statusBadge = {
     ready: 'badge-success',
@@ -252,7 +255,7 @@ function TaskRows({ task, depth, getChildren, onEdit }: TaskRowsProps) {
       <tr className="hover">
         <td>
           <div className="flex items-center gap-1" style={{ paddingLeft: depth * 20 }}>
-            {children.length > 0 && <ChevronRight size={14} className="text-base-content/40" />}
+            {children.length > 0 && <ChevronRight size={14} className="text-base-content/40" aria-hidden="true" />}
             <div>
               <div className="font-medium">{task.title}</div>
               <div className="text-xs text-base-content/50 font-mono">{task.id}</div>
@@ -279,9 +282,9 @@ function TaskRows({ task, depth, getChildren, onEdit }: TaskRowsProps) {
           <button
             className="btn btn-ghost btn-xs"
             onClick={() => onEdit(task)}
-            title="Edit task"
+            aria-label="Edit task"
           >
-            <Edit2 size={14} />
+            <Edit2 size={14} aria-hidden="true" />
           </button>
         </td>
       </tr>

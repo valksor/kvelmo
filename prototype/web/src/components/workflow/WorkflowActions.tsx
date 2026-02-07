@@ -47,28 +47,28 @@ const primaryActions: ActionConfig[] = [
   {
     action: 'plan',
     label: 'Plan',
-    icon: <Play size={16} />,
+    icon: <Play size={16} aria-hidden="true" />,
     className: 'btn-info',
     disabled: (state, hasTask) => !hasTask || isActive(state),
   },
   {
     action: 'implement',
     label: 'Implement',
-    icon: <Code size={16} />,
+    icon: <Code size={16} aria-hidden="true" />,
     className: 'btn-primary',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'review',
     label: 'Review',
-    icon: <CheckCircle size={16} />,
+    icon: <CheckCircle size={16} aria-hidden="true" />,
     className: 'btn-secondary',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
   },
   {
     action: 'finish',
     label: 'Finish',
-    icon: <Flag size={16} />,
+    icon: <Flag size={16} aria-hidden="true" />,
     className: 'btn-success',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
   },
@@ -78,7 +78,7 @@ const advancedActions: ActionConfig[] = [
   {
     action: 'sync',
     label: 'Sync',
-    icon: <RefreshCw size={16} />,
+    icon: <RefreshCw size={16} aria-hidden="true" />,
     className: 'btn-outline',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
@@ -88,21 +88,21 @@ const secondaryActions: ActionConfig[] = [
   {
     action: 'undo',
     label: 'Undo',
-    icon: <Undo2 size={16} />,
+    icon: <Undo2 size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'redo',
     label: 'Redo',
-    icon: <Redo2 size={16} />,
+    icon: <Redo2 size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
   },
   {
     action: 'abandon',
     label: 'Abandon',
-    icon: <X size={16} />,
+    icon: <X size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm text-error',
     disabled: (state, hasTask) => !hasTask || isActive(state),
     dangerous: true,
@@ -111,7 +111,7 @@ const secondaryActions: ActionConfig[] = [
   {
     action: 'reset',
     label: 'Reset',
-    icon: <RotateCcw size={16} />,
+    icon: <RotateCcw size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask) => !hasTask || isActive(state) || state === 'idle',
   },
@@ -251,9 +251,10 @@ export function WorkflowActions({
                         className={`btn ${config.className} btn-square`}
                         disabled={isImplementDisabled}
                         onClick={() => setShowImplementOptions(!showImplementOptions)}
-                        title="Implementation options"
+                        aria-label="Implementation options"
+                        aria-expanded={showImplementOptions}
                       >
-                        {showImplementOptions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {showImplementOptions ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
                       </button>
                     )}
                   </div>
@@ -262,10 +263,11 @@ export function WorkflowActions({
                   {showAdvancedActions && showImplementOptions && (
                     <div className="p-3 bg-base-200/50 rounded-lg space-y-3 mt-1">
                       <div>
-                        <label className="block text-xs font-medium text-base-content/60 mb-1">
+                        <label htmlFor="impl-component" className="block text-xs font-medium text-base-content/60 mb-1">
                           Component
                         </label>
                         <select
+                          id="impl-component"
                           value={selectedComponent}
                           onChange={(e) => setSelectedComponent(e.target.value)}
                           className="select select-bordered w-full"
@@ -280,10 +282,11 @@ export function WorkflowActions({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-base-content/60 mb-1">
+                        <label htmlFor="impl-parallel" className="block text-xs font-medium text-base-content/60 mb-1">
                           Parallel workers
                         </label>
                         <input
+                          id="impl-parallel"
                           type="number"
                           min={0}
                           max={10}
@@ -338,7 +341,7 @@ export function WorkflowActions({
             }
           }}
         >
-          {showAdvancedActions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {showAdvancedActions ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
           Advanced actions
         </button>
 
@@ -364,7 +367,7 @@ export function WorkflowActions({
                   className={`btn ${config.className}`}
                   disabled={isPending || config.disabled(state, hasTask, progressPhase)}
                   onClick={() => handleAction(config)}
-                  title={config.label}
+                  aria-label={config.label}
                 >
                   {config.icon}
                 </button>

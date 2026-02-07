@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Loader2, AlertCircle, Sparkles, FileText, Plus, Pencil, Trash2, CheckCircle, DollarSign } from 'lucide-react'
 import { useStandaloneSimplify, type StandaloneMode } from '@/api/standalone'
 import { useStatus } from '@/api/workflow'
@@ -7,6 +7,7 @@ import { Checkbox, FormField, TextArea, TextInput } from '@/components/settings/
 
 export default function Simplify() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const id = useId()
   const [mode, setMode] = useState<StandaloneMode>('uncommitted')
   const [baseBranch, setBaseBranch] = useState('main')
   const [range, setRange] = useState('')
@@ -20,7 +21,7 @@ export default function Simplify() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -53,13 +54,13 @@ export default function Simplify() {
   const getOperationIcon = (op: string) => {
     switch (op) {
       case 'create':
-        return <Plus size={14} className="text-success" />
+        return <Plus size={14} aria-hidden="true" className="text-success" />
       case 'update':
-        return <Pencil size={14} className="text-info" />
+        return <Pencil size={14} aria-hidden="true" className="text-info" />
       case 'delete':
-        return <Trash2 size={14} className="text-error" />
+        return <Trash2 size={14} aria-hidden="true" className="text-error" />
       default:
-        return <FileText size={14} />
+        return <FileText size={14} aria-hidden="true" />
     }
   }
 
@@ -101,8 +102,9 @@ export default function Simplify() {
               void handleRun()
             }}
           >
-            <FormField label="Target Mode">
+            <FormField label="Target Mode" inputId={`${id}-mode`}>
               <select
+                id={`${id}-mode`}
                 value={mode}
                 onChange={(e) => setMode(e.target.value as StandaloneMode)}
                 className="select select-bordered w-full"
@@ -143,8 +145,9 @@ export default function Simplify() {
               />
             )}
 
-            <FormField label="Context Lines" hint={`${context} lines (0 to 10)`}>
+            <FormField label="Context Lines" hint={`${context} lines (0 to 10)`} inputId={`${id}-context`}>
               <input
+                id={`${id}-context`}
                 type="range"
                 min={0}
                 max={10}
@@ -179,12 +182,12 @@ export default function Simplify() {
             >
               {simplifyMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                   Simplifying...
                 </>
               ) : (
                 <>
-                  <Sparkles size={18} />
+                  <Sparkles size={18} aria-hidden="true" />
                   Run Simplify
                 </>
               )}
@@ -196,7 +199,7 @@ export default function Simplify() {
       {/* Error */}
       {simplifyMutation.isError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>{simplifyMutation.error.message}</span>
         </div>
       )}
@@ -222,7 +225,7 @@ export default function Simplify() {
               <div className="stat">
                 <div className="stat-title">Cost</div>
                 <div className="stat-value text-success flex items-center gap-1">
-                  <DollarSign size={20} />
+                  <DollarSign size={20} aria-hidden="true" />
                   {usage.cost_usd.toFixed(4)}
                 </div>
               </div>
@@ -243,7 +246,7 @@ export default function Simplify() {
           {changes.length === 0 ? (
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body text-center py-12">
-                <CheckCircle className="w-12 h-12 mx-auto text-success mb-4" />
+                <CheckCircle aria-hidden="true" className="w-12 h-12 mx-auto text-success mb-4" />
                 <h2 className="text-lg font-medium">No Changes Needed</h2>
                 <p className="text-base-content/60 mt-2">
                   The code is already simplified or no improvements were found.
@@ -277,7 +280,7 @@ export default function Simplify() {
           {/* Error from response */}
           {simplifyMutation.data.error && (
             <div className="alert alert-warning">
-              <AlertCircle size={18} />
+              <AlertCircle size={18} aria-hidden="true" />
               <span>{simplifyMutation.data.error}</span>
             </div>
           )}

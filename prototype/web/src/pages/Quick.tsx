@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import {
   Loader2,
   AlertCircle,
@@ -28,9 +28,11 @@ import {
   useSubmitSource,
   type QuickTask,
 } from '@/api/quick'
+import { AccessibleModal } from '@/components/ui/AccessibleModal'
 
 export default function Quick() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const id = useId()
 
   // Form state for new task
   const [title, setTitle] = useState('')
@@ -69,7 +71,7 @@ export default function Quick() {
   if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 aria-hidden="true" className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -199,7 +201,7 @@ export default function Quick() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Plus size={18} />
+                  <Plus size={18} aria-hidden="true" />
                   New Quick Task
                 </h3>
                 <p className="text-sm text-base-content/60 mt-1">
@@ -211,10 +213,11 @@ export default function Quick() {
 
             <form onSubmit={handleCreate} className="space-y-5">
               <div className="form-control">
-                <label className="label py-1">
+                <label className="label py-1" htmlFor={`${id}-title`}>
                   <span className="label-text font-medium">Title (optional)</span>
                 </label>
                 <input
+                  id={`${id}-title`}
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -224,29 +227,31 @@ export default function Quick() {
               </div>
 
               <div className="form-control">
-                <label className="label py-1">
+                <label className="label py-1" htmlFor={`${id}-desc`}>
                   <span className="label-text font-medium">Description *</span>
                 </label>
                 <textarea
+                  id={`${id}-desc`}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What needs to be done?"
                   className="textarea textarea-bordered h-28 w-full"
                   required
                 />
-                <label className="label py-1">
+                <div className="label py-1">
                   <span className="label-text-alt text-base-content/55">
                     Be specific enough that someone else could start work directly.
                   </span>
-                </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
-                  <label className="label py-1">
+                  <label className="label py-1" htmlFor={`${id}-priority`}>
                     <span className="label-text font-medium">Priority</span>
                   </label>
                   <select
+                    id={`${id}-priority`}
                     value={priority}
                     onChange={(e) => setPriority(Number(e.target.value))}
                     className="select select-bordered w-full"
@@ -258,10 +263,11 @@ export default function Quick() {
                 </div>
 
                 <div className="form-control">
-                  <label className="label py-1">
+                  <label className="label py-1" htmlFor={`${id}-labels`}>
                     <span className="label-text font-medium">Labels (comma-separated)</span>
                   </label>
                   <input
+                    id={`${id}-labels`}
                     type="text"
                     value={labels}
                     onChange={(e) => setLabels(e.target.value)}
@@ -278,9 +284,9 @@ export default function Quick() {
                   disabled={!description.trim() || createMutation.isPending}
                 >
                   {createMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Plus size={18} />
+                    <Plus size={18} aria-hidden="true" />
                   )}
                   Create Task
                 </button>
@@ -289,7 +295,7 @@ export default function Quick() {
 
             {createMutation.isError && (
               <div className="alert alert-error">
-                <AlertCircle size={18} />
+                <AlertCircle size={18} aria-hidden="true" />
                 <span>{createMutation.error.message}</span>
               </div>
             )}
@@ -306,24 +312,25 @@ export default function Quick() {
             >
               <div>
                 <h3 className="font-semibold flex items-center gap-2">
-                  <ExternalLink size={18} />
+                  <ExternalLink size={18} aria-hidden="true" />
                   Import from External Source
                 </h3>
                 <p className="text-sm text-base-content/60 mt-1">
                   Pull an existing issue, ticket, or task into your queue.
                 </p>
               </div>
-              {showSourceForm ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showSourceForm ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
             </button>
 
             {showSourceForm && (
               <form onSubmit={handleSourceSubmit} className="space-y-5 pt-5">
                 <div className="grid grid-cols-1 gap-4">
                   <div className="form-control">
-                    <label className="label py-1">
+                    <label className="label py-1" htmlFor={`${id}-src-provider`}>
                       <span className="label-text font-medium">Provider</span>
                     </label>
                     <select
+                      id={`${id}-src-provider`}
                       value={sourceProvider}
                       onChange={(e) => setSourceProvider(e.target.value)}
                       className="select select-bordered w-full"
@@ -339,10 +346,11 @@ export default function Quick() {
                   </div>
 
                   <div className="form-control">
-                    <label className="label py-1">
+                    <label className="label py-1" htmlFor={`${id}-src-ref`}>
                       <span className="label-text font-medium">Reference (URL or ID)</span>
                     </label>
                     <input
+                      id={`${id}-src-ref`}
                       type="text"
                       value={sourceRef}
                       onChange={(e) => setSourceRef(e.target.value)}
@@ -354,10 +362,11 @@ export default function Quick() {
                 </div>
 
                 <div className="form-control">
-                  <label className="label py-1">
+                  <label className="label py-1" htmlFor={`${id}-src-notes`}>
                     <span className="label-text font-medium">Notes (optional)</span>
                   </label>
                   <textarea
+                    id={`${id}-src-notes`}
                     value={sourceNotes}
                     onChange={(e) => setSourceNotes(e.target.value)}
                     placeholder="Additional context or instructions"
@@ -384,9 +393,9 @@ export default function Quick() {
                     disabled={!sourceRef.trim() || submitSourceMutation.isPending}
                   >
                     {submitSourceMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                     ) : (
-                      <ExternalLink size={18} />
+                      <ExternalLink size={18} aria-hidden="true" />
                     )}
                     Import & Submit
                   </button>
@@ -412,7 +421,7 @@ export default function Quick() {
 
                 {submitSourceMutation.isError && (
                   <div className="alert alert-error mt-2">
-                    <AlertCircle size={18} />
+                    <AlertCircle size={18} aria-hidden="true" />
                     <span>{submitSourceMutation.error.message}</span>
                   </div>
                 )}
@@ -426,22 +435,22 @@ export default function Quick() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="font-medium mb-4 flex items-center gap-2">
-            <Zap size={18} />
+            <Zap size={18} aria-hidden="true" />
             Quick Tasks ({tasks.length})
           </h3>
 
           {tasksLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loader2 aria-hidden="true" className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : tasksError ? (
             <div className="alert alert-error">
-              <AlertCircle size={18} />
+              <AlertCircle size={18} aria-hidden="true" />
               <span>{tasksError instanceof Error ? tasksError.message : 'Failed to load tasks'}</span>
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center py-12">
-              <Zap size={48} className="mx-auto text-base-content/30 mb-4" />
+              <Zap size={48} aria-hidden="true" className="mx-auto text-base-content/30 mb-4" />
               <p className="text-base-content/60">No quick tasks yet</p>
               <p className="text-sm text-base-content/40 mt-1">
                 Create one above to get started
@@ -483,9 +492,9 @@ export default function Quick() {
                         title="Optimize with AI"
                       >
                         {optimizeMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Sparkles size={14} />
+                          <Sparkles size={14} aria-hidden="true" />
                         )}
                       </button>
                       <button
@@ -494,14 +503,14 @@ export default function Quick() {
                         disabled={exportMutation.isPending}
                         title="Export to markdown"
                       >
-                        <FileOutput size={14} />
+                        <FileOutput size={14} aria-hidden="true" />
                       </button>
                       <button
                         className="btn btn-ghost btn-xs"
                         onClick={() => setSubmitTaskId(task.id)}
                         title="Submit to provider"
                       >
-                        <Send size={14} />
+                        <Send size={14} aria-hidden="true" />
                       </button>
                       <button
                         className="btn btn-ghost btn-xs text-success"
@@ -509,15 +518,16 @@ export default function Quick() {
                         disabled={startMutation.isPending}
                         title="Start working"
                       >
-                        <Play size={14} />
+                        <Play size={14} aria-hidden="true" />
                       </button>
                       <button
                         className="btn btn-ghost btn-xs text-error"
                         onClick={() => handleDelete(task.id)}
                         disabled={deleteMutation.isPending}
                         title="Delete"
+                        aria-label="Delete task"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -531,12 +541,12 @@ export default function Quick() {
                         setExpandedTaskId(expandedTaskId === task.id ? null : task.id)
                       }
                     >
-                      <StickyNote size={14} />
+                      <StickyNote size={14} aria-hidden="true" />
                       Notes ({task.note_count})
                       {expandedTaskId === task.id ? (
-                        <ChevronUp size={14} />
+                        <ChevronUp size={14} aria-hidden="true" />
                       ) : (
-                        <ChevronDown size={14} />
+                        <ChevronDown size={14} aria-hidden="true" />
                       )}
                     </button>
 
@@ -579,129 +589,131 @@ export default function Quick() {
         </div>
       </div>
 
-      {/* Submit Modal */}
-      {submitTaskId && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">Submit Task</h3>
-            <p className="py-4 text-base-content/60">
-              Submit this task to an external provider.
-            </p>
+      {/* Submit modal */}
+      <AccessibleModal
+        isOpen={!!submitTaskId}
+        onClose={() => setSubmitTaskId(null)}
+        title="Submit Task"
+        size="lg"
+        actions={(
+          <>
+            <button className="btn btn-ghost" onClick={() => setSubmitTaskId(null)}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={submitMutation.isPending}
+            >
+              {submitMutation.isPending ? (
+                <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+              ) : (
+                'Submit'
+              )}
+            </button>
+          </>
+        )}
+      >
+        <p className="py-2 text-base-content/60">
+          Submit this task to an external provider.
+        </p>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Provider</span>
-              </label>
-              <select
-                value={submitProvider}
-                onChange={(e) => setSubmitProvider(e.target.value)}
-                className="select select-bordered"
-              >
-                <option value="github">GitHub</option>
-                <option value="gitlab">GitLab</option>
-                <option value="jira">Jira</option>
-                <option value="linear">Linear</option>
-              </select>
-            </div>
-
-            <div className="form-control mt-4">
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={submitDryRun}
-                  onChange={(e) => setSubmitDryRun(e.target.checked)}
-                  className="checkbox checkbox-primary"
-                />
-                <span className="label-text">Dry run (preview only)</span>
-              </label>
-            </div>
-
-            {submitMutation.isSuccess && (
-              <div className="alert alert-success mt-4">
-                <span>
-                  Submitted!{' '}
-                  {submitMutation.data.external_url && (
-                    <a
-                      href={submitMutation.data.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      View →
-                    </a>
-                  )}
-                </span>
-              </div>
-            )}
-
-            {submitMutation.isError && (
-              <div className="alert alert-error mt-4">
-                <AlertCircle size={18} />
-                <span>{submitMutation.error.message}</span>
-              </div>
-            )}
-
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setSubmitTaskId(null)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={submitMutation.isPending}
-              >
-                {submitMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Submit'
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setSubmitTaskId(null)} />
+        <div className="form-control">
+          <label className="label" htmlFor={`${id}-submit-provider`}>
+            <span className="label-text">Provider</span>
+          </label>
+          <select
+            id={`${id}-submit-provider`}
+            value={submitProvider}
+            onChange={(e) => setSubmitProvider(e.target.value)}
+            className="select select-bordered"
+          >
+            <option value="github">GitHub</option>
+            <option value="gitlab">GitLab</option>
+            <option value="jira">Jira</option>
+            <option value="linear">Linear</option>
+          </select>
         </div>
-      )}
+
+        <div className="form-control mt-4">
+          <label className="label cursor-pointer justify-start gap-3">
+            <input
+              type="checkbox"
+              checked={submitDryRun}
+              onChange={(e) => setSubmitDryRun(e.target.checked)}
+              className="checkbox checkbox-primary"
+            />
+            <span className="label-text">Dry run (preview only)</span>
+          </label>
+        </div>
+
+        {submitMutation.isSuccess && (
+          <div className="alert alert-success mt-4">
+            <span>
+              Submitted!{' '}
+              {submitMutation.data.external_url && (
+                <a
+                  href={submitMutation.data.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View →
+                </a>
+              )}
+            </span>
+          </div>
+        )}
+
+        {submitMutation.isError && (
+          <div className="alert alert-error mt-4">
+            <AlertCircle size={18} aria-hidden="true" />
+            <span>{submitMutation.error.message}</span>
+          </div>
+        )}
+      </AccessibleModal>
 
       {/* Delete confirmation modal */}
-      {deleteTaskId && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">Delete Task</h3>
-            <p className="py-4 text-base-content/60">
-              This removes the quick task permanently.
-            </p>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setDeleteTaskId(null)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-error"
-                onClick={handleConfirmDelete}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Delete'
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTaskId(null)} />
-        </div>
-      )}
+      <AccessibleModal
+        isOpen={!!deleteTaskId}
+        onClose={() => setDeleteTaskId(null)}
+        title="Delete Task"
+        size="md"
+        actions={(
+          <>
+            <button className="btn btn-ghost" onClick={() => setDeleteTaskId(null)}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-error"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+              ) : (
+                'Delete'
+              )}
+            </button>
+          </>
+        )}
+      >
+        <p className="py-2 text-base-content/60">
+          This removes the quick task permanently.
+        </p>
+      </AccessibleModal>
 
       {/* Global mutation errors */}
       {optimizeMutation.isError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>Optimization failed: {optimizeMutation.error.message}</span>
         </div>
       )}
 
       {startMutation.isError && (
         <div className="alert alert-error">
-          <AlertCircle size={18} />
+          <AlertCircle size={18} aria-hidden="true" />
           <span>Failed to start: {startMutation.error.message}</span>
         </div>
       )}

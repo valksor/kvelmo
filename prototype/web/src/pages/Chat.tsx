@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useId, useState, useRef, useEffect, useCallback } from 'react'
 import { Send, Loader2, StopCircle, Trash2, Terminal, MessageSquare } from 'lucide-react'
 import { apiRequest } from '@/api/client'
 
@@ -64,6 +64,7 @@ function formatCommandMessage(response: CommandResponse): string {
 }
 
 export default function Chat() {
+  const messageInputID = useId()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -239,7 +240,7 @@ export default function Chat() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <MessageSquare size={24} className="text-primary" />
+          <MessageSquare size={24} aria-hidden="true" className="text-primary" />
           <h1 className="text-2xl font-bold">Interactive Chat</h1>
         </div>
         <button
@@ -247,7 +248,7 @@ export default function Chat() {
           onClick={clearMessages}
           disabled={messages.length === 0}
         >
-          <Trash2 size={16} />
+          <Trash2 size={16} aria-hidden="true" />
           Clear
         </button>
       </div>
@@ -256,7 +257,7 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto rounded-lg bg-base-200/50 p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-base-content/50">
-            <Terminal size={48} className="mb-4" />
+            <Terminal size={48} aria-hidden="true" className="mb-4" />
             <p className="text-lg font-medium">Interactive Chat</p>
             <p className="text-sm mt-2">
               Chat with the AI agent or run workflow commands.
@@ -279,7 +280,11 @@ export default function Chat() {
 
       {/* Input area */}
       <div className="mt-4 flex gap-2">
+        <label htmlFor={messageInputID} className="sr-only">
+          Message input
+        </label>
         <textarea
+          id={messageInputID}
           ref={inputRef}
           className="textarea textarea-bordered flex-1 resize-none"
           placeholder={isLoading ? 'Waiting for response...' : 'Type a message or command...'}
@@ -294,8 +299,9 @@ export default function Chat() {
             className="btn btn-error"
             onClick={stopRequest}
             title="Stop request"
+            aria-label="Stop request"
           >
-            <StopCircle size={20} />
+            <StopCircle size={20} aria-hidden="true" />
           </button>
         ) : (
           <button
@@ -303,8 +309,9 @@ export default function Chat() {
             onClick={sendMessage}
             disabled={!input.trim()}
             title="Send (Enter)"
+            aria-label="Send message"
           >
-            <Send size={20} />
+            <Send size={20} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -365,7 +372,7 @@ function MessageBubble({ message, formatTime }: MessageBubbleProps) {
         <time className="text-xs opacity-50 ml-2">{formatTime(timestamp)}</time>
       </div>
       <div className={`chat-bubble ${bubbleColorClasses[role]} whitespace-pre-wrap`}>
-        {content || (isStreaming && <Loader2 className="w-4 h-4 animate-spin" />)}
+        {content || (isStreaming && <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />)}
       </div>
     </div>
   )
