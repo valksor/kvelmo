@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import {
   Globe,
   Brain,
@@ -55,6 +55,7 @@ import {
 // =============================================================================
 
 type DevToolsTab = 'network' | 'console' | 'websocket' | 'source' | 'coverage'
+const DEVTOOLS_TAB_ORDER: DevToolsTab[] = ['network', 'console', 'websocket', 'source', 'coverage']
 
 export function BrowserPanel() {
   const [url, setUrl] = useState('')
@@ -81,6 +82,9 @@ export function BrowserPanel() {
   const [coverageDuration, setCoverageDuration] = useState(5)
   const [coverageTrackJs, setCoverageTrackJs] = useState(true)
   const [coverageTrackCss, setCoverageTrackCss] = useState(true)
+
+  // Accessible IDs
+  const bid = useId()
 
   // Results
   const [screenshotData, setScreenshotData] = useState<string | null>(null)
@@ -190,12 +194,36 @@ export function BrowserPanel() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
 
   const isConnected = status?.connected
+  const handleDevToolsTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, current: DevToolsTab) => {
+    const currentIndex = DEVTOOLS_TAB_ORDER.indexOf(current)
+    if (currentIndex < 0) return
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      setDevToolsTab(DEVTOOLS_TAB_ORDER[(currentIndex + 1) % DEVTOOLS_TAB_ORDER.length])
+      return
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      setDevToolsTab(DEVTOOLS_TAB_ORDER[(currentIndex - 1 + DEVTOOLS_TAB_ORDER.length) % DEVTOOLS_TAB_ORDER.length])
+      return
+    }
+    if (e.key === 'Home') {
+      e.preventDefault()
+      setDevToolsTab(DEVTOOLS_TAB_ORDER[0])
+      return
+    }
+    if (e.key === 'End') {
+      e.preventDefault()
+      setDevToolsTab(DEVTOOLS_TAB_ORDER[DEVTOOLS_TAB_ORDER.length - 1])
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -211,26 +239,26 @@ export function BrowserPanel() {
                     className="btn btn-ghost btn-sm"
                     onClick={() => reloadMutation.mutate({})}
                     disabled={reloadMutation.isPending}
-                    title="Reload page"
+                    aria-label="Reload page"
                   >
-                    <RefreshCw size={16} />
+                    <RefreshCw size={16} aria-hidden="true" />
                   </button>
                 </>
               )}
-              <button className="btn btn-ghost btn-sm" onClick={() => refetch()}>
-                <RefreshCw size={16} />
+              <button className="btn btn-ghost btn-sm" onClick={() => refetch()} aria-label="Refresh status">
+                <RefreshCw size={16} aria-hidden="true" />
               </button>
             </div>
           </div>
 
           {isConnected ? (
             <div className="flex items-center gap-2 text-success">
-              <CheckCircle size={16} />
+              <CheckCircle size={16} aria-hidden="true" />
               <span>Connected to {status.host}:{status.port}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-error">
-              <XCircle size={16} />
+              <XCircle size={16} aria-hidden="true" />
               <span>{status?.error || 'Not connected'}</span>
             </div>
           )}
@@ -261,7 +289,7 @@ export function BrowserPanel() {
               className="btn btn-primary"
               disabled={!isConnected || !url.trim() || gotoMutation.isPending}
             >
-              {gotoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Go'}
+              {gotoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : 'Go'}
             </button>
           </form>
         </div>
@@ -278,7 +306,7 @@ export function BrowserPanel() {
                   key={tab.id}
                   className="flex items-center gap-3 p-2 rounded-lg bg-base-200/50 hover:bg-base-200"
                 >
-                  <Globe size={16} className="text-base-content/50 flex-shrink-0" />
+                  <Globe size={16} className="text-base-content/50 flex-shrink-0" aria-hidden="true" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{tab.title || 'Untitled'}</p>
                     <p className="text-xs text-base-content/50 truncate">{tab.url}</p>
@@ -286,17 +314,18 @@ export function BrowserPanel() {
                   <button
                     className="btn btn-ghost btn-xs text-error"
                     onClick={() => closeMutation.mutate({ tab_id: tab.id })}
-                    title="Close tab"
+                    aria-label="Close tab"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                   <a
                     href={tab.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-ghost btn-xs"
+                    aria-label="Open in new window"
                   >
-                    <ExternalLink size={14} />
+                    <ExternalLink size={14} aria-hidden="true" />
                   </a>
                 </div>
               ))}
@@ -315,10 +344,10 @@ export function BrowserPanel() {
               onClick={() => setShowInteractions(!showInteractions)}
             >
               <h3 className="card-title">
-                <MousePointer size={18} />
+                <MousePointer size={18} aria-hidden="true" />
                 Interactions
               </h3>
-              {showInteractions ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showInteractions ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
             </button>
 
             {showInteractions && (
@@ -326,15 +355,16 @@ export function BrowserPanel() {
                 {/* Screenshot */}
                 <div className="p-4 rounded-lg bg-base-200/50">
                   <h4 className="font-medium flex items-center gap-2 mb-3">
-                    <Camera size={16} />
+                    <Camera size={16} aria-hidden="true" />
                     Screenshot
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-4 items-end">
                     <div className="form-control">
-                      <label className="label py-1">
+                      <label className="label py-1" htmlFor={`${bid}-ss-format`}>
                         <span className="label-text">Format</span>
                       </label>
                       <select
+                        id={`${bid}-ss-format`}
                         className="select select-bordered"
                         value={screenshotFormat}
                         onChange={(e) => setScreenshotFormat(e.target.value as 'png' | 'jpeg')}
@@ -360,9 +390,9 @@ export function BrowserPanel() {
                       disabled={screenshotMutation.isPending}
                     >
                       {screenshotMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Camera size={16} />
+                        <Camera size={16} aria-hidden="true" />
                       )}
                       Capture
                     </button>
@@ -375,7 +405,7 @@ export function BrowserPanel() {
                         download={`screenshot.${screenshotFormat}`}
                         className="btn btn-sm btn-ghost mt-2"
                       >
-                        <Download size={14} />
+                        <Download size={14} aria-hidden="true" />
                         Download
                       </a>
                     </div>
@@ -385,15 +415,16 @@ export function BrowserPanel() {
                 {/* Click & Type */}
                 <div className="p-4 rounded-lg bg-base-200/50">
                   <h4 className="font-medium flex items-center gap-2 mb-3">
-                    <Type size={16} />
+                    <Type size={16} aria-hidden="true" />
                     Click & Type
                   </h4>
                   <div className="space-y-3">
                     <div className="form-control">
-                      <label className="label py-1">
+                      <label className="label py-1" htmlFor={`${bid}-css-selector`}>
                         <span className="label-text">CSS Selector</span>
                       </label>
                       <input
+                        id={`${bid}-css-selector`}
                         type="text"
                         className="input input-bordered"
                         placeholder="#submit, .btn-primary, [data-testid='login']"
@@ -407,16 +438,17 @@ export function BrowserPanel() {
                         onClick={handleClick}
                         disabled={!selector.trim() || clickMutation.isPending}
                       >
-                        {clickMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MousePointer size={16} />}
+                        {clickMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <MousePointer size={16} aria-hidden="true" />}
                         Click
                       </button>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 items-end">
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-type-text`}>
                           <span className="label-text">Text to type</span>
                         </label>
                         <input
+                          id={`${bid}-type-text`}
                           type="text"
                           className="input input-bordered"
                           placeholder="Hello world"
@@ -440,7 +472,7 @@ export function BrowserPanel() {
                         onClick={handleType}
                         disabled={!selector.trim() || typeMutation.isPending}
                       >
-                        {typeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Type size={16} />}
+                        {typeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Type size={16} aria-hidden="true" />}
                         Type
                       </button>
                     </div>
@@ -450,22 +482,28 @@ export function BrowserPanel() {
                 {/* Eval JS */}
                 <div className="p-4 rounded-lg bg-base-200/50">
                   <h4 className="font-medium flex items-center gap-2 mb-3">
-                    <Code size={16} />
+                    <Code size={16} aria-hidden="true" />
                     Evaluate JavaScript
                   </h4>
                   <div className="space-y-3">
-                    <textarea
-                      className="textarea textarea-bordered w-full h-24 font-mono text-sm"
-                      placeholder="document.title"
-                      value={evalExpr}
-                      onChange={(e) => setEvalExpr(e.target.value)}
-                    />
+                    <div className="form-control">
+                      <label className="label py-1" htmlFor={`${bid}-eval-expr`}>
+                        <span className="label-text">Expression</span>
+                      </label>
+                      <textarea
+                        id={`${bid}-eval-expr`}
+                        className="textarea textarea-bordered w-full h-24 font-mono text-sm"
+                        placeholder="document.title"
+                        value={evalExpr}
+                        onChange={(e) => setEvalExpr(e.target.value)}
+                      />
+                    </div>
                     <button
                       className="btn btn-sm btn-primary"
                       onClick={handleEval}
                       disabled={!evalExpr.trim() || evalMutation.isPending}
                     >
-                      {evalMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play size={14} />}
+                      {evalMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
                       Run
                     </button>
                     {evalResult !== null && (
@@ -479,7 +517,7 @@ export function BrowserPanel() {
                 {/* DOM Query */}
                 <div className="p-4 rounded-lg bg-base-200/50">
                   <h4 className="font-medium flex items-center gap-2 mb-3">
-                    <Search size={16} />
+                    <Search size={16} aria-hidden="true" />
                     DOM Query
                   </h4>
                   <div className="space-y-3">
@@ -512,7 +550,7 @@ export function BrowserPanel() {
                         onClick={handleDomQuery}
                         disabled={!selector.trim() || domMutation.isPending}
                       >
-                        {domMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={16} />}
+                        {domMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Search size={16} aria-hidden="true" />}
                         Query
                       </button>
                     </div>
@@ -556,67 +594,98 @@ export function BrowserPanel() {
               onClick={() => setShowDevTools(!showDevTools)}
             >
               <h3 className="card-title">
-                <Terminal size={18} />
+                <Terminal size={18} aria-hidden="true" />
                 DevTools
               </h3>
-              {showDevTools ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showDevTools ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
             </button>
 
             {showDevTools && (
               <div className="mt-4">
                 {/* DevTools tabs */}
-                <div role="tablist" className="tabs tabs-boxed mb-4">
+                <div role="tablist" aria-label="Browser DevTools tabs" className="tabs tabs-boxed mb-4">
                   <button
                     role="tab"
+                    id={`${bid}-devtools-tab-network`}
+                    aria-selected={devToolsTab === 'network'}
+                    aria-controls={`${bid}-devtools-panel-network`}
+                    tabIndex={devToolsTab === 'network' ? 0 : -1}
                     className={`tab gap-1 ${devToolsTab === 'network' ? 'tab-active' : ''}`}
                     onClick={() => setDevToolsTab('network')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'network')}
                   >
-                    <Network size={14} />
+                    <Network size={14} aria-hidden="true" />
                     Network
                   </button>
                   <button
                     role="tab"
+                    id={`${bid}-devtools-tab-console`}
+                    aria-selected={devToolsTab === 'console'}
+                    aria-controls={`${bid}-devtools-panel-console`}
+                    tabIndex={devToolsTab === 'console' ? 0 : -1}
                     className={`tab gap-1 ${devToolsTab === 'console' ? 'tab-active' : ''}`}
                     onClick={() => setDevToolsTab('console')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'console')}
                   >
-                    <Terminal size={14} />
+                    <Terminal size={14} aria-hidden="true" />
                     Console
                   </button>
                   <button
                     role="tab"
+                    id={`${bid}-devtools-tab-websocket`}
+                    aria-selected={devToolsTab === 'websocket'}
+                    aria-controls={`${bid}-devtools-panel-websocket`}
+                    tabIndex={devToolsTab === 'websocket' ? 0 : -1}
                     className={`tab gap-1 ${devToolsTab === 'websocket' ? 'tab-active' : ''}`}
                     onClick={() => setDevToolsTab('websocket')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'websocket')}
                   >
-                    <Globe size={14} />
+                    <Globe size={14} aria-hidden="true" />
                     WebSocket
                   </button>
                   <button
                     role="tab"
+                    id={`${bid}-devtools-tab-source`}
+                    aria-selected={devToolsTab === 'source'}
+                    aria-controls={`${bid}-devtools-panel-source`}
+                    tabIndex={devToolsTab === 'source' ? 0 : -1}
                     className={`tab gap-1 ${devToolsTab === 'source' ? 'tab-active' : ''}`}
                     onClick={() => setDevToolsTab('source')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'source')}
                   >
-                    <FileCode size={14} />
+                    <FileCode size={14} aria-hidden="true" />
                     Source
                   </button>
                   <button
                     role="tab"
+                    id={`${bid}-devtools-tab-coverage`}
+                    aria-selected={devToolsTab === 'coverage'}
+                    aria-controls={`${bid}-devtools-panel-coverage`}
+                    tabIndex={devToolsTab === 'coverage' ? 0 : -1}
                     className={`tab gap-1 ${devToolsTab === 'coverage' ? 'tab-active' : ''}`}
                     onClick={() => setDevToolsTab('coverage')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'coverage')}
                   >
-                    <BarChart3 size={14} />
+                    <BarChart3 size={14} aria-hidden="true" />
                     Coverage
                   </button>
                 </div>
 
                 {/* Network tab */}
                 {devToolsTab === 'network' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-network`}
+                    aria-labelledby={`${bid}-devtools-tab-network`}
+                    className="space-y-4"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-net-duration`}>
                           <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
+                          id={`${bid}-net-duration`}
                           type="number"
                           className="input input-bordered w-24"
                           value={networkDuration}
@@ -643,12 +712,12 @@ export function BrowserPanel() {
                       >
                         {networkMutation.isPending ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                             Monitoring...
                           </>
                         ) : (
                           <>
-                            <Network size={14} />
+                            <Network size={14} aria-hidden="true" />
                             Monitor
                           </>
                         )}
@@ -691,13 +760,19 @@ export function BrowserPanel() {
 
                 {/* Console tab */}
                 {devToolsTab === 'console' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-console`}
+                    aria-labelledby={`${bid}-devtools-tab-console`}
+                    className="space-y-4"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[220px_260px_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-con-duration`}>
                           <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
+                          id={`${bid}-con-duration`}
                           type="number"
                           className="input input-bordered w-24"
                           value={consoleDuration}
@@ -707,10 +782,11 @@ export function BrowserPanel() {
                         />
                       </div>
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-con-level`}>
                           <span className="label-text">Level filter</span>
                         </label>
                         <select
+                          id={`${bid}-con-level`}
                           className="select select-bordered"
                           value={consoleLevel}
                           onChange={(e) => setConsoleLevel(e.target.value)}
@@ -728,12 +804,12 @@ export function BrowserPanel() {
                       >
                         {consoleMutation.isPending ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                             Monitoring...
                           </>
                         ) : (
                           <>
-                            <Terminal size={14} />
+                            <Terminal size={14} aria-hidden="true" />
                             Monitor
                           </>
                         )}
@@ -761,13 +837,19 @@ export function BrowserPanel() {
 
                 {/* WebSocket tab */}
                 {devToolsTab === 'websocket' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-websocket`}
+                    aria-labelledby={`${bid}-devtools-tab-websocket`}
+                    className="space-y-4"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-[220px_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-ws-duration`}>
                           <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
+                          id={`${bid}-ws-duration`}
                           type="number"
                           className="input input-bordered w-24"
                           value={wsDuration}
@@ -783,12 +865,12 @@ export function BrowserPanel() {
                       >
                         {wsMutation.isPending ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                             Monitoring...
                           </>
                         ) : (
                           <>
-                            <Globe size={14} />
+                            <Globe size={14} aria-hidden="true" />
                             Monitor
                           </>
                         )}
@@ -813,16 +895,21 @@ export function BrowserPanel() {
 
                 {/* Source tab */}
                 {devToolsTab === 'source' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-source`}
+                    aria-labelledby={`${bid}-devtools-tab-source`}
+                    className="space-y-4"
+                  >
                     <button
                       className="btn btn-sm btn-primary"
                       onClick={handleGetSource}
                       disabled={sourceMutation.isPending}
                     >
                       {sourceMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                       ) : (
-                        <FileCode size={14} />
+                        <FileCode size={14} aria-hidden="true" />
                       )}
                       Get Page Source
                     </button>
@@ -831,8 +918,9 @@ export function BrowserPanel() {
                         <button
                           className="btn btn-ghost btn-xs absolute top-2 right-2"
                           onClick={() => copyToClipboard(pageSource)}
+                          aria-label="Copy to clipboard"
                         >
-                          <Copy size={14} />
+                          <Copy size={14} aria-hidden="true" />
                         </button>
                         <pre className="p-3 rounded bg-base-200 text-xs font-mono overflow-x-auto max-h-96">
                           {pageSource.substring(0, 5000)}
@@ -848,13 +936,19 @@ export function BrowserPanel() {
 
                 {/* Coverage tab */}
                 {devToolsTab === 'coverage' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-coverage`}
+                    aria-labelledby={`${bid}-devtools-tab-coverage`}
+                    className="space-y-4"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[220px_auto_auto_auto] gap-4 items-end">
                       <div className="form-control">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor={`${bid}-cov-duration`}>
                           <span className="label-text">Duration (seconds)</span>
                         </label>
                         <input
+                          id={`${bid}-cov-duration`}
                           type="number"
                           className="input input-bordered w-24"
                           value={coverageDuration}
@@ -896,12 +990,12 @@ export function BrowserPanel() {
                       >
                         {coverageMutation.isPending ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                             Measuring...
                           </>
                         ) : (
                           <>
-                            <BarChart3 size={14} />
+                            <BarChart3 size={14} aria-hidden="true" />
                             Measure
                           </>
                         )}
@@ -936,7 +1030,7 @@ export function BrowserPanel() {
       {/* Mutation errors */}
       {gotoMutation.isError && (
         <div className="alert alert-error">
-          <AlertCircle size={16} />
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{gotoMutation.error.message}</span>
         </div>
       )}
@@ -965,6 +1059,7 @@ export function MemoryPanel() {
   const [query, setQuery] = useState('')
   const [limit, setLimit] = useState(5)
   const [types, setTypes] = useState<string[]>([])
+  const mid = useId()
 
   const searchMutation = useMutation({
     mutationFn: (searchQuery: string) => {
@@ -1004,7 +1099,7 @@ export function MemoryPanel() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title">
-            <Brain size={20} />
+            <Brain size={20} aria-hidden="true" />
             Memory Search
           </h3>
           <p className="text-sm text-base-content/60">
@@ -1032,9 +1127,9 @@ export function MemoryPanel() {
                 disabled={!query.trim() || searchMutation.isPending}
               >
                 {searchMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Search size={16} />
+                  <Search size={16} aria-hidden="true" />
                 )}
                 Search
               </button>
@@ -1056,10 +1151,11 @@ export function MemoryPanel() {
             </div>
 
             <div className="form-control w-32">
-              <label className="label py-1">
+              <label className="label py-1" htmlFor={`${mid}-limit`}>
                 <span className="label-text">Results limit</span>
               </label>
               <input
+                id={`${mid}-limit`}
                 type="number"
                 className="input input-bordered w-full"
                 value={limit}
@@ -1107,7 +1203,7 @@ export function MemoryPanel() {
 
       {searchMutation.error && (
         <div className="alert alert-error">
-          <AlertCircle size={16} />
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{searchMutation.error instanceof Error ? searchMutation.error.message : 'Search failed'}</span>
         </div>
       )}
@@ -1144,6 +1240,7 @@ interface ScanResponse {
 export function SecurityPanel() {
   const [scanners, setScanners] = useState<string[]>(['gosec', 'gitleaks'])
   const [failLevel, setFailLevel] = useState('critical')
+  const sid = useId()
 
   const scanMutation = useMutation({
     mutationFn: () =>
@@ -1183,7 +1280,7 @@ export function SecurityPanel() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title">
-            <Shield size={20} />
+            <Shield size={20} aria-hidden="true" />
             Security Scan
           </h3>
           <p className="text-sm text-base-content/60">
@@ -1192,9 +1289,9 @@ export function SecurityPanel() {
 
           <div className="space-y-4 mt-4">
             <div>
-              <label className="label">
+              <div className="label">
                 <span className="label-text font-medium">Scanners</span>
-              </label>
+              </div>
               <div className="flex flex-wrap gap-3">
                 {scannerOptions.map((opt) => (
                   <label key={opt.value} className="label cursor-pointer gap-2">
@@ -1211,10 +1308,11 @@ export function SecurityPanel() {
             </div>
 
             <div className="form-control w-48">
-              <label className="label">
+              <label className="label" htmlFor={`${sid}-fail-level`}>
                 <span className="label-text font-medium">Fail Level</span>
               </label>
               <select
+                id={`${sid}-fail-level`}
                 className="select select-bordered"
                 value={failLevel}
                 onChange={(e) => setFailLevel(e.target.value)}
@@ -1234,12 +1332,12 @@ export function SecurityPanel() {
             >
               {scanMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   Scanning...
                 </>
               ) : (
                 <>
-                  <Play size={16} />
+                  <Play size={16} aria-hidden="true" />
                   Run Scan
                 </>
               )}
@@ -1256,12 +1354,12 @@ export function SecurityPanel() {
               <h3 className="card-title">Scan Results</h3>
               {scanMutation.data.passed ? (
                 <span className="badge badge-success gap-1">
-                  <CheckCircle size={14} />
+                  <CheckCircle size={14} aria-hidden="true" />
                   Passed
                 </span>
               ) : (
                 <span className="badge badge-error gap-1">
-                  <XCircle size={14} />
+                  <XCircle size={14} aria-hidden="true" />
                   Issues Found
                 </span>
               )}
@@ -1299,6 +1397,7 @@ export function SecurityPanel() {
                     <div className="flex items-start gap-2">
                       <AlertTriangle
                         size={16}
+                        aria-hidden="true"
                         className={
                           finding.severity === 'critical'
                             ? 'text-error'
@@ -1334,7 +1433,7 @@ export function SecurityPanel() {
 
       {scanMutation.error && (
         <div className="alert alert-error">
-          <AlertCircle size={16} />
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{scanMutation.error instanceof Error ? scanMutation.error.message : 'Scan failed'}</span>
         </div>
       )}
@@ -1397,7 +1496,7 @@ export function StackPanel() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     )
   }
@@ -1405,7 +1504,7 @@ export function StackPanel() {
   if (error) {
     return (
       <div className="alert alert-error">
-        <AlertCircle size={16} />
+        <AlertCircle size={16} aria-hidden="true" />
         <span>{error instanceof Error ? error.message : 'Failed to load stacks'}</span>
       </div>
     )
@@ -1419,7 +1518,7 @@ export function StackPanel() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="card-title">
-                <Layers size={20} />
+                <Layers size={20} aria-hidden="true" />
                 Task Stacks
               </h3>
               <p className="text-sm text-base-content/60">
@@ -1431,8 +1530,9 @@ export function StackPanel() {
                 className="btn btn-ghost btn-sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
+                aria-label="Refresh stacks"
               >
-                <RefreshCw size={16} />
+                <RefreshCw size={16} aria-hidden="true" />
               </button>
               <button
                 className="btn btn-primary btn-sm"
@@ -1440,7 +1540,7 @@ export function StackPanel() {
                 disabled={syncMutation.isPending}
               >
                 {syncMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 ) : (
                   'Sync All'
                 )}
@@ -1454,7 +1554,7 @@ export function StackPanel() {
       {!data?.stacks || data.stacks.length === 0 ? (
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body text-center py-12">
-            <Layers size={48} className="mx-auto text-base-content/30 mb-4" />
+            <Layers size={48} className="mx-auto text-base-content/30 mb-4" aria-hidden="true" />
             <p className="text-base-content/60">No task stacks found.</p>
             <p className="text-sm text-base-content/40">
               Stacks are created when tasks have dependencies on other tasks.
@@ -1472,7 +1572,7 @@ export function StackPanel() {
                     <span className="badge badge-sm">{stack.task_count} tasks</span>
                     {stack.has_conflict && (
                       <span className="badge badge-error badge-sm gap-1">
-                        <AlertTriangle size={12} />
+                        <AlertTriangle size={12} aria-hidden="true" />
                         Conflict
                       </span>
                     )}
@@ -1486,7 +1586,7 @@ export function StackPanel() {
                     disabled={rebaseMutation.isPending}
                   >
                     {rebaseMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                     ) : (
                       'Rebase'
                     )}
