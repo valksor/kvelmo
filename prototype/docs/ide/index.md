@@ -38,6 +38,8 @@ All IDE integrations require:
 2. **Server running** - `mehr serve` in your project directory
 3. **IDE plugin installed** - See integration-specific docs
 
+> **Windows users:** Your IDE runs on Windows while Mehrhof runs inside WSL2. Both VS Code and JetBrains have native WSL support that makes this seamless. See the integration-specific docs below for WSL setup, or the [Windows & WSL2 Guide](/guides/windows-wsl.md) for general tips.
+
 ## JetBrains
 
 Supports IntelliJ IDEA, GoLand, WebStorm, PyCharm, and other JetBrains IDEs (2025.1+).

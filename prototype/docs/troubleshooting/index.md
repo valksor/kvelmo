@@ -473,6 +473,14 @@ cat .mehrhof/config.yaml | python -c "import yaml,sys; yaml.safe_load(sys.stdin)
 
 ---
 
+## Windows / WSL2
+
+For WSL-specific issues (browser won't open, slow builds, networking, Docker, permissions), see the dedicated [Windows / WSL2 Troubleshooting](/troubleshooting/windows-wsl.md) page.
+
+**Most common fix:** If Mehrhof feels slow on Windows, move your project from `/mnt/c/` to the Linux filesystem (`~/projects/`). See [Windows & WSL2 Guide](/guides/windows-wsl.md#project-location-important).
+
+---
+
 ## Report Issues
 
 1. Note the error message

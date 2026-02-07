@@ -8,6 +8,7 @@
 
 - **Guides**
   - [Getting Started with the CLI](guides/first-task.md)
+  - [Windows & WSL2](guides/windows-wsl.md)
   - [Company Guidelines](guides/company-guidelines.md)
   - [Iterative Workflow](guides/iterative-workflow.md)
   - [Recovery & Undo](guides/recovery.md)
@@ -198,6 +199,7 @@
 
 - **Troubleshooting**
   - [Common Issues](troubleshooting/index.md)
+  - [Windows / WSL2](troubleshooting/windows-wsl.md)
 
 - **Legal**
   - [License](legal/license.md)

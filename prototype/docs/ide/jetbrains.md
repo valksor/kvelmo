@@ -7,6 +7,33 @@ Native plugin for JetBrains IDEs (IntelliJ IDEA, GoLand, WebStorm, PyCharm, etc.
 - JetBrains IDE **2025.1** or later
 - `mehr` CLI installed (auto-detected from common paths)
 
+## Windows (WSL)
+
+Windows users run Mehrhof inside WSL2. JetBrains 2025.1+ supports opening projects directly from the WSL filesystem.
+
+### Setup
+
+1. Open your project via the WSL path:
+   - **File > Open** and navigate to `\\wsl$\Ubuntu\home\yourname\project`
+   - Or use **File > Remote Development > WSL** for the dedicated WSL backend
+
+2. Start `mehr serve` in a WSL terminal (either the IDE's built-in terminal or a separate Windows Terminal tab):
+   ```bash
+   cd ~/projects/your-project
+   mehr serve
+   ```
+
+3. Configure the plugin's server URL if auto-detection doesn't find the running server:
+   - **Settings > Tools > Mehrhof > Server URL**: `http://localhost:8080`
+
+### Tips
+
+- **Store projects on the Linux filesystem** (`~/projects/`), not `/mnt/c/`. File indexing and builds are significantly faster. See [Windows & WSL2 Guide](/guides/windows-wsl.md#project-location-important).
+- The `mehr executable` setting auto-detects from common Linux paths (`~/.local/bin`, `/usr/local/bin`). Set it manually only if needed.
+- On older Windows builds where `localhost` doesn't forward to WSL, find the WSL IP with `hostname -I` and use that in the Server URL setting.
+
+For more WSL tips, see the [Windows & WSL2 Guide](/guides/windows-wsl.md).
+
 ## Installation
 
 ### From GitHub Releases
