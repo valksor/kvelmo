@@ -101,12 +101,12 @@ Search semantic memory for similar past tasks, code changes, and solutions.
 
 Each result shows:
 
-| Field | Description |
-|-------|-------------|
-| **Type** | Document category |
+| Field       | Description             |
+|-------------|-------------------------|
+| **Type**    | Document category       |
 | **Task ID** | Source task (truncated) |
-| **Match** | Similarity percentage |
-| **Content** | Relevant excerpt |
+| **Match**   | Similarity percentage   |
+| **Content** | Relevant excerpt        |
 
 Higher match percentages indicate stronger semantic similarity.
 
@@ -120,16 +120,16 @@ Run security scanners to detect vulnerabilities, exposed secrets, and dependency
 
 ### Available Scanners
 
-| Scanner | Purpose |
-|---------|---------|
-| **GoSec** | Go static analysis (SAST) |
-| **GitLeaks** | Secret detection |
-| **Go Vuln Check** | Go vulnerability database |
-| **Semgrep** | Multi-language SAST |
-| **NPM Audit** | JavaScript dependencies |
+| Scanner             | Purpose                   |
+|---------------------|---------------------------|
+| **GoSec**           | Go static analysis (SAST) |
+| **GitLeaks**        | Secret detection          |
+| **Go Vuln Check**   | Go vulnerability database |
+| **Semgrep**         | Multi-language SAST       |
+| **NPM Audit**       | JavaScript dependencies   |
 | **ESLint Security** | JavaScript security rules |
-| **Bandit** | Python security analysis |
-| **Pip Audit** | Python dependencies |
+| **Bandit**          | Python security analysis  |
+| **Pip Audit**       | Python dependencies       |
 
 ### Running a Scan
 

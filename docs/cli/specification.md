@@ -44,12 +44,12 @@ mehr specification diff <number> --file <path> [flags]
 
 **Flags:**
 
-| Flag        | Short | Type   | Default | Description                                  |
-|-------------|-------|--------|---------|----------------------------------------------|
-| `--number`  | `-n`  | int    | 0       | Specification number                          |
-| `--file`    | `-f`  | string | ""      | Implemented file path (required)              |
-| `--context` | `-c`  | int    | 3       | Number of context lines in the unified diff   |
-| `--output`  | `-o`  | string | ""      | Save diff to file instead of printing         |
+| Flag        | Short | Type   | Default | Description                                 |
+|-------------|-------|--------|---------|---------------------------------------------|
+| `--number`  | `-n`  | int    | 0       | Specification number                        |
+| `--file`    | `-f`  | string | ""      | Implemented file path (required)            |
+| `--context` | `-c`  | int    | 3       | Number of context lines in the unified diff |
+| `--output`  | `-o`  | string | ""      | Save diff to file instead of printing       |
 
 ## Examples
 

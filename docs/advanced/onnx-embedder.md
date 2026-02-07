@@ -67,12 +67,12 @@ memory:
 
 ## Platform Support
 
-| Platform     | Embedder Binary | Notes                           |
-|--------------|-----------------|---------------------------------|
-| linux-amd64  | Available       | Native ONNX support             |
-| linux-arm64  | Available       | Native ONNX support             |
-| darwin-arm64 | Available       | Apple Silicon                   |
-| darwin-amd64 | Available       | Intel Macs                      |
+| Platform     | Embedder Binary | Notes                                          |
+|--------------|-----------------|------------------------------------------------|
+| linux-amd64  | Available       | Native ONNX support                            |
+| linux-arm64  | Available       | Native ONNX support                            |
+| darwin-arm64 | Available       | Apple Silicon                                  |
+| darwin-amd64 | Available       | Intel Macs                                     |
 | windows      | WSL only        | Use Linux binary (`amd64`/`arm64`) inside WSL2 |
 
 On unsupported native platforms or architectures, Mehrhof falls back to hash-based embeddings automatically. No error is raised; semantic search uses keyword matching in that mode.

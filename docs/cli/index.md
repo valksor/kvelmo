@@ -78,7 +78,7 @@ These flags work with any command:
 |-----------------------------|------------------------------------|
 | [serve](cli/serve.md)       | Start web UI server                |
 | [register](cli/register.md) | Register project for global access |
-| unregister                   | Remove project from registry       |
+| unregister                  | Remove project from registry       |
 
 ### Utility
 

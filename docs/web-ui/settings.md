@@ -8,9 +8,9 @@ From the navigation bar, click **Settings**. In global mode, you must first sele
 
 The Settings page is organized into three sections that match the top navigation structure:
 
-| Section | What it contains |
-|---------|------------------|
-| **Work** | Git, agent defaults, workflow, project storage, and provider connections |
+| Section      | What it contains                                                                                              |
+|--------------|---------------------------------------------------------------------------------------------------------------|
+| **Work**     | Git, agent defaults, workflow, project storage, and provider connections                                      |
 | **Advanced** | Agent aliases, budget, stack options, update patterns, memory, security, sandbox, and other advanced features |
 
 Each settings block is collapsible. Use the chevron on the right side of each block header to expand or collapse details.
@@ -23,39 +23,39 @@ The **Work** section controls day-to-day workflow behavior.
 
 Configure version control integration:
 
-| Setting | Description |
-|---------|-------------|
-| **Commit Prefix** | Pattern for commit messages (use `{key}`, `{type}`, `{slug}`) |
-| **Branch Pattern** | Pattern for branch names |
-| **Default Branch** | Override branch detection (e.g., main, develop) |
-| **Auto Commit** | Commit automatically after implementation |
-| **Sign Commits** | GPG sign commits |
-| **Stash on Start** | Auto-stash changes before creating branch |
-| **Auto Pop Stash** | Pop stash after branch creation |
+| Setting            | Description                                                   |
+|--------------------|---------------------------------------------------------------|
+| **Commit Prefix**  | Pattern for commit messages (use `{key}`, `{type}`, `{slug}`) |
+| **Branch Pattern** | Pattern for branch names                                      |
+| **Default Branch** | Override branch detection (e.g., main, develop)               |
+| **Auto Commit**    | Commit automatically after implementation                     |
+| **Sign Commits**   | GPG sign commits                                              |
+| **Stash on Start** | Auto-stash changes before creating branch                     |
+| **Auto Pop Stash** | Pop stash after branch creation                               |
 
 ### Agent Settings
 
 Configure AI agent behavior:
 
-| Setting | Description |
-|---------|-------------|
-| **Default Agent** | Agent to use when not specified |
-| **Timeout** | Maximum time for agent execution (seconds) |
-| **Max Retries** | Retry count on transient failures |
-| **Instructions** | Global instructions included in all prompts |
-| **Optimize Prompts** | Optimize prompts for token efficiency |
+| Setting              | Description                                 |
+|----------------------|---------------------------------------------|
+| **Default Agent**    | Agent to use when not specified             |
+| **Timeout**          | Maximum time for agent execution (seconds)  |
+| **Max Retries**      | Retry count on transient failures           |
+| **Instructions**     | Global instructions included in all prompts |
+| **Optimize Prompts** | Optimize prompts for token efficiency       |
 
 ### Agent Aliases
 
 Create custom aliases that wrap base agents with additional configuration.
 Location: **Settings → Advanced**.
 
-| Field | Description |
-|-------|-------------|
-| **Extends** | Base agent to wrap (e.g., claude, codex) |
+| Field           | Description                                     |
+|-----------------|-------------------------------------------------|
+| **Extends**     | Base agent to wrap (e.g., claude, codex)        |
 | **Binary Path** | Custom path to agent binary (overrides default) |
-| **Description** | Human-readable description |
-| **Args** | Space-separated CLI arguments |
+| **Description** | Human-readable description                      |
+| **Args**        | Space-separated CLI arguments                   |
 
 Click **Add Alias** to create a new alias. Click the trash icon to remove one.
 
@@ -63,12 +63,12 @@ Click **Add Alias** to create a new alias. Click the trash icon to remove one.
 
 Configure task lifecycle:
 
-| Setting | Description |
-|---------|-------------|
-| **Auto Init** | Auto-initialize new workspaces |
-| **Session Retention** | Days to keep session history |
-| **Delete Work on Finish** | Clean up work directory after finish |
-| **Delete Work on Abandon** | Clean up work directory on abandon |
+| Setting                    | Description                          |
+|----------------------------|--------------------------------------|
+| **Auto Init**              | Auto-initialize new workspaces       |
+| **Session Retention**      | Days to keep session history         |
+| **Delete Work on Finish**  | Clean up work directory after finish |
+| **Delete Work on Abandon** | Clean up work directory on abandon   |
 
 ### Budget Settings
 
@@ -91,32 +91,32 @@ Location: **Settings → Advanced**.
 
 Configure directory layout:
 
-| Setting | Description |
-|---------|-------------|
-| **Code Directory** | Separate code directory (relative or absolute) |
-| **Project Directory** | Where to store work files |
-| **Save in Project** | Store work in project directory instead of global |
+| Setting               | Description                                       |
+|-----------------------|---------------------------------------------------|
+| **Code Directory**    | Separate code directory (relative or absolute)    |
+| **Project Directory** | Where to store work files                         |
+| **Save in Project**   | Store work in project directory instead of global |
 
 ### Stack Settings
 
 Configure stacked feature branches:
 Location: **Settings → Advanced**.
 
-| Setting | Description |
-|---------|-------------|
-| **Auto Rebase** | When to auto-rebase child branches (disabled, on_finish) |
-| **Block on Conflicts** | Block auto-rebase if conflicts detected |
+| Setting                | Description                                              |
+|------------------------|----------------------------------------------------------|
+| **Auto Rebase**        | When to auto-rebase child branches (disabled, on_finish) |
+| **Block on Conflicts** | Block auto-rebase if conflicts detected                  |
 
 ### Updates & Patterns
 
 Location: **Settings → Advanced**.
 
-| Setting | Description |
-|---------|-------------|
-| **Enable Update Checks** | Check for new versions |
-| **Check Interval** | Hours between update checks |
-| **Specification Pattern** | Filename pattern for specs |
-| **Review Pattern** | Filename pattern for reviews |
+| Setting                   | Description                  |
+|---------------------------|------------------------------|
+| **Enable Update Checks**  | Check for new versions       |
+| **Check Interval**        | Hours between update checks  |
+| **Specification Pattern** | Filename pattern for specs   |
+| **Review Pattern**        | Filename pattern for reviews |
 
 ## Provider Settings (Work)
 
@@ -124,51 +124,51 @@ Configure authentication and settings for external task providers.
 
 ### Default Provider
 
-| Setting | Description |
-|---------|-------------|
+| Setting              | Description                                                  |
+|----------------------|--------------------------------------------------------------|
 | **Default Provider** | Provider for bare task references (file, github, jira, etc.) |
-| **Default Mention** | Mention text when submitting tasks |
+| **Default Mention**  | Mention text when submitting tasks                           |
 
 ### GitHub
 
-| Setting | Description |
-|---------|-------------|
-| **Token** | Personal access token |
-| **Owner** | Repository owner |
-| **Repository** | Repository name |
-| **Target Branch** | Default branch for PRs |
-| **Draft PRs** | Create PRs as draft by default |
+| Setting           | Description                    |
+|-------------------|--------------------------------|
+| **Token**         | Personal access token          |
+| **Owner**         | Repository owner               |
+| **Repository**    | Repository name                |
+| **Target Branch** | Default branch for PRs         |
+| **Draft PRs**     | Create PRs as draft by default |
 
 ### GitLab
 
-| Setting | Description |
-|---------|-------------|
-| **Token** | Personal access token |
-| **Host** | GitLab host (default: gitlab.com) |
-| **Project Path** | Path like `group/project` |
+| Setting          | Description                       |
+|------------------|-----------------------------------|
+| **Token**        | Personal access token             |
+| **Host**         | GitLab host (default: gitlab.com) |
+| **Project Path** | Path like `group/project`         |
 
 ### Jira
 
-| Setting | Description |
-|---------|-------------|
-| **Token** | API token |
-| **Email** | Email for Cloud authentication |
-| **Base URL** | Jira instance URL |
-| **Project** | Default project key |
+| Setting      | Description                    |
+|--------------|--------------------------------|
+| **Token**    | API token                      |
+| **Email**    | Email for Cloud authentication |
+| **Base URL** | Jira instance URL              |
+| **Project**  | Default project key            |
 
 ### Linear
 
-| Setting | Description |
-|---------|-------------|
-| **Token** | API key |
-| **Team** | Default team key |
+| Setting   | Description      |
+|-----------|------------------|
+| **Token** | API key          |
+| **Team**  | Default team key |
 
 ### Notion
 
-| Setting | Description |
-|---------|-------------|
-| **Token** | Integration token |
-| **Database ID** | Default database |
+| Setting             | Description              |
+|---------------------|--------------------------|
+| **Token**           | Integration token        |
+| **Database ID**     | Default database         |
 | **Status Property** | Property name for status |
 
 ### Other Providers
@@ -183,96 +183,96 @@ Enable and configure optional features.
 
 Control Chrome automation for testing and verification:
 
-| Setting | Description |
-|---------|-------------|
-| **Enable Browser** | Allow AI agents to control a browser |
-| **Port** | Chrome debugging port (0 = random) |
-| **Timeout** | Seconds before timeout |
-| **Screenshot Directory** | Where to save screenshots |
-| **Headless** | Run browser without UI |
-| **Auto-load/save Cookies** | Persist browser cookies |
+| Setting                    | Description                          |
+|----------------------------|--------------------------------------|
+| **Enable Browser**         | Allow AI agents to control a browser |
+| **Port**                   | Chrome debugging port (0 = random)   |
+| **Timeout**                | Seconds before timeout               |
+| **Screenshot Directory**   | Where to save screenshots            |
+| **Headless**               | Run browser without UI               |
+| **Auto-load/save Cookies** | Persist browser cookies              |
 
 ### MCP (Model Context Protocol)
 
-| Setting | Description |
-|---------|-------------|
+| Setting               | Description                             |
+|-----------------------|-----------------------------------------|
 | **Enable MCP Server** | Allow AI agents to call Mehrhof via MCP |
-| **Rate Limit** | Requests per second |
-| **Burst Size** | Maximum burst requests |
+| **Rate Limit**        | Requests per second                     |
+| **Burst Size**        | Maximum burst requests                  |
 
 ### Security Scanning
 
 Configure automated security checks:
 
-| Setting | Description |
-|---------|-------------|
-| **Enable Security Scanning** | Scan code for vulnerabilities |
-| **Run On** | When to scan (planning, implementing, reviewing) |
-| **Fail On** | Severity level that blocks completion |
-| **Block Finish** | Block task completion on failures |
-| **Scanners** | Enable SAST, Secrets, Dependencies, License checks |
+| Setting                      | Description                                        |
+|------------------------------|----------------------------------------------------|
+| **Enable Security Scanning** | Scan code for vulnerabilities                      |
+| **Run On**                   | When to scan (planning, implementing, reviewing)   |
+| **Fail On**                  | Severity level that blocks completion              |
+| **Block Finish**             | Block task completion on failures                  |
+| **Scanners**                 | Enable SAST, Secrets, Dependencies, License checks |
 
 ### Memory System
 
 Configure semantic memory:
 
-| Setting | Description |
-|---------|-------------|
-| **Enable Memory** | Enable semantic search and learning |
-| **Backend** | Vector database (ChromaDB, Pinecone, etc.) |
-| **Connection String** | Database connection |
-| **Embedding Model** | Hash-based (default) or ONNX (semantic) |
-| **Max Results** | Search results limit |
-| **Similarity Threshold** | Minimum match score (0-1) |
+| Setting                  | Description                                |
+|--------------------------|--------------------------------------------|
+| **Enable Memory**        | Enable semantic search and learning        |
+| **Backend**              | Vector database (ChromaDB, Pinecone, etc.) |
+| **Connection String**    | Database connection                        |
+| **Embedding Model**      | Hash-based (default) or ONNX (semantic)    |
+| **Max Results**          | Search results limit                       |
+| **Similarity Threshold** | Minimum match score (0-1)                  |
 
 ### Sandbox
 
 Isolate agent execution:
 
-| Setting | Description |
-|---------|-------------|
+| Setting            | Description             |
+|--------------------|-------------------------|
 | **Enable Sandbox** | Isolate agent execution |
-| **Allow Network** | Required for LLM APIs |
-| **Tmp Directory** | Temporary file location |
+| **Allow Network**  | Required for LLM APIs   |
+| **Tmp Directory**  | Temporary file location |
 
 ### Quality & Linters
 
-| Setting | Description |
-|---------|-------------|
-| **Enable Quality Checks** | Run linters and formatters |
-| **Use Defaults** | Auto-enable linters for detected languages |
+| Setting                   | Description                                |
+|---------------------------|--------------------------------------------|
+| **Enable Quality Checks** | Run linters and formatters                 |
+| **Use Defaults**          | Auto-enable linters for detected languages |
 
 ### Links (Bidirectional Linking)
 
-| Setting | Description |
-|---------|-------------|
-| **Enabled** | Enable bidirectional linking |
-| **Auto Index** | Automatically index links |
-| **Case Sensitive** | Case-sensitive link matching |
+| Setting                | Description                   |
+|------------------------|-------------------------------|
+| **Enabled**            | Enable bidirectional linking  |
+| **Auto Index**         | Automatically index links     |
+| **Case Sensitive**     | Case-sensitive link matching  |
 | **Max Context Length** | Characters of context to show |
 
 ### Hierarchical Context
 
-| Setting | Description |
-|---------|-------------|
-| **Include Parent** | Show parent task context |
-| **Include Siblings** | Show sibling task context |
-| **Max Siblings** | Maximum siblings to include |
-| **Description Limit** | Characters per description |
+| Setting               | Description                 |
+|-----------------------|-----------------------------|
+| **Include Parent**    | Show parent task context    |
+| **Include Siblings**  | Show sibling task context   |
+| **Max Siblings**      | Maximum siblings to include |
+| **Description Limit** | Characters per description  |
 
 ### Labels
 
-| Setting | Description |
-|---------|-------------|
+| Setting           | Description          |
+|-------------------|----------------------|
 | **Enable Labels** | Enable task labeling |
 
 ### Library (Documentation)
 
-| Setting | Description |
-|---------|-------------|
-| **Auto Include Max** | Max collections to auto-include |
-| **Max Pages Per Prompt** | Pages per agent prompt |
-| **Max Token Budget** | Token limit for library content |
+| Setting                  | Description                     |
+|--------------------------|---------------------------------|
+| **Auto Include Max**     | Max collections to auto-include |
+| **Max Pages Per Prompt** | Pages per agent prompt          |
+| **Max Token Budget**     | Token limit for library content |
 
 <!-- DISABLED: automation temporarily unavailable (requires remote serve)
 ## Admin Section (Automation)

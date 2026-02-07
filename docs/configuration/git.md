@@ -14,14 +14,14 @@ git:
   auto_pop_stash: true
 ```
 
-| Setting          | Default                | Description                                    |
-|------------------|------------------------|------------------------------------------------|
-| `auto_commit`    | `true`                 | Auto-commit after operations                   |
-| `commit_prefix`  | `[{key}]`              | Commit message prefix template                 |
-| `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template                         |
-| `sign_commits`   | `false`                | GPG-sign commits                               |
+| Setting          | Default                | Description                                      |
+|------------------|------------------------|--------------------------------------------------|
+| `auto_commit`    | `true`                 | Auto-commit after operations                     |
+| `commit_prefix`  | `[{key}]`              | Commit message prefix template                   |
+| `branch_pattern` | `{type}/{key}--{slug}` | Branch naming template                           |
+| `sign_commits`   | `false`                | GPG-sign commits                                 |
 | `stash_on_start` | `true`                 | Kept for backward compatibility (always enabled) |
-| `auto_pop_stash` | `true`                 | Auto-pop stash after branch creation           |
+| `auto_pop_stash` | `true`                 | Auto-pop stash after branch creation             |
 
 ## Stash Behavior
 
