@@ -47,12 +47,12 @@ On Unix systems (Linux/macOS), the binary replacement is atomic using `os.Rename
 
 ## Flags
 
-| Flag            | Description                              | Default |
-|-----------------|------------------------------------------|---------|
-| `-n, --nightly` | Install latest stable/pre-release         | `false` |
-| `-v, --version` | Install specific release tag             | `""`    |
-| `--check`       | Check for updates without installing     | `false` |
-| `-y, --yes`     | Skip confirmation prompt                 | `false` |
+| Flag            | Description                          | Default |
+|-----------------|--------------------------------------|---------|
+| `-n, --nightly` | Install latest stable/pre-release    | `false` |
+| `-v, --version` | Install specific release tag         | `""`    |
+| `--check`       | Check for updates without installing | `false` |
+| `-y, --yes`     | Skip confirmation prompt             | `false` |
 
 ## Examples
 

@@ -101,12 +101,12 @@ data: {"event":"done"}
 
 ## Simplification Modes
 
-| Mode | Description |
-|------|-------------|
-| Uncommitted changes | Simplifies changes not yet committed |
-| Branch vs base | Simplifies the difference between current branch and base |
-| Commit range | Simplifies code within a specific commit range |
-| Specific files | Simplifies only the specified files |
+| Mode                | Description                                               |
+|---------------------|-----------------------------------------------------------|
+| Uncommitted changes | Simplifies changes not yet committed                      |
+| Branch vs base      | Simplifies the difference between current branch and base |
+| Commit range        | Simplifies code within a specific commit range            |
+| Specific files      | Simplifies only the specified files                       |
 
 For API integration examples, see [REST API Reference](/reference/rest-api.md).
 

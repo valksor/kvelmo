@@ -18,11 +18,11 @@ Mehrhof integrates security scanning and code quality tools that run automatical
 
 Security and quality features are available from:
 
-| Feature               | Location                               |
-|-----------------------|----------------------------------------|
-| **Run Scan**          | Tools → Security                       |
-| **Simplify**          | Simplify page (navigation bar)         |
-| **Security Settings** | Settings → Advanced → Security Scanning|
+| Feature               | Location                                |
+|-----------------------|-----------------------------------------|
+| **Run Scan**          | Tools → Security                        |
+| **Simplify**          | Simplify page (navigation bar)          |
+| **Security Settings** | Settings → Advanced → Security Scanning |
 
 Scans run automatically during implementation and review if enabled in Settings.
 
