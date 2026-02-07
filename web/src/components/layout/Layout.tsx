@@ -22,6 +22,7 @@ import { useStatus } from '@/api/workflow'
 import { useSwitchToGlobal } from '@/api/projects'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationCenter } from '@/components/ui/NotificationCenter'
+import { SkipLink } from '@/components/ui/SkipLink'
 
 // Type definitions for navigation structure
 type NavItem = {
@@ -70,7 +71,7 @@ function NavDropdownMenu({
         }}
       >
         <summary className={isChildActive ? 'menu-active' : ''}>
-          <Icon size={18} />
+          <Icon size={18} aria-hidden="true" />
           <span className="hidden sm:inline">{dropdown.label}</span>
         </summary>
         <ul
@@ -85,7 +86,7 @@ function NavDropdownMenu({
                 }}
                 className={({ isActive }) => (isActive ? 'menu-active' : '')}
               >
-                <ItemIcon size={16} />
+                <ItemIcon size={16} aria-hidden="true" />
                 {label}
               </NavLink>
             </li>
@@ -177,17 +178,18 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-base-200">
+      <SkipLink />
       {/* Navbar */}
-      <nav className="navbar bg-base-100 shadow-sm border-b border-base-300">
+      <nav className="navbar bg-base-100 shadow-sm border-b border-base-300" aria-label="Main navigation">
         <div className="flex-1 flex items-center gap-2">
           {canSwitchToGlobal && !isGlobalMode && (
             <button
               onClick={() => switchToGlobal.mutate()}
               disabled={switchToGlobal.isPending}
               className="btn btn-ghost btn-sm gap-1"
-              title="Back to project list"
+              aria-label="Back to project list"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} aria-hidden="true" />
               <span className="hidden sm:inline">Projects</span>
             </button>
           )}
@@ -196,7 +198,7 @@ export default function Layout() {
           </a>
           {activeProject && (
             <div className="flex items-center gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-1 max-w-[55vw] min-w-0">
-              <FolderKanban size={14} className="text-primary shrink-0" />
+              <FolderKanban size={14} className="text-primary shrink-0" aria-hidden="true" />
               <span className="text-sm font-medium truncate">{activeProject.name}</span>
               <span className="text-base-content/40">|</span>
               <span
@@ -229,8 +231,9 @@ export default function Layout() {
                   <NavLink
                     to={to}
                     className={({ isActive }) => (isActive ? 'menu-active' : '')}
+                    aria-label={label}
                   >
-                    <Icon size={18} />
+                    <Icon size={18} aria-hidden="true" />
                     <span className="hidden sm:inline">{label}</span>
                   </NavLink>
                 </li>
@@ -243,7 +246,7 @@ export default function Layout() {
       </nav>
 
       {/* Main content */}
-      <main className="container mx-auto p-4 max-w-7xl">
+      <main id="main-content" className="container mx-auto p-4 max-w-7xl" tabIndex={-1}>
         <Outlet />
       </main>
     </div>
