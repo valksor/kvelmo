@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
+import { ScreenReaderAnnouncer } from '@/components/ui/ScreenReaderAnnouncer'
 
 // Eagerly loaded (critical path)
 import Dashboard from '@/pages/Dashboard'
@@ -29,7 +30,7 @@ const TaskDetail = lazy(() => import('@/pages/TaskDetail'))
 
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading page">
       <span className="loading loading-spinner loading-lg text-primary" />
     </div>
   )
@@ -51,8 +52,9 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+      <ScreenReaderAnnouncer>
+        <BrowserRouter>
+          <Routes>
           {/* DISABLED: remote serve temporarily unavailable */}
           {/* <Route path="/login" element={<Login />} /> */}
 
@@ -82,8 +84,9 @@ export default function App() {
             {/* 404 - eagerly loaded */}
             <Route path="*" element={<NotFound />} />
           </Route>
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </ScreenReaderAnnouncer>
     </QueryClientProvider>
   )
 }
