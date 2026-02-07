@@ -60,6 +60,7 @@ See individual workflow pages for details:
 
 - **[Chat](interactive.md)** - Conversational interface for real-time communication (Workflow dropdown)
 - **[Settings](settings.md)** - Configure workflow, providers, git, and other options (Admin dropdown)
+- **[Accessibility](/web-ui/accessibility.md)** - Keyboard and screen-reader support across core UI workflows
 - **[Tools](browser.md)** - Browser automation for testing and authentication (More dropdown)
 - **Task History** - Search, filter, and resume past tasks
 - **Notes** - Add context at any point in the workflow
@@ -103,5 +104,6 @@ See [CLI: serve](/cli/serve.md) for starting the server and [CLI Overview](/cli/
 
 - [**Getting Started**](getting-started.md) - Complete walkthrough
 - [**Creating Tasks**](creating-tasks.md) - Task creation workflows
+- [**Accessibility**](/web-ui/accessibility.md) - Keyboard and screen-reader support
 - [**Settings**](settings.md) - Configuration guide
 - [**REST API**](api.md) - Programmatic access

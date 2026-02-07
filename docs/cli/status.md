@@ -20,6 +20,7 @@ The `status` command displays information about the active task including:
 - Checkpoints
 - Current branch
 - Worktree path (if applicable)
+- Accessibility-friendly state prefixes (for example, `[P] Planning`)
 
 **Context-aware:** When run from within a worktree, automatically shows the task associated with that worktree.
 
@@ -46,7 +47,7 @@ Output:
 ```
 Active Task: a1b2c3d4
   Title:   Add user authentication
-  State:   implementing - Generating code from specifications
+  State:   [I] Implementing - AI is generating code
   Source:  task.md
   WorkDir: ~/.valksor/mehrhof/workspaces/<project-id>/work/a1b2c3d4
   Started: 2024-01-15 10:30:00
@@ -82,7 +83,7 @@ Output:
 ```
 Worktree Task: a1b2c3d4
   Title:    Add user authentication
-  State:    implementing - Generating code from specifications
+  State:    [I] Implementing - AI is generating code
   Source:   task.md
   Worktree: /path/to/project-worktrees/a1b2c3d4
   Started:  2024-01-15 10:30:00
@@ -101,24 +102,13 @@ mehr status --all
 Output:
 
 ```
-Tasks in workspace:
+TASK ID    STATE             TITLE                    SPECS  ACTIVE
+a1b2c3d4   [*] Started       Add user authentication  2      *
+b5c6d7e8   unknown           Auth hardening updates   3
+c9d0e1f2   unknown           Health endpoint fix      1
 
-  * a1b2c3d4 (idle)
-    Source: task.md
-    Branch: task/a1b2c3d4
-    Specifications: 2
-
-    b5c6d7e8 (implementing)
-    Source: ./features/auth/
-    Branch: task/b5c6d7e8
-    Specifications: 3
-
-    c9d0e1f2 (done)
-    Source: bugfix.md
-    Branch: (deleted)
-    Specifications: 1
-
-* = active task
+Legend:
+  * = active task
 ```
 
 ### Workflow State Diagram
@@ -241,6 +231,23 @@ Output:
 | done         | Completed                                                                                                 |
 | failed       | Error occurred                                                                                            |
 
+## Accessibility Prefixes
+
+Status output includes short state prefixes so state meaning is not communicated by color alone:
+
+| Prefix | Meaning          |
+|--------|------------------|
+| `[*]`  | Ready or started |
+| `[P]`  | Planning         |
+| `[I]`  | Implementing     |
+| `[R]`  | Reviewing        |
+| `[D]`  | Done             |
+| `[F]`  | Failed           |
+| `[W]`  | Waiting          |
+| `[C]`  | Checkpointing    |
+| `[←]`  | Reverting        |
+| `[→]`  | Restoring        |
+
 **Context-aware descriptions:** The `idle` state shows different messages depending on context:
 - "Ready to start" - Before any specifications are implemented
 - "Implementation complete - ready for review or finish" - After specifications have been implemented
@@ -267,7 +274,7 @@ Or switch to an existing task branch:
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Dashboard](/web-ui/dashboard.md).
+Prefer a visual interface? See [Web UI: Dashboard](/web-ui/dashboard.md) and [Web UI: Accessibility](/web-ui/accessibility.md).
 
 ---
 

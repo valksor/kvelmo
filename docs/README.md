@@ -26,14 +26,15 @@ Use the **CLI** for scriptable workflows, automation, and integration with other
 
 ## Key Features
 
-| Feature                 | What It Does                                                   |
-|-------------------------|----------------------------------------------------------------|
-| **Structured workflow** | Breaks work into plan → create → review → finish steps         |
-| **Human review gates**  | Nothing ships without your explicit approval                   |
-| **Undo/redo support**   | Roll back to any checkpoint if something goes wrong            |
-| **Providers**           | Pull tasks from files, GitHub, Jira, Linear, Notion, and more  |
-| **Git integration**     | Automatic branches, commits, and merge handling                |
-| **Configurable**        | Match your team's policies, guidelines, and approval workflows |
+| Feature                 | What It Does                                                    |
+|-------------------------|-----------------------------------------------------------------|
+| **Structured workflow** | Breaks work into plan → create → review → finish steps          |
+| **Human review gates**  | Nothing ships without your explicit approval                    |
+| **Undo/redo support**   | Roll back to any checkpoint if something goes wrong             |
+| **Providers**           | Pull tasks from files, GitHub, Jira, Linear, Notion, and more   |
+| **Git integration**     | Automatic branches, commits, and merge handling                 |
+| **Configurable**        | Match your team's policies, guidelines, and approval workflows  |
+| **Accessibility**       | Keyboard and screen-reader-friendly workflows in Web UI and CLI |
 
 ---
 

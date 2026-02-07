@@ -30,6 +30,7 @@ Mehrhof is:
 - **Completely free**—BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
 - **Zero config for existing users**—if your agent CLI works, Mehrhof works. API keys optional for advanced setups
 - **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
+- **Accessibility-aware by default**—keyboard-first navigation, screen reader announcements, skip links, and accessible dialog patterns in the Web UI, plus state prefixes in CLI status output
 
 Mehrhof is not magic. It's a structured way to work with tools you already have, with clear checkpoints and human oversight at every step.
 
@@ -123,6 +124,7 @@ Click **"Create Task"** in your browser and you're ready to go.
 | 🔍 **History**          | Browse and search past tasks                            |
 | 🌓 **Dark Mode**        | Toggle between light and dark themes                    |
 | 📱 **Mobile Ready**     | Full functionality on phone or tablet                   |
+| ♿ **Accessibility**    | Keyboard-friendly navigation, screen reader support, and accessible dialogs |
 
 ### Getting Started with CLI
 
