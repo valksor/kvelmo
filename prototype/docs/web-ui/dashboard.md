@@ -31,11 +31,11 @@ When the server is started in global mode, the dashboard shows a project selecto
 
 When you have an active task, a summary card appears at the top showing:
 
-| Field | Description |
-|-------|-------------|
-| **Title** | Task name (click to view full details) |
-| **State** | Current workflow state (planning, implementing, etc.) |
-| **Branch** | Git branch for this task |
+| Field      | Description                                           |
+|------------|-------------------------------------------------------|
+| **Title**  | Task name (click to view full details)                |
+| **State**  | Current workflow state (planning, implementing, etc.) |
+| **Branch** | Git branch for this task                              |
 
 Click **View Task** or the task title to open the Task Detail page with full workflow controls.
 
@@ -43,11 +43,11 @@ Click **View Task** or the task title to open the Task Detail page with full wor
 
 Three tabs for starting new work:
 
-| Tab | Purpose |
-|-----|---------|
+| Tab       | Purpose                                                                  |
+|-----------|--------------------------------------------------------------------------|
 | **Start** | Begin a new task from a reference (file path, GitHub issue, Jira ticket) |
-| **Quick** | Manage quick tasks queue — lightweight tasks for rapid execution |
-| **Plan** | Create project plans from requirements or specifications |
+| **Quick** | Manage quick tasks queue — lightweight tasks for rapid execution         |
+| **Plan**  | Create project plans from requirements or specifications                 |
 
 ### Budget Overview
 
@@ -60,10 +60,10 @@ If monthly budget tracking is enabled in [Settings](/web-ui/settings.md), this s
 
 The Tasks block combines two views in one place:
 
-| View | Purpose |
-|------|---------|
-| **Recent** | Quick access to your latest workflow tasks |
-| **Queue** | Project planning queue tasks with dependencies and execution actions |
+| View       | Purpose                                                              |
+|------------|----------------------------------------------------------------------|
+| **Recent** | Quick access to your latest workflow tasks                           |
+| **Queue**  | Project planning queue tasks with dependencies and execution actions |
 
 #### Recent View
 
@@ -118,6 +118,15 @@ Real-time updates include:
 ### Dark Mode
 
 Toggle between light and dark themes using the button in the top-right corner.
+
+### Accessibility
+
+The dashboard includes keyboard and assistive-technology support:
+- Skip link to jump directly to main content
+- Keyboard-operable navigation and notification controls
+- Screen-reader announcements for workflow notifications
+
+For full details, see [Web UI: Accessibility](/web-ui/accessibility.md).
 
 ### Mobile Responsive
 

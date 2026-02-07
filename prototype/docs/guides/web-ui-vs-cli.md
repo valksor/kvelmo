@@ -26,6 +26,7 @@ Mehrhof offers two ways to work: a graphical Web UI and a command-line interface
 | **Automation**           | Manual only                      | Fully scriptable                    |
 | **Configuration**        | Visual forms                     | Edit YAML files                     |
 | **Multi-task**           | Easy switching                   | Terminal per task                   |
+| **Accessibility**        | Screen reader + keyboard support | Text state prefixes + terminal flow |
 
 ---
 
@@ -202,6 +203,7 @@ Both interfaces have access to the same features:
 | Providers info   | ✅ Settings (Work section)    | ✅ `mehr providers list`   |
 | Provider health  | ✅ Settings (Provider Health) | ✅ `mehr providers status` |
 | Provider login   | ✅ Settings form              | ✅ `mehr <provider> login` |
+| Accessibility    | ✅ Skip links, ARIA patterns, live announcements | ✅ State prefixes in status output |
 
 **You can switch between interfaces anytime**—they share the same state and data.
 

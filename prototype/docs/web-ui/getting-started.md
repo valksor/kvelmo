@@ -9,12 +9,15 @@ By the end of this guide, you'll be able to:
 - Create a task from scratch
 - Watch the plan and implementation steps
 - Review and complete your task
+- Navigate key workflow actions with keyboard-friendly controls
 
 ## Prerequisites
 
 - Mehrhof installed ([Quickstart](/quickstart.md) if needed)
 - A project directory (can be empty or an existing codebase)
 - An agent CLI configured (Claude recommended, see [AI Agents](/agents/index.md))
+
+For accessibility details, see [Web UI: Accessibility](/web-ui/accessibility.md).
 
 > **Don't have a project?** You can start with an empty directory. Mehrhof will create everything it needs.
 
