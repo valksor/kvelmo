@@ -99,10 +99,12 @@ function ConnectionStatus({ connected }: { connected: boolean }) {
           <span className="text-base-content/60">Connected</span>
         </>
       ) : (
-        <>
-          <WifiOff size={16} aria-hidden="true" className="text-warning" />
-          <span className="text-base-content/60">Reconnecting...</span>
-        </>
+        <div className="tooltip tooltip-left" data-tip="Lost connection to server. Updates will resume automatically.">
+          <div className="flex items-center gap-2">
+            <WifiOff size={16} aria-hidden="true" className="text-warning" />
+            <span className="text-base-content/60">Reconnecting...</span>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -1,17 +1,30 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { Terminal, ChevronDown, ChevronUp, Trash2, ArrowDownToLine } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
+import { Terminal, ChevronDown, ChevronUp, Trash2, ArrowDownToLine, BarChart3, List } from 'lucide-react'
 import type { AgentMessage } from '@/hooks/useWorkflowSSE'
+import { ProgressSummary } from './ProgressSummary'
+
+export interface TerminalMessage extends AgentMessage {
+  _id: number
+}
 
 interface AgentTerminalProps {
-  messages: AgentMessage[]
+  messages: TerminalMessage[]
   onClear: () => void
 }
+
+const MAX_DISPLAY = 500
+
+type ViewMode = 'summary' | 'details'
 
 export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [viewMode, setViewMode] = useState<ViewMode>('summary')
   const terminalRef = useRef<HTMLDivElement>(null)
-  const displayMessages = [...messages].reverse()
+  const displayMessages = useMemo(() => {
+    const start = Math.max(0, messages.length - MAX_DISPLAY)
+    return messages.slice(start).slice().reverse()
+  }, [messages])
 
   // Auto-scroll to top when new messages arrive (newest-first view)
   useEffect(() => {
@@ -66,51 +79,95 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
         <div className="px-4 pb-4">
           {/* Controls */}
           <div className="flex items-center justify-between mb-2">
-            <button
-              className={`btn btn-ghost btn-xs gap-1 ${autoScroll ? 'text-primary' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleAutoScroll()
-              }}
-              title={autoScroll ? 'Auto-follow enabled' : 'Auto-follow disabled'}
-            >
-              <ArrowDownToLine size={14} />
-              Auto-follow
-            </button>
-            <button
-              className="btn btn-ghost btn-xs gap-1"
-              onClick={(e) => {
-                e.stopPropagation()
-                onClear()
-              }}
-              disabled={messageCount === 0}
-            >
-              <Trash2 size={14} />
-              Clear
-            </button>
+            <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="join" role="group" aria-label="View mode">
+                <button
+                  className={`btn btn-xs join-item gap-1 ${viewMode === 'summary' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setViewMode('summary')
+                  }}
+                  title="Summary view - easy to understand progress"
+                >
+                  <BarChart3 size={12} />
+                  Summary
+                </button>
+                <button
+                  className={`btn btn-xs join-item gap-1 ${viewMode === 'details' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setViewMode('details')
+                  }}
+                  title="Details view - full technical log"
+                >
+                  <List size={12} />
+                  Details
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {viewMode === 'details' && (
+                <button
+                  className={`btn btn-ghost btn-xs gap-1 ${autoScroll ? 'text-primary' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleAutoScroll()
+                  }}
+                  title={autoScroll ? 'Auto-follow enabled' : 'Auto-follow disabled'}
+                >
+                  <ArrowDownToLine size={14} />
+                  Auto-follow
+                </button>
+              )}
+              <button
+                className="btn btn-ghost btn-xs gap-1"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClear()
+                }}
+                disabled={messageCount === 0}
+              >
+                <Trash2 size={14} />
+                Clear
+              </button>
+            </div>
           </div>
 
-          {/* Terminal output */}
-          <div
-            ref={terminalRef}
-            className="bg-base-300 rounded-lg p-3 font-mono text-xs max-h-64 overflow-y-auto"
-          >
-            {messages.length === 0 ? (
-              <span className="text-base-content/40">No updates yet...</span>
-            ) : (
-              displayMessages.map((msg, idx) => (
-                <TerminalLine key={idx} message={msg} />
-              ))
-            )}
-          </div>
+          {/* Content based on view mode */}
+          {viewMode === 'summary' ? (
+            <div className="bg-base-300 rounded-lg p-4">
+              <ProgressSummary messages={messages} />
+            </div>
+          ) : (
+            <div
+              ref={terminalRef}
+              className="bg-base-300 rounded-lg p-3 font-mono text-xs max-h-64 overflow-y-auto"
+            >
+              {messages.length === 0 ? (
+                <span className="text-base-content/40">No updates yet...</span>
+              ) : (
+                displayMessages.map((msg) => (
+                  <TerminalLine key={msg._id} message={msg} />
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function TerminalLine({ message }: { message: AgentMessage }) {
-  const time = new Date(message.timestamp).toLocaleTimeString()
+function formatTime(ts: string): string {
+  const t = ts.indexOf('T')
+  if (t === -1) return ts
+  return ts.slice(t + 1, t + 9)
+}
+
+const TerminalLine = memo(function TerminalLine({ message }: { message: TerminalMessage }) {
+  const time = formatTime(message.timestamp)
   const colorClass =
     message.type === 'error'
       ? 'text-error'
@@ -126,4 +183,4 @@ function TerminalLine({ message }: { message: AgentMessage }) {
       </span>
     </div>
   )
-}
+})

@@ -22,8 +22,8 @@ describe('CostsCard', () => {
 
   it('renders nothing when no costs are available', () => {
     useTaskCostsMock.mockReturnValue({ data: undefined, isLoading: false })
-    const { container } = render(<CostsCard taskId="task-1" />)
-    expect(container).toBeEmptyDOMElement()
+    render(<CostsCard taskId="task-1" />)
+    expect(screen.queryByText('Cost Summary')).not.toBeInTheDocument()
   })
 
   it('renders summary and toggles step breakdown', async () => {

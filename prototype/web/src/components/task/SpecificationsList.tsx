@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatDate } from '@/utils/format'
 import {
   CheckCircle,
   Circle,
@@ -13,7 +14,16 @@ import {
 import { useSpecificationFileDiff } from '@/api/task'
 import { AccessibleModal } from '@/components/ui/AccessibleModal'
 import { VisualUnifiedDiff } from '@/components/task/VisualUnifiedDiff'
+import { VisualCombinedDiff } from '@/components/task/VisualCombinedDiff'
 import type { Specification } from '@/types/api'
+
+// User-friendly status labels for non-technical users
+const statusLabels: Record<string, string> = {
+  completed: 'Done',
+  in_progress: 'Working',
+  pending: 'Not Started',
+  failed: 'Problem',
+}
 
 interface SpecificationsListProps {
   specs?: Specification[]
@@ -23,11 +33,10 @@ interface SpecificationsListProps {
 
 export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsListProps) {
   const [expandedSpecs, setExpandedSpecs] = useState<Set<number>>(new Set())
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
   const [diffTarget, setDiffTarget] = useState<{ specNumber: number; filePath: string } | null>(null)
   const [diffContent, setDiffContent] = useState('')
   const [diffError, setDiffError] = useState('')
-  const [diffMode, setDiffMode] = useState<'visual' | 'raw'>('visual')
+  const [diffMode, setDiffMode] = useState<'split' | 'combined' | 'raw'>('split')
   const { mutateAsync: fetchDiff, isPending: isLoadingDiff } = useSpecificationFileDiff(taskId)
 
   if (isLoading) {
@@ -88,7 +97,7 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
     setDiffTarget(null)
     setDiffContent('')
     setDiffError('')
-    setDiffMode('visual')
+    setDiffMode('split')
   }
 
   const handleOpenDiff = async (specNumber: number, filePath: string) => {
@@ -102,7 +111,7 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
     setDiffTarget({ specNumber, filePath })
     setDiffContent('')
     setDiffError('')
-    setDiffMode('visual')
+    setDiffMode('split')
 
     try {
       const response = await fetchDiff({ specNumber, filePath })
@@ -146,23 +155,12 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
           </div>
 
           {/* Specification list */}
-          <div className="flex justify-end mb-3">
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              onClick={() => setShowTechnicalDetails((prev) => !prev)}
-            >
-              {showTechnicalDetails ? 'Hide technical details' : 'Show technical details'}
-            </button>
-          </div>
-
           <div className="space-y-4">
             {specs.map((spec) => (
               <SpecificationItem
                 key={spec.number}
                 spec={spec}
                 expanded={expandedSpecs.has(spec.number)}
-                showTechnicalDetails={showTechnicalDetails}
                 onToggle={() => toggleSpec(spec.number)}
                 onOpenDiff={handleOpenDiff}
               />
@@ -192,10 +190,16 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
               <div className="flex justify-end mb-3">
                 <div className="join" role="group" aria-label="Diff view mode">
                   <button
-                    className={`btn btn-sm join-item ${diffMode === 'visual' ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setDiffMode('visual')}
+                    className={`btn btn-sm join-item ${diffMode === 'split' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setDiffMode('split')}
                   >
-                    Visual
+                    Split
+                  </button>
+                  <button
+                    className={`btn btn-sm join-item ${diffMode === 'combined' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setDiffMode('combined')}
+                  >
+                    Combined
                   </button>
                   <button
                     className={`btn btn-sm join-item ${diffMode === 'raw' ? 'btn-primary' : 'btn-ghost'}`}
@@ -215,8 +219,10 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
               ) : diffError ? (
                 <p className="text-sm text-error whitespace-pre-wrap">{diffError}</p>
               ) : diffContent ? (
-                diffMode === 'visual' ? (
+                diffMode === 'split' ? (
                   <VisualUnifiedDiff diff={diffContent} />
+                ) : diffMode === 'combined' ? (
+                  <VisualCombinedDiff diff={diffContent} />
                 ) : (
                   <pre className="text-xs font-mono whitespace-pre-wrap">{diffContent}</pre>
                 )
@@ -234,7 +240,6 @@ export function SpecificationsList({ specs, isLoading, taskId }: SpecificationsL
 interface SpecificationItemProps {
   spec: Specification
   expanded: boolean
-  showTechnicalDetails: boolean
   onToggle: () => void
   onOpenDiff: (specNumber: number, filePath: string) => void
 }
@@ -242,7 +247,6 @@ interface SpecificationItemProps {
 function SpecificationItem({
   spec,
   expanded,
-  showTechnicalDetails,
   onToggle,
   onOpenDiff,
 }: SpecificationItemProps) {
@@ -305,7 +309,7 @@ function SpecificationItem({
                   : 'bg-base-200 text-base-content/60'
             }`}
           >
-            {spec.status}
+            {statusLabels[spec.status] || spec.status}
           </span>
         </div>
       </button>
@@ -358,24 +362,24 @@ function SpecificationItem({
           {/* Timestamps */}
           {(spec.created_at || spec.completed_at) && (
             <div className="mt-3 pt-3 border-t border-base-200 flex items-center gap-4 text-xs text-base-content/60">
-              {spec.created_at && <span>Created: {new Date(spec.created_at).toLocaleDateString()}</span>}
+              {spec.created_at && <span>Created: {formatDate(spec.created_at)}</span>}
               {spec.completed_at && (
                 <span className="text-success">
-                  Completed: {new Date(spec.completed_at).toLocaleDateString()}
+                  Completed: {formatDate(spec.completed_at)}
                 </span>
               )}
             </div>
           )}
 
-          {showTechnicalDetails && spec.implemented_files && spec.implemented_files.length > 0 && (
+          {spec.implemented_files && spec.implemented_files.length > 0 && (
             <div className="mt-3 pt-3 border-t border-base-200">
               <span className="text-xs font-medium text-base-content/60 uppercase">
                 Implemented Files ({spec.implemented_files.length})
               </span>
               <div className="mt-2 flex flex-wrap gap-2">
-                {spec.implemented_files.map((filePath) => (
+                {spec.implemented_files.map((filePath, index) => (
                   <button
-                    key={filePath}
+                    key={`${filePath}-${index}`}
                     className="px-2 py-1 text-xs rounded bg-success/10 text-success font-mono hover:bg-success/20 transition-colors inline-flex items-center gap-1"
                     title={filePath}
                     onClick={() => onOpenDiff(spec.number, filePath)}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { formatDate } from '@/utils/format'
 import { Link } from 'react-router-dom'
 import { ChevronRight, FolderGit2, ListTree, Loader2, History } from 'lucide-react'
 import { useQueues, type PlanTask } from '@/api/project-planning'
@@ -130,7 +131,7 @@ function RecentTaskRow({ task }: { task: TaskHistoryItem }) {
             {task.title || task.id}
           </div>
           <div className="flex items-center gap-2 text-xs text-base-content/60 mt-0.5">
-            <span>{new Date(task.created_at).toLocaleDateString()}</span>
+            <span>{formatDate(task.created_at)}</span>
             {task.worktree_path && (
               <span className="flex items-center gap-1">
                 <FolderGit2 size={12} aria-hidden="true" />
