@@ -350,7 +350,7 @@ func TestFormatDate(t *testing.T) {
 		{
 			name: "valid date",
 			t:    time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
-			want: "2024-01-15",
+			want: "15.01.2024",
 		},
 	}
 
@@ -378,7 +378,7 @@ func TestFormatDateTime(t *testing.T) {
 		{
 			name: "valid datetime",
 			t:    time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
-			want: "2024-01-15 10:30",
+			want: "15.01.2024 10:30",
 		},
 	}
 
@@ -656,99 +656,6 @@ func TestFormatCount(t *testing.T) {
 			got := FormatCount(tt.count, tt.singular, tt.plural)
 			if got != tt.want {
 				t.Errorf("FormatCount() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestToFloat(t *testing.T) {
-	tests := []struct {
-		name  string
-		input interface{}
-		want  float64
-	}{
-		{
-			name:  "int positive",
-			input: 42,
-			want:  42.0,
-		},
-		{
-			name:  "int zero",
-			input: 0,
-			want:  0.0,
-		},
-		{
-			name:  "int negative",
-			input: -10,
-			want:  -10.0,
-		},
-		{
-			name:  "int64 positive",
-			input: int64(1000000),
-			want:  1000000.0,
-		},
-		{
-			name:  "int64 negative",
-			input: int64(-500),
-			want:  -500.0,
-		},
-		{
-			name:  "int32 positive",
-			input: int32(100),
-			want:  100.0,
-		},
-		{
-			name:  "int32 negative",
-			input: int32(-50),
-			want:  -50.0,
-		},
-		{
-			name:  "uint positive",
-			input: uint(999),
-			want:  999.0,
-		},
-		{
-			name:  "uint64 large",
-			input: uint64(18446744073709551615),
-			want:  18446744073709551615.0,
-		},
-		{
-			name:  "float32 positive",
-			input: float32(2.5),
-			want:  2.5,
-		},
-		{
-			name:  "float64 positive",
-			input: 3.14,
-			want:  3.14,
-		},
-		{
-			name:  "float64 zero",
-			input: 0.0,
-			want:  0.0,
-		},
-		{
-			name:  "float64 negative",
-			input: -2.5,
-			want:  -2.5,
-		},
-		{
-			name:  "string returns zero",
-			input: "not a number",
-			want:  0.0,
-		},
-		{
-			name:  "nil returns zero",
-			input: nil,
-			want:  0.0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := toFloat(tt.input)
-			if got != tt.want {
-				t.Errorf("toFloat(%v) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}

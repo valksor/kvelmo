@@ -11,11 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/automation"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/library"
 	"github.com/valksor/go-mehrhof/internal/registration"
-	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/taskrunner"
 	"github.com/valksor/go-toolkit/eventbus"
 )
@@ -51,8 +49,6 @@ type Config struct {
 	EventBus *eventbus.Bus
 	// WorkspaceRoot is the root directory of the workspace (for project mode).
 	WorkspaceRoot string
-	// AuthStore is the authentication store (nil means no auth required).
-	AuthStore *storage.AuthStore
 	// APIOnly specifies whether to run in API-only mode (no web UI).
 	APIOnly bool
 }
@@ -63,7 +59,6 @@ type Server struct {
 	httpServer *http.Server
 	listener   net.Listener
 	router     http.Handler
-	sessions   *sessionStore
 
 	mu                  sync.RWMutex
 	running             bool
@@ -76,10 +71,6 @@ type Server struct {
 	// Operation tracking for interactive mode cancellation
 	opMu      sync.RWMutex
 	activeOps map[string]*activeOperation // sessionID -> active operation
-
-	// Automation for webhook processing
-	automation       *automation.Automation
-	automationConfig *storage.AutomationSettings
 
 	// Shared-only library for global mode (when no project selected)
 	sharedLibrary *library.Manager
@@ -96,7 +87,6 @@ func New(cfg Config) (*Server, error) {
 
 	s := &Server{
 		config:              cfg,
-		sessions:            newSessionStore(),
 		startedInGlobalMode: cfg.Mode == ModeGlobal,
 		activeOps:           make(map[string]*activeOperation),
 	}
@@ -193,11 +183,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		s.mu.Unlock()
 
 		return nil
-	}
-
-	// Stop the session cleanup goroutine
-	if s.sessions != nil {
-		s.sessions.stop()
 	}
 
 	if s.httpServer != nil {
@@ -314,9 +299,9 @@ func (s *Server) switchToGlobal() {
 // Operation tracking helpers for interactive mode cancellation.
 
 // getSessionID extracts a session identifier from the request.
-// Returns session cookie value if present, falls back to X-Request-ID header.
+// Returns CSRF cookie value if present, falls back to X-Request-ID header.
 func (s *Server) getSessionID(r *http.Request) string {
-	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+	if cookie, err := r.Cookie(csrfCookieName); err == nil {
 		return cookie.Value
 	}
 	// Fall back to X-Request-ID header for API clients

@@ -8,10 +8,7 @@ type PageData struct {
 	Mode             string
 	IsGlobalMode     bool
 	IsProjectMode    bool
-	AuthEnabled      bool
 	CanSwitchProject bool
-	CurrentUser      string
-	IsViewer         bool // True if current user has read-only access
 
 	// Project info (when in project mode)
 	ProjectName string
@@ -208,7 +205,6 @@ type QuestionData struct {
 	Question string
 	Options  []OptionData
 	TaskID   string
-	IsViewer bool
 }
 
 // OptionData represents a question option.
@@ -507,82 +503,6 @@ type HistoryData struct {
 	HasNext     bool
 }
 
-// AutomationData contains data for the automation page.
-type AutomationData struct {
-	PageData
-
-	// Status
-	Enabled bool
-	Running bool
-	Workers int
-
-	// Queue statistics
-	PendingJobs   int
-	RunningJobs   int
-	CompletedJobs int
-	FailedJobs    int
-	CancelledJobs int
-
-	// Job list
-	Jobs []AutomationJobData
-
-	// Configuration
-	Config AutomationConfigData
-}
-
-// AutomationJobData represents a single automation job.
-type AutomationJobData struct {
-	ID           string
-	Status       string
-	StatusBadge  string
-	StatusIcon   string
-	WorkflowType string
-	Provider     string
-	Repository   string
-	Reference    string // e.g., "#123"
-	Sender       string
-	Command      string
-	Error        string
-	CreatedAt    string
-	StartedAt    string
-	CompletedAt  string
-	Duration     string
-	Attempts     int
-	MaxAttempts  int
-	CanCancel    bool
-	CanRetry     bool
-}
-
-// AutomationConfigData represents automation configuration for display.
-type AutomationConfigData struct {
-	Providers     []AutomationProviderData
-	AccessControl AutomationAccessControlData
-	Labels        AutomationLabelsData
-}
-
-// AutomationProviderData represents a provider configuration.
-type AutomationProviderData struct {
-	Name          string
-	Enabled       bool
-	CommandPrefix string
-	TriggerOn     []string // Human-readable triggers
-}
-
-// AutomationAccessControlData represents access control settings.
-type AutomationAccessControlData struct {
-	Mode      string
-	Allowlist []string
-	Blocklist []string
-	AllowBots bool
-}
-
-// AutomationLabelsData represents label configuration.
-type AutomationLabelsData struct {
-	MehrhofGenerated string
-	InProgress       string
-	Failed           string
-}
-
 // SessionData represents a task session.
 type SessionData struct {
 	ID         string
@@ -658,14 +578,6 @@ type ProjectTaskData struct {
 	Assignee    string
 	DueDate     string
 	Labels      []LabelData
-}
-
-// LoginData contains data for the login page.
-type LoginData struct {
-	PageData
-
-	Error    string
-	Redirect string // URL to redirect to after successful login
 }
 
 // LicenseData contains data for the license page.

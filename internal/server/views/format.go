@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/valksor/go-mehrhof/internal/display"
 )
 
 // FormatCost formats a USD cost value with proper display.
@@ -179,22 +181,22 @@ func FormatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dh %dm", hours, mins)
 }
 
-// FormatDate formats a time as a date string (YYYY-MM-DD).
+// FormatDate formats a time as a date string (dd.mm.yyyy).
 func FormatDate(t time.Time) string {
 	if t.IsZero() {
 		return ""
 	}
 
-	return t.Format("2006-01-02")
+	return t.Format(display.DateFormat)
 }
 
-// FormatDateTime formats a time as a datetime string.
+// FormatDateTime formats a time as a datetime string (dd.mm.yyyy hh:mm).
 func FormatDateTime(t time.Time) string {
 	if t.IsZero() {
 		return ""
 	}
 
-	return t.Format("2006-01-02 15:04")
+	return t.Format(display.DateTimeFormat)
 }
 
 // FormatMonth formats a time as a month string (January 2006).

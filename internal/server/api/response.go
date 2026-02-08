@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 )
 
 // Response is the standard API response format.
@@ -39,7 +38,6 @@ const (
 	ErrCodeAgentError     = "AGENT_ERROR"
 	ErrCodeBudgetExceeded = "BUDGET_EXCEEDED"
 	ErrCodeNotConfigured  = "NOT_CONFIGURED"
-	ErrCodeRateLimited    = "RATE_LIMITED"
 )
 
 // WriteSuccess writes a successful JSON response with the given data.
@@ -175,12 +173,4 @@ func WriteBudgetExceeded(w http.ResponseWriter, budgetType string) {
 func WriteNotConfigured(w http.ResponseWriter, feature string) {
 	WriteError(w, http.StatusNotFound, ErrCodeNotConfigured,
 		feature+" is not configured")
-}
-
-// WriteRateLimited writes a 429 Too Many Requests error.
-func WriteRateLimited(w http.ResponseWriter, retryAfter int) {
-	if retryAfter > 0 {
-		w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
-	}
-	WriteError(w, http.StatusTooManyRequests, ErrCodeRateLimited, "rate limit exceeded")
 }

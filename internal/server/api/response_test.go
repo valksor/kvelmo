@@ -670,69 +670,6 @@ func TestWriteNotConfigured(t *testing.T) {
 	}
 }
 
-func TestWriteRateLimited(t *testing.T) {
-	tests := []struct {
-		name       string
-		retryAfter int
-		wantHeader string
-	}{
-		{
-			name:       "with retry after",
-			retryAfter: 60,
-			wantHeader: "60",
-		},
-		{
-			name:       "retry after zero",
-			retryAfter: 0,
-			wantHeader: "",
-		},
-		{
-			name:       "retry after negative",
-			retryAfter: -1,
-			wantHeader: "",
-		},
-		{
-			name:       "retry after large value",
-			retryAfter: 3600,
-			wantHeader: "3600",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			WriteRateLimited(w, tt.retryAfter)
-
-			if w.Code != http.StatusTooManyRequests {
-				t.Errorf("WriteRateLimited() status = %d, want %d", w.Code, http.StatusTooManyRequests)
-			}
-
-			// Check Retry-After header
-			header := w.Header().Get("Retry-After")
-			if header != tt.wantHeader {
-				t.Errorf("WriteRateLimited() Retry-After = %s, want %s", header, tt.wantHeader)
-			}
-
-			var resp Response
-			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-				t.Fatalf("failed to parse response: %v", err)
-			}
-
-			if resp.Error == nil {
-				t.Fatal("WriteRateLimited() error = nil")
-			}
-
-			if resp.Error.Code != ErrCodeRateLimited {
-				t.Errorf("WriteRateLimited() code = %s, want %s", resp.Error.Code, ErrCodeRateLimited)
-			}
-
-			if resp.Error.Message != "rate limit exceeded" {
-				t.Errorf("WriteRateLimited() message = %s, want 'rate limit exceeded'", resp.Error.Message)
-			}
-		})
-	}
-}
-
 // Test error codes constants.
 func TestErrorCodes(t *testing.T) {
 	tests := []struct {
@@ -753,7 +690,6 @@ func TestErrorCodes(t *testing.T) {
 		{"Agent Error", ErrCodeAgentError, "AGENT_ERROR"},
 		{"Budget Exceeded", ErrCodeBudgetExceeded, "BUDGET_EXCEEDED"},
 		{"Not Configured", ErrCodeNotConfigured, "NOT_CONFIGURED"},
-		{"Rate Limited", ErrCodeRateLimited, "RATE_LIMITED"},
 	}
 
 	for _, tt := range tests {
