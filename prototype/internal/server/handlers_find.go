@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/xid"
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/conductor/commands"
 )
 
 // handleFindSearch handles find search requests via Web UI.
@@ -79,16 +80,15 @@ func (s *Server) streamFindResults(w http.ResponseWriter, r *http.Request, query
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Build find options
-	findOpts := conductor.FindOptions{
-		Query:   query,
-		Path:    path,
-		Pattern: pattern,
-		Context: contextLines,
-	}
-
-	// Get result channel from conductor
-	resultChan, err := s.config.Conductor.Find(r.Context(), findOpts)
+	result, err := commands.ExecuteWithRun(r.Context(), s.config.Conductor, "find", commands.Invocation{
+		Source: commands.SourceAPI,
+		Options: map[string]any{
+			"query":   query,
+			"path":    path,
+			"pattern": pattern,
+			"context": contextLines,
+		},
+	})
 	if err != nil {
 		s.writeSSEEvent(w, flusher, "error", map[string]string{
 			"message": err.Error(),
@@ -96,6 +96,24 @@ func (s *Server) streamFindResults(w http.ResponseWriter, r *http.Request, query
 
 		return
 	}
+	if result == nil {
+		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "empty response"})
+
+		return
+	}
+	if result.Type == commands.ResultError {
+		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": result.Message})
+
+		return
+	}
+	data, ok := result.Data.(map[string]any)
+	if !ok {
+		s.writeSSEEvent(w, flusher, "error", map[string]string{"message": "invalid response payload"})
+
+		return
+	}
+
+	matches, _ := data["matches"].([]conductor.FindResult)
 
 	// Generate session ID
 	sessionID := xid.New().String()
@@ -108,22 +126,14 @@ func (s *Server) streamFindResults(w http.ResponseWriter, r *http.Request, query
 
 	// Stream results
 	count := 0
-	for result := range resultChan {
-		if result.File == "__error__" {
-			s.writeSSEEvent(w, flusher, "error", map[string]string{
-				"message": result.Snippet,
-			})
-
-			continue
-		}
-
+	for _, match := range matches {
 		count++
 		s.writeSSEEvent(w, flusher, "result", map[string]any{
-			"file":    result.File,
-			"line":    result.Line,
-			"snippet": result.Snippet,
-			"context": result.Context,
-			"reason":  result.Reason,
+			"file":    match.File,
+			"line":    match.Line,
+			"snippet": match.Snippet,
+			"context": match.Context,
+			"reason":  match.Reason,
 		})
 		flusher.Flush()
 	}
@@ -137,36 +147,34 @@ func (s *Server) streamFindResults(w http.ResponseWriter, r *http.Request, query
 
 // handleFindSearchJSON returns search results as JSON.
 func (s *Server) handleFindSearchJSON(w http.ResponseWriter, r *http.Request, query, path, pattern string, contextLines int) {
-	// Build find options
-	findOpts := conductor.FindOptions{
-		Query:   query,
-		Path:    path,
-		Pattern: pattern,
-		Context: contextLines,
-	}
-
-	// Get result channel from conductor
-	resultChan, err := s.config.Conductor.Find(r.Context(), findOpts)
+	result, err := commands.ExecuteWithRun(r.Context(), s.config.Conductor, "find", commands.Invocation{
+		Source: commands.SourceAPI,
+		Options: map[string]any{
+			"query":   query,
+			"path":    path,
+			"pattern": pattern,
+			"context": contextLines,
+		},
+	})
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, err.Error())
+		s.mapErrorToHTTP(w, err)
+
+		return
+	}
+	if result == nil {
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"query":   query,
+			"count":   0,
+			"matches": []conductor.FindResult{},
+		})
+
+		return
+	}
+	if payload, ok := result.Data.(map[string]any); ok {
+		s.writeJSON(w, http.StatusOK, payload)
 
 		return
 	}
 
-	// Collect all results
-	var results []conductor.FindResult
-	for result := range resultChan {
-		if result.File == "__error__" {
-			s.writeError(w, http.StatusInternalServerError, result.Snippet)
-
-			return
-		}
-		results = append(results, result)
-	}
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"query":   query,
-		"count":   len(results),
-		"matches": results,
-	})
+	s.writeCommandResult(w, result)
 }

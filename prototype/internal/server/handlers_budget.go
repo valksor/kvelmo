@@ -8,26 +8,16 @@ import (
 
 // handleBudgetMonthlyStatus returns the monthly budget status as HTML partial.
 func (s *Server) handleBudgetMonthlyStatus(w http.ResponseWriter, r *http.Request) {
+	if s.config.Conductor != nil {
+		s.handleViaRouter(CommandRoute{
+			Command: "budget-monthly",
+		})(w, r)
+
+		return
+	}
+
 	var cfg *storage.WorkspaceConfig
 	var state *storage.MonthlyBudgetState
-
-	if s.config.Conductor != nil {
-		ws := s.config.Conductor.GetWorkspace()
-		if ws != nil {
-			var err error
-			cfg, err = ws.LoadConfig()
-			if err != nil {
-				// Fall back to defaults on error
-				cfg = storage.NewDefaultWorkspaceConfig()
-			}
-
-			state, err = ws.LoadMonthlyBudgetState()
-			if err != nil {
-				// No state file yet - that's ok, state will be nil
-				state = nil
-			}
-		}
-	}
 
 	// Use defaults if no config loaded (no workspace case)
 	if cfg == nil {
@@ -78,30 +68,4 @@ func (s *Server) writeBudgetStatusJSON(w http.ResponseWriter, cfg *storage.Works
 	}
 
 	s.writeJSON(w, http.StatusOK, response)
-}
-
-// handleBudgetMonthlyReset resets the monthly budget tracking.
-func (s *Server) handleBudgetMonthlyReset(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
-	}
-
-	// Reset monthly budget state
-	if err := ws.ResetMonthlyBudget(); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to reset budget: "+err.Error())
-
-		return
-	}
-
-	// Return updated status HTML
-	s.handleBudgetMonthlyStatus(w, r)
 }

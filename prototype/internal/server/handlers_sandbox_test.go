@@ -134,13 +134,13 @@ func TestHandler_SandboxEnable_NoConductor(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 
-	// Should return error when no conductor
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	// handleViaRouter returns 503 when conductor is nil
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 
 	respBody, _ := io.ReadAll(resp.Body)
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(respBody, &result))
-	assert.Contains(t, result["error"], "workspace not available")
+	assert.Contains(t, result["error"], "conductor not initialized")
 }
 
 func TestHandler_SandboxEnable_WithConductor(t *testing.T) {
@@ -306,77 +306,4 @@ func TestHandler_SandboxEnable_SSEEvent(t *testing.T) {
 
 	// The event would be published via SSE to connected clients
 	// Verifying actual SSE event delivery requires a separate integration test
-}
-
-func TestIsSandboxActive(t *testing.T) {
-	t.Run("returns false when no conductor", func(t *testing.T) {
-		s := &Server{}
-		assert.False(t, s.isSandboxActive())
-	})
-
-	t.Run("returns false when no active task", func(t *testing.T) {
-		cond, tmpDir := createTestConductor(t)
-
-		cfg := Config{
-			Port:          0,
-			Mode:          ModeProject,
-			Conductor:     cond,
-			WorkspaceRoot: tmpDir,
-		}
-
-		srv, err := New(cfg)
-		require.NoError(t, err)
-
-		assert.False(t, srv.isSandboxActive())
-	})
-}
-
-func TestIsSandboxEnabled(t *testing.T) {
-	t.Run("returns false when no conductor", func(t *testing.T) {
-		s := &Server{}
-		assert.False(t, s.isSandboxEnabled())
-	})
-
-	t.Run("returns false when sandbox not configured", func(t *testing.T) {
-		cond, tmpDir := createTestConductor(t)
-
-		cfg := Config{
-			Port:          0,
-			Mode:          ModeProject,
-			Conductor:     cond,
-			WorkspaceRoot: tmpDir,
-		}
-
-		srv, err := New(cfg)
-		require.NoError(t, err)
-
-		assert.False(t, srv.isSandboxEnabled())
-	})
-
-	t.Run("returns true when sandbox enabled", func(t *testing.T) {
-		cond, tmpDir := createTestConductor(t)
-
-		// Enable sandbox in config
-		ws := cond.GetWorkspace()
-		require.NotNil(t, ws)
-		workspaceCfg, err := ws.LoadConfig()
-		require.NoError(t, err)
-		workspaceCfg.Sandbox = &storage.SandboxSettings{
-			Enabled: true,
-			Network: true,
-		}
-		require.NoError(t, ws.SaveConfig(workspaceCfg))
-
-		cfg := Config{
-			Port:          0,
-			Mode:          ModeProject,
-			Conductor:     cond,
-			WorkspaceRoot: tmpDir,
-		}
-
-		srv, err := New(cfg)
-		require.NoError(t, err)
-
-		assert.True(t, srv.isSandboxEnabled())
-	})
 }

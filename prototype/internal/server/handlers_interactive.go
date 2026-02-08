@@ -14,7 +14,6 @@ import (
 	"github.com/valksor/go-mehrhof/internal/conductor/commands"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -45,13 +44,6 @@ type commandResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
 	State   string `json:"state,omitempty"`
-}
-
-type stateResponse struct {
-	Success bool   `json:"success"`
-	State   string `json:"state,omitempty"`
-	TaskID  string `json:"task_id,omitempty"`
-	Title   string `json:"title,omitempty"`
 }
 
 // parseChatRequest parses chat request from either JSON or form data.
@@ -172,6 +164,29 @@ func (s *Server) routerResultToJSON(result *commands.Result) map[string]any {
 		// Question pending for user
 		if result.Data != nil {
 			response["question"] = result.Data
+		}
+
+	case commands.ResultWaiting:
+		response["status"] = "waiting"
+		if data, ok := result.Data.(commands.WaitingData); ok {
+			response["question"] = data.Question
+			response["options"] = data.Options
+			if data.Phase != "" {
+				response["phase"] = data.Phase
+			}
+		}
+
+	case commands.ResultPaused:
+		response["status"] = "paused"
+
+	case commands.ResultStopped:
+		response["status"] = "stopped"
+
+	case commands.ResultConflict:
+		response["success"] = false
+		response["status"] = "conflict"
+		if result.Data != nil {
+			response["conflict"] = result.Data
 		}
 
 	case commands.ResultChat:
@@ -316,126 +331,6 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleInteractiveAnswer responds to an agent question.
-// POST /api/v1/interactive/answer.
-func (s *Server) handleInteractiveAnswer(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-
-		return
-	}
-
-	// Parse request
-	var req struct {
-		Response string `json:"response"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
-
-		return
-	}
-
-	if req.Response == "" {
-		s.writeError(w, http.StatusBadRequest, "response is required")
-
-		return
-	}
-
-	ctx := r.Context()
-	cond := s.config.Conductor
-	task := cond.GetActiveTask()
-
-	if task == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "no active task")
-
-		return
-	}
-
-	// Clear the pending question
-	if err := cond.GetWorkspace().ClearPendingQuestion(task.ID); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "clear pending question: "+err.Error())
-
-		return
-	}
-
-	// Add an answer as a note
-	if err := cond.GetWorkspace().AppendNote(task.ID, task.State, req.Response); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "save answer: "+err.Error())
-
-		return
-	}
-
-	// Resume workflow based on state
-	var err error
-	state := workflow.State(task.State)
-
-	switch state {
-	case workflow.StatePlanning:
-		err = cond.Plan(ctx)
-	case workflow.StateImplementing:
-		err = cond.Implement(ctx)
-	case workflow.StateReviewing:
-		err = cond.Review(ctx)
-	case workflow.StateIdle, workflow.StateDone, workflow.StateFailed,
-		workflow.StateWaiting, workflow.StatePaused, workflow.StateCheckpointing,
-		workflow.StateReverting, workflow.StateRestoring:
-		s.writeError(w, http.StatusBadRequest, "cannot resume from state: "+string(state))
-
-		return
-	}
-
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "resume workflow: "+err.Error())
-
-		return
-	}
-
-	s.writeJSON(w, http.StatusOK, commandResponse{
-		Success: true,
-		Message: "Answer sent, resuming...",
-	})
-}
-
-// handleInteractiveState returns the current state.
-// GET /api/v1/interactive/state.
-func (s *Server) handleInteractiveState(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-
-		return
-	}
-
-	resp := stateResponse{
-		Success: true,
-	}
-
-	// Return empty state if no conductor
-	if s.config.Conductor == nil {
-		s.writeJSON(w, http.StatusOK, resp)
-
-		return
-	}
-
-	cond := s.config.Conductor
-	task := cond.GetActiveTask()
-
-	if task != nil {
-		resp.State = task.State
-		resp.TaskID = task.ID
-		if work := cond.GetTaskWork(); work != nil {
-			resp.Title = work.Metadata.Title
-		}
-	}
-
-	s.writeJSON(w, http.StatusOK, resp)
-}
-
 // handleInteractiveStop pauses the current operation.
 // POST /api/v1/interactive/stop.
 func (s *Server) handleInteractiveStop(w http.ResponseWriter, r *http.Request) {
@@ -468,100 +363,6 @@ func (s *Server) handleInteractiveStop(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, commandResponse{
 		Success: true,
 		Message: fmt.Sprintf("Cancelled %s operation", opName),
-	})
-}
-
-// handleInteractiveCommands returns available commands for discovery.
-// GET /api/v1/interactive/commands.
-// This endpoint allows IDE plugins to discover available commands dynamically
-// rather than hardcoding command lists.
-func (s *Server) handleInteractiveCommands(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-
-		return
-	}
-
-	// Get all registered commands from the unified router
-	cmds := commands.Metadata()
-
-	// Include Web-specific commands that aren't in the router
-	webCommands := []commands.CommandInfo{
-		{
-			Name:         "reset",
-			Description:  "Reset workflow state to idle",
-			Category:     "control",
-			RequiresTask: false,
-		},
-		{
-			Name:         "auto",
-			Description:  "Auto-execute the next workflow step",
-			Category:     "workflow",
-			RequiresTask: true,
-		},
-		{
-			Name:         "find",
-			Aliases:      []string{"search"},
-			Description:  "Search codebase for patterns",
-			Category:     "exploration",
-			Args:         []commands.CommandArg{{Name: "query", Required: true, Description: "Search query"}},
-			RequiresTask: false,
-		},
-		{
-			Name:         "memory",
-			Aliases:      []string{"mem"},
-			Description:  "Search and manage semantic memory",
-			Category:     "exploration",
-			Args:         []commands.CommandArg{{Name: "query", Required: false, Description: "Memory search query"}},
-			RequiresTask: false,
-		},
-		{
-			Name:         "library",
-			Aliases:      []string{"lib"},
-			Description:  "Search project library",
-			Category:     "exploration",
-			Args:         []commands.CommandArg{{Name: "query", Required: false, Description: "Library search query"}},
-			RequiresTask: false,
-		},
-		{
-			Name:         "question",
-			Description:  "Ask agent a question and wait for response",
-			Category:     "interaction",
-			Args:         []commands.CommandArg{{Name: "question", Required: true, Description: "Question to ask"}},
-			RequiresTask: true,
-		},
-		{
-			Name:         "delete",
-			Aliases:      []string{"del", "rm"},
-			Description:  "Delete the current task",
-			Category:     "task",
-			RequiresTask: true,
-		},
-		{
-			Name:         "export",
-			Description:  "Export task to file",
-			Category:     "task",
-			RequiresTask: true,
-		},
-		{
-			Name:         "submit",
-			Description:  "Submit task for project",
-			Category:     "workflow",
-			RequiresTask: true,
-		},
-		{
-			Name:         "sync",
-			Description:  "Sync task with external source",
-			Category:     "workflow",
-			RequiresTask: true,
-		},
-	}
-
-	// Combine router commands with Web-specific commands
-	allCommands := append(cmds, webCommands...)
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"commands": allCommands,
 	})
 }
 

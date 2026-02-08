@@ -259,8 +259,7 @@ func TestHandler_QuickTaskCreate_InvalidJSON(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }
 
-func TestHandler_QuickTaskNote_BackwardCompatibility(t *testing.T) {
-	// Test both "content" and "note" field names are accepted
+func TestHandler_QuickTaskNote_RequiresNoteField(t *testing.T) {
 	cfg := Config{
 		Port:      0,
 		Mode:      ModeProject,
@@ -273,19 +272,9 @@ func TestHandler_QuickTaskNote_BackwardCompatibility(t *testing.T) {
 	ctx := context.Background()
 	client := testHTTPClient()
 
-	// Test legacy "content" field
-	body := bytes.NewBufferString(`{"content": "test note with legacy field"}`)
+	body := bytes.NewBufferString(`{"note": "test note with new field"}`)
 	resp, err := doPost(ctx, client, srv.URL()+"/api/v1/quick/task-1/note", body)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
-	// Fails on conductor check
-	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-
-	// Test new "note" field
-	body = bytes.NewBufferString(`{"note": "test note with new field"}`)
-	resp, err = doPost(ctx, client, srv.URL()+"/api/v1/quick/task-1/note", body)
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-	// Fails on conductor check
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }

@@ -6,7 +6,7 @@ import Project from './Project'
 
 function getCreatePlanTab(): HTMLButtonElement {
   const tab = screen
-    .getAllByRole('button', { name: /create plan/i })
+    .getAllByRole('tab', { name: /create plan/i })
     .find((button): button is HTMLButtonElement => button.className.includes('tab'))
 
   if (!tab) {
@@ -38,7 +38,7 @@ describe('Project Page', () => {
 
       await waitFor(() => {
         expect(getCreatePlanTab()).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /queues/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /queues/i })).toBeInTheDocument()
       })
     })
 
@@ -63,10 +63,10 @@ describe('Project Page', () => {
       render(<Project />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /queues/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /queues/i })).toBeInTheDocument()
       })
 
-      await user.click(screen.getByRole('button', { name: /queues/i }))
+      await user.click(screen.getByRole('tab', { name: /queues/i }))
 
       await waitFor(() => {
         expect(screen.getByText(/dashboard - tasks - queue/i)).toBeInTheDocument()
