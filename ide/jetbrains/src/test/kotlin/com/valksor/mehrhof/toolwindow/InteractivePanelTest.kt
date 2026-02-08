@@ -50,9 +50,10 @@ class InteractivePanelTest {
         every { service.currentTaskWork } returns null
 
         // Mock API calls that may be triggered during state listener callbacks
-        every { client.getInteractiveState() } returns Result.success(
-            InteractiveStateResponse(success = true, state = "idle")
-        )
+        every { client.getInteractiveState() } returns
+            Result.success(
+                InteractiveStateResponse(success = true, state = "idle"),
+            )
 
         // Mock ActionManager for toolbar
         mockkStatic(ActionManager::class)

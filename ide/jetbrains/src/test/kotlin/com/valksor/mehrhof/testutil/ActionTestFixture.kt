@@ -6,39 +6,9 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
 import com.valksor.mehrhof.api.MehrhofApiClient
-import com.valksor.mehrhof.api.models.AddNoteResponse
-import com.valksor.mehrhof.api.models.AllCostsResponse
-import com.valksor.mehrhof.api.models.BrowserCloseResponse
-import com.valksor.mehrhof.api.models.BrowserClickResponse
-import com.valksor.mehrhof.api.models.BrowserConsoleResponse
-import com.valksor.mehrhof.api.models.BrowserEvalResponse
-import com.valksor.mehrhof.api.models.BrowserGotoResponse
-import com.valksor.mehrhof.api.models.BrowserNavigateResponse
-import com.valksor.mehrhof.api.models.BrowserNetworkResponse
-import com.valksor.mehrhof.api.models.BrowserReloadResponse
-import com.valksor.mehrhof.api.models.BrowserScreenshotResponse
-import com.valksor.mehrhof.api.models.BrowserStatusResponse
-import com.valksor.mehrhof.api.models.BrowserTabsResponse
-import com.valksor.mehrhof.api.models.BrowserTypeResponse
-import com.valksor.mehrhof.api.models.ContinueResponse
-import com.valksor.mehrhof.api.models.EntityLinksResponse
-import com.valksor.mehrhof.api.models.GrandTotal
-import com.valksor.mehrhof.api.models.FindSearchResponse
-import com.valksor.mehrhof.api.models.InteractiveCommandResponse
-import com.valksor.mehrhof.api.models.LibraryCollection
-import com.valksor.mehrhof.api.models.LibraryListResponse
-import com.valksor.mehrhof.api.models.LibraryShowResponse
-import com.valksor.mehrhof.api.models.LibraryStatsResponse
-import com.valksor.mehrhof.api.models.LinksListResponse
-import com.valksor.mehrhof.api.models.LinksSearchResponse
-import com.valksor.mehrhof.api.models.LinksStatsResponse
-import com.valksor.mehrhof.api.models.MemoryIndexResponse
-import com.valksor.mehrhof.api.models.MemorySearchResponse
-import com.valksor.mehrhof.api.models.MemoryStatsResponse
-import com.valksor.mehrhof.api.models.TaskCostResponse
-import com.valksor.mehrhof.api.models.WorkflowResponse
 import com.valksor.mehrhof.api.browserClick
 import com.valksor.mehrhof.api.browserClose
 import com.valksor.mehrhof.api.browserConsole
@@ -68,11 +38,41 @@ import com.valksor.mehrhof.api.linksStats
 import com.valksor.mehrhof.api.memoryIndex
 import com.valksor.mehrhof.api.memorySearch
 import com.valksor.mehrhof.api.memoryStats
+import com.valksor.mehrhof.api.models.AddNoteResponse
+import com.valksor.mehrhof.api.models.AllCostsResponse
+import com.valksor.mehrhof.api.models.BrowserClickResponse
+import com.valksor.mehrhof.api.models.BrowserCloseResponse
+import com.valksor.mehrhof.api.models.BrowserConsoleResponse
+import com.valksor.mehrhof.api.models.BrowserEvalResponse
+import com.valksor.mehrhof.api.models.BrowserGotoResponse
+import com.valksor.mehrhof.api.models.BrowserNavigateResponse
+import com.valksor.mehrhof.api.models.BrowserNetworkResponse
+import com.valksor.mehrhof.api.models.BrowserReloadResponse
+import com.valksor.mehrhof.api.models.BrowserScreenshotResponse
+import com.valksor.mehrhof.api.models.BrowserStatusResponse
+import com.valksor.mehrhof.api.models.BrowserTabsResponse
+import com.valksor.mehrhof.api.models.BrowserTypeResponse
+import com.valksor.mehrhof.api.models.ContinueResponse
+import com.valksor.mehrhof.api.models.EntityLinksResponse
+import com.valksor.mehrhof.api.models.FindSearchResponse
+import com.valksor.mehrhof.api.models.GrandTotal
+import com.valksor.mehrhof.api.models.InteractiveCommandResponse
+import com.valksor.mehrhof.api.models.LibraryCollection
+import com.valksor.mehrhof.api.models.LibraryListResponse
+import com.valksor.mehrhof.api.models.LibraryShowResponse
+import com.valksor.mehrhof.api.models.LibraryStatsResponse
+import com.valksor.mehrhof.api.models.LinksListResponse
+import com.valksor.mehrhof.api.models.LinksSearchResponse
+import com.valksor.mehrhof.api.models.LinksStatsResponse
+import com.valksor.mehrhof.api.models.MemoryIndexResponse
+import com.valksor.mehrhof.api.models.MemorySearchResponse
+import com.valksor.mehrhof.api.models.MemoryStatsResponse
+import com.valksor.mehrhof.api.models.TaskCostResponse
+import com.valksor.mehrhof.api.models.WorkflowResponse
 import com.valksor.mehrhof.api.optimizeQueueTask
 import com.valksor.mehrhof.api.submitQueueTask
 import com.valksor.mehrhof.api.syncTask
 import com.valksor.mehrhof.services.MehrhofProjectService
-import com.intellij.openapi.ui.InputValidator
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -322,30 +322,40 @@ class ActionTestFixture {
 
     private fun setUpExtensionMocks() {
         mockkStatic("com.valksor.mehrhof.api.MehrhofApiClientExtensionsKt")
+        setUpQueueMocks()
+        setUpFindMock()
+        setUpMemoryMocks()
+        setUpLibraryMocks()
+        setUpLinksMocks()
+        setUpBrowserMocks()
+    }
 
+    private fun setUpQueueMocks() {
         val okCommand = Result.success(InteractiveCommandResponse(success = true))
-
-        // Queue task extensions
         every { client.createQuickTask(any()) } returns okCommand
         every { client.deleteQueueTask(any(), any()) } returns okCommand
         every { client.exportQueueTask(any(), any()) } returns okCommand
         every { client.optimizeQueueTask(any(), any()) } returns okCommand
         every { client.submitQueueTask(any(), any(), any()) } returns okCommand
         every { client.syncTask() } returns okCommand
+    }
 
-        // Find extension
+    private fun setUpFindMock() {
         every { client.find(any()) } returns
             Result.success(FindSearchResponse(query = "", count = 0, matches = emptyList()))
+    }
 
-        // Memory extensions
+    private fun setUpMemoryMocks() {
         every { client.memorySearch(any()) } returns
             Result.success(MemorySearchResponse(results = emptyList(), count = 0))
         every { client.memoryIndex(any()) } returns
             Result.success(MemoryIndexResponse(success = true))
         every { client.memoryStats() } returns
             Result.success(MemoryStatsResponse(totalDocuments = 0, byType = emptyMap(), enabled = true))
+    }
 
-        // Library extensions
+    private fun setUpLibraryMocks() {
+        val okCommand = Result.success(InteractiveCommandResponse(success = true))
         every { client.libraryList() } returns
             Result.success(LibraryListResponse(collections = emptyList(), count = 0))
         every { client.libraryShow(any()) } returns
@@ -379,8 +389,10 @@ class ActionTestFixture {
             )
         every { client.libraryPull(any(), any(), any()) } returns okCommand
         every { client.libraryRemove(any()) } returns okCommand
+    }
 
-        // Links extensions
+    private fun setUpLinksMocks() {
+        val okCommand = Result.success(InteractiveCommandResponse(success = true))
         every { client.linksList() } returns
             Result.success(LinksListResponse(links = emptyList(), count = 0))
         every { client.linksGet(any()) } returns
@@ -399,8 +411,9 @@ class ActionTestFixture {
                 ),
             )
         every { client.linksRebuild() } returns okCommand
+    }
 
-        // Browser extensions
+    private fun setUpBrowserMocks() {
         every { client.browserStatus() } returns
             Result.success(BrowserStatusResponse(connected = false, tabs = emptyList()))
         every { client.browserTabs() } returns

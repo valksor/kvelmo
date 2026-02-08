@@ -1,13 +1,10 @@
 package com.valksor.mehrhof.settings
 
-import com.intellij.openapi.options.ConfigurationException
-import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
