@@ -2,6 +2,8 @@
 // All command logic lives here; CLI and Web become thin presentation layers.
 package commands
 
+import "context"
+
 // ResultType categorizes the kind of response a command returns.
 type ResultType string
 
@@ -17,16 +19,24 @@ const (
 	ResultChat           ResultType = "chat"           // Chat/agent response
 	ResultHelp           ResultType = "help"           // Help text
 	ResultExit           ResultType = "exit"           // Signal to exit REPL
+	ResultWaiting        ResultType = "waiting"        // Pending question from agent
+	ResultPaused         ResultType = "paused"         // Budget paused
+	ResultStopped        ResultType = "stopped"        // Budget stopped
+	ResultConflict       ResultType = "conflict"       // Active task conflict
 )
+
+// Executor runs the second phase of a command invocation.
+type Executor func(ctx context.Context) error
 
 // Result is the unified response for all commands.
 // Clients render this based on their interface (CLI, Web, IDE).
 type Result struct {
-	Type    ResultType `json:"type"`
-	Message string     `json:"message"`           // Human-readable summary
-	Data    any        `json:"data,omitempty"`    // Typed payload for structured data
-	State   string     `json:"state,omitempty"`   // Current workflow state after command
-	TaskID  string     `json:"task_id,omitempty"` // Active task ID if applicable
+	Type     ResultType `json:"type"`
+	Message  string     `json:"message"`           // Human-readable summary
+	Data     any        `json:"data,omitempty"`    // Typed payload for structured data
+	State    string     `json:"state,omitempty"`   // Current workflow state after command
+	TaskID   string     `json:"task_id,omitempty"` // Active task ID if applicable
+	Executor Executor   `json:"-"`                 // Optional execution phase (never serialized)
 }
 
 // NewResult creates a basic message result.
@@ -172,4 +182,18 @@ type SpecificationItem struct {
 	Description string `json:"description,omitempty"`
 	Status      string `json:"status"`
 	Component   string `json:"component,omitempty"`
+}
+
+// QuestionOption is a selectable option for pending questions.
+type QuestionOption struct {
+	Label       string `json:"label"`
+	Value       string `json:"value,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// WaitingData contains pending question details.
+type WaitingData struct {
+	Question string           `json:"question"`
+	Options  []QuestionOption `json:"options,omitempty"`
+	Phase    string           `json:"phase"`
 }
