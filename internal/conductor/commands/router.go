@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 )
 
@@ -31,9 +32,10 @@ const (
 
 // Invocation is a structured command invocation.
 type Invocation struct {
-	Args    []string       `json:"args,omitempty"`
-	Options map[string]any `json:"options,omitempty"`
-	Source  InvocationSource
+	Args     []string             `json:"args,omitempty"`
+	Options  map[string]any       `json:"options,omitempty"`
+	Source   InvocationSource     `json:"-"`
+	StreamCB agent.StreamCallback `json:"-"` // Optional streaming callback for chat commands
 }
 
 // HandlerFunc is the signature for all command handlers.

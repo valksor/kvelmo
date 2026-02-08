@@ -15,6 +15,7 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	routercommands "github.com/valksor/go-mehrhof/internal/conductor/commands"
 	mehrhofdisplay "github.com/valksor/go-mehrhof/internal/display"
@@ -287,10 +288,22 @@ func (s *InteractiveSession) handleCommand(ctx context.Context, input string) er
 func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, args []string, input string) error {
 	// First, check if the command is handled by the unified router
 	if routercommands.IsKnownCommand(cmd) {
-		result, err := routercommands.Execute(ctx, s.cond, cmd, routercommands.Invocation{
+		// Build invocation with streaming callback for chat commands
+		inv := routercommands.Invocation{
 			Args:   args,
 			Source: routercommands.SourceREPL,
-		})
+		}
+
+		// Chat commands need streaming callback for real-time output
+		if cmd == "chat" || cmd == "c" || cmd == "ask" {
+			s.printf(true, "\n%s %s\n", display.Bold("You:"), strings.Join(args, " "))
+			s.printf(true, "%s\n", display.Bold("Agent:"))
+			inv.StreamCB = func(event agent.Event) error {
+				return s.handleAgentEvent(event)
+			}
+		}
+
+		result, err := routercommands.Execute(ctx, s.cond, cmd, inv)
 		if err != nil {
 			// Check for specific error types
 			if errors.Is(err, routercommands.ErrNoActiveTask) {
@@ -307,8 +320,12 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 				return io.EOF
 			}
 
-			// Render the result for CLI display
-			s.renderResult(result)
+			// Render the result for CLI display (skip for chat, already streamed)
+			if cmd != "chat" && cmd != "c" && cmd != "ask" {
+				s.renderResult(result)
+			} else {
+				fmt.Println() // New line after streamed response
+			}
 
 			// Update local state if result includes state
 			if result.State != "" {
@@ -319,31 +336,8 @@ func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, arg
 		return nil
 	}
 
-	// Handle CLI-specific commands that aren't in the router
-	// These have special behavior like streaming, interactive prompts, or complex subcommands
-	switch cmd {
-	case "chat":
-		return s.handleChat(ctx, strings.Join(args, " "))
-
-	case "find":
-		return s.handleFind(ctx, args)
-
-	case "simplify":
-		return s.handleSimplify(ctx, args)
-
-	case "label":
-		return s.handleLabel(ctx, args)
-
-	case "memory":
-		return s.handleMemory(ctx, args)
-
-	case "library":
-		return s.handleLibrary(ctx, args)
-
-	default:
-		// If no recognized command, treat as a chat message
-		return s.handleChat(ctx, input)
-	}
+	// Unknown commands are treated as chat messages - route through router
+	return s.executeCommand(ctx, "chat", []string{input}, input)
 }
 
 // printHelp displays available commands.
@@ -401,27 +395,6 @@ func (s *InteractiveSession) printHelp() {
 	s.printf(true, "\n")
 }
 
-// buildChatPrompt builds a prompt for chat with context.
-func (s *InteractiveSession) buildChatPrompt(message string) string {
-	var builder strings.Builder
-
-	builder.WriteString("You are an AI assistant helping with a software development task.\n\n")
-
-	// Add the current task context
-	task := s.cond.GetActiveTask()
-	if task != nil {
-		if work := s.cond.GetTaskWork(); work != nil {
-			builder.WriteString(fmt.Sprintf("Task: %s\n", work.Metadata.Title))
-			builder.WriteString(fmt.Sprintf("Current State: %s\n\n", s.state))
-		}
-	}
-
-	builder.WriteString("User message: ")
-	builder.WriteString(message)
-
-	return builder.String()
-}
-
 // getPrompt returns the current prompt string.
 func (s *InteractiveSession) getPrompt() string {
 	stateStr := string(s.state)
@@ -434,6 +407,7 @@ func (s *InteractiveSession) getPrompt() string {
 func (s *InteractiveSession) getCompleter() *readline.PrefixCompleter {
 	return readline.NewPrefixCompleter(
 		readline.PcItem("chat"),
+		readline.PcItem("c"),
 		readline.PcItem("ask"),
 		readline.PcItem("start"),
 		readline.PcItem("plan"),

@@ -38,6 +38,20 @@ func TestArgumentValidationPaths(t *testing.T) {
 		errSub string
 	}{
 		{
+			name: "chat requires message",
+			call: func() (*Result, error) {
+				return handleChat(context.Background(), cond, Invocation{})
+			},
+			errSub: "message cannot be empty",
+		},
+		{
+			name: "chat no agent available",
+			call: func() (*Result, error) {
+				return handleChat(context.Background(), cond, Invocation{Args: []string{"hello"}})
+			},
+			errSub: "no agent available",
+		},
+		{
 			name: "start requires ref",
 			call: func() (*Result, error) {
 				return handleStart(context.Background(), cond, Invocation{})

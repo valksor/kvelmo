@@ -231,7 +231,7 @@ func (s *Server) handleInteractiveChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Message == "" {
-		s.writeError(w, http.StatusBadRequest, "message is required")
+		s.writeError(w, http.StatusBadRequest, "message cannot be empty")
 
 		return
 	}

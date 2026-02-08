@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/conductor/commands"
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-toolkit/eventbus"
@@ -48,10 +50,34 @@ func (s *Server) handleInteractiveCommand(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := commands.Execute(opCtx, s.config.Conductor, req.Command, commands.Invocation{
+	// Build invocation with optional streaming callback for chat
+	inv := commands.Invocation{
 		Args:   req.Args,
 		Source: commands.SourceInteractive,
-	})
+	}
+
+	// Add streaming callback for chat commands to publish agent events via SSE
+	if req.Command == "chat" || req.Command == "c" || req.Command == "ask" {
+		taskID := ""
+		if task := s.config.Conductor.GetActiveTask(); task != nil {
+			taskID = task.ID
+		}
+		inv.StreamCB = func(event agent.Event) error {
+			// Publish agent output to EventBus for SSE streaming
+			evt := events.AgentMessageEvent{
+				TaskID:    taskID,
+				Content:   event.Text,
+				Role:      "assistant",
+				Timestamp: time.Now(),
+			}
+			s.config.EventBus.PublishRaw(evt.ToEvent())
+			slog.Debug("streamed agent event", "task_id", taskID, "text_len", len(event.Text))
+
+			return nil
+		}
+	}
+
+	result, err := commands.Execute(opCtx, s.config.Conductor, req.Command, inv)
 	if err != nil {
 		switch {
 		case errors.Is(err, commands.ErrNoActiveTask):
