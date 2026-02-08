@@ -1,5 +1,6 @@
 package com.valksor.mehrhof.settings
 
+import com.intellij.openapi.options.ConfigurationException
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
 import io.mockk.every
