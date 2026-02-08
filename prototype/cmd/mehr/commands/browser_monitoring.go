@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -41,17 +40,13 @@ func runBrowserConsole(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	duration := time.Duration(consoleDuration * float64(time.Second))
-	messages, err := ctrl.GetConsoleLogs(ctx, tabs[0].ID, duration)
+	messages, err := ctrl.GetConsoleLogs(ctx, tabID, duration)
 	if err != nil {
 		return fmt.Errorf("get console logs: %w", err)
 	}
@@ -116,17 +111,13 @@ func runBrowserNetwork(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	duration := time.Duration(networkDuration * float64(time.Second))
-	requests, err := ctrl.GetNetworkRequests(ctx, tabs[0].ID, duration)
+	requests, err := ctrl.GetNetworkRequests(ctx, tabID, duration)
 	if err != nil {
 		return fmt.Errorf("get network requests: %w", err)
 	}

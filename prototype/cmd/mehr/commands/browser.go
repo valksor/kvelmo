@@ -22,6 +22,7 @@ var (
 	browserStrictCerts bool // Enable strict certificate validation
 	browserKeepAlive   bool // Keep browser running after command completes
 	cookieProfile      string
+	browserTabID       string             // Target a specific tab by ID (for MCP/agent use)
 	browserMCPMode     bool               // Set by MCP server to enable session reuse between tool calls
 	mcpCtrl            browser.Controller // Cached controller for MCP mode (reused across tool calls)
 	mcpCtrlMu          sync.Mutex
@@ -58,6 +59,13 @@ var browserCmd = &cobra.Command{
 By default, launches an isolated Chrome instance on a random port.
 This prevents hijacking your active browser session.
 
+Tab Targeting (for MCP/agent use):
+  1. List tabs:     mehr browser tabs
+  2. Open new tab:  mehr browser goto https://example.com  (returns tab ID)
+  3. Target tab:    mehr browser screenshot --tab-id <id>
+
+If --tab-id is omitted, commands target the first open tab (backward compatible).
+
 To keep the browser running for use by AI agents or further commands:
   mehr browser --keep-alive navigate https://example.com
 
@@ -80,6 +88,7 @@ func init() {
 	browserCmd.PersistentFlags().BoolVar(&browserStrictCerts, "strict-certs", false, "Enable strict certificate validation (default: ignore)")
 	browserCmd.PersistentFlags().BoolVar(&browserKeepAlive, "keep-alive", false, "Keep browser running after command completes")
 	browserCmd.PersistentFlags().StringVar(&cookieProfile, "cookie-profile", "default", "Cookie profile to use")
+	browserCmd.PersistentFlags().StringVar(&browserTabID, "tab-id", "", "Target a specific tab by ID (use 'browser tabs' to list IDs)")
 
 	browserCmd.AddCommand(browserStatusCmd)
 	browserCmd.AddCommand(browserTabsCmd)
@@ -256,6 +265,7 @@ func runBrowserGoto(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Opened new tab: %s\n", tab.Title)
 	fmt.Printf("URL: %s\n", tab.URL)
+	fmt.Printf("Tab ID: %s\n", tab.ID)
 
 	if browserKeepAlive {
 		printKeepAliveMessage(ctrl)
@@ -274,16 +284,12 @@ func runBrowserNavigate(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	if err := ctrl.Navigate(ctx, tabs[0].ID, url); err != nil {
+	if err := ctrl.Navigate(ctx, tabID, url); err != nil {
 		return fmt.Errorf("navigate: %w", err)
 	}
 
@@ -345,16 +351,12 @@ func runBrowserReload(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	if err := ctrl.Reload(ctx, tabs[0].ID, reloadHard); err != nil {
+	if err := ctrl.Reload(ctx, tabID, reloadHard); err != nil {
 		return fmt.Errorf("reload: %w", err)
 	}
 
@@ -477,4 +479,20 @@ func setupKeepAliveSignalHandler(ctx context.Context, ctrl browser.Controller) {
 		case <-ctx.Done():
 		}
 	}()
+}
+
+// resolveTabID returns the requested tab ID, or defaults to the first open tab.
+// This enables explicit tab targeting via --tab-id flag while maintaining
+// backward compatibility (omitting the flag uses the first tab).
+func resolveTabID(ctx context.Context, ctrl browser.Controller, tabID string) (string, error) {
+	if tabID != "" {
+		return tabID, nil
+	}
+
+	tabs, err := ctrl.ListTabs(ctx)
+	if err != nil || len(tabs) == 0 {
+		return "", errors.New("no tabs open")
+	}
+
+	return tabs[0].ID, nil
 }

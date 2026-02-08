@@ -227,12 +227,19 @@ func runFinish(cmd *cobra.Command, args []string) error {
 	}
 
 	// Perform finish
-	if err := cond.Finish(ctx, opts); err != nil {
+	if err := cond.Finish(ctx, opts); errors.Is(err, conductor.ErrPendingQuestion) {
+		// Provider doesn't support PRs — prompt the user for an action
+		action := promptFinishAction()
+		opts.FinishAction = action
+		if err := cond.Finish(ctx, opts); err != nil {
+			return fmt.Errorf("finish: %w", err)
+		}
+	} else if err != nil {
 		return fmt.Errorf("finish: %w", err)
 	}
 
 	// Success message depends on what happened
-	if finishMerge {
+	if finishMerge || opts.FinishAction == "merge" {
 		fmt.Println(tkdisplay.SuccessMsg("Task completed and merged"))
 	} else {
 		fmt.Println(tkdisplay.SuccessMsg("Task completed"))
@@ -246,4 +253,35 @@ func runFinish(cmd *cobra.Command, args []string) error {
 	)
 
 	return nil
+}
+
+// promptFinishAction prompts the user to choose an action when the provider
+// doesn't support pull requests. This keeps terminal I/O in the CLI layer.
+func promptFinishAction() string {
+	fmt.Println("\nThe provider for this task does not support pull requests.")
+	fmt.Println("What would you like to do?")
+	fmt.Println("  1. Merge changes to target branch locally")
+	fmt.Println("  2. Mark task as done (no merge)")
+	fmt.Println("  3. Cancel")
+
+	for {
+		var choice string
+		fmt.Print("\nEnter choice (1-3): ")
+		if _, err := fmt.Scanln(&choice); err != nil {
+			fmt.Println("\nCancelled")
+
+			return "cancel"
+		}
+
+		switch choice {
+		case "1", "merge":
+			return "merge"
+		case "2", "done":
+			return "done"
+		case "3", "cancel", "q":
+			return "cancel"
+		default:
+			fmt.Println("Invalid choice. Please enter 1, 2, or 3.")
+		}
+	}
 }

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -59,15 +58,12 @@ func runBrowserSource(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanup()
 
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	source, err := ctrl.GetPageSource(ctx, tabs[0].ID)
+	source, err := ctrl.GetPageSource(ctx, tabID)
 	if err != nil {
 		return fmt.Errorf("get page source: %w", err)
 	}
@@ -97,15 +93,12 @@ func runBrowserScripts(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanup()
 
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	scripts, err := ctrl.GetScriptSources(ctx, tabs[0].ID)
+	scripts, err := ctrl.GetScriptSources(ctx, tabID)
 	if err != nil {
 		return fmt.Errorf("get scripts: %w", err)
 	}
@@ -165,16 +158,13 @@ func runBrowserWebSocket(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanup()
 
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	duration := time.Duration(wsDuration * float64(time.Second))
-	frames, err := ctrl.GetWebSocketFrames(ctx, tabs[0].ID, duration)
+	frames, err := ctrl.GetWebSocketFrames(ctx, tabID, duration)
 	if err != nil {
 		return fmt.Errorf("get websocket frames: %w", err)
 	}
@@ -253,16 +243,13 @@ func runBrowserCoverage(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanup()
 
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	duration := time.Duration(coverageDuration * float64(time.Second))
-	summary, jsEntries, cssEntries, err := ctrl.GetCoverage(ctx, tabs[0].ID, duration, coverageJS, coverageCSS)
+	summary, jsEntries, cssEntries, err := ctrl.GetCoverage(ctx, tabID, duration, coverageJS, coverageCSS)
 	if err != nil {
 		return fmt.Errorf("get coverage: %w", err)
 	}
@@ -363,17 +350,14 @@ func runBrowserStyles(cmd *cobra.Command, _ []string) error {
 	}
 	defer cleanup()
 
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	// Show computed styles
 	if stylesComputed {
-		styles, err := ctrl.GetComputedStyles(ctx, tabs[0].ID, stylesSelector)
+		styles, err := ctrl.GetComputedStyles(ctx, tabID, stylesSelector)
 		if err != nil {
 			return fmt.Errorf("get computed styles: %w", err)
 		}
@@ -396,7 +380,7 @@ func runBrowserStyles(cmd *cobra.Command, _ []string) error {
 
 	// Show matched rules
 	if stylesMatched || stylesInherited {
-		matched, err := ctrl.GetMatchedStyles(ctx, tabs[0].ID, stylesSelector)
+		matched, err := ctrl.GetMatchedStyles(ctx, tabID, stylesSelector)
 		if err != nil {
 			return fmt.Errorf("get matched styles: %w", err)
 		}

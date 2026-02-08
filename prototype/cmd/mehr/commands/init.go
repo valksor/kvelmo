@@ -225,6 +225,7 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace) error {
 //   - Commit prefix: [<ticket-id>]
 //   - Specs: tickets/<task-id>/SPEC-N.md
 //   - Reviews: tickets/<task-id>/CODERABBIT-N.txt
+//   - Timezone: Europe/Riga
 func applyASCConfig(cfg *storage.WorkspaceConfig) {
 	cfg.Git.BranchPattern = "asc/{key}"
 	cfg.Git.CommitPrefix = "[{key}]"
@@ -232,4 +233,9 @@ func applyASCConfig(cfg *storage.WorkspaceConfig) {
 	cfg.Storage.ProjectDir = "tickets"
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"
 	cfg.Review.FilenamePattern = "CODERABBIT-{n}.txt"
+
+	if cfg.Display == nil {
+		cfg.Display = &storage.DisplaySettings{}
+	}
+	cfg.Display.Timezone = "Europe/Riga"
 }

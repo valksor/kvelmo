@@ -226,15 +226,12 @@ func TestShowActiveTask_WithTask(t *testing.T) {
 	tc.CreateTaskWork("test-task-1", "My Test Task")
 
 	oldJSON := statusJSON
-	oldDiagram := statusDiagram
 
 	defer func() {
 		statusJSON = oldJSON
-		statusDiagram = oldDiagram
 	}()
 
 	statusJSON = false
-	statusDiagram = false
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
