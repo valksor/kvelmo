@@ -492,6 +492,14 @@ func (s *Server) setupRouter() http.Handler {
 			UnwrapData: true,
 		}))
 
+		// i18n endpoints (translations and user overrides)
+		mux.HandleFunc("GET /api/v1/i18n/overrides", s.handleGetI18nOverrides)
+		mux.HandleFunc("GET /api/v1/i18n/overrides/global", s.handleGetI18nOverridesGlobal)
+		mux.HandleFunc("GET /api/v1/i18n/overrides/project", s.handleGetI18nOverridesProject)
+		mux.HandleFunc("POST /api/v1/i18n/overrides/global", s.handleSaveI18nOverridesGlobal)
+		mux.HandleFunc("POST /api/v1/i18n/overrides/project", s.handleSaveI18nOverridesProject)
+		mux.HandleFunc("GET /api/v1/i18n/keys", s.handleGetI18nKeys)
+
 		// Sandbox endpoints
 		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleViaRouter(CommandRoute{
 			Command:           "sandbox-status",
@@ -717,6 +725,14 @@ func (s *Server) setupRouter() http.Handler {
 			Command:    "provider-health",
 			UnwrapData: true,
 		}))
+
+		// i18n endpoints (translations and user overrides)
+		mux.HandleFunc("GET /api/v1/i18n/overrides", s.handleGetI18nOverrides)
+		mux.HandleFunc("GET /api/v1/i18n/overrides/global", s.handleGetI18nOverridesGlobal)
+		mux.HandleFunc("GET /api/v1/i18n/overrides/project", s.handleGetI18nOverridesProject)
+		mux.HandleFunc("POST /api/v1/i18n/overrides/global", s.handleSaveI18nOverridesGlobal)
+		mux.HandleFunc("POST /api/v1/i18n/overrides/project", s.handleSaveI18nOverridesProject)
+		mux.HandleFunc("GET /api/v1/i18n/keys", s.handleGetI18nKeys)
 
 		// Budget status endpoint (returns placeholder when no workspace)
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
