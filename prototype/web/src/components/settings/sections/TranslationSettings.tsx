@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, Languages, Loader2, RotateCcw, Save } from 'lucide-react'
 import { CollapseSection } from '../FormField'
@@ -36,16 +36,9 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
   const saveGlobal = useSaveI18nOverrides('global')
   const saveProject = useSaveI18nOverrides('project')
 
-  // Local state for edits
-  const [terminologyEntries, setTerminologyEntries] = useState<TerminologyEntry[]>([])
-  const [keyEntries, setKeyEntries] = useState<KeyOverrideEntry[]>([])
-  const [hasChanges, setHasChanges] = useState(false)
-  // Screen reader announcement for save/reset status
-  const [statusAnnouncement, setStatusAnnouncement] = useState<string | null>(null)
-
-  // Initialize local state from fetched data
-  useEffect(() => {
-    if (!overrideData) return
+  // Derive initial entries from fetched data using useMemo (avoids setState in useEffect)
+  const initialEntries = useMemo(() => {
+    if (!overrideData) return { terminology: [] as TerminologyEntry[], keys: [] as KeyOverrideEntry[] }
 
     // Convert terminology maps to entry arrays
     // Use ?? {} to handle undefined/null from API responses
@@ -88,10 +81,19 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
       }
     }
 
-    setTerminologyEntries(termEntries)
-    setKeyEntries(keyEntriesArr)
-    setHasChanges(false)
+    return { terminology: termEntries, keys: keyEntriesArr }
   }, [overrideData])
+
+  // Local state for user edits (null means use initial values)
+  const [editedTerminology, setEditedTerminology] = useState<TerminologyEntry[] | null>(null)
+  const [editedKeys, setEditedKeys] = useState<KeyOverrideEntry[] | null>(null)
+  // Screen reader announcement for save/reset status
+  const [statusAnnouncement, setStatusAnnouncement] = useState<string | null>(null)
+
+  // Use edited values if user has made changes, otherwise use computed initial values
+  const terminologyEntries = editedTerminology ?? initialEntries.terminology
+  const keyEntries = editedKeys ?? initialEntries.keys
+  const hasChanges = editedTerminology !== null || editedKeys !== null
 
   // Convert entries back to override objects
   const buildOverrides = useMemo(() => {
@@ -120,13 +122,11 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
   }, [terminologyEntries, keyEntries])
 
   const handleTerminologyChange = (entries: TerminologyEntry[]) => {
-    setTerminologyEntries(entries)
-    setHasChanges(true)
+    setEditedTerminology(entries)
   }
 
   const handleKeyChange = (entries: KeyOverrideEntry[]) => {
-    setKeyEntries(entries)
-    setHasChanges(true)
+    setEditedKeys(entries)
   }
 
   const handleSave = async () => {
@@ -141,7 +141,9 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
       if (hasProject) {
         await saveProject.mutateAsync(projectOverrides)
       }
-      setHasChanges(false)
+      // Reset edited state (will refetch and use new initial values)
+      setEditedTerminology(null)
+      setEditedKeys(null)
       setStatusAnnouncement(t('sections.translations.saved'))
     } catch {
       // Error handling is done by the mutation
@@ -155,10 +157,13 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
 
     try {
       await saveGlobal.mutateAsync(createEmptyOverrides())
-      // Remove global entries from local state
-      setTerminologyEntries((prev) => prev.filter((e) => e.scope !== 'global'))
-      setKeyEntries((prev) => prev.filter((e) => e.scope !== 'global'))
-      setHasChanges(false)
+      // Remove global entries from edited state
+      setEditedTerminology((prev) =>
+        prev ? prev.filter((e) => e.scope !== 'global') : initialEntries.terminology.filter((e) => e.scope !== 'global')
+      )
+      setEditedKeys((prev) =>
+        prev ? prev.filter((e) => e.scope !== 'global') : initialEntries.keys.filter((e) => e.scope !== 'global')
+      )
       setStatusAnnouncement(t('sections.translations.clearedGlobal'))
     } catch {
       // Error handling is done by the mutation
@@ -172,10 +177,13 @@ export function TranslationSettings({ projectName, hasProject }: TranslationSett
 
     try {
       await saveProject.mutateAsync(createEmptyOverrides())
-      // Remove project entries from local state
-      setTerminologyEntries((prev) => prev.filter((e) => e.scope !== 'project'))
-      setKeyEntries((prev) => prev.filter((e) => e.scope !== 'project'))
-      setHasChanges(false)
+      // Remove project entries from edited state
+      setEditedTerminology((prev) =>
+        prev ? prev.filter((e) => e.scope !== 'project') : initialEntries.terminology.filter((e) => e.scope !== 'project')
+      )
+      setEditedKeys((prev) =>
+        prev ? prev.filter((e) => e.scope !== 'project') : initialEntries.keys.filter((e) => e.scope !== 'project')
+      )
       setStatusAnnouncement(t('sections.translations.clearedProject'))
     } catch {
       // Error handling is done by the mutation
