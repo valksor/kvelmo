@@ -10,6 +10,7 @@ import { QuestionPrompt } from '@/components/workflow/QuestionPrompt'
 import { SpecificationsList } from '@/components/task/SpecificationsList'
 import { ReviewsList } from '@/components/task/ReviewsList'
 import { NotesCard } from '@/components/task/NotesCard'
+import { LabelsCard } from '@/components/task/LabelsCard'
 import { AgentTerminal, type TerminalMessage } from '@/components/task/AgentTerminal'
 import { QuickQuestion } from '@/components/task/QuickQuestion'
 import { CostsCard } from '@/components/task/CostsCard'
@@ -190,7 +191,7 @@ function TaskDetailView({ id }: { id?: string }) {
           <AgentTerminal messages={terminalMessages} onClear={clearAgentMessages} />
         </div>
 
-        {/* Right column: Actions + Workflow + Costs */}
+        {/* Right column: Actions + Labels + Costs */}
         <div className="space-y-6">
           <WorkflowActions
             state={state}
@@ -199,6 +200,7 @@ function TaskDetailView({ id }: { id?: string }) {
             progressPhase={progressPhase}
             specs={specsData?.specifications}
           />
+          <LabelsCard hasActiveTask={hasTask} />
           <CostsCard taskId={id} />
         </div>
       </div>

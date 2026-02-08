@@ -7,6 +7,7 @@ import type {
   SpecificationDiffResponse,
   AgentLogsHistoryResponse,
   WorkResponse,
+  LabelsResponse,
 } from '@/types/api'
 
 /**
@@ -128,5 +129,55 @@ export function useTaskWork(taskId?: string) {
     queryKey: ['work', taskId],
     queryFn: () => apiRequest<WorkResponse>(`/work/${taskId}`),
     enabled: !!taskId,
+  })
+}
+
+/**
+ * Hook for fetching task labels
+ */
+export function useTaskLabels() {
+  return useQuery({
+    queryKey: ['task', 'labels'],
+    queryFn: () => apiRequest<LabelsResponse>('/labels'),
+  })
+}
+
+/**
+ * Hook to add a label to the current task
+ */
+export function useAddLabel() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (label: string) => {
+      return apiRequest<{ success: boolean; message?: string; error?: string }>('/task/labels', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'add', label }),
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', 'labels'] })
+      queryClient.invalidateQueries({ queryKey: ['work'] })
+    },
+  })
+}
+
+/**
+ * Hook to remove a label from the current task
+ */
+export function useRemoveLabel() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (label: string) => {
+      return apiRequest<{ success: boolean; message?: string; error?: string }>('/task/labels', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'remove', label }),
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', 'labels'] })
+      queryClient.invalidateQueries({ queryKey: ['work'] })
+    },
   })
 }
