@@ -18,6 +18,7 @@ func init() {
 			Description:  "Show current task status",
 			Category:     "info",
 			RequiresTask: false,
+			MutatesState: false,
 		},
 		Handler: handleStatus,
 	})
@@ -28,6 +29,7 @@ func init() {
 			Description:  "Show token usage and costs",
 			Category:     "info",
 			RequiresTask: true,
+			MutatesState: false,
 		},
 		Handler: handleCost,
 	})
@@ -38,6 +40,7 @@ func init() {
 			Description:  "Show token budget status",
 			Category:     "info",
 			RequiresTask: true,
+			MutatesState: false,
 		},
 		Handler: handleBudget,
 	})
@@ -49,6 +52,7 @@ func init() {
 			Description:  "List all tasks",
 			Category:     "info",
 			RequiresTask: false,
+			MutatesState: false,
 		},
 		Handler: handleList,
 	})
@@ -63,12 +67,13 @@ func init() {
 				{Name: "number", Required: false, Description: "Specification number to view"},
 			},
 			RequiresTask: true,
+			MutatesState: false,
 		},
 		Handler: handleSpecification,
 	})
 }
 
-func handleStatus(ctx context.Context, cond *conductor.Conductor, _ []string) (*Result, error) {
+func handleStatus(ctx context.Context, cond *conductor.Conductor, _ Invocation) (*Result, error) {
 	status, err := cond.Status(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status: %w", err)
@@ -91,7 +96,7 @@ func handleStatus(ctx context.Context, cond *conductor.Conductor, _ []string) (*
 	return NewStatusResult(message, data.State, data.TaskID, data), nil
 }
 
-func handleCost(_ context.Context, cond *conductor.Conductor, _ []string) (*Result, error) {
+func handleCost(_ context.Context, cond *conductor.Conductor, _ Invocation) (*Result, error) {
 	task := cond.GetActiveTask()
 	if task == nil {
 		return nil, ErrNoActiveTask
@@ -123,7 +128,7 @@ func handleCost(_ context.Context, cond *conductor.Conductor, _ []string) (*Resu
 	return NewCostResult(message, data), nil
 }
 
-func handleBudget(_ context.Context, cond *conductor.Conductor, _ []string) (*Result, error) {
+func handleBudget(_ context.Context, cond *conductor.Conductor, _ Invocation) (*Result, error) {
 	ws := cond.GetWorkspace()
 	if ws == nil {
 		return nil, errors.New("no workspace available")
@@ -187,7 +192,7 @@ func handleBudget(_ context.Context, cond *conductor.Conductor, _ []string) (*Re
 	return NewBudgetResult(message, data), nil
 }
 
-func handleList(_ context.Context, cond *conductor.Conductor, _ []string) (*Result, error) {
+func handleList(_ context.Context, cond *conductor.Conductor, _ Invocation) (*Result, error) {
 	ws := cond.GetWorkspace()
 	if ws == nil {
 		return nil, errors.New("no workspace available")
@@ -231,7 +236,8 @@ func handleList(_ context.Context, cond *conductor.Conductor, _ []string) (*Resu
 	return NewListResult(message, items), nil
 }
 
-func handleSpecification(_ context.Context, cond *conductor.Conductor, args []string) (*Result, error) {
+func handleSpecification(_ context.Context, cond *conductor.Conductor, inv Invocation) (*Result, error) {
+	args := inv.Args
 	ws := cond.GetWorkspace()
 	if ws == nil {
 		return nil, errors.New("no workspace available")
