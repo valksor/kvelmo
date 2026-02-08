@@ -8,7 +8,7 @@ Plain-language definitions for Mehrhof concepts.
 
 ### Task
 
-A description of what you want to create or change. Tasks can be written in plain language—no technical expertise required. You might describe a feature you want, a bug you've noticed, or a change you need.
+A description of what you want to create or change. Tasks can be written in plain language — no technical expertise required. You might describe a feature you want, a bug you've noticed, or a change you need.
 
 **Example**: "Add a dark mode toggle to the settings page"
 
@@ -20,7 +20,7 @@ A structured breakdown of how the work will be done. Before any changes are made
 
 ### Change Set
 
-The actual modifications produced by the workflow—code files, documentation, configuration. After the plan is executed, you get a change set to review.
+The actual modifications produced by the workflow — code files, documentation, configuration. After the plan is executed, you get a change set to review.
 
 **What you do**: Review the changes, ask questions, request adjustments, or approve.
 
@@ -46,7 +46,7 @@ The structured process: task → plan → create → review → finish. Each ste
 
 ### Agent CLI
 
-The external AI tool Mehrhof uses to handle text transformations. You install your agent CLI separately (Claude is recommended and primary-supported; Codex and custom agents also available)—Mehrhof orchestrates it but does not include or provide access to it.
+The external AI tool Mehrhof uses to handle text transformations. You install your agent CLI separately (Claude is recommended and primary-supported; Codex and custom agents also available) — Mehrhof orchestrates it but does not include or provide access to it.
 
 **Important**: Mehrhof wraps your local agent installation. It does not provide AI access.
 

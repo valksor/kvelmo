@@ -1,6 +1,6 @@
 # Memory
 
-The semantic memory system stores vector embeddings of your past tasks—code changes, specifications, session logs, and solutions. This enables finding similar past work and auto-suggesting solutions based on historical context.
+The semantic memory system stores vector embeddings of your past tasks — code changes, specifications, session logs, and solutions. This enables finding similar past work and auto-suggesting solutions based on historical context.
 
 ## Overview
 
@@ -11,7 +11,7 @@ Mehrhof's semantic memory stores embeddings of:
 - **Session logs** (agent conversations) - How problems were solved
 - **Solutions** (fixes and corrections) - What went wrong and how it was fixed
 
-When you search, Mehrhof finds semantically similar past tasks using vector similarity—not just keyword matching.
+When you search, Mehrhof finds semantically similar past tasks using vector similarity — not just keyword matching.
 
 ## Accessing in the Web UI
 

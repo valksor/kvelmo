@@ -25,7 +25,7 @@ Mehrhof uses CLI tools rather than direct API connections:
 | Works if your CLI works         | Requires environment setup      |
 | API keys optional (for aliases) | API keys always required        |
 
-**Already have Claude or Codex working?** You're ready to go—no additional configuration needed. API keys are only required if you want to configure [agent aliases](#agent-aliases) for custom agents or work accounts.
+**Already have Claude or Codex working?** You're ready to go — no additional configuration needed. API keys are only required if you want to configure [agent aliases](#agent-aliases) for custom agents or work accounts.
 
 ## Claude as the Primary Agent
 

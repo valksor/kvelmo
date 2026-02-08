@@ -78,7 +78,7 @@ Show incoming links (backlinks) to an entity:
 mehr links backlinks <entity>
 ```
 
-This shows what references this entity—useful for understanding dependencies and impact.
+This shows what references this entity — useful for understanding dependencies and impact.
 
 **Examples:**
 ```bash

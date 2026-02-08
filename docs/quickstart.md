@@ -21,7 +21,7 @@ No prior experience with command-line tools is required if you choose the Web UI
 
 > **No API Keys Required to Start**
 >
-> Mehrhof uses your agent CLI directly. If `claude --version` or `codex --version` works, you're ready—no API keys to copy for basic usage. For advanced setups (custom agents, work accounts), API keys can be configured via [agent aliases](/agents/index.md#agent-aliases).
+> Mehrhof uses your agent CLI directly. If `claude --version` or `codex --version` works, you're ready — no API keys to copy for basic usage. For advanced setups (custom agents, work accounts), API keys can be configured via [agent aliases](/agents/index.md#agent-aliases).
 
 ```bash
 # Check if Claude is installed
@@ -90,7 +90,7 @@ make install
 
 ## Choose Your Interface
 
-Mehrhof works two ways: through a **Web UI** or a **command-line interface (CLI)**. Both have full feature parity—choose what works best for you.
+Mehrhof works two ways: through a **Web UI** or a **command-line interface (CLI)**. Both have full feature parity — choose what works best for you.
 
 ### Web UI — Comfortable Browser Experience
 
