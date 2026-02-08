@@ -24,6 +24,25 @@ import type {
   InteractiveChatResponse,
   StateChangedEvent,
   AgentMessageEvent,
+  FindSearchResponse,
+  FindMatch,
+  MemorySearchResponse,
+  MemoryResult,
+  MemoryIndexResponse,
+  MemoryStatsResponse,
+  LibraryListResponse,
+  LibraryCollection,
+  LibraryShowResponse,
+  LibraryStatsResponse,
+  LinksListResponse,
+  LinkData,
+  EntityLinksResponse,
+  LinksSearchResponse,
+  EntityResult,
+  LinksStatsResponse,
+  BrowserStatusResponse,
+  BrowserTab,
+  BrowserTabsResponse,
 } from '../../src/api/models';
 
 // Counter for generating unique IDs
@@ -314,6 +333,300 @@ export function createAgentMessageEvent(
     ...overrides,
   };
 }
+
+// ============================================================================
+// Find & Search Factories
+// ============================================================================
+
+/**
+ * Create a FindMatch with optional overrides.
+ */
+export function createFindMatch(overrides: Partial<FindMatch> = {}): FindMatch {
+  return {
+    file: 'src/app.ts',
+    line: 10,
+    snippet: 'function handleRequest() {',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a FindSearchResponse with optional overrides.
+ */
+export function createFindSearchResponse(
+  overrides: Partial<FindSearchResponse> = {}
+): FindSearchResponse {
+  return {
+    query: 'test',
+    count: 2,
+    matches: [
+      createFindMatch({ file: 'src/app.ts', line: 10 }),
+      createFindMatch({ file: 'src/utils.ts', line: 25 }),
+    ],
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Memory Factories
+// ============================================================================
+
+/**
+ * Create a MemoryResult with optional overrides.
+ */
+export function createMemoryResult(overrides: Partial<MemoryResult> = {}): MemoryResult {
+  return {
+    task_id: nextId(),
+    type: 'spec',
+    score: 0.95,
+    content: 'Test memory content',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a MemorySearchResponse with optional overrides.
+ */
+export function createMemorySearchResponse(
+  overrides: Partial<MemorySearchResponse> = {}
+): MemorySearchResponse {
+  return {
+    results: [createMemoryResult()],
+    count: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a MemoryIndexResponse with optional overrides.
+ */
+export function createMemoryIndexResponse(
+  overrides: Partial<MemoryIndexResponse> = {}
+): MemoryIndexResponse {
+  return {
+    success: true,
+    message: 'Indexed 5 documents',
+    task_id: nextId(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a MemoryStatsResponse with optional overrides.
+ */
+export function createMemoryStatsResponse(
+  overrides: Partial<MemoryStatsResponse> = {}
+): MemoryStatsResponse {
+  return {
+    total_documents: 100,
+    by_type: { spec: 50, note: 30, session: 20 },
+    enabled: true,
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Library Factories
+// ============================================================================
+
+/**
+ * Create a LibraryCollection with optional overrides.
+ */
+export function createLibraryCollection(
+  overrides: Partial<LibraryCollection> = {}
+): LibraryCollection {
+  return {
+    id: nextId(),
+    name: 'Test Collection',
+    source: 'https://docs.example.com',
+    source_type: 'web',
+    include_mode: 'auto',
+    page_count: 50,
+    total_size: 500000,
+    location: 'project',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LibraryListResponse with optional overrides.
+ */
+export function createLibraryListResponse(
+  overrides: Partial<LibraryListResponse> = {}
+): LibraryListResponse {
+  return {
+    collections: [createLibraryCollection()],
+    count: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LibraryShowResponse with optional overrides.
+ */
+export function createLibraryShowResponse(
+  overrides: Partial<LibraryShowResponse> = {}
+): LibraryShowResponse {
+  return {
+    collection: createLibraryCollection(),
+    pages: ['page1.md', 'page2.md', 'page3.md'],
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LibraryStatsResponse with optional overrides.
+ */
+export function createLibraryStatsResponse(
+  overrides: Partial<LibraryStatsResponse> = {}
+): LibraryStatsResponse {
+  return {
+    total_collections: 5,
+    total_pages: 250,
+    total_size: 2500000,
+    project_count: 3,
+    shared_count: 2,
+    by_mode: { auto: 3, manual: 2 },
+    enabled: true,
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Links Factories
+// ============================================================================
+
+/**
+ * Create a LinkData with optional overrides.
+ */
+export function createLinkData(overrides: Partial<LinkData> = {}): LinkData {
+  return {
+    source: 'spec:1',
+    target: 'decision:cache',
+    context: 'specification',
+    created_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LinksListResponse with optional overrides.
+ */
+export function createLinksListResponse(
+  overrides: Partial<LinksListResponse> = {}
+): LinksListResponse {
+  return {
+    links: [createLinkData()],
+    count: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * Create an EntityLinksResponse with optional overrides.
+ */
+export function createEntityLinksResponse(
+  overrides: Partial<EntityLinksResponse> = {}
+): EntityLinksResponse {
+  return {
+    entity_id: 'spec:1',
+    outgoing: [createLinkData()],
+    incoming: [],
+    ...overrides,
+  };
+}
+
+/**
+ * Create an EntityResult with optional overrides.
+ */
+export function createEntityResult(overrides: Partial<EntityResult> = {}): EntityResult {
+  return {
+    entity_id: 'spec:main',
+    type: 'spec',
+    name: 'Main Specification',
+    total_links: 5,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LinksSearchResponse with optional overrides.
+ */
+export function createLinksSearchResponse(
+  overrides: Partial<LinksSearchResponse> = {}
+): LinksSearchResponse {
+  return {
+    query: 'cache',
+    results: [createEntityResult()],
+    count: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a LinksStatsResponse with optional overrides.
+ */
+export function createLinksStatsResponse(
+  overrides: Partial<LinksStatsResponse> = {}
+): LinksStatsResponse {
+  return {
+    total_links: 50,
+    total_sources: 20,
+    total_targets: 30,
+    orphan_entities: 5,
+    most_linked: [createEntityResult()],
+    enabled: true,
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Browser Factories
+// ============================================================================
+
+/**
+ * Create a BrowserTab with optional overrides.
+ */
+export function createBrowserTab(overrides: Partial<BrowserTab> = {}): BrowserTab {
+  return {
+    id: nextId(),
+    title: 'Test Page',
+    url: 'https://example.com',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a BrowserStatusResponse with optional overrides.
+ */
+export function createBrowserStatusResponse(
+  overrides: Partial<BrowserStatusResponse> = {}
+): BrowserStatusResponse {
+  return {
+    connected: true,
+    host: 'localhost',
+    port: 9222,
+    tabs: [createBrowserTab()],
+    ...overrides,
+  };
+}
+
+/**
+ * Create a BrowserTabsResponse with optional overrides.
+ */
+export function createBrowserTabsResponse(
+  overrides: Partial<BrowserTabsResponse> = {}
+): BrowserTabsResponse {
+  return {
+    tabs: [createBrowserTab()],
+    count: 1,
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Mock Fetch Utilities
+// ============================================================================
 
 /**
  * Create a mock fetch response.

@@ -2,3 +2,5 @@
 preload = ["./test/helpers/bunSetup.ts"]
 root = "./test/unit"
 coverageReporter = ["text", "lcov"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["test/helpers/**"]
