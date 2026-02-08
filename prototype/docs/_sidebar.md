@@ -52,22 +52,13 @@
     - [Links](web-ui/links.md)
   - **Settings**
     - [Settings](web-ui/settings.md)
-    <!-- DISABLED: remote serve
-    - [Authentication](web-ui/authentication.md)
-    -->
   - **Tools**
     - [Tools](web-ui/tools.md)
     - [Browser Control](web-ui/browser.md)
-    <!-- DISABLED: remote serve
-    - [Remote Access](web-ui/remote-access.md)
-    -->
     - [Interactive Mode](web-ui/interactive.md)
     - [Smart Commit](web-ui/commit.md)
     - [Standalone Review](web-ui/standalone-review.md)
     - [Standalone Simplify](web-ui/standalone-simplify.md)
-    <!-- DISABLED: automation
-    - [Automation](web-ui/automation.md)
-    -->
 - **Reference**
   - [REST API](reference/rest-api.md)
 
@@ -137,9 +128,6 @@
     - [serve](cli/serve.md)
     - [register](cli/register.md)
     - [interactive](cli/interactive.md)
-    <!-- DISABLED: automation
-    - [automation](cli/automation.md)
-    -->
 
 - **Concepts**
   - [Workflow](concepts/workflow.md)

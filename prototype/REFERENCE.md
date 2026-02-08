@@ -121,14 +121,9 @@ All browser subcommands share: `--host`, `--port`, `--headless`, `--strict-certs
 
 | Command | Description | Key Flags | Conductor Method |
 |---------|-------------|-----------|-----------------|
-| `mehr serve` | Start web UI server | `--port/-p`, `--host`, `--global`, `--open`, `--tunnel-info`, `--api` | `Server.Start()` |
-| `mehr serve register` | Register project for remote access | `--list/-l` | `Registry.Register()` |
-| `mehr serve unregister` | Remove from remote registry | | `Registry.Unregister()` |
-| `mehr serve auth add` | Add web UI user | | `AuthStore` |
-| `mehr serve auth list` | List web UI users | | `AuthStore` |
-| `mehr serve auth remove` | Remove web UI user | | `AuthStore` |
-| `mehr serve auth passwd` | Change user password | | `AuthStore` |
-| `mehr serve auth role` | Change user role | | `AuthStore` |
+| `mehr serve` | Start web UI server | `--port/-p`, `--global`, `--open`, `--api` | `Server.Start()` |
+| `mehr serve register` | Register project in global registry | `--list/-l` | `Registry.Register()` |
+| `mehr serve unregister` | Remove from global registry | | `Registry.Unregister()` |
 | `mehr interactive` | Start interactive CLI (REPL + chat) | | Full workflow |
 | `mehr mcp` | Start MCP server for AI agents | | MCP integration |
 | `mehr scan` | Security/quality scan | | `Scan()` |
@@ -352,27 +347,13 @@ Base URL: `http://host:port`. Response format: `{"success": bool, "data": object
 | POST | `/api/v1/agents/aliases` | Create agent alias |
 | DELETE | `/api/v1/agents/aliases/{alias}` | Delete agent alias |
 
-### Auth & Health
+### Health & CSRF
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/login` | User login |
-| POST | `/api/v1/auth/logout` | User logout |
 | GET | `/api/v1/auth/csrf` | Get CSRF token |
 | GET | `/health` | Health check |
 | GET | `/api/v1/license` | License info |
-
-### Automation (Webhooks)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/webhooks/{provider}` | Webhook endpoint (GitHub/GitLab) |
-| GET | `/api/v1/automation/status` | Automation status |
-| GET | `/api/v1/automation/jobs` | List automation jobs |
-| GET | `/api/v1/automation/jobs/{id}` | Get job details |
-| POST | `/api/v1/automation/jobs/{id}/cancel` | Cancel job |
-| POST | `/api/v1/automation/jobs/{id}/retry` | Retry job |
-| GET | `/api/v1/automation/config` | Get automation config |
 
 ### Global Mode (multi-project)
 

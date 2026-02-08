@@ -2,16 +2,29 @@
 
 Configure your workspace through the Web UI settings page without editing configuration files directly.
 
+## Settings Mode
+
+Mehrhof offers two settings views to match your needs:
+
+| Mode | What You See | Best For |
+|------|--------------|----------|
+| **Simple** (default) | Agent selection, Git basics, Budget | Most users — essential settings only |
+| **Advanced** | All settings including providers, memory, security | Power users, custom configurations |
+
+Toggle between modes using the **Simple/Advanced** switch in the top-right corner of the Settings page. Your preference is saved automatically.
+
+> **Tip:** In Simple mode, you'll see a "Switch to Advanced" button if you need more options — click it to toggle instantly.
+
 ## Accessing Settings
 
 From the navigation bar, click **Settings**. In global mode, you must first select a project.
 
-The Settings page is organized into three sections that match the top navigation structure:
+The Settings page is organized into two sections:
 
-| Section      | What it contains                                                                                              |
-|--------------|---------------------------------------------------------------------------------------------------------------|
-| **Work**     | Git, agent defaults, workflow, project storage, and provider connections                                      |
-| **Advanced** | Agent aliases, budget, stack options, update patterns, memory, security, sandbox, and other advanced features |
+| Section    | What it contains                                                                                              |
+|------------|---------------------------------------------------------------------------------------------------------------|
+| **Work**   | Git, agent defaults, workflow, project storage, and provider connections                                      |
+| **System** | Agent aliases, budget, stack options, update patterns, memory, security, sandbox, and other advanced features |
 
 Each settings block is collapsible. Use the chevron on the right side of each block header to expand or collapse details.
 
@@ -33,6 +46,16 @@ Configure version control integration:
 | **Stash on Start** | Auto-stash changes before creating branch                     |
 | **Auto Pop Stash** | Pop stash after branch creation                               |
 
+### Display Settings
+
+Configure how dates and times are shown:
+
+| Setting      | Description                                                             |
+|--------------|-------------------------------------------------------------------------|
+| **Timezone** | IANA timezone for display (e.g., `Europe/Riga`, `America/New_York`)     |
+
+Enter your timezone directly or select from the suggestions dropdown. All dates display in **dd.mm.yyyy** format.
+
 ### Agent Settings
 
 Configure AI agent behavior:
@@ -48,7 +71,7 @@ Configure AI agent behavior:
 ### Agent Aliases
 
 Create custom aliases that wrap base agents with additional configuration.
-Location: **Settings → Advanced**.
+Location: **Settings → System**.
 
 | Field           | Description                                     |
 |-----------------|-------------------------------------------------|
@@ -73,7 +96,7 @@ Configure task lifecycle:
 ### Budget Settings
 
 Control spending limits:
-Location: **Settings → Advanced**.
+Location: **Settings → System**.
 
 **Per Task:**
 - **Max Cost** — Maximum USD per task
@@ -100,7 +123,7 @@ Configure directory layout:
 ### Stack Settings
 
 Configure stacked feature branches:
-Location: **Settings → Advanced**.
+Location: **Settings → System**.
 
 | Setting                | Description                                              |
 |------------------------|----------------------------------------------------------|
@@ -109,7 +132,7 @@ Location: **Settings → Advanced**.
 
 ### Updates & Patterns
 
-Location: **Settings → Advanced**.
+Location: **Settings → System**.
 
 | Setting                   | Description                  |
 |---------------------------|------------------------------|
@@ -175,9 +198,9 @@ Configure authentication and settings for external task providers.
 
 Additional providers available: Bitbucket, Azure DevOps, Asana, ClickUp, Trello, Wrike, YouTrack. Expand the **Other Providers** section to configure these.
 
-## Advanced Features
+## System Features
 
-Enable and configure optional features.
+Enable and configure optional features. These settings are found under the **System** section.
 
 ### Browser Automation
 
@@ -273,64 +296,6 @@ Isolate agent execution:
 | **Auto Include Max**     | Max collections to auto-include |
 | **Max Pages Per Prompt** | Pages per agent prompt          |
 | **Max Token Budget**     | Token limit for library content |
-
-<!-- DISABLED: automation temporarily unavailable (requires remote serve)
-## Admin Section (Automation)
-
-Configure webhook automation for GitHub and GitLab.
-
-### Webhook Automation
-
-| Setting | Description |
-|---------|-------------|
-| **Enable Automation** | Process webhooks automatically |
-
-### GitHub Triggers
-
-| Setting | Description |
-|---------|-------------|
-| **Enable GitHub** | Enable GitHub webhook processing |
-| **Webhook Secret** | Secret for webhook validation |
-| **Command Prefix** | Comment trigger (default: @mehrhof) |
-| **Trigger On** | Issue opened, PR opened, PR updated, Comment commands |
-| **Use Worktrees** | Isolate work with git worktrees |
-| **Dry Run** | Log actions without executing |
-
-### GitLab Triggers
-
-| Setting | Description |
-|---------|-------------|
-| **Enable GitLab** | Enable GitLab webhook processing |
-| **Webhook Secret** | Secret for webhook validation |
-| **Command Prefix** | Comment trigger |
-| **Trigger On** | Issue opened, MR opened, MR updated, Comment commands |
-
-### Access Control
-
-| Setting | Description |
-|---------|-------------|
-| **Mode** | All users, Allowlist only, Blocklist |
-| **Allow Bots** | Allow bot accounts |
-| **Require Org** | Require organization membership |
-
-### Queue Settings
-
-| Setting | Description |
-|---------|-------------|
-| **Max Concurrent** | Maximum parallel jobs |
-| **Job Timeout** | Timeout per job (e.g., 30m, 1h) |
-| **Retry Attempts** | Retries on failure |
-| **Retry Delay** | Delay between retries |
-
-### Automation Labels
-
-| Setting | Description |
-|---------|-------------|
-| **Generated Label** | Label for Mehrhof PRs |
-| **In Progress Label** | Label while processing |
-| **Failed Label** | Label on failure |
-| **Skip Review Label** | Label to skip review |
--->
 
 ## Global Mode
 

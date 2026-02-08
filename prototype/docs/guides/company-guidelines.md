@@ -198,16 +198,6 @@ Users can override team settings locally:
 - Use `.env` files (gitignored) for API tokens
 - Use environment variables in CI/CD
 
-<!-- DISABLED: remote serve temporarily unavailable
-### Access Control
-
-- Configure authentication for remote Web UI access
-- Use SSH tunnels for secure remote access
-- Restrict who can run certain commands
-
-See [Authentication](/web-ui/authentication.md) for Web UI access control.
--->
-
 ---
 
 ## Next Steps

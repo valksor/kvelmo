@@ -68,14 +68,6 @@ See individual workflow pages for details:
 
 > **For developers:** Programmatic access to all features is available via the [REST API](/reference/rest-api.md).
 
-<!-- DISABLED: remote serve
-## Remote Access
-
-Access the Web UI from anywhere:
-- [Remote Access](remote-access.md) - SSH tunnels, Cloudflare, Tailscale
-- [Authentication](authentication.md) - User management and security
--->
-
 ## Comparison with CLI
 
 Both interfaces provide the same core functionality. The choice depends on your workflow:
