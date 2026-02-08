@@ -3,6 +3,7 @@ package com.valksor.mehrhof.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ui.Messages
 import com.valksor.mehrhof.api.*
+import java.util.Locale
 
 // ============================================================================
 // Note & Question Actions
@@ -127,13 +128,14 @@ class CostAction : MehrhofAction() {
                         val message =
                             buildString {
                                 appendLine("Task: ${response.title ?: taskId}")
-                                appendLine("Cost: \$${String.format("%.4f", response.totalCostUsd)}")
+                                appendLine("Cost: \$${String.format(Locale.US, "%.4f", response.totalCostUsd)}")
                                 appendLine(
                                     "Tokens: ${response.totalTokens} (${response.inputTokens} in, ${response.outputTokens} out)"
                                 )
                                 appendLine(
                                     "Cached: ${response.cachedTokens} (${response.cachedPercent?.let {
                                         String.format(
+                                            Locale.US,
                                             "%.1f",
                                             it
                                         )
@@ -152,7 +154,7 @@ class CostAction : MehrhofAction() {
                         val total = response.grandTotal
                         val message =
                             buildString {
-                                appendLine("Total Cost: \$${String.format("%.4f", total.costUsd)}")
+                                appendLine("Total Cost: \$${String.format(Locale.US, "%.4f", total.costUsd)}")
                                 val totalIn = total.inputTokens
                                 val totalOut = total.outputTokens
                                 appendLine("Tokens: ${total.totalTokens} ($totalIn in, $totalOut out)")
