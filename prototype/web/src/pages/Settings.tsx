@@ -10,16 +10,13 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useProjects } from '@/api/projects'
-import { useAgents, useSaveSettings, useSettings } from '@/api/settings'
+import { useSaveSettings, useSettings } from '@/api/settings'
 import { useStatus } from '@/api/workflow'
-// DISABLED: automation temporarily unavailable (requires remote serve)
-// import { AutomationSettings } from '@/components/settings/sections/AutomationSettings'
-import { CoreSettings } from '@/components/settings/sections/CoreSettings'
-import { FeatureSettings } from '@/components/settings/sections/FeatureSettings'
-import { ProviderSettings } from '@/components/settings/sections/ProviderSettings'
+import { useSettingsMode } from '@/hooks/useSettingsMode'
+import { SettingsModeToggle } from '@/components/settings/SettingsModeToggle'
+import { DynamicSettings } from '@/components/settings/DynamicSettings'
 import type { WorkspaceConfig } from '@/types/api'
 
-// DISABLED: automation temporarily unavailable — 'admin' section removed
 type SectionID = 'work' | 'advanced'
 
 interface SectionMeta {
@@ -38,17 +35,24 @@ const sectionNavigation: SectionMeta[] = [
   },
   {
     id: 'advanced',
-    label: 'Advanced',
+    label: 'System',
     description: 'Memory, security, browser, sandbox, and power features',
     icon: Wrench,
   },
-  // DISABLED: automation temporarily unavailable (requires remote serve)
-  // {
-  //   id: 'admin',
-  //   label: 'Admin',
-  //   description: 'Automation controls and webhook behavior',
-  //   icon: Shield,
-  // },
+]
+
+// Section IDs grouped by tab - core/providers for Work, features for System
+const workSections = [
+  'git', 'agent', 'workflow', 'budget', 'project', 'storage',
+  'specification', 'review', 'display', 'providers', 'github', 'gitlab',
+  'jira', 'linear', 'notion', 'bitbucket', 'asana', 'clickup',
+  'azure_devops', 'trello', 'wrike', 'youtrack',
+]
+
+const advancedSections = [
+  'browser', 'mcp', 'security', 'memory', 'library', 'orchestration',
+  'ml', 'sandbox', 'labels', 'quality', 'links', 'context', 'stack',
+  'update', 'plugins',
 ]
 
 export default function Settings() {
@@ -60,7 +64,7 @@ export default function Settings() {
 
   const projectIDForSettings = isGlobalMode ? selectedProjectID : undefined
   const { data: settings, isLoading, error } = useSettings(projectIDForSettings)
-  const { data: agents } = useAgents()
+
   const {
     mutate: saveSettings,
     isPending: isSaving,
@@ -71,11 +75,12 @@ export default function Settings() {
   const [activeSection, setActiveSection] = useState<SectionID>('work')
   const [formData, setFormData] = useState<Partial<WorkspaceConfig>>({})
   const [hasChanges, setHasChanges] = useState(false)
+  const { isSimple, toggleMode } = useSettingsMode()
 
   useEffect(() => {
-    if (settings) {
+    if (settings?.values) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- form initialization from fetched data
-      setFormData(settings)
+      setFormData(settings.values)
       setHasChanges(false)
     }
   }, [settings])
@@ -168,16 +173,6 @@ export default function Settings() {
     )
   }
 
-  const agentList = agents?.agents ?? []
-  const agentOptions =
-    agentList.length > 0
-      ? agentList.map((agent) => ({ value: agent.name, label: agent.name }))
-      : [
-          { value: 'claude', label: 'claude' },
-          { value: 'gemini', label: 'gemini' },
-          { value: 'ollama', label: 'ollama' },
-        ]
-
   const selectedProject = isGlobalMode
     ? projectsData?.projects?.find((project) => project.id === selectedProjectID)
     : undefined
@@ -203,10 +198,12 @@ export default function Settings() {
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
           <p className="text-base-content/60 text-sm">
-            Organized to match navigation groups: Work, Advanced, and Admin.
+            {isSimple ? 'Showing essential settings only.' : 'Showing all settings.'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <SettingsModeToggle isSimple={isSimple} onToggle={toggleMode} />
+          <div className="flex items-center gap-2">
           {isSuccess && (
             <span className="text-success flex items-center gap-1 text-sm" role="status">
               <CheckCircle size={16} aria-hidden="true" /> Saved
@@ -217,16 +214,32 @@ export default function Settings() {
               <AlertCircle size={16} aria-hidden="true" /> Failed to save
             </span>
           )}
-          <button
-            className="btn btn-primary"
-            onClick={() => saveSettings(formData)}
-            disabled={isSaving || !hasChanges}
-          >
-            {isSaving ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
-            Save Changes
-          </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => saveSettings(formData)}
+              disabled={isSaving || !hasChanges}
+            >
+              {isSaving ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
+
+      {isSimple && (
+        <div className="alert alert-info" role="status">
+          <Wrench size={18} aria-hidden="true" />
+          <div>
+            <p className="font-medium">Looking for more settings?</p>
+            <p className="text-sm opacity-80">
+              Switch to Advanced mode to see all configuration options.
+            </p>
+          </div>
+          <button className="btn btn-sm btn-ghost" onClick={toggleMode}>
+            Show All Settings
+          </button>
+        </div>
+      )}
 
       <div className="card bg-base-100 shadow-sm border border-base-300/70">
         <div className="card-body p-2 sm:p-3">
@@ -262,32 +275,28 @@ export default function Settings() {
       <div className="space-y-4">
         {activeSection === 'work' && (
           <div role="tabpanel" id="tabpanel-settings-work" aria-labelledby="tab-settings-work" className="space-y-4">
-            <CoreSettings
-              data={formData}
-              agentOptions={agentOptions}
-              updateField={updateField}
-              mode="work"
+            <DynamicSettings
+              projectId={projectIDForSettings}
+              sectionIds={workSections}
+              values={formData as Record<string, unknown>}
+              onChange={updateField}
+              simpleMode={isSimple}
             />
-            <ProviderSettings data={formData} updateField={updateField} />
           </div>
         )}
 
         {activeSection === 'advanced' && (
           <div role="tabpanel" id="tabpanel-settings-advanced" aria-labelledby="tab-settings-advanced" className="space-y-4">
-            <CoreSettings
-              data={formData}
-              agentOptions={agentOptions}
-              updateField={updateField}
-              mode="advanced"
+            <DynamicSettings
+              projectId={projectIDForSettings}
+              sectionIds={advancedSections}
+              values={formData as Record<string, unknown>}
+              onChange={updateField}
+              simpleMode={isSimple}
             />
-            <FeatureSettings data={formData} updateField={updateField} />
           </div>
         )}
 
-        {/* DISABLED: automation temporarily unavailable (requires remote serve) */}
-        {/* {activeSection === 'admin' && (
-          <AutomationSettings data={formData} updateField={updateField} />
-        )} */}
       </div>
     </div>
   )

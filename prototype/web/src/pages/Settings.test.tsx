@@ -6,6 +6,9 @@ import Settings from './Settings'
 
 describe('Settings Page', () => {
   beforeEach(() => {
+    // Clear settings mode to ensure clean state (defaults to 'simple')
+    localStorage.removeItem('mehrhof-settings-mode')
+
     mockApiEndpoints({
       '/api/v1/status': mockProjectModeStatus,
       '/api/v1/settings': mockSettings,
@@ -25,9 +28,8 @@ describe('Settings Page', () => {
     render(<Settings />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /work settings section/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /advanced settings section/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /admin settings section/i })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /work/i })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /system/i })).toBeInTheDocument()
     })
   })
 
@@ -40,18 +42,38 @@ describe('Settings Page', () => {
     })
   })
 
-  it('switches to Advanced section when clicked', async () => {
+  it('switches to Advanced section and shows feature settings in advanced mode', async () => {
     const user = userEvent.setup()
     render(<Settings />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /advanced settings section/i })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /system/i })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: /advanced settings section/i }))
+    await user.click(screen.getByRole('tab', { name: /system/i }))
 
+    // In simple mode (default), System section has no fields marked simple, so nothing shown
+    // Switch to advanced mode to see settings
+    const modeToggle = screen.getByRole('checkbox', { name: /switch to advanced/i })
+    await user.click(modeToggle)
+
+    // Now Browser Automation should be visible
     await waitFor(() => {
       expect(screen.getByText('Browser Automation')).toBeInTheDocument()
+    })
+  })
+
+  it('shows Work section fields in simple mode', async () => {
+    render(<Settings />)
+
+    // Wait for settings to load - simple mode shows only fields with simple=true
+    await waitFor(() => {
+      expect(screen.getByText('Git')).toBeInTheDocument()
+    })
+
+    // Git section with simple fields should be visible
+    await waitFor(() => {
+      expect(screen.getByText('Auto Commit')).toBeInTheDocument()
     })
   })
 
