@@ -15,9 +15,43 @@ import { useStatus } from '@/api/workflow'
 import { useSettingsMode } from '@/hooks/useSettingsMode'
 import { SettingsModeToggle } from '@/components/settings/SettingsModeToggle'
 import { DynamicSettings } from '@/components/settings/DynamicSettings'
+import { type CustomFieldProps } from '@/components/settings/DynamicForm'
+import { AgentSelect } from '@/components/settings/AgentSelect'
 import { AppearanceSettings } from '@/components/settings/sections/AppearanceSettings'
+import { AgentStepsSettings } from '@/components/settings/sections/AgentStepsSettings'
 import { TranslationSettings } from '@/components/settings/sections/TranslationSettings'
 import type { WorkspaceConfig } from '@/types/api'
+
+/**
+ * Custom renderer for agent.default field - renders AgentSelect dropdown
+ * instead of the default text input.
+ */
+function AgentDefaultRenderer({ field, value, onChange }: CustomFieldProps) {
+  return (
+    <AgentSelect
+      label={field.label}
+      hint={field.description}
+      value={value as string | undefined}
+      onChange={(v) => onChange(v)}
+      allowEmpty
+      emptyLabel="Auto-detect"
+    />
+  )
+}
+
+/** Custom renderers for schema fields that need special UI */
+const customRenderers: Record<string, React.ComponentType<CustomFieldProps>> = {
+  'agent.default': AgentDefaultRenderer,
+}
+
+/** Extract agent config with type safety to avoid repeated type assertions */
+function getAgentConfig(formData: Partial<WorkspaceConfig>) {
+  const agent = formData.agent as { default?: string; steps?: Record<string, { name?: string }> } | undefined
+  return {
+    default: agent?.default ?? 'claude',
+    steps: agent?.steps ?? {},
+  }
+}
 
 type SectionID = 'work' | 'advanced'
 
@@ -284,7 +318,18 @@ export default function Settings() {
               values={formData as Record<string, unknown>}
               onChange={updateField}
               simpleMode={isSimple}
+              customRenderers={customRenderers}
             />
+            {!isSimple && (() => {
+              const agentConfig = getAgentConfig(formData)
+              return (
+                <AgentStepsSettings
+                  values={agentConfig.steps}
+                  onChange={(step, name) => updateField(['agent', 'steps', step, 'name'], name ?? '')}
+                  defaultAgent={agentConfig.default}
+                />
+              )
+            })()}
           </div>
         )}
 

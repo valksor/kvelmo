@@ -1,6 +1,6 @@
 import { Loader2, AlertCircle } from 'lucide-react'
 import { useSettings } from '@/api/settings'
-import { DynamicForm } from './DynamicForm'
+import { DynamicForm, type CustomFieldProps } from './DynamicForm'
 
 interface DynamicSettingsProps {
   /** Project ID for global mode */
@@ -15,6 +15,8 @@ interface DynamicSettingsProps {
   simpleMode?: boolean
   /** Validation errors keyed by field path */
   errors?: Record<string, string>
+  /** Custom renderers for specific field paths (e.g., agent dropdowns) */
+  customRenderers?: Record<string, React.ComponentType<CustomFieldProps>>
 }
 
 /**
@@ -41,6 +43,7 @@ export function DynamicSettings({
   values,
   simpleMode = false,
   errors,
+  customRenderers,
 }: DynamicSettingsProps) {
   const { data, isLoading, error } = useSettings(projectId)
 
@@ -90,6 +93,7 @@ export function DynamicSettings({
       errors={errors}
       onChange={onChange}
       simpleMode={simpleMode}
+      customRenderers={customRenderers}
       defaultOpen="first"
     />
   )
