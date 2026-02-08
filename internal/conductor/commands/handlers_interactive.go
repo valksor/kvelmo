@@ -100,7 +100,7 @@ func handleInteractiveAnswer(ctx context.Context, cond *conductor.Conductor, inv
 
 	state := workflow.State(task.State)
 
-	switch state { //nolint:exhaustive // Only planning/implementing/reviewing can be resumed
+	switch state {
 	case workflow.StatePlanning:
 		if err := cond.Plan(ctx); err != nil {
 			return nil, fmt.Errorf("resume planning: %w", err)
@@ -113,8 +113,18 @@ func handleInteractiveAnswer(ctx context.Context, cond *conductor.Conductor, inv
 		if err := cond.Review(ctx); err != nil {
 			return nil, fmt.Errorf("resume reviewing: %w", err)
 		}
-	default:
-		return nil, fmt.Errorf("%w: cannot resume from state %s", ErrBadRequest, state)
+	case workflow.StateIdle:
+		return nil, fmt.Errorf("%w: task not started, use 'plan' to begin", ErrBadRequest)
+	case workflow.StateDone:
+		return nil, fmt.Errorf("%w: task already completed", ErrBadRequest)
+	case workflow.StateFailed:
+		return nil, fmt.Errorf("%w: task failed, use 'reset' to recover", ErrBadRequest)
+	case workflow.StateWaiting:
+		return nil, fmt.Errorf("%w: task already waiting for answer", ErrBadRequest)
+	case workflow.StatePaused:
+		return nil, fmt.Errorf("%w: task paused due to budget limits", ErrBadRequest)
+	case workflow.StateCheckpointing, workflow.StateReverting, workflow.StateRestoring:
+		return nil, fmt.Errorf("%w: operation in progress, please wait", ErrBadRequest)
 	}
 
 	return NewResult("Answer sent, resuming..."), nil
