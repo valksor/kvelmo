@@ -583,9 +583,28 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 		return errors.New("no active task")
 	}
 
-	// Determine action based on flags and provider support
-	if opts.ForceMerge {
-		// User explicitly requested local merge
+	// If called with a finish action from waiting state, clear the pending question first.
+	if opts.FinishAction != "" && c.activeTask.State == string(workflow.StateWaiting) {
+		_ = c.workspace.ClearPendingQuestion(c.activeTask.ID)
+		if err := c.machine.Dispatch(ctx, workflow.EventAnswer); err != nil {
+			return fmt.Errorf("clear waiting state: %w", err)
+		}
+		c.activeTask.State = string(c.machine.State())
+		if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+			c.logError(fmt.Errorf("save active task after clearing wait: %w", err))
+		}
+	}
+
+	// Determine merge preference: CLI --merge flag > config > default (PR)
+	preferMerge := opts.ForceMerge
+	if !preferMerge {
+		cfg, _ := c.workspace.LoadConfig()
+		preferMerge = cfg.Workflow.PreferLocalMerge
+	}
+
+	// Determine action based on merge preference and provider support
+	if preferMerge {
+		// Local merge preferred (via --merge flag or config)
 		if err := c.finishWithMerge(ctx, opts); err != nil {
 			return err
 		}
@@ -609,18 +628,26 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 			}
 		}
 	} else if c.git != nil && c.activeTask.UseGit && c.activeTask.Branch != "" {
-		// Provider doesn't support PR, ask user what to do
-		action := c.askUserFinishAction()
+		// Provider doesn't support PR — resolve finish action
+		action := opts.FinishAction
+		if action == "" {
+			if c.opts.AutoMode || c.opts.SkipAgentQuestions {
+				action = "done"
+			} else {
+				return c.saveFinishActionQuestion(ctx)
+			}
+		}
 		switch action {
 		case "merge":
 			if err := c.finishWithMerge(ctx, opts); err != nil {
 				return err
 			}
 		case "done":
-			// Just mark as done, no merge
 			c.logVerbosef("Marking task as done without merging")
 		case "cancel":
 			return errors.New("cancelled by user")
+		default:
+			return fmt.Errorf("unknown finish action: %s", action)
 		}
 	} else {
 		// No git, just mark as done
@@ -666,6 +693,7 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) error {
 
 	c.activeTask = nil
 	c.taskWork = nil
+	c.machine.Reset()
 
 	return nil
 }
@@ -775,66 +803,63 @@ func (c *Conductor) finishWithMerge(ctx context.Context, opts FinishOptions) err
 }
 
 // providerSupportsPR checks if the current task's provider supports PR creation.
+// Falls back to checking the git remote hosting provider if the task source doesn't support PRs.
 func (c *Conductor) providerSupportsPR(ctx context.Context) bool {
-	if c.activeTask == nil || c.activeTask.Ref == "" {
+	if c.activeTask == nil {
 		return false
 	}
 
-	// Resolve provider from the stored reference
-	resolveOpts := provider.ResolveOptions{
-		DefaultProvider: c.opts.DefaultProvider,
+	// First, check if task source provider supports PRs
+	if c.activeTask.Ref != "" {
+		resolveOpts := provider.ResolveOptions{
+			DefaultProvider: c.opts.DefaultProvider,
+		}
+
+		workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
+		scheme := parseScheme(c.activeTask.Ref)
+		providerCfg := buildProviderConfig(workspaceCfg, scheme)
+
+		p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, providerCfg, resolveOpts)
+		if err == nil {
+			if _, ok := p.(provider.PRCreator); ok {
+				return true
+			}
+		}
 	}
 
-	// Load workspace config and build provider config
-	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
-	scheme := parseScheme(c.activeTask.Ref)
-	providerCfg := buildProviderConfig(workspaceCfg, scheme)
+	// Fallback: check git remote hosting provider
+	_, err := c.resolveRemotePRProvider(ctx)
 
-	p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, providerCfg, resolveOpts)
-	if err != nil {
-		return false
-	}
-
-	// Check if provider implements PRCreator interface
-	_, ok := p.(provider.PRCreator)
-
-	return ok
+	return err == nil
 }
 
-// askUserFinishAction prompts the user to choose an action when PR is not supported.
-func (c *Conductor) askUserFinishAction() string {
-	// For non-interactive use (auto mode), default to "done"
-	if c.opts.AutoMode || c.opts.SkipAgentQuestions {
-		return "done"
+// saveFinishActionQuestion saves a pending question for the user to choose a finish action.
+// Returns ErrPendingQuestion to signal the caller (CLI or Web UI) to present the options.
+func (c *Conductor) saveFinishActionQuestion(ctx context.Context) error {
+	taskID := c.activeTask.ID
+	pq := &storage.PendingQuestion{
+		Question: "The provider for this task does not support pull requests. What would you like to do?",
+		Phase:    "finishing",
+		AskedAt:  time.Now(),
+		Options: []storage.QuestionOption{
+			{Label: "Merge changes to target branch locally", Value: "merge"},
+			{Label: "Mark task as done (no merge)", Value: "done"},
+			{Label: "Cancel", Value: "cancel"},
+		},
+	}
+	if err := c.workspace.SavePendingQuestion(taskID, pq); err != nil {
+		return fmt.Errorf("save finish action question: %w", err)
 	}
 
-	fmt.Println("\nThe provider for this task does not support pull requests.")
-	fmt.Println("What would you like to do?")
-	fmt.Println("  1. Merge changes to target branch locally")
-	fmt.Println("  2. Mark task as done (no merge)")
-	fmt.Println("  3. Cancel")
-
-	for {
-		var choice string
-		fmt.Print("\nEnter choice (1-3): ")
-		if _, err := fmt.Scanln(&choice); err != nil {
-			// Handle EOF or empty input
-			fmt.Println("\nCancelled")
-
-			return "cancel"
-		}
-
-		switch choice {
-		case "1", "merge":
-			return "merge"
-		case "2", "done":
-			return "done"
-		case "3", "cancel", "q":
-			return "cancel"
-		default:
-			fmt.Println("Invalid choice. Please enter 1, 2, or 3.")
-		}
+	if err := c.dispatchWithRetry(ctx, workflow.EventWait); err != nil {
+		return err
 	}
+	c.activeTask.State = string(workflow.StateWaiting)
+	if err := c.workspace.SaveActiveTask(c.activeTask); err != nil {
+		c.logError(fmt.Errorf("save active task after finish question: %w", err))
+	}
+
+	return ErrPendingQuestion
 }
 
 // filterSpecificationsByComponent filters specifications by component name.

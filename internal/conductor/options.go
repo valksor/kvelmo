@@ -444,6 +444,9 @@ type FinishOptions struct {
 	// Commit message
 	CommitMessage string // Optional pre-generated commit message
 
+	// Finish action for non-PR providers (user's chosen action: "merge", "done", "cancel")
+	FinishAction string `json:"finish_action"`
+
 	// Auto-rebase options (for stacked features)
 	SkipAutoRebase  bool // Skip auto-rebase even if configured (CLI --no-auto-rebase)
 	ForceAutoRebase bool // Force auto-rebase regardless of config (CLI --auto-rebase)

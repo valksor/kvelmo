@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -276,34 +277,52 @@ Please retry the implementation, taking into account this error.
 			if parseErr != nil {
 				c.logError(fmt.Errorf("failed to parse specification-%d for file tracking: %w", specificationNum, parseErr))
 			} else {
+				codeDir := c.CodeDir()
+
 				// Check if previously tracked files still exist (handle reverts/undo)
+				// Normalize paths and deduplicate while checking
+				seen := make(map[string]struct{})
 				var validFiles []string
 				for _, filePath := range specification.ImplementedFiles {
-					if _, err := os.Stat(filePath); err == nil {
-						// File still exists
-						validFiles = append(validFiles, filePath)
+					norm := normalizeAgentPath(filePath, codeDir)
+					if _, exists := seen[norm]; exists {
+						continue // skip duplicate
+					}
+					// Stat using absolute path for relative entries
+					statPath := norm
+					if !filepath.IsAbs(norm) {
+						statPath = filepath.Join(codeDir, norm)
+					}
+					if _, err := os.Stat(statPath); err == nil {
+						seen[norm] = struct{}{}
+						validFiles = append(validFiles, norm)
 					}
 				}
 
-				// Update specification if files were deleted
+				// Update specification if files changed (deleted or deduplicated)
 				if len(validFiles) != len(specification.ImplementedFiles) {
 					originalCount := len(specification.ImplementedFiles)
 					specification.ImplementedFiles = validFiles
-					c.logVerbosef("Cleared %d deleted files from specification-%d tracking",
+					c.logVerbosef("Cleaned %d entries from specification-%d tracking (deleted or duplicate)",
 						originalCount-len(validFiles), specificationNum)
 				}
 
-				// Add new files from this implementation
-				var filePaths []string
+				// Add new files from this implementation (normalized + deduplicated)
+				var added int
 				for _, fc := range response.Files {
-					filePaths = append(filePaths, fc.Path)
+					norm := normalizeAgentPath(fc.Path, codeDir)
+					if _, exists := seen[norm]; !exists {
+						specification.ImplementedFiles = append(specification.ImplementedFiles, norm)
+						seen[norm] = struct{}{}
+						added++
+					}
 				}
-				specification.ImplementedFiles = append(specification.ImplementedFiles, filePaths...)
 				specification.UpdatedAt = time.Now()
 				if saveErr := c.workspace.SaveSpecificationWithMeta(taskID, specification); saveErr != nil {
 					c.logError(fmt.Errorf("failed to save file tracking to specification-%d: %w", specificationNum, saveErr))
 				} else {
-					c.logVerbosef("Tracked %d files to specification-%d", len(filePaths), specificationNum)
+					c.logVerbosef("Tracked %d new files to specification-%d (%d total)",
+						added, specificationNum, len(specification.ImplementedFiles))
 				}
 			}
 		}

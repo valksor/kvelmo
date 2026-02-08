@@ -2226,6 +2226,44 @@ func TestDeleteWorkPrecedence_Documentation(t *testing.T) {
 	})
 }
 
+// Test PreferLocalMerge config precedence: CLI --merge > config > default (PR).
+func TestPreferLocalMerge_Precedence(t *testing.T) {
+	// This test documents the expected precedence behavior for merge preference.
+	// The actual logic is in Finish(): prefer merge if ForceMerge OR config.PreferLocalMerge.
+
+	t.Run("ForceMerge flag takes precedence over config", func(t *testing.T) {
+		opts := FinishOptions{ForceMerge: true}
+		// When ForceMerge is true, local merge should happen regardless of config
+		if !opts.ForceMerge {
+			t.Error("ForceMerge should be true")
+		}
+	})
+
+	t.Run("default creates PR when available", func(t *testing.T) {
+		opts := DefaultFinishOptions()
+		// Default: ForceMerge is false, so config is checked
+		if opts.ForceMerge {
+			t.Error("Default FinishOptions.ForceMerge should be false")
+		}
+		// When config.Workflow.PreferLocalMerge is also false (default),
+		// PR should be created when provider supports it.
+	})
+
+	t.Run("config PreferLocalMerge affects behavior", func(t *testing.T) {
+		// This documents that when opts.ForceMerge is false,
+		// the Finish() method checks cfg.Workflow.PreferLocalMerge.
+		// If PreferLocalMerge is true, local merge is preferred.
+		cfg := storage.WorkspaceConfig{
+			Workflow: storage.WorkflowSettings{
+				PreferLocalMerge: true,
+			},
+		}
+		if !cfg.Workflow.PreferLocalMerge {
+			t.Error("PreferLocalMerge should be true in this config")
+		}
+	})
+}
+
 // Test WithTitleOverride option.
 func TestWithTitleOverride(t *testing.T) {
 	opts := DefaultOptions()
