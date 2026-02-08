@@ -83,14 +83,16 @@ See [JetBrains: Windows (WSL)](/ide/jetbrains.md#windows-wsl) for detailed setup
 
 ## Web UI Access
 
-When you run `mehr serve` inside WSL, the server binds to localhost. On modern Windows (11 22H2+ with WSL 2.0+), ports are automatically forwarded — open `http://localhost:8080` in your Windows browser and it works.
+When you run `mehr serve` inside WSL, the server binds to localhost. On modern Windows (11 22H2+ with WSL 2.0+), ports are automatically forwarded — open `http://localhost:6337` in your Windows browser and it works.
 
 ```bash
 # Inside WSL
 mehr serve --open
 ```
 
-**Note:** The `--open` flag may not launch your Windows browser automatically from WSL. If it doesn't, copy the URL from the terminal output and paste it into your Windows browser manually.
+The `--open` flag works automatically in WSL. Mehrhof detects the WSL environment and uses `wslview` (if installed) or `explorer.exe` to launch your default Windows browser.
+
+If the browser doesn't open automatically, copy the URL from the terminal output (e.g., `http://localhost:6337`) and paste it into your Windows browser manually.
 
 ### Older Windows Builds
 
@@ -104,7 +106,7 @@ If `localhost` doesn't reach WSL, your system may use the older NAT networking m
 2. **Find the WSL IP** and use that:
    ```bash
    hostname -I
-   # Use the IP shown, e.g., http://172.x.x.x:8080
+   # Use the IP shown, e.g., http://172.x.x.x:6337
    ```
 
 3. **Bind to all interfaces** (allows Windows to connect via any address):

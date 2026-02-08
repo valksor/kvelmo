@@ -173,6 +173,20 @@ If any are missing, follow the relevant sections below.
 
 Windows users must use WSL2 (Windows Subsystem for Linux). Native Windows is not supported.
 
+### Quick Install (PowerShell)
+
+If you already have WSL2 set up with a Linux distribution, run this in PowerShell to install Mehrhof:
+
+```powershell
+irm https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.ps1 | iex
+```
+
+The script checks your WSL2 setup and runs the Linux installer inside WSL. If WSL2 isn't installed, it will give you setup instructions.
+
+### Manual Setup
+
+If you're setting up WSL2 for the first time, follow these steps:
+
 ### Step 1: Enable WSL2
 
 First, open **PowerShell as Administrator**:
