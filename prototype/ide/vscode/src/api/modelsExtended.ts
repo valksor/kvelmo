@@ -329,3 +329,27 @@ export interface HeartbeatEvent {
   agent?: string;
   timestamp: number;
 }
+
+// ============================================================================
+// Budget Models
+// ============================================================================
+
+export interface BudgetStatusResponse {
+  enabled: boolean;
+  max_cost?: number;
+  spent?: number;
+  remaining?: number;
+  currency?: string;
+  warning_at?: number;
+  warned?: boolean;
+  limit_hit?: boolean;
+}
+
+// ============================================================================
+// Label Models
+// ============================================================================
+
+export interface LabelsListResponse {
+  labels: string[];
+  count: number;
+}

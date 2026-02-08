@@ -365,6 +365,41 @@
         "command": "mehrhof.commit",
         "title": "Commit Analysis",
         "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.auto",
+        "title": "Auto Workflow",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.budgetStatus",
+        "title": "Budget Status",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.budgetReset",
+        "title": "Budget Reset",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.simplify",
+        "title": "Simplify Code...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.labelList",
+        "title": "Labels List",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.labelAdd",
+        "title": "Label Add...",
+        "category": "Mehrhof"
+      },
+      {
+        "command": "mehrhof.labelRemove",
+        "title": "Label Remove...",
+        "category": "Mehrhof"
       }
     ],
     "viewsContainers": {

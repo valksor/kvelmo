@@ -30,6 +30,8 @@ import type {
   BrowserCloseResponse,
   BrowserConsoleResponse,
   BrowserNetworkResponse,
+  BudgetStatusResponse,
+  LabelsListResponse,
 } from './models';
 
 // Re-export for backward compatibility
@@ -285,5 +287,63 @@ export class MehrhofApiClient extends MehrhofApiClientBase {
       capture_body: options?.captureBody,
       max_body_size: options?.maxBodySize,
     });
+  }
+
+  // ============================================================================
+  // Auto Workflow
+  // ============================================================================
+
+  async auto(options?: { loops?: number }): Promise<InteractiveCommandResponse> {
+    const args: string[] = [];
+    if (options?.loops && options.loops > 0) {
+      args.push('--loops', options.loops.toString());
+    }
+    return this.executeCommand({ command: 'auto', args });
+  }
+
+  // ============================================================================
+  // Budget Operations
+  // ============================================================================
+
+  async budgetStatus(): Promise<BudgetStatusResponse> {
+    return this.get<BudgetStatusResponse>('/api/v1/budget/monthly/status');
+  }
+
+  async budgetReset(): Promise<InteractiveCommandResponse> {
+    return this.executeCommand({ command: 'budget', args: ['reset'] });
+  }
+
+  // ============================================================================
+  // Simplify Operations
+  // ============================================================================
+
+  async simplify(options?: {
+    path?: string;
+    instructions?: string;
+  }): Promise<InteractiveCommandResponse> {
+    const args: string[] = [];
+    if (options?.path) {
+      args.push(options.path);
+    }
+    if (options?.instructions) {
+      args.push('--instructions', options.instructions);
+    }
+    return this.executeCommand({ command: 'simplify', args });
+  }
+
+  // ============================================================================
+  // Label Operations
+  // ============================================================================
+
+  async labelsList(): Promise<LabelsListResponse> {
+    return this.get<LabelsListResponse>('/api/v1/labels');
+  }
+
+  async labelsAdd(label: string): Promise<InteractiveCommandResponse> {
+    return this.executeCommand({ command: 'label', args: ['add', label] });
+  }
+
+  async labelsRemove(label: string): Promise<InteractiveCommandResponse> {
+    return this.executeCommand({ command: 'label', args: ['remove', label] });
   }
 }
