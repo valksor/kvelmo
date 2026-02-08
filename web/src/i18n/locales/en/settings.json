@@ -1,0 +1,106 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "work": "Work",
+    "workDescription": "Project workflow, git, agents, and provider defaults",
+    "advanced": "Advanced",
+    "advancedDescription": "Memory, security, browser, sandbox, and power features"
+  },
+  "status": {
+    "saved": "Saved",
+    "saving": "Saving...",
+    "saveFailed": "Failed to save",
+    "unsavedChanges": "You have unsaved changes"
+  },
+  "project": {
+    "selectProject": "Select Project",
+    "noProjects": "No projects registered yet.",
+    "registerHint": "Register a project with",
+    "selectToEdit": "Select a project to configure its settings.",
+    "editing": "Editing: {{name}}",
+    "changeProject": "Change Project"
+  },
+  "sections": {
+    "git": {
+      "title": "Git",
+      "commitPrefix": "Commit prefix",
+      "commitPrefixHint": "Prefix for auto-generated commit messages",
+      "autoPush": "Auto push",
+      "autoPushHint": "Automatically push commits after creation",
+      "signCommits": "Sign commits",
+      "signCommitsHint": "Sign commits with GPG key"
+    },
+    "agent": {
+      "title": "Agent",
+      "defaultAgent": "Default agent",
+      "defaultAgentHint": "Agent to use when not specified",
+      "retryCount": "Retry count",
+      "retryCountHint": "Number of retries on transient failures",
+      "retryDelay": "Retry delay",
+      "retryDelayHint": "Delay between retries"
+    },
+    "workflow": {
+      "title": "Workflow",
+      "autoCheckpoint": "Auto checkpoint",
+      "autoCheckpointHint": "Create checkpoint before each step",
+      "maxSpecifications": "Max specifications",
+      "maxSpecificationsHint": "Maximum number of specifications per task"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "language": "Language",
+      "languageHint": "Select your preferred language",
+      "theme": "Theme",
+      "themeHint": "Select color theme",
+      "moreLanguagesComing": "More languages coming soon. English is currently the only supported language."
+    },
+    "translations": {
+      "title": "Translation Customization",
+      "description": "Customize terminology and text throughout the application. Changes apply after page reload.",
+      "terminology": "Terminology Replacements",
+      "terminologyHint": "Replace terms across all translations (case-insensitive). Example: 'Task' → 'Ticket'",
+      "keyOverrides": "Translation Key Overrides",
+      "keyOverridesHint": "Override specific translation keys for power users. Example: 'nav.dashboard' → 'Home'",
+      "unsavedChanges": "You have unsaved changes",
+      "saveOverrides": "Save Overrides",
+      "saveError": "Failed to save overrides",
+      "loadError": "Failed to load translation overrides",
+      "reloadNotice": "Changes will take effect after page reload.",
+      "clearGlobal": "Clear Global",
+      "clearProject": "Clear Project",
+      "confirmClearGlobal": "This will clear all global translation customizations. Are you sure?",
+      "confirmClearProject": "This will clear all project-specific translation customizations. Are you sure?",
+      "saved": "Translation overrides saved",
+      "clearedGlobal": "Global translation overrides cleared",
+      "clearedProject": "Project translation overrides cleared",
+      "scope": {
+        "global": "Global",
+        "globalDescription": "Applies to all projects",
+        "project": "This Project",
+        "projectDescription": "Applies only to this project",
+        "saveToGlobal": "Save to Global",
+        "saveToProject": "Save to Project"
+      }
+    },
+    "memory": {
+      "title": "Memory",
+      "enabled": "Enable memory",
+      "enabledHint": "Use semantic memory for context"
+    },
+    "security": {
+      "title": "Security",
+      "enableSAST": "Enable SAST",
+      "enableSASTHint": "Run static analysis security testing"
+    },
+    "browser": {
+      "title": "Browser",
+      "headless": "Headless mode",
+      "headlessHint": "Run browser without visible window"
+    },
+    "sandbox": {
+      "title": "Sandbox",
+      "enabled": "Enable sandbox",
+      "enabledHint": "Run agents in isolated environment"
+    }
+  }
+}

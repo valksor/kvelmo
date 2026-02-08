@@ -24,6 +24,9 @@ export default defineConfig({
             'zod',
             '@hookform/resolvers',
             'react-hook-form',
+            'i18next',
+            'react-i18next',
+            'i18next-browser-languagedetector',
           ],
           // UI utilities - updated more frequently
           'vendor-ui': ['lucide-react', 'date-fns'],

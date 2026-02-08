@@ -1,0 +1,102 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "work": "Work",
+    "project": "Project",
+    "quick": "Quick",
+    "history": "History",
+    "advanced": "Advanced",
+    "find": "Find",
+    "review": "Review",
+    "commit": "Commit",
+    "simplify": "Simplify",
+    "chat": "Chat",
+    "library": "Library",
+    "links": "Links",
+    "tools": "Tools",
+    "admin": "Admin",
+    "settings": "Settings",
+    "license": "License",
+    "backToProjects": "Projects",
+    "documentation": "Documentation",
+    "openDocumentation": "Open documentation"
+  },
+  "status": {
+    "connected": "Connected",
+    "reconnecting": "Reconnecting...",
+    "loading": "Loading...",
+    "connectionLost": "Lost connection to server. Updates will resume automatically."
+  },
+  "actions": {
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "back": "Back",
+    "close": "Close",
+    "search": "Search",
+    "clear": "Clear",
+    "reset": "Reset",
+    "submit": "Submit",
+    "continue": "Continue",
+    "retry": "Retry"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "lv": "Latviešu"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear all notifications"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo_one": "{{count}}m ago",
+    "minutesAgo_other": "{{count}}m ago",
+    "hoursAgo_one": "{{count}}h ago",
+    "hoursAgo_other": "{{count}}h ago",
+    "daysAgo_one": "{{count}}d ago",
+    "daysAgo_other": "{{count}}d ago"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "notFound": "Not found",
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "networkError": "Network error",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{current}} of {{total}}",
+    "showingResults": "Showing {{from}}-{{to}} of {{total}} results"
+  },
+  "empty": {
+    "noData": "No data available",
+    "noResults": "No results found",
+    "noItems": "No items"
+  },
+  "confirm": {
+    "areYouSure": "Are you sure?",
+    "cannotUndo": "This action cannot be undone.",
+    "yes": "Yes",
+    "no": "No"
+  }
+}
