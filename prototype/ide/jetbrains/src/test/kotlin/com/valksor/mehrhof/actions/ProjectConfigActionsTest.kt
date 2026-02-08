@@ -393,14 +393,15 @@ class ProjectConfigActionsTest {
     fun `project actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            ProjectPlanAction(),
-            ProjectTasksAction(),
-            ProjectEditAction(),
-            ProjectSubmitAction(),
-            ProjectStartAction(),
-            ProjectSyncAction(),
-        )
+        val actions =
+            listOf(
+                ProjectPlanAction(),
+                ProjectTasksAction(),
+                ProjectEditAction(),
+                ProjectSubmitAction(),
+                ProjectStartAction(),
+                ProjectSyncAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -413,11 +414,12 @@ class ProjectConfigActionsTest {
     fun `stack actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            StackListAction(),
-            StackRebaseAction(),
-            StackSyncAction(),
-        )
+        val actions =
+            listOf(
+                StackListAction(),
+                StackRebaseAction(),
+                StackSyncAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -430,17 +432,18 @@ class ProjectConfigActionsTest {
     fun `config actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            ConfigValidateAction(),
-            AgentsListAction(),
-            AgentsExplainAction(),
-            ProvidersListAction(),
-            ProvidersInfoAction(),
-            TemplatesListAction(),
-            TemplatesShowAction(),
-            ScanAction(),
-            CommitAction(),
-        )
+        val actions =
+            listOf(
+                ConfigValidateAction(),
+                AgentsListAction(),
+                AgentsExplainAction(),
+                ProvidersListAction(),
+                ProvidersInfoAction(),
+                TemplatesListAction(),
+                TemplatesShowAction(),
+                ScanAction(),
+                CommitAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -453,26 +456,27 @@ class ProjectConfigActionsTest {
     fun `all actions enable when connected`() {
         fixture.setConnected(true)
 
-        val actions = listOf(
-            ProjectPlanAction(),
-            ProjectTasksAction(),
-            ProjectEditAction(),
-            ProjectSubmitAction(),
-            ProjectStartAction(),
-            ProjectSyncAction(),
-            StackListAction(),
-            StackRebaseAction(),
-            StackSyncAction(),
-            ConfigValidateAction(),
-            AgentsListAction(),
-            AgentsExplainAction(),
-            ProvidersListAction(),
-            ProvidersInfoAction(),
-            TemplatesListAction(),
-            TemplatesShowAction(),
-            ScanAction(),
-            CommitAction(),
-        )
+        val actions =
+            listOf(
+                ProjectPlanAction(),
+                ProjectTasksAction(),
+                ProjectEditAction(),
+                ProjectSubmitAction(),
+                ProjectStartAction(),
+                ProjectSyncAction(),
+                StackListAction(),
+                StackRebaseAction(),
+                StackSyncAction(),
+                ConfigValidateAction(),
+                AgentsListAction(),
+                AgentsExplainAction(),
+                ProvidersListAction(),
+                ProvidersInfoAction(),
+                TemplatesListAction(),
+                TemplatesShowAction(),
+                ScanAction(),
+                CommitAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()

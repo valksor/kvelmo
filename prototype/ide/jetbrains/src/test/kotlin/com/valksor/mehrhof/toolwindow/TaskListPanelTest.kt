@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.valksor.mehrhof.api.MehrhofApiClient
 import com.valksor.mehrhof.api.models.TaskInfo
-import com.valksor.mehrhof.api.models.TaskListResponse
 import com.valksor.mehrhof.api.models.TaskSummary
 import com.valksor.mehrhof.api.models.TaskWork
 import com.valksor.mehrhof.services.MehrhofProjectService

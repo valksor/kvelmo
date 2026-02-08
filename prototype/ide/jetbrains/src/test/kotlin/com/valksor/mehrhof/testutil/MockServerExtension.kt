@@ -32,7 +32,9 @@ import org.junit.jupiter.api.extension.ExtensionContext
  * }
  * ```
  */
-class MockServerExtension : BeforeEachCallback, AfterEachCallback {
+class MockServerExtension :
+    BeforeEachCallback,
+    AfterEachCallback {
     private lateinit var server: MockWebServer
 
     /**

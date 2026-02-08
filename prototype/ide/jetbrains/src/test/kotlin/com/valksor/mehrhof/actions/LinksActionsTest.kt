@@ -57,10 +57,21 @@ class LinksActionsTest {
         every { fixture.client.linksList() } returns
             Result.success(
                 LinksListResponse(
-                    links = listOf(
-                        LinkData(source = "spec:1", target = "impl:1", context = "implements", createdAt = "2024-01-01"),
-                        LinkData(source = "spec:2", target = "impl:2", context = "implements", createdAt = "2024-01-02"),
-                    ),
+                    links =
+                        listOf(
+                            LinkData(
+                                source = "spec:1",
+                                target = "impl:1",
+                                context = "implements",
+                                createdAt = "2024-01-01",
+                            ),
+                            LinkData(
+                                source = "spec:2",
+                                target = "impl:2",
+                                context = "implements",
+                                createdAt = "2024-01-02",
+                            ),
+                        ),
                     count = 2,
                 ),
             )
@@ -119,10 +130,21 @@ class LinksActionsTest {
             Result.success(
                 LinksSearchResponse(
                     query = "authentication",
-                    results = listOf(
-                        EntityResult(entityId = "spec:auth", type = "spec", name = "Auth Spec", totalLinks = 5),
-                        EntityResult(entityId = "impl:auth", type = "impl", name = "Auth Impl", totalLinks = 3),
-                    ),
+                    results =
+                        listOf(
+                            EntityResult(
+                                entityId = "spec:auth",
+                                type = "spec",
+                                name = "Auth Spec",
+                                totalLinks = 5,
+                            ),
+                            EntityResult(
+                                entityId = "impl:auth",
+                                type = "impl",
+                                name = "Auth Impl",
+                                totalLinks = 3,
+                            ),
+                        ),
                     count = 2,
                 ),
             )
@@ -164,9 +186,10 @@ class LinksActionsTest {
                     totalSources = 50,
                     totalTargets = 60,
                     orphanEntities = 5,
-                    mostLinked = listOf(
-                        EntityResult(entityId = "spec:main", type = "spec", totalLinks = 20),
-                    ),
+                    mostLinked =
+                        listOf(
+                            EntityResult(entityId = "spec:main", type = "spec", totalLinks = 20),
+                        ),
                     enabled = true,
                 ),
             )
@@ -220,12 +243,13 @@ class LinksActionsTest {
     fun `links actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            LinksListAction(),
-            LinksSearchAction(),
-            LinksStatsAction(),
-            LinksRebuildAction(),
-        )
+        val actions =
+            listOf(
+                LinksListAction(),
+                LinksSearchAction(),
+                LinksStatsAction(),
+                LinksRebuildAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -238,12 +262,13 @@ class LinksActionsTest {
     fun `links actions enable when connected`() {
         fixture.setConnected(true)
 
-        val actions = listOf(
-            LinksListAction(),
-            LinksSearchAction(),
-            LinksStatsAction(),
-            LinksRebuildAction(),
-        )
+        val actions =
+            listOf(
+                LinksListAction(),
+                LinksSearchAction(),
+                LinksStatsAction(),
+                LinksRebuildAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()

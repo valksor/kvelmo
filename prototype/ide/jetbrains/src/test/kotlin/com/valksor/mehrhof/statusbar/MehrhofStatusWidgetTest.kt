@@ -145,7 +145,9 @@ class MehrhofStatusWidgetTest {
         every { service.isConnected() } returns true
         every { service.workflowState } returns "implementing"
         every { service.currentTask } returns null
-        every { service.currentTaskWork } returns TaskWork(title = "This is a very long task title that should be truncated")
+        every {
+            service.currentTaskWork
+        } returns TaskWork(title = "This is a very long task title that should be truncated")
 
         val text = widget.getText()
         // WorkflowUtils.truncate limits to 20 chars + ellipsis

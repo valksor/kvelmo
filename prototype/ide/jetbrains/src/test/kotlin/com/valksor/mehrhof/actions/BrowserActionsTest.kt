@@ -112,10 +112,11 @@ class BrowserActionsTest {
         every { fixture.client.browserTabs() } returns
             Result.success(
                 BrowserTabsResponse(
-                    tabs = listOf(
-                        BrowserTab(id = "t1", title = "Google", url = "https://google.com"),
-                        BrowserTab(id = "t2", title = "GitHub", url = "https://github.com"),
-                    ),
+                    tabs =
+                        listOf(
+                            BrowserTab(id = "t1", title = "Google", url = "https://google.com"),
+                            BrowserTab(id = "t2", title = "GitHub", url = "https://github.com"),
+                        ),
                     count = 2,
                 ),
             )
@@ -340,10 +341,11 @@ class BrowserActionsTest {
             Result.success(
                 BrowserConsoleResponse(
                     success = true,
-                    messages = listOf(
-                        BrowserConsoleMessage(level = "log", text = "Hello world"),
-                        BrowserConsoleMessage(level = "error", text = "Something went wrong"),
-                    ),
+                    messages =
+                        listOf(
+                            BrowserConsoleMessage(level = "log", text = "Hello world"),
+                            BrowserConsoleMessage(level = "error", text = "Something went wrong"),
+                        ),
                     count = 2,
                 ),
             )
@@ -373,22 +375,23 @@ class BrowserActionsTest {
             Result.success(
                 BrowserNetworkResponse(
                     success = true,
-                    requests = listOf(
-                        BrowserNetworkEntry(
-                            method = "GET",
-                            url = "https://api.example.com/data",
-                            status = 200,
-                            statusText = "OK",
-                            timestamp = "2024-01-01T12:00:00Z",
+                    requests =
+                        listOf(
+                            BrowserNetworkEntry(
+                                method = "GET",
+                                url = "https://api.example.com/data",
+                                status = 200,
+                                statusText = "OK",
+                                timestamp = "2024-01-01T12:00:00Z",
+                            ),
+                            BrowserNetworkEntry(
+                                method = "POST",
+                                url = "https://api.example.com/submit",
+                                status = 201,
+                                statusText = "Created",
+                                timestamp = "2024-01-01T12:00:01Z",
+                            ),
                         ),
-                        BrowserNetworkEntry(
-                            method = "POST",
-                            url = "https://api.example.com/submit",
-                            status = 201,
-                            statusText = "Created",
-                            timestamp = "2024-01-01T12:00:01Z",
-                        ),
-                    ),
                     count = 2,
                 ),
             )
@@ -406,19 +409,20 @@ class BrowserActionsTest {
     fun `browser actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            BrowserStatusAction(),
-            BrowserTabsAction(),
-            BrowserGotoAction(),
-            BrowserNavigateAction(),
-            BrowserReloadAction(),
-            BrowserScreenshotAction(),
-            BrowserClickAction(),
-            BrowserTypeAction(),
-            BrowserEvalAction(),
-            BrowserConsoleAction(),
-            BrowserNetworkAction(),
-        )
+        val actions =
+            listOf(
+                BrowserStatusAction(),
+                BrowserTabsAction(),
+                BrowserGotoAction(),
+                BrowserNavigateAction(),
+                BrowserReloadAction(),
+                BrowserScreenshotAction(),
+                BrowserClickAction(),
+                BrowserTypeAction(),
+                BrowserEvalAction(),
+                BrowserConsoleAction(),
+                BrowserNetworkAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -431,19 +435,20 @@ class BrowserActionsTest {
     fun `browser actions enable when connected`() {
         fixture.setConnected(true)
 
-        val actions = listOf(
-            BrowserStatusAction(),
-            BrowserTabsAction(),
-            BrowserGotoAction(),
-            BrowserNavigateAction(),
-            BrowserReloadAction(),
-            BrowserScreenshotAction(),
-            BrowserClickAction(),
-            BrowserTypeAction(),
-            BrowserEvalAction(),
-            BrowserConsoleAction(),
-            BrowserNetworkAction(),
-        )
+        val actions =
+            listOf(
+                BrowserStatusAction(),
+                BrowserTabsAction(),
+                BrowserGotoAction(),
+                BrowserNavigateAction(),
+                BrowserReloadAction(),
+                BrowserScreenshotAction(),
+                BrowserClickAction(),
+                BrowserTypeAction(),
+                BrowserEvalAction(),
+                BrowserConsoleAction(),
+                BrowserNetworkAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()

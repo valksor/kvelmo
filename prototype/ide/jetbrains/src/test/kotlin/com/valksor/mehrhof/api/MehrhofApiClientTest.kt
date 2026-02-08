@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.*
 /**
  * Unit tests for MehrhofApiClient.
  */
+@Suppress("LargeClass") // Comprehensive API client test covering all endpoints
 class MehrhofApiClientTest {
     private lateinit var mockServer: MockWebServer
     private lateinit var client: MehrhofApiClient

@@ -76,10 +76,11 @@ class MemoryActionsTest {
         every { fixture.client.memorySearch("login") } returns
             Result.success(
                 MemorySearchResponse(
-                    results = listOf(
-                        MemoryResult(taskId = "t1", type = "spec", score = 0.95, content = "Login spec"),
-                        MemoryResult(taskId = "t2", type = "impl", score = 0.80, content = "Login impl"),
-                    ),
+                    results =
+                        listOf(
+                            MemoryResult(taskId = "t1", type = "spec", score = 0.95, content = "Login spec"),
+                            MemoryResult(taskId = "t2", type = "impl", score = 0.80, content = "Login impl"),
+                        ),
                     count = 2,
                 ),
             )
@@ -197,11 +198,12 @@ class MemoryActionsTest {
     fun `memory actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            MemorySearchAction(),
-            MemoryIndexAction(),
-            MemoryStatsAction(),
-        )
+        val actions =
+            listOf(
+                MemorySearchAction(),
+                MemoryIndexAction(),
+                MemoryStatsAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -214,11 +216,12 @@ class MemoryActionsTest {
     fun `memory actions enable when connected`() {
         fixture.setConnected(true)
 
-        val actions = listOf(
-            MemorySearchAction(),
-            MemoryIndexAction(),
-            MemoryStatsAction(),
-        )
+        val actions =
+            listOf(
+                MemorySearchAction(),
+                MemoryIndexAction(),
+                MemoryStatsAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()

@@ -57,18 +57,19 @@ class LibraryActionsTest {
         every { fixture.client.libraryList() } returns
             Result.success(
                 LibraryListResponse(
-                    collections = listOf(
-                        LibraryCollection(
-                            id = "c1",
-                            name = "React Docs",
-                            source = "https://react.dev",
-                            sourceType = "website",
-                            includeMode = "all",
-                            pageCount = 50,
-                            totalSize = 1024000,
-                            location = "/docs/react",
+                    collections =
+                        listOf(
+                            LibraryCollection(
+                                id = "c1",
+                                name = "React Docs",
+                                source = "https://react.dev",
+                                sourceType = "website",
+                                includeMode = "all",
+                                pageCount = 50,
+                                totalSize = 1024000,
+                                location = "/docs/react",
+                            ),
                         ),
-                    ),
                     count = 1,
                 ),
             )
@@ -115,17 +116,18 @@ class LibraryActionsTest {
         every { fixture.client.libraryShow("react-docs") } returns
             Result.success(
                 LibraryShowResponse(
-                    collection = LibraryCollection(
-                        id = "c1",
-                        name = "React Docs",
-                        source = "https://react.dev",
-                        sourceType = "website",
-                        includeMode = "all",
-                        pageCount = 50,
-                        totalSize = 2048000,
-                        location = "/docs/react",
-                        pulledAt = "2024-01-15T10:00:00Z",
-                    ),
+                    collection =
+                        LibraryCollection(
+                            id = "c1",
+                            name = "React Docs",
+                            source = "https://react.dev",
+                            sourceType = "website",
+                            includeMode = "all",
+                            pageCount = 50,
+                            totalSize = 2048000,
+                            location = "/docs/react",
+                            pulledAt = "2024-01-15T10:00:00Z",
+                        ),
                     pages = listOf("hooks.md", "components.md", "state.md"),
                 ),
             )
@@ -283,13 +285,14 @@ class LibraryActionsTest {
     fun `library actions disable when not connected`() {
         fixture.setConnected(false)
 
-        val actions = listOf(
-            LibraryListAction(),
-            LibraryShowAction(),
-            LibraryPullAction(),
-            LibraryRemoveAction(),
-            LibraryStatsAction(),
-        )
+        val actions =
+            listOf(
+                LibraryListAction(),
+                LibraryShowAction(),
+                LibraryPullAction(),
+                LibraryRemoveAction(),
+                LibraryStatsAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()
@@ -302,13 +305,14 @@ class LibraryActionsTest {
     fun `library actions enable when connected`() {
         fixture.setConnected(true)
 
-        val actions = listOf(
-            LibraryListAction(),
-            LibraryShowAction(),
-            LibraryPullAction(),
-            LibraryRemoveAction(),
-            LibraryStatsAction(),
-        )
+        val actions =
+            listOf(
+                LibraryListAction(),
+                LibraryShowAction(),
+                LibraryPullAction(),
+                LibraryRemoveAction(),
+                LibraryStatsAction(),
+            )
 
         for (action in actions) {
             fixture.resetPresentation()

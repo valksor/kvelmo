@@ -1,10 +1,8 @@
 package com.valksor.mehrhof.toolwindow
 
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -12,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import javax.swing.JButton
 import javax.swing.JOptionPane
-import javax.swing.JPanel
 
 /**
  * Unit tests for [ActionsPanel].
@@ -26,9 +23,10 @@ class ActionsPanelTest {
     @BeforeEach
     fun setUp() {
         capturedCommands.clear()
-        panel = ActionsPanel { command, args ->
-            capturedCommands.add(command to args)
-        }
+        panel =
+            ActionsPanel { command, args ->
+                capturedCommands.add(command to args)
+            }
 
         // Mock JOptionPane for dialogs
         mockkStatic(JOptionPane::class)
@@ -256,7 +254,9 @@ class ActionsPanelTest {
 
     @Test
     fun `quick task button shows input dialog and passes description`() {
-        every { JOptionPane.showInputDialog(any(), any(), eq("Create Quick Task"), any<Int>()) } returns "Fix bug in login"
+        every {
+            JOptionPane.showInputDialog(any(), any(), eq("Create Quick Task"), any<Int>())
+        } returns "Fix bug in login"
 
         clickButton("Quick Task...")
 
@@ -267,7 +267,9 @@ class ActionsPanelTest {
 
     @Test
     fun `note button shows input dialog and passes note text`() {
-        every { JOptionPane.showInputDialog(any(), any(), eq("Add Note"), any<Int>()) } returns "Remember to test edge cases"
+        every {
+            JOptionPane.showInputDialog(any(), any(), eq("Add Note"), any<Int>())
+        } returns "Remember to test edge cases"
 
         clickButton("Add Note...")
 
@@ -336,7 +338,10 @@ class ActionsPanelTest {
         return buttons
     }
 
-    private fun findButtonsRecursive(container: java.awt.Container, buttons: MutableList<JButton>) {
+    private fun findButtonsRecursive(
+        container: java.awt.Container,
+        buttons: MutableList<JButton>,
+    ) {
         for (component in container.components) {
             if (component is JButton) {
                 buttons.add(component)
@@ -347,8 +352,9 @@ class ActionsPanelTest {
     }
 
     private fun clickButton(text: String) {
-        val button = findAllButtons().find { it.text == text }
-            ?: throw AssertionError("Button '$text' not found")
+        val button =
+            findAllButtons().find { it.text == text }
+                ?: throw AssertionError("Button '$text' not found")
         button.doClick()
     }
 }
