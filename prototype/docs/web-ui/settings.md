@@ -46,6 +46,16 @@ Configure version control integration:
 | **Stash on Start** | Auto-stash changes before creating branch                     |
 | **Auto Pop Stash** | Pop stash after branch creation                               |
 
+### Appearance Settings
+
+Configure visual and language preferences:
+
+| Setting      | Description                                                         |
+|--------------|---------------------------------------------------------------------|
+| **Language** | UI language preference (currently English, more languages coming)   |
+
+See [Language & Translations](/web-ui/language.md) for customizing terminology and translation overrides.
+
 ### Display Settings
 
 Configure how dates and times are shown:
@@ -319,5 +329,6 @@ Prefer working from the terminal? See [CLI: config](/cli/config.md) for configur
 ## Next Steps
 
 - [**Dashboard**](/web-ui/dashboard.md) — Return to main view
+- [**Language & Translations**](/web-ui/language.md) — Customize terminology and translations
 - [**Tools**](/web-ui/tools.md) — Browser, Memory, Security, Stack tools
 - [**Configuration Guide**](/configuration/index.md) — Advanced configuration

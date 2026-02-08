@@ -52,6 +52,7 @@
     - [Links](web-ui/links.md)
   - **Settings**
     - [Settings](web-ui/settings.md)
+    - [Language & Translations](web-ui/language.md)
   - **Tools**
     - [Tools](web-ui/tools.md)
     - [Browser Control](web-ui/browser.md)
