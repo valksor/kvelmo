@@ -36,9 +36,10 @@ describe('Layout', () => {
 
     render(<Layout />)
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Admin')).toBeInTheDocument()
-    expect(screen.queryByText('Work')).not.toBeInTheDocument()
+    // i18n mock returns keys as values: nav.dashboard, nav.admin
+    expect(screen.getByText('nav.dashboard')).toBeInTheDocument()
+    expect(screen.getByText('nav.admin')).toBeInTheDocument()
+    expect(screen.queryByText('nav.work')).not.toBeInTheDocument()
   })
 
   it('renders project navigation and supports switch to global', async () => {
@@ -58,13 +59,15 @@ describe('Layout', () => {
 
     render(<Layout />)
 
-    expect(screen.getByText('Work')).toBeInTheDocument()
-    expect(screen.getByText('Advanced')).toBeInTheDocument()
+    // i18n mock returns keys as values
+    expect(screen.getByText('nav.work')).toBeInTheDocument()
+    expect(screen.getByText('nav.advanced')).toBeInTheDocument()
     expect(screen.getByText('acme/repo')).toBeInTheDocument()
     expect(screen.getByText('https://github.com/acme/repo.git')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /back to project list/i })).toBeInTheDocument()
+    // The aria-label uses nav.backToProjects key
+    expect(screen.getByRole('button', { name: /nav\.backToProjects/i })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /back to project list/i }))
+    await user.click(screen.getByRole('button', { name: /nav\.backToProjects/i }))
     expect(mutateMock).toHaveBeenCalledTimes(1)
   })
 })

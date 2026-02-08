@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatDate } from '@/utils/format'
 import { Bell, X, CheckCircle, AlertCircle, HelpCircle, Trash2 } from 'lucide-react'
 import { useWorkflowSSE, type QuestionData } from '@/hooks/useWorkflowSSE'
@@ -14,6 +15,7 @@ export interface Notification {
 }
 
 export function NotificationCenter() {
+  const { t } = useTranslation(['common', 'workflow'])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const { announce } = useAnnouncer()
@@ -38,14 +40,14 @@ export function NotificationCenter() {
       if (state === 'done') {
         addNotification({
           type: 'success',
-          title: 'Workflow Complete',
-          message: 'Task has been completed successfully',
+          title: t('workflow:notifications.workflowComplete'),
+          message: t('workflow:notifications.workflowCompleteMessage'),
         })
       } else if (state === 'failed') {
         addNotification({
           type: 'error',
-          title: 'Workflow Failed',
-          message: 'Task encountered an error',
+          title: t('workflow:notifications.workflowFailed'),
+          message: t('workflow:notifications.workflowFailedMessage'),
         })
       }
     },
@@ -53,16 +55,16 @@ export function NotificationCenter() {
       const preview = question.question?.trim()
       addNotification({
         type: 'question',
-        title: 'Question Pending',
+        title: t('workflow:notifications.questionPending'),
         message: preview
           ? preview.slice(0, 100) + (preview.length > 100 ? '...' : '')
-          : 'A response is required to continue.',
+          : t('workflow:notifications.questionPendingMessage'),
       })
     },
     onError: (error: string) => {
       addNotification({
         type: 'error',
-        title: 'Error',
+        title: t('workflow:notifications.error'),
         message: error,
       })
     },
@@ -123,7 +125,7 @@ export function NotificationCenter() {
         tabIndex={0}
         className="btn btn-ghost btn-sm btn-circle relative"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+        aria-label={unreadCount > 0 ? `${t('notifications.title')} (${unreadCount})` : t('notifications.title')}
       >
         <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && (
@@ -136,27 +138,27 @@ export function NotificationCenter() {
       {isOpen && (
         <div
           role="menu"
-          aria-label="Notifications"
+          aria-label={t('notifications.title')}
           tabIndex={0}
           className="dropdown-content z-[100] mt-2 w-80 bg-base-100 rounded-box shadow-lg border border-base-300"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-base-300">
-            <h3 className="font-medium">Notifications</h3>
+            <h3 className="font-medium">{t('notifications.title')}</h3>
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
                   className="btn btn-ghost btn-xs"
                 >
-                  Mark all read
+                  {t('notifications.markAllRead')}
                 </button>
               )}
               {notifications.length > 0 && (
                 <button
                   onClick={clearAll}
                   className="btn btn-ghost btn-xs text-error"
-                  aria-label="Clear all notifications"
+                  aria-label={t('notifications.clearAll')}
                 >
                   <Trash2 size={14} aria-hidden="true" />
                 </button>
@@ -169,7 +171,7 @@ export function NotificationCenter() {
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-base-content/60">
                 <Bell size={24} className="mx-auto mb-2 opacity-50" aria-hidden="true" />
-                <p className="text-sm">No notifications</p>
+                <p className="text-sm">{t('notifications.empty')}</p>
               </div>
             ) : (
               <ul className="divide-y divide-base-200">
@@ -228,6 +230,8 @@ export function NotificationCenter() {
   )
 }
 
+// Relative time formatting - kept simple for now
+// TODO: Add i18n pluralization support in a future refinement
 function formatRelativeTime(date: Date): string {
   const now = new Date()
   const diff = now.getTime() - date.getTime()

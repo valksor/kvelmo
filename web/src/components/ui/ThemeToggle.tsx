@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sun, Moon } from 'lucide-react'
 
 type Theme = 'light' | 'dark'
@@ -8,6 +9,7 @@ const LIGHT_THEME = 'winter'
 const DARK_THEME = 'business'
 
 export function ThemeToggle() {
+  const { t } = useTranslation()
   const [theme, setTheme] = useState<Theme>(() => {
     // Check localStorage first
     if (typeof window !== 'undefined') {
@@ -34,12 +36,14 @@ export function ThemeToggle() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
+  const label = theme === 'light' ? t('theme.switchToDark') : t('theme.switchToLight')
+
   return (
     <button
       onClick={toggleTheme}
       className="btn btn-ghost btn-sm btn-circle"
-      title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-      aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+      title={label}
+      aria-label={label}
     >
       {theme === 'light' ? (
         <Moon size={18} className="text-base-content/70" />

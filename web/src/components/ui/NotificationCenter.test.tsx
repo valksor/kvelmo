@@ -28,10 +28,12 @@ describe('NotificationCenter', () => {
     })
 
     await user.click(screen.getAllByRole('button')[0]!)
-    expect(screen.getByText('Workflow Complete')).toBeInTheDocument()
+    // i18n mock returns keys as values: workflow:notifications.workflowComplete
+    expect(screen.getByText('workflow:notifications.workflowComplete')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /mark all read/i }))
+    // notifications.markAllRead key
+    await user.click(screen.getByRole('button', { name: /notifications\.markAllRead/i }))
     expect(screen.queryByText('1')).not.toBeInTheDocument()
   })
 
@@ -47,12 +49,14 @@ describe('NotificationCenter', () => {
     })
 
     await user.click(screen.getAllByRole('button')[0]!)
-    expect(screen.getByText('Question Pending')).toBeInTheDocument()
-    expect(screen.getByText('Error')).toBeInTheDocument()
+    // i18n mock returns keys as values
+    expect(screen.getByText('workflow:notifications.questionPending')).toBeInTheDocument()
+    expect(screen.getByText('workflow:notifications.error')).toBeInTheDocument()
 
     const clearAllButton = container.querySelector('.btn.btn-ghost.btn-xs.text-error') as HTMLElement
     await user.click(clearAllButton)
     await user.click(screen.getAllByRole('button')[0]!)
-    expect(screen.getByText('No notifications')).toBeInTheDocument()
+    // notifications.empty key
+    expect(screen.getByText('notifications.empty')).toBeInTheDocument()
   })
 })

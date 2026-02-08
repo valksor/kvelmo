@@ -42,3 +42,17 @@ global.fetch = vi.fn()
 vi.mock('focus-trap-react', () => ({
   FocusTrap: ({ children }: { children: unknown }) => children,
 }))
+
+// Mock react-i18next for tests - returns key as translation value
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      changeLanguage: vi.fn(),
+      language: 'en',
+    },
+  }),
+  Trans: ({ children }: { children: unknown }) => children,
+  initReactI18next: { type: '3rdParty', init: vi.fn() },
+  I18nextProvider: ({ children }: { children: unknown }) => children,
+}))
