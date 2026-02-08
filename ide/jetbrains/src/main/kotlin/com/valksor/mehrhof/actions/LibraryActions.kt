@@ -3,10 +3,24 @@ package com.valksor.mehrhof.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ui.Messages
 import com.valksor.mehrhof.api.*
+import java.util.Locale
 
 // ============================================================================
 // Library Actions
 // ============================================================================
+
+/** Shared byte formatting utility for library actions. */
+private object ByteFormatter {
+    fun format(bytes: Long): String {
+        if (bytes < 1024) return "$bytes B"
+        val kb = bytes / 1024.0
+        if (kb < 1024) return String.format(Locale.US, "%.1f KB", kb)
+        val mb = kb / 1024.0
+        if (mb < 1024) return String.format(Locale.US, "%.1f MB", mb)
+        val gb = mb / 1024.0
+        return String.format(Locale.US, "%.1f GB", gb)
+    }
+}
 
 class LibraryListAction : MehrhofAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -24,7 +38,7 @@ class LibraryListAction : MehrhofAction() {
                             buildString {
                                 appendLine("${response.count} collection(s):")
                                 response.collections.forEach { coll ->
-                                    val size = formatBytes(coll.totalSize)
+                                    val size = ByteFormatter.format(coll.totalSize)
                                     appendLine("• ${coll.name} (${coll.pageCount} pages, $size)")
                                 }
                             }
@@ -38,16 +52,6 @@ class LibraryListAction : MehrhofAction() {
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = isConnected(e)
-    }
-
-    private fun formatBytes(bytes: Long): String {
-        if (bytes < 1024) return "$bytes B"
-        val kb = bytes / 1024.0
-        if (kb < 1024) return String.format("%.1f KB", kb)
-        val mb = kb / 1024.0
-        if (mb < 1024) return String.format("%.1f MB", mb)
-        val gb = mb / 1024.0
-        return String.format("%.1f GB", gb)
     }
 }
 
@@ -78,7 +82,7 @@ class LibraryShowAction : MehrhofAction() {
                             appendLine("Type: ${coll.sourceType}")
                             appendLine("Mode: ${coll.includeMode}")
                             appendLine("Pages: ${coll.pageCount}")
-                            appendLine("Size: ${formatBytes(coll.totalSize)}")
+                            appendLine("Size: ${ByteFormatter.format(coll.totalSize)}")
                             appendLine("Location: ${coll.location}")
                             coll.pulledAt?.let { appendLine("Pulled: $it") }
                             if (response.pages.isNotEmpty()) {
@@ -100,16 +104,6 @@ class LibraryShowAction : MehrhofAction() {
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = isConnected(e)
-    }
-
-    private fun formatBytes(bytes: Long): String {
-        if (bytes < 1024) return "$bytes B"
-        val kb = bytes / 1024.0
-        if (kb < 1024) return String.format("%.1f KB", kb)
-        val mb = kb / 1024.0
-        if (mb < 1024) return String.format("%.1f MB", mb)
-        val gb = mb / 1024.0
-        return String.format("%.1f GB", gb)
     }
 }
 
@@ -225,7 +219,7 @@ class LibraryStatsAction : MehrhofAction() {
                             buildString {
                                 appendLine("Collections: ${response.totalCollections}")
                                 appendLine("Pages: ${response.totalPages}")
-                                appendLine("Total size: ${formatBytes(response.totalSize)}")
+                                appendLine("Total size: ${ByteFormatter.format(response.totalSize)}")
                                 appendLine("Project: ${response.projectCount}")
                                 appendLine("Shared: ${response.sharedCount}")
                                 if (response.byMode.isNotEmpty()) {
@@ -245,15 +239,5 @@ class LibraryStatsAction : MehrhofAction() {
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = isConnected(e)
-    }
-
-    private fun formatBytes(bytes: Long): String {
-        if (bytes < 1024) return "$bytes B"
-        val kb = bytes / 1024.0
-        if (kb < 1024) return String.format("%.1f KB", kb)
-        val mb = kb / 1024.0
-        if (mb < 1024) return String.format("%.1f MB", mb)
-        val gb = mb / 1024.0
-        return String.format("%.1f GB", gb)
     }
 }
