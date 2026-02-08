@@ -75,6 +75,7 @@ env:
 | `context`       | Hierarchical task context          | [Context Configuration](context.md)   |
 | `budget`        | Cost and token budgets             | (see below)                           |
 | `quality`       | Code quality and linters           | (see below)                           |
+| `display`       | Date/time display preferences      | (see below)                           |
 
 ### providers
 
@@ -91,6 +92,7 @@ workflow:
   session_retention_days: 30       # Keep sessions for N days
   delete_work_on_finish: false     # Delete work dirs after finish
   delete_work_on_abandon: true     # Delete work dirs on abandon
+  prefer_local_merge: false        # Use local merge instead of PR on finish
 ```
 
 ### budget
@@ -195,6 +197,23 @@ env:
 ```
 
 Variables are filtered by agent name prefix, stripped when passed.
+
+### display
+
+Configure date and time display preferences.
+
+```yaml
+display:
+  timezone: "Europe/Riga"  # IANA timezone (default: UTC)
+```
+
+All dates are displayed in **dd.mm.yyyy** format (e.g., 08.02.2026).
+
+| Option     | Type   | Default | Description                                                     |
+|------------|--------|---------|-----------------------------------------------------------------|
+| `timezone` | string | `UTC`   | IANA timezone for display (e.g., `Europe/Riga`, `America/New_York`) |
+
+> **Note:** When initializing with `mehr init --asc`, timezone defaults to `Europe/Riga`.
 
 ## Environment File (.env)
 

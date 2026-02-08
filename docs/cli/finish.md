@@ -20,9 +20,21 @@ The `finish` command completes the current task by:
 4. Keeping the work directory by default (use `--delete-work` to remove, or configure `workflow.delete_work_on_finish` in `config.yaml`)
 
 **Default behavior**:
-- For `github:` tasks → Creates PR automatically
-- For `file:`/`directory:` tasks → Prompts to choose (merge / mark done / cancel)
-- Use `--merge` flag to force local merge
+- For `github:` or `gitlab:` tasks → Creates PR/MR automatically
+- For `file:`/`directory:` tasks on GitHub/GitLab-hosted projects → Creates PR automatically (uses git remote)
+- For other tasks (no git remote, or unsupported hosts) → Prompts to choose (merge / mark done / cancel)
+- Use `--merge` flag to force local merge (skips PR creation)
+
+**Configuration:**
+
+To make local merge the default (skip PR creation):
+
+```yaml
+workflow:
+  prefer_local_merge: true
+```
+
+With this setting, `mehr finish` behaves like `mehr finish --merge`. The `--merge` flag is still respected when passed explicitly.
 
 ## Flags
 
@@ -61,13 +73,32 @@ Creating pull request...
 Task completed!
 ```
 
-### Basic Finish (file task)
+### Basic Finish (file task on GitHub project)
 
 ```bash
 mehr finish
 ```
 
-For `file:`/`directory:` tasks, prompts for action:
+For `file:`/`directory:` tasks on a GitHub-hosted project, automatically creates a PR using the git remote:
+
+```
+Finishing task a1b2c3d4...
+Running quality checks...
+  make quality: PASSED
+Pushing branch to origin...
+Creating pull request...
+  PR #42: Implementation
+  https://github.com/owner/repo/pull/42
+Task completed!
+```
+
+### Basic Finish (file task without git remote)
+
+```bash
+mehr finish
+```
+
+For `file:`/`directory:` tasks without a supported git remote, prompts for action:
 
 ```
 The provider for this task does not support pull requests.
@@ -186,12 +217,14 @@ Continue with modified files? [y/N]
 
 ## What Happens
 
-### With PR Creation (default for GitHub:, gitlab:, etc.)
+### With PR Creation (default for GitHub/GitLab tasks or git remotes)
 
 1. **Quality Checks** (unless skipped)
 2. **Push branch** to remote
-3. **Create PR** via provider API
+3. **Create PR** via provider API (uses task provider or git remote as fallback)
 4. **Task marked done** (branch preserved)
+
+> **Note**: For `file:` or `directory:` tasks, Mehrhof automatically detects if your project is hosted on GitHub/GitLab from the git remote and creates a PR there. No additional configuration needed.
 
 ### With Local Merge (`--merge` flag)
 

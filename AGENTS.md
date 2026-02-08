@@ -285,8 +285,7 @@ mehr agents | providers | templates | update | generate-secret
 | `internal/browser/`      | Chrome automation (CDP)                                                                                                       |
 | `internal/mcp/`          | Model Context Protocol server                                                                                                 |
 | `internal/memory/`       | Semantic memory with vector embeddings                                                                                        |
-| `internal/server/`       | Web UI: REST API, SSE, authentication, CSRF protection, rate limiting                                                         |
-| `internal/automation/`   | Webhook automation: GitHub/GitLab webhooks, job queue, access control                                                         |
+| `internal/server/`       | Web UI: REST API, SSE, CSRF protection                                                                                        |
 | `ide/jetbrains/`         | JetBrains IDE plugin - Kotlin, native integration via REST API + SSE                                                          |
 | `ide/vscode/`            | VS Code extension - TypeScript, webview-based UI via REST API + SSE                                                           |
 | `internal/links/`        | Bidirectional linking (`[[reference]]` syntax)                                                                                |

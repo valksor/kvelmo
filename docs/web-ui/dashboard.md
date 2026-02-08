@@ -95,8 +95,24 @@ For a dedicated planning workspace, see [Project Planning](/web-ui/project-plann
 - **Specifications** — View generated specs with expandable content
 - **Reviews** — Code review results and issues
 - **Notes** — Add context notes for the AI agent
-- **Agent Terminal** — Real-time streaming of AI responses
+- **Agent Terminal** — Real-time streaming of AI responses (see below)
 - **Costs** — Token usage and cost tracking
+
+### Agent Activity Panel
+
+The activity panel shows AI progress in two views:
+
+| View | Shows | Best For |
+|------|-------|----------|
+| **Summary** (default) | Progress bar, step counts, recent activity | Most users — highlights what matters |
+| **Details** | Full log output | Debugging, technical users |
+
+Toggle between views using the **Summary** and **Details** buttons at the top of the panel.
+
+**Summary view includes:**
+- Progress bar showing completed vs total steps
+- Recent messages categorized by type (success, warning, error, info)
+- Current action in plain language
 - **Quick Questions** — Ask the agent questions without changing workflow state
 
 This separation keeps the dashboard lightweight while providing full control on the task detail page.
@@ -106,6 +122,8 @@ This separation keeps the dashboard lightweight while providing full control on 
 The dashboard header shows your real-time connection status:
 - **Connected** (green) — SSE connection active, receiving live updates
 - **Reconnecting** (yellow) — Connection lost, attempting to reconnect
+
+> **Tip:** Hover over the "Reconnecting" status to see more details. Updates will resume automatically once the connection is restored.
 
 Real-time updates include:
 - Task state changes

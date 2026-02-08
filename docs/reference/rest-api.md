@@ -27,22 +27,6 @@ http://localhost:PORT/api/v1
 
 Replace `PORT` with the actual port number shown when starting the server.
 
-<!-- DISABLED: remote serve
-## Authentication
-
-For network-accessible servers (`--host 0.0.0.0`), include session cookies:
-
-```bash
-# Login first to get session cookie
-curl -c cookies.txt -X POST http://localhost:PORT/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}'
-
-# Use session cookie for requests
-curl -b cookies.txt http://localhost:PORT/api/v1/status
-```
--->
-
 ## Endpoints Overview
 
 | Category           | Endpoints                                                                             |
@@ -54,39 +38,9 @@ curl -b cookies.txt http://localhost:PORT/api/v1/status
 | **Browser**        | Status, tabs, goto, navigate, screenshot, click, type, eval, dom, close               |
 | **Settings**       | Get, update settings                                                                  |
 | **Templates**      | List, get, apply                                                                      |
-| **Utilities**      | Guide, scan, memory search, providers, agents, diagram                                |
+| **Utilities**      | Guide, scan, memory search, providers, agents                                         |
 
 ---
-
-<!-- DISABLED: remote serve
-## Authentication Endpoints
-
-### POST /api/v1/auth/login
-
-Authenticate and create a session.
-
-```bash
-curl -X POST http://localhost:PORT/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "login successful"
-}
-```
-
-### POST /api/v1/auth/logout
-
-End the current session.
-
-```bash
-curl -X POST http://localhost:PORT/api/v1/auth/logout
-```
--->
 
 ---
 
@@ -400,15 +354,6 @@ List available task providers.
 
 ```bash
 curl http://localhost:PORT/api/v1/providers
-```
-
-### GET /api/v1/workflow/diagram
-
-Get SVG workflow state diagram.
-
-```bash
-curl http://localhost:PORT/api/v1/workflow/diagram \
-  --output workflow-diagram.svg
 ```
 
 ### GET /api/v1/costs

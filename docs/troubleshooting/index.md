@@ -66,22 +66,6 @@ mehr serve --port 9090
 
 See [Providers](/providers/index.md) for token setup per provider.
 
-<!-- DISABLED: remote serve
-### Remote Access Not Working
-
-**Cause:** Server not bound to accessible address.
-
-```bash
-# Bind to all interfaces (for remote access)
-mehr serve --host 0.0.0.0
-
-# With authentication (required for remote)
-mehr serve --host 0.0.0.0 --auth
-```
-
-See [Remote Access](/web-ui/remote-access.md) for full setup.
--->
-
 ---
 
 ## Installation Issues
@@ -179,40 +163,6 @@ budget:
 ```
 
 3. **Check your provider's rate limits** — Anthropic and other providers have usage tiers. Higher tiers allow more requests per minute. See your provider's dashboard for current limits.
-
-<!-- DISABLED: remote serve
-### CSRF Token Errors
-
-**Cause:** Making POST/PUT/DELETE requests to an authenticated server without a valid CSRF token.
-
-```
-Error: CSRF token invalid or missing (HTTP 403)
-```
-
-**Fixes:**
-
-1. **Web UI:** Refresh the page — the CSRF token is fetched automatically on load
-2. **API clients:** Obtain the token from the login response (`csrf_token` field) or `GET /api/v1/auth/csrf`, then include it as `X-Csrf-Token` header
-3. **IDE plugins:** Update to latest version — CSRF tokens are handled automatically
-4. **Localhost mode:** CSRF is not enforced on localhost — if you see this error, check your `--host` flag
-
-### Server Rate Limiting (HTTP 429)
-
-**Cause:** Too many requests from your IP address. The server enforces per-IP rate limits when authentication is enabled.
-
-| Endpoint Type  | Limit       |
-|----------------|-------------|
-| General API    | 120 req/min |
-| Auth endpoints | 10 req/min  |
-
-**Fixes:**
-
-1. **Wait and retry** — Rate limits reset after the time window
-2. **Reduce request frequency** — Space out API calls
-3. **Localhost mode** — Rate limiting is disabled on localhost
-
-> **Note:** This is different from AI provider rate limits (see "Rate limited" below). Server rate limiting protects the Mehrhof server itself.
--->
 
 ### Agent Retry Behavior
 

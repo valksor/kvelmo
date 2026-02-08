@@ -51,9 +51,16 @@ curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.s
 
 The script auto-detects your OS and architecture, verifies checksums, and installs to `~/.local/bin` (or `/usr/local/bin` with sudo).
 
-> **Windows Users:** Mehrhof runs inside [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux). Install WSL2 first, then run the installation script from your Linux shell. Store projects on the Linux filesystem (`~/projects/`) for best performance.
+> **Windows Users:** Mehrhof runs inside [WSL2](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux). You have two install options:
 >
-> See the [Windows & WSL2 Guide](/guides/windows-wsl.md) for setup, IDE integration, and tips.
+> **Option 1 — PowerShell (easiest):** Run this in PowerShell to check prerequisites and install:
+> ```powershell
+> irm https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.ps1 | iex
+> ```
+>
+> **Option 2 — Manual:** Install WSL2 first, then run the bash install script from your Linux shell.
+>
+> Store projects on the Linux filesystem (`~/projects/`) for best performance. See the [Windows & WSL2 Guide](/guides/windows-wsl.md) for setup, IDE integration, and tips.
 
 ### Other Installation Options
 
