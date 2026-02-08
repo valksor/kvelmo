@@ -181,8 +181,11 @@ func (c *EmbedderClient) findEmbedderBinary() string {
 		"./build/mehr-embedder",
 		// User's PATH
 		"mehr-embedder",
-		// ~/.valksor/mehrhof/bin/
-		filepath.Join(os.Getenv("HOME"), ".valksor", "mehrhof", "bin", "mehr-embedder"),
+	}
+
+	// Add ~/.valksor/mehrhof/bin/ candidate if home dir is available
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		candidates = append(candidates, filepath.Join(home, ".valksor", "mehrhof", "bin", "mehr-embedder"))
 	}
 
 	for _, path := range candidates {

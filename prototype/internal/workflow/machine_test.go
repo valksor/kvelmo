@@ -897,6 +897,8 @@ func TestCanTransition(t *testing.T) {
 		{"idle to implementing", StateIdle, EventImplement, true},
 		{"idle to reviewing", StateIdle, EventReview, true},
 		{"idle to finish", StateIdle, EventFinish, true},
+		{"idle to waiting", StateIdle, EventWait, true},
+		{"waiting to idle", StateWaiting, EventAnswer, true},
 		{"planning to plan done", StatePlanning, EventPlanDone, true},
 		{"planning error", StatePlanning, EventError, true},
 		{"implementing done", StateImplementing, EventImplementDone, true},

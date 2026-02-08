@@ -48,9 +48,12 @@ var TransitionTable = map[TransitionKey][]Transition{
 		{From: StatePlanning, Event: EventPause, To: StatePaused},
 	},
 
-	// === Waiting (agent asked question) ===
+	// === Waiting (user input needed) ===
+	{StateIdle, EventWait}: {
+		{From: StateIdle, Event: EventWait, To: StateWaiting}, // Workflow needs user decision (e.g., finish action)
+	},
 	{StateWaiting, EventAnswer}: {
-		{From: StateWaiting, Event: EventAnswer, To: StateIdle}, // Ready to re-plan
+		{From: StateWaiting, Event: EventAnswer, To: StateIdle}, // Ready to continue
 	},
 	{StateWaiting, EventPlan}: {
 		{From: StateWaiting, Event: EventPlan, To: StatePlanning}, // Re-enter planning after answer

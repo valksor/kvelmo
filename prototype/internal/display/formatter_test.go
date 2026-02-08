@@ -282,8 +282,8 @@ func TestFormatterTimestamp(t *testing.T) {
 	if result == "" {
 		t.Error("Timestamp() returned empty string")
 	}
-	// Should match format "2006-01-02 15:04:05"
-	expected := "2024-01-15 14:30:00"
+	// Should match format "02.01.2006 15:04:05" (dd.mm.yyyy)
+	expected := "15.01.2024 14:30:00"
 	if result != expected {
 		t.Errorf("Timestamp() = %q, want %q", result, expected)
 	}
