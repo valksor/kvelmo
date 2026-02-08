@@ -77,16 +77,50 @@ check_dependencies() {
     fi
 }
 
+# Check if running inside WSL
+is_wsl() {
+    # Fast path: check WSL_DISTRO_NAME env var
+    if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+        return 0
+    fi
+    # Fallback: check /proc/version for "microsoft" or "WSL"
+    if [[ -f /proc/version ]] && grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
 # Detect OS
 detect_os() {
     local os
     os=$(uname -s | tr '[:upper:]' '[:lower:]')
     case "$os" in
         linux)
+            # Note WSL detection for user clarity
+            if is_wsl; then
+                info "WSL environment detected"
+            fi
             echo "linux"
             ;;
         darwin)
             echo "darwin"
+            ;;
+        mingw*|msys*|cygwin*)
+            # Windows compatibility layer - not supported, suggest WSL
+            echo ""
+            error "Detected $os environment (Windows compatibility layer).
+
+Mehrhof requires WSL2 (Windows Subsystem for Linux) on Windows.
+
+To install via WSL:
+  1. Install WSL2: wsl --install (in PowerShell as Admin)
+  2. Restart your computer
+  3. Run this script inside WSL: wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash\"
+
+Or use the PowerShell installer:
+  irm https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.ps1 | iex
+
+Documentation: https://valksor.com/docs/mehrhof/guides/windows-wsl"
             ;;
         *)
             error "Unsupported operating system: $os. Supported: linux, darwin (macOS)"
