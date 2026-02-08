@@ -285,3 +285,30 @@ data class StackSyncResponse(
     val updatedCount: Int? = null,
     val error: String? = null
 )
+
+// ============================================================================
+// Budget Models
+// ============================================================================
+
+data class BudgetStatusResponse(
+    val enabled: Boolean,
+    @SerializedName("max_cost")
+    val maxCost: Double? = null,
+    val spent: Double? = null,
+    val remaining: Double? = null,
+    val currency: String? = null,
+    @SerializedName("warning_at")
+    val warningAt: Double? = null,
+    val warned: Boolean? = null,
+    @SerializedName("limit_hit")
+    val limitHit: Boolean? = null
+)
+
+// ============================================================================
+// Label Models
+// ============================================================================
+
+data class LabelsListResponse(
+    val labels: List<String>,
+    val count: Int
+)

@@ -4,6 +4,7 @@ import { registerBrowserCommands } from './browser';
 import { registerProjectCommands } from './project';
 import { registerSearchCommands } from './search';
 import { registerTaskCommands } from './tasks';
+import { registerToolCommands } from './tools';
 import { registerWorkflowCommands } from './workflow';
 
 export function registerCommands(
@@ -15,4 +16,5 @@ export function registerCommands(
   registerSearchCommands(context, service);
   registerBrowserCommands(context, service);
   registerProjectCommands(context, service);
+  registerToolCommands(context, service);
 }

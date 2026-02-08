@@ -425,6 +425,44 @@
                     class="com.valksor.mehrhof.actions.CommitAction"
                     text="Commit Analysis"
                     description="AI commit assistance"/>
+
+            <separator/>
+
+            <!-- Auto, Budget, Simplify, Label actions -->
+            <action id="Mehrhof.Auto"
+                    class="com.valksor.mehrhof.actions.AutoAction"
+                    text="Auto Workflow"
+                    description="Run automated workflow"/>
+
+            <action id="Mehrhof.BudgetStatus"
+                    class="com.valksor.mehrhof.actions.BudgetStatusAction"
+                    text="Budget Status"
+                    description="Show monthly budget status"/>
+
+            <action id="Mehrhof.BudgetReset"
+                    class="com.valksor.mehrhof.actions.BudgetResetAction"
+                    text="Budget Reset"
+                    description="Reset monthly budget spending"/>
+
+            <action id="Mehrhof.Simplify"
+                    class="com.valksor.mehrhof.actions.SimplifyAction"
+                    text="Simplify Code..."
+                    description="Run AI code simplification"/>
+
+            <action id="Mehrhof.LabelList"
+                    class="com.valksor.mehrhof.actions.LabelListAction"
+                    text="Labels List"
+                    description="List task labels"/>
+
+            <action id="Mehrhof.LabelAdd"
+                    class="com.valksor.mehrhof.actions.LabelAddAction"
+                    text="Label Add..."
+                    description="Add a label to the task"/>
+
+            <action id="Mehrhof.LabelRemove"
+                    class="com.valksor.mehrhof.actions.LabelRemoveAction"
+                    text="Label Remove..."
+                    description="Remove a label from the task"/>
         </group>
 
         <!-- Toolbar actions -->

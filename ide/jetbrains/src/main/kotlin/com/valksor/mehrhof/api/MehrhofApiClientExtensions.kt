@@ -291,3 +291,80 @@ fun MehrhofApiClient.browserNetwork(
     captureBody: Boolean = false
 ): Result<BrowserNetworkResponse> =
     post("/api/v1/browser/network", BrowserNetworkRequest(tabId, duration, captureBody, null))
+
+// ========================================================================
+// Auto Workflow Extensions
+// ========================================================================
+
+/**
+ * Run automated workflow.
+ * POST /api/v1/workflow/auto
+ */
+fun MehrhofApiClient.auto(loops: Int = 0): Result<InteractiveCommandResponse> {
+    val args = if (loops > 0) listOf("--loops", loops.toString()) else emptyList()
+    return post("/api/v1/interactive/command", InteractiveCommandRequest("auto", args))
+}
+
+// ========================================================================
+// Budget Extensions
+// ========================================================================
+
+/**
+ * Get monthly budget status.
+ * GET /api/v1/budget/monthly/status
+ */
+fun MehrhofApiClient.budgetStatus(): Result<BudgetStatusResponse> =
+    get("/api/v1/budget/monthly/status")
+
+/**
+ * Reset monthly budget spending.
+ * POST /api/v1/budget/monthly/reset
+ */
+fun MehrhofApiClient.budgetReset(): Result<InteractiveCommandResponse> =
+    post("/api/v1/interactive/command", InteractiveCommandRequest("budget", listOf("reset")))
+
+// ========================================================================
+// Simplify Extensions
+// ========================================================================
+
+/**
+ * Run code simplification.
+ * POST /api/v1/workflow/simplify
+ */
+fun MehrhofApiClient.simplify(
+    path: String? = null,
+    instructions: String? = null
+): Result<InteractiveCommandResponse> {
+    val args = mutableListOf<String>()
+    if (path != null) args.add(path)
+    if (instructions != null) {
+        args.add("--instructions")
+        args.add(instructions)
+    }
+    return post("/api/v1/interactive/command", InteractiveCommandRequest("simplify", args))
+}
+
+// ========================================================================
+// Label Extensions
+// ========================================================================
+
+/**
+ * List labels for the current task.
+ * GET /api/v1/labels
+ */
+fun MehrhofApiClient.labelsList(): Result<LabelsListResponse> =
+    get("/api/v1/labels")
+
+/**
+ * Add a label to the current task.
+ * POST /api/v1/labels
+ */
+fun MehrhofApiClient.labelsAdd(label: String): Result<InteractiveCommandResponse> =
+    post("/api/v1/interactive/command", InteractiveCommandRequest("label", listOf("add", label)))
+
+/**
+ * Remove a label from the current task.
+ * POST /api/v1/interactive/command
+ */
+fun MehrhofApiClient.labelsRemove(label: String): Result<InteractiveCommandResponse> =
+    post("/api/v1/interactive/command", InteractiveCommandRequest("label", listOf("remove", label)))
