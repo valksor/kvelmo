@@ -6,16 +6,12 @@ import { ScreenReaderAnnouncer } from '@/components/ui/ScreenReaderAnnouncer'
 
 // Eagerly loaded (critical path)
 import Dashboard from '@/pages/Dashboard'
-// DISABLED: remote serve temporarily unavailable
-// import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
 
 // Lazy loaded pages - largest first for maximum impact
 const Tools = lazy(() => import('@/pages/Tools'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const Quick = lazy(() => import('@/pages/Quick'))
-// DISABLED: automation temporarily unavailable (requires remote serve)
-// const Automation = lazy(() => import('@/pages/Automation'))
 const Project = lazy(() => import('@/pages/Project'))
 const Chat = lazy(() => import('@/pages/Chat'))
 const History = lazy(() => import('@/pages/History'))
@@ -55,10 +51,7 @@ export default function App() {
       <ScreenReaderAnnouncer>
         <BrowserRouter>
           <Routes>
-          {/* DISABLED: remote serve temporarily unavailable */}
-          {/* <Route path="/login" element={<Login />} /> */}
-
-          {/* Protected routes with layout */}
+          {/* Routes with layout */}
           <Route element={<Layout />}>
             {/* Eagerly loaded */}
             <Route path="/" element={<Dashboard />} />
@@ -78,8 +71,6 @@ export default function App() {
             <Route path="/review" element={<LazyRoute><Review /></LazyRoute>} />
             <Route path="/simplify" element={<LazyRoute><Simplify /></LazyRoute>} />
             <Route path="/quick" element={<LazyRoute><Quick /></LazyRoute>} />
-            {/* DISABLED: automation temporarily unavailable (requires remote serve) */}
-            {/* <Route path="/automation" element={<LazyRoute><Automation /></LazyRoute>} /> */}
 
             {/* 404 - eagerly loaded */}
             <Route path="*" element={<NotFound />} />

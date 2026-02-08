@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { formatDate } from '@/utils/format'
 import { Bell, X, CheckCircle, AlertCircle, HelpCircle, Trash2 } from 'lucide-react'
 import { useWorkflowSSE, type QuestionData } from '@/hooks/useWorkflowSSE'
 import { useAnnouncer } from '@/components/ui/useAnnouncer'
@@ -237,5 +238,5 @@ function formatRelativeTime(date: Date): string {
   if (seconds < 60) return 'Just now'
   if (minutes < 60) return `${minutes}m ago`
   if (hours < 24) return `${hours}h ago`
-  return date.toLocaleDateString()
+  return formatDate(date)
 }

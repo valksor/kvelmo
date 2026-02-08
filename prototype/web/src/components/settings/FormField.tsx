@@ -54,6 +54,8 @@ interface TextInputProps {
   type?: 'text' | 'password' | 'number'
   disabled?: boolean
   required?: boolean
+  /** HTML datalist ID for autocomplete suggestions */
+  list?: string
 }
 
 export function TextInput({
@@ -66,6 +68,7 @@ export function TextInput({
   type = 'text',
   disabled,
   required,
+  list,
 }: TextInputProps) {
   const { inputId, hintId, errorId } = useFieldIds()
   return (
@@ -79,6 +82,7 @@ export function TextInput({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
+        list={list}
         aria-invalid={error ? true : undefined}
         aria-describedby={descriptionIds(hint, error, hintId, errorId)}
       />

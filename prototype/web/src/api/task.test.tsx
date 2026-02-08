@@ -10,7 +10,6 @@ import {
   useTaskCosts,
   useTaskNotes,
   useTaskSpecs,
-  useWorkflowDiagram,
 } from './task'
 
 const apiRequestMock = vi.fn()
@@ -51,22 +50,6 @@ describe('task api hooks', () => {
     await waitFor(() => {
       expect(apiRequestMock).toHaveBeenCalledWith('/agent/logs/history?task_id=task%2F123')
     })
-  })
-
-  it('useWorkflowDiagram fetches plain text SVG', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '<svg></svg>',
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { result } = renderHook(() => useWorkflowDiagram(), { wrapper: createWrapper(queryClient) })
-
-    await waitFor(() => {
-      expect(result.current.data).toBe('<svg></svg>')
-    })
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/workflow/diagram')
   })
 
   it('useAddNote posts note content and invalidates notes query', async () => {

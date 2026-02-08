@@ -36,3 +36,9 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 
 // Mock fetch for API tests (can be overridden in individual tests)
 global.fetch = vi.fn()
+
+// Mock focus-trap-react: JSDOM cannot compute CSS tabbability, so FocusTrap
+// throws when it can't find focusable elements. Render children passthrough.
+vi.mock('focus-trap-react', () => ({
+  FocusTrap: ({ children }: { children: unknown }) => children,
+}))

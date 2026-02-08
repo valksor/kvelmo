@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { render, type RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import { ScreenReaderAnnouncer } from '@/components/ui/ScreenReaderAnnouncer'
 
 // Create a fresh QueryClient for each test with test-optimized settings
 function createTestQueryClient() {
@@ -35,7 +36,9 @@ function AllProviders({
 
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+      <ScreenReaderAnnouncer>
+        <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+      </ScreenReaderAnnouncer>
     </QueryClientProvider>
   )
 }

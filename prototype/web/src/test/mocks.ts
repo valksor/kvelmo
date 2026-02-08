@@ -5,6 +5,7 @@ import type {
   TaskHistoryItem,
   WorkspaceConfig,
 } from '@/types/api'
+import type { SettingsResponseV2 } from '@/types/schema'
 
 // =============================================================================
 // Mock Status Responses
@@ -84,7 +85,7 @@ export const mockTaskHistory: TaskHistoryItem[] = [
 // Mock Settings
 // =============================================================================
 
-export const mockSettings: Partial<WorkspaceConfig> = {
+export const mockSettingsValues: Partial<WorkspaceConfig> = {
   git: {
     commit_prefix: '[MEHR-{key}]',
     branch_pattern: 'mehr/{type}/{slug}',
@@ -103,7 +104,59 @@ export const mockSettings: Partial<WorkspaceConfig> = {
     session_retention_days: 30,
     delete_work_on_finish: false,
     delete_work_on_abandon: false,
+    prefer_local_merge: false,
   },
+}
+
+// Schema-driven settings response format
+export const mockSettings: SettingsResponseV2 = {
+  schema: {
+    version: '1',
+    sections: [
+      {
+        id: 'git',
+        title: 'Git',
+        description: 'Version control settings',
+        icon: 'git-branch',
+        category: 'core',
+        fields: [
+          { path: 'git.auto_commit', type: 'boolean', label: 'Auto Commit', simple: true },
+          { path: 'git.commit_prefix', type: 'string', label: 'Commit Prefix', simple: true },
+        ],
+      },
+      {
+        id: 'agent',
+        title: 'Agent',
+        description: 'AI agent configuration',
+        icon: 'bot',
+        category: 'core',
+        fields: [
+          { path: 'agent.default', type: 'string', label: 'Default Agent', simple: true },
+        ],
+      },
+      {
+        id: 'budget',
+        title: 'Budget',
+        description: 'Cost and budget controls',
+        icon: 'wallet',
+        category: 'core',
+        fields: [
+          { path: 'budget.per_task.max_cost', type: 'number', label: 'Max Cost Per Task' },
+        ],
+      },
+      {
+        id: 'browser',
+        title: 'Browser Automation',
+        description: 'Chrome DevTools Protocol settings',
+        icon: 'globe',
+        category: 'features',
+        fields: [
+          { path: 'browser.enabled', type: 'boolean', label: 'Enable Browser', advanced: true },
+        ],
+      },
+    ],
+  },
+  values: mockSettingsValues as Record<string, unknown>,
 }
 
 // =============================================================================
