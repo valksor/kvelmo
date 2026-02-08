@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Home,
   MessageSquare,
@@ -18,7 +19,7 @@ import {
   Layers,
   HelpCircle,
 } from 'lucide-react'
-import { useRef, useEffect, type ComponentType } from 'react'
+import { useRef, useEffect, useMemo, type ComponentType } from 'react'
 import { useStatus } from '@/api/workflow'
 import { useSwitchToGlobal } from '@/api/projects'
 import { useDocsURL } from '@/api/settings'
@@ -99,59 +100,69 @@ function NavDropdownMenu({
   )
 }
 
-// Admin dropdown - shared between global and project modes
-const adminDropdown: NavDropdown = {
-  label: 'Admin',
-  icon: Settings,
-  items: [
-    { to: '/settings', icon: Settings, label: 'Settings' },
-    { to: '/license', icon: Scale, label: 'License' },
-  ],
+/**
+ * Hook to generate navigation items with translations.
+ * Returns both global and project navigation configurations.
+ */
+function useNavItems() {
+  const { t } = useTranslation()
+
+  return useMemo(() => {
+    const adminDropdown: NavDropdown = {
+      label: t('nav.admin'),
+      icon: Settings,
+      items: [
+        { to: '/settings', icon: Settings, label: t('nav.settings') },
+        { to: '/license', icon: Scale, label: t('nav.license') },
+      ],
+    }
+
+    const workDropdown: NavDropdown = {
+      label: t('nav.work'),
+      icon: Layers,
+      items: [
+        { to: '/project', icon: FolderKanban, label: t('nav.project') },
+        { to: '/quick', icon: Zap, label: t('nav.quick') },
+        { to: '/history', icon: History, label: t('nav.history') },
+      ],
+    }
+
+    const advancedDropdown: NavDropdown = {
+      label: t('nav.advanced'),
+      icon: Wrench,
+      items: [
+        { to: '/find', icon: Search, label: t('nav.find') },
+        { to: '/review', icon: Eye, label: t('nav.review') },
+        { to: '/commit', icon: GitCommit, label: t('nav.commit') },
+        { to: '/simplify', icon: Sparkles, label: t('nav.simplify') },
+        { to: '/chat', icon: MessageSquare, label: t('nav.chat') },
+        { to: '/library', icon: BookOpen, label: t('nav.library') },
+        { to: '/links', icon: Link2, label: t('nav.links') },
+        { to: '/tools', icon: Wrench, label: t('nav.tools') },
+      ],
+    }
+
+    const globalNavItems: NavEntry[] = [
+      { to: '/', icon: Home, label: t('nav.dashboard') },
+      adminDropdown,
+    ]
+
+    const projectNavItems: NavEntry[] = [
+      { to: '/', icon: Home, label: t('nav.dashboard') },
+      workDropdown,
+      advancedDropdown,
+      adminDropdown,
+    ]
+
+    return { globalNavItems, projectNavItems }
+  }, [t])
 }
-
-// Global mode navigation (simplified)
-const globalNavItems: NavEntry[] = [
-  { to: '/', icon: Home, label: 'Dashboard' },
-  adminDropdown,
-]
-
-const workDropdown: NavDropdown = {
-  label: 'Work',
-  icon: Layers,
-  items: [
-    { to: '/project', icon: FolderKanban, label: 'Project' },
-    { to: '/quick', icon: Zap, label: 'Quick' },
-    { to: '/history', icon: History, label: 'History' },
-  ],
-}
-
-const advancedDropdown: NavDropdown = {
-  label: 'Advanced',
-  icon: Wrench,
-  items: [
-    { to: '/find', icon: Search, label: 'Find' },
-    { to: '/review', icon: Eye, label: 'Review' },
-    { to: '/commit', icon: GitCommit, label: 'Commit' },
-    { to: '/simplify', icon: Sparkles, label: 'Simplify' },
-    { to: '/chat', icon: MessageSquare, label: 'Chat' },
-    { to: '/library', icon: BookOpen, label: 'Library' },
-    { to: '/links', icon: Link2, label: 'Links' },
-    { to: '/tools', icon: Wrench, label: 'Tools' },
-  ],
-}
-
-// Project mode navigation (work-first, advanced hidden under dropdown)
-const projectNavItems: NavEntry[] = [
-  { to: '/', icon: Home, label: 'Dashboard' },
-  workDropdown,
-  advancedDropdown,
-  // Admin dropdown
-  adminDropdown,
-]
 
 export default function Layout() {
+  const { t } = useTranslation()
   const { data: status, isLoading: statusLoading } = useStatus()
   const { data: docsData } = useDocsURL()
+  const { globalNavItems, projectNavItems } = useNavItems()
   // Default to global mode while loading (safer - fewer nav items, no project-specific routes)
   const isGlobalMode = statusLoading || status?.mode === 'global'
   const activeProject = isGlobalMode ? undefined : status?.project
@@ -188,10 +199,10 @@ export default function Layout() {
               onClick={() => switchToGlobal.mutate()}
               disabled={switchToGlobal.isPending}
               className="btn btn-ghost btn-sm gap-1"
-              aria-label="Back to project list"
+              aria-label={t('nav.backToProjects')}
             >
               <ArrowLeft size={16} aria-hidden="true" />
-              <span className="hidden sm:inline">Projects</span>
+              <span className="hidden sm:inline">{t('nav.projects')}</span>
             </button>
           )}
           <a href="/" className="btn btn-ghost text-xl">
@@ -248,8 +259,8 @@ export default function Layout() {
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-ghost btn-sm btn-circle"
-              title="Documentation"
-              aria-label="Open documentation"
+              title={t('nav.documentation')}
+              aria-label={t('nav.openDocumentation')}
             >
               <HelpCircle size={18} aria-hidden="true" />
             </a>

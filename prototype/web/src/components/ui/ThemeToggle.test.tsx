@@ -21,14 +21,16 @@ describe('ThemeToggle', () => {
     vi.mocked(localStorage.getItem).mockReturnValue('light')
     render(<ThemeToggle />)
 
-    expect(screen.getByTitle(/switch to dark mode/i)).toBeInTheDocument()
+    // Mock returns key as value: theme.switchToDark
+    expect(screen.getByTitle(/theme\.switchToDark/)).toBeInTheDocument()
   })
 
   it('shows sun icon in dark mode (to switch to light)', () => {
     vi.mocked(localStorage.getItem).mockReturnValue('dark')
     render(<ThemeToggle />)
 
-    expect(screen.getByTitle(/switch to light mode/i)).toBeInTheDocument()
+    // Mock returns key as value: theme.switchToLight
+    expect(screen.getByTitle(/theme\.switchToLight/)).toBeInTheDocument()
   })
 
   it('toggles theme when clicked', async () => {
@@ -37,12 +39,12 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle />)
 
     // Initially should show "switch to dark" (meaning we're in light mode)
-    expect(screen.getByTitle(/switch to dark mode/i)).toBeInTheDocument()
+    expect(screen.getByTitle(/theme\.switchToDark/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button'))
 
     // After click should show "switch to light" (meaning we're now in dark mode)
-    expect(screen.getByTitle(/switch to light mode/i)).toBeInTheDocument()
+    expect(screen.getByTitle(/theme\.switchToLight/)).toBeInTheDocument()
   })
 
   it('saves theme preference to localStorage on toggle', async () => {
@@ -73,13 +75,15 @@ describe('ThemeToggle', () => {
     vi.mocked(localStorage.getItem).mockReturnValue(null)
     render(<ThemeToggle />)
 
-    expect(screen.getByTitle(/switch to dark mode/i)).toBeInTheDocument()
+    // Mock returns key as value: theme.switchToDark
+    expect(screen.getByTitle(/theme\.switchToDark/)).toBeInTheDocument()
   })
 
   it('has accessible aria-label', () => {
     vi.mocked(localStorage.getItem).mockReturnValue('light')
     render(<ThemeToggle />)
 
-    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to dark mode')
+    // Mock returns key as value: theme.switchToDark
+    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'theme.switchToDark')
   })
 })
