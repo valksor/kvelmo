@@ -34,17 +34,32 @@ Mehrhof has seven user interfaces:
 
 **Everything else MUST have 1:1 parity across all interfaces.**
 
+### Architecture: Unified Command Router
+
+All interfaces route through `internal/conductor/commands/`:
+
+```
+CLI Interactive ─┐
+Web Chat ────────┼──→ commands.Execute() ──→ Handler ──→ Conductor
+IDE Plugins ─────┤     (unified router)
+MCP Server ──────┘
+```
+
+This ensures consistent behavior and automatic parity for all commands.
+
 ---
 
 ## Current Parity Status
 
+All interfaces now route through the unified command router (`internal/conductor/commands/`).
+
 | Interface | Required     | Implemented | Parity      |
 |-----------|--------------|-------------|-------------|
 | CLI       | 100%         | 100%        | ✅ Reference |
-| Web UI    | ~95 commands | ~90         | 95%         |
-| Web Chat  | ~95 commands | ~78         | 82%         |
-| VS Code   | ~95 commands | ~69         | 73%         |
-| JetBrains | ~95 commands | ~69         | 73%         |
+| Web UI    | ~95 commands | ~95         | 100%        |
+| Web Chat  | ~95 commands | ~95         | 100%        |
+| VS Code   | ~95 commands | ~95         | 100%        |
+| JetBrains | ~95 commands | ~95         | 100%        |
 | MCP       | ~93 commands | ~95         | 100%+       |
 
 ---
@@ -129,7 +144,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `note list/view`       | ✅        | API endpoints                       |
 | `question <msg>`       | ✅        | Quick question + SSE                |
 | `specification`        | ✅        | `/api/v1/tasks/{id}/specs`          |
-| `label`                | ⚠️       | API exists, UI missing              |
+| `label`                | ✅        | LabelsCard in TaskDetail            |
 | `delete --task`        | ✅        | Quick task delete                   |
 | `export --task`        | ✅        | Quick task export                   |
 | `optimize --task`      | ✅        | Quick task optimization             |
@@ -144,7 +159,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `links`                | ✅        | `/links` page                       |
 | `library`              | ✅        | `/library` page with pull/list/show |
 | `browser`              | ✅        | `/browser` page                     |
-| `browser cookies`      | ❌        | API + UI missing                    |
+| `browser cookies`      | ✅        | Cookies tab in DevTools section     |
 | `project`              | ✅        | Project planning pages              |
 | `stack`                | ✅        | `/stack` page                       |
 | `scan`                 | ✅        | `/scan` page with scanner selection |
@@ -181,7 +196,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `finish`          | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | `continue`        | ✅ (`cont`) | ✅        | ✅         | ✅       |                                                                             |
 | `abandon`         | ✅          | ✅        | ✅         | ✅       |                                                                             |
-| `auto`            | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `auto`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | **Session**       |
 | `status`          | ✅ (`st`)   | ✅        | ✅         | ✅       |                                                                             |
 | `note`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
@@ -191,7 +206,7 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `cost`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | `list`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | `quick`           | ✅          | ✅        | ✅         | ✅       |                                                                             |
-| `budget`          | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `budget`          | ✅          | ✅        | ✅         | ✅       | status/reset                                                                |
 | `reset`           | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | **Search**        |
 | `find`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
@@ -205,8 +220,8 @@ func (s *Server) handleWorkflowPlan(w http.ResponseWriter, r *http.Request) {
 | `submit`          | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | `sync`            | ✅          | ✅        | ✅         | ✅       |                                                                             |
 | **Tools**         |
-| `simplify`        | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
-| `label`           | ✅          | ✅        | ❌         | ❌       | IDE plugins missing                                                         |
+| `simplify`        | ✅          | ✅        | ✅         | ✅       |                                                                             |
+| `label`           | ✅          | ✅        | ✅         | ✅       | list/add/remove                                                             |
 | `scan`            | ❌          | ✅        | ✅         | ✅       | CLI redirect                                                                |
 | `commit`          | ❌          | ✅        | ✅         | ✅       | CLI redirect                                                                |
 | **Browser**       |

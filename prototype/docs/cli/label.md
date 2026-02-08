@@ -118,7 +118,7 @@ Labels are free-form, but common conventions include:
 
 ## Web UI
 
-Prefer a visual interface? See the Labels section in [Dashboard](/web-ui/dashboard.md).
+Prefer a visual interface? See [Web UI: Labels](/web-ui/labels.md).
 
 ## See Also
 

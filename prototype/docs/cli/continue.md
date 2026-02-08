@@ -146,7 +146,8 @@ Prefer a visual interface? See [Web UI: Continuing](/web-ui/continuing.md).
 
 ## See Also
 
-- [status](cli/status.md) - Detailed task status
-- [plan](cli/plan.md) - Create specifications
-- [implement](cli/implement.md) - Implement specifications
-- [undo](cli/undo.md) / [redo](cli/redo.md) - Checkpoint management
+- [guide](/cli/guide.md) - Quick next-action suggestions
+- [status](/cli/status.md) - Detailed task status
+- [plan](/cli/plan.md) - Create specifications
+- [implement](/cli/implement.md) - Implement specifications
+- [undo](/cli/undo.md) / [redo](/cli/redo.md) - Checkpoint management

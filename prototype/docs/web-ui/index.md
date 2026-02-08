@@ -37,15 +37,15 @@ The main dashboard provides:
 
 Each workflow phase has a dedicated button:
 
-| Action      | Button Location  | Description                                  |
-|-------------|------------------|----------------------------------------------|
-| Create Task | Dashboard        | Start a new task from file, URL, or provider |
-| Plan        | Active Task Card | Generate a structured plan                   |
-| Create      | Active Task Card | Execute the plan to produce changes          |
-| Review      | Active Task Card | Run quality checks                           |
-| Finish      | Active Task Card | Complete and merge the task                  |
-| Continue    | Dashboard        | Execute next logical step                    |
-| Undo/Redo   | Dashboard        | Navigate checkpoint history                  |
+| Action      | Button Location  | Description                                  | CLI                             |
+|-------------|------------------|----------------------------------------------|---------------------------------|
+| Create Task | Dashboard        | Start a new task from file, URL, or provider | [start](/cli/start.md)          |
+| Plan        | Active Task Card | Generate a structured plan                   | [plan](/cli/plan.md)            |
+| Create      | Active Task Card | Execute the plan to produce changes          | [implement](/cli/implement.md)  |
+| Review      | Active Task Card | Run quality checks                           | [review](/cli/review.md)        |
+| Finish      | Active Task Card | Complete and merge the task                  | [finish](/cli/finish.md)        |
+| Continue    | Dashboard        | Execute next logical step                    | [continue](/cli/continue.md)    |
+| Undo/Redo   | Dashboard        | Navigate checkpoint history                  | [undo](/cli/undo.md), [redo](/cli/redo.md) |
 
 See individual workflow pages for details:
 - [Creating Tasks](creating-tasks.md)
