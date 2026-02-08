@@ -38,9 +38,9 @@ type WorkspaceConfig struct {
 	Quality       *QualitySettings            `yaml:"quality,omitempty" json:"quality,omitempty"`
 	Links         *LinksSettings              `yaml:"links,omitempty" json:"links,omitempty"`
 	Context       *ContextSettings            `yaml:"context,omitempty" json:"context,omitempty"`
-	Automation    *AutomationSettings         `yaml:"automation,omitempty" json:"automation,omitempty"`
 	Project       ProjectSettings             `yaml:"project,omitempty" json:"project,omitempty"`
 	Stack         *StackSettings              `yaml:"stack,omitempty" json:"stack,omitempty"`
+	Display       *DisplaySettings            `yaml:"display,omitempty" json:"display,omitempty"`
 }
 
 // PluginsConfig holds plugin-related configuration.
@@ -56,14 +56,14 @@ type PluginsConfig struct {
 
 // GitHubSettings holds GitHub provider configuration.
 type GitHubSettings struct {
-	Token         string                  `yaml:"token,omitempty" json:"token,omitempty"`                   // GitHub token (env vars take priority)
-	Owner         string                  `yaml:"owner,omitempty" json:"owner,omitempty"`                   // Repository owner (auto-detected from git remote)
-	Repo          string                  `yaml:"repo,omitempty" json:"repo,omitempty"`                     // Repository name
-	BranchPattern string                  `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"` // Default: "issue/{key}-{slug}"
-	CommitPrefix  string                  `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`   // Default: "[#{key}]"
-	TargetBranch  string                  `yaml:"target_branch,omitempty" json:"target_branch,omitempty"`   // Default: detected from repo
-	DraftPR       bool                    `yaml:"draft_pr,omitempty" json:"draft_pr,omitempty"`             // Create PRs as draft
-	Comments      *GitHubCommentsSettings `yaml:"comments,omitempty" json:"comments,omitempty"`
+	Token         string                  `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=GitHub personal access token;sensitive"`
+	Owner         string                  `yaml:"owner,omitempty" json:"owner,omitempty" schema:"label=Owner;desc=Repository owner (auto-detected from git remote)"`
+	Repo          string                  `yaml:"repo,omitempty" json:"repo,omitempty" schema:"label=Repository;desc=Repository name"`
+	BranchPattern string                  `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Pattern for branch names;default=issue/{key}-{slug}"`
+	CommitPrefix  string                  `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Pattern for commit messages;default=[#{key}]"`
+	TargetBranch  string                  `yaml:"target_branch,omitempty" json:"target_branch,omitempty" schema:"label=Target Branch;desc=Default target branch for PRs;placeholder=auto-detect"`
+	DraftPR       bool                    `yaml:"draft_pr,omitempty" json:"draft_pr,omitempty" schema:"label=Draft PR;desc=Create PRs as draft;default=false"`
+	Comments      *GitHubCommentsSettings `yaml:"comments,omitempty" json:"comments,omitempty" schema:"-"`
 }
 
 // GitHubCommentsSettings controls automated GitHub issue commenting.
@@ -77,121 +77,121 @@ type GitHubCommentsSettings struct {
 
 // WrikeSettings holds Wrike provider configuration.
 type WrikeSettings struct {
-	Token   string `yaml:"token,omitempty" json:"token,omitempty"`     // Wrike API token (env vars take priority)
-	Host    string `yaml:"host,omitempty" json:"host,omitempty"`       // API base URL override (default: https://www.wrike.com/api/v4)
-	Space   string `yaml:"space,omitempty" json:"space,omitempty"`     // Space ID (for listing tasks across space)
-	Folder  string `yaml:"folder,omitempty" json:"folder,omitempty"`   // Folder ID (for task lookup/creation if no project)
-	Project string `yaml:"project,omitempty" json:"project,omitempty"` // Project ID (primary target for task creation)
+	Token   string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Wrike API token;sensitive"`
+	Host    string `yaml:"host,omitempty" json:"host,omitempty" schema:"label=Host;desc=API base URL override;default=https://www.wrike.com/api/v4;advanced"`
+	Space   string `yaml:"space,omitempty" json:"space,omitempty" schema:"label=Space;desc=Space ID"`
+	Folder  string `yaml:"folder,omitempty" json:"folder,omitempty" schema:"label=Folder;desc=Folder ID"`
+	Project string `yaml:"project,omitempty" json:"project,omitempty" schema:"label=Project;desc=Project ID"`
 }
 
 // GitLabSettings holds GitLab provider configuration.
 type GitLabSettings struct {
-	Token         string `yaml:"token,omitempty" json:"token,omitempty"`                   // GitLab token (env vars take priority)
-	Host          string `yaml:"host,omitempty" json:"host,omitempty"`                     // GitLab host (default: https://gitlab.com)
-	ProjectPath   string `yaml:"project_path,omitempty" json:"project_path,omitempty"`     // Default project path (e.g., group/project)
-	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"` // Default: "issue/{key}-{slug}"
-	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`   // Default: "[#{key}]"
+	Token         string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=GitLab personal access token;sensitive"`
+	Host          string `yaml:"host,omitempty" json:"host,omitempty" schema:"label=Host;desc=GitLab host URL;default=https://gitlab.com;placeholder=https://gitlab.com"`
+	ProjectPath   string `yaml:"project_path,omitempty" json:"project_path,omitempty" schema:"label=Project Path;desc=Project path (e.g., group/project)"`
+	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Pattern for branch names;default=issue/{key}-{slug}"`
+	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Pattern for commit messages;default=[#{key}]"`
 }
 
 // NotionSettings holds Notion provider configuration.
 type NotionSettings struct {
-	Token               string `yaml:"token,omitempty" json:"token,omitempty"`                               // Notion token (env vars take priority)
-	DatabaseID          string `yaml:"database_id,omitempty" json:"database_id,omitempty"`                   // Default database ID
-	StatusProperty      string `yaml:"status_property,omitempty" json:"status_property,omitempty"`           // Property name for status (default: Status)
-	DescriptionProperty string `yaml:"description_property,omitempty" json:"description_property,omitempty"` // Property name for description
-	LabelsProperty      string `yaml:"labels_property,omitempty" json:"labels_property,omitempty"`           // Property name for labels (default: Tags)
+	Token               string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Notion integration token;sensitive"`
+	DatabaseID          string `yaml:"database_id,omitempty" json:"database_id,omitempty" schema:"label=Database ID;desc=Default database ID"`
+	StatusProperty      string `yaml:"status_property,omitempty" json:"status_property,omitempty" schema:"label=Status Property;desc=Property name for status;default=Status"`
+	DescriptionProperty string `yaml:"description_property,omitempty" json:"description_property,omitempty" schema:"label=Description Property;desc=Property name for description"`
+	LabelsProperty      string `yaml:"labels_property,omitempty" json:"labels_property,omitempty" schema:"label=Labels Property;desc=Property name for labels;default=Tags"`
 }
 
 // JiraSettings holds Jira provider configuration.
 type JiraSettings struct {
-	Token   string `yaml:"token,omitempty" json:"token,omitempty"`       // Jira API token (env vars take priority)
-	Email   string `yaml:"email,omitempty" json:"email,omitempty"`       // Email for Cloud auth
-	BaseURL string `yaml:"base_url,omitempty" json:"base_url,omitempty"` // Base URL (optional, auto-detected)
-	Project string `yaml:"project,omitempty" json:"project,omitempty"`   // Default project key
+	Token   string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Jira API token;sensitive"`
+	Email   string `yaml:"email,omitempty" json:"email,omitempty" schema:"label=Email;desc=Email for Cloud auth"`
+	BaseURL string `yaml:"base_url,omitempty" json:"base_url,omitempty" schema:"label=Base URL;desc=Jira base URL;placeholder=https://your-domain.atlassian.net"`
+	Project string `yaml:"project,omitempty" json:"project,omitempty" schema:"label=Project;desc=Default project key"`
 }
 
 // LinearSettings holds Linear provider configuration.
 type LinearSettings struct {
-	Token string `yaml:"token,omitempty" json:"token,omitempty"` // Linear API key (env vars take priority)
-	Team  string `yaml:"team,omitempty" json:"team,omitempty"`   // Default team key
+	Token string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=API Key;desc=Linear API key;sensitive"`
+	Team  string `yaml:"team,omitempty" json:"team,omitempty" schema:"label=Team;desc=Default team key"`
 }
 
 // YouTrackSettings holds YouTrack provider configuration.
 type YouTrackSettings struct {
-	Token string `yaml:"token,omitempty" json:"token,omitempty"` // YouTrack token (env vars take priority)
-	Host  string `yaml:"host,omitempty" json:"host,omitempty"`   // YouTrack host
+	Token string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=YouTrack token;sensitive"`
+	Host  string `yaml:"host,omitempty" json:"host,omitempty" schema:"label=Host;desc=YouTrack host URL"`
 }
 
 // BitbucketSettings holds Bitbucket provider configuration.
 type BitbucketSettings struct {
-	Username          string `yaml:"username,omitempty" json:"username,omitempty"`                       // Bitbucket username
-	AppPassword       string `yaml:"app_password,omitempty" json:"app_password,omitempty"`               // Bitbucket app password (env vars take priority)
-	Workspace         string `yaml:"workspace,omitempty" json:"workspace,omitempty"`                     // Bitbucket workspace
-	RepoSlug          string `yaml:"repo,omitempty" json:"repo,omitempty"`                               // Repository slug
-	BranchPattern     string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"`           // Git branch template
-	CommitPrefix      string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`             // Commit message prefix
-	TargetBranch      string `yaml:"target_branch,omitempty" json:"target_branch,omitempty"`             // Target branch for PRs
-	CloseSourceBranch bool   `yaml:"close_source_branch,omitempty" json:"close_source_branch,omitempty"` // Delete source branch when PR is merged
+	Username          string `yaml:"username,omitempty" json:"username,omitempty" schema:"label=Username;desc=Bitbucket username"`
+	AppPassword       string `yaml:"app_password,omitempty" json:"app_password,omitempty" schema:"label=App Password;desc=Bitbucket app password;sensitive"`
+	Workspace         string `yaml:"workspace,omitempty" json:"workspace,omitempty" schema:"label=Workspace;desc=Bitbucket workspace"`
+	RepoSlug          string `yaml:"repo,omitempty" json:"repo,omitempty" schema:"label=Repository;desc=Repository slug"`
+	BranchPattern     string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Git branch template"`
+	CommitPrefix      string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Commit message prefix"`
+	TargetBranch      string `yaml:"target_branch,omitempty" json:"target_branch,omitempty" schema:"label=Target Branch;desc=Target branch for PRs"`
+	CloseSourceBranch bool   `yaml:"close_source_branch,omitempty" json:"close_source_branch,omitempty" schema:"label=Close Source Branch;desc=Delete source branch when PR is merged;default=false"`
 }
 
 // AsanaSettings holds Asana provider configuration.
 type AsanaSettings struct {
-	Token          string `yaml:"token,omitempty" json:"token,omitempty"`                     // Asana token (env vars take priority)
-	WorkspaceGID   string `yaml:"workspace_gid,omitempty" json:"workspace_gid,omitempty"`     // Asana workspace GID
-	DefaultProject string `yaml:"default_project,omitempty" json:"default_project,omitempty"` // Default project GID for list operations
-	BranchPattern  string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"`   // Git branch template
-	CommitPrefix   string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`     // Commit message prefix
+	Token          string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Asana access token;sensitive"`
+	WorkspaceGID   string `yaml:"workspace_gid,omitempty" json:"workspace_gid,omitempty" schema:"label=Workspace GID;desc=Asana workspace GID"`
+	DefaultProject string `yaml:"default_project,omitempty" json:"default_project,omitempty" schema:"label=Default Project;desc=Default project GID"`
+	BranchPattern  string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Git branch template"`
+	CommitPrefix   string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Commit message prefix"`
 }
 
 // ClickUpSettings holds ClickUp provider configuration.
 type ClickUpSettings struct {
-	Token         string `yaml:"token,omitempty" json:"token,omitempty"`                   // ClickUp API token (env vars take priority)
-	TeamID        string `yaml:"team_id,omitempty" json:"team_id,omitempty"`               // Team/Workspace ID
-	DefaultList   string `yaml:"default_list,omitempty" json:"default_list,omitempty"`     // Default list ID for list operations
-	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"` // Git branch template
-	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`   // Commit message prefix
+	Token         string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=ClickUp API token;sensitive"`
+	TeamID        string `yaml:"team_id,omitempty" json:"team_id,omitempty" schema:"label=Team ID;desc=Team/Workspace ID"`
+	DefaultList   string `yaml:"default_list,omitempty" json:"default_list,omitempty" schema:"label=Default List;desc=Default list ID"`
+	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Git branch template"`
+	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Commit message prefix"`
 }
 
 // AzureDevOpsSettings holds Azure DevOps provider configuration.
 type AzureDevOpsSettings struct {
-	Token         string `yaml:"token,omitempty" json:"token,omitempty"`                   // Azure DevOps PAT (env vars take priority)
-	Organization  string `yaml:"organization,omitempty" json:"organization,omitempty"`     // Azure DevOps organization
-	Project       string `yaml:"project,omitempty" json:"project,omitempty"`               // Project name
-	AreaPath      string `yaml:"area_path,omitempty" json:"area_path,omitempty"`           // Filter by area path
-	IterationPath string `yaml:"iteration_path,omitempty" json:"iteration_path,omitempty"` // Filter by iteration
-	RepoName      string `yaml:"repo_name,omitempty" json:"repo_name,omitempty"`           // Default repository for PR creation
-	TargetBranch  string `yaml:"target_branch,omitempty" json:"target_branch,omitempty"`   // Default target branch for PRs
-	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty"` // Git branch template
-	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty"`   // Commit message prefix
+	Token         string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Azure DevOps PAT;sensitive"`
+	Organization  string `yaml:"organization,omitempty" json:"organization,omitempty" schema:"label=Organization;desc=Azure DevOps organization"`
+	Project       string `yaml:"project,omitempty" json:"project,omitempty" schema:"label=Project;desc=Project name"`
+	AreaPath      string `yaml:"area_path,omitempty" json:"area_path,omitempty" schema:"label=Area Path;desc=Filter by area path;advanced"`
+	IterationPath string `yaml:"iteration_path,omitempty" json:"iteration_path,omitempty" schema:"label=Iteration Path;desc=Filter by iteration;advanced"`
+	RepoName      string `yaml:"repo_name,omitempty" json:"repo_name,omitempty" schema:"label=Repository;desc=Default repository for PR creation"`
+	TargetBranch  string `yaml:"target_branch,omitempty" json:"target_branch,omitempty" schema:"label=Target Branch;desc=Default target branch for PRs"`
+	BranchPattern string `yaml:"branch_pattern,omitempty" json:"branch_pattern,omitempty" schema:"label=Branch Pattern;desc=Git branch template"`
+	CommitPrefix  string `yaml:"commit_prefix,omitempty" json:"commit_prefix,omitempty" schema:"label=Commit Prefix;desc=Commit message prefix"`
 }
 
 // TrelloSettings holds Trello provider configuration.
 type TrelloSettings struct {
-	APIKey string `yaml:"api_key,omitempty" json:"api_key,omitempty"` // Trello API key (env vars take priority)
-	Token  string `yaml:"token,omitempty" json:"token,omitempty"`     // Trello token (env vars take priority)
-	Board  string `yaml:"board,omitempty" json:"board,omitempty"`     // Default board ID
+	APIKey string `yaml:"api_key,omitempty" json:"api_key,omitempty" schema:"label=API Key;desc=Trello API key;sensitive"`
+	Token  string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Trello token;sensitive"`
+	Board  string `yaml:"board,omitempty" json:"board,omitempty" schema:"label=Board;desc=Default board ID"`
 }
 
 // BrowserSettings holds browser automation configuration.
 type BrowserSettings struct {
-	Enabled          bool   `yaml:"enabled,omitempty" json:"enabled,omitempty"`                       // Enable browser automation (default: false)
-	Host             string `yaml:"host,omitempty" json:"host,omitempty"`                             // CDP host (default: localhost)
-	Port             int    `yaml:"port,omitempty" json:"port,omitempty"`                             // CDP port: 0 = random (default), 9222 = existing Chrome
-	Headless         bool   `yaml:"headless,omitempty" json:"headless,omitempty"`                     // Launch headless browser (default: false)
-	IgnoreCertErrors bool   `yaml:"ignore_cert_errors,omitempty" json:"ignore_cert_errors,omitempty"` // Ignore SSL certificate errors (default: true for local dev)
-	Timeout          int    `yaml:"timeout,omitempty" json:"timeout,omitempty"`                       // Operation timeout in seconds (default: 30)
-	ScreenshotDir    string `yaml:"screenshot_dir,omitempty" json:"screenshot_dir,omitempty"`         // Directory for screenshots (default: .mehrhof/screenshots)
-	CookieProfile    string `yaml:"cookie_profile,omitempty" json:"cookie_profile,omitempty"`         // Which cookie profile to use (default: "default")
-	CookieAutoLoad   bool   `yaml:"cookie_auto_load,omitempty" json:"cookie_auto_load,omitempty"`     // Auto-load cookies on connect (default: true)
-	CookieAutoSave   bool   `yaml:"cookie_auto_save,omitempty" json:"cookie_auto_save,omitempty"`     // Auto-save cookies on disconnect (default: true)
-	CookieDir        string `yaml:"cookie_dir,omitempty" json:"cookie_dir,omitempty"`                 // Custom cookie directory (default: ~/.mehrhof/)
+	Enabled          bool   `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Browser;desc=Enable browser automation;default=false"`
+	Host             string `yaml:"host,omitempty" json:"host,omitempty" schema:"label=Host;desc=CDP host;default=localhost;advanced"`
+	Port             int    `yaml:"port,omitempty" json:"port,omitempty" schema:"label=Port;desc=CDP port (0=random, 9222=existing Chrome);default=0;advanced"`
+	Headless         bool   `yaml:"headless,omitempty" json:"headless,omitempty" schema:"label=Headless;desc=Launch headless browser;default=false"`
+	IgnoreCertErrors bool   `yaml:"ignore_cert_errors,omitempty" json:"ignore_cert_errors,omitempty" schema:"label=Ignore Cert Errors;desc=Ignore SSL certificate errors;default=true;advanced"`
+	Timeout          int    `yaml:"timeout,omitempty" json:"timeout,omitempty" schema:"label=Timeout;desc=Operation timeout in seconds;default=30;min=5;max=300"`
+	ScreenshotDir    string `yaml:"screenshot_dir,omitempty" json:"screenshot_dir,omitempty" schema:"label=Screenshot Dir;desc=Directory for screenshots;default=.mehrhof/screenshots;advanced"`
+	CookieProfile    string `yaml:"cookie_profile,omitempty" json:"cookie_profile,omitempty" schema:"label=Cookie Profile;desc=Cookie profile name;default=default;advanced"`
+	CookieAutoLoad   bool   `yaml:"cookie_auto_load,omitempty" json:"cookie_auto_load,omitempty" schema:"label=Auto Load Cookies;desc=Auto-load cookies on connect;default=true;advanced"`
+	CookieAutoSave   bool   `yaml:"cookie_auto_save,omitempty" json:"cookie_auto_save,omitempty" schema:"label=Auto Save Cookies;desc=Auto-save cookies on disconnect;default=true;advanced"`
+	CookieDir        string `yaml:"cookie_dir,omitempty" json:"cookie_dir,omitempty" schema:"label=Cookie Dir;desc=Custom cookie directory;placeholder=~/.mehrhof/;advanced"`
 }
 
 // MCPSettings holds MCP (Model Context Protocol) server configuration.
 type MCPSettings struct {
-	Enabled   bool               `yaml:"enabled,omitempty" json:"enabled,omitempty"`       // Enable MCP server (default: false)
-	ToolList  []string           `yaml:"tools,omitempty" json:"tools,omitempty"`           // Allowlist of tools to expose (empty = all safe tools)
-	RateLimit *RateLimitSettings `yaml:"rate_limit,omitempty" json:"rate_limit,omitempty"` // Rate limiting for tool calls
+	Enabled   bool               `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable MCP;desc=Enable Model Context Protocol server;default=false"`
+	ToolList  []string           `yaml:"tools,omitempty" json:"tools,omitempty" schema:"-"`
+	RateLimit *RateLimitSettings `yaml:"rate_limit,omitempty" json:"rate_limit,omitempty" schema:"-"`
 }
 
 // RateLimitSettings holds rate limiter configuration for MCP server.
@@ -202,12 +202,12 @@ type RateLimitSettings struct {
 
 // SecuritySettings holds security scanning configuration.
 type SecuritySettings struct {
-	Enabled  bool                   `yaml:"enabled,omitempty" json:"enabled,omitempty"`   // Enable security scanning (default: false)
-	RunOn    SecurityRunOnConfig    `yaml:"run_on,omitempty" json:"run_on,omitempty"`     // When to run scans
-	FailOn   SecurityFailOnConfig   `yaml:"fail_on,omitempty" json:"fail_on,omitempty"`   // Failure policy
-	Scanners SecurityScannersConfig `yaml:"scanners,omitempty" json:"scanners,omitempty"` // Scanner configuration
-	Output   SecurityOutputConfig   `yaml:"output,omitempty" json:"output,omitempty"`     // Reporting settings
-	Tools    *SecurityToolsConfig   `yaml:"tools,omitempty" json:"tools,omitempty"`       // Tool management
+	Enabled  bool                   `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Security;desc=Enable security scanning;default=false"`
+	RunOn    SecurityRunOnConfig    `yaml:"run_on,omitempty" json:"run_on,omitempty" schema:"-"`
+	FailOn   SecurityFailOnConfig   `yaml:"fail_on,omitempty" json:"fail_on,omitempty" schema:"-"`
+	Scanners SecurityScannersConfig `yaml:"scanners,omitempty" json:"scanners,omitempty" schema:"-"`
+	Output   SecurityOutputConfig   `yaml:"output,omitempty" json:"output,omitempty" schema:"-"`
+	Tools    *SecurityToolsConfig   `yaml:"tools,omitempty" json:"tools,omitempty" schema:"-"`
 }
 
 // SecurityRunOnConfig controls when security scans run.
@@ -271,11 +271,11 @@ type SecurityToolsConfig struct {
 
 // MemorySettings holds memory system configuration.
 type MemorySettings struct {
-	Enabled   bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty"`     // Enable memory system (default: false)
-	VectorDB  VectorDBSettings      `yaml:"vector_db,omitempty" json:"vector_db,omitempty"` // Vector database configuration
-	Retention MemoryRetentionConfig `yaml:"retention,omitempty" json:"retention,omitempty"` // Retention policy
-	Search    MemorySearchConfig    `yaml:"search,omitempty" json:"search,omitempty"`       // Search settings
-	Learning  MemoryLearningConfig  `yaml:"learning,omitempty" json:"learning,omitempty"`   // Learning settings
+	Enabled   bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Memory;desc=Enable semantic memory system;default=false"`
+	VectorDB  VectorDBSettings      `yaml:"vector_db,omitempty" json:"vector_db,omitempty" schema:"-"`
+	Retention MemoryRetentionConfig `yaml:"retention,omitempty" json:"retention,omitempty" schema:"-"`
+	Search    MemorySearchConfig    `yaml:"search,omitempty" json:"search,omitempty" schema:"-"`
+	Learning  MemoryLearningConfig  `yaml:"learning,omitempty" json:"learning,omitempty" schema:"-"`
 }
 
 // VectorDBSettings configures vector database backend.
@@ -318,24 +318,24 @@ type MemoryLearningConfig struct {
 
 // LibrarySettings holds library documentation collection configuration.
 type LibrarySettings struct {
-	AutoIncludeMax    int    `yaml:"auto_include_max,omitempty" json:"auto_include_max,omitempty"`         // Max collections to auto-include (default: 3)
-	MaxPagesPerPrompt int    `yaml:"max_pages_per_prompt,omitempty" json:"max_pages_per_prompt,omitempty"` // Max pages from a single collection (default: 20)
-	MaxCrawlPages     int    `yaml:"max_crawl_pages,omitempty" json:"max_crawl_pages,omitempty"`           // Default max pages per crawl (default: 100)
-	MaxCrawlDepth     int    `yaml:"max_crawl_depth,omitempty" json:"max_crawl_depth,omitempty"`           // Default max crawl depth (default: 3)
-	MaxPageSizeBytes  int64  `yaml:"max_page_size_bytes,omitempty" json:"max_page_size_bytes,omitempty"`   // Max size per page (default: 1MB)
-	LockTimeout       string `yaml:"lock_timeout,omitempty" json:"lock_timeout,omitempty"`                 // File lock timeout (default: "10s")
-	MaxTokenBudget    int    `yaml:"max_token_budget,omitempty" json:"max_token_budget,omitempty"`         // Total token budget for library context (default: 8000)
+	AutoIncludeMax    int    `yaml:"auto_include_max,omitempty" json:"auto_include_max,omitempty" schema:"label=Auto Include Max;desc=Max collections to auto-include;default=3;min=0;max=10;advanced"`
+	MaxPagesPerPrompt int    `yaml:"max_pages_per_prompt,omitempty" json:"max_pages_per_prompt,omitempty" schema:"label=Max Pages Per Prompt;desc=Max pages from a single collection;default=20;min=1;max=100;advanced"`
+	MaxCrawlPages     int    `yaml:"max_crawl_pages,omitempty" json:"max_crawl_pages,omitempty" schema:"label=Max Crawl Pages;desc=Default max pages per crawl;default=100;min=1;max=1000;advanced"`
+	MaxCrawlDepth     int    `yaml:"max_crawl_depth,omitempty" json:"max_crawl_depth,omitempty" schema:"label=Max Crawl Depth;desc=Default max crawl depth;default=3;min=1;max=10;advanced"`
+	MaxPageSizeBytes  int64  `yaml:"max_page_size_bytes,omitempty" json:"max_page_size_bytes,omitempty" schema:"label=Max Page Size;desc=Max size per page in bytes;default=1048576;advanced"`
+	LockTimeout       string `yaml:"lock_timeout,omitempty" json:"lock_timeout,omitempty" schema:"label=Lock Timeout;desc=File lock timeout;default=10s;advanced"`
+	MaxTokenBudget    int    `yaml:"max_token_budget,omitempty" json:"max_token_budget,omitempty" schema:"label=Max Token Budget;desc=Total token budget for library context;default=8000;min=1000;max=50000;advanced"`
 
 	// Crawl filtering options
-	DomainScope   string `yaml:"domain_scope,omitempty" json:"domain_scope,omitempty"`     // "same-host" (default) or "same-domain"
-	VersionFilter bool   `yaml:"version_filter,omitempty" json:"version_filter,omitempty"` // Auto-detect version from URL path
-	VersionPath   string `yaml:"version_path,omitempty" json:"version_path,omitempty"`     // Explicit version path segment (e.g., "v24", "v1.2.3")
+	DomainScope   string `yaml:"domain_scope,omitempty" json:"domain_scope,omitempty" schema:"label=Domain Scope;desc=Crawl domain scope;type=select;options=same-host,same-domain;default=same-host;advanced"`
+	VersionFilter bool   `yaml:"version_filter,omitempty" json:"version_filter,omitempty" schema:"label=Version Filter;desc=Auto-detect version from URL path;default=false;advanced"`
+	VersionPath   string `yaml:"version_path,omitempty" json:"version_path,omitempty" schema:"label=Version Path;desc=Explicit version path segment;placeholder=v24;advanced"`
 }
 
 // OrchestrationSettings holds multi-agent orchestration configuration.
 type OrchestrationSettings struct {
-	Enabled bool                              `yaml:"enabled,omitempty" json:"enabled,omitempty"` // Enable multi-agent orchestration (default: false)
-	Steps   map[string]StepOrchestratorConfig `yaml:"steps,omitempty" json:"steps,omitempty"`     // Per-step orchestration config
+	Enabled bool                              `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Orchestration;desc=Enable multi-agent orchestration;default=false"`
+	Steps   map[string]StepOrchestratorConfig `yaml:"steps,omitempty" json:"steps,omitempty" schema:"-"`
 }
 
 // StepOrchestratorConfig defines orchestration for a workflow step.
@@ -368,10 +368,10 @@ type StepConsensusConfig struct {
 
 // MLSettings holds ML prediction system configuration.
 type MLSettings struct {
-	Enabled     bool                `yaml:"enabled,omitempty" json:"enabled,omitempty"`         // Enable ML predictions (default: false)
-	Telemetry   MLTelemetryConfig   `yaml:"telemetry,omitempty" json:"telemetry,omitempty"`     // Telemetry settings
-	Model       MLModelConfig       `yaml:"model,omitempty" json:"model,omitempty"`             // Model configuration
-	Predictions MLPredictionsConfig `yaml:"predictions,omitempty" json:"predictions,omitempty"` // Prediction settings
+	Enabled     bool                `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable ML;desc=Enable ML predictions;default=false"`
+	Telemetry   MLTelemetryConfig   `yaml:"telemetry,omitempty" json:"telemetry,omitempty" schema:"-"`
+	Model       MLModelConfig       `yaml:"model,omitempty" json:"model,omitempty" schema:"-"`
+	Predictions MLPredictionsConfig `yaml:"predictions,omitempty" json:"predictions,omitempty" schema:"-"`
 }
 
 // MLTelemetryConfig controls telemetry collection.
@@ -411,13 +411,13 @@ type AgentAliasConfig struct {
 
 // GitSettings holds git-related configuration.
 type GitSettings struct {
-	CommitPrefix  string `yaml:"commit_prefix" json:"commit_prefix"`
-	BranchPattern string `yaml:"branch_pattern" json:"branch_pattern"`
-	AutoCommit    bool   `yaml:"auto_commit" json:"auto_commit"`
-	SignCommits   bool   `yaml:"sign_commits" json:"sign_commits"`
-	StashOnStart  bool   `yaml:"stash_on_start" json:"stash_on_start"`                     // Auto-stash changes before creating task branch
-	AutoPopStash  bool   `yaml:"auto_pop_stash" json:"auto_pop_stash"`                     // Auto-pop stash after branch creation (if stashed)
-	DefaultBranch string `yaml:"default_branch,omitempty" json:"default_branch,omitempty"` // Override default branch detection (e.g., "main", "develop")
+	CommitPrefix  string `yaml:"commit_prefix" json:"commit_prefix" schema:"label=Commit Prefix;desc=Pattern for commit messages. Use {key}, {type}, {slug};default=[{key}];maxlen=100;simple"`
+	BranchPattern string `yaml:"branch_pattern" json:"branch_pattern" schema:"label=Branch Pattern;desc=Pattern for branch names. Use {key}, {type}, {slug};default={type}/{key}--{slug};simple"`
+	AutoCommit    bool   `yaml:"auto_commit" json:"auto_commit" schema:"label=Auto Commit;desc=Automatically commit after implementation;default=true;simple"`
+	SignCommits   bool   `yaml:"sign_commits" json:"sign_commits" schema:"label=Sign Commits;desc=GPG sign commits;default=false;showWhen=git.auto_commit:true"`
+	StashOnStart  bool   `yaml:"stash_on_start" json:"stash_on_start" schema:"label=Stash on Start;desc=Auto-stash changes before creating task branch;default=false"`
+	AutoPopStash  bool   `yaml:"auto_pop_stash" json:"auto_pop_stash" schema:"label=Auto Pop Stash;desc=Auto-pop stash after branch creation;default=true;showWhen=git.stash_on_start:true"`
+	DefaultBranch string `yaml:"default_branch,omitempty" json:"default_branch,omitempty" schema:"label=Default Branch;desc=Override default branch detection (e.g., main, develop);placeholder=auto-detect"`
 }
 
 // StepAgentConfig holds agent configuration for a specific workflow step.
@@ -431,13 +431,13 @@ type StepAgentConfig struct {
 
 // AgentSettings holds agent-related configuration.
 type AgentSettings struct {
-	Default         string                     `yaml:"default" json:"default"`
-	Timeout         int                        `yaml:"timeout" json:"timeout"`
-	MaxRetries      int                        `yaml:"max_retries" json:"max_retries"`
-	Instructions    string                     `yaml:"instructions,omitempty" json:"instructions,omitempty"`         // Global instructions for all steps
-	OptimizePrompts bool                       `yaml:"optimize_prompts,omitempty" json:"optimize_prompts,omitempty"` // Optimize prompts for all steps
-	Steps           map[string]StepAgentConfig `yaml:"steps,omitempty" json:"steps,omitempty"`                       // Per-step agent configuration
-	PRReview        *PRReviewConfig            `yaml:"pr_review,omitempty" json:"pr_review,omitempty"`               // PR review configuration
+	Default         string                     `yaml:"default" json:"default" schema:"label=Default Agent;desc=Agent to use when not specified;default=claude;simple"`
+	Timeout         int                        `yaml:"timeout" json:"timeout" schema:"label=Timeout;desc=Maximum time for agent execution in seconds;default=300;min=30;max=3600"`
+	MaxRetries      int                        `yaml:"max_retries" json:"max_retries" schema:"label=Max Retries;desc=Retry count on transient failures;default=3;min=0;max=10"`
+	Instructions    string                     `yaml:"instructions,omitempty" json:"instructions,omitempty" schema:"label=Instructions;desc=Global instructions included in all agent prompts;type=textarea"`
+	OptimizePrompts bool                       `yaml:"optimize_prompts,omitempty" json:"optimize_prompts,omitempty" schema:"label=Optimize Prompts;desc=Optimize prompts for token efficiency;default=false"`
+	Steps           map[string]StepAgentConfig `yaml:"steps,omitempty" json:"steps,omitempty" schema:"-"`
+	PRReview        *PRReviewConfig            `yaml:"pr_review,omitempty" json:"pr_review,omitempty" schema:"-"`
 }
 
 // PRReviewConfig holds PR review configuration.
@@ -459,74 +459,75 @@ type SimplifySettings struct {
 
 // WorkflowSettings holds workflow-related configuration.
 type WorkflowSettings struct {
-	AutoInit             bool             `yaml:"auto_init" json:"auto_init"`
-	SessionRetentionDays int              `yaml:"session_retention_days" json:"session_retention_days"`
-	DeleteWorkOnFinish   bool             `yaml:"delete_work_on_finish" json:"delete_work_on_finish"`   // Delete work dirs on finish (default: false)
-	DeleteWorkOnAbandon  bool             `yaml:"delete_work_on_abandon" json:"delete_work_on_abandon"` // Delete work dirs on abandon (default: true)
-	Simplify             SimplifySettings `yaml:"simplify,omitempty" json:"simplify,omitempty"`         // Simplification command settings
+	AutoInit             bool             `yaml:"auto_init" json:"auto_init" schema:"label=Auto Init;desc=Auto-initialize workspace;default=true;simple"`
+	SessionRetentionDays int              `yaml:"session_retention_days" json:"session_retention_days" schema:"label=Session Retention;desc=How long to keep session logs in days;default=30;min=1;max=365"`
+	DeleteWorkOnFinish   bool             `yaml:"delete_work_on_finish" json:"delete_work_on_finish" schema:"label=Delete Work on Finish;desc=Clean up work directory after finish;default=false"`
+	DeleteWorkOnAbandon  bool             `yaml:"delete_work_on_abandon" json:"delete_work_on_abandon" schema:"label=Delete Work on Abandon;desc=Clean up work directory on abandon;default=true"`
+	PreferLocalMerge     bool             `yaml:"prefer_local_merge" json:"prefer_local_merge" schema:"label=Prefer Local Merge;desc=Use local merge instead of creating PR on finish;default=false"`
+	Simplify             SimplifySettings `yaml:"simplify,omitempty" json:"simplify,omitempty" schema:"-"`
 }
 
 // BudgetSettings holds budget configuration for costs and tokens.
 type BudgetSettings struct {
-	Enabled       bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Enable budget tracking (default: false)
-	PerTask       BudgetConfig          `yaml:"per_task,omitempty" json:"per_task,omitempty"`             // Default budget for tasks
-	Monthly       MonthlyBudgetSettings `yaml:"monthly,omitempty" json:"monthly,omitempty"`               // Monthly workspace budget
-	ExchangeRates map[string]float64    `yaml:"exchange_rates,omitempty" json:"exchange_rates,omitempty"` // Currency conversion rates (to USD)
+	Enabled       bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Budget;desc=Track costs per task and monthly;default=false"`
+	PerTask       BudgetConfig          `yaml:"per_task,omitempty" json:"per_task,omitempty" schema:"-"`
+	Monthly       MonthlyBudgetSettings `yaml:"monthly,omitempty" json:"monthly,omitempty" schema:"-"`
+	ExchangeRates map[string]float64    `yaml:"exchange_rates,omitempty" json:"exchange_rates,omitempty" schema:"-"`
 }
 
 // MonthlyBudgetSettings defines a workspace monthly budget.
 type MonthlyBudgetSettings struct {
-	MaxCost   float64 `yaml:"max_cost,omitempty" json:"max_cost,omitempty"`
-	Currency  string  `yaml:"currency,omitempty" json:"currency,omitempty"`
-	WarningAt float64 `yaml:"warning_at,omitempty" json:"warning_at,omitempty"` // 0-1 (e.g., 0.8)
+	MaxCost   float64 `yaml:"max_cost,omitempty" json:"max_cost,omitempty" schema:"label=Monthly Max Cost;desc=Maximum monthly spend in USD;min=0"`
+	Currency  string  `yaml:"currency,omitempty" json:"currency,omitempty" schema:"label=Currency;desc=Currency code;default=USD;placeholder=USD"`
+	WarningAt float64 `yaml:"warning_at,omitempty" json:"warning_at,omitempty" schema:"label=Warning At;desc=Percentage to warn at (0-1);default=0.8;min=0;max=1"`
 }
 
 // UpdateSettings holds update-related configuration.
 type UpdateSettings struct {
-	Enabled       bool `yaml:"enabled" json:"enabled"`               // Enable automatic update checks
-	CheckInterval int  `yaml:"check_interval" json:"check_interval"` // Hours between checks (default: 24)
+	Enabled       bool `yaml:"enabled" json:"enabled" schema:"label=Enable Updates;desc=Enable automatic update checks;default=true;simple"`
+	CheckInterval int  `yaml:"check_interval" json:"check_interval" schema:"label=Check Interval;desc=Hours between update checks;default=24;min=1;max=168"`
 }
 
 // StorageSettings holds storage-related configuration.
 type StorageSettings struct {
-	HomeDir       string `yaml:"home_dir,omitempty" json:"home_dir,omitempty"`               // Override for mehrhof home directory (default: ~/.mehrhof)
-	SaveInProject bool   `yaml:"save_in_project,omitempty" json:"save_in_project,omitempty"` // Store work in project directory (default: false = global)
-	ProjectDir    string `yaml:"project_dir,omitempty" json:"project_dir,omitempty"`         // Project dir for work (default: ".mehrhof/work" when save_in_project=true)
+	HomeDir       string `yaml:"home_dir,omitempty" json:"home_dir,omitempty" schema:"label=Home Directory;desc=Override mehrhof home directory;placeholder=~/.mehrhof;advanced"`
+	SaveInProject bool   `yaml:"save_in_project,omitempty" json:"save_in_project,omitempty" schema:"label=Save in Project;desc=Store work in project directory instead of global;default=false"`
+	ProjectDir    string `yaml:"project_dir,omitempty" json:"project_dir,omitempty" schema:"label=Project Directory;desc=Project dir for work files;default=.mehrhof/work;showWhen=storage.save_in_project:true"`
 }
 
 // ProjectSettings holds project-level settings for decoupled hub/code workflows.
 type ProjectSettings struct {
-	CodeDir string `yaml:"code_dir,omitempty" json:"code_dir,omitempty"` // Separate code directory (relative to project root or absolute)
+	CodeDir string `yaml:"code_dir,omitempty" json:"code_dir,omitempty" schema:"label=Code Directory;desc=Separate code directory (relative or absolute);placeholder=../code"`
 }
 
 // StackSettings holds stacked feature branch configuration.
 type StackSettings struct {
-	AutoRebase       string `yaml:"auto_rebase,omitempty" json:"auto_rebase,omitempty"`               // When to auto-rebase children: "disabled" (default) | "on_finish"
-	BlockOnConflicts bool   `yaml:"block_on_conflicts,omitempty" json:"block_on_conflicts,omitempty"` // Block auto-rebase if conflicts detected (default: true)
+	AutoRebase       string `yaml:"auto_rebase,omitempty" json:"auto_rebase,omitempty" schema:"label=Auto Rebase;desc=When to auto-rebase children;type=select;options=disabled,on_finish;default=disabled;advanced"`
+	BlockOnConflicts bool   `yaml:"block_on_conflicts,omitempty" json:"block_on_conflicts,omitempty" schema:"label=Block on Conflicts;desc=Block auto-rebase if conflicts detected;default=true;showWhen=stack.auto_rebase:on_finish;advanced"`
 }
 
 // SpecificationSettings holds specification-related configuration.
 type SpecificationSettings struct {
-	FilenamePattern string `yaml:"filename_pattern" json:"filename_pattern"` // Spec filename pattern (default: "specification-{n}.md")
+	FilenamePattern string `yaml:"filename_pattern" json:"filename_pattern" schema:"label=Spec Filename Pattern;desc=Pattern for spec filenames;default=specification-{n}.md;advanced"`
 }
 
 // ReviewSettings holds code review output configuration.
 type ReviewSettings struct {
-	FilenamePattern string `yaml:"filename_pattern" json:"filename_pattern"` // Review filename pattern (default: "review-{n}.txt")
+	FilenamePattern string `yaml:"filename_pattern" json:"filename_pattern" schema:"label=Review Filename Pattern;desc=Pattern for review filenames;default=review-{n}.txt;advanced"`
 }
 
 // SandboxSettings holds agent sandboxing configuration.
 type SandboxSettings struct {
-	Enabled bool     `yaml:"enabled,omitempty" json:"enabled,omitempty"` // Enable sandboxing (default: false)
-	Network bool     `yaml:"network,omitempty" json:"network,omitempty"` // Allow network access (default: true - LLM APIs need this)
-	TmpDir  string   `yaml:"tmp_dir,omitempty" json:"tmp_dir,omitempty"` // Tmpfs mount path (default: auto)
-	Tools   []string `yaml:"tools,omitempty" json:"tools,omitempty"`     // Extra binary paths to allow (beyond defaults)
+	Enabled bool     `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Sandbox;desc=Enable agent sandboxing;default=false"`
+	Network bool     `yaml:"network,omitempty" json:"network,omitempty" schema:"label=Allow Network;desc=Allow network access (LLM APIs need this);default=true"`
+	TmpDir  string   `yaml:"tmp_dir,omitempty" json:"tmp_dir,omitempty" schema:"label=Temp Directory;desc=Tmpfs mount path;placeholder=auto;advanced"`
+	Tools   []string `yaml:"tools,omitempty" json:"tools,omitempty" schema:"-"`
 }
 
 // ProvidersSettings holds provider-related configuration.
 type ProvidersSettings struct {
-	Default        string `yaml:"default,omitempty" json:"default,omitempty"`                 // Default provider for bare references (e.g., "file", "directory", "github")
-	DefaultMention string `yaml:"default_mention,omitempty" json:"default_mention,omitempty"` // Default mention text when submitting tasks (e.g., "@manager please review")
+	Default        string `yaml:"default,omitempty" json:"default,omitempty" schema:"label=Default Provider;desc=Default provider for bare references;type=select;options=file,directory,github,gitlab,jira,linear,notion"`
+	DefaultMention string `yaml:"default_mention,omitempty" json:"default_mention,omitempty" schema:"label=Default Mention;desc=Default mention text when submitting tasks;placeholder=@manager please review"`
 }
 
 // LabelDefinition defines a label with optional color.
@@ -537,16 +538,16 @@ type LabelDefinition struct {
 
 // LabelSettings holds label-related configuration.
 type LabelSettings struct {
-	Enabled     bool              `yaml:"enabled,omitempty" json:"enabled,omitempty"`         // Enable label system (default: true)
-	Defined     []LabelDefinition `yaml:"defined,omitempty" json:"defined,omitempty"`         // Predefined labels with colors
-	Suggestions []string          `yaml:"suggestions,omitempty" json:"suggestions,omitempty"` // Suggested labels for autocomplete
+	Enabled     bool              `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Labels;desc=Enable label system;default=true"`
+	Defined     []LabelDefinition `yaml:"defined,omitempty" json:"defined,omitempty" schema:"-"`
+	Suggestions []string          `yaml:"suggestions,omitempty" json:"suggestions,omitempty" schema:"-"`
 }
 
 // QualitySettings holds code quality and linter configuration.
 type QualitySettings struct {
-	Enabled     bool                    `yaml:"enabled,omitempty" json:"enabled,omitempty"`           // Enable quality checks (default: true)
-	UseDefaults bool                    `yaml:"use_defaults,omitempty" json:"use_defaults,omitempty"` // Auto-enable default linters (default: false - safer)
-	Linters     map[string]LinterConfig `yaml:"linters,omitempty" json:"linters,omitempty"`           // Linter-specific config by name
+	Enabled     bool                    `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Quality;desc=Enable code quality checks;default=true"`
+	UseDefaults bool                    `yaml:"use_defaults,omitempty" json:"use_defaults,omitempty" schema:"label=Use Defaults;desc=Auto-enable default linters;default=false"`
+	Linters     map[string]LinterConfig `yaml:"linters,omitempty" json:"linters,omitempty" schema:"-"`
 }
 
 // LinterConfig defines configuration for a single linter.
@@ -555,4 +556,9 @@ type LinterConfig struct {
 	Command    []string `yaml:"command,omitempty" json:"command,omitempty"`       // Custom command (e.g., ["vendor/bin/phpstan", "analyse"])
 	Args       []string `yaml:"args,omitempty" json:"args,omitempty"`             // Additional arguments
 	Extensions []string `yaml:"extensions,omitempty" json:"extensions,omitempty"` // File extensions to lint (default: auto-detected)
+}
+
+// DisplaySettings holds display preferences for dates and times.
+type DisplaySettings struct {
+	Timezone string `yaml:"timezone,omitempty" json:"timezone,omitempty" schema:"label=Timezone;desc=IANA timezone for display (e.g., Europe/Riga);default=UTC;placeholder=UTC;simple"`
 }

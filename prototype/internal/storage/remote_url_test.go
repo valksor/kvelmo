@@ -43,6 +43,11 @@ func TestSanitizeRemoteURL(t *testing.T) {
 			in:   "oauth2@gitlab.com/group/repo.git",
 			want: "gitlab.com/group/repo.git",
 		},
+		{
+			name: "project ID with token (dashes instead of slashes)",
+			in:   "ghp_secret123@github.com-user-repo",
+			want: "github.com-user-repo",
+		},
 	}
 
 	for _, tt := range tests {
