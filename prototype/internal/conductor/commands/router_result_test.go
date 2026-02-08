@@ -22,7 +22,7 @@ func mustNewConductor(t *testing.T) *conductor.Conductor {
 func TestExecuteUnknownCommand(t *testing.T) {
 	cond := mustNewConductor(t)
 
-	result, err := Execute(context.Background(), cond, "definitely-unknown-command", nil)
+	result, err := Execute(context.Background(), cond, "definitely-unknown-command", Invocation{})
 	if result != nil {
 		t.Fatalf("expected nil result, got %#v", result)
 	}
@@ -43,14 +43,14 @@ func TestExecuteRequiresTask(t *testing.T) {
 			Category:     "test",
 			RequiresTask: true,
 		},
-		Handler: func(_ context.Context, _ *conductor.Conductor, _ []string) (*Result, error) {
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
 			handlerCalled = true
 
 			return NewResult("ok"), nil
 		},
 	})
 
-	result, err := Execute(context.Background(), cond, "rtt", nil)
+	result, err := Execute(context.Background(), cond, "rtt", Invocation{})
 	if result != nil {
 		t.Fatalf("expected nil result, got %#v", result)
 	}
@@ -75,14 +75,14 @@ func TestExecuteAliasAndHandlerError(t *testing.T) {
 			Category:     "test",
 			RequiresTask: false,
 		},
-		Handler: func(_ context.Context, _ *conductor.Conductor, args []string) (*Result, error) {
-			receivedArgs = append(receivedArgs, args...)
+		Handler: func(_ context.Context, _ *conductor.Conductor, inv Invocation) (*Result, error) {
+			receivedArgs = append(receivedArgs, inv.Args...)
 
 			return nil, expectedErr
 		},
 	})
 
-	result, err := Execute(context.Background(), cond, "eat", []string{"one", "two"})
+	result, err := Execute(context.Background(), cond, "eat", Invocation{Args: []string{"one", "two"}})
 	if result != nil {
 		t.Fatalf("expected nil result, got %#v", result)
 	}
@@ -105,7 +105,7 @@ func TestExecuteReturnsResult(t *testing.T) {
 			Category:     "test",
 			RequiresTask: false,
 		},
-		Handler: func(_ context.Context, _ *conductor.Conductor, _ []string) (*Result, error) {
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
 			return &Result{
 				Type:    ResultMessage,
 				Message: "ok",
@@ -113,7 +113,7 @@ func TestExecuteReturnsResult(t *testing.T) {
 		},
 	})
 
-	result, err := Execute(context.Background(), cond, "eot", nil)
+	result, err := Execute(context.Background(), cond, "eot", Invocation{})
 	if err != nil {
 		t.Fatalf("Execute returned unexpected error: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestMetadataCategoriesAndLookup(t *testing.T) {
 			Category:     "metadata-test",
 			RequiresTask: false,
 		},
-		Handler: func(_ context.Context, _ *conductor.Conductor, _ []string) (*Result, error) {
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
 			return NewResult("ok"), nil
 		},
 	})
@@ -249,5 +249,131 @@ func TestResultBuilders(t *testing.T) {
 
 	if ExitResult.Type != ResultExit {
 		t.Fatalf("ExitResult type = %q, want %q", ExitResult.Type, ResultExit)
+	}
+}
+
+func TestExecuteWithRun(t *testing.T) {
+	cond := mustNewConductor(t)
+	executed := false
+
+	Register(Command{
+		Info: CommandInfo{
+			Name:        "execute-with-run-test",
+			Description: "test execute with run",
+			Category:    "test",
+		},
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
+			return &Result{
+				Type:    ResultMessage,
+				Message: "ok",
+				Executor: func(context.Context) error {
+					executed = true
+
+					return nil
+				},
+			}, nil
+		},
+	})
+
+	_, err := Execute(context.Background(), cond, "execute-with-run-test", Invocation{})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	if executed {
+		t.Fatalf("Execute should not run executor")
+	}
+
+	_, err = ExecuteWithRun(context.Background(), cond, "execute-with-run-test", Invocation{})
+	if err != nil {
+		t.Fatalf("ExecuteWithRun returned error: %v", err)
+	}
+	if !executed {
+		t.Fatalf("ExecuteWithRun should run executor")
+	}
+}
+
+func TestExecuteWithRunClassifiesExecutorError(t *testing.T) {
+	cond := mustNewConductor(t)
+
+	Register(Command{
+		Info: CommandInfo{
+			Name:        "execute-classify-test",
+			Description: "test classify",
+			Category:    "test",
+		},
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
+			return &Result{
+				Type:    ResultMessage,
+				Message: "ok",
+				State:   "planning",
+				TaskID:  "task-1",
+				Executor: func(context.Context) error {
+					return conductor.ErrBudgetPaused
+				},
+			}, nil
+		},
+	})
+
+	result, err := ExecuteWithRun(context.Background(), cond, "execute-classify-test", Invocation{})
+	if err != nil {
+		t.Fatalf("ExecuteWithRun returned error: %v", err)
+	}
+	if result == nil || result.Type != ResultPaused {
+		t.Fatalf("expected paused result, got %#v", result)
+	}
+}
+
+func TestExecuteWithRunClassifiesExecuteError(t *testing.T) {
+	cond := mustNewConductor(t)
+
+	Register(Command{
+		Info: CommandInfo{
+			Name:        "execute-classify-stage-test",
+			Description: "test classify execute-stage errors",
+			Category:    "test",
+		},
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
+			return nil, conductor.ErrPendingQuestion
+		},
+	})
+
+	result, err := ExecuteWithRun(context.Background(), cond, "execute-classify-stage-test", Invocation{})
+	if err != nil {
+		t.Fatalf("ExecuteWithRun returned error: %v", err)
+	}
+	if result == nil || result.Type != ResultWaiting {
+		t.Fatalf("expected waiting result, got %#v", result)
+	}
+}
+
+func TestExecuteWithRunPreservesRouterErrors(t *testing.T) {
+	cond := mustNewConductor(t)
+
+	result, err := ExecuteWithRun(context.Background(), cond, "definitely-unknown-command", Invocation{})
+	if result != nil {
+		t.Fatalf("expected nil result, got %#v", result)
+	}
+	if !errors.Is(err, ErrUnknownCommand) {
+		t.Fatalf("expected ErrUnknownCommand, got %v", err)
+	}
+
+	Register(Command{
+		Info: CommandInfo{
+			Name:         "execute-with-run-no-task-test",
+			Description:  "test no active task pass-through",
+			Category:     "test",
+			RequiresTask: true,
+		},
+		Handler: func(_ context.Context, _ *conductor.Conductor, _ Invocation) (*Result, error) {
+			return NewResult("ok"), nil
+		},
+	})
+
+	result, err = ExecuteWithRun(context.Background(), cond, "execute-with-run-no-task-test", Invocation{})
+	if result != nil {
+		t.Fatalf("expected nil result, got %#v", result)
+	}
+	if !errors.Is(err, ErrNoActiveTask) {
+		t.Fatalf("expected ErrNoActiveTask, got %v", err)
 	}
 }

@@ -17,6 +17,7 @@ type CommandInfo struct {
 	Category     string       `json:"category"`
 	Args         []CommandArg `json:"args,omitempty"`
 	RequiresTask bool         `json:"requires_task"`
+	MutatesState bool         `json:"mutates_state"`
 	Subcommands  []string     `json:"subcommands,omitempty"`
 }
 

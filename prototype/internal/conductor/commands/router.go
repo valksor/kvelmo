@@ -15,9 +15,30 @@ var ErrUnknownCommand = errors.New("unknown command")
 // ErrNoActiveTask is returned when a command requires an active task but none exists.
 var ErrNoActiveTask = errors.New("no active task")
 
+// ErrBadRequest is returned when a command receives invalid input.
+// The HTTP adapter maps this to 400 Bad Request.
+var ErrBadRequest = errors.New("bad request")
+
+// InvocationSource identifies where a command call originated.
+type InvocationSource string
+
+const (
+	SourceCLI         InvocationSource = "cli"
+	SourceREPL        InvocationSource = "repl"
+	SourceAPI         InvocationSource = "api"
+	SourceInteractive InvocationSource = "interactive"
+)
+
+// Invocation is a structured command invocation.
+type Invocation struct {
+	Args    []string       `json:"args,omitempty"`
+	Options map[string]any `json:"options,omitempty"`
+	Source  InvocationSource
+}
+
 // HandlerFunc is the signature for all command handlers.
 // It receives the conductor, parsed arguments, and returns a Result.
-type HandlerFunc func(ctx context.Context, cond *conductor.Conductor, args []string) (*Result, error)
+type HandlerFunc func(ctx context.Context, cond *conductor.Conductor, inv Invocation) (*Result, error)
 
 // Command represents a registered command with its handler and metadata.
 type Command struct {
@@ -41,7 +62,7 @@ func Register(cmd Command) {
 
 // Execute runs a command by name with the given arguments.
 // It handles alias resolution, task requirement checks, and error wrapping.
-func Execute(ctx context.Context, cond *conductor.Conductor, name string, args []string) (*Result, error) {
+func Execute(ctx context.Context, cond *conductor.Conductor, name string, inv Invocation) (*Result, error) {
 	// Resolve alias to canonical name
 	canonical := resolveAlias(name)
 
@@ -52,21 +73,40 @@ func Execute(ctx context.Context, cond *conductor.Conductor, name string, args [
 	}
 
 	// Check if command requires an active task
-	if cmd.Info.RequiresTask && cond.GetActiveTask() == nil {
+	if cmd.Info.RequiresTask && (cond == nil || cond.GetActiveTask() == nil) {
 		return nil, ErrNoActiveTask
 	}
 
 	// Execute the handler
-	result, err := cmd.Handler(ctx, cond, args)
+	result, err := cmd.Handler(ctx, cond, inv)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add current state to result if not already set
-	if result != nil && result.State == "" {
+	if result != nil && result.State == "" && cond != nil {
 		if task := cond.GetActiveTask(); task != nil {
 			result.State = task.State
 			result.TaskID = task.ID
+		}
+	}
+
+	return result, nil
+}
+
+// ExecuteWithRun executes the command and runs its executor when provided.
+func ExecuteWithRun(ctx context.Context, cond *conductor.Conductor, name string, inv Invocation) (*Result, error) {
+	result, err := Execute(ctx, cond, name, inv)
+	if err != nil {
+		if errors.Is(err, ErrUnknownCommand) || errors.Is(err, ErrNoActiveTask) || errors.Is(err, ErrBadRequest) {
+			return nil, err
+		}
+
+		return ClassifyError(result, err), nil
+	}
+	if result != nil && result.Executor != nil {
+		if execErr := result.Executor(ctx); execErr != nil {
+			return ClassifyError(result, execErr), nil
 		}
 	}
 
@@ -109,8 +149,10 @@ func ParseInput(input string) (string, []string) {
 
 // GetCurrentState returns the current workflow state from the conductor.
 func GetCurrentState(cond *conductor.Conductor) string {
-	if task := cond.GetActiveTask(); task != nil {
-		return task.State
+	if cond != nil {
+		if task := cond.GetActiveTask(); task != nil {
+			return task.State
+		}
 	}
 
 	return "idle"
