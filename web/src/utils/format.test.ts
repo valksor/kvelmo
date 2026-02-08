@@ -37,9 +37,7 @@ describe('formatCostSimple', () => {
 
 describe('formatDate', () => {
   it('formats date as dd.mm.yyyy', () => {
-    // Use UTC date to avoid timezone issues in tests
-    const date = new Date(Date.UTC(2026, 1, 8)) // Feb 8, 2026
-    // Note: getDate/getMonth use local timezone, so we test with ISO string
+    // Use ISO string to avoid timezone issues in tests
     expect(formatDate('2026-02-08T12:00:00Z')).toBe('08.02.2026')
   })
 
