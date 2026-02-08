@@ -71,7 +71,7 @@ function parseProgress(messages: TerminalMessage[]): StepProgress {
 
 type MessageCategory = 'success' | 'warning' | 'error' | 'info'
 
-export function categorizeMessage(msg: TerminalMessage): MessageCategory {
+function categorizeMessage(msg: TerminalMessage): MessageCategory {
   if (msg.type === 'error' || PATTERNS.error.test(msg.content)) return 'error'
   if (PATTERNS.warning.test(msg.content)) return 'warning'
   if (PATTERNS.completed.test(msg.content)) return 'success'
