@@ -152,6 +152,7 @@ function StartTaskForm() {
       })
     },
     onSuccess: (data) => {
+      queryClient.removeQueries({ queryKey: ['task', 'active'] })
       queryClient.invalidateQueries({ queryKey: ['task'] })
       queryClient.invalidateQueries({ queryKey: ['status'] })
       if (data?.task_id) {

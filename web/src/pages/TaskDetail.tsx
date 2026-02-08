@@ -1,19 +1,21 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useActiveTask } from '@/api/workflow'
-import { useTaskSpecs, useTaskNotes, useAgentLogsHistory } from '@/api/task'
+import { useTaskSpecs, useTaskNotes, useAgentLogsHistory, useTaskWork } from '@/api/task'
 import { useWorkflowSSE, type AgentMessage } from '@/hooks/useWorkflowSSE'
 import { ActiveWorkCard } from '@/components/task/ActiveWorkCard'
+import { CompletedWorkCard } from '@/components/task/CompletedWorkCard'
 import { WorkflowActions } from '@/components/workflow/WorkflowActions'
 import { QuestionPrompt } from '@/components/workflow/QuestionPrompt'
 import { SpecificationsList } from '@/components/task/SpecificationsList'
 import { ReviewsList } from '@/components/task/ReviewsList'
 import { NotesCard } from '@/components/task/NotesCard'
-import { WorkflowDiagram } from '@/components/task/WorkflowDiagram'
-import { AgentTerminal } from '@/components/task/AgentTerminal'
+import { AgentTerminal, type TerminalMessage } from '@/components/task/AgentTerminal'
 import { QuickQuestion } from '@/components/task/QuickQuestion'
 import { CostsCard } from '@/components/task/CostsCard'
 import { ArrowLeft, Wifi, WifiOff } from 'lucide-react'
+
+let nextMsgId = 0
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
@@ -24,11 +26,17 @@ export default function TaskDetail() {
 function TaskDetailView({ id }: { id?: string }) {
 
   // Agent terminal messages (local state, not persisted)
-  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([])
+  const [agentMessages, setAgentMessages] = useState<TerminalMessage[]>([])
   const [historySuppressed, setHistorySuppressed] = useState(false)
 
   const handleAgentMessage = useCallback((message: AgentMessage) => {
-    setAgentMessages((prev) => [...prev, message])
+    setAgentMessages((prev) => {
+      const enriched: TerminalMessage = { ...message, _id: ++nextMsgId }
+      if (prev.length >= 2000) {
+        return [...prev.slice(-1000), enriched]
+      }
+      return [...prev, enriched]
+    })
   }, [])
 
   const clearAgentMessages = useCallback(() => {
@@ -43,33 +51,35 @@ function TaskDetailView({ id }: { id?: string }) {
   })
 
   // Fetch task data - all queries run in parallel
-  const { data: taskData, isLoading: taskLoading } = useActiveTask()
+  const { data: taskData, isLoading: activeLoading } = useActiveTask()
+  const { data: workData, isLoading: workLoading } = useTaskWork(id)
   const { data: specsData, isLoading: specsLoading } = useTaskSpecs(id)
   const { data: notesData } = useTaskNotes(id)
   const { data: agentLogsHistory } = useAgentLogsHistory(id)
 
-  const historyMessages = useMemo<AgentMessage[]>(() => {
+  const historyMessages = useMemo<TerminalMessage[]>(() => {
     if (historySuppressed || !agentLogsHistory?.logs?.length) {
       return []
     }
 
-    return agentLogsHistory.logs.map((entry) => ({
+    return agentLogsHistory.logs.map((entry, i) => ({
       content: entry.message,
       timestamp: entry.started_at || new Date(entry.index * 1000).toISOString(),
       type: entry.type || 'output',
       taskId: id,
+      _id: -(i + 1),
     }))
   }, [agentLogsHistory, historySuppressed, id])
 
-  const terminalMessages = useMemo(() => {
+  const terminalMessages = useMemo<TerminalMessage[]>(() => {
     if (historyMessages.length === 0) {
       return agentMessages
     }
 
     // Merge history + live stream and deduplicate identical lines.
     const seen = new Set<string>()
-    const merged: AgentMessage[] = []
-    const pushUnique = (message: AgentMessage) => {
+    const merged: TerminalMessage[] = []
+    const pushUnique = (message: TerminalMessage) => {
       const key = `${message.timestamp}:${message.type || 'output'}:${message.content}`
       if (seen.has(key)) {
         return
@@ -84,16 +94,21 @@ function TaskDetailView({ id }: { id?: string }) {
     return merged
   }, [historyMessages, agentMessages])
 
-  // Check if this is the active task
+  // Determine if this is the active task or a completed task
   const isActiveTask = taskData?.task?.id === id
+  const isCompletedTask = !isActiveTask && workData?.work != null
+  const taskLoading = activeLoading || workLoading
+
+  // For active tasks, use active task data; for completed, use work data
   const task = isActiveTask ? taskData?.task : undefined
   const work = isActiveTask ? taskData?.work : undefined
-  const state = task?.state || 'idle'
+  const completedWork = isCompletedTask ? workData?.work : undefined
+  const state = task?.state || completedWork?.metadata?.state || 'done'
   const progressPhase = task?.progress_phase
   const hasTask = isActiveTask && taskData?.active === true
 
-  // Show not found only after loading completes and task doesn't exist
-  if (!taskLoading && !task) {
+  // Show not found only after loading completes and neither active nor completed task exists
+  if (!taskLoading && !task && !completedWork) {
     return (
       <div className="space-y-4">
         <Link to="/" className="btn btn-ghost gap-2">
@@ -127,10 +142,12 @@ function TaskDetailView({ id }: { id?: string }) {
               <span className="text-base-content/60">Connected</span>
             </>
           ) : (
-            <>
-              <WifiOff size={16} aria-hidden="true" className="text-warning" />
-              <span className="text-base-content/60">Reconnecting...</span>
-            </>
+            <div className="tooltip tooltip-left" data-tip="Lost connection to server. Updates will resume automatically.">
+              <div className="flex items-center gap-2">
+                <WifiOff size={16} aria-hidden="true" className="text-warning" />
+                <span className="text-base-content/60">Reconnecting...</span>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -139,7 +156,7 @@ function TaskDetailView({ id }: { id?: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: Task info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* ActiveWorkCard with loading skeleton */}
+          {/* Task card with loading skeleton */}
           {taskLoading ? (
             <div className="card bg-base-100 shadow-sm animate-pulse">
               <div className="card-body">
@@ -150,6 +167,8 @@ function TaskDetailView({ id }: { id?: string }) {
             </div>
           ) : task ? (
             <ActiveWorkCard task={task} work={work} progressPhase={progressPhase} />
+          ) : completedWork ? (
+            <CompletedWorkCard work={completedWork} />
           ) : null}
 
           {/* Quick question input (during active states) */}
@@ -180,7 +199,6 @@ function TaskDetailView({ id }: { id?: string }) {
             progressPhase={progressPhase}
             specs={specsData?.specifications}
           />
-          <WorkflowDiagram currentState={state} progressPhase={progressPhase} />
           <CostsCard taskId={id} />
         </div>
       </div>

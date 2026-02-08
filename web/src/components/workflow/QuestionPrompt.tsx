@@ -34,8 +34,8 @@ export function QuestionPrompt({ question }: QuestionPromptProps) {
             <HelpCircle className="w-6 h-6 text-warning-content" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-warning-content">Agent Needs Input</h3>
-            <p className="text-sm text-base-content/60">Please respond to continue the workflow</p>
+            <h3 className="text-lg font-bold text-warning-content">Action Required</h3>
+            <p className="text-sm text-base-content/60">The AI needs your decision to continue</p>
           </div>
         </div>
 

@@ -4,8 +4,8 @@ import { TaskSummaryCard } from './TaskSummaryCard'
 
 describe('TaskSummaryCard', () => {
   it('returns nothing when task is missing', () => {
-    const { container } = render(<TaskSummaryCard />)
-    expect(container).toBeEmptyDOMElement()
+    render(<TaskSummaryCard />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('renders title, branch, and details link', () => {

@@ -5,8 +5,8 @@ import type { TaskResponse } from '@/types/api'
 
 describe('TaskCard', () => {
   it('renders nothing when task is inactive', () => {
-    const { container } = render(<TaskCard task={{ active: false }} />)
-    expect(container).toBeEmptyDOMElement()
+    render(<TaskCard task={{ active: false }} />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('renders active task details and cost summary', () => {

@@ -39,6 +39,7 @@ interface ActionConfig {
   disabled: (state: WorkflowState, hasTask: boolean, phase: ProgressPhase) => boolean
   dangerous?: boolean
   confirm?: string
+  tooltip?: string
 }
 
 const isActive = (s: WorkflowState) => s.endsWith('ing')
@@ -50,6 +51,7 @@ const primaryActions: ActionConfig[] = [
     icon: <Play size={16} aria-hidden="true" />,
     className: 'btn-info',
     disabled: (state, hasTask) => !hasTask || isActive(state),
+    tooltip: 'AI will analyze your task and create a step-by-step specification',
   },
   {
     action: 'implement',
@@ -57,6 +59,7 @@ const primaryActions: ActionConfig[] = [
     icon: <Code size={16} aria-hidden="true" />,
     className: 'btn-primary',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
+    tooltip: 'AI will write code to complete each specification',
   },
   {
     action: 'review',
@@ -64,6 +67,7 @@ const primaryActions: ActionConfig[] = [
     icon: <CheckCircle size={16} aria-hidden="true" />,
     className: 'btn-secondary',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
+    tooltip: 'AI will check the completed work for issues',
   },
   {
     action: 'finish',
@@ -71,6 +75,7 @@ const primaryActions: ActionConfig[] = [
     icon: <Flag size={16} aria-hidden="true" />,
     className: 'btn-success',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started' || phase === 'planned',
+    tooltip: 'Mark this task as complete and clean up',
   },
 ]
 
@@ -81,6 +86,7 @@ const advancedActions: ActionConfig[] = [
     icon: <RefreshCw size={16} aria-hidden="true" />,
     className: 'btn-outline',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
+    tooltip: 'Update task with latest changes from code',
   },
 ]
 
@@ -91,6 +97,7 @@ const secondaryActions: ActionConfig[] = [
     icon: <Undo2 size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
+    tooltip: 'Revert to previous checkpoint',
   },
   {
     action: 'redo',
@@ -98,6 +105,7 @@ const secondaryActions: ActionConfig[] = [
     icon: <Redo2 size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask, phase) => !hasTask || isActive(state) || phase === 'started',
+    tooltip: 'Restore undone changes',
   },
   {
     action: 'abandon',
@@ -107,6 +115,7 @@ const secondaryActions: ActionConfig[] = [
     disabled: (state, hasTask) => !hasTask || isActive(state),
     dangerous: true,
     confirm: 'Are you sure you want to abandon this task?',
+    tooltip: 'Stop working on this task and discard progress',
   },
   {
     action: 'reset',
@@ -114,6 +123,7 @@ const secondaryActions: ActionConfig[] = [
     icon: <RotateCcw size={16} aria-hidden="true" />,
     className: 'btn-ghost btn-sm',
     disabled: (state, hasTask) => !hasTask || isActive(state) || state === 'idle',
+    tooltip: 'Reset workflow state to idle without losing work',
   },
 ]
 
@@ -241,6 +251,7 @@ export function WorkflowActions({
                       className={`btn ${config.className} justify-start gap-2 flex-1`}
                       disabled={isImplementDisabled}
                       onClick={() => handleAction(config)}
+                      title={config.tooltip}
                     >
                       {config.icon}
                       {config.label}
@@ -318,6 +329,7 @@ export function WorkflowActions({
                 className={`btn ${config.className} justify-start gap-2`}
                 disabled={isPending || config.disabled(state, hasTask, progressPhase)}
                 onClick={() => handleAction(config)}
+                title={config.tooltip}
               >
                 {config.icon}
                 {config.label}
@@ -354,6 +366,7 @@ export function WorkflowActions({
                   className={`btn ${config.className} justify-start gap-2`}
                   disabled={isPending || config.disabled(state, hasTask, progressPhase)}
                   onClick={() => handleAction(config)}
+                  title={config.tooltip}
                 >
                   {config.icon}
                   {config.label}
@@ -368,6 +381,7 @@ export function WorkflowActions({
                   disabled={isPending || config.disabled(state, hasTask, progressPhase)}
                   onClick={() => handleAction(config)}
                   aria-label={config.label}
+                  title={config.tooltip}
                 >
                   {config.icon}
                 </button>

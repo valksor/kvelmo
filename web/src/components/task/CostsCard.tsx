@@ -58,7 +58,12 @@ export function CostsCard({ taskId }: CostsCardProps) {
             </div>
           </div>
           <div className="bg-base-200 rounded-lg p-3">
-            <div className="text-xs text-base-content/60">Total Tokens</div>
+            <div className="text-xs text-base-content/60 flex items-center gap-1">
+              Total Tokens
+              <div className="tooltip tooltip-top" data-tip="Tokens are units of text the AI processes. More tokens = more processing.">
+                <span className="cursor-help text-base-content/40">ⓘ</span>
+              </div>
+            </div>
             <div className="text-lg font-bold">
               {costs.total_tokens.toLocaleString()}
             </div>

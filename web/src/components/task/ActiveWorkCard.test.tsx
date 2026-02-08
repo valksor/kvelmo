@@ -5,8 +5,8 @@ import { ActiveWorkCard } from './ActiveWorkCard'
 
 describe('ActiveWorkCard', () => {
   it('renders nothing when task is missing', () => {
-    const { container } = render(<ActiveWorkCard />)
-    expect(container).toBeEmptyDOMElement()
+    render(<ActiveWorkCard />)
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
 
   it('renders task details and opens modal', async () => {

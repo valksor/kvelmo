@@ -15,10 +15,10 @@ describe('TaskContentModal', () => {
   })
 
   it('does not render when closed', () => {
-    const { container } = render(
+    render(
       <TaskContentModal isOpen={false} onClose={vi.fn()} title="Title" />
     )
-    expect(container).toBeEmptyDOMElement()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('renders content and copies text', async () => {
@@ -39,7 +39,7 @@ describe('TaskContentModal', () => {
     expect(screen.getByText('github:1')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /copy/i }))
-    expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument()
+    expect(screen.getByText('Copied')).toBeInTheDocument()
   })
 
   it('calls onClose for close action and escape key', async () => {

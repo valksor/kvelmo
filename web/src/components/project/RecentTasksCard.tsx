@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { formatDate } from '@/utils/format'
 import { ChevronRight, Loader2, FolderGit2 } from 'lucide-react'
 import type { TaskHistoryItem } from '@/types/api'
 import { getStateConfigWithProgress } from '@/constants/stateConfig'
@@ -66,7 +67,7 @@ function TaskRow({ task }: TaskRowProps) {
             {task.title || task.id}
           </div>
           <div className="flex items-center gap-2 text-xs text-base-content/60 mt-0.5">
-            <span>{new Date(task.created_at).toLocaleDateString()}</span>
+            <span>{formatDate(task.created_at)}</span>
             {task.worktree_path && (
               <span className="flex items-center gap-1">
                 <FolderGit2 size={12} />
