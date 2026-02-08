@@ -142,7 +142,10 @@ func (s *InteractiveSession) Initialize(ctx context.Context) error {
 	// Setup readline
 	historyFile := ""
 	if !interactiveNoHistory {
-		historyFile = filepath.Join(os.Getenv("HOME"), ".mehr_history")
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			historyFile = filepath.Join(home, ".mehr_history")
+		}
+		// If home dir unavailable, historyFile stays empty → history disabled gracefully
 	}
 
 	rl, err := readline.NewEx(&readline.Config{
@@ -284,7 +287,10 @@ func (s *InteractiveSession) handleCommand(ctx context.Context, input string) er
 func (s *InteractiveSession) executeCommand(ctx context.Context, cmd string, args []string, input string) error {
 	// First, check if the command is handled by the unified router
 	if routercommands.IsKnownCommand(cmd) {
-		result, err := routercommands.Execute(ctx, s.cond, cmd, args)
+		result, err := routercommands.Execute(ctx, s.cond, cmd, routercommands.Invocation{
+			Args:   args,
+			Source: routercommands.SourceREPL,
+		})
 		if err != nil {
 			// Check for specific error types
 			if errors.Is(err, routercommands.ErrNoActiveTask) {

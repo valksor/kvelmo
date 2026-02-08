@@ -225,6 +225,27 @@ func (s *InteractiveSession) renderResult(result *routercommands.Result) {
 		s.printf(true, "  %s\n", result.Message)
 		s.printf(true, "\n")
 
+	case routercommands.ResultWaiting:
+		s.printf(true, "\n%s\n", display.WarningMsg("Agent is waiting for your answer"))
+		if waiting, ok := result.Data.(routercommands.WaitingData); ok {
+			s.printf(true, "  %s\n", waiting.Question)
+			for i, opt := range waiting.Options {
+				s.printf(true, "  %d. %s\n", i+1, opt.Label)
+			}
+		} else if result.Message != "" {
+			s.printf(true, "  %s\n", result.Message)
+		}
+		s.printf(true, "\n")
+
+	case routercommands.ResultPaused:
+		s.printf(true, "%s %s\n", display.WarningMsg("Paused:"), result.Message)
+
+	case routercommands.ResultStopped:
+		s.printf(false, "%s %s\n", display.ErrorMsg("Stopped:"), result.Message)
+
+	case routercommands.ResultConflict:
+		s.printf(false, "%s %s\n", display.ErrorMsg("Conflict:"), result.Message)
+
 	case routercommands.ResultExit:
 		// Exit is handled before renderResult is called, but include for exhaustiveness
 		// Nothing to display

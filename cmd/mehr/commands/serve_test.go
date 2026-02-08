@@ -3,8 +3,6 @@
 package commands
 
 import (
-	"bytes"
-	"os"
 	"testing"
 )
 
@@ -98,34 +96,6 @@ func TestServeCommand_Subcommands(t *testing.T) {
 		}
 		if !found {
 			t.Errorf("serve command missing %q subcommand", name)
-		}
-	}
-
-	// Auth subcommand is disabled (remote serve)
-	for _, cmd := range subcommands {
-		if cmd.Name() == "auth" {
-			t.Error("serve command should not have \"auth\" subcommand (remote serve disabled)")
-		}
-	}
-}
-
-func TestServeAuthCommand_Subcommands(t *testing.T) {
-	t.Skip("remote serve temporarily disabled")
-
-	subcommands := serveAuthCmd.Commands()
-
-	expectedNames := []string{"add", "list", "remove", "passwd", "role"}
-	for _, name := range expectedNames {
-		found := false
-		for _, cmd := range subcommands {
-			if cmd.Name() == name {
-				found = true
-
-				break
-			}
-		}
-		if !found {
-			t.Errorf("serve auth command missing %q subcommand", name)
 		}
 	}
 }
@@ -346,49 +316,5 @@ func TestSplitAny(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestRunServe_TunnelInfo(t *testing.T) {
-	t.Skip("remote serve temporarily disabled")
-
-	// Save and restore flag
-	origTunnelInfo := serveTunnelInfo
-	origPort := servePort
-	defer func() {
-		serveTunnelInfo = origTunnelInfo
-		servePort = origPort
-	}()
-
-	serveTunnelInfo = true
-	servePort = 6337
-
-	// Capture stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	os.Stdout = w
-
-	err := runServe(serveCmd, nil)
-
-	_ = w.Close()
-	os.Stdout = oldStdout
-
-	if err != nil {
-		t.Fatalf("runServe() with --tunnel-info returned error: %v", err)
-	}
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	output := buf.String()
-
-	expectedContents := []string{
-		"SSH Tunnel",
-		"localhost:6337",
-	}
-
-	for _, want := range expectedContents {
-		if !containsString(output, want) {
-			t.Errorf("tunnel-info output does not contain %q\nGot:\n%s", want, output)
-		}
 	}
 }

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -61,15 +60,12 @@ func runBrowserScreenshot(cmd *cobra.Command, args []string) error {
 			}
 		}()
 	} else {
-		// Use the first available tab
-		tabs, err := ctrl.ListTabs(ctx)
+		// Use --tab-id flag or fall back to first tab
+		var err error
+		tabID, err = resolveTabID(ctx, ctrl, browserTabID)
 		if err != nil {
-			return fmt.Errorf("list tabs: %w", err)
+			return err
 		}
-		if len(tabs) == 0 {
-			return errors.New("no tabs open")
-		}
-		tabID = tabs[0].ID
 	}
 
 	opts := browser.ScreenshotOptions{
@@ -140,17 +136,13 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
 	if domAll {
-		elems, err := ctrl.QuerySelectorAll(ctx, tabs[0].ID, domSelector)
+		elems, err := ctrl.QuerySelectorAll(ctx, tabID, domSelector)
 		if err != nil {
 			return fmt.Errorf("query selector: %w", err)
 		}
@@ -189,7 +181,7 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 			fmt.Printf("\n... and %d more (use --limit to show more)\n", len(elems)-limit)
 		}
 	} else {
-		elem, err := ctrl.QuerySelector(ctx, tabs[0].ID, domSelector)
+		elem, err := ctrl.QuerySelector(ctx, tabID, domSelector)
 		if err != nil {
 			return fmt.Errorf("query selector: %w", err)
 		}
@@ -210,7 +202,7 @@ func runBrowserDOM(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Visible: %v\n", elem.Visible)
 
 		if domComputed {
-			printKeyComputedStyles(ctx, ctrl, tabs[0].ID, domSelector)
+			printKeyComputedStyles(ctx, ctrl, tabID, domSelector)
 		}
 	}
 
@@ -277,16 +269,12 @@ func runBrowserClick(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	if err := ctrl.Click(ctx, tabs[0].ID, clickSelector); err != nil {
+	if err := ctrl.Click(ctx, tabID, clickSelector); err != nil {
 		return fmt.Errorf("click: %w", err)
 	}
 
@@ -333,16 +321,12 @@ func runBrowserType(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	if err := ctrl.Type(ctx, tabs[0].ID, typeSelector, text, typeClear); err != nil {
+	if err := ctrl.Type(ctx, tabID, typeSelector, text, typeClear); err != nil {
 		return fmt.Errorf("type: %w", err)
 	}
 
@@ -377,16 +361,12 @@ func runBrowserEval(cmd *cobra.Command, args []string) error {
 	}
 	defer cleanup()
 
-	// Use the first available tab
-	tabs, err := ctrl.ListTabs(ctx)
+	tabID, err := resolveTabID(ctx, ctrl, browserTabID)
 	if err != nil {
-		return fmt.Errorf("list tabs: %w", err)
-	}
-	if len(tabs) == 0 {
-		return errors.New("no tabs open")
+		return err
 	}
 
-	result, err := ctrl.Eval(ctx, tabs[0].ID, expression)
+	result, err := ctrl.Eval(ctx, tabID, expression)
 	if err != nil {
 		return fmt.Errorf("eval: %w", err)
 	}

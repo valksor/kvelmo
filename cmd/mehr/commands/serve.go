@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/valksor/go-mehrhof/internal/platform"
 	"github.com/valksor/go-mehrhof/internal/server"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
@@ -25,72 +25,14 @@ import (
 const DefaultPreferredPort = 6337
 
 var (
-	servePort       int
-	serveHost       string
-	serveGlobal     bool
-	serveOpen       bool
-	serveTunnelInfo bool
-	serveAPIOnly    bool
+	servePort    int
+	serveGlobal  bool
+	serveOpen    bool
+	serveAPIOnly bool
 
 	// Register subcommand flags.
 	serveRegisterList bool
 )
-
-// Auth subcommands.
-var serveAuthCmd = &cobra.Command{
-	Use:   "auth",
-	Short: "Manage web UI authentication",
-	Long: `Manage user credentials for web UI authentication.
-
-Authentication is required when exposing the server to the network
-using --host 0.0.0.0 or a specific IP address.
-
-Examples:
-  mehr serve auth add admin mypassword  # Add a user
-  mehr serve auth list                  # List all users
-  mehr serve auth remove admin          # Remove a user
-  mehr serve auth passwd admin newpass  # Change password`,
-}
-
-var serveAuthAddCmd = &cobra.Command{
-	Use:   "add <username> <password>",
-	Short: "Add a user",
-	Args:  cobra.ExactArgs(2),
-	RunE:  runServeAuthAdd,
-}
-
-var authRole string
-
-func init() {
-	serveAuthAddCmd.Flags().StringVar(&authRole, "role", "user", "User role: user or viewer")
-}
-
-var serveAuthListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all users",
-	RunE:  runServeAuthList,
-}
-
-var serveAuthRemoveCmd = &cobra.Command{
-	Use:   "remove <username>",
-	Short: "Remove a user",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runServeAuthRemove,
-}
-
-var serveAuthPasswdCmd = &cobra.Command{
-	Use:   "passwd <username> <newpassword>",
-	Short: "Change a user's password",
-	Args:  cobra.ExactArgs(2),
-	RunE:  runServeAuthPasswd,
-}
-
-var serveAuthRoleCmd = &cobra.Command{
-	Use:   "role <username> <role>",
-	Short: "Change a user's role",
-	Args:  cobra.ExactArgs(2),
-	RunE:  runServeAuthRole,
-}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -141,72 +83,27 @@ Examples:
 	Args: cobra.MaximumNArgs(1),
 }
 
-// DISABLED: remote serve temporarily unavailable
-// Blank references prevent "unused" lint errors for disabled code.
-var (
-	_ = serveAuthListCmd
-	_ = serveAuthRemoveCmd
-	_ = serveAuthPasswdCmd
-	_ = serveAuthRoleCmd
-	_ = runServeAuthList
-	_ = runServeAuthRemove
-	_ = runServeAuthPasswd
-	_ = runServeAuthRole
-)
-
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	// Main serve flags
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Server port (default: 6337, 0 = random)")
-	// DISABLED: remote serve temporarily unavailable
-	// serveCmd.Flags().StringVar(&serveHost, "host", "localhost", "Host to bind to (use 0.0.0.0 for all interfaces)")
 	serveCmd.Flags().BoolVar(&serveGlobal, "global", false, "Global mode (show all projects)")
 	serveCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
-	// DISABLED: remote serve temporarily unavailable
-	// serveCmd.Flags().BoolVar(&serveTunnelInfo, "tunnel-info", false, "Show SSH tunnel instructions")
 	serveCmd.Flags().BoolVar(&serveAPIOnly, "api", false, "API-only mode (no web UI)")
 
 	serveCmd.AddCommand(serveRegisterCmd)
 	serveRegisterCmd.Flags().BoolVarP(&serveRegisterList, "list", "l", false, "List all registered projects")
 	serveCmd.AddCommand(serveUnregisterCmd)
-	// DISABLED: remote serve temporarily unavailable
-	// serveCmd.AddCommand(serveAuthCmd)
-	// serveAuthCmd.AddCommand(serveAuthAddCmd)
-	// serveAuthCmd.AddCommand(serveAuthListCmd)
-	// serveAuthCmd.AddCommand(serveAuthRemoveCmd)
-	// serveAuthCmd.AddCommand(serveAuthPasswdCmd)
-	// serveAuthCmd.AddCommand(serveAuthRoleCmd)
 }
 
 func runServe(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	// Handle --tunnel-info flag: show info and exit without starting server
-	if serveTunnelInfo {
-		port := servePort
-		if port == 0 {
-			port = DefaultPreferredPort
-		}
-		fmt.Printf("SSH Tunnel Instructions:\n")
-		fmt.Printf("  Access remote serve from your local machine (-L flag):\n")
-		fmt.Printf("    ssh -L 8080:localhost:%d user@remote-server\n", port)
-		fmt.Printf("    Then open: http://localhost:8080 on YOUR local machine\n")
-		fmt.Printf("\n  Access local serve from remote server (-R flag):\n")
-		fmt.Printf("    ssh -R 8080:localhost:%d user@remote-server\n", port)
-		fmt.Printf("    Then open: http://localhost:8080 on THE REMOTE server\n")
-
-		return nil
-	}
-
 	// Handle default port with smart fallback
 	if !cmd.Flags().Changed("port") {
 		// Try preferred port 6337, fall back to random if taken
-		host := serveHost
-		if host == "" {
-			host = "localhost"
-		}
-		if portAvailable(host, DefaultPreferredPort) {
+		if portAvailable("localhost", DefaultPreferredPort) {
 			servePort = DefaultPreferredPort
 		} else {
 			fmt.Printf("Port %d in use, using random available port\n", DefaultPreferredPort)
@@ -217,26 +114,8 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	// Create server config
 	cfg := server.Config{
 		Port:    servePort,
-		Host:    serveHost,
+		Host:    "localhost",
 		APIOnly: serveAPIOnly,
-	}
-
-	// Check if auth is required (non-localhost binding)
-	requiresAuth := serveHost != "" && serveHost != "localhost" && serveHost != "127.0.0.1"
-	if requiresAuth {
-		authStore, err := storage.LoadAuthStore()
-		if err != nil {
-			return fmt.Errorf("load auth store: %w", err)
-		}
-
-		if authStore.Count() == 0 {
-			return errors.New("authentication required for network access\n\n" +
-				"Add a user first:\n" +
-				"  mehr serve auth add <username> <password>")
-		}
-
-		cfg.AuthStore = authStore
-		fmt.Println("Authentication enabled for network access")
 	}
 
 	if serveGlobal {
@@ -307,12 +186,6 @@ func runServe(cmd *cobra.Command, _ []string) error {
 
 	url := srv.URL()
 	fmt.Printf("\nServer running at: %s\n", url)
-
-	// Show security notice for network binding
-	if requiresAuth {
-		fmt.Println("\nNetwork access enabled - authentication required")
-	}
-
 	fmt.Println("\nPress Ctrl+C to stop")
 
 	// Open browser if requested (skip in API-only mode)
@@ -331,6 +204,23 @@ func runServe(cmd *cobra.Command, _ []string) error {
 // 1. Browser launch should not be cancelled when the server context is cancelled
 // 2. The browser process is meant to outlive this command.
 func openBrowser(url string) error {
+	// WSL: use Windows-side browser via fallback chain
+	if platform.IsWSL() {
+		// Try wslview first (wslu utility, common on Ubuntu WSL)
+		if path, err := exec.LookPath("wslview"); err == nil {
+			if err := exec.Command(path, url).Start(); err == nil { //nolint:noctx // browser should outlive command
+				return nil
+			}
+			// wslview found but failed, try next fallback
+		}
+		// Fallback: explorer.exe (always available in WSL)
+		if err := exec.Command("explorer.exe", url).Start(); err == nil { //nolint:noctx // browser should outlive command
+			return nil
+		}
+		// Both failed: return helpful error
+		return fmt.Errorf("WSL detected but couldn't open browser. Visit %s manually", url)
+	}
+
 	var cmd string
 	var args []string
 
@@ -421,7 +311,7 @@ func runServeRegister(cmd *cobra.Command, _ []string) error {
 	if remoteURL != "" {
 		fmt.Printf("  Remote: %s\n", remoteURL)
 	}
-	fmt.Printf("\nThis project can now be accessed in remote mode.\n")
+	fmt.Printf("\nThis project can now be accessed in global mode.\n")
 
 	return nil
 }
@@ -562,158 +452,4 @@ func splitAny(s string, sep string) []string {
 	}
 
 	return result
-}
-
-// runServeAuthAdd handles "mehr serve auth add".
-func runServeAuthAdd(_ *cobra.Command, args []string) error {
-	username := args[0]
-	password := args[1]
-
-	authStore, err := storage.LoadAuthStore()
-	if err != nil {
-		return fmt.Errorf("load auth store: %w", err)
-	}
-
-	role := storage.Role(authRole)
-	if role != "" && !storage.ValidRole(string(role)) {
-		return fmt.Errorf("invalid role: %s (must be 'user' or 'viewer')", role)
-	}
-	if role == "" {
-		role = storage.RoleUser
-	}
-
-	if err := authStore.AddUser(username, password, role); err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
-			return fmt.Errorf("user %q already exists", username)
-		}
-
-		return fmt.Errorf("add user: %w", err)
-	}
-
-	if err := authStore.Save(); err != nil {
-		return fmt.Errorf("save auth store: %w", err)
-	}
-
-	fmt.Printf("User %q added successfully (role: %s).\n", username, role)
-
-	return nil
-}
-
-// runServeAuthList handles "mehr serve auth list".
-func runServeAuthList(_ *cobra.Command, _ []string) error {
-	authStore, err := storage.LoadAuthStore()
-	if err != nil {
-		return fmt.Errorf("load auth store: %w", err)
-	}
-
-	users := authStore.ListUsersDetails()
-	if len(users) == 0 {
-		fmt.Println("No users configured.")
-		fmt.Println("\nUse 'mehr serve auth add <username> <password> [--role <role>]' to add a user.")
-
-		return nil
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "USERNAME\tROLE\tCREATED")
-
-	for _, user := range users {
-		role := user.Role
-		if role == "" {
-			role = storage.RoleUser
-		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n",
-			user.Username,
-			role,
-			user.CreatedAt.Format("2006-01-02 15:04"),
-		)
-	}
-
-	_ = w.Flush()
-
-	fmt.Printf("\nTotal: %d user(s)\n", len(users))
-
-	return nil
-}
-
-// runServeAuthRemove handles "mehr serve auth remove".
-func runServeAuthRemove(_ *cobra.Command, args []string) error {
-	username := args[0]
-
-	authStore, err := storage.LoadAuthStore()
-	if err != nil {
-		return fmt.Errorf("load auth store: %w", err)
-	}
-
-	if !authStore.RemoveUser(username) {
-		fmt.Printf("User %q not found.\n", username)
-
-		return nil
-	}
-
-	if err := authStore.Save(); err != nil {
-		return fmt.Errorf("save auth store: %w", err)
-	}
-
-	fmt.Printf("User %q removed.\n", username)
-
-	return nil
-}
-
-// runServeAuthPasswd handles "mehr serve auth passwd".
-func runServeAuthPasswd(_ *cobra.Command, args []string) error {
-	username := args[0]
-	newPassword := args[1]
-
-	authStore, err := storage.LoadAuthStore()
-	if err != nil {
-		return fmt.Errorf("load auth store: %w", err)
-	}
-
-	if err := authStore.UpdatePassword(username, newPassword); err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
-			return fmt.Errorf("user %q not found", username)
-		}
-
-		return fmt.Errorf("update password: %w", err)
-	}
-
-	if err := authStore.Save(); err != nil {
-		return fmt.Errorf("save auth store: %w", err)
-	}
-
-	fmt.Printf("Password updated for user %q.\n", username)
-
-	return nil
-}
-
-// runServeAuthRole handles "mehr serve auth role".
-func runServeAuthRole(_ *cobra.Command, args []string) error {
-	username := args[0]
-	role := storage.Role(args[1])
-
-	if !storage.ValidRole(string(role)) {
-		return fmt.Errorf("invalid role: %s (must be 'user' or 'viewer')", role)
-	}
-
-	authStore, err := storage.LoadAuthStore()
-	if err != nil {
-		return fmt.Errorf("load auth store: %w", err)
-	}
-
-	if err := authStore.SetRole(username, role); err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
-			return fmt.Errorf("user %q not found", username)
-		}
-
-		return fmt.Errorf("set role: %w", err)
-	}
-
-	if err := authStore.Save(); err != nil {
-		return fmt.Errorf("save auth store: %w", err)
-	}
-
-	fmt.Printf("Role updated for user %q to %s.\n", username, role)
-
-	return nil
 }
