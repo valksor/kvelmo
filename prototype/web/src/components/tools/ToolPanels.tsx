@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
+  Cookie,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/api/client'
@@ -44,6 +45,7 @@ import {
   useBrowserWebSocket,
   useBrowserSource,
   useBrowserCoverage,
+  useBrowserCookies,
   type DOMElement,
   type NetworkEntry,
   type ConsoleMessage,
@@ -54,8 +56,8 @@ import {
 // Browser Panel
 // =============================================================================
 
-type DevToolsTab = 'network' | 'console' | 'websocket' | 'source' | 'coverage'
-const DEVTOOLS_TAB_ORDER: DevToolsTab[] = ['network', 'console', 'websocket', 'source', 'coverage']
+type DevToolsTab = 'network' | 'console' | 'websocket' | 'source' | 'coverage' | 'cookies'
+const DEVTOOLS_TAB_ORDER: DevToolsTab[] = ['network', 'console', 'websocket', 'source', 'coverage', 'cookies']
 
 export function BrowserPanel() {
   const [url, setUrl] = useState('')
@@ -109,6 +111,7 @@ export function BrowserPanel() {
   const wsMutation = useBrowserWebSocket()
   const sourceMutation = useBrowserSource()
   const coverageMutation = useBrowserCoverage()
+  const { data: cookiesData, isLoading: cookiesLoading, refetch: refetchCookies } = useBrowserCookies()
 
   const handleGoto = (e: React.FormEvent) => {
     e.preventDefault()
@@ -669,6 +672,19 @@ export function BrowserPanel() {
                     <BarChart3 size={14} aria-hidden="true" />
                     Coverage
                   </button>
+                  <button
+                    role="tab"
+                    id={`${bid}-devtools-tab-cookies`}
+                    aria-selected={devToolsTab === 'cookies'}
+                    aria-controls={`${bid}-devtools-panel-cookies`}
+                    tabIndex={devToolsTab === 'cookies' ? 0 : -1}
+                    className={`tab gap-1 ${devToolsTab === 'cookies' ? 'tab-active' : ''}`}
+                    onClick={() => setDevToolsTab('cookies')}
+                    onKeyDown={(e) => handleDevToolsTabKeyDown(e, 'cookies')}
+                  >
+                    <Cookie size={14} aria-hidden="true" />
+                    Cookies
+                  </button>
                 </div>
 
                 {/* Network tab */}
@@ -1019,6 +1035,102 @@ export function BrowserPanel() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Cookies tab */}
+                {devToolsTab === 'cookies' && (
+                  <div
+                    role="tabpanel"
+                    id={`${bid}-devtools-panel-cookies`}
+                    aria-labelledby={`${bid}-devtools-tab-cookies`}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-base-content/70">
+                        View and manage browser cookies for the current session.
+                      </p>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => refetchCookies()}
+                        disabled={cookiesLoading}
+                        aria-label="Refresh cookies"
+                      >
+                        {cookiesLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <RefreshCw size={14} aria-hidden="true" />
+                        )}
+                      </button>
+                    </div>
+
+                    {cookiesLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-base-content/40" aria-hidden="true" />
+                      </div>
+                    ) : cookiesData?.cookies && cookiesData.cookies.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="table table-xs">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Domain</th>
+                              <th>Path</th>
+                              <th>Secure</th>
+                              <th>HttpOnly</th>
+                              <th>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cookiesData.cookies.map((cookie, i) => (
+                              <tr key={`${cookie.domain}-${cookie.name}-${i}`} className="hover">
+                                <td className="font-mono text-xs font-medium">{cookie.name}</td>
+                                <td className="text-xs">{cookie.domain}</td>
+                                <td className="text-xs">{cookie.path}</td>
+                                <td>
+                                  {cookie.secure ? (
+                                    <span className="badge badge-success badge-xs">Yes</span>
+                                  ) : (
+                                    <span className="badge badge-ghost badge-xs">No</span>
+                                  )}
+                                </td>
+                                <td>
+                                  {cookie.http_only ? (
+                                    <span className="badge badge-info badge-xs">Yes</span>
+                                  ) : (
+                                    <span className="badge badge-ghost badge-xs">No</span>
+                                  )}
+                                </td>
+                                <td className="max-w-xs truncate font-mono text-xs text-base-content/70">
+                                  {cookie.value}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="mt-2 text-xs text-base-content/60">
+                          {cookiesData.count} cookie{cookiesData.count !== 1 ? 's' : ''} total
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-base-content/60">
+                        <Cookie size={32} className="mx-auto mb-2 opacity-40" aria-hidden="true" />
+                        <p>No cookies found</p>
+                        <p className="text-xs mt-1">Navigate to a page to see its cookies</p>
+                      </div>
+                    )}
+
+                    {/* Export/Import section */}
+                    <div className="p-4 rounded-lg bg-base-200/50 space-y-3">
+                      <h4 className="font-medium text-sm">Cookie Profiles</h4>
+                      <p className="text-xs text-base-content/60">
+                        Use the CLI to export and import cookie profiles:
+                      </p>
+                      <div className="mockup-code text-xs">
+                        <pre data-prefix="$"><code>mehr browser cookies export --profile mysite</code></pre>
+                        <pre data-prefix="$"><code>mehr browser cookies import --profile mysite</code></pre>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
