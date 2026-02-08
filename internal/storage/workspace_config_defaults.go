@@ -96,47 +96,12 @@ func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 			MaxSiblings:      5,
 			DescriptionLimit: 500,
 		},
-		Automation: &AutomationSettings{
-			Enabled: false,
-			Providers: map[string]ProviderAutoConfig{
-				"github": {
-					Enabled:       false,
-					CommandPrefix: "@mehrhof",
-					UseWorktrees:  true,
-					TriggerOn: AutomationTriggerConfig{
-						IssueOpened:     true,
-						PROpened:        true,
-						CommentCommands: true,
-					},
-				},
-				"gitlab": {
-					Enabled:       false,
-					CommandPrefix: "@mehrhof",
-					UseWorktrees:  true,
-					TriggerOn: AutomationTriggerConfig{
-						IssueOpened:     true,
-						MROpened:        true,
-						CommentCommands: true,
-					},
-				},
-			},
-			AccessControl: AutomationAccessControlConfig{
-				Mode: "all",
-			},
-			Queue: AutomationQueueConfig{
-				MaxConcurrent: 1,
-				JobTimeout:    "30m",
-			},
-			Labels: AutomationLabelConfig{
-				MehrhofGenerated: "mehrhof-generated",
-				InProgress:       "mehrhof-processing",
-				Failed:           "mehrhof-failed",
-				SkipReview:       "mehrhof-skip-review",
-			},
-		},
 		Stack: &StackSettings{
 			AutoRebase:       "disabled", // Opt-in: "disabled" | "on_finish"
 			BlockOnConflicts: true,       // Safe default: always block on conflicts
+		},
+		Display: &DisplaySettings{
+			Timezone: "UTC",
 		},
 		Env: make(map[string]string),
 	}

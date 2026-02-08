@@ -40,6 +40,9 @@ type WorkMetadata struct {
 	TaskType    string   `yaml:"task_type,omitempty"`    // Task type (e.g., "feature", "fix")
 	Slug        string   `yaml:"slug,omitempty"`         // URL-safe title slug
 	Labels      []string `yaml:"labels,omitempty"`       // Task labels for filtering and grouping
+
+	// Completion info
+	PullRequest *PullRequestInfo `yaml:"pull_request,omitempty" json:"pull_request,omitempty"` // Set when task finishes with PR
 }
 
 // SourceInfo tracks the original source (read-only reference).
@@ -119,75 +122,19 @@ type NotesFile struct {
 
 // LinksSettings holds bidirectional linking configuration.
 type LinksSettings struct {
-	Enabled          bool `yaml:"enabled" json:"enabled"`                                           // Enable link system (default: true)
-	AutoIndex        bool `yaml:"auto_index" json:"auto_index"`                                     // Auto-index on save (default: true when Enabled=true)
-	CaseSensitive    bool `yaml:"case_sensitive,omitempty" json:"case_sensitive,omitempty"`         // Name matching (default: false)
-	MaxContextLength int  `yaml:"max_context_length,omitempty" json:"max_context_length,omitempty"` // Context chars for links (default: 200)
+	Enabled          bool `yaml:"enabled" json:"enabled" schema:"label=Enable Links;desc=Enable bidirectional link system;default=true"`
+	AutoIndex        bool `yaml:"auto_index" json:"auto_index" schema:"label=Auto Index;desc=Auto-index on save;default=true"`
+	CaseSensitive    bool `yaml:"case_sensitive,omitempty" json:"case_sensitive,omitempty" schema:"label=Case Sensitive;desc=Case-sensitive name matching;default=false;advanced"`
+	MaxContextLength int  `yaml:"max_context_length,omitempty" json:"max_context_length,omitempty" schema:"label=Max Context Length;desc=Context chars for links;default=200;min=50;max=1000;advanced"`
 }
 
 // ContextSettings holds hierarchical task context configuration.
 // Controls whether parent and sibling task context is included when working on subtasks.
 type ContextSettings struct {
-	IncludeParent    bool `yaml:"include_parent" json:"include_parent"`                           // Include parent task context (default: true)
-	IncludeSiblings  bool `yaml:"include_siblings" json:"include_siblings"`                       // Include sibling subtask context (default: true)
-	MaxSiblings      int  `yaml:"max_siblings,omitempty" json:"max_siblings,omitempty"`           // Maximum sibling tasks to include (default: 5)
-	DescriptionLimit int  `yaml:"description_limit,omitempty" json:"description_limit,omitempty"` // Truncate descriptions to this length (default: 500)
-}
-
-// AutomationSettings holds webhook automation configuration for GitHub/GitLab.
-type AutomationSettings struct {
-	Enabled       bool                          `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Master enable switch
-	Providers     map[string]ProviderAutoConfig `yaml:"providers,omitempty" json:"providers,omitempty"`           // Per-provider config (github, gitlab)
-	AccessControl AutomationAccessControlConfig `yaml:"access_control,omitempty" json:"access_control,omitempty"` // User/repo filtering
-	Queue         AutomationQueueConfig         `yaml:"queue,omitempty" json:"queue,omitempty"`                   // Job queue settings
-	Labels        AutomationLabelConfig         `yaml:"labels,omitempty" json:"labels,omitempty"`                 // Label configuration
-}
-
-// ProviderAutoConfig holds provider-specific automation settings.
-type ProviderAutoConfig struct {
-	Enabled       bool                    `yaml:"enabled,omitempty" json:"enabled,omitempty"`               // Enable for this provider
-	WebhookSecret string                  `yaml:"webhook_secret,omitempty" json:"webhook_secret,omitempty"` // Webhook signature secret
-	TriggerOn     AutomationTriggerConfig `yaml:"trigger_on,omitempty" json:"trigger_on,omitempty"`         // Which events to trigger
-	CommandPrefix string                  `yaml:"command_prefix,omitempty" json:"command_prefix,omitempty"` // Comment trigger (default: @mehrhof)
-	UseWorktrees  bool                    `yaml:"use_worktrees,omitempty" json:"use_worktrees,omitempty"`   // Isolate with worktrees
-	DryRun        bool                    `yaml:"dry_run,omitempty" json:"dry_run,omitempty"`               // Log actions without executing
-}
-
-// AutomationTriggerConfig defines which events trigger automation.
-type AutomationTriggerConfig struct {
-	IssueOpened     bool     `yaml:"issue_opened,omitempty" json:"issue_opened,omitempty"`         // Auto-fix on issue open
-	IssueLabeled    []string `yaml:"issue_labeled,omitempty" json:"issue_labeled,omitempty"`       // Auto-fix on specific labels
-	PROpened        bool     `yaml:"pr_opened,omitempty" json:"pr_opened,omitempty"`               // Auto-review on PR open (GitHub)
-	PRUpdated       bool     `yaml:"pr_updated,omitempty" json:"pr_updated,omitempty"`             // Re-review on PR update
-	MROpened        bool     `yaml:"mr_opened,omitempty" json:"mr_opened,omitempty"`               // Auto-review on MR open (GitLab)
-	MRUpdated       bool     `yaml:"mr_updated,omitempty" json:"mr_updated,omitempty"`             // Re-review on MR update
-	CommentCommands bool     `yaml:"comment_commands,omitempty" json:"comment_commands,omitempty"` // @mehrhof commands in comments
-}
-
-// AutomationAccessControlConfig defines who can trigger automation.
-type AutomationAccessControlConfig struct {
-	Mode       string   `yaml:"mode,omitempty" json:"mode,omitempty"`               // "allowlist", "blocklist", "all"
-	Allowlist  []string `yaml:"allowlist,omitempty" json:"allowlist,omitempty"`     // Allowed users/orgs
-	Blocklist  []string `yaml:"blocklist,omitempty" json:"blocklist,omitempty"`     // Blocked users/orgs
-	AllowBots  bool     `yaml:"allow_bots,omitempty" json:"allow_bots,omitempty"`   // Allow bot accounts
-	RequireOrg bool     `yaml:"require_org,omitempty" json:"require_org,omitempty"` // Require org membership
-}
-
-// AutomationQueueConfig defines job queue behavior.
-type AutomationQueueConfig struct {
-	MaxConcurrent  int      `yaml:"max_concurrent,omitempty" json:"max_concurrent,omitempty"`   // Max parallel jobs (default: 1)
-	JobTimeout     string   `yaml:"job_timeout,omitempty" json:"job_timeout,omitempty"`         // Per-job timeout (default: 30m)
-	RetryAttempts  int      `yaml:"retry_attempts,omitempty" json:"retry_attempts,omitempty"`   // Max retry on failure (default: 0)
-	RetryDelay     string   `yaml:"retry_delay,omitempty" json:"retry_delay,omitempty"`         // Delay between retries
-	PriorityLabels []string `yaml:"priority_labels,omitempty" json:"priority_labels,omitempty"` // Labels that boost priority
-}
-
-// AutomationLabelConfig defines label management for automation.
-type AutomationLabelConfig struct {
-	MehrhofGenerated string `yaml:"mehr_generated,omitempty" json:"mehr_generated,omitempty"` // Label for mehrhof PRs (default: "mehrhof-generated")
-	InProgress       string `yaml:"in_progress,omitempty" json:"in_progress,omitempty"`       // Label during processing
-	Failed           string `yaml:"failed,omitempty" json:"failed,omitempty"`                 // Label on failure
-	SkipReview       string `yaml:"skip_review,omitempty" json:"skip_review,omitempty"`       // PRs with this skip auto-review
+	IncludeParent    bool `yaml:"include_parent" json:"include_parent" schema:"label=Include Parent;desc=Include parent task context;default=true"`
+	IncludeSiblings  bool `yaml:"include_siblings" json:"include_siblings" schema:"label=Include Siblings;desc=Include sibling subtask context;default=true"`
+	MaxSiblings      int  `yaml:"max_siblings,omitempty" json:"max_siblings,omitempty" schema:"label=Max Siblings;desc=Maximum sibling tasks to include;default=5;min=1;max=20;advanced"`
+	DescriptionLimit int  `yaml:"description_limit,omitempty" json:"description_limit,omitempty" schema:"label=Description Limit;desc=Truncate descriptions to this length;default=500;min=100;max=2000;advanced"`
 }
 
 // Session records an interaction session.
@@ -280,6 +227,14 @@ type HierarchyInfo struct {
 	ParentID    string   `yaml:"parent_id,omitempty"`    // Parent task ID
 	ParentTitle string   `yaml:"parent_title,omitempty"` // Parent task title
 	SiblingIDs  []string `yaml:"sibling_ids,omitempty"`  // Sibling task IDs
+}
+
+// PullRequestInfo stores PR details for completed tasks.
+// Persisted when a task finishes with PR creation (mehr finish).
+type PullRequestInfo struct {
+	Number    int       `yaml:"number" json:"number"`
+	URL       string    `yaml:"url" json:"url"`
+	CreatedAt time.Time `yaml:"created_at" json:"created_at"`
 }
 
 // NewActiveTask creates a new active task.

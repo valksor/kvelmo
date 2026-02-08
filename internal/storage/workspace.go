@@ -141,6 +141,18 @@ func (w *Workspace) DataRoot() string {
 	return w.workspaceRoot
 }
 
+// TasksDir returns the directory for storing task source files.
+// Respects storage.save_in_project setting for consistent storage location.
+// When save_in_project=true: .mehrhof/tasks/
+// When save_in_project=false: ~/.valksor/mehrhof/workspaces/<id>/tasks/.
+func (w *Workspace) TasksDir(cfg *WorkspaceConfig) string {
+	if cfg != nil && cfg.Storage.SaveInProject {
+		return filepath.Join(w.root, taskDirName, "tasks")
+	}
+
+	return filepath.Join(w.workspaceRoot, "tasks")
+}
+
 // ConfigPath returns the path to the config file.
 func (w *Workspace) ConfigPath() string {
 	return filepath.Join(w.taskRoot, configFileName)

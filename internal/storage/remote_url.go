@@ -45,9 +45,7 @@ func SanitizeRemoteURL(remoteURL string) string {
 		return remoteURL
 	}
 
-	if strings.Contains(hostPart, ":") || strings.Contains(hostPart, "/") {
-		return hostPart
-	}
-
-	return remoteURL
+	// Strip credentials - hostPart is valid whether it's a URL path
+	// (contains : or /) or a project ID (uses dashes)
+	return hostPart
 }
