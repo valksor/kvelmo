@@ -58,7 +58,7 @@ export class ServerManager {
     }
 
     return new Promise<number>((resolve, reject) => {
-      this.outputChannel.appendLine(`Starting server with: ${executable} serve --api`);
+      this.outputChannel.appendLine(`Starting server with: ${executable} serve --api --port 0`);
       this.outputChannel.appendLine(`Working directory: ${workspacePath}`);
 
       const env = { ...process.env };
@@ -72,8 +72,8 @@ export class ServerManager {
       env.PATH = [...additionalPaths, env.PATH].join(path.delimiter);
 
       // Using spawn with array arguments - safe from shell injection
-      // Start server in API-only mode (no web UI needed for IDE plugin)
-      this.process = spawn(executable, ['serve', '--api'], {
+      // Start server in API-only mode with random port (avoids conflicts with multiple instances)
+      this.process = spawn(executable, ['serve', '--api', '--port', '0'], {
         cwd: workspacePath,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
