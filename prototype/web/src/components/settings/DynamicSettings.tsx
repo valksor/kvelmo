@@ -94,17 +94,3 @@ export function DynamicSettings({
     />
   )
 }
-
-/**
- * Hook to check if a section has schema support.
- * Use this to conditionally render DynamicSettings vs hardcoded components.
- */
-export function useSectionHasSchema(projectId?: string, sectionId?: string) {
-  const { data } = useSettings(projectId)
-
-  if (!data?.schema || !sectionId) {
-    return false
-  }
-
-  return data.schema.sections.some((s) => s.id === sectionId)
-}
