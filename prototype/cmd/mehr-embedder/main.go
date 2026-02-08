@@ -23,6 +23,15 @@ import (
 
 // Protocol types for the embedder.
 
+// embeddingModel defines the interface for embedding models.
+// This is satisfied by *memory.ONNXEmbedding but allows mocking in tests.
+type embeddingModel interface {
+	Embed(ctx context.Context, text string) ([]float32, error)
+	EmbedBatch(ctx context.Context, texts []string) ([][]float32, error)
+	Dimension() int
+	Close() error
+}
+
 // InitParams contains parameters for the init method.
 type InitParams struct {
 	ModelName string `json:"modelName,omitempty"`
@@ -70,7 +79,7 @@ type request struct {
 
 // Embedder wraps the ONNX embedding model with JSON-RPC handlers.
 type Embedder struct {
-	model *memory.ONNXEmbedding
+	model embeddingModel
 }
 
 // NewEmbedder creates a new embedder instance.
@@ -175,7 +184,7 @@ func run() int {
 	}()
 
 	// Run the JSON-RPC server
-	if err := runServer(ctx, embedder); err != nil {
+	if err := runServer(ctx, embedder, os.Stdin, os.Stdout); err != nil {
 		slog.Error("server error", "error", err)
 
 		return 1
@@ -187,9 +196,9 @@ func run() int {
 }
 
 // runServer runs the JSON-RPC server over stdio.
-func runServer(ctx context.Context, embedder *Embedder) error {
-	reader := bufio.NewReader(os.Stdin)
-	encoder := json.NewEncoder(os.Stdout)
+func runServer(ctx context.Context, embedder *Embedder, r io.Reader, w io.Writer) error {
+	reader := bufio.NewReader(r)
+	encoder := json.NewEncoder(w)
 
 	for {
 		select {
