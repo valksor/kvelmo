@@ -185,24 +185,24 @@ If you prefer terminal workflows:
 
 Both interfaces have access to the same features:
 
-| Feature          | Web UI                       | CLI                       |
-|------------------|------------------------------|---------------------------|
-| Start task       | ✅ Create button              | ✅ `mehr start`            |
-| Plan             | ✅ Plan button                | ✅ `mehr plan`             |
-| Implement        | ✅ Implement button           | ✅ `mehr implement`        |
-| Review           | ✅ Review button              | ✅ `mehr review`           |
-| Finish           | ✅ Finish button              | ✅ `mehr finish`           |
-| Undo/Redo        | ✅ Buttons                    | ✅ `mehr undo/redo`        |
-| View status      | ✅ Active Task card           | ✅ `mehr status`           |
-| Workflow diagram | ✅ Interactive SVG            | ✅ `mehr status --diagram` |
-| Add notes        | ✅ Note button                | ✅ `mehr note`             |
-| Task history     | ✅ History section            | ✅ `mehr list`             |
-| Cost tracking    | ✅ Costs section              | ✅ `mehr cost`             |
-| Settings         | ✅ Settings page              | ✅ Edit config files       |
-| Agents info      | ✅ Settings (Work/Advanced)   | ✅ `mehr agents list`      |
-| Providers info   | ✅ Settings (Work section)    | ✅ `mehr providers list`   |
-| Provider health  | ✅ Settings (Provider Health) | ✅ `mehr providers status` |
-| Provider login   | ✅ Settings form              | ✅ `mehr <provider> login` |
+| Feature          | Web UI                                          | CLI                               |
+|------------------|-------------------------------------------------|-----------------------------------|
+| Start task       | ✅ Create button                                 | ✅ `mehr start`                    |
+| Plan             | ✅ Plan button                                   | ✅ `mehr plan`                     |
+| Implement        | ✅ Implement button                              | ✅ `mehr implement`                |
+| Review           | ✅ Review button                                 | ✅ `mehr review`                   |
+| Finish           | ✅ Finish button                                 | ✅ `mehr finish`                   |
+| Undo/Redo        | ✅ Buttons                                       | ✅ `mehr undo/redo`                |
+| View status      | ✅ Active Task card                              | ✅ `mehr status`                   |
+| Workflow diagram | ✅ Interactive SVG                               | ✅ `mehr status --diagram`         |
+| Add notes        | ✅ Note button                                   | ✅ `mehr note`                     |
+| Task history     | ✅ History section                               | ✅ `mehr list`                     |
+| Cost tracking    | ✅ Costs section                                 | ✅ `mehr cost`                     |
+| Settings         | ✅ Settings page                                 | ✅ Edit config files               |
+| Agents info      | ✅ Settings (Work/Advanced)                      | ✅ `mehr agents list`              |
+| Providers info   | ✅ Settings (Work section)                       | ✅ `mehr providers list`           |
+| Provider health  | ✅ Settings (Provider Health)                    | ✅ `mehr providers status`         |
+| Provider login   | ✅ Settings form                                 | ✅ `mehr <provider> login`         |
 | Accessibility    | ✅ Skip links, ARIA patterns, live announcements | ✅ State prefixes in status output |
 
 **You can switch between interfaces anytime**—they share the same state and data.

@@ -102,10 +102,10 @@ For a dedicated planning workspace, see [Project Planning](/web-ui/project-plann
 
 The activity panel shows AI progress in two views:
 
-| View | Shows | Best For |
-|------|-------|----------|
+| View                  | Shows                                      | Best For                             |
+|-----------------------|--------------------------------------------|--------------------------------------|
 | **Summary** (default) | Progress bar, step counts, recent activity | Most users — highlights what matters |
-| **Details** | Full log output | Debugging, technical users |
+| **Details**           | Full log output                            | Debugging, technical users           |
 
 Toggle between views using the **Summary** and **Details** buttons at the top of the panel.
 
