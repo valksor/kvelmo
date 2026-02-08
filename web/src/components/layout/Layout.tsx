@@ -16,10 +16,12 @@ import {
   Zap,
   ArrowLeft,
   Layers,
+  HelpCircle,
 } from 'lucide-react'
 import { useRef, useEffect, type ComponentType } from 'react'
 import { useStatus } from '@/api/workflow'
 import { useSwitchToGlobal } from '@/api/projects'
+import { useDocsURL } from '@/api/settings'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationCenter } from '@/components/ui/NotificationCenter'
 import { SkipLink } from '@/components/ui/SkipLink'
@@ -103,8 +105,6 @@ const adminDropdown: NavDropdown = {
   icon: Settings,
   items: [
     { to: '/settings', icon: Settings, label: 'Settings' },
-    // DISABLED: automation temporarily unavailable (requires remote serve)
-    // { to: '/automation', icon: Bot, label: 'Automation' },
     { to: '/license', icon: Scale, label: 'License' },
   ],
 }
@@ -151,6 +151,7 @@ const projectNavItems: NavEntry[] = [
 
 export default function Layout() {
   const { data: status, isLoading: statusLoading } = useStatus()
+  const { data: docsData } = useDocsURL()
   // Default to global mode while loading (safer - fewer nav items, no project-specific routes)
   const isGlobalMode = statusLoading || status?.mode === 'global'
   const activeProject = isGlobalMode ? undefined : status?.project
@@ -241,6 +242,18 @@ export default function Layout() {
             })}
           </ul>
           <NotificationCenter />
+          {docsData?.url && (
+            <a
+              href={docsData.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost btn-sm btn-circle"
+              title="Documentation"
+              aria-label="Open documentation"
+            >
+              <HelpCircle size={18} aria-hidden="true" />
+            </a>
+          )}
           <ThemeToggle />
         </div>
       </nav>

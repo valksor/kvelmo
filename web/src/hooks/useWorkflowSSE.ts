@@ -80,7 +80,6 @@ function refreshQueriesForEvent(eventType: SSEEventType) {
     case 'state_changed':
       sharedQueryClient.refetchQueries({ queryKey: ['status'] })
       sharedQueryClient.refetchQueries({ queryKey: ['task'] })
-      sharedQueryClient.refetchQueries({ queryKey: ['workflow', 'diagram'] })
       break
     case 'progress':
     case 'agent_message':
@@ -151,6 +150,11 @@ function handleIncomingEvent(eventType: string, event: MessageEvent) {
     data = JSON.parse(event.data) as ParsedEventData
   } catch {
     return
+  }
+
+  // Handle heartbeat state changes as a safety net (catches missed state_changed events)
+  if (eventType === 'heartbeat' && (data as { state_changed?: boolean }).state_changed) {
+    refreshQueriesForEvent('state_changed')
   }
 
   refreshQueriesForEvent(eventType as SSEEventType)

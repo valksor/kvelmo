@@ -6,6 +6,7 @@ import type {
   CostsResponse,
   SpecificationDiffResponse,
   AgentLogsHistoryResponse,
+  WorkResponse,
 } from '@/types/api'
 
 /**
@@ -50,22 +51,6 @@ export function useAgentLogsHistory(taskId?: string) {
     queryFn: () =>
       apiRequest<AgentLogsHistoryResponse>(`/agent/logs/history?task_id=${encodeURIComponent(taskId || '')}`),
     enabled: !!taskId,
-  })
-}
-
-/**
- * Hook for fetching workflow diagram SVG
- */
-export function useWorkflowDiagram() {
-  return useQuery({
-    queryKey: ['workflow', 'diagram'],
-    queryFn: async () => {
-      const response = await fetch('/api/v1/workflow/diagram')
-      if (!response.ok) {
-        throw new Error('Failed to fetch workflow diagram')
-      }
-      return response.text()
-    },
   })
 }
 
@@ -131,5 +116,17 @@ export function useSpecificationFileDiff(taskId?: string) {
 
       return apiRequest<SpecificationDiffResponse>(`/tasks/${taskId}/specs/${specNumber}/diff?${query}`)
     },
+  })
+}
+
+/**
+ * Hook for fetching work data by task ID.
+ * Works for both active and completed tasks.
+ */
+export function useTaskWork(taskId?: string) {
+  return useQuery({
+    queryKey: ['work', taskId],
+    queryFn: () => apiRequest<WorkResponse>(`/work/${taskId}`),
+    enabled: !!taskId,
   })
 }

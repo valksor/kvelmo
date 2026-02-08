@@ -48,32 +48,6 @@ describe('useWorkflowSSE', () => {
     vi.unstubAllGlobals()
   })
 
-  it('refetches workflow diagram when state changes', async () => {
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    })
-
-    const refetchSpy = vi.spyOn(queryClient, 'refetchQueries')
-    const wrapper = createWrapper(queryClient)
-
-    renderHook(() => useWorkflowSSE(), { wrapper })
-
-    const source = MockEventSource.instances[0]
-    if (!source) {
-      throw new Error('EventSource was not created')
-    }
-
-    act(() => {
-      source.emit('state_changed', { from: 'idle', to: 'planning' })
-    })
-
-    await waitFor(() => {
-      expect(refetchSpy).toHaveBeenCalledWith({ queryKey: ['workflow', 'diagram'] })
-    })
-  })
-
   it('streams progress events as agent messages', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {

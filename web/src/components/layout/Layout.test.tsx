@@ -62,9 +62,9 @@ describe('Layout', () => {
     expect(screen.getByText('Advanced')).toBeInTheDocument()
     expect(screen.getByText('acme/repo')).toBeInTheDocument()
     expect(screen.getByText('https://github.com/acme/repo.git')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /projects/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /back to project list/i })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /projects/i }))
+    await user.click(screen.getByRole('button', { name: /back to project list/i }))
     expect(mutateMock).toHaveBeenCalledTimes(1)
   })
 })

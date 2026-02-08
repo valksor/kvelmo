@@ -232,6 +232,7 @@ export interface WorkflowSettings {
   session_retention_days: number
   delete_work_on_finish: boolean
   delete_work_on_abandon: boolean
+  prefer_local_merge: boolean
   simplify?: SimplifySettings
 }
 
@@ -637,55 +638,8 @@ export interface ContextSettings {
   description_limit?: number
 }
 
-// Automation settings
-export interface AutomationTriggerConfig {
-  issue_opened?: boolean
-  issue_labeled?: string[]
-  pr_opened?: boolean
-  pr_updated?: boolean
-  mr_opened?: boolean
-  mr_updated?: boolean
-  comment_commands?: boolean
-}
-
-export interface ProviderAutoConfig {
-  enabled?: boolean
-  webhook_secret?: string
-  trigger_on?: AutomationTriggerConfig
-  command_prefix?: string
-  use_worktrees?: boolean
-  dry_run?: boolean
-}
-
-export interface AutomationAccessControlConfig {
-  mode?: string
-  allowlist?: string[]
-  blocklist?: string[]
-  allow_bots?: boolean
-  require_org?: boolean
-}
-
-export interface AutomationQueueConfig {
-  max_concurrent?: number
-  job_timeout?: string
-  retry_attempts?: number
-  retry_delay?: string
-  priority_labels?: string[]
-}
-
-export interface AutomationLabelConfig {
-  mehr_generated?: string
-  in_progress?: string
-  failed?: string
-  skip_review?: string
-}
-
-export interface AutomationSettings {
-  enabled?: boolean
-  providers?: Record<string, ProviderAutoConfig>
-  access_control?: AutomationAccessControlConfig
-  queue?: AutomationQueueConfig
-  labels?: AutomationLabelConfig
+export interface DisplaySettings {
+  timezone?: string
 }
 
 // Plugins
@@ -742,9 +696,9 @@ export interface WorkspaceConfig {
   quality?: QualitySettings
   links?: LinksSettings
   context?: ContextSettings
-  automation?: AutomationSettings
   project?: ProjectSettings
   stack?: StackSettings
+  display?: DisplaySettings
 }
 
 // /api/v1/tasks list item (from handleListTasks)
@@ -807,4 +761,50 @@ export interface Review {
   status: string
   summary?: string
   issue_count: number
+}
+
+// PR info for completed tasks
+export interface PullRequestInfo {
+  number: number
+  url: string
+  created_at: string
+}
+
+// /api/v1/work/{id} response
+export interface WorkResponse {
+  active: boolean
+  task?: {
+    id: string
+    state: WorkflowState
+    progress_phase: ProgressPhase
+    ref: string
+    branch: string
+    worktree_path: string
+    started: string
+  }
+  work: {
+    metadata: {
+      id: string
+      title: string
+      state: WorkflowState
+      external_key: string
+      task_type?: string
+      labels?: string[]
+      created_at: string
+      updated_at: string
+      pull_request?: PullRequestInfo
+    }
+    source: {
+      type: string
+      ref: string
+      read_at: string
+    }
+    git: {
+      branch: string
+      base_branch: string
+      worktree_path?: string
+    }
+    costs: CostData
+    description?: string
+  }
 }
