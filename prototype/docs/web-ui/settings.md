@@ -6,10 +6,10 @@ Configure your workspace through the Web UI settings page without editing config
 
 Mehrhof offers two settings views to match your needs:
 
-| Mode | What You See | Best For |
-|------|--------------|----------|
-| **Simple** (default) | Agent selection, Git basics, Budget | Most users — essential settings only |
-| **Advanced** | All settings including providers, memory, security | Power users, custom configurations |
+| Mode                 | What You See                                       | Best For                             |
+|----------------------|----------------------------------------------------|--------------------------------------|
+| **Simple** (default) | Agent selection, Git basics, Budget                | Most users — essential settings only |
+| **Advanced**         | All settings including providers, memory, security | Power users, custom configurations   |
 
 Toggle between modes using the **Simple/Advanced** switch in the top-right corner of the Settings page. Your preference is saved automatically.
 

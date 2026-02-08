@@ -26,9 +26,9 @@ Mehrhof is:
 
 - **A workflow framework** that turns requests into structured, reviewable outputs
 - **A structured process** that breaks creation into clear steps: plan → create → review → finish
-- **Uses your existing CLI**—Claude, Codex, or custom agents; no API keys required to get started
+- **Uses your existing CLI**—Claude, Codex, or custom agents; no API keys are required to get started
 - **Completely free**—BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
-- **Zero config for existing users**—if your agent CLI works, Mehrhof works. API keys optional for advanced setups
+- **Zero config for existing users**—if your agent CLI works, Mehrhof works. API keys are optional for advanced setups
 - **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
 - **Accessibility-aware by default**—keyboard-first navigation, screen reader announcements, skip links, and accessible dialog patterns in the Web UI, plus state prefixes in CLI status output
 
@@ -112,19 +112,25 @@ Click **"Create Task"** in your browser and you're ready to go.
 
 **Web UI Features:**
 
-| Feature                 | Description                                             |
-|-------------------------|---------------------------------------------------------|
-| 📊 **Dashboard**        | See all tasks at a glance with real-time progress       |
-| 🎨 **Workflow Diagram** | Visual state showing current step and available actions |
-| 📝 **Task Creation**    | Write tasks directly in browser or upload files         |
-| 📜 **Live Output**      | Watch progress as it happens                            |
-| 🔙 **Undo/Redo**        | Easy checkpoint navigation                              |
-| 💬 **Notes**            | Add context for the workflow at any point               |
-| 💰 **Budgets**          | Set cost/token limits with warnings                     |
-| 🔍 **History**          | Browse and search past tasks                            |
-| 🌓 **Dark Mode**        | Toggle between light and dark themes                    |
-| 📱 **Mobile Ready**     | Full functionality on phone or tablet                   |
-| ♿ **Accessibility**    | Keyboard-friendly navigation, screen reader support, and accessible dialogs |
+| Feature                      | Description                                   |
+|------------------------------|-----------------------------------------------|
+| 📊 **Dashboard**             | All tasks at a glance with real-time status   |
+| 💬 **Interactive Chat**      | Talk to the AI—ask questions, give guidance   |
+| 📝 **Task Creation**         | Write tasks directly or upload files          |
+| 📜 **Live Output**           | Watch progress as it happens                  |
+| 🔍 **Semantic Search**       | Find past tasks by meaning, not just keywords |
+| 🔗 **Linked References**     | Connect specs, decisions, and tasks           |
+| 📚 **Documentation Library** | Pull in docs for context                      |
+| 🛡️ **Security Scanning**    | Vulnerability checks before shipping          |
+| 📋 **Templates**             | Start from proven patterns                    |
+| 🔙 **Undo/Redo**             | Checkpoint navigation                         |
+| 💬 **Notes**                 | Add context at any point                      |
+| 💰 **Budget Controls**       | Set cost limits with warnings                 |
+| 🏷️ **Labels**               | Organize with custom tags                     |
+| 📜 **History**               | Browse and search past tasks                  |
+| 🌓 **Dark Mode**             | Light and dark themes                         |
+| 📱 **Mobile Ready**          | Full functionality on phone or tablet         |
+| ♿ **Accessibility**          | Keyboard-first, screen reader support         |
 
 ### Getting Started with CLI
 
@@ -150,29 +156,39 @@ mehr finish
 
 ### Workflow Commands
 
-| Command            | Description                                           |
-|--------------------|-------------------------------------------------------|
-| `mehr init`        | Initialize workspace (creates `.mehrhof/config.yaml`) |
-| `mehr start <ref>` | Start task from file, directory, or provider          |
-| `mehr plan`        | Generate structured plan from task description        |
-| `mehr implement`   | Execute the plan to create changes                    |
-| `mehr review`      | Run quality checks on changes                         |
-| `mehr finish`      | Complete task and merge changes                       |
-| `mehr auto <ref>`  | Full workflow: plan → implement → review → finish     |
+| Command            | Description                                       |
+|--------------------|---------------------------------------------------|
+| `mehr init`        | Initialize workspace                              |
+| `mehr start <ref>` | Start task from file, directory, or provider      |
+| `mehr plan`        | Generate structured plan                          |
+| `mehr implement`   | Execute the plan                                  |
+| `mehr review`      | Run code review                                   |
+| `mehr finish`      | Complete task and merge                           |
+| `mehr auto <ref>`  | Full workflow: plan → implement → review → finish |
+| `mehr continue`    | Resume work on task                               |
+| `mehr abandon`     | Discard task without merging                      |
 
 ### Task Management
 
-| Command                   | Description                                   |
-|---------------------------|-----------------------------------------------|
-| `mehr status`             | Show current task state with workflow diagram |
-| `mehr list`               | List all tasks with search, filter, and sort  |
-| `mehr continue`           | Resume work on task                           |
-| `mehr guide`              | Get suggestion for next action                |
-| `mehr note <msg>`         | Add context notes for the workflow            |
-| `mehr question <msg>`     | Ask questions during workflow steps           |
-| `mehr undo` / `mehr redo` | Navigate checkpoints                          |
-| `mehr reset`              | Reset stuck workflow state to idle            |
-| `mehr abandon`            | Abandon task without merging                  |
+| Command              | Description                         |
+|----------------------|-------------------------------------|
+| `mehr status`        | Show current task state             |
+| `mehr list`          | List all tasks with search/filter   |
+| `mehr guide`         | Get suggestion for next action      |
+| `mehr note`          | Add context notes                   |
+| `mehr question`      | Ask agent a question                |
+| `mehr quick`         | Create simple task without planning |
+| `mehr label`         | Manage task labels                  |
+| `mehr specification` | View/manage specifications          |
+| `mehr optimize`      | AI improves task from notes         |
+| `mehr simplify`      | Simplify content                    |
+| `mehr undo`          | Revert to previous checkpoint       |
+| `mehr redo`          | Restore forward checkpoint          |
+| `mehr reset`         | Reset stuck workflow to idle        |
+| `mehr cost`          | View token usage and costs          |
+| `mehr budget`        | Manage token/cost limits            |
+| `mehr export`        | Export task to markdown             |
+| `mehr delete`        | Delete a task                       |
 
 ### Providers
 
@@ -184,21 +200,44 @@ mehr finish
 | `mehr start linear:ENG-123` | Load from Linear       |
 | `mehr start notion:<uuid>`  | Load from Notion       |
 
-Supports 16+ sources: Empty, File, Directory, GitHub, GitLab, Bitbucket, Jira, Linear, Asana, ClickUp, Azure DevOps, Notion, Trello, Wrike, YouTrack, and Research.
+Supports 15 task sources: Empty, File, Directory, GitHub, GitLab, Bitbucket, Jira, Linear, Asana, ClickUp, Azure DevOps, Notion, Trello, Wrike, and YouTrack.
 
-### Advanced
+### Information Commands
 
-| Command               | Description                                            |
-|-----------------------|--------------------------------------------------------|
-| `mehr serve`          | Start Web UI server                                    |
-| `mehr interactive`    | REPL mode with chat and workflow control               |
-| `mehr project plan`   | Create task breakdown with dependencies                |
-| `mehr project submit` | Submit tasks to provider                               |
-| `mehr browser`        | Browser automation commands                            |
-| `mehr mcp`            | Start MCP server for external integration              |
-| `mehr scan`           | Run security scanners (SAST, secrets, vulnerabilities) |
-| `mehr cost`           | View token usage and costs                             |
-| `mehr memory <query>` | Search semantic memory for similar past tasks          |
+| Command         | Description                 |
+|-----------------|-----------------------------|
+| `mehr find`     | AI-powered code search      |
+| `mehr memory`   | Search semantic memory      |
+| `mehr links`    | Bidirectional linking       |
+| `mehr library`  | Documentation library       |
+| `mehr workflow` | Show workflow states        |
+| `mehr scan`     | Run security scanners       |
+| `mehr commit`   | Create commits using AI     |
+
+### Configuration Commands
+
+| Command          | Description              |
+|------------------|--------------------------|
+| `mehr config`    | Configuration management |
+| `mehr agents`    | Manage AI agents         |
+| `mehr providers` | Task source management   |
+| `mehr templates` | Task templates           |
+| `mehr plugins`   | Plugin management        |
+
+### Utility Commands
+
+| Command            | Description                        |
+|--------------------|------------------------------------|
+| `mehr serve`       | Start Web UI server                |
+| `mehr interactive` | REPL mode with chat                |
+| `mehr browser`     | Browser automation (CDP)           |
+| `mehr mcp`         | Start MCP server                   |
+| `mehr project`     | Project planning with dependencies |
+| `mehr stack`       | Manage stacked features            |
+| `mehr submit`      | Submit task to provider            |
+| `mehr sync`        | Sync task from provider            |
+| `mehr update`      | Update to latest version           |
+| `mehr license`     | Display license info               |
 
 **Tip:** Use command shortcuts for faster typing: `mehr gu` → `guide`, `mehr config:v` → `config validate`.
 
@@ -274,13 +313,13 @@ make install
 
 For semantic memory (`embedding_model: onnx`), the `mehr-embedder` sidecar is available on:
 
-| Platform | Architecture |
-|----------|--------------|
-| Linux    | `amd64`, `arm64` |
-| macOS    | `arm64`, `amd64` |
+| Platform | Architecture                                                          |
+|----------|-----------------------------------------------------------------------|
+| Linux    | `amd64`, `arm64`                                                      |
+| macOS    | `arm64`, `amd64`                                                      |
 | Windows  | WSL2 only (use Linux `amd64`/`arm64` build based on WSL architecture) |
 
-Native Windows binaries are not supported. Use WSL2 and install inside the Linux shell with the standard install script.
+Native Windows binaries are not supported. Use WSL2 and install inside the Linux shell with the standard installation script.
 
 ---
 

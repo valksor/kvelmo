@@ -209,8 +209,8 @@ display:
 
 All dates are displayed in **dd.mm.yyyy** format (e.g., 08.02.2026).
 
-| Option     | Type   | Default | Description                                                     |
-|------------|--------|---------|-----------------------------------------------------------------|
+| Option     | Type   | Default | Description                                                         |
+|------------|--------|---------|---------------------------------------------------------------------|
 | `timezone` | string | `UTC`   | IANA timezone for display (e.g., `Europe/Riga`, `America/New_York`) |
 
 > **Note:** When initializing with `mehr init --asc`, timezone defaults to `Europe/Riga`.

@@ -4,15 +4,15 @@ Solutions for common issues when running Mehrhof inside WSL2 on Windows.
 
 ## Quick Fixes
 
-| Problem | Quick Fix |
-|---------|-----------|
+| Problem                          | Quick Fix                                        |
+|----------------------------------|--------------------------------------------------|
 | Browser won't open from `--open` | Copy URL from terminal, paste in Windows browser |
-| Slow git/builds | Move project to `~/projects/`, not `/mnt/c/` |
-| `localhost` doesn't reach WSL | Run `wsl --update` for mirrored networking |
-| Docker not found | Enable Docker Desktop WSL2 integration |
-| Claude CLI not found | Install Claude inside WSL, not Windows |
-| Permission denied on files | Check `umask` or remount with metadata |
-| Too many open files | Increase inotify watches (see below) |
+| Slow git/builds                  | Move project to `~/projects/`, not `/mnt/c/`     |
+| `localhost` doesn't reach WSL    | Run `wsl --update` for mirrored networking       |
+| Docker not found                 | Enable Docker Desktop WSL2 integration           |
+| Claude CLI not found             | Install Claude inside WSL, not Windows           |
+| Permission denied on files       | Check `umask` or remount with metadata           |
+| Too many open files              | Increase inotify watches (see below)             |
 
 ---
 

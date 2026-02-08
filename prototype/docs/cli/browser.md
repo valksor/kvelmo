@@ -607,11 +607,12 @@ mehr browser cookies import --profile work-github --file /tmp/backup-cookies.jso
 If Chrome is not installed, install it:
 
 **Linux:**
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y wget gnupg
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+sudo sh -c 'echo "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
 sudo apt-get update
 sudo apt-get install -y google-chrome-stable
 ```
