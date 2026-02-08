@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
 // ContinueWithExisting reuses an existing work directory for an updated task.
@@ -153,6 +154,9 @@ func (c *Conductor) Resume(ctx context.Context) error {
 }
 
 // Delete abandons the current task without merging.
+// Git checkout and worktree removal happen synchronously (they affect working
+// directory state). Checkpoint deletion, branch deletion, and work directory
+// removal are deferred to a background goroutine so the caller returns quickly.
 func (c *Conductor) Delete(ctx context.Context, opts DeleteOptions) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -163,23 +167,20 @@ func (c *Conductor) Delete(ctx context.Context, opts DeleteOptions) error {
 
 	taskID := c.activeTask.ID
 
-	// Handle git operations if applicable
-	if c.git != nil && c.activeTask.UseGit && c.activeTask.Branch != "" && !opts.KeepBranch {
+	// Capture state for background cleanup before clearing.
+	useGit := c.git != nil && c.activeTask.UseGit && c.activeTask.Branch != "" && !opts.KeepBranch
+	taskBranch := c.activeTask.Branch
+
+	// Synchronous git operations that affect working directory state.
+	if useGit {
 		currentBranch, _ := c.git.CurrentBranch(ctx)
-		taskBranch := c.activeTask.Branch
 		worktreePath := c.activeTask.WorktreePath
 
-		// NOTE: Cleanup errors below are logged but not returned intentionally.
-		// Delete operation should succeed even if cleanup partially fails.
-		// This is best-effort cleanup that should not block task deletion.
-
-		// If using worktree, remove it first
 		if worktreePath != "" {
 			if err := c.git.RemoveWorktree(ctx, worktreePath, true); err != nil {
 				c.logError(fmt.Errorf("remove worktree: %w", err))
 			}
 		} else if currentBranch == taskBranch {
-			// If we're on the task branch (not worktree), switch to base branch first
 			var baseBranch string
 			if c.taskWork != nil && c.taskWork.Git.BaseBranch != "" {
 				baseBranch = c.taskWork.Git.BaseBranch
@@ -195,41 +196,56 @@ func (c *Conductor) Delete(ctx context.Context, opts DeleteOptions) error {
 				return fmt.Errorf("checkout base branch: %w", err)
 			}
 		}
-
-		// Checkpoint deletion is best-effort; ignore errors
-		_ = c.git.DeleteAllCheckpoints(ctx, taskID)
-
-		// Delete the branch
-		if err := c.git.DeleteBranch(ctx, taskBranch, true); err != nil {
-			c.logError(fmt.Errorf("delete branch: %w", err))
-		}
 	}
 
-	// Delete work directory based on: CLI flag > config > default (delete)
+	// Determine if work directory should be deleted: CLI flag > config > default.
 	var shouldDelete bool
 	if opts.DeleteWork != nil {
-		shouldDelete = *opts.DeleteWork // CLI explicitly set
+		shouldDelete = *opts.DeleteWork
 	} else {
-		cfg, _ := c.workspace.LoadConfig()              // ignore error, use defaults
-		shouldDelete = cfg.Workflow.DeleteWorkOnAbandon // default: true
-	}
-	if shouldDelete {
-		if err := c.workspace.DeleteWork(taskID); err != nil {
-			c.logError(fmt.Errorf("delete work directory: %w", err))
-		}
+		cfg, _ := c.workspace.LoadConfig()
+		shouldDelete = cfg.Workflow.DeleteWorkOnAbandon
 	}
 
-	// Clear active task
+	// Clear active task immediately so the UI and subsequent operations see idle state.
 	if err := c.workspace.ClearActiveTask(); err != nil {
 		c.logError(fmt.Errorf("clear active task: %w", err))
 	}
 
 	c.activeTask = nil
 	c.taskWork = nil
+	c.machine.Reset()
 
 	c.publishProgress("Task deleted", 100)
 
+	// Defer expensive cleanup (checkpoint deletion, branch deletion, directory
+	// removal) to a background goroutine so the HTTP response returns quickly.
+	git := c.git
+	workspace := c.workspace
+	bgCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	go func() {
+		defer cancel()
+		cleanupAfterDelete(bgCtx, git, workspace, taskID, taskBranch, useGit, shouldDelete)
+	}()
+
 	return nil
+}
+
+// cleanupAfterDelete performs best-effort cleanup of git refs and work
+// directories in the background after a task has been deleted.
+func cleanupAfterDelete(ctx context.Context, git *vcs.Git, workspace *storage.Workspace, taskID, taskBranch string, useGit, deleteWork bool) {
+	if useGit && git != nil {
+		_ = git.DeleteAllCheckpoints(ctx, taskID)
+		if err := git.DeleteBranch(ctx, taskBranch, true); err != nil {
+			slog.Warn("background cleanup: delete branch", "branch", taskBranch, "error", err)
+		}
+	}
+
+	if deleteWork && workspace != nil {
+		if err := workspace.DeleteWork(taskID); err != nil {
+			slog.Warn("background cleanup: delete work dir", "task", taskID, "error", err)
+		}
+	}
 }
 
 // Status returns the current task status.
@@ -276,6 +292,12 @@ func (c *Conductor) Status(ctx context.Context) (*TaskStatus, error) {
 // ListExistingWorkDirs returns all task IDs with existing work directories.
 func (c *Conductor) ListExistingWorkDirs() ([]string, error) {
 	return c.workspace.ListWorks()
+}
+
+// LoadWorkByID loads work data for a specific task ID from the work directory.
+// This works for both active and completed tasks as long as the work directory exists.
+func (c *Conductor) LoadWorkByID(taskID string) (*storage.TaskWork, error) {
+	return c.workspace.LoadWork(taskID)
 }
 
 // ArchiveWorkDir archives a specific work directory.

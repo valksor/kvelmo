@@ -175,6 +175,18 @@ func (c *Conductor) CodeDir() string {
 	return c.opts.WorkDir
 }
 
+// TasksDir returns the directory for storing task source files.
+// Respects storage.save_in_project config for consistent storage location.
+func (c *Conductor) TasksDir() string {
+	if c.workspace == nil {
+		return ""
+	}
+
+	cfg, _ := c.workspace.LoadConfig()
+
+	return c.workspace.TasksDir(cfg)
+}
+
 // GetActiveTask returns the current active task.
 // Returns a copy to avoid data races; the caller cannot modify the internal state.
 // Note: ActiveTask only contains value types (strings, bool, time.Time),

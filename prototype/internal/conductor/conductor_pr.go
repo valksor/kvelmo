@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/valksor/go-mehrhof/internal/events"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-mehrhof/internal/provider/token"
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
@@ -35,16 +37,24 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 		return nil, fmt.Errorf("push branch: %w", err)
 	}
 
-	// Resolve the provider from the original reference
-	p, err := c.resolveTaskProvider(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("resolve provider: %w", err)
+	// Resolve task source provider
+	taskProvider, resolveErr := c.resolveTaskProvider(ctx)
+
+	// Check if task source supports PRs
+	var prCreator provider.PRCreator
+	if resolveErr == nil {
+		prCreator, _ = taskProvider.(provider.PRCreator)
 	}
 
-	// Check if provider supports PR creation
-	prCreator, ok := p.(provider.PRCreator)
-	if !ok {
-		return nil, errors.New("provider does not support PR creation")
+	// Fallback to git remote provider if task source doesn't support PRs
+	usedRemoteFallback := false
+	if prCreator == nil {
+		remotePR, err := c.resolveRemotePRProvider(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("cannot create PR: %w", err)
+		}
+		prCreator = remotePR
+		usedRemoteFallback = true
 	}
 
 	// Load specifications for PR body
@@ -88,6 +98,19 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 		return nil, fmt.Errorf("create pull request: %w", err)
 	}
 
+	// Persist PR info to work metadata for later retrieval
+	if c.taskWork != nil {
+		c.taskWork.Metadata.PullRequest = &storage.PullRequestInfo{
+			Number:    pr.Number,
+			URL:       pr.URL,
+			CreatedAt: time.Now(),
+		}
+		if saveErr := c.workspace.SaveWork(c.taskWork); saveErr != nil {
+			c.logError(fmt.Errorf("save PR info to work: %w", saveErr))
+			// Non-fatal: PR was created, just metadata save failed
+		}
+	}
+
 	// Publish PRCreatedEvent
 	c.eventBus.Publish(events.PRCreatedEvent{
 		TaskID:   taskID,
@@ -95,20 +118,95 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 		PRURL:    pr.URL,
 	})
 
-	// Post comment to issue if configured (GitHub-specific)
-	if commenter, ok := p.(provider.Commenter); ok {
-		issueID := c.taskWork.Metadata.ExternalKey
-		if issueID != "" {
-			comment := fmt.Sprintf("Pull request created: #%d\n%s\n\nThe PR includes all changes from branch `%s`.",
-				pr.Number, pr.URL, sourceBranch)
-			if _, err := commenter.AddComment(ctx, issueID, comment); err != nil {
-				c.logError(fmt.Errorf("add PR comment to issue: %w", err))
-				// Don't fail the PR creation
+	// Post comment to issue ONLY if task source provider supports commenting
+	// (remote fallback provider doesn't have issue context)
+	if !usedRemoteFallback && resolveErr == nil {
+		if commenter, ok := taskProvider.(provider.Commenter); ok {
+			issueID := c.taskWork.Metadata.ExternalKey
+			if issueID != "" {
+				comment := fmt.Sprintf("Pull request created: #%d\n%s\n\nThe PR includes all changes from branch `%s`.",
+					pr.Number, pr.URL, sourceBranch)
+				if _, err := commenter.AddComment(ctx, issueID, comment); err != nil {
+					c.logError(fmt.Errorf("add PR comment to issue: %w", err))
+					// Don't fail the PR creation
+				}
 			}
 		}
 	}
 
 	return pr, nil
+}
+
+// resolveRemotePRProvider resolves a PR-capable provider from the git remote URL.
+// This is used as a fallback when the task source provider doesn't support PRs.
+func (c *Conductor) resolveRemotePRProvider(ctx context.Context) (provider.PRCreator, error) {
+	if c.git == nil {
+		return nil, errors.New("no git available")
+	}
+
+	// Get the default remote
+	remote, err := c.git.GetDefaultRemote(ctx)
+	if err != nil {
+		return nil, errors.New("no git remote configured")
+	}
+
+	// Get the remote URL
+	remoteURL, err := c.git.RemoteURL(ctx, remote)
+	if err != nil {
+		return nil, fmt.Errorf("get remote URL: %w", err)
+	}
+
+	// Detect provider from URL
+	providerName := provider.DetectProviderFromURL(remoteURL)
+	if providerName == "" {
+		return nil, fmt.Errorf("unsupported git remote: %s (only GitHub/GitLab supported)", remoteURL)
+	}
+
+	// Parse owner/repo from URL
+	owner, repo, err := provider.ParseOwnerRepoFromURL(remoteURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse remote URL: %w", err)
+	}
+
+	c.logVerbosef("Task source provider doesn't support PRs, using git remote: %s (%s/%s)", providerName, owner, repo)
+
+	// Build provider config from workspace settings
+	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
+	cfg := buildProviderConfig(workspaceCfg, providerName)
+
+	// Override owner/repo with URL-extracted values (remote URL is source of truth)
+	if providerName == "gitlab" {
+		// GitLab uses project_path for nested groups
+		cfg.Set("project_path", owner+"/"+repo)
+	} else {
+		cfg.Set("owner", owner)
+		cfg.Set("repo", repo)
+	}
+
+	// Create provider instance
+	p, err := c.providers.Create(ctx, providerName, cfg)
+	if err != nil {
+		if errors.Is(err, token.ErrNoToken) {
+			switch providerName {
+			case "github":
+				return nil, errors.New("GitHub token required: run 'gh auth login' or set github.token in config.yaml")
+			case "gitlab":
+				return nil, errors.New("GitLab token required: set gitlab.token in config.yaml")
+			default:
+				return nil, fmt.Errorf("%s token required: check config.yaml", providerName)
+			}
+		}
+
+		return nil, fmt.Errorf("create %s provider: %w", providerName, err)
+	}
+
+	// Type-assert to PRCreator
+	prCreator, ok := p.(provider.PRCreator)
+	if !ok {
+		return nil, fmt.Errorf("%s provider does not support pull requests", providerName)
+	}
+
+	return prCreator, nil
 }
 
 // resolveTaskProvider resolves the provider from the task's original reference.
