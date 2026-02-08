@@ -179,15 +179,3 @@ function DynamicField({
     />
   )
 }
-
-/**
- * Utility hook for working with DynamicForm.
- * Returns helpers for managing form state.
- */
-export function useDynamicFormState(initialValues: Record<string, unknown>) {
-  // This is a placeholder for potential state management helpers
-  // The actual state is managed by the parent component via onChange
-  return {
-    initialValues,
-  }
-}
