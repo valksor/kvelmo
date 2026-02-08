@@ -320,21 +320,26 @@ func (g *Git) DeleteCheckpoint(ctx context.Context, taskID string, number int) e
 	return nil
 }
 
-// DeleteAllCheckpoints removes all checkpoints for a task.
+// DeleteAllCheckpoints removes all checkpoints for a task using a batched
+// git update-ref --stdin call instead of spawning N individual processes.
 func (g *Git) DeleteAllCheckpoints(ctx context.Context, taskID string) error {
 	checkpoints, err := g.ListCheckpoints(ctx, taskID)
 	if err != nil {
 		return err
 	}
 
-	for _, cp := range checkpoints {
-		if err := g.DeleteCheckpoint(ctx, taskID, cp.Number); err != nil {
-			// Continue on error, best effort
-			continue
-		}
+	if len(checkpoints) == 0 {
+		return nil
 	}
 
-	return nil
+	var input strings.Builder
+	for _, cp := range checkpoints {
+		fmt.Fprintf(&input, "delete %s/%s/%d\n", CheckpointPrefix, taskID, cp.Number)
+	}
+
+	_, err = g.runStdin(ctx, input.String(), "update-ref", "--stdin")
+
+	return err
 }
 
 // ChangeSummary holds statistics about changes.

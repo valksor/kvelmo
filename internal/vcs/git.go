@@ -334,6 +334,28 @@ func (g *Git) run(ctx context.Context, args ...string) (string, error) {
 	return runGitCommandContext(ctx, g.repoRoot, args...)
 }
 
+// runStdin executes a git command with input piped to stdin.
+func (g *Git) runStdin(ctx context.Context, input string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = g.repoRoot
+	cmd.Stdin = strings.NewReader(input)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		errMsg := stderr.String()
+		if errMsg == "" {
+			errMsg = err.Error()
+		}
+
+		return "", fmt.Errorf("%s", strings.TrimSpace(errMsg))
+	}
+
+	return stdout.String(), nil
+}
+
 // runGitCommandContext executes a git command with context.
 func runGitCommandContext(ctx context.Context, dir string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)

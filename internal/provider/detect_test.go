@@ -100,3 +100,163 @@ func TestDetectProviderFromURLSubdomain(t *testing.T) {
 		})
 	}
 }
+
+// TestParseOwnerRepoFromURL tests owner/repo extraction from git URLs.
+func TestParseOwnerRepoFromURL(t *testing.T) {
+	tests := []struct {
+		name          string
+		url           string
+		expectedOwner string
+		expectedRepo  string
+		expectError   bool
+	}{
+		// HTTPS format
+		{
+			name:          "github https",
+			url:           "https://github.com/owner/repo.git",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "github https no .git",
+			url:           "https://github.com/owner/repo",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "github https with port",
+			url:           "https://github.com:443/owner/repo.git",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "gitlab https",
+			url:           "https://gitlab.com/group/project.git",
+			expectedOwner: "group",
+			expectedRepo:  "project",
+		},
+		{
+			name:          "gitlab https subgroup",
+			url:           "https://gitlab.com/group/subgroup/project.git",
+			expectedOwner: "group/subgroup",
+			expectedRepo:  "project",
+		},
+		{
+			name:          "gitlab https nested subgroups",
+			url:           "https://gitlab.com/org/team/subsystem/project.git",
+			expectedOwner: "org/team/subsystem",
+			expectedRepo:  "project",
+		},
+
+		// SSH format
+		{
+			name:          "github ssh",
+			url:           "git@github.com:owner/repo.git",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "github ssh no .git",
+			url:           "git@github.com:owner/repo",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "gitlab ssh",
+			url:           "git@gitlab.com:group/project.git",
+			expectedOwner: "group",
+			expectedRepo:  "project",
+		},
+		{
+			name:          "gitlab ssh subgroup",
+			url:           "git@gitlab.com:group/subgroup/project.git",
+			expectedOwner: "group/subgroup",
+			expectedRepo:  "project",
+		},
+
+		// Edge cases
+		{
+			name:          "bitbucket https",
+			url:           "https://bitbucket.org/workspace/repo.git",
+			expectedOwner: "workspace",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "trailing slash stripped",
+			url:           "https://github.com/owner/repo/",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+		{
+			name:          "whitespace trimmed",
+			url:           "  https://github.com/owner/repo.git  ",
+			expectedOwner: "owner",
+			expectedRepo:  "repo",
+		},
+
+		// Error cases
+		{
+			name:        "empty url",
+			url:         "",
+			expectError: true,
+		},
+		{
+			name:        "whitespace only",
+			url:         "   ",
+			expectError: true,
+		},
+		{
+			name:        "no path",
+			url:         "https://github.com",
+			expectError: true,
+		},
+		{
+			name:        "only owner",
+			url:         "https://github.com/owner",
+			expectError: true,
+		},
+		{
+			name:        "ssh no colon",
+			url:         "git@github.com/owner/repo.git",
+			expectError: true,
+		},
+		{
+			name:        "ssh empty path",
+			url:         "git@github.com:",
+			expectError: true,
+		},
+		{
+			name:        "malformed ssh",
+			url:         "git@github.com:.git",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			owner, repo, err := ParseOwnerRepoFromURL(tt.url)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("ParseOwnerRepoFromURL(%q) expected error, got owner=%q repo=%q", tt.url, owner, repo)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("ParseOwnerRepoFromURL(%q) unexpected error: %v", tt.url, err)
+
+				return
+			}
+
+			if owner != tt.expectedOwner {
+				t.Errorf("ParseOwnerRepoFromURL(%q) owner = %q, want %q", tt.url, owner, tt.expectedOwner)
+			}
+
+			if repo != tt.expectedRepo {
+				t.Errorf("ParseOwnerRepoFromURL(%q) repo = %q, want %q", tt.url, repo, tt.expectedRepo)
+			}
+		})
+	}
+}

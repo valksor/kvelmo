@@ -28,11 +28,21 @@ var (
 	SeparatorDash = strings.Repeat("-", 60)
 )
 
-// TimestampFormat is the standard timestamp format for CLI output.
-const TimestampFormat = "2006-01-02 15:04:05"
+// Date and time format constants for consistent display across the application.
+// All user-facing dates use dd.mm.yyyy format.
+const (
+	// DateFormat is the standard date format (dd.mm.yyyy).
+	DateFormat = "02.01.2006"
 
-// ShortTimestampFormat is a shorter timestamp format.
-const ShortTimestampFormat = "15:04:05"
+	// DateTimeFormat is the standard datetime format (dd.mm.yyyy hh:mm).
+	DateTimeFormat = "02.01.2006 15:04"
+
+	// TimestampFormat is the full timestamp format (dd.mm.yyyy hh:mm:ss).
+	TimestampFormat = "02.01.2006 15:04:05"
+
+	// ShortTimestampFormat is time only (hh:mm:ss).
+	ShortTimestampFormat = "15:04:05"
+)
 
 // Formatter provides consistent output formatting.
 type Formatter struct {
@@ -181,6 +191,27 @@ func (f *Formatter) ShortTimestamp(t time.Time) string {
 	return t.Format(ShortTimestampFormat)
 }
 
+// Date formats a time.Time using the date-only format (dd.mm.yyyy).
+func (f *Formatter) Date(t time.Time) string {
+	return t.Format(DateFormat)
+}
+
+// DateTime formats a time.Time using the datetime format (dd.mm.yyyy hh:mm).
+func (f *Formatter) DateTime(t time.Time) string {
+	return t.Format(DateTimeFormat)
+}
+
+// FormatInTimezone formats a time in the specified IANA timezone.
+// Falls back to UTC if the timezone is invalid.
+func FormatInTimezone(t time.Time, format, tz string) string {
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.UTC
+	}
+
+	return t.In(loc).Format(format)
+}
+
 // RelativeTimestamp formats a time.Time as a relative duration.
 func (f *Formatter) RelativeTimestamp(t time.Time) string {
 	duration := time.Since(t)
@@ -210,7 +241,7 @@ func (f *Formatter) RelativeTimestamp(t time.Time) string {
 
 		return fmt.Sprintf("%d days ago", days)
 	default:
-		return t.Format("2006-01-02")
+		return t.Format(DateFormat)
 	}
 }
 
