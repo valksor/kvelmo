@@ -51,7 +51,7 @@ class MehrhofServerManager(
 
     /**
      * Start the Mehrhof server for the given project.
-     * Spawns `mehr serve --api` and captures the port from output.
+     * Spawns `mehr serve --api --port 0` to use a random available port.
      */
     fun startServer(
         project: Project,
@@ -80,7 +80,7 @@ class MehrhofServerManager(
 
         try {
             val processBuilder =
-                ProcessBuilder(mehrBinary, "serve", "--api")
+                ProcessBuilder(mehrBinary, "serve", "--api", "--port", "0")
                     .directory(File(projectPath))
                     .redirectErrorStream(true)
 
