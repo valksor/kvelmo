@@ -8,7 +8,6 @@ import (
 	routercommands "github.com/valksor/go-mehrhof/internal/conductor/commands"
 	mehrhofdisplay "github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/events"
-	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/display"
 	"github.com/valksor/go-toolkit/eventbus"
@@ -35,46 +34,6 @@ func (s *InteractiveSession) handleAgentEvent(event agent.Event) error {
 		Type: events.TypeAgentMessage,
 		Data: map[string]any{"event": event},
 	})
-
-	return nil
-}
-
-// handleAgentQuestion handles when the agent asks a question.
-func (s *InteractiveSession) handleAgentQuestion(q *agent.Question) error {
-	s.state = workflow.StateWaiting
-
-	// Save the pending question
-	task := s.cond.GetActiveTask()
-	if task != nil {
-		pendingQuestion := &storage.PendingQuestion{
-			Question: q.Text,
-		}
-		for _, opt := range q.Options {
-			pendingQuestion.Options = append(pendingQuestion.Options, storage.QuestionOption{
-				Label:       opt.Label,
-				Description: opt.Description,
-			})
-		}
-		_ = s.cond.GetWorkspace().SavePendingQuestion(task.ID, pendingQuestion)
-	}
-
-	fmt.Println()
-	s.printf(true, "\n%s\n", display.WarningMsg("Agent has a question:"))
-	s.printf(true, "  %s\n\n", display.Bold(q.Text))
-
-	if len(q.Options) > 0 {
-		s.printf(true, "%s\n", display.Muted("Options:"))
-		for i, opt := range q.Options {
-			s.printf(true, "  %s %s", display.Info(fmt.Sprintf("%d.", i+1)), opt.Label)
-			if opt.Description != "" {
-				s.printf(true, " %s", display.Muted("- "+opt.Description))
-			}
-			fmt.Println()
-		}
-		fmt.Println()
-	}
-
-	s.printf(true, "%s\n", display.Muted("Answer with: answer <response> or answer <number>"))
 
 	return nil
 }

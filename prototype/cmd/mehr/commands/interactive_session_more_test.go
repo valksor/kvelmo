@@ -42,10 +42,8 @@ func TestInteractiveSessionUtilityMethods(t *testing.T) {
 		t.Fatalf("expected non-nil completer")
 	}
 
-	chatPrompt := s.buildChatPrompt("hello")
-	if !strings.Contains(chatPrompt, "You are an AI assistant") || !strings.Contains(chatPrompt, "User message: hello") {
-		t.Fatalf("unexpected chat prompt: %q", chatPrompt)
-	}
+	// Chat prompt building is now handled by the unified router in internal/conductor/commands/
+	// and tested there. See handlers_validation_test.go for chat handler tests.
 
 	called := false
 	s.cancelFunc = func() { called = true }
@@ -59,30 +57,13 @@ func TestInteractiveSessionValidationPaths(t *testing.T) {
 	s := newInteractiveSession(mustNewConductorForInteractive(t))
 	ctx := context.Background()
 
-	if err := s.handleChat(ctx, ""); err == nil || !strings.Contains(err.Error(), "message cannot be empty") {
+	// Chat validation is tested via router - test that empty chat routes correctly
+	if err := s.executeCommand(ctx, "chat", nil, "chat"); err == nil || !strings.Contains(err.Error(), "message cannot be empty") {
 		t.Fatalf("expected empty-message error, got %v", err)
 	}
-	if err := s.handleFind(ctx, nil); err == nil || !strings.Contains(err.Error(), "usage: find") {
-		t.Fatalf("expected usage error, got %v", err)
-	}
-	if err := s.handleSimplify(ctx, nil); err == nil || !strings.Contains(err.Error(), "no active task") {
-		t.Fatalf("expected no active task error, got %v", err)
-	}
-	if err := s.handleLabelAdd(ctx, "", []string{"bug"}); err == nil || !strings.Contains(err.Error(), "no active task") {
-		t.Fatalf("expected no active task error, got %v", err)
-	}
-	if err := s.handleLabelRemove(ctx, "task-1", nil); err == nil || !strings.Contains(err.Error(), "usage: label remove") {
-		t.Fatalf("expected usage error, got %v", err)
-	}
-	if err := s.handleLabelSet(ctx, "", []string{"x"}); err == nil || !strings.Contains(err.Error(), "no active task") {
-		t.Fatalf("expected no active task error, got %v", err)
-	}
-	if err := s.handleMemory(ctx, nil); err == nil || !strings.Contains(err.Error(), "usage: memory") {
-		t.Fatalf("expected usage error, got %v", err)
-	}
-	if err := s.handleLibrary(ctx, nil); err == nil || !strings.Contains(err.Error(), "library system is not enabled") {
-		t.Fatalf("expected library-disabled error, got %v", err)
-	}
+
+	// All commands (including chat, find, simplify, label, memory, library) now route through
+	// the unified command router and are tested in internal/conductor/commands/
 }
 
 func TestInteractiveSessionExecuteAndRender(t *testing.T) {
@@ -141,9 +122,6 @@ func TestInteractiveSessionExecuteAndRender(t *testing.T) {
 }
 
 func TestInteractiveStandaloneHelpers(t *testing.T) {
-	if got := formatSize(512); got != "512 B" {
-		t.Fatalf("formatSize(512) = %q", got)
-	}
 	if got := capitalizeFirst("hello"); got != "Hello" {
 		t.Fatalf("capitalizeFirst = %q", got)
 	}
