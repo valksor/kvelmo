@@ -181,6 +181,7 @@
   - [E2E Testing](advanced/e2e.md)
 
 - **Reference**
+  - [CLI to Web UI Mapping](reference/cli-webui-mapping.md)
   - [Feature Parity](reference/feature-parity.md)
   - [Storage Structure](reference/storage.md)
   - [Task File Format](reference/task-format.md)

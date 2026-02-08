@@ -388,5 +388,7 @@ More contextual than `mehr status` with action suggestions.
 
 ## See Also
 
-- [start](cli/start.md) - Begin a new task
+- [guide](/cli/guide.md) - Quick next-action suggestions
+- [continue](/cli/continue.md) - Resume work with auto-execute option
+- [start](/cli/start.md) - Begin a new task
 - [Workflow](/concepts/workflow.md) - Understanding states

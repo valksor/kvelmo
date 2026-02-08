@@ -401,7 +401,7 @@ git:
 
 ## Web UI
 
-Prefer a visual interface? See [Web UI: Standalone Simplify](/web-ui/standalone-simplify.md).
+Prefer a visual interface? See [Web UI: Simplify](/web-ui/simplify.md).
 
 ## See Also
 
