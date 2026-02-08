@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from './client'
 import type { WorkspaceConfig, TaskHistoryItem } from '@/types/api'
+import type { SettingsResponseV2 } from '@/types/schema'
 
 /**
- * Fetch workspace settings (full WorkspaceConfig)
+ * Fetch workspace settings with schema.
+ * Returns both the schema definition and current values.
  * @param projectId - Optional project ID for global mode
  */
 export function useSettings(projectId?: string) {
   const url = projectId ? `/settings?project=${projectId}` : '/settings'
+
   return useQuery({
     queryKey: ['settings', projectId],
-    queryFn: () => apiRequest<WorkspaceConfig>(url),
-    staleTime: 30_000, // Settings don't change often
+    queryFn: () => apiRequest<SettingsResponseV2>(url),
+    staleTime: 30_000,
   })
 }
 
@@ -84,5 +87,25 @@ export function useAgents() {
     queryKey: ['agents'],
     queryFn: () => apiRequest<AgentsResponse>('/agents'),
     staleTime: 60_000, // Agent list rarely changes
+  })
+}
+
+/**
+ * Response structure for /docs-url endpoint
+ */
+interface DocsURLResponse {
+  url: string
+  version: string
+}
+
+/**
+ * Fetch documentation URL for current build version.
+ * Returns /docs/latest for stable releases (v*), /docs/nightly otherwise.
+ */
+export function useDocsURL() {
+  return useQuery({
+    queryKey: ['docs-url'],
+    queryFn: () => apiRequest<DocsURLResponse>('/docs-url'),
+    staleTime: Infinity, // Version never changes during session
   })
 }
