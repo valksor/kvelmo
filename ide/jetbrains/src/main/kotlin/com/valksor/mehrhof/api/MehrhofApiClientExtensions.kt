@@ -313,8 +313,7 @@ fun MehrhofApiClient.auto(loops: Int = 0): Result<InteractiveCommandResponse> {
  * Get monthly budget status.
  * GET /api/v1/budget/monthly/status
  */
-fun MehrhofApiClient.budgetStatus(): Result<BudgetStatusResponse> =
-    get("/api/v1/budget/monthly/status")
+fun MehrhofApiClient.budgetStatus(): Result<BudgetStatusResponse> = get("/api/v1/budget/monthly/status")
 
 /**
  * Reset monthly budget spending.
@@ -352,8 +351,7 @@ fun MehrhofApiClient.simplify(
  * List labels for the current task.
  * GET /api/v1/labels
  */
-fun MehrhofApiClient.labelsList(): Result<LabelsListResponse> =
-    get("/api/v1/labels")
+fun MehrhofApiClient.labelsList(): Result<LabelsListResponse> = get("/api/v1/labels")
 
 /**
  * Add a label to the current task.
