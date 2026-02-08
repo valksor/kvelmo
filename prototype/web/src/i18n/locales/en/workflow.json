@@ -1,0 +1,134 @@
+{
+  "states": {
+    "idle": "Idle",
+    "planning": "Planning",
+    "implementing": "Implementing",
+    "reviewing": "Reviewing",
+    "waiting": "Waiting",
+    "checkpointing": "Checkpointing",
+    "reverting": "Reverting",
+    "restoring": "Restoring",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "stateDescriptions": {
+    "idle": "No active task",
+    "planning": "AI generating specifications",
+    "implementing": "AI executing specifications",
+    "reviewing": "Code review in progress",
+    "waiting": "Awaiting user response",
+    "checkpointing": "Creating git checkpoint",
+    "reverting": "Undo to checkpoint",
+    "restoring": "Redo to checkpoint",
+    "done": "Task completed",
+    "failed": "Task failed"
+  },
+  "actions": {
+    "start": "Start",
+    "plan": "Plan",
+    "implement": "Implement",
+    "review": "Review",
+    "finish": "Finish",
+    "abandon": "Abandon",
+    "continue": "Continue",
+    "undo": "Undo",
+    "redo": "Redo",
+    "reset": "Reset",
+    "pause": "Pause",
+    "resume": "Resume"
+  },
+  "task": {
+    "title": "Task",
+    "noActiveTask": "No active task",
+    "startNew": "Start a new task",
+    "activeTask": "Active Task",
+    "taskDetails": "Task Details",
+    "source": "Source",
+    "created": "Created",
+    "updated": "Updated",
+    "specifications": "Specifications",
+    "reviews": "Reviews",
+    "notes": "Notes",
+    "costs": "Costs",
+    "progress": "Progress",
+    "checkpoint": "Checkpoint",
+    "checkpoints": "Checkpoints"
+  },
+  "creation": {
+    "title": "How would you like to start?",
+    "description": "Use Start Task for full workflow, or expand to quick capture and plan-first modes.",
+    "startTask": {
+      "title": "Start Task",
+      "description": "Full workflow with planning and implementation"
+    },
+    "quickCapture": {
+      "title": "Quick Capture",
+      "description": "Quickly capture a task for later"
+    },
+    "planFirst": {
+      "title": "Plan First",
+      "description": "Create a detailed plan before implementation"
+    },
+    "placeholder": {
+      "title": "Enter task title...",
+      "description": "Describe what you want to accomplish..."
+    }
+  },
+  "specifications": {
+    "title": "Specifications",
+    "empty": "No specifications yet",
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    }
+  },
+  "reviews": {
+    "title": "Reviews",
+    "empty": "No reviews yet",
+    "iteration": "Iteration {{number}}",
+    "findings": "Findings",
+    "approved": "Approved",
+    "changesRequested": "Changes Requested"
+  },
+  "costs": {
+    "title": "Costs",
+    "totalCost": "Total Cost",
+    "inputTokens": "Input Tokens",
+    "outputTokens": "Output Tokens",
+    "requestCount": "Requests",
+    "noData": "No cost data available"
+  },
+  "agent": {
+    "title": "Agent",
+    "output": "Output",
+    "terminal": "Terminal",
+    "noOutput": "No output yet",
+    "running": "Running...",
+    "completed": "Completed",
+    "failed": "Failed"
+  },
+  "history": {
+    "title": "History",
+    "recentTasks": "Recent Tasks",
+    "queuedTasks": "Queued Tasks",
+    "empty": "No task history",
+    "viewAll": "View All"
+  },
+  "errors": {
+    "loadFailed": "Failed to load task",
+    "actionFailed": "Action failed",
+    "invalidState": "Invalid state transition"
+  },
+  "notifications": {
+    "workflowComplete": "Workflow Complete",
+    "workflowCompleteMessage": "Task has been completed successfully",
+    "workflowFailed": "Workflow Failed",
+    "workflowFailedMessage": "Task encountered an error",
+    "questionPending": "Question Pending",
+    "questionPendingMessage": "A response is required to continue.",
+    "error": "Error"
+  }
+}

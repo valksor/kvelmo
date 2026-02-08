@@ -15,6 +15,8 @@ import { useStatus } from '@/api/workflow'
 import { useSettingsMode } from '@/hooks/useSettingsMode'
 import { SettingsModeToggle } from '@/components/settings/SettingsModeToggle'
 import { DynamicSettings } from '@/components/settings/DynamicSettings'
+import { AppearanceSettings } from '@/components/settings/sections/AppearanceSettings'
+import { TranslationSettings } from '@/components/settings/sections/TranslationSettings'
 import type { WorkspaceConfig } from '@/types/api'
 
 type SectionID = 'work' | 'advanced'
@@ -275,6 +277,7 @@ export default function Settings() {
       <div className="space-y-4">
         {activeSection === 'work' && (
           <div role="tabpanel" id="tabpanel-settings-work" aria-labelledby="tab-settings-work" className="space-y-4">
+            <AppearanceSettings simpleMode={isSimple} />
             <DynamicSettings
               projectId={projectIDForSettings}
               sectionIds={workSections}
@@ -294,6 +297,12 @@ export default function Settings() {
               onChange={updateField}
               simpleMode={isSimple}
             />
+            {!isSimple && (
+              <TranslationSettings
+                projectName={selectedProject?.name ?? status?.project?.name}
+                hasProject={!isGlobalMode || !!selectedProjectID}
+              />
+            )}
           </div>
         )}
 
