@@ -1,6 +1,6 @@
 # Auto Mode
 
-Auto mode runs the entire Mehrhof workflow without user interaction—plan, implement, review, and finish in one click. Ideal for well-defined tasks where you trust the AI to handle the complete process autonomously.
+Auto mode runs the entire Mehrhof workflow without user interaction — plan, implement, review, and finish in one click. Ideal for well-defined tasks where you trust the AI to handle the complete process autonomously.
 
 ## Overview
 

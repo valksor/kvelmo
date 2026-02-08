@@ -4,9 +4,9 @@ Mehrhof uses a simple configuration system with sensible defaults.
 
 ## How Agent Integration Works
 
-Mehrhof calls your agent CLI as a subprocess—it does NOT connect to AI APIs directly:
+Mehrhof calls your agent CLI as a subprocess — it does NOT connect to AI APIs directly:
 
-- **Your CLI handles authentication**—Claude uses subscription auth, Codex uses your configured API key
+- **Your CLI handles authentication** — Claude uses subscription auth, Codex uses your configured API key
 - **No API keys required in Mehrhof** for basic usage
 - **API keys optional** via agent aliases for custom agents or work accounts
 - Environment variables in workspace config are passed to agents when they run

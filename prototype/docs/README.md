@@ -2,9 +2,9 @@
 
 Mehrhof helps you turn ideas into reliable changes through a structured workflow of **plan → create → review → finish**.
 
-Whether you're a product manager describing a feature, an ops person fixing a process, or a developer automating routine work—Mehrhof provides the guardrails to make changes safely. It wraps your local agent CLI (Claude by default) to handle text transformations while keeping you in control of review and approval.
+Whether you're a product manager describing a feature, an ops person fixing a process, or a developer automating routine work — Mehrhof provides the guardrails to make changes safely. It wraps your local agent CLI (Claude by default) to handle text transformations while keeping you in control of review and approval.
 
-**Free and open-source.** If you already pay for Claude, Codex, or another agent CLI, Mehrhof adds zero extra cost—just install and use.
+**Free and open-source.** If you already pay for Claude, Codex, or another agent CLI, Mehrhof adds zero extra cost — just install and use.
 
 ---
 
@@ -12,7 +12,7 @@ Whether you're a product manager describing a feature, an ops person fixing a pr
 
 ### For Non-Technical Contributors
 
-Start with the **Web UI**—a comfortable browser-based experience that doesn't require command-line expertise.
+Start with the **Web UI** — a comfortable browser-based experience that doesn't require command-line expertise.
 
 **[Get Started with Web UI](web-ui/getting-started.md)** — Visual walkthrough of your first task
 

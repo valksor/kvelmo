@@ -1,6 +1,6 @@
 # Web UI vs CLI: Which Should You Use?
 
-Mehrhof offers two ways to work: a graphical Web UI and a command-line interface (CLI). Both have the same features—choose based on your workflow and preferences.
+Mehrhof offers two ways to work: a graphical Web UI and a command-line interface (CLI). Both have the same features — choose based on your workflow and preferences.
 
 ## Quick Comparison
 
@@ -205,7 +205,7 @@ Both interfaces have access to the same features:
 | Provider login   | ✅ Settings form                                 | ✅ `mehr <provider> login`         |
 | Accessibility    | ✅ Skip links, ARIA patterns, live announcements | ✅ State prefixes in status output |
 
-**You can switch between interfaces anytime**—they share the same state and data.
+**You can switch between interfaces anytime** — they share the same state and data.
 
 ---
 

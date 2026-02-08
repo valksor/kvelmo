@@ -122,7 +122,7 @@ Create a `/health` endpoint that:
 
 ## Understanding the Workflow: Plan, Implement, Review
 
-Mehrhof works in three distinct phases. This separation gives you control over each step—you can review the plan before any code is written.
+Mehrhof works in three distinct phases. This separation gives you control over each step — you can review the plan before any code is written.
 
 ```text
 ┌──────────────┐     ┌─────────────┐     ┌────────────────────┐     ┌──────────────────┐
@@ -137,7 +137,7 @@ Mehrhof works in three distinct phases. This separation gives you control over e
 
 ### The Planning Phase (Plan Mode)
 
-When you click **"Plan"**, the AI analyzes your task and creates detailed specifications—think of it as a blueprint before building.
+When you click **"Plan"**, the AI analyzes your task and creates detailed specifications — think of it as a blueprint before building.
 
 **What happens:**
 - AI reads your task description

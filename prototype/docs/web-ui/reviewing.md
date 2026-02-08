@@ -44,7 +44,7 @@ The **Quality Settings** panel in Settings lets you enable/disable quality check
 | **Enable Quality Checks** | Master switch for all quality checks                | `true`          |
 | **Use Defaults**          | Auto-enable built-in linters based on project files | `false` (safer) |
 
-> **Important:** With **Use Defaults** disabled (default), built-in linters will NOT run automatically. You must explicitly enable them. This prevents unintended code modifications—for example, `php-cs-fixer` running on Symfony projects with custom config paths.
+> **Important:** With **Use Defaults** disabled (default), built-in linters will NOT run automatically. You must explicitly enable them. This prevents unintended code modifications — for example, `php-cs-fixer` running on Symfony projects with custom config paths.
 
 **Built-in linters:**
 

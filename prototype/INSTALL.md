@@ -418,7 +418,7 @@ After installation, authenticate with your Anthropic account:
 claude login
 ```
 
-Follow the prompts to complete authentication. This uses your **Claude subscription**—no separate API key setup required. Once authenticated, Mehrhof will use your CLI directly with no additional configuration.
+Follow the prompts to complete authentication. This uses your **Claude subscription** — no separate API key setup required. Once authenticated, Mehrhof will use your CLI directly with no additional configuration.
 
 ### Verify
 

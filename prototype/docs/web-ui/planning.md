@@ -1,6 +1,6 @@
 # Planning
 
-The planning phase is where the AI analyzes your requirements and creates detailed specifications—a blueprint before any code is written.
+The planning phase is where the AI analyzes your requirements and creates detailed specifications — a blueprint before any code is written.
 
 ## What Planning Does
 

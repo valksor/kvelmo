@@ -1,6 +1,6 @@
 # Web UI
 
-The Mehrhof Web UI provides a comfortable browser-based interface for the plan → create → review workflow. It offers the same functionality as the CLI with a visual, interactive experience—no command-line expertise required.
+The Mehrhof Web UI provides a comfortable browser-based interface for the plan → create → review workflow. It offers the same functionality as the CLI with a visual, interactive experience — no command-line expertise required.
 
 ## When to Use the Web UI
 

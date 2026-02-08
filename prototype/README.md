@@ -12,11 +12,11 @@
 
 ---
 
-**Mehrhof** is a free, open-source structured creation environment designed for people who know what they want to build—whether that's feature changes, documentation updates, or well-defined modifications—without requiring deep technical skills.
+**Mehrhof** is a free, open-source structured creation environment designed for people who know what they want to build — whether that's feature changes, documentation updates, or well-defined modifications — without requiring deep technical skills.
 
 Rather than being an "AI automation tool," Mehrhof brings clarity, guardrails, and repeatable workflows to the process of transforming human intent into reliable, reviewable output. It orchestrates your local agent CLI (Claude, Codex, or custom) to handle the mechanics of planning and transformation, while you stay in control of meaning, quality, and approval.
 
-We build Mehrhof with the Valksor philosophy: **clarity before speed, quality before spectacle, long-term thinking over quick wins**. Technology should be understandable, dependable, and trustworthy—not coated in hype.
+We build Mehrhof with the Valksor philosophy: **clarity before speed, quality before spectacle, long-term thinking over quick wins**. Technology should be understandable, dependable, and trustworthy — not coated in hype.
 
 ---
 
@@ -26,11 +26,11 @@ Mehrhof is:
 
 - **A workflow framework** that turns requests into structured, reviewable outputs
 - **A structured process** that breaks creation into clear steps: plan → create → review → finish
-- **Uses your existing CLI**—Claude, Codex, or custom agents; no API keys are required to get started
-- **Completely free**—BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
-- **Zero config for existing users**—if your agent CLI works, Mehrhof works. API keys are optional for advanced setups
+- **Uses your existing CLI** — Claude, Codex, or custom agents; no API keys are required to get started
+- **Completely free** — BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
+- **Zero config for existing users** — if your agent CLI works, Mehrhof works. API keys are optional for advanced setups
 - **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
-- **Accessibility-aware by default**—keyboard-first navigation, screen reader announcements, skip links, and accessible dialog patterns in the Web UI, plus state prefixes in CLI status output
+- **Accessibility-aware by default** — keyboard-first navigation, screen reader announcements, skip links, and accessible dialog patterns in the Web UI, plus state prefixes in CLI status output
 
 Mehrhof is not magic. It's a structured way to work with tools you already have, with clear checkpoints and human oversight at every step.
 
@@ -57,12 +57,12 @@ Start with a plain-language description of what you want to create or change. No
 Mehrhof helps break your intent into actionable steps. You review this plan before any changes are made. Nothing happens without your approval.
 
 **3. Create via Agent CLI**
-Mehrhof structures calls to your configured agent (Claude by default, or Codex/custom). The agent handles the text transformations—creating code, documentation, or configuration files based on your approved plan.
+Mehrhof structures calls to your configured agent (Claude by default, or Codex/custom). The agent handles the text transformations — creating code, documentation, or configuration files based on your approved plan.
 
 **4. Review and Adjust**
 All output is presented for human review before acceptance. You can undo, adjust, add notes, and iterate until you're satisfied. Then finish to merge your changes.
 
-No hidden AI access, no servers, no extra fees—just structured assistance using tools you already have.
+No hidden AI access, no servers, no extra fees — just structured assistance using tools you already have.
 
 ---
 
@@ -115,7 +115,7 @@ Click **"Create Task"** in your browser and you're ready to go.
 | Feature                      | Description                                   |
 |------------------------------|-----------------------------------------------|
 | 📊 **Dashboard**             | All tasks at a glance with real-time status   |
-| 💬 **Interactive Chat**      | Talk to the AI—ask questions, give guidance   |
+| 💬 **Interactive Chat**      | Talk to the AI — ask questions, give guidance   |
 | 📝 **Task Creation**         | Write tasks directly or upload files          |
 | 📜 **Live Output**           | Watch progress as it happens                  |
 | 🔍 **Semantic Search**       | Find past tasks by meaning, not just keywords |
@@ -305,7 +305,7 @@ cd go-mehrhof
 make install
 ```
 
-**Prerequisite**: You need an agent CLI installed separately (e.g., [Claude](https://claude.ai/code)). Mehrhof uses your CLI subscription directly—no API keys to configure. If `claude --version` works, you're ready. See [Agents](https://valksor.com/docs/mehrhof/nightly/#/agents/index) for supported agents.
+**Prerequisite**: You need an agent CLI installed separately (e.g., [Claude](https://claude.ai/code)). Mehrhof uses your CLI subscription directly — no API keys to configure. If `claude --version` works, you're ready. See [Agents](https://valksor.com/docs/mehrhof/nightly/#/agents/index) for supported agents.
 
 **Starting from scratch?** See [INSTALL.md](INSTALL.md) for complete instructions including WSL setup, Git, Go, and agent CLI installation.
 
