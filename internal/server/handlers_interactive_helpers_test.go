@@ -201,7 +201,7 @@ func TestInteractiveCommandsEndpointDirect(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/interactive/commands", nil)
 	rr := httptest.NewRecorder()
-	srv.handleInteractiveCommands(rr, req)
+	srv.router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rr.Code)
 	}
@@ -212,5 +212,19 @@ func TestInteractiveCommandsEndpointDirect(t *testing.T) {
 	}
 	if _, ok := body["commands"]; !ok {
 		t.Fatalf("commands key missing in response")
+	}
+}
+
+func TestNoInteractiveSwitchCaseFallback(t *testing.T) {
+	interactiveCommands := []string{
+		"reset", "auto", "find", "simplify", "label",
+		"memory", "library", "links", "question",
+		"delete", "export", "optimize", "submit", "sync",
+	}
+
+	for _, cmd := range interactiveCommands {
+		if !commands.IsKnownCommand(cmd) {
+			t.Fatalf("command %q must be registered in router", cmd)
+		}
 	}
 }

@@ -9,9 +9,45 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/valksor/go-mehrhof/internal/workflow"
 )
+
+// Test-local response types matching command handler output shapes.
+type testProvidersListResponse struct {
+	Providers []testProviderInfo `json:"providers"`
+	Count     int                `json:"count"`
+}
+
+type testProviderInfo struct {
+	Scheme      string `json:"scheme"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type testAgentsListResponse struct {
+	Agents []testAgentInfo `json:"agents"`
+	Count  int             `json:"count"`
+}
+
+type testAgentInfo struct {
+	Name   string          `json:"name"`
+	Type   string          `json:"type"`
+	Models []testModelInfo `json:"models,omitempty"`
+}
+
+type testModelInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type testLicensesListResponse struct {
+	Licenses []testLicenseEntry `json:"licenses"`
+	Count    int                `json:"count"`
+}
+
+type testLicenseEntry struct {
+	Path    string `json:"path"`
+	License string `json:"license"`
+}
 
 func TestHandler_Guide_NoConductor(t *testing.T) {
 	cfg := Config{
@@ -83,7 +119,7 @@ func TestHandler_ListProviders(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result providersListResponse
+	var result testProvidersListResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
 	assert.Greater(t, result.Count, 0)
 	assert.Greater(t, len(result.Providers), 0)
@@ -100,127 +136,6 @@ func TestHandler_ListProviders(t *testing.T) {
 	}
 	assert.True(t, foundFile, "expected file provider")
 	assert.True(t, foundGithub, "expected github provider")
-}
-
-func TestGetGuideActions(t *testing.T) {
-	tests := []struct {
-		name           string
-		state          workflow.State
-		specifications int
-		wantEndpoint   string
-	}{
-		{
-			name:           "idle with no specs",
-			state:          workflow.StateIdle,
-			specifications: 0,
-			wantEndpoint:   "POST /api/v1/workflow/plan",
-		},
-		{
-			name:           "idle with specs",
-			state:          workflow.StateIdle,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/implement",
-		},
-		{
-			name:           "implementing",
-			state:          workflow.StateImplementing,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/finish",
-		},
-		{
-			name:           "done",
-			state:          workflow.StateDone,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/start",
-		},
-		{
-			name:           "waiting",
-			state:          workflow.StateWaiting,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/answer",
-		},
-		{
-			name:           "paused",
-			state:          workflow.StatePaused,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/resume",
-		},
-		{
-			name:           "planning",
-			state:          workflow.StatePlanning,
-			specifications: 0,
-			wantEndpoint:   "GET /api/v1/task",
-		},
-		{
-			name:           "reviewing",
-			state:          workflow.StateReviewing,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/finish",
-		},
-		{
-			name:           "failed",
-			state:          workflow.StateFailed,
-			specifications: 1,
-			wantEndpoint:   "POST /api/v1/workflow/implement",
-		},
-		{
-			name:           "checkpointing",
-			state:          workflow.StateCheckpointing,
-			specifications: 1,
-			wantEndpoint:   "GET /api/v1/task",
-		},
-		{
-			name:           "reverting",
-			state:          workflow.StateReverting,
-			specifications: 1,
-			wantEndpoint:   "GET /api/v1/task",
-		},
-		{
-			name:           "restoring",
-			state:          workflow.StateRestoring,
-			specifications: 1,
-			wantEndpoint:   "GET /api/v1/task",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actions := getGuideActions(tt.state, tt.specifications)
-			found := false
-			for _, action := range actions {
-				if action.Endpoint == tt.wantEndpoint {
-					found = true
-
-					break
-				}
-			}
-			assert.True(t, found, "expected actions to contain endpoint %q, got %v", tt.wantEndpoint, actions)
-		})
-	}
-}
-
-func TestGetGuideActions_HasCommandAndDescription(t *testing.T) {
-	states := []workflow.State{
-		workflow.StateIdle,
-		workflow.StatePlanning,
-		workflow.StateImplementing,
-		workflow.StateReviewing,
-		workflow.StateDone,
-		workflow.StateWaiting,
-		workflow.StateFailed,
-	}
-
-	for _, state := range states {
-		t.Run(string(state), func(t *testing.T) {
-			actions := getGuideActions(state, 1)
-			require.Greater(t, len(actions), 0)
-			for _, action := range actions {
-				assert.NotEmpty(t, action.Command, "action should have command")
-				assert.NotEmpty(t, action.Description, "action should have description")
-				assert.NotEmpty(t, action.Endpoint, "action should have endpoint")
-			}
-		})
-	}
 }
 
 func TestHandler_ListProviders_AllExpectedProviders(t *testing.T) {
@@ -243,7 +158,7 @@ func TestHandler_ListProviders_AllExpectedProviders(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result providersListResponse
+	var result testProvidersListResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
 
 	// Check for expected providers
@@ -279,7 +194,7 @@ func TestHandler_ListProviders_ProviderHasAllFields(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result providersListResponse
+	var result testProvidersListResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
 
 	for _, p := range result.Providers {
@@ -307,7 +222,7 @@ func TestHandler_ListProviders_CountMatchesLength(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result providersListResponse
+	var result testProvidersListResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
 
 	assert.Equal(t, len(result.Providers), result.Count)
@@ -429,7 +344,7 @@ func TestHandler_ListAgents_WithModels(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result agentsListResponse
+	var result testAgentsListResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
 
 	// Verify model structure is correct (if any agents have models)
@@ -439,66 +354,6 @@ func TestHandler_ListAgents_WithModels(t *testing.T) {
 			assert.NotEmpty(t, model.Name, "model should have Name")
 		}
 	}
-}
-
-func TestHandler_WorkflowDiagram_NoConductor(t *testing.T) {
-	cfg := Config{
-		Port:      0,
-		Mode:      ModeProject,
-		Conductor: nil,
-	}
-
-	srv, cleanup := startTestServer(t, cfg)
-	defer cleanup()
-
-	ctx := context.Background()
-	client := testHTTPClient()
-
-	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/workflow/diagram")
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-
-	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-
-	respBody, _ := io.ReadAll(resp.Body)
-	var result map[string]string
-	require.NoError(t, json.Unmarshal(respBody, &result))
-	assert.Contains(t, result["error"], "conductor not initialized")
-}
-
-func TestHandler_WorkflowDiagram_ReturnsSVG(t *testing.T) {
-	// Create conductor for this test
-	cond, tmpDir := createTestConductor(t)
-
-	cfg := Config{
-		Port:          0,
-		Mode:          ModeProject,
-		Conductor:     cond,
-		WorkspaceRoot: tmpDir,
-	}
-
-	srv, cleanup := startTestServer(t, cfg)
-	defer cleanup()
-
-	ctx := context.Background()
-	client := testHTTPClient()
-
-	resp, err := doGet(ctx, client, srv.URL()+"/api/v1/workflow/diagram")
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	// Verify content type is SVG
-	contentType := resp.Header.Get("Content-Type")
-	assert.Equal(t, "image/svg+xml", contentType)
-
-	// Verify body contains SVG content
-	body, _ := io.ReadAll(resp.Body)
-	bodyStr := string(body)
-	assert.Contains(t, bodyStr, "<svg", "response should contain SVG")
-	assert.Contains(t, bodyStr, "state-box", "SVG should contain state boxes")
-	assert.Contains(t, bodyStr, "</svg>", "response should close SVG tag")
 }
 
 func TestHandler_License(t *testing.T) {
@@ -550,7 +405,7 @@ func TestHandler_LicenseInfo(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result licensesListResponse
+	var result testLicensesListResponse
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	assert.Greater(t, result.Count, 0, "expected at least one license")

@@ -10,108 +10,100 @@ import (
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
-// handleStandaloneReview handles POST /api/v1/workflow/review/standalone.
-// Performs a standalone code review without requiring an active task.
-func (s *Server) handleStandaloneReview(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+// handleStandaloneReviewDispatch dispatches standalone review requests.
+// SSE streaming path is handled inline; JSON path goes through the command router.
+func (s *Server) handleStandaloneReviewDispatch(w http.ResponseWriter, r *http.Request) {
+	// SSE streaming path: parse body and delegate to SSE handler.
+	if r.Header.Get("Accept") == "text/event-stream" {
+		if s.config.Conductor == nil {
+			s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
-		return
-	}
-
-	var req standaloneReviewRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
-
-		return
-	}
-
-	// Default to uncommitted mode if not specified
-	if req.Mode == "" {
-		req.Mode = "uncommitted"
-	}
-
-	// Map request to conductor options
-	diffOpts := conductor.StandaloneDiffOptions{
-		Mode:       mapDiffMode(req.Mode),
-		BaseBranch: req.BaseBranch,
-		Range:      req.Range,
-		Files:      req.Files,
-		Context:    req.Context,
-	}
-
-	// Default checkpoint to true if not explicitly set and applying fixes
-	createCheckpoint := req.CreateCheckpoint
-	if req.ApplyFixes && !req.CreateCheckpoint {
-		// If apply_fixes is true but create_checkpoint is false (default value),
-		// check if the field was explicitly set. For safety, default to true.
-		// The client should explicitly pass create_checkpoint: false to disable.
-		createCheckpoint = true
-	}
-
-	reviewOpts := conductor.StandaloneReviewOptions{
-		StandaloneDiffOptions: diffOpts,
-		Agent:                 req.Agent,
-		ApplyFixes:            req.ApplyFixes,
-		CreateCheckpoint:      createCheckpoint,
-	}
-
-	// Check if SSE streaming is requested
-	acceptHeader := r.Header.Get("Accept")
-	if acceptHeader == "text/event-stream" {
-		s.handleStandaloneReviewSSE(w, r, reviewOpts)
-
-		return
-	}
-
-	// Synchronous review
-	result, err := s.config.Conductor.ReviewStandalone(r.Context(), reviewOpts)
-	if err != nil {
-		s.writeJSON(w, http.StatusOK, standaloneReviewResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	// Build response
-	resp := standaloneReviewResponse{
-		Success: true,
-		Verdict: result.Verdict,
-		Summary: result.Summary,
-	}
-
-	// Map issues
-	for _, issue := range result.Issues {
-		resp.Issues = append(resp.Issues, standaloneReviewIssue{
-			Severity:    issue.Severity,
-			Category:    issue.Category,
-			File:        issue.File,
-			Line:        issue.Line,
-			Description: issue.Message, // ReviewIssue uses Message field
-		})
-	}
-
-	// Map changes (if fixes were applied)
-	for _, change := range result.Changes {
-		resp.Changes = append(resp.Changes, standaloneFileChange{
-			Path:      change.Path,
-			Operation: string(change.Operation),
-		})
-	}
-
-	// Map usage
-	if result.Usage != nil {
-		resp.Usage = &standaloneUsageInfo{
-			InputTokens:  result.Usage.InputTokens,
-			OutputTokens: result.Usage.OutputTokens,
-			CachedTokens: result.Usage.CachedTokens,
-			CostUSD:      result.Usage.CostUSD,
+			return
 		}
+
+		var req standaloneReviewRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
+
+		if req.Mode == "" {
+			req.Mode = "uncommitted"
+		}
+
+		createCheckpoint := req.CreateCheckpoint
+		if req.ApplyFixes && !req.CreateCheckpoint {
+			createCheckpoint = true
+		}
+
+		s.handleStandaloneReviewSSE(w, r, conductor.StandaloneReviewOptions{
+			StandaloneDiffOptions: conductor.StandaloneDiffOptions{
+				Mode:       mapDiffMode(req.Mode),
+				BaseBranch: req.BaseBranch,
+				Range:      req.Range,
+				Files:      req.Files,
+				Context:    req.Context,
+			},
+			Agent:            req.Agent,
+			ApplyFixes:       req.ApplyFixes,
+			CreateCheckpoint: createCheckpoint,
+		})
+
+		return
 	}
 
-	s.writeJSON(w, http.StatusOK, resp)
+	// JSON path → command router.
+	s.handleViaRouter(CommandRoute{
+		Command:    "standalone-review",
+		ParseFn:    parseStandaloneReviewInvocation,
+		UnwrapData: true,
+	})(w, r)
+}
+
+// handleStandaloneSimplifyDispatch dispatches standalone simplify requests.
+// SSE streaming path is handled inline; JSON path goes through the command router.
+func (s *Server) handleStandaloneSimplifyDispatch(w http.ResponseWriter, r *http.Request) {
+	// SSE streaming path: parse body and delegate to SSE handler.
+	if r.Header.Get("Accept") == "text/event-stream" {
+		if s.config.Conductor == nil {
+			s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
+
+			return
+		}
+
+		var req standaloneSimplifyRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+
+			return
+		}
+
+		if req.Mode == "" {
+			req.Mode = "uncommitted"
+		}
+
+		s.handleStandaloneSimplifySSE(w, r, conductor.StandaloneSimplifyOptions{
+			StandaloneDiffOptions: conductor.StandaloneDiffOptions{
+				Mode:       mapDiffMode(req.Mode),
+				BaseBranch: req.BaseBranch,
+				Range:      req.Range,
+				Files:      req.Files,
+				Context:    req.Context,
+			},
+			Agent:            req.Agent,
+			CreateCheckpoint: req.CreateCheckpoint,
+		})
+
+		return
+	}
+
+	// JSON path → command router.
+	s.handleViaRouter(CommandRoute{
+		Command:    "standalone-simplify",
+		ParseFn:    parseStandaloneSimplifyInvocation,
+		UnwrapData: true,
+	})(w, r)
 }
 
 // handleStandaloneReviewSSE handles streaming review via Server-Sent Events.
@@ -189,7 +181,7 @@ func (s *Server) handleStandaloneReviewSSE(w http.ResponseWriter, r *http.Reques
 					Severity:    issue.Severity,
 					File:        issue.File,
 					Line:        issue.Line,
-					Description: issue.Message, // ReviewIssue uses Message field
+					Description: issue.Message,
 				})
 			}
 			for _, change := range result.Changes {
@@ -218,88 +210,6 @@ func (s *Server) handleStandaloneReviewSSE(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-}
-
-// handleStandaloneSimplify handles POST /api/v1/workflow/simplify/standalone.
-// Performs standalone code simplification without requiring an active task.
-func (s *Server) handleStandaloneSimplify(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	var req standaloneSimplifyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
-
-		return
-	}
-
-	// Default to uncommitted mode if not specified
-	if req.Mode == "" {
-		req.Mode = "uncommitted"
-	}
-
-	// Map request to conductor options
-	diffOpts := conductor.StandaloneDiffOptions{
-		Mode:       mapDiffMode(req.Mode),
-		BaseBranch: req.BaseBranch,
-		Range:      req.Range,
-		Files:      req.Files,
-		Context:    req.Context,
-	}
-
-	simplifyOpts := conductor.StandaloneSimplifyOptions{
-		StandaloneDiffOptions: diffOpts,
-		Agent:                 req.Agent,
-		CreateCheckpoint:      req.CreateCheckpoint,
-	}
-
-	// Check if SSE streaming is requested
-	acceptHeader := r.Header.Get("Accept")
-	if acceptHeader == "text/event-stream" {
-		s.handleStandaloneSimplifySSE(w, r, simplifyOpts)
-
-		return
-	}
-
-	// Synchronous simplify
-	result, err := s.config.Conductor.SimplifyStandalone(r.Context(), simplifyOpts)
-	if err != nil {
-		s.writeJSON(w, http.StatusOK, standaloneSimplifyResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	// Build response
-	resp := standaloneSimplifyResponse{
-		Success: true,
-		Summary: result.Summary,
-	}
-
-	// Map changes
-	for _, change := range result.Changes {
-		resp.Changes = append(resp.Changes, standaloneFileChange{
-			Path:      change.Path,
-			Operation: string(change.Operation),
-		})
-	}
-
-	// Map usage
-	if result.Usage != nil {
-		resp.Usage = &standaloneUsageInfo{
-			InputTokens:  result.Usage.InputTokens,
-			OutputTokens: result.Usage.OutputTokens,
-			CachedTokens: result.Usage.CachedTokens,
-			CostUSD:      result.Usage.CostUSD,
-		}
-	}
-
-	s.writeJSON(w, http.StatusOK, resp)
 }
 
 // handleStandaloneSimplifySSE handles streaming simplify via Server-Sent Events.

@@ -180,7 +180,7 @@ func (s *Server) handleProjectPlan(w http.ResponseWriter, r *http.Request) {
 
 // handleProjectQueues lists all project queues.
 // GET /api/v1/project/queues.
-func (s *Server) handleProjectQueues(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleProjectQueues(w http.ResponseWriter, _ *http.Request) {
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -251,31 +251,6 @@ func (s *Server) handleProjectQueue(w http.ResponseWriter, _ *http.Request, queu
 	}
 
 	s.writeJSON(w, http.StatusOK, resp)
-}
-
-// handleProjectQueueDelete deletes a queue.
-// DELETE /api/v1/project/queue/{id}.
-func (s *Server) handleProjectQueueDelete(w http.ResponseWriter, _ *http.Request, queueID string) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
-	}
-
-	if err := ws.DeleteQueue(queueID); err != nil {
-		s.writeError(w, http.StatusInternalServerError, "delete queue failed: "+err.Error())
-
-		return
-	}
-
-	s.writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // handleProjectTasks lists tasks with optional filtering.
@@ -526,12 +501,6 @@ func (s *Server) handleProjectReorder(w http.ResponseWriter, r *http.Request) {
 // handleProjectSubmit submits tasks to a provider.
 // POST /api/v1/project/submit.
 func (s *Server) handleProjectSubmit(w http.ResponseWriter, r *http.Request) {
-	if s.isViewer(r) {
-		s.writeError(w, http.StatusForbidden, "viewers cannot modify projects")
-
-		return
-	}
-
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
@@ -922,16 +891,6 @@ func (s *Server) handleProjectQueueRoute(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	s.handleProjectQueue(w, r, queueID)
-}
-
-func (s *Server) handleProjectQueueDeleteRoute(w http.ResponseWriter, r *http.Request) {
-	queueID := parseQueueID(r.URL.Path, "/api/v1/project/queue/")
-	if queueID == "" {
-		s.writeError(w, http.StatusBadRequest, "queue ID required")
-
-		return
-	}
-	s.handleProjectQueueDelete(w, r, queueID)
 }
 
 func (s *Server) handleProjectTaskEditRoute(w http.ResponseWriter, r *http.Request) {

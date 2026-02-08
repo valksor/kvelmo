@@ -58,7 +58,7 @@ func TestHandler_CommitPlan_NoConductor(t *testing.T) {
 	respBody, _ := io.ReadAll(resp.Body)
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(respBody, &result))
-	assert.Contains(t, result["error"], "conductor not available")
+	assert.Contains(t, result["error"], "conductor not initialized")
 }
 
 func TestHandler_CommitExecute_NoConductor(t *testing.T) {
@@ -84,5 +84,5 @@ func TestHandler_CommitExecute_NoConductor(t *testing.T) {
 	respBody, _ := io.ReadAll(resp.Body)
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(respBody, &result))
-	assert.Contains(t, result["error"], "conductor not available")
+	assert.Contains(t, result["error"], "conductor not initialized")
 }

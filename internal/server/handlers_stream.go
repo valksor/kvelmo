@@ -3,7 +3,6 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -86,90 +85,6 @@ func (s *Server) handleAgentLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Run combined event + heartbeat loop (blocks until client disconnects)
 	s.runSSEEventLoop(w, flusher, r.Context(), eventCh)
-}
-
-// handleAgentLogsHistory returns recent agent log history.
-func (s *Server) handleAgentLogsHistory(w http.ResponseWriter, r *http.Request) {
-	taskID := r.URL.Query().Get("task_id")
-	if taskID == "" && s.config.Conductor != nil {
-		activeTask := s.config.Conductor.GetActiveTask()
-		if activeTask != nil {
-			taskID = activeTask.ID
-		}
-	}
-
-	if taskID == "" {
-		s.writeJSON(w, http.StatusOK, map[string]any{
-			"logs": []map[string]any{},
-		})
-
-		return
-	}
-
-	if s.config.Conductor == nil {
-		s.writeJSON(w, http.StatusOK, map[string]any{
-			"logs":  []map[string]any{},
-			"error": "conductor not initialized",
-		})
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeJSON(w, http.StatusOK, map[string]any{
-			"logs": []map[string]any{},
-		})
-
-		return
-	}
-
-	// Get sessions for the task
-	transcripts, err := ws.ListTranscripts(taskID)
-	if err != nil {
-		s.writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": "failed to load transcripts",
-		})
-
-		return
-	}
-
-	sort.Strings(transcripts)
-
-	// Return transcript lines as agent log history so UI can hydrate terminal output.
-	var logs []map[string]any
-	lineIndex := 0
-	for _, transcriptFile := range transcripts {
-		content, loadErr := ws.LoadTranscript(taskID, transcriptFile)
-		if loadErr != nil {
-			continue
-		}
-
-		kind, startedAt := parseTranscriptMetadata(transcriptFile)
-		lines := strings.Split(content, "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" {
-				continue
-			}
-
-			logs = append(logs, map[string]any{
-				"index":      lineIndex,
-				"kind":       kind,
-				"started_at": startedAt,
-				"file":       transcriptFile,
-				"type":       "output",
-				"message":    line,
-			})
-			lineIndex++
-		}
-	}
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"logs":    logs,
-		"task_id": taskID,
-		"count":   len(logs),
-	})
 }
 
 func parseTranscriptMetadata(filename string) (string, string) {

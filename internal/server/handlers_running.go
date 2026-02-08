@@ -15,128 +15,11 @@ import (
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
-// runningTaskJSON represents a running task in JSON format.
-type runningTaskJSON struct {
-	ID           string    `json:"id"`
-	Reference    string    `json:"reference"`
-	TaskID       string    `json:"task_id,omitempty"`
-	Status       string    `json:"status"`
-	StartedAt    time.Time `json:"started_at"`
-	FinishedAt   time.Time `json:"finished_at,omitempty"`
-	Duration     string    `json:"duration"`
-	WorktreePath string    `json:"worktree_path,omitempty"`
-	Error        string    `json:"error,omitempty"`
-}
-
 // parallelStartRequest represents a request to start multiple tasks in parallel.
 type parallelStartRequest struct {
 	References  []string `json:"references"`   // Task references to start
 	MaxWorkers  int      `json:"max_workers"`  // Max parallel workers (default: 2)
 	UseWorktree bool     `json:"use_worktree"` // Create worktree for each task
-}
-
-// handleRunningTaskRoutes dispatches running task requests based on path.
-// This handles paths like /api/v1/running/{id}/cancel and /api/v1/running/{id}/stream.
-func (s *Server) handleRunningTaskRoutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/api/v1/running/")
-
-	switch {
-	case strings.HasSuffix(path, "/cancel"):
-		s.handleRunningTaskCancel(w, r)
-	case strings.HasSuffix(path, "/stream"):
-		s.handleRunningTaskStream(w, r)
-	default:
-		s.writeError(w, http.StatusNotFound, "unknown route: "+r.URL.Path)
-	}
-}
-
-// handleRunningTasks lists all running parallel tasks.
-// GET /api/v1/running.
-func (s *Server) handleRunningTasks(w http.ResponseWriter, _ *http.Request) {
-	registry := s.getTaskRegistry()
-	if registry == nil {
-		s.writeJSON(w, http.StatusOK, map[string]any{
-			"tasks": []runningTaskJSON{},
-			"count": 0,
-		})
-
-		return
-	}
-
-	tasks := registry.List()
-
-	var jsonTasks []runningTaskJSON
-	for _, task := range tasks {
-		errStr := ""
-		if task.Error != nil {
-			errStr = task.Error.Error()
-		}
-		jsonTasks = append(jsonTasks, runningTaskJSON{
-			ID:           task.ID,
-			Reference:    task.Reference,
-			TaskID:       task.TaskID,
-			Status:       string(task.Status),
-			StartedAt:    task.StartedAt,
-			FinishedAt:   task.FinishedAt,
-			Duration:     task.Duration().String(),
-			WorktreePath: task.WorktreePath,
-			Error:        errStr,
-		})
-	}
-
-	// Count running vs total
-	running := registry.CountRunning()
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"tasks":   jsonTasks,
-		"count":   len(jsonTasks),
-		"running": running,
-	})
-}
-
-// handleRunningTaskCancel cancels a running parallel task.
-// POST /api/v1/running/{id}/cancel.
-func (s *Server) handleRunningTaskCancel(w http.ResponseWriter, r *http.Request) {
-	if s.isViewer(r) {
-		s.writeError(w, http.StatusForbidden, "viewers cannot cancel tasks")
-
-		return
-	}
-
-	// Extract task ID from path
-	// Path is /api/v1/running/{id}/cancel
-	path := strings.TrimPrefix(r.URL.Path, "/api/v1/running/")
-	taskID := strings.TrimSuffix(path, "/cancel")
-	if taskID == "" {
-		s.writeError(w, http.StatusBadRequest, "task ID is required")
-
-		return
-	}
-
-	registry := s.getTaskRegistry()
-	if registry == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "no parallel tasks running")
-
-		return
-	}
-
-	// Check if task exists
-	task := registry.Get(taskID)
-	if task == nil {
-		s.writeError(w, http.StatusNotFound, "task not found: "+taskID)
-
-		return
-	}
-
-	// Cancel the task
-	_ = registry.Cancel(taskID)
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"success":   true,
-		"message":   "task cancellation requested",
-		"task_id":   taskID,
-		"reference": task.Reference,
-	})
 }
 
 // handleRunningTaskStream streams events for a specific running task via SSE.
@@ -233,12 +116,6 @@ func (s *Server) handleRunningTaskStream(w http.ResponseWriter, r *http.Request)
 // handleParallelStart starts multiple tasks in parallel.
 // POST /api/v1/parallel.
 func (s *Server) handleParallelStart(w http.ResponseWriter, r *http.Request) {
-	if s.isViewer(r) {
-		s.writeError(w, http.StatusForbidden, "viewers cannot start tasks")
-
-		return
-	}
-
 	if s.config.Conductor == nil {
 		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
 
