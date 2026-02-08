@@ -5,13 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/display"
 	"github.com/valksor/go-mehrhof/internal/server/static"
-	"github.com/valksor/go-mehrhof/internal/server/views"
-	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-toolkit/eventbus"
 )
 
@@ -34,238 +30,751 @@ func (s *Server) setupRouter() http.Handler {
 	// Health check (public)
 	mux.HandleFunc("GET /health", s.handleHealth)
 
-	// DISABLED: remote serve temporarily unavailable
-	// mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
-	// mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/v1/auth/csrf", s.handleCSRFToken)
-	// if !s.config.APIOnly {
-	// 	mux.HandleFunc("GET /logout", s.handleLogout)
-	// }
 
 	// API routes
-	mux.HandleFunc("GET /api/v1/status", s.handleStatus)
-	mux.HandleFunc("GET /api/v1/context", s.handleContext)
+	mux.HandleFunc("GET /api/v1/status", s.handleViaRouter(CommandRoute{
+		Command:           "server-status",
+		InjectFn:          s.injectServerStatus(),
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
+	mux.HandleFunc("GET /api/v1/context", s.handleViaRouter(CommandRoute{
+		Command:           "server-context",
+		InjectFn:          s.injectServerContext(),
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
+	mux.HandleFunc("GET /api/v1/docs-url", s.handleViaRouter(CommandRoute{
+		Command:           "docs-url",
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
 
 	// License routes
-	mux.HandleFunc("GET /api/v1/license", s.handleLicense)
-	mux.HandleFunc("GET /api/v1/license/info", s.handleLicenseInfo)
+	mux.HandleFunc("GET /api/v1/license", s.handleViaRouter(CommandRoute{
+		Command:           "license",
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
+	mux.HandleFunc("GET /api/v1/license/info", s.handleViaRouter(CommandRoute{
+		Command:           "license-info",
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
 
 	// Project mode routes
 	if s.config.Mode == ModeProject {
 		// Task endpoints
-		mux.HandleFunc("GET /api/v1/task", s.handleGetTask)
-		mux.HandleFunc("GET /api/v1/tasks", s.handleListTasks)
-		mux.HandleFunc("GET /api/v1/tasks/{id}/specs", s.handleGetSpecifications)
-		mux.HandleFunc("GET /api/v1/tasks/{id}/specs/{number}/diff", s.handleGetSpecificationDiff)
-		mux.HandleFunc("GET /api/v1/tasks/{id}/sessions", s.handleGetSessions)
+		mux.HandleFunc("GET /api/v1/task", s.handleViaRouter(CommandRoute{
+			Command: "task",
+		}))
+		mux.HandleFunc("GET /api/v1/tasks", s.handleViaRouter(CommandRoute{
+			Command: "tasks",
+		}))
+		mux.HandleFunc("GET /api/v1/tasks/{id}/specs", s.handleViaRouter(CommandRoute{
+			Command:    "specifications",
+			ParseFn:    parseTaskIDInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/tasks/{id}/specs/{number}/diff", s.handleViaRouter(CommandRoute{
+			Command:    "specification-diff",
+			ParseFn:    parseSpecificationDiffInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/tasks/{id}/sessions", s.handleViaRouter(CommandRoute{
+			Command:    "sessions",
+			ParseFn:    parseTaskIDInvocation,
+			UnwrapData: true,
+		}))
+
+		// Work data by ID (active or completed tasks)
+		mux.HandleFunc("GET /api/v1/work/{id}", s.handleViaRouter(CommandRoute{
+			Command:    "work",
+			ParseFn:    parseWorkByIDInvocation,
+			UnwrapData: true,
+		}))
 
 		// Workflow action endpoints
-		mux.HandleFunc("POST /api/v1/workflow/start", s.handleWorkflowStart)
-		mux.HandleFunc("POST /api/v1/workflow/plan", s.handleWorkflowPlan)
-		mux.HandleFunc("POST /api/v1/workflow/implement", s.handleWorkflowImplement)
-		mux.HandleFunc("POST /api/v1/workflow/implement/review/{n}", s.handleWorkflowImplementReview)
-		mux.HandleFunc("POST /api/v1/workflow/review", s.handleWorkflowReview)
-		mux.HandleFunc("POST /api/v1/workflow/finish", s.handleWorkflowFinish)
-		mux.HandleFunc("POST /api/v1/workflow/undo", s.handleWorkflowUndo)
-		mux.HandleFunc("POST /api/v1/workflow/redo", s.handleWorkflowRedo)
-		mux.HandleFunc("POST /api/v1/workflow/answer", s.handleWorkflowAnswer)
-		mux.HandleFunc("POST /api/v1/workflow/resume", s.handleWorkflowResume)
-		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleWorkflowAbandon)
-		mux.HandleFunc("POST /api/v1/workflow/reset", s.handleWorkflowReset)
-		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleWorkflowContinue)
-		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleWorkflowAuto)
+		mux.HandleFunc("POST /api/v1/workflow/start", s.handleViaRouter(CommandRoute{
+			Command: "start",
+			ParseFn: s.parseStartInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/plan", s.handleViaRouter(CommandRoute{
+			Command: "plan",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/implement", s.handleViaRouter(CommandRoute{
+			Command: "implement",
+			ParseFn: parseImplementInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/implement/review/{n}", s.handleViaRouter(CommandRoute{
+			Command: "implement",
+			ParseFn: parseImplementReviewInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/review", s.handleViaRouter(CommandRoute{
+			Command: "review",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/finish", s.handleViaRouter(CommandRoute{
+			Command: "finish",
+			ParseFn: parseFinishInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/undo", s.handleViaRouter(CommandRoute{
+			Command: "undo",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/redo", s.handleViaRouter(CommandRoute{
+			Command: "redo",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/answer", s.handleViaRouter(CommandRoute{
+			Command: "answer",
+			ParseFn: parseAnswerInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/resume", s.handleViaRouter(CommandRoute{
+			Command: "continue",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/abandon", s.handleViaRouter(CommandRoute{
+			Command: "abandon",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/reset", s.handleViaRouter(CommandRoute{
+			Command: "reset",
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/continue", s.handleViaRouter(CommandRoute{
+			Command: "continue",
+			ParseFn: parseContinueInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/auto", s.handleViaRouter(CommandRoute{
+			Command: "auto",
+			ParseFn: parseAutoInvocation,
+		}))
 		mux.HandleFunc("POST /api/v1/workflow/question", s.handleWorkflowQuestion)
-		mux.HandleFunc("GET /api/v1/workflow/diagram", s.handleWorkflowDiagram)
 
 		// Notes endpoints
-		mux.HandleFunc("POST /api/v1/tasks/{id}/notes", s.handleAddNote)
-		mux.HandleFunc("GET /api/v1/tasks/{id}/notes", s.handleGetNotes)
+		mux.HandleFunc("POST /api/v1/tasks/{id}/notes", s.handleViaRouter(CommandRoute{
+			Command: "note",
+			ParseFn: parseNoteInvocation,
+		}))
+		mux.HandleFunc("GET /api/v1/tasks/{id}/notes", s.handleViaRouter(CommandRoute{
+			Command: "notes",
+			ParseFn: parseNotesInvocation,
+		}))
 
 		// Labels endpoints
-		mux.HandleFunc("GET /api/v1/task/labels", s.handleTaskLabels)
-		mux.HandleFunc("POST /api/v1/task/labels", s.handleTaskLabels)
-		mux.HandleFunc("GET /api/v1/labels", s.handleListLabels)
+		mux.HandleFunc("GET /api/v1/task/labels", s.handleViaRouter(CommandRoute{
+			Command: "label",
+			ParseFn: parseLabelsGetInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/task/labels", s.handleViaRouter(CommandRoute{
+			Command: "label",
+			ParseFn: parseLabelsPostInvocation,
+		}))
+		mux.HandleFunc("GET /api/v1/labels", s.handleViaRouter(CommandRoute{
+			Command: "labels",
+		}))
 
 		// Hierarchy endpoint
-		mux.HandleFunc("GET /api/v1/task/hierarchy", s.handleGetHierarchy)
+		mux.HandleFunc("GET /api/v1/task/hierarchy", s.handleViaRouter(CommandRoute{
+			Command:    "hierarchy",
+			UnwrapData: true,
+		}))
 
 		// Cost tracking endpoints
-		mux.HandleFunc("GET /api/v1/tasks/{id}/costs", s.handleGetTaskCosts)
-		mux.HandleFunc("GET /api/v1/costs", s.handleGetAllCosts)
+		mux.HandleFunc("GET /api/v1/tasks/{id}/costs", s.handleViaRouter(CommandRoute{
+			Command: "costs",
+			ParseFn: parseTaskIDInvocation,
+		}))
+		mux.HandleFunc("GET /api/v1/costs", s.handleViaRouter(CommandRoute{
+			Command: "costs",
+			ParseFn: parseAggregateCostsInvocation,
+		}))
 
 		// Guide endpoint
-		mux.HandleFunc("GET /api/v1/guide", s.handleGuide)
+		mux.HandleFunc("GET /api/v1/guide", s.handleViaRouter(CommandRoute{
+			Command:    "guide",
+			UnwrapData: true,
+		}))
 
 		// Info endpoints
-		mux.HandleFunc("GET /api/v1/agents", s.handleListAgents)
-		mux.HandleFunc("GET /api/v1/providers", s.handleListProviders)
+		mux.HandleFunc("GET /api/v1/agents", s.handleViaRouter(CommandRoute{
+			Command:    "agents",
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/providers", s.handleViaRouter(CommandRoute{
+			Command:           "providers",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("GET /api/v1/command/status", s.handleViaRouter(CommandRoute{
+			Command: "status",
+		}))
+		mux.HandleFunc("GET /api/v1/command/cost", s.handleViaRouter(CommandRoute{
+			Command: "cost",
+		}))
+		mux.HandleFunc("GET /api/v1/command/budget", s.handleViaRouter(CommandRoute{
+			Command: "budget",
+		}))
+		mux.HandleFunc("GET /api/v1/command/list", s.handleViaRouter(CommandRoute{
+			Command: "list",
+		}))
+		mux.HandleFunc("GET /api/v1/command/specification", s.handleViaRouter(CommandRoute{
+			Command: "specification",
+			ParseFn: parseSpecificationInvocation,
+		}))
 
 		// Agent Alias endpoints
-		mux.HandleFunc("GET /api/v1/agents/aliases", s.handleListAgentAliases)
-		mux.HandleFunc("POST /api/v1/agents/aliases", s.handleCreateAgentAlias)
-		mux.HandleFunc("DELETE /api/v1/agents/aliases/", s.handleDeleteAgentAlias)
+		mux.HandleFunc("GET /api/v1/agents/aliases", s.handleViaRouter(CommandRoute{
+			Command:    "agent-alias",
+			ParseFn:    parseAgentAliasListInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/agents/aliases", s.handleViaRouter(CommandRoute{
+			Command: "agent-alias",
+			ParseFn: parseAgentAliasAddInvocation,
+		}))
+		mux.HandleFunc("DELETE /api/v1/agents/aliases/", s.handleViaRouter(CommandRoute{
+			Command: "agent-alias",
+			ParseFn: parseAgentAliasDeleteInvocation,
+		}))
 
 		// Browser automation endpoints
-		mux.HandleFunc("GET /api/v1/browser/status", s.handleBrowserStatus)
-		mux.HandleFunc("GET /api/v1/browser/tabs", s.handleBrowserTabs)
-		mux.HandleFunc("POST /api/v1/browser/goto", s.handleBrowserGoto)
-		mux.HandleFunc("POST /api/v1/browser/navigate", s.handleBrowserNavigate)
-		mux.HandleFunc("POST /api/v1/browser/switch", s.handleBrowserSwitch)
-		mux.HandleFunc("POST /api/v1/browser/screenshot", s.handleBrowserScreenshot)
-		mux.HandleFunc("POST /api/v1/browser/click", s.handleBrowserClick)
-		mux.HandleFunc("POST /api/v1/browser/type", s.handleBrowserType)
-		mux.HandleFunc("POST /api/v1/browser/eval", s.handleBrowserEval)
-		mux.HandleFunc("POST /api/v1/browser/dom", s.handleBrowserDOM)
-		mux.HandleFunc("POST /api/v1/browser/reload", s.handleBrowserReload)
-		mux.HandleFunc("POST /api/v1/browser/close", s.handleBrowserClose)
-		mux.HandleFunc("GET /api/v1/browser/cookies", s.handleBrowserCookiesGet)
-		mux.HandleFunc("POST /api/v1/browser/cookies", s.handleBrowserCookiesSet)
+		mux.HandleFunc("GET /api/v1/browser/status", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserGetSubcommand("status"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/browser/tabs", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserGetSubcommand("tabs"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/goto", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("goto"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/navigate", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("navigate"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/switch", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("switch"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/screenshot", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("screenshot"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/click", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("click"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/type", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("type"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/eval", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("eval"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/dom", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("dom"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/reload", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("reload"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/close", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("close"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/browser/cookies", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserCookiesGetInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/cookies", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("cookies-set"),
+			UnwrapData: true,
+		}))
 
 		// Browser DevTools endpoints
-		mux.HandleFunc("POST /api/v1/browser/network", s.handleBrowserNetwork)
-		mux.HandleFunc("POST /api/v1/browser/console", s.handleBrowserConsole)
-		mux.HandleFunc("POST /api/v1/browser/websocket", s.handleBrowserWebSocket)
-		mux.HandleFunc("POST /api/v1/browser/source", s.handleBrowserSource)
-		mux.HandleFunc("POST /api/v1/browser/scripts", s.handleBrowserScripts)
-		mux.HandleFunc("POST /api/v1/browser/styles", s.handleBrowserStyles)
-		mux.HandleFunc("POST /api/v1/browser/coverage", s.handleBrowserCoverage)
+		mux.HandleFunc("POST /api/v1/browser/network", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("network"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/console", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("console"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/websocket", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("websocket"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/source", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("source"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/scripts", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("scripts"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/styles", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("styles"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/browser/coverage", s.handleViaRouter(CommandRoute{
+			Command:    "browser",
+			ParseFn:    parseBrowserSubcommand("coverage"),
+			UnwrapData: true,
+		}))
 
 		// Security scan endpoint
-		mux.HandleFunc("POST /api/v1/scan", s.handleSecurityScan)
+		mux.HandleFunc("POST /api/v1/scan", s.handleViaRouter(CommandRoute{
+			Command:    "security-scan",
+			ParseFn:    parseSecurityScanInvocation,
+			UnwrapData: true,
+		}))
 
 		// Memory endpoints
-		mux.HandleFunc("GET /api/v1/memory/search", s.handleMemorySearch)
-		mux.HandleFunc("POST /api/v1/memory/index", s.handleMemoryIndex)
-		mux.HandleFunc("GET /api/v1/memory/stats", s.handleMemoryStats)
+		mux.HandleFunc("GET /api/v1/memory/search", s.handleViaRouter(CommandRoute{
+			Command:    "memory",
+			ParseFn:    parseMemorySearchInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/memory/index", s.handleViaRouter(CommandRoute{
+			Command:    "memory",
+			ParseFn:    parseMemoryIndexInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/memory/stats", s.handleViaRouter(CommandRoute{
+			Command:    "memory",
+			ParseFn:    parseMemoryStatsInvocation,
+			UnwrapData: true,
+		}))
 
 		// Library endpoints
-		mux.HandleFunc("GET /api/v1/library", s.handleLibraryList)
-		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
-		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
-		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
-		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleLibraryItems)
-		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
-		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
+		mux.HandleFunc("GET /api/v1/library", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryListInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/stats", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryStatsInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/library/pull", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryPullInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryPullPreviewInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryItemsInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryShowInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("DELETE /api/v1/library/", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryRemoveInvocation,
+			UnwrapData: true,
+		}))
 
 		// Links endpoints
-		mux.HandleFunc("GET /api/v1/links", s.handleListLinks)
-		mux.HandleFunc("GET /api/v1/links/", s.handleGetEntityLinks)
-		mux.HandleFunc("GET /api/v1/links/search", s.handleSearchLinks)
-		mux.HandleFunc("GET /api/v1/links/stats", s.handleLinksStats)
-		mux.HandleFunc("POST /api/v1/links/rebuild", s.handleRebuildLinks)
+		mux.HandleFunc("GET /api/v1/links", s.handleViaRouter(CommandRoute{
+			Command:    "links",
+			ParseFn:    parseLinksListInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/links/search", s.handleViaRouter(CommandRoute{
+			Command:    "links",
+			ParseFn:    parseLinksSearchInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/links/stats", s.handleViaRouter(CommandRoute{
+			Command:    "links",
+			ParseFn:    parseLinksStatsInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/links/", s.handleViaRouter(CommandRoute{
+			Command:    "links",
+			ParseFn:    parseLinksEntityInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/links/rebuild", s.handleViaRouter(CommandRoute{
+			Command:    "links",
+			ParseFn:    parseLinksRebuildInvocation,
+			UnwrapData: true,
+		}))
 
-		// Find search endpoints
+		// Find search endpoints (JSON mode via router, SSE streaming via thin handler)
 		mux.HandleFunc("GET /api/v1/find", s.handleFindSearch)
 		mux.HandleFunc("POST /api/v1/find", s.handleFindSearch)
 
 		// Budget endpoints
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
-		mux.HandleFunc("POST /api/v1/budget/monthly/reset", s.handleBudgetMonthlyReset)
+		mux.HandleFunc("POST /api/v1/budget/monthly/reset", s.handleViaRouter(CommandRoute{
+			Command: "budget-reset",
+		}))
 
 		// Sync and simplify endpoints
-		mux.HandleFunc("POST /api/v1/workflow/sync", s.handleWorkflowSync)
-		mux.HandleFunc("POST /api/v1/workflow/simplify", s.handleWorkflowSimplify)
+		mux.HandleFunc("POST /api/v1/workflow/sync", s.handleViaRouter(CommandRoute{
+			Command: "sync",
+			ParseFn: parseSyncInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/workflow/simplify", s.handleViaRouter(CommandRoute{
+			Command: "simplify",
+			ParseFn: parseSimplifyInvocation,
+		}))
 
-		// Standalone review/simplify endpoints (no active task required)
-		mux.HandleFunc("POST /api/v1/workflow/review/standalone", s.handleStandaloneReview)
-		mux.HandleFunc("POST /api/v1/workflow/simplify/standalone", s.handleStandaloneSimplify)
+		// Standalone review/simplify endpoints (SSE+JSON split: SSE stays inline, JSON goes through router)
+		mux.HandleFunc("POST /api/v1/workflow/review/standalone", s.handleStandaloneReviewDispatch)
+		mux.HandleFunc("POST /api/v1/workflow/simplify/standalone", s.handleStandaloneSimplifyDispatch)
 
 		// Templates endpoints
-		mux.HandleFunc("GET /api/v1/templates", s.handleListTemplates)
-		mux.HandleFunc("GET /api/v1/templates/{name}", s.handleGetTemplate)
-		mux.HandleFunc("POST /api/v1/templates/apply", s.handleApplyTemplate)
+		mux.HandleFunc("GET /api/v1/templates", s.handleViaRouter(CommandRoute{
+			Command:           "template",
+			ParseFn:           parseTemplateListInvocation,
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("GET /api/v1/templates/{name}", s.handleViaRouter(CommandRoute{
+			Command:           "template",
+			ParseFn:           parseTemplateGetInvocation,
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("POST /api/v1/templates/apply", s.handleViaRouter(CommandRoute{
+			Command:    "template",
+			ParseFn:    parseTemplateApplyInvocation,
+			UnwrapData: true,
+		}))
 
 		// Settings endpoints
-		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
+		mux.HandleFunc("GET /api/v1/settings", s.handleViaRouter(CommandRoute{
+			Command:    "settings-get",
+			ParseFn:    parseSettingsGetInvocation,
+			InjectFn:   s.injectSettingsMode(),
+			UnwrapData: true,
+		}))
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
-		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
-		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+		mux.HandleFunc("GET /api/v1/settings/explain", s.handleViaRouter(CommandRoute{
+			Command:    "config-explain",
+			ParseFn:    parseConfigExplainInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleViaRouter(CommandRoute{
+			Command:    "provider-health",
+			UnwrapData: true,
+		}))
 
 		// Sandbox endpoints
-		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
-		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
-		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
+		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleViaRouter(CommandRoute{
+			Command:           "sandbox-status",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleViaRouter(CommandRoute{
+			Command:    "sandbox-enable",
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleViaRouter(CommandRoute{
+			Command:    "sandbox-disable",
+			UnwrapData: true,
+		}))
 
 		// Interactive chat API (always available in API mode for IDE plugins)
 		mux.HandleFunc("POST /api/v1/interactive/chat", s.handleInteractiveChat)
 		mux.HandleFunc("POST /api/v1/interactive/command", s.handleInteractiveCommand)
-		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleInteractiveAnswer)
-		mux.HandleFunc("GET /api/v1/interactive/state", s.handleInteractiveState)
+		mux.HandleFunc("POST /api/v1/interactive/answer", s.handleViaRouter(CommandRoute{
+			Command: "interactive-answer",
+			ParseFn: parseInteractiveAnswerInvocation,
+		}))
+		mux.HandleFunc("GET /api/v1/interactive/state", s.handleViaRouter(CommandRoute{
+			Command:           "interactive-state",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
 		mux.HandleFunc("POST /api/v1/interactive/stop", s.handleInteractiveStop)
-		mux.HandleFunc("GET /api/v1/interactive/commands", s.handleInteractiveCommands)
+		mux.HandleFunc("GET /api/v1/interactive/commands", s.handleViaRouter(CommandRoute{
+			Command:           "interactive-commands",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
 
 		// Commit API endpoints (always available)
-		mux.HandleFunc("GET /api/v1/commit/changes", s.handleCommitChanges)
-		mux.HandleFunc("GET /api/v1/commit/plan", s.handleCommitPlan)
-		mux.HandleFunc("POST /api/v1/commit/execute", s.handleCommitExecute)
+		mux.HandleFunc("GET /api/v1/commit/changes", s.handleViaRouter(CommandRoute{
+			Command:    "commit",
+			ParseFn:    parseCommitChangesInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/commit/plan", s.handleViaRouter(CommandRoute{
+			Command:    "commit",
+			ParseFn:    parseCommitPlanInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/commit/execute", s.handleViaRouter(CommandRoute{
+			Command:    "commit",
+			ParseFn:    parseCommitExecuteInvocation,
+			UnwrapData: true,
+		}))
 
 		// Stack management API (always available)
-		mux.HandleFunc("GET /api/v1/stack", s.handleStackList)
-		mux.HandleFunc("POST /api/v1/stack/sync", s.handleStackSync)
-		mux.HandleFunc("GET /api/v1/stack/rebase-preview", s.handleStackRebasePreview)
-		mux.HandleFunc("POST /api/v1/stack/rebase", s.handleStackRebase)
+		mux.HandleFunc("GET /api/v1/stack", s.handleViaRouter(CommandRoute{
+			Command:    "stack",
+			ParseFn:    parseStackSubcommand("list"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/stack/sync", s.handleViaRouter(CommandRoute{
+			Command:    "stack",
+			ParseFn:    parseStackSubcommand("sync"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/stack/rebase-preview", s.handleViaRouter(CommandRoute{
+			Command:    "stack",
+			ParseFn:    parseStackRebasePreviewInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/stack/rebase", s.handleViaRouter(CommandRoute{
+			Command:    "stack",
+			ParseFn:    parseStackRebaseInvocation,
+			UnwrapData: true,
+		}))
 
 		// Project workflow endpoints
-		mux.HandleFunc("POST /api/v1/project/upload", s.handleProjectUpload)
-		mux.HandleFunc("POST /api/v1/project/source", s.handleProjectSource)
-		mux.HandleFunc("POST /api/v1/project/plan", s.handleProjectPlan)
-		mux.HandleFunc("GET /api/v1/project/queues", s.handleProjectQueues)
-		mux.HandleFunc("GET /api/v1/project/queue/", s.handleProjectQueueRoute)
-		mux.HandleFunc("DELETE /api/v1/project/queue/", s.handleProjectQueueDeleteRoute)
-		mux.HandleFunc("GET /api/v1/project/tasks", s.handleProjectTasks)
-		mux.HandleFunc("PUT /api/v1/project/tasks/", s.handleProjectTaskEditRoute)
-		mux.HandleFunc("POST /api/v1/project/reorder", s.handleProjectReorder)
-		mux.HandleFunc("POST /api/v1/project/submit", s.handleProjectSubmit)
-		mux.HandleFunc("POST /api/v1/project/start", s.handleProjectStart)
+		mux.HandleFunc("POST /api/v1/project/upload", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    s.parseProjectUploadInvocation(),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/project/source", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    s.parseProjectSourceInvocation(),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/project/plan", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectPlanInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/project/queues", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectSubcommand("queues"),
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/project/queue/", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectQueueInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("DELETE /api/v1/project/queue/", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectQueueDeleteInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/project/tasks", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectTasksInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("PUT /api/v1/project/tasks/", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectTaskEditInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/project/reorder", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectReorderInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/project/submit", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectSubmitInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/project/start", s.handleViaRouter(CommandRoute{
+			Command:    "project",
+			ParseFn:    parseProjectStartInvocation,
+			UnwrapData: true,
+		}))
 		mux.HandleFunc("POST /api/v1/project/sync", s.handleProjectSync)
 
 		// Quick tasks endpoints (API always available, UI only in full mode)
-		mux.HandleFunc("GET /api/v1/quick", s.handleQuickTaskList)
-		mux.HandleFunc("POST /api/v1/quick", s.handleQuickTaskCreate)
-		mux.HandleFunc("POST /api/v1/quick/submit-source", s.handleQuickTaskSubmitSource)
+		mux.HandleFunc("GET /api/v1/quick", s.handleViaRouter(CommandRoute{
+			Command:    "quick-list",
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick", s.handleViaRouter(CommandRoute{
+			Command:    "quick",
+			ParseFn:    parseQuickCreateInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/submit-source", s.handleViaRouter(CommandRoute{
+			Command:    "submit-source",
+			ParseFn:    parseSubmitSourceInvocation,
+			UnwrapData: true,
+		}))
 		// Quick task item endpoints using Go 1.22+ wildcard patterns
-		mux.HandleFunc("GET /api/v1/quick/{taskId}", s.handleQuickTaskGet)
-		mux.HandleFunc("POST /api/v1/quick/{taskId}/note", s.handleQuickTaskNote)
-		mux.HandleFunc("POST /api/v1/quick/{taskId}/optimize", s.handleQuickTaskOptimize)
-		mux.HandleFunc("POST /api/v1/quick/{taskId}/export", s.handleQuickTaskExport)
-		mux.HandleFunc("POST /api/v1/quick/{taskId}/submit", s.handleQuickTaskSubmit)
-		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleQuickTaskStart)
-		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleQuickTaskDelete)
+		mux.HandleFunc("GET /api/v1/quick/{taskId}", s.handleViaRouter(CommandRoute{
+			Command:    "quick-get",
+			ParseFn:    parseQuickTaskIDInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/note", s.handleViaRouter(CommandRoute{
+			Command: "quick-note",
+			ParseFn: parseQuickNoteInvocation,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/optimize", s.handleViaRouter(CommandRoute{
+			Command:    "optimize",
+			ParseFn:    parseQuickOptimizeInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/export", s.handleViaRouter(CommandRoute{
+			Command:    "export",
+			ParseFn:    parseQuickExportInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/submit", s.handleViaRouter(CommandRoute{
+			Command:    "submit",
+			ParseFn:    parseQuickSubmitInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/quick/{taskId}/start", s.handleViaRouter(CommandRoute{
+			Command: "start",
+			ParseFn: parseQuickStartInvocation,
+		}))
+		mux.HandleFunc("DELETE /api/v1/quick/{taskId}", s.handleViaRouter(CommandRoute{
+			Command: "delete",
+			ParseFn: parseQuickDeleteInvocation,
+		}))
 
 		// Running parallel tasks endpoints
-		mux.HandleFunc("GET /api/v1/running", s.handleRunningTasks)
-		mux.HandleFunc("POST /api/v1/running/", s.handleRunningTaskRoutes) // Handles cancel sub-routes
-		mux.HandleFunc("GET /api/v1/running/", s.handleRunningTaskRoutes)  // Handles stream sub-routes
+		mux.HandleFunc("GET /api/v1/running", s.handleViaRouter(CommandRoute{
+			Command:           "running-list",
+			InjectFn:          s.injectTaskRegistry(),
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("POST /api/v1/running/{id}/cancel", s.handleViaRouter(CommandRoute{
+			Command:           "running-cancel",
+			ParseFn:           parseRunningCancelInvocation,
+			InjectFn:          s.injectTaskRegistry(),
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("GET /api/v1/running/{id}/stream", s.handleRunningTaskStream)
 		mux.HandleFunc("POST /api/v1/parallel", s.handleParallelStart)
 	}
 
 	// Global mode routes
 	if s.config.Mode == ModeGlobal {
-		mux.HandleFunc("GET /api/v1/projects", s.handleListProjects)
+		mux.HandleFunc("GET /api/v1/projects", s.handleViaRouter(CommandRoute{
+			Command:           "projects-list",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
 		mux.HandleFunc("POST /api/v1/projects/select", s.handleSelectProject)
 
 		// Settings endpoints
-		mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
+		mux.HandleFunc("GET /api/v1/settings", s.handleViaRouter(CommandRoute{
+			Command:           "settings-get",
+			ParseFn:           parseSettingsGetInvocation,
+			InjectFn:          s.injectSettingsMode(),
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
 		mux.HandleFunc("POST /api/v1/settings", s.handleSaveSettings)
-		mux.HandleFunc("GET /api/v1/settings/explain", s.handleConfigExplain)
-		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleProviderHealth)
+		mux.HandleFunc("GET /api/v1/settings/explain", s.handleViaRouter(CommandRoute{
+			Command:    "config-explain",
+			ParseFn:    parseConfigExplainInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/settings/provider-health", s.handleViaRouter(CommandRoute{
+			Command:    "provider-health",
+			UnwrapData: true,
+		}))
 
 		// Budget status endpoint (returns placeholder when no workspace)
 		mux.HandleFunc("GET /api/v1/budget/monthly/status", s.handleBudgetMonthlyStatus)
 
 		// Sandbox endpoints (also available in global mode)
-		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleSandboxStatus)
-		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleSandboxEnable)
-		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleSandboxDisable)
+		mux.HandleFunc("GET /api/v1/sandbox/status", s.handleViaRouter(CommandRoute{
+			Command:           "sandbox-status",
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("POST /api/v1/sandbox/enable", s.handleViaRouter(CommandRoute{
+			Command:    "sandbox-enable",
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/sandbox/disable", s.handleViaRouter(CommandRoute{
+			Command:    "sandbox-disable",
+			UnwrapData: true,
+		}))
 
 		// Library endpoints (shared collections available without project)
-		mux.HandleFunc("GET /api/v1/library", s.handleLibraryList)
-		mux.HandleFunc("GET /api/v1/library/stats", s.handleLibraryStats)
-		mux.HandleFunc("POST /api/v1/library/pull", s.handleLibraryPull)
-		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleLibraryPullPreview)
-		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleLibraryItems)
-		mux.HandleFunc("GET /api/v1/library/", s.handleLibraryShow)
-		mux.HandleFunc("DELETE /api/v1/library/", s.handleLibraryRemove)
+		globalLibInject := injectLibraryGlobalMode(s.config.Mode)
+		mux.HandleFunc("GET /api/v1/library", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryListInvocation,
+			InjectFn:   globalLibInject,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/stats", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryStatsInvocation,
+			InjectFn:   globalLibInject,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/library/pull", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryPullInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("POST /api/v1/library/pull/preview", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryPullPreviewInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/{id}/items", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryItemsInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("GET /api/v1/library/", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryShowInvocation,
+			UnwrapData: true,
+		}))
+		mux.HandleFunc("DELETE /api/v1/library/", s.handleViaRouter(CommandRoute{
+			Command:    "library",
+			ParseFn:    parseLibraryRemoveInvocation,
+			UnwrapData: true,
+		}))
 	}
 
 	// Switch project route (available when started in global mode)
@@ -273,21 +782,17 @@ func (s *Server) setupRouter() http.Handler {
 		mux.HandleFunc("POST /api/v1/projects/switch", s.handleSwitchProject)
 	}
 
-	// DISABLED: automation temporarily unavailable (requires remote serve)
-	// mux.HandleFunc("POST /api/v1/webhooks/{provider}", s.handleWebhook)
-	// mux.HandleFunc("GET /api/v1/automation/status", s.handleAutomationStatus)
-	// mux.HandleFunc("GET /api/v1/automation/jobs", s.handleAutomationJobs)
-	// mux.HandleFunc("GET /api/v1/automation/jobs/{id}", s.handleAutomationJob)
-	// mux.HandleFunc("POST /api/v1/automation/jobs/{id}/cancel", s.handleAutomationJobCancel)
-	// mux.HandleFunc("POST /api/v1/automation/jobs/{id}/retry", s.handleAutomationJobRetry)
-	// mux.HandleFunc("GET /api/v1/automation/config", s.handleAutomationConfig)
-
 	// SSE events endpoint
 	mux.HandleFunc("GET /api/v1/events", s.handleEvents)
 
 	// Agent logs streaming endpoints
 	mux.HandleFunc("GET /api/v1/agent/logs/stream", s.handleAgentLogs)
-	mux.HandleFunc("GET /api/v1/agent/logs/history", s.handleAgentLogsHistory)
+	mux.HandleFunc("GET /api/v1/agent/logs/history", s.handleViaRouter(CommandRoute{
+		Command:           "agent-logs-history",
+		ParseFn:           parseAgentLogsHistoryInvocation,
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
 
 	// React SPA catch-all - skip in API-only mode
 	// Note: /{path...} matches all paths including root "/" in Go 1.22+
@@ -297,11 +802,9 @@ func (s *Server) setupRouter() http.Handler {
 
 	// Wrap with middleware chain (innermost to outermost):
 	// 1. Logging (innermost)
-	// 2. CSRF validation
-	// 3. Authentication (outermost)
+	// 2. CSRF validation (outermost)
 	handler := s.withMiddleware(mux)
 	handler = s.csrfMiddleware(handler)
-	handler = s.authMiddleware(handler)
 
 	return handler
 }
@@ -368,240 +871,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Status handler returns server and workspace status.
-func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	response := map[string]any{
-		"mode":              s.modeString(),
-		"running":           s.IsRunning(),
-		"port":              s.Port(),
-		"canSwitchToGlobal": s.startedInGlobalMode,
-	}
-
-	if project := s.currentProjectStatusInfo(); project != nil {
-		response["project"] = project
-	}
-
-	if s.config.Mode == ModeProject && s.config.Conductor != nil {
-		machine := s.config.Conductor.GetMachine()
-		if machine != nil {
-			response["state"] = string(machine.State())
-		}
-	}
-
-	s.writeJSON(w, http.StatusOK, response)
-}
-
-// Context handler returns server context (worktree status, current task).
-func (s *Server) handleContext(w http.ResponseWriter, r *http.Request) {
-	response := map[string]any{
-		"mode":           s.modeString(),
-		"workspace_root": s.config.WorkspaceRoot,
-	}
-
-	if s.config.Mode == ModeProject && s.config.Conductor != nil {
-		activeTask := s.config.Conductor.GetActiveTask()
-		if activeTask != nil {
-			response["current_task"] = map[string]any{
-				"id":            activeTask.ID,
-				"state":         activeTask.State,
-				"ref":           activeTask.Ref,
-				"branch":        activeTask.Branch,
-				"worktree_path": activeTask.WorktreePath,
-				"started":       activeTask.Started,
-			}
-		}
-	}
-
-	s.writeJSON(w, http.StatusOK, response)
-}
-
-// GetTask handler returns the active task details.
-func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
-	}
-
-	// Read from disk (same as CLI's mehr status) to avoid stale in-memory state
-	// when CLI operations modify .active_task in a separate process.
-	if !ws.HasActiveTask() {
-		s.writeJSON(w, http.StatusOK, map[string]any{
-			"active": false,
-		})
-
-		return
-	}
-
-	activeTask, err := ws.LoadActiveTask()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to load active task: "+err.Error())
-
-		return
-	}
-
-	taskWork, err := ws.LoadWork(activeTask.ID)
-	if err != nil {
-		taskWork = nil
-	}
-
-	// Compute progress phase for context-aware state display (matches CLI behavior)
-	progressPhase := computeProgressPhase(ws, activeTask.ID)
-
-	response := map[string]any{
-		"active": true,
-		"task": map[string]any{
-			"id":             activeTask.ID,
-			"state":          activeTask.State,
-			"progress_phase": string(progressPhase),
-			"ref":            activeTask.Ref,
-			"branch":         activeTask.Branch,
-			"worktree_path":  activeTask.WorktreePath,
-			"started":        activeTask.Started,
-		},
-	}
-
-	if taskWork != nil {
-		workResponse := map[string]any{
-			"title":        taskWork.Metadata.Title,
-			"external_key": taskWork.Metadata.ExternalKey,
-			"created_at":   taskWork.Metadata.CreatedAt,
-			"updated_at":   taskWork.Metadata.UpdatedAt,
-			"costs":        taskWork.Costs,
-		}
-
-		// Include source content as description for task detail view
-		if content, err := ws.GetSourceContent(activeTask.ID); err == nil && content != "" {
-			workResponse["description"] = content
-		}
-
-		// Include reviews if available
-		if reviewsData := views.ComputeReviews(ws, activeTask.ID); reviewsData != nil {
-			reviewList := make([]map[string]any, 0, len(reviewsData.Items))
-			for _, item := range reviewsData.Items {
-				reviewList = append(reviewList, map[string]any{
-					"number":      item.Number,
-					"status":      strings.ToLower(item.Status),
-					"summary":     item.Summary,
-					"issue_count": item.IssueCount,
-				})
-			}
-			workResponse["reviews"] = reviewList
-		}
-
-		response["work"] = workResponse
-	}
-
-	// Add pending question if present
-	if ws != nil {
-		enhanceTaskResponseWithPendingQuestion(response, ws, activeTask.ID)
-	}
-
-	s.writeJSON(w, http.StatusOK, response)
-}
-
-// ListTasks handler returns all tasks in the workspace.
-func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
-	if s.config.Conductor == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "conductor not initialized")
-
-		return
-	}
-
-	ws := s.config.Conductor.GetWorkspace()
-	if ws == nil {
-		s.writeError(w, http.StatusServiceUnavailable, "workspace not initialized")
-
-		return
-	}
-
-	taskIDs, err := ws.ListWorks()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to list tasks: "+err.Error())
-
-		return
-	}
-
-	// Read active task from disk to avoid stale in-memory state
-	var activeTask *storage.ActiveTask
-	if ws.HasActiveTask() {
-		activeTask, _ = ws.LoadActiveTask()
-	}
-
-	var tasks []map[string]any
-	for _, id := range taskIDs {
-		work, err := ws.LoadWork(id)
-		if err != nil {
-			continue
-		}
-
-		// Use active task's live state if this is the active task
-		state := work.Metadata.State
-		if activeTask != nil && activeTask.ID == id {
-			state = activeTask.State
-		}
-
-		// Compute progress phase for context-aware state display
-		progressPhase := computeProgressPhase(ws, id)
-
-		task := map[string]any{
-			"id":             id,
-			"title":          work.Metadata.Title,
-			"state":          state,
-			"progress_phase": string(progressPhase),
-			"created_at":     work.Metadata.CreatedAt,
-		}
-
-		// Check for worktree
-		if work.Git.WorktreePath != "" {
-			task["worktree_path"] = work.Git.WorktreePath
-		}
-
-		tasks = append(tasks, task)
-	}
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"tasks": tasks,
-		"count": len(tasks),
-	})
-}
-
-// ListProjects handler returns all registered projects (global mode).
-// Uses the project registry (not workspace discovery) to show only explicitly registered projects.
-func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
-	registry, err := storage.LoadRegistry()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "failed to load registry: "+err.Error())
-
-		return
-	}
-
-	projects := registry.List()
-	result := make([]map[string]any, 0, len(projects))
-
-	for _, p := range projects {
-		result = append(result, map[string]any{
-			"id":          p.ID,
-			"name":        p.Name,
-			"path":        p.Path,
-			"remote_url":  storage.SanitizeRemoteURL(p.RemoteURL),
-			"last_access": p.LastAccess,
-		})
-	}
-
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"projects": result,
-		"count":    len(result),
-	})
-}
-
 // Events handler provides SSE stream of events.
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// Disable write timeout for SSE (allows indefinite streaming during long agent operations)
@@ -637,7 +906,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// Use channel-based event delivery to prevent panic on client disconnect.
 	// The callback only writes to a channel (never panics), while the main loop
 	// checks ctx.Done() before writing to ResponseWriter.
-	eventCh := make(chan eventbus.Event, 100)
+	eventCh := make(chan eventbus.Event, 500) // Increased from 100 to prevent event drops during heavy agent streaming
 	subID := s.config.EventBus.SubscribeAll(func(e eventbus.Event) {
 		select {
 		case eventCh <- e:
@@ -788,38 +1057,4 @@ func (s *Server) runSSEEventLoop(w http.ResponseWriter, flusher http.Flusher, ct
 			}
 		}
 	}
-}
-
-// computeProgressPhase determines the progress phase for a task.
-// This matches the CLI's display logic so Web UI shows consistent state names.
-func computeProgressPhase(ws *storage.Workspace, taskID string) display.ProgressPhase {
-	if ws == nil {
-		return display.PhaseStarted
-	}
-
-	hasSpecs := false
-	hasImplementedFiles := false
-	hasReviews := false
-
-	// Check for specifications and implemented files
-	if specs, err := ws.ListSpecifications(taskID); err == nil && len(specs) > 0 {
-		hasSpecs = true
-		// Check for implemented files in any specification
-		for _, specNum := range specs {
-			if spec, err := ws.ParseSpecification(taskID, specNum); err == nil {
-				if len(spec.ImplementedFiles) > 0 {
-					hasImplementedFiles = true
-
-					break
-				}
-			}
-		}
-	}
-
-	// Check for reviews
-	if reviews, err := ws.ListReviews(taskID); err == nil && len(reviews) > 0 {
-		hasReviews = true
-	}
-
-	return display.DetectProgressPhase(hasSpecs, hasImplementedFiles, hasReviews)
 }
