@@ -763,6 +763,12 @@ export interface Review {
   issue_count: number
 }
 
+// /api/v1/labels response
+export interface LabelsResponse {
+  labels: string[]
+  count: number
+}
+
 // PR info for completed tasks
 export interface PullRequestInfo {
   number: number
