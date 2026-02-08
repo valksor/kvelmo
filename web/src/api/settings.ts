@@ -62,13 +62,42 @@ export function useTaskHistory(options: { enabled?: boolean } = {}) {
 }
 
 /**
+ * Agent capabilities returned by the API
+ */
+export interface AgentCapabilities {
+  streaming: boolean
+  tool_use: boolean
+  file_operations: boolean
+  code_execution: boolean
+  multi_turn: boolean
+  system_prompt: boolean
+  allowed_tools?: string[]
+}
+
+/**
+ * Agent model information
+ */
+export interface AgentModel {
+  id: string
+  name: string
+  default?: boolean
+  max_tokens?: number
+  input_cost_usd?: number
+  output_cost_usd?: number
+}
+
+/**
  * Agent information returned by the API
  */
-interface AgentInfo {
+export interface AgentInfo {
   name: string
-  type: string
+  type: 'built-in' | 'alias'
+  extends?: string           // For alias agents - base agent name
+  description?: string
+  version?: string
   available: boolean
-  models?: { id: string; name: string }[]
+  capabilities?: AgentCapabilities
+  models?: AgentModel[]
 }
 
 /**
