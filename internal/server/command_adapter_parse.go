@@ -1224,6 +1224,43 @@ func parseStandaloneSimplifyInvocation(r *http.Request) (commands.Invocation, er
 	}, nil
 }
 
+// --- Filesystem browse parse function ---
+
+func parseFSBrowseInvocation(r *http.Request) (commands.Invocation, error) {
+	// Get path from query parameter (optional - defaults to home dir in handler)
+	path := r.URL.Query().Get("path")
+
+	return commands.Invocation{
+		Source: commands.SourceAPI,
+		Options: map[string]any{
+			"path": path,
+		},
+	}, nil
+}
+
+// --- Project tracking parse function ---
+
+func parseProjectPathInvocation(r *http.Request) (commands.Invocation, error) {
+	var req struct {
+		Path string `json:"path"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		return commands.Invocation{}, errors.New("invalid request body: " + err.Error())
+	}
+
+	if req.Path == "" {
+		return commands.Invocation{}, errors.New("path is required")
+	}
+
+	return commands.Invocation{
+		Source: commands.SourceAPI,
+		Options: map[string]any{
+			"path": req.Path,
+		},
+	}, nil
+}
+
 // --- InjectFn helpers ---
 
 // injectServerStatus returns an InjectFn that adds server status info to the invocation.
@@ -1240,6 +1277,17 @@ func (s *Server) injectServerStatus() func(r *http.Request, inv *commands.Invoca
 
 		if project := s.currentProjectStatusInfo(); project != nil {
 			inv.Options["project"] = project
+		}
+
+		// Add config version status if conductor is available
+		if s.config.Conductor != nil {
+			if status := s.config.Conductor.GetConfigVersionStatus(); status != nil {
+				inv.Options["config_version"] = map[string]any{
+					"current":     status.Current,
+					"required":    status.Required,
+					"is_outdated": status.IsOutdated,
+				}
+			}
 		}
 	}
 }
