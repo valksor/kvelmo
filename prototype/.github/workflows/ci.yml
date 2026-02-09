@@ -252,6 +252,44 @@ jobs:
                     flag-name: react-coverage
                     base-path: web
 
+    desktop:
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+        runs-on: ubuntu-amd
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Install Dependencies
+                working-directory: desktop
+                run: bun install
+
+            -   name: Lint
+                working-directory: desktop
+                run: bun run lint
+
+            -   name: Run Tests with Coverage
+                working-directory: desktop
+                run: bun run test:coverage
+
+            -   name: Upload Desktop coverage to Coveralls
+                if: github.event_name != 'pull_request'
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: desktop/coverage/lcov.info
+                    format: lcov
+                    parallel: true
+                    flag-name: desktop-coverage
+                    base-path: desktop
+
     # Test mehr-embedder build (CGO + ONNX Runtime)
     # This ensures the embedder compiles on supported platforms
     embedder:
@@ -323,7 +361,7 @@ jobs:
                     flag-name: embedder-coverage
 
     coverage-finish:
-        needs: [test, jetbrains, vscode, web, embedder]
+        needs: [test, jetbrains, vscode, web, desktop, embedder]
         runs-on: ubuntu-amd
         if: >-
             github.event_name != 'pull_request' &&
@@ -332,6 +370,7 @@ jobs:
             needs.jetbrains.result == 'success' &&
             needs.vscode.result == 'success' &&
             needs.web.result == 'success' &&
+            (needs.desktop.result == 'success' || needs.desktop.result == 'skipped') &&
             (needs.embedder.result == 'success' || needs.embedder.result == 'skipped')
         steps:
             -   name: Finish Coveralls parallel build
@@ -339,10 +378,10 @@ jobs:
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
                     parallel-finished: true
-                    carryforward: "go-coverage,kotlin-coverage,typescript-coverage,react-coverage,embedder-coverage"
+                    carryforward: "go-coverage,kotlin-coverage,typescript-coverage,react-coverage,desktop-coverage,embedder-coverage"
 
     cleanup:
-        needs: [test, jetbrains, vscode, web, embedder, coverage-finish]
+        needs: [test, jetbrains, vscode, web, desktop, embedder, coverage-finish]
         if: always()
         strategy:
             matrix:
@@ -373,6 +412,8 @@ jobs:
                     rm -rf ide/vscode/coverage/ || true
                     rm -rf web/node_modules/ || true
                     rm -rf web/coverage/ || true
+                    rm -rf desktop/node_modules/ || true
+                    rm -rf desktop/coverage/ || true
 
             -   name: Cleanup browser caches
                 run: |

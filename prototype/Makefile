@@ -1,4 +1,4 @@
-.PHONY: build build-embedder test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-a11y web-test web-test-coverage
+.PHONY: build build-embedder test quality install clean run hooks lefthook generate-licenses e2e e2e-fast e2e-check vscode-quality jetbrains-quality ide-quality quality-all sandbox-build sandbox-build-dev sandbox-run sandbox-interactive sandbox-push sandbox-ls sandbox-clean web-build web-dev web-install web-a11y web-test web-test-coverage desktop-install desktop-dev desktop-build desktop-package desktop-binary desktop-test desktop-test-coverage
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -188,6 +188,41 @@ web-test:
 ## Run React frontend tests with coverage
 web-test-coverage:
 	cd web && bun run test:coverage
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Desktop App (Electron)
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Install desktop app dependencies
+desktop-install:
+	cd desktop && bun install
+
+## Build and copy mehr binary for desktop bundling (local dev only)
+desktop-binary: build
+	@mkdir -p desktop/resources/bin
+	cp $(BUILD_DIR)/$(BINARY_NAME) desktop/resources/bin/mehr
+	@echo "Copied mehr binary to desktop/resources/bin/"
+
+## Run desktop app in dev mode (requires web-build first)
+desktop-dev: web-build desktop-install desktop-binary
+	cd desktop && bun run dev
+
+## Build desktop app for all platforms
+desktop-build: web-build desktop-install desktop-binary
+	cd desktop && bun run make
+
+## Package desktop app (.app on macOS, binary on Linux - no installers)
+desktop-package: web-build desktop-install desktop-binary
+	cd desktop && bun run package
+	@echo "Output: desktop/out/Mehrhof-*/"
+
+## Run desktop app tests
+desktop-test:
+	cd desktop && bun run test:run
+
+## Run desktop app tests with coverage
+desktop-test-coverage:
+	cd desktop && bun run test:coverage
 
 # ──────────────────────────────────────────────────────────────────────────────
 # E2E Tests (Local Manual Only)

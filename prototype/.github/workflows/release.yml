@@ -348,3 +348,125 @@ jobs:
                         "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}" \
                         "mehr-embedder-${{ matrix.goos }}-${{ matrix.goarch }}.sha256" \
                         --clobber
+
+    # Build desktop app (Electron) on native runners
+    # macOS/Linux: download mehr binary from release; Windows: uses WSL (no binary)
+    desktop:
+        needs: [release]
+        if: >-
+            !contains(github.event.release.name, '[skip desktop]') &&
+            !contains(github.event.release.body, '[skip desktop]')
+        strategy:
+            matrix:
+                include:
+                    # macOS - self-hosted runners, download mehr binary from release
+                    -   platform: darwin
+                        arch: arm64
+                        runner: macos-arm
+                        mehr_asset: mehr-darwin-arm64
+                    -   platform: darwin
+                        arch: x64
+                        runner: macos-15-intel
+                        mehr_asset: mehr-darwin-amd64
+                    # Linux - self-hosted runners, download mehr binary from release
+                    -   platform: linux
+                        arch: x64
+                        runner: ubuntu-amd
+                        mehr_asset: mehr-linux-amd64
+                    -   platform: linux
+                        arch: arm64
+                        runner: self-arm
+                        mehr_asset: mehr-linux-arm64
+                    # Windows - GitHub runners, no binary (uses WSL)
+                    -   platform: win32
+                        arch: x64
+                        runner: windows-latest
+                        mehr_asset: ''
+                    -   platform: win32
+                        arch: arm64
+                        runner: windows-11-arm
+                        mehr_asset: ''
+
+        runs-on: ${{ matrix.runner }}
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Download mehr binary from release
+                if: matrix.mehr_asset != ''
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    gh release download "$RELEASE_TAG" \
+                        --pattern "${{ matrix.mehr_asset }}" \
+                        --output desktop/resources/bin/mehr
+                    chmod +x desktop/resources/bin/mehr
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Build web UI
+                working-directory: web
+                run: |
+                    bun install
+                    bun run build
+
+            -   name: Install desktop dependencies
+                working-directory: desktop
+                run: bun install
+
+            -   name: Set version in package.json (Unix)
+                if: matrix.platform != 'win32'
+                working-directory: desktop
+                env:
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    VERSION="${RELEASE_TAG#v}"
+                    if [ "$VERSION" = "nightly" ]; then
+                        DATE=$(date +%Y%m%d)
+                        VERSION="0.0.0-nightly.${DATE}"
+                    fi
+                    bun x json -I -f package.json -e "this.version='$VERSION'"
+
+            -   name: Set version in package.json (Windows)
+                if: matrix.platform == 'win32'
+                working-directory: desktop
+                env:
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                shell: pwsh
+                run: |
+                    $VERSION = $env:RELEASE_TAG -replace '^v', ''
+                    if ($VERSION -eq 'nightly') {
+                        $DATE = Get-Date -Format 'yyyyMMdd'
+                        $VERSION = "0.0.0-nightly.$DATE"
+                    }
+                    bun x json -I -f package.json -e "this.version='$VERSION'"
+
+            -   name: Build desktop app
+                working-directory: desktop
+                run: bun run make -- --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
+
+            -   name: Upload to release (Unix)
+                if: matrix.platform != 'win32'
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                run: |
+                    find desktop/out/make -type f \( -name "*.dmg" -o -name "*.deb" -o -name "*.zip" \) | while read f; do
+                        gh release upload "$RELEASE_TAG" "$f" --clobber
+                    done
+
+            -   name: Upload to release (Windows)
+                if: matrix.platform == 'win32'
+                env:
+                    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+                    RELEASE_TAG: ${{ github.event.release.tag_name }}
+                shell: pwsh
+                run: |
+                    Get-ChildItem -Path desktop/out/make -Recurse -Include *.exe | ForEach-Object {
+                        gh release upload $env:RELEASE_TAG $_.FullName --clobber
+                    }

@@ -29,7 +29,7 @@ Mehrhof is:
 - **Uses your existing CLI** — Claude, Codex, or custom agents; no API keys are required to get started
 - **Completely free** — BSD-3 licensed, no usage fees, no Mehrhof account needed. Already have a CLI working? Mehrhof adds zero cost
 - **Zero config for existing users** — if your agent CLI works, Mehrhof works. API keys are optional for advanced setups
-- **A comfortable interface** for non-technical contributors via Web UI, with CLI available for power users
+- **A comfortable interface** for non-technical contributors via Web UI or Desktop App, with CLI available for power users
 - **Accessibility-aware by default** — keyboard-first navigation, screen reader announcements, skip links, and accessible dialog patterns in the Web UI, plus state prefixes in CLI status output
 
 Mehrhof is not magic. It's a structured way to work with tools you already have, with clear checkpoints and human oversight at every step.
@@ -100,15 +100,15 @@ Both interfaces use the same underlying engine and configuration. Your work is p
 # 1. Install Mehrhof
 curl -fsSL https://raw.githubusercontent.com/valksor/go-mehrhof/master/install.sh | bash
 
-# 2. Navigate to your project
-cd /path/to/your/project
-
-# 3. Initialize and start
-mehr init           # One-time setup
-mehr serve --open   # Opens browser automatically
+# 2. Start the server
+mehr serve --global --open
 ```
 
-Click **"Create Task"** in your browser and you're ready to go.
+Click **"Open Folder"** to select your project — no `cd` or `mehr init` needed. The project picker handles initialization automatically.
+
+> **Already in a project directory?** Run `mehr serve --open` without `--global` to open directly to that project.
+
+> **Prefer a desktop app?** Download the [Desktop App](https://github.com/valksor/go-mehrhof/releases) for a fully native experience with no terminal required after install.
 
 **Web UI Features:**
 

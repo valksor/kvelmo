@@ -68,6 +68,9 @@
   - [JetBrains](ide/jetbrains.md)
   - [VS Code](ide/vscode.md)
 
+- **Desktop App**
+  - [Overview](desktop/index.md)
+
 - **CLI**
   - [Overview](cli/index.md)
   - **Workflow**
@@ -127,7 +130,6 @@
     - [version](cli/version.md)
   - **Server**
     - [serve](cli/serve.md)
-    - [register](cli/register.md)
     - [interactive](cli/interactive.md)
 
 - **Concepts**
