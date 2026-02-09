@@ -26,6 +26,7 @@ import { useDocsURL } from '@/api/settings'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationCenter } from '@/components/ui/NotificationCenter'
 import { SkipLink } from '@/components/ui/SkipLink'
+import { ConfigVersionBanner } from '@/components/ui/ConfigVersionBanner'
 
 // Type definitions for navigation structure
 type NavItem = {
@@ -271,6 +272,13 @@ export default function Layout() {
 
       {/* Main content */}
       <main id="main-content" className="container mx-auto p-4 max-w-7xl" tabIndex={-1}>
+        {/* Config version warning banner */}
+        {status?.config_version && (
+          <ConfigVersionBanner
+            versionInfo={status.config_version}
+            projectId={status.project?.id}
+          />
+        )}
         <Outlet />
       </main>
     </div>

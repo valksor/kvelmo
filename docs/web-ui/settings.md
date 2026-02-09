@@ -19,6 +19,34 @@ Toggle between modes using the **Simple/Advanced** switch in the top-right corne
 
 From the navigation bar, click **Settings**. In global mode, you must first select a project.
 
+## Config Version Warning
+
+If your configuration file is outdated, a yellow warning banner appears at the top of any page:
+
+> ⚠️ Your config is outdated (v0 → v1). Some features may not work correctly.
+>
+> [Update Config] [✕]
+
+This happens when Mehrhof's configuration schema has changed between versions.
+
+**What to do:**
+
+1. Click **Update Config** to re-initialize your configuration
+2. A confirmation dialog explains what will be preserved
+3. Click OK to proceed
+
+**What is preserved:**
+- Agent defaults and custom aliases
+- Git patterns (branch, commit prefix)
+- Provider tokens (GitHub, Jira, etc.)
+- Project settings
+
+**What is reset:**
+- New fields get default values
+- Deprecated fields are removed
+
+You can dismiss the banner temporarily by clicking the ✕ button, but it will reappear on next session until you update.
+
 The Settings page is organized into two sections:
 
 | Section    | What it contains                                                                                              |
