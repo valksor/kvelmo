@@ -96,7 +96,7 @@ export default function Settings() {
   const isGlobalMode = status?.mode === 'global'
 
   const [selectedProjectID, setSelectedProjectID] = useState<string | undefined>(undefined)
-  const { data: projectsData, isLoading: projectsLoading } = useProjects(isGlobalMode)
+  const { data: projectsData, isLoading: projectsLoading } = useProjects({ enabled: isGlobalMode })
 
   const projectIDForSettings = isGlobalMode ? selectedProjectID : undefined
   const { data: settings, isLoading, error } = useSettings(projectIDForSettings)

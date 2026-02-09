@@ -94,14 +94,14 @@ Mehrhof works two ways: through a **Web UI** or a **command-line interface (CLI)
 
 ### Web UI — Comfortable Browser Experience
 
-The Web UI is ideal if you prefer visual interfaces or are new to development tools. Everything happens in your browser with click-through workflows.
+The Web UI is ideal if you prefer visual interfaces or are new to development tools. No terminal commands required after installation.
 
 ```text
-┌─────────────────┐     ┌───────────────┐     ┌─────────────────────┐     ┌───────────────────┐
-│ Install Mehrhof │ ──▶ │ Run mehr init │ ──▶ │ mehr serve --open   │ ──▶ │ Click Create Task │
-└─────────────────┘     └───────────────┘     └─────────────────────┘     └─────────┬─────────┘
-                                                                                    │
-                                                                                    ▼
+┌─────────────────┐     ┌───────────────────────────┐     ┌───────────────────┐     ┌───────────────────┐
+│ Install Mehrhof │ ──▶ │ mehr serve --global --open │ ──▶ │ Click Open Folder │ ──▶ │ Click Create Task │
+└─────────────────┘     └───────────────────────────┘     └───────────────────┘     └─────────┬─────────┘
+                                                                                              │
+                                                                                              ▼
 ┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────┐
 │ Review & Finish │ ◀── │ Click Create │ ◀── │ Review Plans │ ◀── │ Click Plan │
 └─────────────────┘     └──────────────┘     └──────────────┘     └────────────┘
@@ -110,17 +110,19 @@ The Web UI is ideal if you prefer visual interfaces or are new to development to
 **Get started:**
 
 ```bash
-# 1. Navigate to your project
-cd /path/to/your/project
-
-# 2. Initialize (one-time per project)
-mehr init
-
-# 3. Start the Web UI
-mehr serve --open
+# Start the Web UI (from any directory)
+mehr serve --global --open
 ```
 
-Your browser opens automatically. Click **"Create Task"** to begin.
+1. Your browser opens automatically
+2. Click **"Open Folder"** to select your project
+3. Click **"Create Task"** to begin
+
+That's it — no `cd /path/to/project` or `mehr init` required. The project picker initializes your workspace automatically when you select a folder.
+
+> **Already in a project directory?** Run `mehr serve --open` (without `--global`) to skip the project picker and open directly to that project.
+
+> **Want zero terminal?** Download the [Desktop App](https://github.com/valksor/go-mehrhof/releases) — just launch, pick a folder, and start working.
 
 **What you'll see:**
 - A clean dashboard showing your current task

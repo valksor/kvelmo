@@ -10,13 +10,14 @@ export interface TerminalMessage extends AgentMessage {
 interface AgentTerminalProps {
   messages: TerminalMessage[]
   onClear: () => void
+  workflowState?: string
 }
 
 const MAX_DISPLAY = 500
 
 type ViewMode = 'summary' | 'details'
 
-export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
+export function AgentTerminal({ messages, onClear, workflowState }: AgentTerminalProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [autoScroll, setAutoScroll] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('summary')
@@ -138,7 +139,7 @@ export function AgentTerminal({ messages, onClear }: AgentTerminalProps) {
           {/* Content based on view mode */}
           {viewMode === 'summary' ? (
             <div className="bg-base-300 rounded-lg p-4">
-              <ProgressSummary messages={messages} />
+              <ProgressSummary messages={messages} workflowState={workflowState} />
             </div>
           ) : (
             <div

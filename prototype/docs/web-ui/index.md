@@ -92,6 +92,17 @@ See [CLI: serve](/cli/serve.md) for starting the server and [CLI Overview](/cli/
 
 ---
 
+## Also Available as Desktop App
+
+Prefer a native app experience? The [Desktop App](/desktop/index.md) provides:
+- Native file dialogs for project selection
+- Zero terminal required after download
+- Windows + WSL integration
+
+Download from the [releases page](https://github.com/valksor/go-mehrhof/releases).
+
+---
+
 ## Next Steps
 
 - [**Getting Started**](getting-started.md) - Complete walkthrough

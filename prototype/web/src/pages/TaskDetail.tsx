@@ -188,7 +188,7 @@ function TaskDetailView({ id }: { id?: string }) {
           <NotesCard notes={notesData?.notes} taskId={id} />
 
           {/* Agent Terminal */}
-          <AgentTerminal messages={terminalMessages} onClear={clearAgentMessages} />
+          <AgentTerminal messages={terminalMessages} onClear={clearAgentMessages} workflowState={state} />
         </div>
 
         {/* Right column: Actions + Labels + Costs */}

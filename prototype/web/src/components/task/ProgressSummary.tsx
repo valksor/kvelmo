@@ -4,6 +4,7 @@ import type { TerminalMessage } from './AgentTerminal'
 
 interface ProgressSummaryProps {
   messages: TerminalMessage[]
+  workflowState?: string
 }
 
 interface StepProgress {
@@ -30,7 +31,10 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   reviewing: 'Checking code quality...',
 }
 
-function parseProgress(messages: TerminalMessage[]): StepProgress {
+// Workflow states that indicate active work in progress
+const ACTIVE_STATES = new Set(['planning', 'implementing', 'reviewing', 'checkpointing', 'reverting', 'restoring'])
+
+function parseProgress(messages: TerminalMessage[], workflowState?: string): StepProgress {
   let current: string | null = null
   let lastUpdate: string | null = null
 
@@ -61,6 +65,11 @@ function parseProgress(messages: TerminalMessage[]): StepProgress {
     lastUpdate = msg.timestamp
   }
 
+  // Clear current action if workflow is not in an active state
+  if (workflowState && !ACTIVE_STATES.has(workflowState)) {
+    current = null
+  }
+
   return {
     total: Math.max(specMentions.size, 1),
     completed: specCompleted.size,
@@ -78,8 +87,8 @@ function categorizeMessage(msg: TerminalMessage): MessageCategory {
   return 'info'
 }
 
-export function ProgressSummary({ messages }: ProgressSummaryProps) {
-  const progress = useMemo(() => parseProgress(messages), [messages])
+export function ProgressSummary({ messages, workflowState }: ProgressSummaryProps) {
+  const progress = useMemo(() => parseProgress(messages, workflowState), [messages, workflowState])
 
   const categoryCounts = useMemo(() => {
     const counts = { success: 0, warning: 0, error: 0, info: 0 }

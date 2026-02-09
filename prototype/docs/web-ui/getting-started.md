@@ -14,22 +14,33 @@ By the end of this guide, you'll be able to:
 ## Prerequisites
 
 - Mehrhof installed ([Quickstart](/quickstart.md) if needed)
-- A project directory (can be empty or an existing codebase)
 - An agent CLI configured (Claude recommended, see [AI Agents](/agents/index.md))
 
 For accessibility details, see [Web UI: Accessibility](/web-ui/accessibility.md).
 
-> **Don't have a project?** You can start with an empty directory. Mehrhof will create everything it needs.
+> **No project yet?** You can start with an empty directory. Just select any folder — Mehrhof will create everything it needs.
 
 ---
 
 ## Step 1: Start the Server
 
-Before using the Web UI, you need to start the server from your terminal. See [CLI: serve](/cli/serve.md) for setup instructions.
+Run this command once from any directory:
 
-Once started, your browser will open automatically to `http://localhost:XXXX`.
+```bash
+mehr serve --global --open
+```
 
-> **Need help with setup?** The [CLI: serve](/cli/serve.md) guide covers initialization, starting the server, and troubleshooting.
+Your browser opens automatically. That's the only terminal command you need.
+
+### Select Your Project
+
+1. Click **"Open Folder"** in the project selector
+2. Navigate to your project directory
+3. Click **"Select This Folder"**
+
+The project picker initializes your workspace automatically — no `cd` or `mehr init` required.
+
+> **Already in a project directory?** Run `mehr serve --open` (without `--global`) to skip the project picker and open directly to that project.
 
 ### What You'll See
 
