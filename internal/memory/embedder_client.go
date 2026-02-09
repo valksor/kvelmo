@@ -43,6 +43,9 @@ type EmbedderClient struct {
 	started bool
 	done    chan struct{}
 	err     error
+
+	// Event publisher for progress feedback (optional, set by conductor)
+	eventPublisher func(message string)
 }
 
 // rpcRequest is a JSON-RPC request.
@@ -79,6 +82,21 @@ func NewEmbedderClient(opts EmbedderClientOptions) *EmbedderClient {
 	}
 }
 
+// SetEventPublisher sets a callback for progress events.
+// This allows the conductor to wire up progress feedback to the UI.
+func (c *EmbedderClient) SetEventPublisher(fn func(message string)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.eventPublisher = fn
+}
+
+// publishEvent sends a progress message if a publisher is configured.
+func (c *EmbedderClient) publishEvent(message string) {
+	if c.eventPublisher != nil {
+		c.eventPublisher(message)
+	}
+}
+
 // ensureRunning starts the embedder process if not already running.
 func (c *EmbedderClient) ensureRunning(ctx context.Context) error {
 	c.mu.Lock()
@@ -95,14 +113,17 @@ func (c *EmbedderClient) ensureRunning(ctx context.Context) error {
 		binPath = c.findEmbedderBinary()
 		if binPath == "" {
 			// Try to download it
+			c.publishEvent("Downloading embedding model binary...")
 			var err error
 			binPath, err = c.downloadEmbedder(ctx)
 			if err != nil {
 				return fmt.Errorf("embedder not available: %w", err)
 			}
+			c.publishEvent("Embedding binary ready")
 		}
 	}
 
+	c.publishEvent("Initializing embedding model...")
 	slog.Debug("starting embedder process", "path", binPath)
 
 	c.cmd = exec.CommandContext(ctx, binPath)
@@ -164,6 +185,7 @@ func (c *EmbedderClient) ensureRunning(ctx context.Context) error {
 	c.dimension = initResult.Dimension
 	c.model = initResult.Model
 
+	c.publishEvent(fmt.Sprintf("Embedding model ready (dimension: %d)", c.dimension))
 	slog.Info("embedder started",
 		"model", c.model,
 		"dimension", c.dimension)
