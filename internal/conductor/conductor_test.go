@@ -1874,6 +1874,42 @@ func TestResolveNaming(t *testing.T) {
 			wantBranchContain: "task/KEY-123",
 			wantCommitPrefix:  "[KEY-123]",
 		},
+		{
+			name: "multi-segment pattern with slash separator",
+			workUnit: &provider.WorkUnit{
+				Title:       "Add authentication",
+				ExternalKey: "WRIKE-123",
+				TaskType:    "feature",
+				Slug:        "add-auth",
+			},
+			taskID: "task-abc",
+			workspaceConfig: &storage.WorkspaceConfig{
+				Git: storage.GitSettings{
+					BranchPattern: "{type}/{key}/{slug}",
+					CommitPrefix:  "[{key}]",
+				},
+			},
+			wantBranchContain: "feature/WRIKE-123/add-auth",
+			wantCommitPrefix:  "[WRIKE-123]",
+		},
+		{
+			name: "multi-segment pattern with custom type prefix",
+			workUnit: &provider.WorkUnit{
+				Title:       "Update dependencies",
+				ExternalKey: "WRIKE-456",
+				TaskType:    "chore",
+				Slug:        "update-deps",
+			},
+			taskID: "task-xyz",
+			workspaceConfig: &storage.WorkspaceConfig{
+				Git: storage.GitSettings{
+					BranchPattern: "chore/{key}/{slug}",
+					CommitPrefix:  "[chore/{key}]",
+				},
+			},
+			wantBranchContain: "chore/WRIKE-456/update-deps",
+			wantCommitPrefix:  "[chore/WRIKE-456]",
+		},
 	}
 
 	for _, tt := range tests {
