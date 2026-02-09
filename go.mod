@@ -1,6 +1,6 @@
 module github.com/valksor/go-mehrhof
 
-go 1.25.6
+go 1.25.7
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -22,13 +22,13 @@ require (
 	github.com/valksor/go-toolkit v0.0.0-20260202190551-837849387b81
 	github.com/yalue/onnxruntime_go v1.25.0
 	github.com/yuin/goldmark v1.7.16
-	gitlab.com/gitlab-org/api/client-go v1.28.1
-	golang.org/x/mod v0.32.0
-	golang.org/x/net v0.49.0
+	gitlab.com/gitlab-org/api/client-go v1.29.0
+	golang.org/x/mod v0.33.0
+	golang.org/x/net v0.50.0
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sys v0.41.0
-	golang.org/x/term v0.39.0
-	golang.org/x/text v0.33.0
+	golang.org/x/term v0.40.0
+	golang.org/x/text v0.34.0
 	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -54,5 +54,5 @@ require (
 	github.com/ysmood/got v0.42.3 // indirect
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.9.0 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
 )
