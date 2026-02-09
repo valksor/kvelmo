@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,6 +17,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/platform"
 	"github.com/valksor/go-mehrhof/internal/server"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
 // DefaultPreferredPort is the default port for the web server.
@@ -29,9 +29,6 @@ var (
 	serveGlobal  bool
 	serveOpen    bool
 	serveAPIOnly bool
-
-	// Register subcommand flags.
-	serveRegisterList bool
 )
 
 var serveCmd = &cobra.Command{
@@ -54,35 +51,6 @@ Examples:
 	RunE: runServe,
 }
 
-var serveRegisterCmd = &cobra.Command{
-	Use:   "register",
-	Short: "Register project in global registry",
-	Long: `Register the current project in the global registry.
-
-Registered projects appear in global mode (mehr serve --global).
-Use this to organize projects you want to manage from a single dashboard.
-
-Examples:
-  mehr serve register        # Register current project
-  mehr serve register --list # List all registered projects`,
-	RunE: runServeRegister,
-}
-
-var serveUnregisterCmd = &cobra.Command{
-	Use:   "unregister [project-id]",
-	Short: "Remove project from global registry",
-	Long: `Remove a project from the global registry.
-
-If no project ID is provided, removes the current project.
-This removes the project from the global mode dashboard.
-
-Examples:
-  mehr serve unregister                      # Remove current project
-  mehr serve unregister github.com-user-repo # Remove by project ID`,
-	RunE: runServeUnregister,
-	Args: cobra.MaximumNArgs(1),
-}
-
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
@@ -91,10 +59,6 @@ func init() {
 	serveCmd.Flags().BoolVar(&serveGlobal, "global", false, "Global mode (show all projects)")
 	serveCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
 	serveCmd.Flags().BoolVar(&serveAPIOnly, "api", false, "API-only mode (no web UI)")
-
-	serveCmd.AddCommand(serveRegisterCmd)
-	serveRegisterCmd.Flags().BoolVarP(&serveRegisterList, "list", "l", false, "List all registered projects")
-	serveCmd.AddCommand(serveUnregisterCmd)
 }
 
 func runServe(cmd *cobra.Command, _ []string) error {
@@ -141,6 +105,12 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		}
 		cfg.Conductor = cond
 		cfg.EventBus = cond.GetEventBus()
+
+		// Auto-register this project for the desktop app and global mode
+		if err := registerProjectOnServe(ctx, res.Root); err != nil {
+			// Non-fatal: log but continue serving
+			fmt.Printf("Warning: failed to register project: %v\n", err)
+		}
 
 		fmt.Printf("Starting Mehrhof Web UI for project: %s\n", res.Root)
 	}
@@ -199,6 +169,39 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	return <-errCh
 }
 
+// registerProjectOnServe registers a project in the registry when serve starts.
+// This enables the project to appear in the desktop app's project list.
+func registerProjectOnServe(ctx context.Context, projectPath string) error {
+	// Generate project ID
+	projectID, err := storage.GenerateProjectID(ctx, projectPath)
+	if err != nil {
+		// Use directory name as fallback
+		projectID = filepath.Base(projectPath)
+	}
+
+	projectName := filepath.Base(projectPath)
+
+	// Try to get remote URL
+	var remoteURL string
+	if git, err := vcs.New(ctx, projectPath); err == nil {
+		if remote, err := git.GetDefaultRemote(ctx); err == nil && remote != "" {
+			remoteURL, _ = git.RemoteURL(ctx, remote)
+		}
+	}
+
+	// Load registry and register project
+	registry, err := storage.LoadRegistry()
+	if err != nil {
+		return fmt.Errorf("load registry: %w", err)
+	}
+
+	if err := registry.Register(projectID, projectPath, remoteURL, projectName); err != nil {
+		return fmt.Errorf("register project: %w", err)
+	}
+
+	return registry.Save()
+}
+
 // openBrowser opens the specified URL in the default browser.
 // Note: We intentionally don't pass a context to exec.CommandContext here because:
 // 1. Browser launch should not be cancelled when the server context is cancelled
@@ -252,204 +255,4 @@ func portAvailable(host string, port int) bool {
 	_ = ln.Close()
 
 	return true
-}
-
-// runServeRegister handles the "mehr serve register" command.
-func runServeRegister(cmd *cobra.Command, _ []string) error {
-	ctx := cmd.Context()
-
-	// Handle --list flag
-	if serveRegisterList {
-		return listRegisteredProjects()
-	}
-
-	// Resolve workspace root
-	res, err := ResolveWorkspaceRoot(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Generate project ID
-	projectID, err := storage.GenerateProjectID(ctx, res.Root)
-	if err != nil {
-		return fmt.Errorf("generate project ID: %w", err)
-	}
-
-	// Get remote URL if available
-	var remoteURL string
-	if res.Git != nil {
-		remote, err := res.Git.GetDefaultRemote(ctx)
-		if err == nil && remote != "" {
-			remoteURL, _ = res.Git.RemoteURL(ctx, remote)
-		}
-	}
-	remoteURL = storage.SanitizeRemoteURL(remoteURL)
-
-	// Get project name from directory or remote
-	name := filepath.Base(res.Root)
-	if remoteURL != "" {
-		// Extract repo name from remote URL
-		name = extractRepoName(remoteURL)
-	}
-
-	// Load registry and register
-	registry, err := storage.LoadRegistry()
-	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
-	}
-
-	if err := registry.Register(projectID, res.Root, remoteURL, name); err != nil {
-		return fmt.Errorf("register project: %w", err)
-	}
-
-	if err := registry.Save(); err != nil {
-		return fmt.Errorf("save registry: %w", err)
-	}
-
-	fmt.Printf("Registered project: %s\n", projectID)
-	fmt.Printf("  Path: %s\n", res.Root)
-	if remoteURL != "" {
-		fmt.Printf("  Remote: %s\n", remoteURL)
-	}
-	fmt.Printf("\nThis project can now be accessed in global mode.\n")
-
-	return nil
-}
-
-// runServeUnregister handles the "mehr serve unregister" command.
-func runServeUnregister(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
-
-	var projectID string
-
-	if len(args) > 0 {
-		// Use provided project ID
-		projectID = args[0]
-	} else {
-		// Use current project
-		res, err := ResolveWorkspaceRoot(ctx)
-		if err != nil {
-			return err
-		}
-
-		projectID, err = storage.GenerateProjectID(ctx, res.Root)
-		if err != nil {
-			return fmt.Errorf("generate project ID: %w", err)
-		}
-	}
-
-	// Load registry and unregister
-	registry, err := storage.LoadRegistry()
-	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
-	}
-
-	if !registry.Unregister(projectID) {
-		fmt.Printf("Project not found in registry: %s\n", projectID)
-
-		return nil
-	}
-
-	if err := registry.Save(); err != nil {
-		return fmt.Errorf("save registry: %w", err)
-	}
-
-	fmt.Printf("Unregistered project: %s\n", projectID)
-
-	return nil
-}
-
-// listRegisteredProjects lists all registered projects.
-func listRegisteredProjects() error {
-	registry, err := storage.LoadRegistry()
-	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
-	}
-
-	projects := registry.List()
-	if len(projects) == 0 {
-		fmt.Println("No projects registered.")
-		fmt.Println("\nUse 'mehr serve register' in a project directory to register it.")
-
-		return nil
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "PROJECT ID\tNAME\tPATH\tREGISTERED")
-
-	for _, p := range projects {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			p.ID,
-			p.Name,
-			truncatePath(p.Path, 40),
-			p.RegisteredAt.Format("2006-01-02"),
-		)
-	}
-
-	_ = w.Flush()
-
-	fmt.Printf("\nTotal: %d project(s)\n", len(projects))
-
-	return nil
-}
-
-// extractRepoName extracts the repository name from a git remote URL.
-func extractRepoName(url string) string {
-	// Handle various URL formats
-	// https://github.com/user/repo.git -> repo
-	// git@github.com:user/repo.git -> repo
-
-	// Remove .git suffix
-	url = trimSuffix(url, ".git")
-
-	// Get the last path component
-	parts := splitAny(url, "/:")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-
-	return url
-}
-
-// truncatePath truncates a path to fit within maxLen characters.
-func truncatePath(path string, maxLen int) string {
-	if len(path) <= maxLen {
-		return path
-	}
-
-	return "..." + path[len(path)-maxLen+3:]
-}
-
-// trimSuffix removes suffix from s if present.
-func trimSuffix(s, suffix string) string {
-	if len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix {
-		return s[:len(s)-len(suffix)]
-	}
-
-	return s
-}
-
-// splitAny splits s by any character in sep.
-func splitAny(s string, sep string) []string {
-	var result []string
-	start := 0
-
-	for i, c := range s {
-		for _, sc := range sep {
-			if c == sc {
-				if i > start {
-					result = append(result, s[start:i])
-				}
-				start = i + 1
-
-				break
-			}
-		}
-	}
-
-	if start < len(s) {
-		result = append(result, s[start:])
-	}
-
-	return result
 }
