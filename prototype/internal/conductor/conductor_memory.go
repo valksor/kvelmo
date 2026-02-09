@@ -38,6 +38,13 @@ func (c *Conductor) InitializeMemory(ctx context.Context) error {
 		return fmt.Errorf("create embedding model %q: %w", modelName, err)
 	}
 
+	// Wire up progress feedback for embedder client (if using ONNX)
+	if embedClient, ok := model.(*memory.EmbedderClient); ok {
+		embedClient.SetEventPublisher(func(message string) {
+			c.publishProgress(message, -1)
+		})
+	}
+
 	// Create vector store
 	var store memory.VectorStore
 
@@ -136,6 +143,8 @@ func (c *Conductor) GetMemoryContextForTask(ctx context.Context) (string, error)
 		return "", nil
 	}
 
+	c.publishProgress("Searching semantic memory...", -1)
+
 	// Use memory tool to augment prompt
 	context, err := c.memory.tool.AugmentPrompt(ctx, work.Metadata.Title, work.Metadata.ExternalKey)
 	if err != nil {
@@ -177,6 +186,8 @@ func (c *Conductor) GetSimilarTasks(ctx context.Context, limit int) ([]string, e
 	if work == nil {
 		return nil, nil
 	}
+
+	c.publishProgress("Finding similar past tasks...", -1)
 
 	// Build query from task title and external key
 	query := fmt.Sprintf("%s %s", work.Metadata.Title, work.Metadata.ExternalKey)
