@@ -157,12 +157,12 @@ func (s *Server) Start(ctx context.Context) error {
 			return fmt.Errorf("serve: %w", err)
 		}
 	case <-ctx.Done():
-		// Graceful shutdown - intentionally use Background() since parent context is cancelled
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		// Fast graceful shutdown - 2 second grace for in-flight requests
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil { //nolint:contextcheck // shutdownCtx is derived from Background, intentionally
-			slog.Warn("server shutdown error", "error", err)
+			slog.Debug("server shutdown timeout, connections force-closed", "error", err)
 		}
 	}
 
