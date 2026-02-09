@@ -49,6 +49,23 @@ See [`mehr start`](/cli/start.md#uncommitted-changes-auto-stash) for CLI usage.
 | `{type}`    | Task type from filename prefix           | `feature`, `fix` |
 | `{slug}`    | URL-safe slugified title                 | `add-user-auth`  |
 
+## Branch Pattern Examples
+
+The default pattern uses `--` to separate segments, but you can use `/` for multi-segment patterns:
+
+```yaml
+git:
+  # Default: double-dash separator
+  branch_pattern: "{type}/{key}--{slug}"    # → feature/FEATURE-123--add-auth
+
+  # Multi-segment with slash separator
+  branch_pattern: "{type}/{key}/{slug}"     # → feature/WRIKE-123/add-auth
+  branch_pattern: "feat/{key}/{slug}"       # → feat/123/my-summary
+  branch_pattern: "chore/{key}/{slug}"      # → chore/INFRA-456/update-deps
+```
+
+Both patterns are valid. Choose the style that matches your team's conventions.
+
 ## See Also
 
 - [Checkpoints](/concepts/checkpoints.md) - How commits are created
