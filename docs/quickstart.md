@@ -90,11 +90,49 @@ make install
 
 ## Choose Your Interface
 
-Mehrhof works two ways: through a **Web UI** or a **command-line interface (CLI)**. Both have full feature parity — choose what works best for you.
+Mehrhof works through multiple interfaces. Choose what matches your comfort level:
 
-### Web UI — Comfortable Browser Experience
+| Interface       | Best For                                  | Setup                         |
+|-----------------|-------------------------------------------|-------------------------------|
+| **Desktop App** | Non-technical users, zero terminal        | Download, launch, pick folder |
+| **Web UI**      | Visual users comfortable with one command | `mehr serve --global --open`  |
+| **CLI**         | Power users, scripting, CI/CD             | Terminal commands             |
 
-The Web UI is ideal if you prefer visual interfaces or are new to development tools. No terminal commands required after installation.
+All interfaces have the same features — the choice is about preference, not capability.
+
+---
+
+### Desktop App — Zero Terminal (Easiest)
+
+The Desktop App is ideal for anyone who wants to skip terminal commands entirely. Download once, then launch and work — no commands ever.
+
+```text
+┌──────────────────┐     ┌─────────────────┐     ┌───────────────────┐     ┌───────────────────┐
+│ Download the App │ ──▶ │ Launch Mehrhof  │ ──▶ │ Click Open Folder │ ──▶ │ Click Create Task │
+└──────────────────┘     └─────────────────┘     └───────────────────┘     └─────────┬─────────┘
+                                                                                      │
+                                                                                      ▼
+┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────┐
+│ Review & Finish │ ◀── │ Click Create │ ◀── │ Review Plans │ ◀── │ Click Plan │
+└─────────────────┘     └──────────────┘     └──────────────┘     └────────────┘
+```
+
+**Get started:**
+
+1. Download from the [releases page](https://github.com/valksor/go-mehrhof/releases)
+2. Install and launch the app
+3. Click **"Open Folder"** to select your project
+4. Click **"Create Task"** to begin
+
+That's it — no terminal, no commands, no setup. The app handles everything.
+
+**[Desktop App Guide](/desktop/index.md)** — Installation and platform-specific notes
+
+---
+
+### Web UI — One Command, Then Visual
+
+The Web UI is ideal if you're comfortable running one terminal command but prefer a visual interface afterward.
 
 ```text
 ┌─────────────────┐     ┌───────────────────────────┐     ┌───────────────────┐     ┌───────────────────┐
@@ -121,8 +159,6 @@ mehr serve --global --open
 That's it — no `cd /path/to/project` or `mehr init` required. The project picker initializes your workspace automatically when you select a folder.
 
 > **Already in a project directory?** Run `mehr serve --open` (without `--global`) to skip the project picker and open directly to that project.
-
-> **Want zero terminal?** Download the [Desktop App](https://github.com/valksor/go-mehrhof/releases) — just launch, pick a folder, and start working.
 
 **What you'll see:**
 - A clean dashboard showing your current task
@@ -163,7 +199,7 @@ Want a pre-built task file? Grab one from the [examples directory on GitHub](htt
 
 ---
 
-You can switch between Web UI and CLI at any time — both use the same engine and configuration. For a detailed comparison, see [Web UI vs CLI](guides/web-ui-vs-cli.md).
+You can switch between Desktop App, Web UI, and CLI at any time — all use the same engine and configuration. For a detailed comparison, see [Web UI vs CLI](guides/web-ui-vs-cli.md).
 
 ---
 
