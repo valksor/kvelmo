@@ -409,6 +409,152 @@ func TestRunList_WithTasks(t *testing.T) {
 	}
 }
 
+func TestRunList_RunningEmptyJSON(t *testing.T) {
+	// Save and restore package-level vars
+	oldFormat := listFormat
+	oldRunning := listRunning
+
+	defer func() {
+		listFormat = oldFormat
+		listRunning = oldRunning
+	}()
+
+	listFormat = "json"
+	listRunning = true
+
+	// Capture stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := runListRunning(context.Background())
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("runListRunning() returned error: %v", err)
+	}
+
+	// Should output empty JSON array
+	if !strings.Contains(output, "[]") {
+		t.Errorf("output = %q, want it to contain empty JSON array %q", output, "[]")
+	}
+}
+
+func TestRunList_CSVFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	restoreHome := paths.SetHomeDirForTesting(homeDir)
+	defer restoreHome()
+
+	cfg := storage.NewDefaultWorkspaceConfig()
+	cfg.Storage.HomeDir = homeDir
+
+	ws, err := storage.OpenWorkspace(context.Background(), tmpDir, cfg)
+	if err != nil {
+		t.Fatalf("OpenWorkspace: %v", err)
+	}
+	if err := ws.EnsureInitialized(); err != nil {
+		t.Fatalf("EnsureInitialized: %v", err)
+	}
+
+	// Create an active task
+	activeTask := storage.NewActiveTask("task-1", "file:task1.md", ws.WorkPath("task-1"))
+	if err := ws.SaveActiveTask(activeTask); err != nil {
+		t.Fatalf("SaveActiveTask: %v", err)
+	}
+
+	work1, err := ws.CreateWork("task-1", storage.SourceInfo{
+		Type: "file",
+		Ref:  "task.md",
+	})
+	if err != nil {
+		t.Fatalf("CreateWork task-1: %v", err)
+	}
+	work1.Metadata.Title = "CSV Test Task"
+	if err := ws.SaveWork(work1); err != nil {
+		t.Fatalf("SaveWork task-1: %v", err)
+	}
+
+	t.Chdir(tmpDir)
+
+	// Save/restore all list flags
+	origFormat := listFormat
+	origRunning := listRunning
+	origWorktrees := listWorktreesOnly
+	origSearch := listSearch
+	origFilter := listFilter
+	origSort := listSort
+	origLabelFilter := listLabelFilter
+	origLabelAny := listLabelAny
+	origNoLabel := listNoLabel
+
+	defer func() {
+		listFormat = origFormat
+		listRunning = origRunning
+		listWorktreesOnly = origWorktrees
+		listSearch = origSearch
+		listFilter = origFilter
+		listSort = origSort
+		listLabelFilter = origLabelFilter
+		listLabelAny = origLabelAny
+		listNoLabel = origNoLabel
+	}()
+
+	listFormat = "csv"
+	listRunning = false
+	listWorktreesOnly = false
+	listSearch = ""
+	listFilter = ""
+	listSort = ""
+	listLabelFilter = ""
+	listLabelAny = nil
+	listNoLabel = false
+
+	// Capture stdout
+	r, w, pipeErr := os.Pipe()
+	if pipeErr != nil {
+		t.Fatalf("os.Pipe: %v", pipeErr)
+	}
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(context.Background())
+
+	runErr := runList(cmd, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if runErr != nil {
+		t.Fatalf("runList() returned error: %v", runErr)
+	}
+
+	// CSV should have header and data row
+	expectedSubstrings := []string{
+		"Task ID,State,Title,Worktree,Active,Cost",
+		"task-1",
+		"CSV Test Task",
+	}
+
+	for _, substr := range expectedSubstrings {
+		if !strings.Contains(output, substr) {
+			t.Errorf("CSV output does not contain %q\nGot:\n%s", substr, output)
+		}
+	}
+}
+
 func TestRunList_JSONFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := t.TempDir()

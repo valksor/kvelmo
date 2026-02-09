@@ -5,6 +5,8 @@ package commands
 
 import (
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 func TestReviewPRCommand_Properties(t *testing.T) {
@@ -238,5 +240,84 @@ func TestReviewPRCommand_NoWorkspaceRequired(t *testing.T) {
 
 	if !hasMention {
 		t.Log("Note: Consider mentioning that workspace is not required for this command")
+	}
+}
+
+func TestValidatePRNumber(t *testing.T) {
+	tests := []struct {
+		name     string
+		prNumber int
+		wantErr  bool
+	}{
+		{"positive number", 123, false},
+		{"one", 1, false},
+		{"large number", 99999, false},
+		{"zero", 0, true},
+		{"negative", -1, true},
+		{"large negative", -100, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePRNumber(tt.prNumber)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validatePRNumber(%d) error = %v, wantErr %v", tt.prNumber, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestResolvePRAgent(t *testing.T) {
+	tests := []struct {
+		name          string
+		cfg           *storage.WorkspaceConfig
+		agentOverride string
+		want          string
+	}{
+		{
+			name:          "override wins over nil config",
+			cfg:           nil,
+			agentOverride: "opus",
+			want:          "opus",
+		},
+		{
+			name:          "override wins over config default",
+			cfg:           &storage.WorkspaceConfig{Agent: storage.AgentSettings{Default: "sonnet"}},
+			agentOverride: "opus",
+			want:          "opus",
+		},
+		{
+			name:          "config default when no override",
+			cfg:           &storage.WorkspaceConfig{Agent: storage.AgentSettings{Default: "sonnet"}},
+			agentOverride: "",
+			want:          "sonnet",
+		},
+		{
+			name:          "fallback to claude with nil config",
+			cfg:           nil,
+			agentOverride: "",
+			want:          "claude",
+		},
+		{
+			name:          "fallback to claude with empty config default",
+			cfg:           &storage.WorkspaceConfig{Agent: storage.AgentSettings{Default: ""}},
+			agentOverride: "",
+			want:          "claude",
+		},
+		{
+			name:          "fallback to claude with zero-value config",
+			cfg:           &storage.WorkspaceConfig{},
+			agentOverride: "",
+			want:          "claude",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolvePRAgent(tt.cfg, tt.agentOverride)
+			if got != tt.want {
+				t.Errorf("resolvePRAgent() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

@@ -4,7 +4,10 @@
 package commands
 
 import (
+	"errors"
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/taskrunner"
 )
 
 // Note: TestStartCommand_AgentFlagShorthand is in common_test.go
@@ -222,5 +225,71 @@ func TestStartCommand_Examples(t *testing.T) {
 		if !containsString(startCmd.Long, example) {
 			t.Errorf("Long description does not contain example %q", example)
 		}
+	}
+}
+
+// --- Behavioral tests ---
+
+func TestCountSuccessful(t *testing.T) {
+	tests := []struct {
+		name    string
+		results []taskrunner.TaskResult
+		want    int
+	}{
+		{
+			name:    "empty results",
+			results: nil,
+			want:    0,
+		},
+		{
+			name: "all successful",
+			results: []taskrunner.TaskResult{
+				{Reference: "task1", Error: nil},
+				{Reference: "task2", Error: nil},
+				{Reference: "task3", Error: nil},
+			},
+			want: 3,
+		},
+		{
+			name: "all failed",
+			results: []taskrunner.TaskResult{
+				{Reference: "task1", Error: errors.New("failed")},
+				{Reference: "task2", Error: errors.New("failed")},
+			},
+			want: 0,
+		},
+		{
+			name: "mixed results",
+			results: []taskrunner.TaskResult{
+				{Reference: "task1", Error: nil},
+				{Reference: "task2", Error: errors.New("failed")},
+				{Reference: "task3", Error: nil},
+				{Reference: "task4", Error: errors.New("timeout")},
+			},
+			want: 2,
+		},
+		{
+			name: "single successful",
+			results: []taskrunner.TaskResult{
+				{Reference: "task1", Error: nil},
+			},
+			want: 1,
+		},
+		{
+			name: "single failed",
+			results: []taskrunner.TaskResult{
+				{Reference: "task1", Error: errors.New("error")},
+			},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := countSuccessful(tt.results)
+			if got != tt.want {
+				t.Errorf("countSuccessful() = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }

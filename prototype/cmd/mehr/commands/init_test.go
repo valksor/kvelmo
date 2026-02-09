@@ -238,8 +238,8 @@ func TestInitCommand_ASCFlag(t *testing.T) {
 	// Verify ASC settings are present
 	// Note: YAML serializes with single quotes for strings containing special chars
 	expectedSettings := []string{
-		"branch_pattern: asc/{key}",
-		"commit_prefix: '[{key}]'",
+		"branch_pattern: '{type}/{key}/{slug}'",
+		"commit_prefix: '{type}({key}):'",
 		"project_dir: tickets",
 		"filename_pattern: SPEC-{n}.md",
 		"filename_pattern: CODERABBIT-{n}.txt",
@@ -294,7 +294,7 @@ func TestInitCommand_ASCFlagOnExistingConfig(t *testing.T) {
 		t.Fatalf("Read config: %v", err)
 	}
 
-	if !strings.Contains(string(content), "branch_pattern: asc/{key}") {
+	if !strings.Contains(string(content), "branch_pattern: '{type}/{key}/{slug}'") {
 		t.Errorf("--asc flag should update existing config with ASC settings")
 	}
 }

@@ -4,7 +4,14 @@
 package commands
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 func TestFinishCommand_Properties(t *testing.T) {
@@ -256,5 +263,210 @@ func TestFinishCommand_QualityTargetDefault(t *testing.T) {
 	}
 	if flag.DefValue != "quality" {
 		t.Errorf("quality-target default = %q, want 'quality'", flag.DefValue)
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// runFinishLogic behavioral tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+func TestRunFinishLogic_NoActiveTask(t *testing.T) {
+	mock := helper_test.NewMockConductor()
+	// No active task set
+
+	opts := finishOptions{skipQuality: true}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+
+	if err == nil {
+		t.Error("expected error for no active task")
+	}
+	if err != nil && err.Error() != "no active task" {
+		t.Errorf("error = %q, want %q", err.Error(), "no active task")
+	}
+}
+
+func TestRunFinishLogic_CallsRunQuality(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"}).
+		WithRunQualityResult(&conductor.QualityResult{Ran: true, Passed: true})
+
+	var stdout bytes.Buffer
+	opts := finishOptions{skipQuality: false, qualityTarget: "quality"}
+	err := runFinishLogic(context.Background(), mock, opts, &stdout)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(mock.RunQualityCalls) != 1 {
+		t.Errorf("RunQuality called %d times, want 1", len(mock.RunQualityCalls))
+	}
+	if mock.RunQualityCalls[0].Target != "quality" {
+		t.Errorf("RunQuality target = %q, want %q", mock.RunQualityCalls[0].Target, "quality")
+	}
+}
+
+func TestRunFinishLogic_SkipsQuality(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"})
+
+	opts := finishOptions{skipQuality: true}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(mock.RunQualityCalls) != 0 {
+		t.Errorf("RunQuality called %d times, want 0", len(mock.RunQualityCalls))
+	}
+}
+
+func TestRunFinishLogic_CallsFinish(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"})
+
+	opts := finishOptions{
+		skipQuality:  true,
+		targetBranch: "main",
+		delete:       true,
+	}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(mock.FinishCalls) != 1 {
+		t.Fatalf("Finish called %d times, want 1", len(mock.FinishCalls))
+	}
+	if mock.FinishCalls[0].TargetBranch != "main" {
+		t.Errorf("TargetBranch = %q, want %q", mock.FinishCalls[0].TargetBranch, "main")
+	}
+	if !mock.FinishCalls[0].DeleteBranch {
+		t.Error("DeleteBranch = false, want true")
+	}
+}
+
+func TestRunFinishLogic_MergeMode(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"})
+
+	opts := finishOptions{
+		skipQuality: true,
+		merge:       true,
+		push:        true,
+		squash:      true,
+	}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(mock.FinishCalls) != 1 {
+		t.Fatalf("Finish called %d times, want 1", len(mock.FinishCalls))
+	}
+	if !mock.FinishCalls[0].ForceMerge {
+		t.Error("ForceMerge = false, want true")
+	}
+	if !mock.FinishCalls[0].PushAfter {
+		t.Error("PushAfter = false, want true")
+	}
+	if !mock.FinishCalls[0].SquashMerge {
+		t.Error("SquashMerge = false, want true")
+	}
+}
+
+func TestRunFinishLogic_PRMode(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"})
+
+	opts := finishOptions{
+		skipQuality: true,
+		draftPR:     true,
+		prTitle:     "My PR Title",
+		prBody:      "PR description",
+	}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(mock.FinishCalls) != 1 {
+		t.Fatalf("Finish called %d times, want 1", len(mock.FinishCalls))
+	}
+	if !mock.FinishCalls[0].DraftPR {
+		t.Error("DraftPR = false, want true")
+	}
+	if mock.FinishCalls[0].PRTitle != "My PR Title" {
+		t.Errorf("PRTitle = %q, want %q", mock.FinishCalls[0].PRTitle, "My PR Title")
+	}
+	if mock.FinishCalls[0].PRBody != "PR description" {
+		t.Errorf("PRBody = %q, want %q", mock.FinishCalls[0].PRBody, "PR description")
+	}
+}
+
+func TestRunFinishLogic_PropagatesQualityError(t *testing.T) {
+	qualityErr := errors.New("lint failed")
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"}).
+		WithRunQualityError(qualityErr)
+
+	opts := finishOptions{skipQuality: false}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+
+	if err == nil {
+		t.Error("expected error")
+	}
+	if !errors.Is(err, qualityErr) {
+		t.Errorf("error = %v, want wrapped %v", err, qualityErr)
+	}
+}
+
+func TestRunFinishLogic_PropagatesFinishError(t *testing.T) {
+	finishErr := errors.New("merge conflict")
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"}).
+		WithFinishError(finishErr)
+
+	opts := finishOptions{skipQuality: true}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+
+	if err == nil {
+		t.Error("expected error")
+	}
+	if !errors.Is(err, finishErr) {
+		t.Errorf("error = %v, want wrapped %v", err, finishErr)
+	}
+}
+
+func TestRunFinishLogic_QualityUserAborted(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"}).
+		WithRunQualityResult(&conductor.QualityResult{Ran: true, UserAborted: true})
+
+	opts := finishOptions{skipQuality: false}
+	err := runFinishLogic(context.Background(), mock, opts, nil)
+	// User abort should return nil (not an error)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	// Finish should NOT have been called (user cancelled)
+	if len(mock.FinishCalls) != 0 {
+		t.Errorf("Finish called %d times, want 0 (user aborted)", len(mock.FinishCalls))
+	}
+}
+
+func TestRunFinishLogic_SquashGeneratesCommitMessage(t *testing.T) {
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{ID: "test", State: "implementing"}).
+		WithCommitMessagePreview("feat: add feature\n\nDetails here")
+
+	var stdout bytes.Buffer
+	opts := finishOptions{skipQuality: true, squash: true}
+	err := runFinishLogic(context.Background(), mock, opts, &stdout)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if mock.CommitMessagePreviewCalls != 1 {
+		t.Errorf("GenerateCommitMessagePreview called %d times, want 1", mock.CommitMessagePreviewCalls)
+	}
+	if len(mock.FinishCalls) != 1 {
+		t.Fatalf("Finish called %d times, want 1", len(mock.FinishCalls))
+	}
+	if mock.FinishCalls[0].CommitMessage != "feat: add feature\n\nDetails here" {
+		t.Errorf("CommitMessage = %q, want %q", mock.FinishCalls[0].CommitMessage, "feat: add feature\n\nDetails here")
 	}
 }
