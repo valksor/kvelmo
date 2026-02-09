@@ -38,46 +38,64 @@ Mehrhof is not magic. It's a structured way to work with tools you already have,
 
 ## How It Works
 
+Mehrhof manages tasks through a stateful workflow with checkpoints at every step:
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   1. TASK          2. PLAN          3. CREATE         4. REVIEW     │
-│   ─────────        ────────         ────────          ────────      │
-│   Describe what    Break it into    Execute via       Human         │
-│   you want         actionable       agent CLI         approval      │
-│                    steps                              before ship   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+          ┌────────────────────────────────────────────────────────┐
+          │                   YOUR CONTROL                         │
+          │  undo ←─────────────────────────────────────→ redo     │
+          └────────────────────────────────────────────────────────┘
+                            ↓ checkpoints ↓
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│   START     │ → │    PLAN     │ → │  IMPLEMENT  │ → │   REVIEW    │ → FINISH
+│  describe   │   │  structure  │   │   execute   │   │   approve   │
+│  your task  │   │  the work   │   │   the plan  │   │   changes   │
+└─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
 **1. Define a Task**
-Start with a plain-language description of what you want to create or change. No code required — write what you need in your own words.
+Describe what you want in plain language. Load from a file or pull directly from GitHub, Jira, Linear, Notion, or 12 other task sources.
 
 **2. Generate a Plan**
-Mehrhof helps break your intent into actionable steps. You review this plan before any changes are made. Nothing happens without your approval.
+Mehrhof creates a structured plan you review before any changes happen. Add notes to refine a direction. Nothing proceeds without your approval.
 
-**3. Create via Agent CLI**
-Mehrhof structures calls to your configured agent (Claude by default, or Codex/custom). The agent handles the text transformations — creating code, documentation, or configuration files based on your approved plan.
+**3. Execute the Plan**
+Your configured agent (Claude, Codex, or custom) produces the changes. Each step creates a git checkpoint — undo anytime to try a different approach.
 
-**4. Review and Adjust**
-All output is presented for human review before acceptance. You can undo, adjust, add notes, and iterate until you're satisfied. Then finish to merge your changes.
+**4. Review and Finish**
+Automated quality checks run. You review the output, adjust if needed, then finish to merge.
 
-No hidden AI access, no servers, no extra fees — just structured assistance using tools you already have.
+**Key differentiators:**
+- **Resumable** — Close your laptop, come back tomorrow. `mehr continue` picks up where you left off.
+- **Undoable** — Every step creates a checkpoint. `mehr undo` reverts; `mehr redo` restores.
+- **Multi-interface** — Same workflow in CLI, Web UI, Desktop App, or IDE plugins.
 
 ---
 
 ## Safety and Responsible Use
 
-Mehrhof is built on principles that keep you in control:
+Mehrhof is built with control mechanisms at every layer:
 
-- **Human review at every step** — Output is always reviewable and adjustable before it becomes permanent
-- **No autonomous execution** — Nothing ships without your explicit approval
-- **Transparent process** — You can see what's happening at each stage; no black boxes
-- **Configurable guardrails** — Match your company's policies, guidelines, and approval workflows
-- **Undo/redo support** — Made a mistake? Roll back to any checkpoint
-- **Security by default** — CSRF protection, per-IP rate limiting, and session-based authentication for network-accessible deployments
+### Human Oversight
+- **Review gates** — Every phase requires your approval before proceeding
+- **No autonomous execution** — Nothing ships without explicit confirmation
+- **Transparent process** — Watch agent output in real-time; see exactly what's happening
 
-We believe AI is a useful support tool for routine work and exploration, but critical decisions require human understanding and oversight. Mehrhof is designed to help, not replace, your judgment.
+### Recovery
+- **Git checkpoints** — Automatic snapshots after planning and implementation
+- **Undo/redo stack** — Bidirectional navigation through your work history
+- **Reset command** — `mehr reset` recovers from stuck states without losing work
+
+### Network Security (Web UI)
+- **CSRF protection** — Token-based protection on all state-changing endpoints
+- **Per-IP rate limiting** — Prevents abuse on network-accessible deployments
+- **Session authentication** — Required when serving beyond localhost
+
+### Code Quality
+- **Security scanning** — Integrated SAST, secret detection, and vulnerability checks
+- **Blocking thresholds** — Configure severity levels that prevent task completion
+
+We believe AI helps routine work, but critical decisions require human judgment. Mehrhof is designed to help, not replace, your oversight.
 
 ---
 
@@ -108,14 +126,14 @@ Click **"Open Folder"** to select your project — no `cd` or `mehr init` needed
 
 > **Already in a project directory?** Run `mehr serve --open` without `--global` to open directly to that project.
 
-> **Prefer a desktop app?** Download the [Desktop App](https://github.com/valksor/go-mehrhof/releases) for a fully native experience with no terminal required after install.
+> **Prefer a desktop app?** Download the [Desktop App](https://github.com/valksor/go-mehrhof/releases) for a fully native experience with no terminal required after installation.
 
 **Web UI Features:**
 
 | Feature                      | Description                                   |
 |------------------------------|-----------------------------------------------|
 | 📊 **Dashboard**             | All tasks at a glance with real-time status   |
-| 💬 **Interactive Chat**      | Talk to the AI — ask questions, give guidance   |
+| 💬 **Interactive Chat**      | Talk to the AI — ask questions, give guidance |
 | 📝 **Task Creation**         | Write tasks directly or upload files          |
 | 📜 **Live Output**           | Watch progress as it happens                  |
 | 🔍 **Semantic Search**       | Find past tasks by meaning, not just keywords |
@@ -247,13 +265,19 @@ See [CLI Reference](https://valksor.com/docs/mehrhof/nightly/#/cli/index) for al
 
 ## Use Cases
 
-Mehrhof helps when you need to:
+### Product & Business Teams
+- **Non-technical contributors** — Create changes through Web UI or Desktop App with guardrails
+- **Requirements to code** — Write what you need; AI handles the mechanics
 
-- **Ship changes safely** — Review gates ensure nothing goes live without human approval
-- **Turn requirements into change sets** — Describe what you need, get structured output you can review
-- **Enable non-technical contributors** — Product managers, ops, and business users can create changes within guardrails
-- **Maintain repeatability** — Same workflow every time; auditable history for enterprise settings
-- **Reduce single points of failure** — Less reliance on one person who "knows how everything works"
+### Engineering Teams
+- **Review enforcement** — Nothing merges without human approval
+- **Audit trails** — Full history of plans, notes, and checkpoints for compliance
+- **Multi-source task management** — Pull tasks from GitHub, Jira, Linear, Notion, or 12 other systems
+
+### Organizations
+- **Reduce key-person risk** — Structured workflows don't depend on one person's knowledge
+- **Repeatability** — Same process every time; consistent quality across contributors
+- **Cost visibility** — Per-task token tracking and budget controls
 
 ---
 
@@ -261,12 +285,13 @@ Mehrhof helps when you need to:
 
 Mehrhof is intentionally limited. It is **not**:
 
-- **A fully autonomous coding system** — Human review is required at every step
-- **An AI API proxy or hosted service** — Mehrhof wraps your local agent CLI; it doesn't provide AI access
+- **A fully autonomous coding system** — Human review is required at every phase
+- **An AI API or hosted service** — Mehrhof wraps your local agent CLI; it doesn't provide AI access or store your code
 - **An unsupervised production code writer** — All output must be reviewed before merging
 - **A replacement for understanding** — You should understand what changes are being made
+- **A "just press go" tool** — Structured workflows mean more steps but more control
 
-These limitations are features, not bugs. They keep you in control.
+Mehrhof is an **orchestrator**, not an AI. It coordinates tools you already have (Claude CLI, git, your project) through a reviewable process. The limitations are features — they keep you in control.
 
 ---
 
@@ -369,26 +394,59 @@ See [Configuration Guide](https://valksor.com/docs/mehrhof/nightly/#/configurati
 
 ## Documentation
 
+### Getting Started
 - [Full Documentation](https://valksor.com/docs/mehrhof/nightly)
 - [Quickstart](https://valksor.com/docs/mehrhof/nightly/#/quickstart) — Install and run your first task
-- [Comparison with Other Tools](docs/COMPARISON.md) — How Mehrhof compares to Aider, Claude Code, Cursor, etc.
-- [Web UI Guide](https://valksor.com/docs/mehrhof/nightly/#/web-ui/getting-started) — Visual walkthrough
-- [CLI Reference](https://valksor.com/docs/mehrhof/nightly/#/cli/index) — All commands and flags
-- [Workflow Concepts](https://valksor.com/docs/mehrhof/nightly/#/concepts/workflow) — Understanding the process
-- [Configuration](https://valksor.com/docs/mehrhof/nightly/#/configuration/index) — Customize behavior
+- [Comparison with Other Tools](docs/COMPARISON.md) — Mehrhof vs. Aider, Claude Code, Cursor, etc.
+
+### By Interface
+- [Web UI Guide](https://valksor.com/docs/mehrhof/nightly/#/web-ui/getting-started)
+- [CLI Reference](https://valksor.com/docs/mehrhof/nightly/#/cli/index)
+- [Desktop App](https://valksor.com/docs/mehrhof/nightly/#/desktop/index)
+- [IDE Plugins](https://valksor.com/docs/mehrhof/nightly/#/ide/index) — JetBrains and VS Code
+
+### Concepts & Reference
+- [Workflow Concepts](https://valksor.com/docs/mehrhof/nightly/#/concepts/workflow)
+- [Checkpoints & Undo](https://valksor.com/docs/mehrhof/nightly/#/concepts/checkpoints)
+- [Task Providers](https://valksor.com/docs/mehrhof/nightly/#/providers/index) — GitHub, Jira, Linear, Notion, and more
+- [Configuration](https://valksor.com/docs/mehrhof/nightly/#/configuration/index)
 
 ---
 
 ## Development
 
+### Quick Reference
+
 ```bash
 make build        # Build binary
-make test         # Run tests
-make quality      # Lint and security checks
+make test         # Run tests (includes quality checks)
+make quality      # Lint and security checks only
 make install      # Install to $GOPATH/bin
+make coverage-html # Generate coverage report
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+### Quality Philosophy
+
+- **Run `make quality` for changed code** — Lint, format, and security checks
+- **Run targeted tests during development** — `go test ./internal/storage/...`
+- **Run `make test` before committing** — Full suite, only after implementation is complete
+- **Target 80%+ coverage** — Enforced by CI
+
+### Key Rules
+
+- **Multi-interface parity** — Every feature needs CLI plus Web UI implementations
+- **No nolint abuse** — `//nolint` requires justification; never suppress globally
+- **File size < 500 lines** — Split by feature or responsibility
+
+### IDE Plugin Development
+
+```bash
+make ide-quality       # Quality checks for all IDE plugins
+cd ide/vscode && make quality    # VS Code extension only
+cd ide/jetbrains && make quality # JetBrains plugin only
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines, code style, and PR process.
 
 ---
 
