@@ -109,6 +109,20 @@ Don't worry about this - WSL handles it automatically.
 
 ---
 
+## Desktop App (Easiest Option)
+
+Prefer a native app with zero terminal? The Desktop App bundles everything — no commands needed after download.
+
+1. Download from [releases](https://github.com/valksor/go-mehrhof/releases)
+2. Install and launch
+3. Pick a folder and start working
+
+**Windows users:** The app requires WSL2 but will auto-install `mehr` for you.
+
+See [Desktop App documentation](docs/desktop/index.md) for details.
+
+---
+
 ## Quick Start (Experienced Users)
 
 > **New to terminals?** Skip this section and start at [Before You Begin](#before-you-begin-first-time-users) instead.
@@ -133,6 +147,10 @@ If any are missing, follow the relevant sections below.
 ---
 
 ## Table of Contents
+
+**Quickest Options:**
+- [Desktop App](#desktop-app-easiest-option) - Zero terminal, just download and run
+- [Quick Start](#quick-start-experienced-users) - For experienced users
 
 **First-Time Users:**
 - [Before You Begin](#before-you-begin-first-time-users) - What is a terminal? How to open it
