@@ -2,6 +2,7 @@ package storage
 
 // WorkspaceConfig holds workspace-specific configuration that users can customize.
 type WorkspaceConfig struct {
+	Version       int                         `yaml:"version" json:"version"`
 	Git           GitSettings                 `yaml:"git" json:"git"`
 	Agent         AgentSettings               `yaml:"agent" json:"agent"`
 	Workflow      WorkflowSettings            `yaml:"workflow" json:"workflow"`

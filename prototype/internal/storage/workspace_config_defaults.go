@@ -5,6 +5,7 @@ import "strings"
 // NewDefaultWorkspaceConfig creates a WorkspaceConfig with default values.
 func NewDefaultWorkspaceConfig() *WorkspaceConfig {
 	return &WorkspaceConfig{
+		Version: CurrentConfigVersion,
 		Git: GitSettings{
 			AutoCommit:    true,
 			CommitPrefix:  "[{key}]",

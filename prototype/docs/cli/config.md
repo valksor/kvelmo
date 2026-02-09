@@ -116,6 +116,66 @@ mehr config validate [flags]
 | 0    | Configuration is valid              |
 | 1    | One or more validation errors found |
 
+### mehr config reinit
+
+Re-initialize workspace configuration while preserving key settings.
+
+```bash
+mehr config reinit [flags]
+```
+
+**Flags:**
+
+| Flag    | Short | Description                |
+|---------|-------|----------------------------|
+| `--yes` | `-y`  | Skip confirmation prompt   |
+
+**When to use:**
+
+Use this command when `mehr config validate` reports your config is outdated. This happens when the config schema has changed between Mehrhof versions.
+
+**What is preserved:**
+
+- Agent defaults and custom aliases
+- Git patterns (branch pattern, commit prefix)
+- Provider configurations (GitHub, Jira, Linear, etc. tokens)
+- Project settings (code_dir)
+- Environment variables
+
+**What gets reset to defaults:**
+
+- New fields added in later versions
+- Deprecated fields are removed
+- Settings structure is normalized
+
+**Examples:**
+
+```bash
+# Re-init with confirmation prompt
+mehr config reinit
+
+# Re-init without prompting (for scripts)
+mehr config reinit --yes
+```
+
+**Output:**
+
+```
+Config version: 0 (current: 1)
+
+The following settings will be preserved:
+  - Agent defaults and aliases
+  - Git patterns (branch, commit prefix)
+  - Provider configurations
+  - Project settings (code_dir)
+  - Environment variables
+
+Re-initialize config? [y/N]: y
+✓ Config re-initialized to version 1
+
+Run mehr config validate to verify the new configuration.
+```
+
 ### Project Settings
 
 | Setting            | Type   | Description                                                          | Default |
@@ -283,6 +343,7 @@ mehr config validate --app-only
 | Check                     | Error Code               | Description                          |
 |---------------------------|--------------------------|--------------------------------------|
 | YAML syntax               | `YAML_SYNTAX`            | Invalid YAML structure               |
+| Config version outdated   | `CONFIG_OUTDATED`        | Config schema version is old (warn)  |
 | Agent alias circular deps | `AGENT_ALIAS_CIRCULAR`   | Alias chain forms a loop             |
 | Undefined agent reference | `AGENT_ALIAS_UNDEFINED`  | `extends` references unknown agent   |
 | Missing extends field     | `AGENT_ALIAS_NO_EXTENDS` | Alias missing required `extends`     |

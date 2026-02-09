@@ -63,6 +63,27 @@ Examples:
 	RunE: runConfigInit,
 }
 
+var configReinitCmd = &cobra.Command{
+	Use:   "reinit",
+	Short: "Re-initialize config while preserving key settings",
+	Long: `Re-initialize workspace configuration with the latest schema.
+
+This command updates your config to the current version while preserving
+important settings:
+  - Agent defaults and aliases
+  - Git patterns (branch, commit prefix)
+  - Provider configurations (GitHub, Jira, etc.)
+  - Project settings (code_dir)
+  - Environment variables
+
+Use this when 'mehr config validate' reports an outdated config version.
+
+Examples:
+  mehr config reinit        # Re-init with confirmation
+  mehr config reinit --yes  # Skip confirmation prompt`,
+	RunE: runConfigReinit,
+}
+
 var configExplainCmd = &cobra.Command{
 	Use:   "explain",
 	Short: "Explain configuration resolution",
@@ -92,6 +113,7 @@ var (
 	validateFormat     string
 	configInitForce    bool
 	configInitProject  string // Project type hint (go, node, python, php)
+	configReinitYes    bool
 	configExplainAgent string
 )
 
@@ -99,6 +121,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configValidateCmd)
 	configCmd.AddCommand(configInitCmd)
+	configCmd.AddCommand(configReinitCmd)
 	configCmd.AddCommand(configExplainCmd)
 
 	configValidateCmd.Flags().BoolVar(&validateStrict, "strict", false,
@@ -110,6 +133,9 @@ func init() {
 		"Overwrite existing config file without prompting")
 	configInitCmd.Flags().StringVar(&configInitProject, "project", "",
 		"Project type for intelligent defaults (go, node, python, php)")
+
+	configReinitCmd.Flags().BoolVarP(&configReinitYes, "yes", "y", false,
+		"Skip confirmation prompt")
 
 	configExplainCmd.Flags().StringVar(&configExplainAgent, "agent", "",
 		"Workflow step to explain (planning, implementing, reviewing)")
@@ -259,6 +285,84 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  %s - Edit the configuration\n", display.Cyan("vim .mehrhof/config.yaml"))
 	fmt.Printf("  %s - Validate the configuration\n", display.Cyan("mehr config validate"))
 	fmt.Printf("  %s - Start your first task\n", display.Cyan("mehr start task.md"))
+
+	return nil
+}
+
+// runConfigReinit re-initializes the workspace config with preserved values.
+func runConfigReinit(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	// Open workspace
+	ws, err := storage.OpenWorkspace(ctx, wd, nil)
+	if err != nil {
+		return fmt.Errorf("open workspace: %w", err)
+	}
+
+	// Check if config exists
+	configPath := ws.ConfigPath()
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fmt.Println("No config file found.")
+		fmt.Printf("Run %s to create a new configuration.\n", display.Cyan("mehr config init"))
+
+		return nil
+	}
+
+	// Load current config
+	oldCfg, err := ws.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	// Check version status
+	status := storage.CheckConfigVersion(oldCfg)
+	if !status.IsOutdated {
+		fmt.Printf("%s Config is already up to date (version %d)\n",
+			display.Success("✓"), status.Current)
+
+		return nil
+	}
+
+	// Show version info
+	fmt.Printf("Config version: %d (current: %d)\n", status.Current, status.Required)
+	fmt.Println()
+	fmt.Println("The following settings will be preserved:")
+	fmt.Println("  - Agent defaults and aliases")
+	fmt.Println("  - Git patterns (branch, commit prefix)")
+	fmt.Println("  - Provider configurations")
+	fmt.Println("  - Project settings (code_dir)")
+	fmt.Println("  - Environment variables")
+	fmt.Println()
+
+	// Prompt for confirmation
+	if !configReinitYes {
+		confirmed, err := confirmAction("Re-initialize config?", false)
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Println("Cancelled")
+
+			return nil
+		}
+	}
+
+	// Re-initialize with preserved values
+	newCfg := storage.ReinitConfig(oldCfg)
+	if err := ws.SaveConfig(newCfg); err != nil {
+		return fmt.Errorf("save config: %w", err)
+	}
+
+	fmt.Printf("%s Config re-initialized to version %d\n",
+		display.Success("✓"), newCfg.Version)
+	fmt.Println()
+	fmt.Println("Run", display.Cyan("mehr config validate"), "to verify the new configuration.")
 
 	return nil
 }
