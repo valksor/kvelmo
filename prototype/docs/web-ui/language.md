@@ -30,11 +30,11 @@ Power users can customize translations to match their organization's terminology
 
 Replace terms throughout the entire interface. Useful for aligning Mehrhof with your team's vocabulary.
 
-| Example Use Case | Find | Replace With |
-|-----------------|------|--------------|
-| Jira integration | Task | Ticket |
-| CI/CD workflow | Workflow | Pipeline |
-| Internal naming | Dashboard | Home |
+| Example Use Case | Find      | Replace With |
+|------------------|-----------|--------------|
+| Jira integration | Task      | Ticket       |
+| CI/CD workflow   | Workflow  | Pipeline     |
+| Internal naming  | Dashboard | Home         |
 
 **To add a terminology replacement:**
 
@@ -55,11 +55,11 @@ Terminology replacements use **word boundary matching**, meaning:
 - Matching is case-insensitive: "task", "TASK", "Task" all match
 - Replacements preserve the original casing pattern when possible
 
-| Find | Replace | Input | Output |
-|------|---------|-------|--------|
-| Task | Ticket | "Create a Task" | "Create a Ticket" |
-| Task | Ticket | "TaskBar" | "TaskBar" (no change) |
-| Task | Ticket | "Subtask" | "Subtask" (no change) |
+| Find | Replace | Input           | Output                |
+|------|---------|-----------------|-----------------------|
+| Task | Ticket  | "Create a Task" | "Create a Ticket"     |
+| Task | Ticket  | "TaskBar"       | "TaskBar" (no change) |
+| Task | Ticket  | "Subtask"       | "Subtask" (no change) |
 
 ### Key Overrides
 
@@ -74,13 +74,13 @@ Override specific translation keys for fine-grained control. This is useful when
 
 Common override keys include:
 
-| Key | Default Value |
-|-----|---------------|
-| `nav.dashboard` | Dashboard |
-| `nav.project` | Project |
-| `workflow:states.planning` | Planning |
-| `workflow:states.implementing` | Implementing |
-| `workflow:task.title` | Task |
+| Key                            | Default Value |
+|--------------------------------|---------------|
+| `nav.dashboard`                | Dashboard     |
+| `nav.project`                  | Project       |
+| `workflow:states.planning`     | Planning      |
+| `workflow:states.implementing` | Implementing  |
+| `workflow:task.title`          | Task          |
 
 ### Override Precedence
 
@@ -104,9 +104,9 @@ Changes take effect immediately after the page reloads.
 
 In the translation editors, scope badges show where each override originates:
 
-| Badge | Meaning |
-|-------|---------|
-| **Global** | Applies to all projects |
+| Badge       | Meaning                         |
+|-------------|---------------------------------|
+| **Global**  | Applies to all projects         |
 | **Project** | Applies only to current project |
 
 ## Removing Overrides

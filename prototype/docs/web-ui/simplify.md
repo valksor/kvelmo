@@ -36,11 +36,11 @@ When you have an active task:
 
 ### What Gets Simplified
 
-| Workflow State       | What's Simplified        | Result                        |
-|----------------------|--------------------------|-------------------------------|
-| **Before planning**  | Task description         | Clearer, more actionable text |
-| **After planning**   | Specification files      | Refined implementation plans  |
-| **After implementing** | Code changes           | Cleaner, more readable code   |
+| Workflow State         | What's Simplified   | Result                        |
+|------------------------|---------------------|-------------------------------|
+| **Before planning**    | Task description    | Clearer, more actionable text |
+| **After planning**     | Specification files | Refined implementation plans  |
+| **After implementing** | Code changes        | Cleaner, more readable code   |
 
 ### Standalone Mode
 
@@ -101,11 +101,11 @@ The AI improves code by:
 
 Configure simplification behavior in **Settings → Workflow → Simplify**:
 
-| Setting                   | Description                              |
-|---------------------------|------------------------------------------|
-| **Custom Instructions**   | Project-specific standards to follow     |
-| **Skip Checkpoints**      | Skip safety checkpoints (not recommended)|
-| **Agent**                 | Specific agent for simplification tasks  |
+| Setting                 | Description                               |
+|-------------------------|-------------------------------------------|
+| **Custom Instructions** | Project-specific standards to follow      |
+| **Skip Checkpoints**    | Skip safety checkpoints (not recommended) |
+| **Agent**               | Specific agent for simplification tasks   |
 
 ## Best Practices
 
