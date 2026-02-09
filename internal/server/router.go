@@ -491,6 +491,7 @@ func (s *Server) setupRouter() http.Handler {
 			Command:    "provider-health",
 			UnwrapData: true,
 		}))
+		mux.HandleFunc("POST /api/v1/config/reinit", s.handleConfigReinit)
 
 		// i18n endpoints (translations and user overrides)
 		mux.HandleFunc("GET /api/v1/i18n/overrides", s.handleGetI18nOverrides)
@@ -706,6 +707,24 @@ func (s *Server) setupRouter() http.Handler {
 			AllowNilConductor: true,
 		}))
 		mux.HandleFunc("POST /api/v1/projects/select", s.handleSelectProject)
+		mux.HandleFunc("POST /api/v1/projects/favorite", s.handleViaRouter(CommandRoute{
+			Command:           "projects-toggle-favorite",
+			ParseFn:           parseProjectPathInvocation,
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("DELETE /api/v1/projects", s.handleViaRouter(CommandRoute{
+			Command:           "projects-remove",
+			ParseFn:           parseProjectPathInvocation,
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
+		mux.HandleFunc("POST /api/v1/projects", s.handleViaRouter(CommandRoute{
+			Command:           "projects-add",
+			ParseFn:           parseProjectPathInvocation,
+			UnwrapData:        true,
+			AllowNilConductor: true,
+		}))
 
 		// Settings endpoints
 		mux.HandleFunc("GET /api/v1/settings", s.handleViaRouter(CommandRoute{
@@ -725,6 +744,7 @@ func (s *Server) setupRouter() http.Handler {
 			Command:    "provider-health",
 			UnwrapData: true,
 		}))
+		mux.HandleFunc("POST /api/v1/config/reinit", s.handleConfigReinit)
 
 		// i18n endpoints (translations and user overrides)
 		mux.HandleFunc("GET /api/v1/i18n/overrides", s.handleGetI18nOverrides)
@@ -797,6 +817,14 @@ func (s *Server) setupRouter() http.Handler {
 	if s.startedInGlobalMode {
 		mux.HandleFunc("POST /api/v1/projects/switch", s.handleSwitchProject)
 	}
+
+	// Filesystem browse endpoint (for folder picker in web UI)
+	mux.HandleFunc("GET /api/v1/fs/browse", s.handleViaRouter(CommandRoute{
+		Command:           "fs-browse",
+		ParseFn:           parseFSBrowseInvocation,
+		UnwrapData:        true,
+		AllowNilConductor: true,
+	}))
 
 	// SSE events endpoint
 	mux.HandleFunc("GET /api/v1/events", s.handleEvents)

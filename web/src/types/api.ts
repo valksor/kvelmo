@@ -24,6 +24,12 @@ export interface StatusProject {
   remote_url?: string
 }
 
+export interface ConfigVersionInfo {
+  current: number
+  required: number
+  is_outdated: boolean
+}
+
 export interface StatusResponse {
   mode: string
   running: boolean
@@ -31,6 +37,7 @@ export interface StatusResponse {
   state?: WorkflowState
   canSwitchToGlobal?: boolean
   project?: StatusProject
+  config_version?: ConfigVersionInfo
 }
 
 // Progress phases for context-aware state display (matches internal/display/display.go)

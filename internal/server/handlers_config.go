@@ -9,8 +9,78 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
+// handleConfigReinit re-initializes the workspace config with preserved values.
+func (s *Server) handleConfigReinit(w http.ResponseWriter, r *http.Request) {
+	selectedProject := r.URL.Query().Get("project")
+
+	var ws *storage.Workspace
+
+	// Global mode with project selection
+	if s.config.Mode == ModeGlobal && selectedProject != "" {
+		var loadErr string
+		_, ws, loadErr = loadProjectConfig(r.Context(), selectedProject)
+		if ws == nil {
+			s.writeError(w, http.StatusNotFound, "project not found: "+loadErr)
+
+			return
+		}
+	} else if s.config.Conductor != nil {
+		ws = s.config.Conductor.GetWorkspace()
+	}
+
+	if ws == nil {
+		s.writeError(w, http.StatusBadRequest, "no workspace available")
+
+		return
+	}
+
+	// Load current config
+	oldCfg, err := ws.LoadConfig()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to load config: "+err.Error())
+
+		return
+	}
+
+	// Check if already current
+	status := storage.CheckConfigVersion(oldCfg)
+	if !status.IsOutdated {
+		s.writeJSON(w, http.StatusOK, map[string]any{
+			"status":  "ok",
+			"message": "Config is already up to date",
+			"version": status.Current,
+		})
+
+		return
+	}
+
+	// Re-initialize with preserved values
+	newCfg := storage.ReinitConfig(oldCfg)
+	if err := ws.SaveConfig(newCfg); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+
+		return
+	}
+
+	// Reinitialize conductor to pick up the updated config
+	if s.config.Conductor != nil {
+		if err := s.config.Conductor.Initialize(r.Context()); err != nil {
+			slog.Warn("failed to reinitialize conductor after config reinit", "error", err)
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"status":      "ok",
+		"message":     "Config re-initialized successfully",
+		"old_version": status.Current,
+		"new_version": newCfg.Version,
+	})
+}
+
 // loadProjectConfig loads config for a specific project by ID.
 // Returns the config and workspace, or an error message.
+//
+//nolint:unparam // Config return is part of consistent API; callers may use it in future
 func loadProjectConfig(ctx context.Context, projectID string) (*storage.WorkspaceConfig, *storage.Workspace, string) {
 	// Load project registry to get the project's repo path
 	registry, err := storage.LoadRegistry()

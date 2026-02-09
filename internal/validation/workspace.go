@@ -14,6 +14,7 @@ import (
 // Error codes for workspace validation.
 const (
 	CodeYAMLSyntax          = "YAML_SYNTAX"
+	CodeConfigOutdated      = "CONFIG_OUTDATED"
 	CodeAgentAliasCircular  = "AGENT_ALIAS_CIRCULAR"
 	CodeAgentAliasUndefined = "AGENT_ALIAS_UNDEFINED"
 	CodeAgentAliasNoExtends = "AGENT_ALIAS_NO_EXTENDS"
@@ -34,6 +35,18 @@ var envVarRefPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
 
 // validateWorkspaceConfig validates all aspects of a workspace configuration.
 func validateWorkspaceConfig(cfg *storage.WorkspaceConfig, configPath string, builtInAgents []string, result *validate.Result) {
+	// Check config version first
+	versionStatus := storage.CheckConfigVersion(cfg)
+	if versionStatus.IsOutdated {
+		result.AddWarningWithSuggestion(
+			CodeConfigOutdated,
+			fmt.Sprintf("Config version %d is outdated (current: %d)", versionStatus.Current, versionStatus.Required),
+			"version",
+			configPath,
+			"Run 'mehr config reinit' to update with latest schema",
+		)
+	}
+
 	validateGitSettings(cfg.Git, configPath, result)
 	validateAgentSettings(cfg.Agent, configPath, builtInAgents, cfg.Agents, result)
 	validateWorkflowSettings(cfg.Workflow, configPath, result)

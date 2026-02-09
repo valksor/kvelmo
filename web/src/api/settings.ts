@@ -138,3 +138,36 @@ export function useDocsURL() {
     staleTime: Infinity, // Version never changes during session
   })
 }
+
+/**
+ * Response structure for /config/reinit endpoint
+ */
+interface ConfigReinitResponse {
+  status: string
+  message: string
+  old_version?: number
+  new_version?: number
+}
+
+/**
+ * Re-initialize config while preserving key settings.
+ * Used when config version is outdated.
+ * @param projectId - Optional project ID for global mode
+ */
+export function useReinitConfig(projectId?: string) {
+  const queryClient = useQueryClient()
+  const url = projectId ? `/config/reinit?project=${projectId}` : '/config/reinit'
+
+  return useMutation({
+    mutationFn: () =>
+      apiRequest<ConfigReinitResponse>(url, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      // Invalidate status to refresh config version info
+      queryClient.invalidateQueries({ queryKey: ['status'] })
+      // Also invalidate settings since config changed
+      queryClient.invalidateQueries({ queryKey: ['settings', projectId] })
+    },
+  })
+}
