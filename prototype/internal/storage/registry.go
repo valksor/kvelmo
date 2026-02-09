@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -36,7 +37,13 @@ type ProjectMetadata struct {
 	Name         string    `yaml:"name"`                  // Human-readable name (repo name or dir name)
 	RegisteredAt time.Time `yaml:"registered_at"`         // When project was registered
 	LastAccess   time.Time `yaml:"last_access,omitempty"` // Last time project was accessed
+	IsFavorite   bool      `yaml:"is_favorite,omitempty"` // Whether project is marked as favorite
 }
+
+const (
+	// MaxRecentProjects is the maximum number of recent projects to return.
+	MaxRecentProjects = 20
+)
 
 // LoadRegistry loads the project registry from disk.
 // If the registry file doesn't exist, returns an empty registry.
@@ -212,4 +219,86 @@ func (r *ProjectRegistry) UpdateLastAccess(id string) {
 		meta.LastAccess = time.Now()
 		r.Projects[id] = meta
 	}
+}
+
+// FindByPath looks up a project in the registry by its filesystem path.
+// Returns the project metadata and true if found, empty metadata and false otherwise.
+func (r *ProjectRegistry) FindByPath(path string) (ProjectMetadata, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	cleanPath := filepath.Clean(path)
+	for _, meta := range r.Projects {
+		if filepath.Clean(meta.Path) == cleanPath {
+			return meta, true
+		}
+	}
+
+	return ProjectMetadata{}, false
+}
+
+// ToggleFavorite toggles the favorite status for a project by path.
+// Returns the new favorite status and an error if the project is not found.
+func (r *ProjectRegistry) ToggleFavorite(path string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	cleanPath := filepath.Clean(path)
+	for id, meta := range r.Projects {
+		if filepath.Clean(meta.Path) == cleanPath {
+			meta.IsFavorite = !meta.IsFavorite
+			r.Projects[id] = meta
+
+			return meta.IsFavorite, nil
+		}
+	}
+
+	return false, fmt.Errorf("project not found: %s", path)
+}
+
+// GetFavorites returns paths of all favorite projects.
+func (r *ProjectRegistry) GetFavorites() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]string, 0)
+	for _, meta := range r.Projects {
+		if meta.IsFavorite {
+			result = append(result, meta.Path)
+		}
+	}
+
+	return result
+}
+
+// ListRecent returns projects ordered by last access (most recent first).
+// Returns at most limit projects. If limit <= 0, returns all projects.
+func (r *ProjectRegistry) ListRecent(limit int) []ProjectMetadata {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Collect all projects
+	projects := make([]ProjectMetadata, 0, len(r.Projects))
+	for _, meta := range r.Projects {
+		projects = append(projects, meta)
+	}
+
+	// Sort by LastAccess descending (most recent first)
+	slices.SortFunc(projects, func(a, b ProjectMetadata) int {
+		if a.LastAccess.After(b.LastAccess) {
+			return -1
+		}
+		if a.LastAccess.Before(b.LastAccess) {
+			return 1
+		}
+
+		return 0
+	})
+
+	// Apply limit
+	if limit > 0 && len(projects) > limit {
+		projects = projects[:limit]
+	}
+
+	return projects
 }
