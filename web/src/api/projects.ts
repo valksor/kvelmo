@@ -7,22 +7,24 @@ export interface Project {
   path: string
   remote_url?: string
   last_access: string
+  is_favorite?: boolean
 }
 
 interface ProjectsResponse {
   count: number
   projects: Project[]
+  favorites?: string[]
 }
 
 /**
- * Hook to list all discovered projects (global mode only)
- * @param enabled - Whether to fetch projects (pass isGlobalMode to avoid 404 in project mode)
+ * Hook to list all auto-tracked projects (global mode only)
+ * @param options - Query options, especially `enabled` to control fetching
  */
-export function useProjects(enabled: boolean = true) {
+export function useProjects(options?: { enabled?: boolean }) {
   return useQuery<ProjectsResponse>({
     queryKey: ['projects'],
     queryFn: () => apiRequest('/projects'),
-    enabled,
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -57,6 +59,48 @@ export function useSwitchToGlobal() {
     onSuccess: () => {
       // Mode changed - reload to get fresh state
       window.location.href = '/'
+    },
+  })
+}
+
+/**
+ * Hook to toggle a project's favorite status
+ */
+export function useToggleFavorite() {
+  return useMutation<{ is_favorite: boolean; path: string }, Error, string>({
+    mutationFn: async (projectPath: string) => {
+      return apiRequest('/projects/favorite', {
+        method: 'POST',
+        body: JSON.stringify({ path: projectPath }),
+      })
+    },
+  })
+}
+
+/**
+ * Hook to remove a project from tracking
+ */
+export function useRemoveProject() {
+  return useMutation<{ path: string }, Error, string>({
+    mutationFn: async (projectPath: string) => {
+      return apiRequest('/projects', {
+        method: 'DELETE',
+        body: JSON.stringify({ path: projectPath }),
+      })
+    },
+  })
+}
+
+/**
+ * Hook to add a new project by path
+ */
+export function useAddProject() {
+  return useMutation<{ path: string; name: string }, Error, string>({
+    mutationFn: async (projectPath: string) => {
+      return apiRequest('/projects', {
+        method: 'POST',
+        body: JSON.stringify({ path: projectPath }),
+      })
     },
   })
 }

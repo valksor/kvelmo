@@ -24,7 +24,7 @@ describe('projects api hooks', () => {
 
   it('useProjects does not query when disabled', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(() => useProjects(false), { wrapper: createWrapper(queryClient) })
+    renderHook(() => useProjects({ enabled: false }), { wrapper: createWrapper(queryClient) })
 
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(apiRequestMock).not.toHaveBeenCalled()
@@ -32,7 +32,7 @@ describe('projects api hooks', () => {
 
   it('useProjects queries /projects when enabled', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(() => useProjects(true), { wrapper: createWrapper(queryClient) })
+    renderHook(() => useProjects({ enabled: true }), { wrapper: createWrapper(queryClient) })
 
     await waitFor(() => {
       expect(apiRequestMock).toHaveBeenCalledWith('/projects')
