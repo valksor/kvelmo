@@ -198,6 +198,10 @@ func TestValidateGitPattern_ValidPlaceholders(t *testing.T) {
 		{"valid with task_id", "task/{task_id}", false},
 		{"invalid placeholder", "{invalid}", true},
 		{"mixed valid and invalid", "{key}/{bad}", true},
+		// Multi-segment patterns with slash separator
+		{"multi-segment with slash separator", "{type}/{key}/{slug}", false},
+		{"custom type prefix with slash", "feat/{key}/{slug}", false},
+		{"three variables with slashes", "{type}/{key}/{task_id}", false},
 	}
 
 	for _, tt := range tests {
