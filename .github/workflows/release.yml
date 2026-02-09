@@ -172,6 +172,13 @@ jobs:
                     bun install
                     bun run build
 
+            -   name: Upload web assets for desktop builds
+                uses: actions/upload-artifact@v4
+                with:
+                    name: web-assets
+                    path: internal/server/static/app/
+                    retention-days: 1
+
             -   name: Save release title
                 id: release-title
                 env:
@@ -351,6 +358,7 @@ jobs:
 
     # Build desktop app (Electron) on native runners
     # macOS/Linux: download mehr binary from release; Windows: uses WSL (no binary)
+    # Web assets are downloaded from the release job's artifact
     desktop:
         needs: [release]
         if: >-
@@ -414,11 +422,11 @@ jobs:
                 with:
                     node-version: '24'
 
-            -   name: Build web UI
-                working-directory: web
-                run: |
-                    bun install
-                    bun run build
+            -   name: Download web assets
+                uses: actions/download-artifact@v4
+                with:
+                    name: web-assets
+                    path: internal/server/static/app/
 
             -   name: Install desktop dependencies
                 working-directory: desktop
