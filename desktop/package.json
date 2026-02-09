@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "electron .",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "make": "tsc && electron-forge make",
     "lint": "eslint src/",
     "test": "vitest",
     "test:run": "vitest run",
