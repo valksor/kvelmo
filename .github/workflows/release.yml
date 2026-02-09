@@ -409,6 +409,11 @@ jobs:
                 with:
                     bun-version: latest
 
+            -   name: Setup Node
+                uses: actions/setup-node@v4
+                with:
+                    node-version: '24'
+
             -   name: Build web UI
                 working-directory: web
                 run: |
