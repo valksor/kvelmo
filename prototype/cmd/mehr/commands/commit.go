@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +16,49 @@ import (
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/display"
 )
+
+// GitCommitAPI defines the git operations used by the commit command.
+// This interface enables mocking for unit tests.
+type GitCommitAPI interface {
+	Add(ctx context.Context, files ...string) error
+	Commit(ctx context.Context, message string) (string, error)
+	CurrentBranch(ctx context.Context) (string, error)
+	Push(ctx context.Context, remote, branch string) error
+}
+
+// gitCommitAdapter adapts *vcs.Git to GitCommitAPI.
+// vcs.Git.Commit has variadic options that we don't need for simple commits.
+type gitCommitAdapter struct {
+	git *vcs.Git
+}
+
+func (a *gitCommitAdapter) Add(ctx context.Context, files ...string) error {
+	return a.git.Add(ctx, files...)
+}
+
+func (a *gitCommitAdapter) Commit(ctx context.Context, message string) (string, error) {
+	return a.git.Commit(ctx, message)
+}
+
+func (a *gitCommitAdapter) CurrentBranch(ctx context.Context) (string, error) {
+	return a.git.CurrentBranch(ctx)
+}
+
+func (a *gitCommitAdapter) Push(ctx context.Context, remote, branch string) error {
+	return a.git.Push(ctx, remote, branch)
+}
+
+// commitOptions holds options for the commit command.
+type commitOptions struct {
+	push   bool
+	dryRun bool
+}
+
+// commitGroup represents a group of files to commit together.
+type commitGroup struct {
+	Files   []string
+	Message string
+}
 
 var (
 	commitPush   bool
@@ -209,37 +254,24 @@ func runCommit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Execute commits
-	for _, group := range groups {
-		// Stage files
-		if err := res.Git.Add(ctx, group.Files...); err != nil {
-			return fmt.Errorf("stage files: %w", err)
+	// Convert storage.ChangeGroup to commitGroup for the testable function
+	commitGroups := make([]commitGroup, len(groups))
+	for i, g := range groups {
+		commitGroups[i] = commitGroup{
+			Files:   g.Files,
+			Message: g.Message,
 		}
+	}
 
-		// Commit
-		hash, err := res.Git.Commit(ctx, group.Message)
-		if err != nil {
-			return fmt.Errorf("commit: %w", err)
-		}
-
-		fmt.Printf("Created %s\n", display.SuccessMsg("%s", hash[:8]+" "+group.Message))
+	// Execute commits using testable logic
+	opts := commitOptions{push: commitPush, dryRun: false}
+	gitAPI := &gitCommitAdapter{git: res.Git}
+	if err := executeCommits(ctx, gitAPI, commitGroups, opts, os.Stdout); err != nil {
+		return err
 	}
 
 	// Clear history after successful commits
 	_ = history.Clear()
-
-	// Push if requested
-	if commitPush {
-		branch, err := res.Git.CurrentBranch(ctx)
-		if err != nil {
-			return fmt.Errorf("get current branch: %w", err)
-		}
-
-		if err := res.Git.Push(ctx, "origin", branch); err != nil {
-			return fmt.Errorf("push: %w", err)
-		}
-		fmt.Println(display.SuccessMsg("Pushed to remote"))
-	}
 
 	return nil
 }
@@ -256,4 +288,73 @@ func (a *agentAdapter) Run(ctx context.Context, prompt string) (*vcs.AgentRespon
 	}
 
 	return &vcs.AgentResponse{Messages: resp.Messages}, nil
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// executeCommits executes the commit workflow: stage, commit, and optionally push.
+// This function is extracted for testing.
+func executeCommits(ctx context.Context, git GitCommitAPI, groups []commitGroup, opts commitOptions, stdout io.Writer) error {
+	if len(groups) == 0 {
+		if stdout != nil {
+			_, _ = fmt.Fprintln(stdout, display.InfoMsg("No changes to commit"))
+		}
+
+		return nil
+	}
+
+	if opts.dryRun {
+		// Dry-run: just display what would be committed
+		for i, group := range groups {
+			if stdout != nil {
+				_, _ = fmt.Fprintf(stdout, "[%d] %s\n", i+1, display.Bold(group.Message))
+				for _, f := range group.Files {
+					_, _ = fmt.Fprintf(stdout, "    %s\n", display.Muted(f))
+				}
+				_, _ = fmt.Fprintln(stdout)
+			}
+		}
+		if stdout != nil {
+			_, _ = fmt.Fprintln(stdout, display.Muted("(dry run: no commits created)"))
+		}
+
+		return nil
+	}
+
+	// Execute commits
+	for _, group := range groups {
+		// Stage files
+		if err := git.Add(ctx, group.Files...); err != nil {
+			return fmt.Errorf("stage files: %w", err)
+		}
+
+		// Commit
+		hash, err := git.Commit(ctx, group.Message)
+		if err != nil {
+			return fmt.Errorf("commit: %w", err)
+		}
+
+		if stdout != nil {
+			_, _ = fmt.Fprintf(stdout, "Created %s\n", display.SuccessMsg("%s", hash[:8]+" "+group.Message))
+		}
+	}
+
+	// Push if requested
+	if opts.push {
+		branch, err := git.CurrentBranch(ctx)
+		if err != nil {
+			return fmt.Errorf("get current branch: %w", err)
+		}
+
+		if err := git.Push(ctx, "origin", branch); err != nil {
+			return fmt.Errorf("push: %w", err)
+		}
+		if stdout != nil {
+			_, _ = fmt.Fprintln(stdout, display.SuccessMsg("Pushed to remote"))
+		}
+	}
+
+	return nil
 }

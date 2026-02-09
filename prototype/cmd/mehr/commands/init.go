@@ -221,14 +221,14 @@ func interactiveSetup(cmd *cobra.Command, ws *storage.Workspace) error {
 // This is deliberately undocumented - see ASC-COMPATIBILITY.md for details.
 //
 // ASC patterns:
-//   - Branch: asc/<ticket-id>
-//   - Commit prefix: [<ticket-id>]
+//   - Branch: <type>/<ticket-id>/<slug> (e.g., feat/WRIKE-123/add-auth)
+//   - Commit prefix: <type>(<ticket-id>): (e.g., feat(1564280896): message)
 //   - Specs: tickets/<task-id>/SPEC-N.md
 //   - Reviews: tickets/<task-id>/CODERABBIT-N.txt
 //   - Timezone: Europe/Riga
 func applyASCConfig(cfg *storage.WorkspaceConfig) {
-	cfg.Git.BranchPattern = "asc/{key}"
-	cfg.Git.CommitPrefix = "[{key}]"
+	cfg.Git.BranchPattern = "{type}/{key}/{slug}"
+	cfg.Git.CommitPrefix = "{type}({key}):"
 	cfg.Storage.SaveInProject = true
 	cfg.Storage.ProjectDir = "tickets"
 	cfg.Specification.FilenamePattern = "SPEC-{n}.md"

@@ -62,8 +62,8 @@ func runReviewPR(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	// Validate PR number
-	if reviewPRNumber <= 0 {
-		return fmt.Errorf("pr-number must be positive (got %d)", reviewPRNumber)
+	if err := validatePRNumber(reviewPRNumber); err != nil {
+		return err
 	}
 
 	// This is a STANDALONE command - no workspace, no task, no user input required
@@ -84,14 +84,8 @@ func runReviewPR(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 2. Validate agent selection
-	agent := reviewPRAgent
-	if agent == "" && cfg != nil && cfg.Agent.Default != "" {
-		agent = cfg.Agent.Default
-	}
-	if agent == "" {
-		agent = "claude" // Built-in default
-	}
+	// 2. Resolve agent selection
+	agent := resolvePRAgent(cfg, reviewPRAgent)
 
 	// 3. Detect provider from git remote if not specified
 	providerName := reviewPRProvider
@@ -173,4 +167,30 @@ func initializeConductorForPRReview(_ context.Context, _ *storage.WorkspaceConfi
 	}
 
 	return cond, nil
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// validatePRNumber validates that the PR number is positive.
+func validatePRNumber(prNumber int) error {
+	if prNumber <= 0 {
+		return fmt.Errorf("pr-number must be positive (got %d)", prNumber)
+	}
+
+	return nil
+}
+
+// resolvePRAgent determines which agent to use for PR review.
+// Priority: explicit override > config default > built-in default ("claude").
+func resolvePRAgent(cfg *storage.WorkspaceConfig, agentOverride string) string {
+	if agentOverride != "" {
+		return agentOverride
+	}
+	if cfg != nil && cfg.Agent.Default != "" {
+		return cfg.Agent.Default
+	}
+
+	return "claude"
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,14 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	tkdisplay "github.com/valksor/go-toolkit/display"
 )
+
+// specificationDiffOptions holds options for the specification diff command.
+type specificationDiffOptions struct {
+	specNumber   int
+	filePath     string
+	contextLines int
+	outputPath   string
+}
 
 var (
 	specificationViewNumber int
@@ -271,11 +280,7 @@ func runSpecificationDiff(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	activeTask := cond.GetActiveTask()
-	if activeTask == nil {
-		return errors.New("no active task. Start a task first with 'mehr start'")
-	}
-
+	// Parse specification number from argument or flag
 	number := specificationDiffNumber
 	if number == 0 && len(args) > 0 {
 		num, parseErr := strconv.Atoi(args[0])
@@ -285,35 +290,67 @@ func runSpecificationDiff(cmd *cobra.Command, args []string) error {
 		number = num
 	}
 
-	if number <= 0 {
-		return errors.New("specification number required. Use: mehr specification diff <number>")
+	// Build options and delegate to testable logic
+	opts := specificationDiffOptions{
+		specNumber:   number,
+		filePath:     specificationDiffFile,
+		contextLines: specificationDiffContext,
+		outputPath:   specificationDiffOutput,
 	}
 
-	if specificationDiffFile == "" {
-		return errors.New("file path required. Use: --file <path>")
+	return runSpecificationDiffLogic(ctx, cond, opts, cmd.OutOrStdout())
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// runSpecificationDiffLogic contains the core diff logic, extracted for testing.
+func runSpecificationDiffLogic(ctx context.Context, api ConductorAPI, opts specificationDiffOptions, stdout io.Writer) error {
+	// Check for active task
+	activeTask := api.GetActiveTask()
+	if activeTask == nil {
+		return errors.New("no active task")
 	}
 
-	diff, err := cond.GetSpecificationFileDiff(ctx, activeTask.ID, number, specificationDiffFile, specificationDiffContext)
+	// Validate inputs
+	if opts.specNumber <= 0 {
+		return errors.New("specification number required")
+	}
+	if opts.filePath == "" {
+		return errors.New("file path required")
+	}
+
+	// Get the diff
+	diff, err := api.GetSpecificationFileDiff(ctx, activeTask.ID, opts.specNumber, opts.filePath, opts.contextLines)
 	if err != nil {
 		return err
 	}
 
+	// Handle empty diff
 	if diff == "" {
-		fmt.Printf("No diff found for %s in specification-%d.\n", specificationDiffFile, number)
-
-		return nil
-	}
-
-	if specificationDiffOutput != "" {
-		if writeErr := os.WriteFile(specificationDiffOutput, []byte(diff), 0o644); writeErr != nil {
-			return fmt.Errorf("write diff file: %w", writeErr)
+		if stdout != nil {
+			_, _ = fmt.Fprintf(stdout, "No diff found for %s in specification-%d.\n", opts.filePath, opts.specNumber)
 		}
-		fmt.Printf("Diff saved to: %s\n", specificationDiffOutput)
 
 		return nil
 	}
 
-	fmt.Print(diff)
+	// Write output
+	if opts.outputPath != "" {
+		if err := os.WriteFile(opts.outputPath, []byte(diff), 0o644); err != nil {
+			return fmt.Errorf("write diff file: %w", err)
+		}
+		if stdout != nil {
+			_, _ = fmt.Fprintf(stdout, "Diff saved to: %s\n", opts.outputPath)
+		}
+
+		return nil
+	}
+
+	if stdout != nil {
+		_, _ = fmt.Fprint(stdout, diff)
+	}
 
 	return nil
 }

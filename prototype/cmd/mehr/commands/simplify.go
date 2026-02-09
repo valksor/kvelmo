@@ -181,21 +181,11 @@ func runStandaloneSimplify(cmd *cobra.Command, args []string) error {
 
 	// Determine diff mode based on flags
 	diffOpts := conductor.StandaloneDiffOptions{
-		Context: simplifyContextSize,
-	}
-
-	switch {
-	case simplifyRange != "":
-		diffOpts.Mode = conductor.DiffModeRange
-		diffOpts.Range = simplifyRange
-	case simplifyBranch != "" || cmd.Flags().Changed("branch"):
-		diffOpts.Mode = conductor.DiffModeBranch
-		diffOpts.BaseBranch = simplifyBranch // May be empty, will auto-detect
-	case len(args) > 0:
-		diffOpts.Mode = conductor.DiffModeFiles
-		diffOpts.Files = args
-	default:
-		diffOpts.Mode = conductor.DiffModeUncommitted
+		Context:    simplifyContextSize,
+		Mode:       resolveDiffMode(simplifyRange, simplifyBranch, cmd.Flags().Changed("branch"), args),
+		Range:      simplifyRange,
+		BaseBranch: simplifyBranch,
+		Files:      args,
 	}
 
 	// Build simplify options
@@ -251,6 +241,25 @@ func printSimplifyModeInfo(opts conductor.StandaloneDiffOptions) {
 		fmt.Printf("%s Simplifying commit range: %s...\n", display.InfoMsg(""), opts.Range)
 	case conductor.DiffModeFiles:
 		fmt.Printf("%s Simplifying files: %s...\n", display.InfoMsg(""), strings.Join(opts.Files, ", "))
+	}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// resolveDiffMode determines which diff mode to use based on flags.
+// Priority: range > branch > files > uncommitted (default).
+func resolveDiffMode(rangeFlag, branchFlag string, branchChanged bool, files []string) conductor.StandaloneDiffMode {
+	switch {
+	case rangeFlag != "":
+		return conductor.DiffModeRange
+	case branchFlag != "" || branchChanged:
+		return conductor.DiffModeBranch
+	case len(files) > 0:
+		return conductor.DiffModeFiles
+	default:
+		return conductor.DiffModeUncommitted
 	}
 }
 

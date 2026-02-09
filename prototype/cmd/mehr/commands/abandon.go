@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -49,7 +50,16 @@ func init() {
 	abandonCmd.Flags().BoolVar(&abandonKeepWork, "keep-work", false, "Keep the work directory")
 }
 
-func runAbandon(cmd *cobra.Command, args []string) error {
+// abandonOptions captures flag state for the abandon command.
+// This enables testing without Cobra runtime dependencies.
+type abandonOptions struct {
+	skipConfirm     bool
+	keepBranch      bool
+	keepWorkChanged bool // true if --keep-work was explicitly set
+	keepWork        bool // value of --keep-work
+}
+
+func runAbandon(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
 	// Initialize conductor with standard providers and agents
@@ -58,6 +68,19 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	opts := abandonOptions{
+		skipConfirm:     abandonYes,
+		keepBranch:      abandonKeepBranch,
+		keepWorkChanged: cmd.Flags().Changed("keep-work"),
+		keepWork:        abandonKeepWork,
+	}
+
+	return runAbandonLogic(ctx, cond, opts)
+}
+
+// runAbandonLogic contains the testable business logic for the abandon command.
+// It accepts a ConductorAPI to enable mock-based testing.
+func runAbandonLogic(ctx context.Context, cond ConductorAPI, opts abandonOptions) error {
 	// Check for an active task
 	activeTask := cond.GetActiveTask()
 	if activeTask == nil {
@@ -83,12 +106,12 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 	promptLines += "\n  State: " + status.State
 	promptLines += fmt.Sprintf("\n  Specifications: %d", status.Specifications)
 
-	if !abandonKeepBranch && status.Branch != "" {
+	if !opts.keepBranch && status.Branch != "" {
 		promptLines += "\n\nWARNING: This will delete the git branch and all uncommitted changes!"
 	}
 
-	// Confirmation prompt (unless --yes or --force)
-	confirmed, err := confirmAction(promptLines, abandonYes)
+	// Confirmation prompt (unless skipConfirm)
+	confirmed, err := confirmAction(promptLines, opts.skipConfirm)
 	if err != nil {
 		return err
 	}
@@ -101,18 +124,18 @@ func runAbandon(cmd *cobra.Command, args []string) error {
 	// Build delete options
 	// Use tri-state for DeleteWork: nil=defer to config, true=delete, false=keep
 	var deleteWork *bool
-	if cmd.Flags().Changed("keep-work") {
-		deleteWork = conductor.BoolPtr(!abandonKeepWork) // --keep-work means don't delete
+	if opts.keepWorkChanged {
+		deleteWork = conductor.BoolPtr(!opts.keepWork) // --keep-work means don't delete
 	}
 
-	opts := conductor.DeleteOptions{
-		Force:      abandonYes,
-		KeepBranch: abandonKeepBranch,
+	deleteOpts := conductor.DeleteOptions{
+		Force:      opts.skipConfirm,
+		KeepBranch: opts.keepBranch,
 		DeleteWork: deleteWork,
 	}
 
 	// Perform delete
-	if err := cond.Delete(ctx, opts); err != nil {
+	if err := cond.Delete(ctx, deleteOpts); err != nil {
 		return fmt.Errorf("abandon: %w", err)
 	}
 

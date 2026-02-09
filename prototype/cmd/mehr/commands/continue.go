@@ -63,7 +63,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	// Initialize conductor with standard providers and agents
-	cond, err := initializeConductor(ctx, conductor.WithVerbose(verbose))
+	cond, err := CreateConductor(ctx, conductor.WithVerbose(verbose))
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func runContinue(cmd *cobra.Command, args []string) error {
 }
 
 // executeNextStep determines and executes the next logical workflow step.
-func executeNextStep(ctx context.Context, cond *conductor.Conductor, status *conductor.TaskStatus) error {
+func executeNextStep(ctx context.Context, cond ConductorAPI, status *conductor.TaskStatus) error {
 	switch workflow.State(status.State) {
 	case workflow.StateIdle:
 		if status.Specifications == 0 {

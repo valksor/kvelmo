@@ -87,12 +87,7 @@ func runQuestion(cmd *cobra.Command, args []string) error {
 	currentState := status.State
 
 	// Check if questions are allowed in the current state
-	validStates := map[string]bool{
-		"planning":     true,
-		"implementing": true,
-		"reviewing":    true,
-	}
-	if !validStates[currentState] {
+	if !isQuestionAllowedInState(currentState) {
 		fmt.Printf("Cannot ask questions in state '%s'.\n", kitdisplay.Cyan(currentState))
 		fmt.Println("\nQuestions are allowed during:")
 		fmt.Println("  ", kitdisplay.Cyan("planning"), "     - Use 'mehr plan' first")
@@ -196,4 +191,20 @@ func joinArgs(args []string) string {
 	result += resultSb182.String()
 
 	return result
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// isQuestionAllowedInState checks if questions can be asked in the given workflow state.
+// Questions are only allowed during active work states: planning, implementing, reviewing.
+func isQuestionAllowedInState(state string) bool {
+	validStates := map[string]bool{
+		"planning":     true,
+		"implementing": true,
+		"reviewing":    true,
+	}
+
+	return validStates[state]
 }

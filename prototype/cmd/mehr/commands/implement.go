@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strconv"
 
@@ -14,6 +16,17 @@ import (
 	tkdisplay "github.com/valksor/go-toolkit/display"
 	"github.com/valksor/go-toolkit/eventbus"
 )
+
+// implementOptions holds options for the implement command.
+type implementOptions struct {
+	force bool
+}
+
+// implementReviewOptions holds options for the implement review command.
+type implementReviewOptions struct {
+	reviewNumber int
+	force        bool
+}
 
 var (
 	implementDryRun            bool
@@ -92,63 +105,48 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	// Build conductor options
-	opts := []conductor.Option{
+	condOpts := []conductor.Option{
 		conductor.WithVerbose(verbose),
 		conductor.WithDryRun(implementDryRun),
 	}
 
 	// Per-step agent override
 	if implementAgentImplementing != "" {
-		opts = append(opts, conductor.WithStepAgent("implementing", implementAgentImplementing))
+		condOpts = append(condOpts, conductor.WithStepAgent("implementing", implementAgentImplementing))
 	}
 
 	// Prompt optimization
 	if implementOptimize {
-		opts = append(opts, conductor.WithOptimizePrompts(true))
+		condOpts = append(condOpts, conductor.WithOptimizePrompts(true))
 	}
 
 	// Component filtering
 	if implementOnly != "" {
-		opts = append(opts, conductor.WithOnlyComponent(implementOnly))
+		condOpts = append(condOpts, conductor.WithOnlyComponent(implementOnly))
 	}
 
 	// Parallel execution
 	if implementParallel != "" {
-		opts = append(opts, conductor.WithParallel(implementParallel))
+		condOpts = append(condOpts, conductor.WithParallel(implementParallel))
 	}
 
 	// Library auto-include
 	if implementLibrary {
-		opts = append(opts, conductor.WithLibraryAutoInclude(true))
+		condOpts = append(condOpts, conductor.WithLibraryAutoInclude(true))
 	}
 
 	// Use deduplicating stdout in verbose mode to suppress duplicate lines
 	if verbose {
-		opts = append(opts, conductor.WithStdout(getDeduplicatingStdout()))
+		condOpts = append(condOpts, conductor.WithStdout(getDeduplicatingStdout()))
 	}
 
 	// Initialize conductor with standard providers and agents
-	cond, err := initializeConductor(ctx, opts...)
+	cond, err := initializeConductor(ctx, condOpts...)
 	if err != nil {
 		return err
 	}
 
-	// Check for an active task
-	if cond.GetActiveTask() == nil {
-		fmt.Print(display.NoActiveTaskError())
-
-		return errors.New("no active task")
-	}
-
-	// Handle --force a flag to reset the stuck state
-	if implementForce {
-		if err := cond.ResetState(ctx); err != nil {
-			return fmt.Errorf("reset state: %w", err)
-		}
-		fmt.Println(tkdisplay.InfoMsg("State reset to idle"))
-	}
-
-	// Set up event handlers
+	// Set up event handlers for verbose mode
 	if verbose {
 		w := cond.GetStdout()
 		cond.GetEventBus().SubscribeAll(func(e eventbus.Event) {
@@ -181,12 +179,8 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Enter implementation phase
-	if err := cond.Implement(ctx); err != nil {
-		return fmt.Errorf("implement: %w", err)
-	}
-
-	// Run implementation with spinner in non-verbose mode
+	// Run implementation logic with spinner in non-verbose mode
+	implOpts := implementOptions{force: implementForce}
 	var implErr error
 	spinnerMsg := "Implementing code..."
 	if implementDryRun {
@@ -199,11 +193,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Println(tkdisplay.InfoMsg("Implementing..."))
 		}
-		implErr = cond.RunImplementation(ctx)
+		implErr = runImplementLogic(ctx, cond, implOpts, cond.GetStdout())
 	} else {
 		spinner := tkdisplay.NewSpinner(spinnerMsg)
 		spinner.Start()
-		implErr = cond.RunImplementation(ctx)
+		implErr = runImplementLogic(ctx, cond, implOpts, nil)
 		if implErr != nil && !errors.Is(implErr, conductor.ErrBudgetPaused) && !errors.Is(implErr, conductor.ErrBudgetStopped) {
 			spinner.StopWithError("Implementation failed")
 		} else if errors.Is(implErr, conductor.ErrBudgetPaused) {
@@ -218,6 +212,8 @@ func runImplement(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+
+	// Handle budget errors with appropriate UI
 	if errors.Is(implErr, conductor.ErrBudgetPaused) {
 		fmt.Println(tkdisplay.WarningMsg("Task paused due to budget limit."))
 		fmt.Println(tkdisplay.Muted("Review budgets and resume when ready:"))
@@ -235,7 +231,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	if implErr != nil {
-		return fmt.Errorf("run implementation: %w", implErr)
+		return implErr
 	}
 
 	// Get status
@@ -270,63 +266,41 @@ func runImplement(cmd *cobra.Command, args []string) error {
 func runImplementReview(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Parse review number
+	// Parse review number (validation done by runImplementReviewLogic)
 	reviewNumber, err := strconv.Atoi(args[0])
 	if err != nil {
 		return fmt.Errorf("invalid review number %q: must be an integer", args[0])
 	}
-	if reviewNumber <= 0 {
-		return fmt.Errorf("review number must be positive, got %d", reviewNumber)
-	}
 
 	// Build conductor options
-	opts := []conductor.Option{
+	condOpts := []conductor.Option{
 		conductor.WithVerbose(verbose),
 		conductor.WithDryRun(implementDryRun),
 	}
 
 	// Per-step agent override
 	if implementAgentImplementing != "" {
-		opts = append(opts, conductor.WithStepAgent("implementing", implementAgentImplementing))
+		condOpts = append(condOpts, conductor.WithStepAgent("implementing", implementAgentImplementing))
 	}
 
 	// Prompt optimization
 	if implementOptimize {
-		opts = append(opts, conductor.WithOptimizePrompts(true))
+		condOpts = append(condOpts, conductor.WithOptimizePrompts(true))
 	}
 
 	// Use deduplicating stdout in verbose mode
 	if verbose {
-		opts = append(opts, conductor.WithStdout(getDeduplicatingStdout()))
+		condOpts = append(condOpts, conductor.WithStdout(getDeduplicatingStdout()))
 	}
 
 	// Initialize conductor
-	cond, err := initializeConductor(ctx, opts...)
+	cond, err := initializeConductor(ctx, condOpts...)
 	if err != nil {
 		return err
 	}
 
-	// Check for an active task
-	if cond.GetActiveTask() == nil {
-		fmt.Print(display.NoActiveTaskError())
-
-		return errors.New("no active task")
-	}
-
-	// Handle --force flag to reset stuck state
-	if implementForce {
-		if err := cond.ResetState(ctx); err != nil {
-			return fmt.Errorf("reset state: %w", err)
-		}
-		fmt.Println(tkdisplay.InfoMsg("State reset to idle"))
-	}
-
-	// Enter implementation state for review fixes
-	if err := cond.ImplementReview(ctx, reviewNumber); err != nil {
-		return fmt.Errorf("implement review: %w", err)
-	}
-
-	// Run review implementation with spinner in non-verbose mode
+	// Run review implementation logic with spinner in non-verbose mode
+	implOpts := implementReviewOptions{reviewNumber: reviewNumber, force: implementForce}
 	var implErr error
 	spinnerMsg := fmt.Sprintf("Implementing fixes from review %d...", reviewNumber)
 	if implementDryRun {
@@ -339,11 +313,11 @@ func runImplementReview(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Println(tkdisplay.InfoMsg("%s", fmt.Sprintf("Implementing fixes from review %d...", reviewNumber)))
 		}
-		implErr = cond.RunReviewImplementation(ctx, reviewNumber)
+		implErr = runImplementReviewLogic(ctx, cond, implOpts, cond.GetStdout())
 	} else {
 		spinner := tkdisplay.NewSpinner(spinnerMsg)
 		spinner.Start()
-		implErr = cond.RunReviewImplementation(ctx, reviewNumber)
+		implErr = runImplementReviewLogic(ctx, cond, implOpts, nil)
 		if implErr != nil {
 			spinner.StopWithError("Review fix implementation failed")
 		} else {
@@ -356,7 +330,7 @@ func runImplementReview(cmd *cobra.Command, args []string) error {
 	}
 
 	if implErr != nil {
-		return fmt.Errorf("run review implementation: %w", implErr)
+		return implErr
 	}
 
 	// Get status
@@ -384,6 +358,95 @@ func runImplementReview(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  %s - View task status\n", tkdisplay.Cyan("mehr status"))
 	fmt.Printf("  %s - Revert changes if needed\n", tkdisplay.Cyan("mehr undo"))
 	fmt.Printf("  %s - Complete the task\n", tkdisplay.Cyan("mehr finish"))
+
+	return nil
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// runImplementLogic contains the core implementation logic, extracted for testing.
+// Returns conductor.ErrBudgetPaused or conductor.ErrBudgetStopped for budget limits.
+// Callers should check for these sentinel errors and handle them as non-failure cases.
+func runImplementLogic(ctx context.Context, api ConductorAPI, opts implementOptions, stdout io.Writer) error {
+	// Check for an active task
+	if api.GetActiveTask() == nil {
+		if stdout != nil {
+			_, _ = fmt.Fprint(stdout, display.NoActiveTaskError())
+		}
+
+		return errors.New("no active task")
+	}
+
+	// Handle --force flag to reset stuck state
+	if opts.force {
+		if err := api.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		if stdout != nil {
+			_, _ = fmt.Fprintln(stdout, tkdisplay.InfoMsg("State reset to idle"))
+		}
+	}
+
+	// Enter implementation phase
+	if err := api.Implement(ctx); err != nil {
+		return fmt.Errorf("implement: %w", err)
+	}
+
+	// Run implementation
+	implErr := api.RunImplementation(ctx)
+
+	// Return budget errors as sentinel values for caller to handle UI
+	if errors.Is(implErr, conductor.ErrBudgetPaused) {
+		return conductor.ErrBudgetPaused
+	}
+	if errors.Is(implErr, conductor.ErrBudgetStopped) {
+		return conductor.ErrBudgetStopped
+	}
+	if implErr != nil {
+		return fmt.Errorf("run implementation: %w", implErr)
+	}
+
+	return nil
+}
+
+// runImplementReviewLogic contains the core review implementation logic, extracted for testing.
+func runImplementReviewLogic(ctx context.Context, api ConductorAPI, opts implementReviewOptions, stdout io.Writer) error {
+	// Validate review number
+	if opts.reviewNumber <= 0 {
+		return fmt.Errorf("review number must be positive, got %d", opts.reviewNumber)
+	}
+
+	// Check for an active task
+	if api.GetActiveTask() == nil {
+		if stdout != nil {
+			_, _ = fmt.Fprint(stdout, display.NoActiveTaskError())
+		}
+
+		return errors.New("no active task")
+	}
+
+	// Handle --force flag to reset stuck state
+	if opts.force {
+		if err := api.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+		if stdout != nil {
+			_, _ = fmt.Fprintln(stdout, tkdisplay.InfoMsg("State reset to idle"))
+		}
+	}
+
+	// Enter implementation state for review fixes
+	if err := api.ImplementReview(ctx, opts.reviewNumber); err != nil {
+		return fmt.Errorf("implement review: %w", err)
+	}
+
+	// Run review implementation
+	implErr := api.RunReviewImplementation(ctx, opts.reviewNumber)
+	if implErr != nil {
+		return fmt.Errorf("run review implementation: %w", implErr)
+	}
 
 	return nil
 }

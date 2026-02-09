@@ -303,6 +303,50 @@ func runNote(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// noteContext provides the state context needed for handleNoteMessage.
+// This allows testing without mocking workspace internals.
+type noteContext struct {
+	hasPendingQuestion bool
+	isWaitingState     bool
+}
+
+// handleNoteMessage processes a note message based on the current state.
+// This function is extracted from runNote to enable unit testing.
+//
+// Returns:
+//   - nil on success
+//   - error if the operation fails
+func handleNoteMessage(ctx context.Context, cond ConductorAPI, message string, nc noteContext) error {
+	// Case 1: Pending question - use AnswerQuestion for full handling
+	if nc.hasPendingQuestion {
+		if err := cond.AnswerQuestion(ctx, message); err != nil {
+			return fmt.Errorf("answer question: %w", err)
+		}
+
+		return nil
+	}
+
+	// Case 2: Waiting state but no pending question - save note and reset
+	if nc.isWaitingState {
+		if err := cond.AddNote(ctx, message); err != nil {
+			return fmt.Errorf("save note: %w", err)
+		}
+
+		if err := cond.ResetState(ctx); err != nil {
+			return fmt.Errorf("reset state: %w", err)
+		}
+
+		return nil
+	}
+
+	// Case 3: Regular note (not in waiting state)
+	if err := cond.AddNote(ctx, message); err != nil {
+		return fmt.Errorf("save note: %w", err)
+	}
+
+	return nil
+}
+
 // addNoteToQueueTask adds a note to a queue task without starting it.
 //
 //nolint:unparam // ctx is kept for a consistent signature with other command functions
