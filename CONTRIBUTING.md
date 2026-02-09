@@ -7,8 +7,8 @@ Thank you for your interest in contributing to Mehrhof! This document provides g
 ### Prerequisites
 
 - **Go 1.25+** - Required for building from source
-- **Git** - Required for version control operations
-- **make** - For build automation
+- **Git** – Required for version control operations
+- **make** – For build automation
 
 ### Getting Started
 
@@ -43,15 +43,26 @@ make coverage-html
 ### Code Quality
 
 ```bash
-# Run linters (golangci-lint, govulncheck)
+# Run linters and formatters (golangci-lint, gofmt, goimports, gofumpt, check-alias)
 make quality
 
-# Format code
+# Format code only
 make fmt
 
 # Tidy dependencies
 make tidy
+
+# Run quality checks for IDE plugins
+make ide-quality        # Both VS Code and JetBrains
+make vscode-quality     # VS Code extension only
+make jetbrains-quality  # JetBrains plugin only
 ```
+
+**Run checks for what you changed:**
+- Go code (`cmd/`, `internal/`, `*.go`): `make quality`
+- VS Code extension (`ide/vscode/`): `cd ide/vscode && make quality`
+- JetBrains plugin (`ide/jetbrains/`): `cd ide/jetbrains && make quality`
+- Docs only (`docs/`, `*.md`): No checks required
 
 ## Code Style
 
@@ -114,7 +125,78 @@ if len(errs) > 0 {
 - Always pass `context.Context` for cancelable operations
 - Use `wg.Go(func() { ... })` instead of `wg.Add(1); go func() { defer wg.Done() }()`
 
+## Critical Rules
+
+These rules are enforced by CI. Violating them will cause your PR to fail.
+
+### Multi-Interface Parity
+
+**Every feature needs both CLI and Web UI implementations.** Shared logic goes in `internal/conductor/`. Both interfaces call the same conductor methods.
+
+See [docs/reference/feature-parity.md](docs/reference/feature-parity.md) for the implementation checklist and status tables.
+
+### go-toolkit Import Policy
+
+Import `github.com/valksor/go-toolkit` packages directly. **No type aliases, no wrappers, no re-exports.**
+
+```go
+// ✅ GOOD - Direct import
+import "github.com/valksor/go-toolkit/eventbus"
+bus := eventbus.NewBus()
+
+// ❌ BAD - Type alias or wrapper
+type Bus = eventbus.Bus  // Don't do this
+```
+
+CI enforces this via `make check-alias`.
+
+### No nolint Abuse
+
+`//nolint` is a last resort. Never disable linters globally in `.golangci.yml`.
+
+**Acceptable** (with justification):
+```go
+//nolint:unparam // Required by interface
+//nolint:nilnil // No task found is not an error
+//nolint:errcheck // String builder WriteString won't fail
+```
+
+**Never acceptable:**
+- `//nolint:errcheck` without justification
+- `//nolint:gosec` (fix the security issue)
+- `//nolint:all` (never suppress all linters)
+
+Always: specify linter name, include justification, place on specific line.
+
+### File Size Limit
+
+Keep all Go files under **500 lines**. Split by feature or responsibility:
+
+```go
+// Split handlers.go (1000 lines) into:
+handlers_plan.go      // Planning handlers
+handlers_implement.go // Implementation handlers
+handlers_review.go    // Review handlers
+```
+
 ## Testing
+
+### Test-First Development
+
+**Write tests FIRST (TDD).** This ensures your implementation meets requirements and catches regressions.
+
+### Testing Strategy
+
+**During development:** Run targeted tests for changed packages:
+```bash
+go test ./internal/storage/...           # Test a package
+go test -run TestWorkspace ./internal/... # Test specific function
+```
+
+**Before committing:** Run the full test suite:
+```bash
+make test  # Only after implementation is complete
+```
 
 ### Conventions
 
@@ -122,6 +204,7 @@ if len(errs) > 0 {
 - Prefer table-driven tests for multiple cases
 - Target 80%+ code coverage
 - Place test files next to the code they test (`foo_test.go`)
+- Shared test utilities are in `internal/helper_test/`
 
 ### Table-Driven Test Example
 
@@ -247,9 +330,46 @@ For feature requests, please:
 
 - **GitHub Issues**: For bugs and feature requests
 - **GitHub Discussions**: For questions and general discussion
-- **Documentation**: See the [docs/](../) directory for detailed guides
+- **Documentation**: See the [docs/](docs/) directory for detailed guides
+
+## Reference
+
+For deeper context on project architecture and conventions:
+
+- [CLAUDE.md](CLAUDE.md) — Complete project conventions and architecture overview
+- [REFERENCE.md](REFERENCE.md) — Command, API, and package reference
+- [docs/reference/feature-parity.md](docs/reference/feature-parity.md) — Interface parity checklist
 
 ## Documentation
+
+### Documentation by Interface
+
+Documentation is organized by interface with specific tone and content requirements:
+
+| Directory | Audience | Tone |
+|-----------|----------|------|
+| `docs/web-ui/` | Non-technical users | Professional, accessible, corporate |
+| `docs/cli/` | CLI-savvy developers | Technical, concise |
+| `docs/ide/` | IDE users | Visual, task-oriented |
+| `docs/concepts/` | All users | Accessible without being condescending |
+| `docs/reference/` | Developers/integrators | Technical, comprehensive |
+
+**Web UI docs (`docs/web-ui/`):**
+- NO bash commands or CLI usage
+- Use button names, screenshots, visual workflows
+
+**CLI docs (`docs/cli/`):**
+- Command syntax, flags, examples, exit codes
+- Brief cross-reference to Web UI equivalent
+
+**Link format:** Always use absolute paths (Docsify breaks relative links):
+```markdown
+# ✅ GOOD
+See [CLI: note](/cli/note.md) for details.
+
+# ❌ BAD - Breaks in Docsify
+See [CLI: note](../cli/note.md) for details.
+```
 
 ### Adding Diagrams
 
@@ -258,7 +378,7 @@ For diagrams in documentation, use **Mermaid** syntax but export to static image
 **Generate a PNG from Mermaid:**
 
 ```bash
-cat <<'EOF' | npx -p @mermaid-js/mermaid-cli mmdc -i - -o docs/_media/img/diagram.png -b transparent
+cat <<'EOF' | bunx @mermaid-js/mermaid-cli mmdc -i - -o docs/_media/img/diagram.png -b transparent
 stateDiagram-v2
     [*] --> StateA
     StateA --> StateB
