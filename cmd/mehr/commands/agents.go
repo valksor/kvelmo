@@ -148,13 +148,7 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 			availableStr = "yes"
 		}
 
-		desc := a.description
-		if len(desc) > 40 {
-			desc = desc[:37] + "..."
-		}
-		if desc == "" {
-			desc = "-"
-		}
+		desc := formatAgentDescription(a.description)
 
 		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			a.name,
@@ -175,6 +169,23 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 	fmt.Println("Configure aliases in .mehrhof/config.yaml under 'agents:'")
 
 	return nil
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// formatAgentDescription formats and truncates the description for display.
+// Truncates to 37 chars + "..." if over 40 chars. Returns "-" if empty.
+func formatAgentDescription(desc string) string {
+	if len(desc) > 40 {
+		return desc[:37] + "..."
+	}
+	if desc == "" {
+		return "-"
+	}
+
+	return desc
 }
 
 func runAgentsExplain(cmd *cobra.Command, args []string) error {

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -46,6 +47,12 @@ func runReset(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	return runResetLogic(ctx, cond, resetYes)
+}
+
+// runResetLogic contains the testable business logic for the reset command.
+// It accepts a ConductorAPI to enable mock-based testing.
+func runResetLogic(ctx context.Context, cond ConductorAPI, skipConfirm bool) error {
 	// Check for an active task
 	activeTask := cond.GetActiveTask()
 	if activeTask == nil {
@@ -74,8 +81,8 @@ func runReset(cmd *cobra.Command, _ []string) error {
 	}
 	promptLines += "\n\n  This preserves all specifications, notes, and code changes."
 
-	// Confirmation prompt (unless --yes)
-	confirmed, err := confirmAction(promptLines, resetYes)
+	// Confirmation prompt (unless --yes/skipConfirm)
+	confirmed, err := confirmAction(promptLines, skipConfirm)
 	if err != nil {
 		return err
 	}

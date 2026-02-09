@@ -239,24 +239,6 @@ func (s *InteractiveSession) handleCommand(ctx context.Context, input string) er
 	cmd := parts[0]
 	args := parts[1:]
 
-	// Handle aliases
-	switch cmd {
-	case "c", "ask":
-		cmd = "chat"
-	case "impl":
-		cmd = "implement"
-	case "cont":
-		cmd = "continue"
-	case "st":
-		cmd = "status"
-	case "a":
-		cmd = "answer"
-	case "?":
-		cmd = "help"
-	case "q", "quit":
-		cmd = "exit"
-	}
-
 	// Create a cancellable context for this command
 	opCtx, cancel := context.WithCancel(ctx)
 

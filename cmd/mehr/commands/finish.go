@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -251,6 +253,90 @@ func runFinish(cmd *cobra.Command, args []string) error {
 		"mehr start <ref>       - Start a new task",
 		"mehr guide             - Get context-aware help",
 	)
+
+	return nil
+}
+
+// finishOptions holds the options for the finish command logic.
+// This struct enables testing without terminal I/O.
+type finishOptions struct {
+	skipQuality   bool
+	qualityTarget string
+	squash        bool
+	merge         bool
+	delete        bool
+	push          bool
+	targetBranch  string
+	deleteWork    *bool // tri-state: nil=defer to config
+	draftPR       bool
+	prTitle       string
+	prBody        string
+	finishAction  string // pre-set action for non-PR providers (bypasses prompt)
+}
+
+// runFinishLogic contains the core finish logic, extracted for testing.
+// It assumes confirmation has already been done by the caller.
+func runFinishLogic(ctx context.Context, cond ConductorAPI, opts finishOptions, stdout io.Writer) error {
+	// Check for an active task
+	activeTask := cond.GetActiveTask()
+	if activeTask == nil {
+		return errors.New("no active task")
+	}
+
+	// Run quality checks (unless skipped)
+	if !opts.skipQuality {
+		qualityOpts := conductor.QualityOptions{
+			Target: opts.qualityTarget,
+		}
+
+		result, err := cond.RunQuality(ctx, qualityOpts)
+		if err != nil {
+			return fmt.Errorf("quality check: %w", err)
+		}
+
+		if result != nil && result.Ran {
+			if result.UserAborted {
+				return nil // User cancelled, not an error
+			}
+
+			if result.Passed && stdout != nil {
+				_, _ = fmt.Fprintln(stdout, tkdisplay.SuccessMsg("Quality checks passed"))
+			}
+		}
+	}
+
+	// Generate commit message preview for squash merges
+	var commitMessage string
+	if opts.squash {
+		if msg, err := cond.GenerateCommitMessagePreview(ctx); err == nil && msg != "" {
+			commitMessage = msg
+			if stdout != nil {
+				_, _ = fmt.Fprintln(stdout, "\nGenerated commit message:")
+				_, _ = fmt.Fprint(stdout, tkdisplay.InfoMsg("%s", msg))
+				_, _ = fmt.Fprintln(stdout)
+			}
+		}
+	}
+
+	// Build finish options
+	finishOpts := conductor.FinishOptions{
+		SquashMerge:   opts.squash,
+		DeleteBranch:  opts.delete,
+		TargetBranch:  opts.targetBranch,
+		PushAfter:     opts.push,
+		DeleteWork:    opts.deleteWork,
+		ForceMerge:    opts.merge,
+		DraftPR:       opts.draftPR,
+		PRTitle:       opts.prTitle,
+		PRBody:        opts.prBody,
+		CommitMessage: commitMessage,
+		FinishAction:  opts.finishAction,
+	}
+
+	// Perform finish
+	if err := cond.Finish(ctx, finishOpts); err != nil {
+		return fmt.Errorf("finish: %w", err)
+	}
 
 	return nil
 }

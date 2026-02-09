@@ -20,6 +20,14 @@ import (
 	"github.com/valksor/go-mehrhof/internal/vcs"
 )
 
+// serveOptions holds options for building server configuration.
+type serveOptions struct {
+	port          int
+	preferredPort int
+	global        bool
+	apiOnly       bool
+}
+
 // DefaultPreferredPort is the default port for the web server.
 // Falls back to a random port if this port is already in use.
 const DefaultPreferredPort = 6337
@@ -64,26 +72,27 @@ func init() {
 func runServe(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	// Handle default port with smart fallback
+	// Build options from flags
+	opts := serveOptions{
+		port:          servePort,
+		preferredPort: DefaultPreferredPort,
+		global:        serveGlobal,
+		apiOnly:       serveAPIOnly,
+	}
+
+	// Resolve port using testable logic (only when port not explicitly set)
+	resolvedPort := opts.port
 	if !cmd.Flags().Changed("port") {
-		// Try preferred port 6337, fall back to random if taken
-		if portAvailable("localhost", DefaultPreferredPort) {
-			servePort = DefaultPreferredPort
-		} else {
-			fmt.Printf("Port %d in use, using random available port\n", DefaultPreferredPort)
-			servePort = 0
+		resolvedPort = resolveServePort(opts, portAvailable)
+		if resolvedPort == 0 && opts.preferredPort > 0 {
+			fmt.Printf("Port %d in use, using random available port\n", opts.preferredPort)
 		}
 	}
 
-	// Create server config
-	cfg := server.Config{
-		Port:    servePort,
-		Host:    "localhost",
-		APIOnly: serveAPIOnly,
-	}
+	// Create base server config using testable logic
+	cfg := buildBaseServerConfig(opts, resolvedPort)
 
 	if serveGlobal {
-		cfg.Mode = server.ModeGlobal
 		fmt.Println("Starting Mehrhof Web UI in global mode...")
 	} else {
 		cfg.Mode = server.ModeProject
@@ -245,6 +254,8 @@ func openBrowser(url string) error {
 }
 
 // portAvailable checks if a port is available for binding.
+//
+
 func portAvailable(host string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", host, port)
 	lc := net.ListenConfig{}
@@ -255,4 +266,43 @@ func portAvailable(host string, port int) bool {
 	_ = ln.Close()
 
 	return true
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Testable logic functions
+// ──────────────────────────────────────────────────────────────────────────────
+
+// resolveServePort determines the actual port to use based on options.
+// Returns the resolved port.
+func resolveServePort(opts serveOptions, checkPort func(string, int) bool) int {
+	// If explicit port specified, use it
+	if opts.port != 0 {
+		return opts.port
+	}
+
+	// Try preferred port if available
+	if checkPort("localhost", opts.preferredPort) {
+		return opts.preferredPort
+	}
+
+	// Fall back to random port (0)
+	return 0
+}
+
+// buildBaseServerConfig creates a base server config from options.
+// This does NOT include workspace-specific configuration.
+func buildBaseServerConfig(opts serveOptions, port int) server.Config {
+	cfg := server.Config{
+		Port:    port,
+		Host:    "localhost",
+		APIOnly: opts.apiOnly,
+	}
+
+	if opts.global {
+		cfg.Mode = server.ModeGlobal
+	} else {
+		cfg.Mode = server.ModeProject
+	}
+
+	return cfg
 }
