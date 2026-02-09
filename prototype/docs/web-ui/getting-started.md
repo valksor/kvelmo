@@ -18,6 +18,8 @@ By the end of this guide, you'll be able to:
 
 For accessibility details, see [Web UI: Accessibility](/web-ui/accessibility.md).
 
+> **Prefer zero terminal?** The [Desktop App](/desktop/index.md) provides everything below without running any commands. Download, launch, and start working.
+
 > **No project yet?** You can start with an empty directory. Just select any folder — Mehrhof will create everything it needs.
 
 ---

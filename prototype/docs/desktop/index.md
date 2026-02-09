@@ -55,6 +55,23 @@ To work on a different project, use the project menu in the top bar to switch or
 
 ---
 
+## Using the App
+
+Once you've opened a project, the desktop app works exactly like the Web UI. All features are available:
+
+| Feature           | Learn More                                  |
+|-------------------|---------------------------------------------|
+| Creating tasks    | [Creating Tasks](/web-ui/creating-tasks.md) |
+| Planning workflow | [Planning](/web-ui/planning.md)             |
+| Implementing      | [Implementing](/web-ui/implementing.md)     |
+| Code review       | [Reviewing](/web-ui/reviewing.md)           |
+| Undo & redo       | [Undo & Redo](/web-ui/undo-redo.md)         |
+| Settings          | [Settings](/web-ui/settings.md)             |
+
+For the complete feature list, see [Web UI Overview](/web-ui/index.md).
+
+---
+
 ## Windows Notes
 
 On Windows, the app runs natively but uses WSL (Windows Subsystem for Linux) behind the scenes. A few things to know:
@@ -95,9 +112,9 @@ Projects appear after you open them at least once. Click **Open Folder** to add 
 
 ## Also Available
 
-| Option | Best For |
-|--------|----------|
-| [Web UI](/web-ui/index.md) | Using in a browser without installing an app |
-| [CLI](/cli/index.md) | Power users who prefer the terminal |
-| [VS Code](/ide/vscode/index.md) | Working inside VS Code |
-| [JetBrains](/ide/jetbrains/index.md) | Working inside IntelliJ, PyCharm, etc. |
+| Option                               | Best For                                     |
+|--------------------------------------|----------------------------------------------|
+| [Web UI](/web-ui/index.md)           | Using in a browser without installing an app |
+| [CLI](/cli/index.md)                 | Power users who prefer the terminal          |
+| [VS Code](/ide/vscode/index.md)      | Working inside VS Code                       |
+| [JetBrains](/ide/jetbrains/index.md) | Working inside IntelliJ, PyCharm, etc.       |

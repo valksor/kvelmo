@@ -68,7 +68,7 @@
   - [JetBrains](ide/jetbrains.md)
   - [VS Code](ide/vscode.md)
 
-- **Desktop App**
+- **Desktop App** (Easiest)
   - [Overview](desktop/index.md)
 
 - **CLI**

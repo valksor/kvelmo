@@ -37,14 +37,14 @@ The main dashboard provides:
 
 Each workflow phase has a dedicated button:
 
-| Action      | Button Location  | Description                                  | CLI                             |
-|-------------|------------------|----------------------------------------------|---------------------------------|
-| Create Task | Dashboard        | Start a new task from file, URL, or provider | [start](/cli/start.md)          |
-| Plan        | Active Task Card | Generate a structured plan                   | [plan](/cli/plan.md)            |
-| Create      | Active Task Card | Execute the plan to produce changes          | [implement](/cli/implement.md)  |
-| Review      | Active Task Card | Run quality checks                           | [review](/cli/review.md)        |
-| Finish      | Active Task Card | Complete and merge the task                  | [finish](/cli/finish.md)        |
-| Continue    | Dashboard        | Execute next logical step                    | [continue](/cli/continue.md)    |
+| Action      | Button Location  | Description                                  | CLI                                        |
+|-------------|------------------|----------------------------------------------|--------------------------------------------|
+| Create Task | Dashboard        | Start a new task from file, URL, or provider | [start](/cli/start.md)                     |
+| Plan        | Active Task Card | Generate a structured plan                   | [plan](/cli/plan.md)                       |
+| Create      | Active Task Card | Execute the plan to produce changes          | [implement](/cli/implement.md)             |
+| Review      | Active Task Card | Run quality checks                           | [review](/cli/review.md)                   |
+| Finish      | Active Task Card | Complete and merge the task                  | [finish](/cli/finish.md)                   |
+| Continue    | Dashboard        | Execute next logical step                    | [continue](/cli/continue.md)               |
 | Undo/Redo   | Dashboard        | Navigate checkpoint history                  | [undo](/cli/undo.md), [redo](/cli/redo.md) |
 
 See individual workflow pages for details:
@@ -94,12 +94,14 @@ See [CLI: serve](/cli/serve.md) for starting the server and [CLI Overview](/cli/
 
 ## Also Available as Desktop App
 
-Prefer a native app experience? The [Desktop App](/desktop/index.md) provides:
+Prefer a native app experience? The [Desktop App](/desktop/index.md) provides everything above without running terminal commands:
+
 - Native file dialogs for project selection
 - Zero terminal required after download
 - Windows + WSL integration
+- Same features, same workflow
 
-Download from the [releases page](https://github.com/valksor/go-mehrhof/releases).
+[Download from releases](https://github.com/valksor/go-mehrhof/releases) or see [Desktop App Overview](/desktop/index.md) for installation.
 
 ---
 
