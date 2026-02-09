@@ -1,6 +1,8 @@
 package conductor
 
 import (
+	"context"
+	"errors"
 	"strings"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
@@ -144,4 +146,46 @@ func buildProviderConfig(workspaceCfg *storage.WorkspaceConfig, providerName str
 	}
 
 	return cfg
+}
+
+// GetConfigVersionStatus returns the version status of the workspace config.
+// Returns nil if workspace is not initialized.
+func (c *Conductor) GetConfigVersionStatus() *storage.ConfigVersionStatus {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.workspace == nil {
+		return nil
+	}
+
+	cfg, err := c.workspace.LoadConfig()
+	if err != nil {
+		return nil
+	}
+
+	status := storage.CheckConfigVersion(cfg)
+
+	return &status
+}
+
+// ReinitConfig re-initializes the workspace config with preserved values.
+func (c *Conductor) ReinitConfig(_ context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.workspace == nil {
+		return errors.New("workspace not initialized")
+	}
+
+	oldCfg, err := c.workspace.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	newCfg := storage.ReinitConfig(oldCfg)
+	if err := c.workspace.SaveConfig(newCfg); err != nil {
+		return err
+	}
+
+	return nil
 }
