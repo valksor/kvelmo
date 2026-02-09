@@ -249,15 +249,15 @@ mehr plan --standalone "How should I implement caching?"
 
 Combine prefix matching with colon notation for maximum speed:
 
-| Full Command         | Shorthand   | Description                |
-|---------------------|-------------|----------------------------|
+| Full Command           | Shorthand   | Description               |
+|------------------------|-------------|---------------------------|
 | `mehr config validate` | `mehr c:v`  | Validate configuration    |
-| `mehr agents list`    | `mehr a:l`  | List available agents     |
-| `mehr plugins list`   | `mehr p:l`  | List installed plugins    |
-| `mehr project plan`   | `mehr pr:p` | Plan project tasks        |
-| `mehr project start`  | `mehr pr:s` | Start project queue       |
-| `mehr budget status`  | `mehr b:s`  | Check budget status       |
-| `mehr budget resume`  | `mehr b:r`  | Resume after budget pause |
+| `mehr agents list`     | `mehr a:l`  | List available agents     |
+| `mehr plugins list`    | `mehr p:l`  | List installed plugins    |
+| `mehr project plan`    | `mehr pr:p` | Plan project tasks        |
+| `mehr project start`   | `mehr pr:s` | Start project queue       |
+| `mehr budget status`   | `mehr b:s`  | Check budget status       |
+| `mehr budget resume`   | `mehr b:r`  | Resume after budget pause |
 
 ### Skip Confirmation Prompts
 
@@ -317,13 +317,13 @@ mehr cost --json > cost-report.json
 
 These three commands help you understand your current context, each optimized for different scenarios:
 
-| Aspect            | `guide`                     | `continue`                      | `status`                      |
-|-------------------|-----------------------------|---------------------------------|-------------------------------|
-| **Purpose**       | "What command next?"        | "Resume work"                   | "Show everything"             |
-| **Output**        | Minimal (state + 1-3 tips)  | Summary (metadata + tips)       | Full (specs, checkpoints, tokens) |
-| **Best for**      | Quick orientation           | Returning after a break         | Debugging, inspection         |
-| **Special**       | Answers pending questions   | `--auto` runs next step         | `--json` for scripting        |
-| **Speed**         | Fastest                     | Fast                            | Comprehensive                 |
+| Aspect       | `guide`                    | `continue`                | `status`                          |
+|--------------|----------------------------|---------------------------|-----------------------------------|
+| **Purpose**  | "What command next?"       | "Resume work"             | "Show everything"                 |
+| **Output**   | Minimal (state + 1-3 tips) | Summary (metadata + tips) | Full (specs, checkpoints, tokens) |
+| **Best for** | Quick orientation          | Returning after a break   | Debugging, inspection             |
+| **Special**  | Answers pending questions  | `--auto` runs next step   | `--json` for scripting            |
+| **Speed**    | Fastest                    | Fast                      | Comprehensive                     |
 
 ### Decision Tree
 
