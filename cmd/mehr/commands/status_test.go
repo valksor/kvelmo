@@ -466,6 +466,144 @@ func TestHasImplementedSpecifications_NoSpecs(t *testing.T) {
 	}
 }
 
+func TestDetectOptionalModifiers_NoSessions(t *testing.T) {
+	tc := NewTestContext(t)
+
+	tc.CreateActiveTask("task-1", "file:task1.md")
+	tc.CreateTaskWork("task-1", "Task Without Sessions")
+
+	mods := detectOptionalModifiers(tc.Workspace, "task-1")
+
+	if mods.Optimized {
+		t.Error("Optimized should be false when no sessions")
+	}
+	if mods.Simplified {
+		t.Error("Simplified should be false when no sessions")
+	}
+}
+
+func TestDetectOptionalModifiers_InvalidTask(t *testing.T) {
+	tc := NewTestContext(t)
+
+	// Test with non-existent task
+	mods := detectOptionalModifiers(tc.Workspace, "non-existent-task")
+
+	if mods.Optimized {
+		t.Error("Optimized should be false for non-existent task")
+	}
+	if mods.Simplified {
+		t.Error("Simplified should be false for non-existent task")
+	}
+}
+
+func TestPrintImplementedFilesSummary_Empty(t *testing.T) {
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	printImplementedFilesSummary([]string{})
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if output != "" {
+		t.Errorf("expected empty output for empty files, got: %q", output)
+	}
+}
+
+func TestPrintImplementedFilesSummary_WithFiles(t *testing.T) {
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	printImplementedFilesSummary([]string{"src/main.go", "src/utils.go"})
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	expected := []string{
+		"Implemented files (2)",
+		"src/main.go",
+		"src/utils.go",
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected output to contain %q, got:\n%s", s, output)
+		}
+	}
+}
+
+func TestShowActiveTask_NoActiveTask_JSON(t *testing.T) {
+	tc := NewTestContext(t)
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = true
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showActiveTask(context.Background(), tc.Workspace, nil)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showActiveTask returned error: %v", err)
+	}
+
+	// Should output JSON with empty task_id
+	if !strings.Contains(output, `"task_id"`) || !strings.Contains(output, `""`) {
+		t.Errorf("expected JSON with empty task_id, got:\n%s", output)
+	}
+}
+
+func TestShowAllTasks_Empty_JSON(t *testing.T) {
+	tc := NewTestContext(t)
+
+	oldJSON := statusJSON
+	defer func() { statusJSON = oldJSON }()
+
+	statusJSON = true
+
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := showAllTasks(tc.Workspace)
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	if err != nil {
+		t.Fatalf("showAllTasks returned error: %v", err)
+	}
+
+	// Should output JSON with tasks array
+	if !strings.Contains(output, `"tasks"`) {
+		t.Errorf("expected JSON with tasks field, got:\n%s", output)
+	}
+}
+
 func TestBuildJSONStatusTask(t *testing.T) {
 	tc := NewTestContext(t)
 

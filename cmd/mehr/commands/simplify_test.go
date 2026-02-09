@@ -6,6 +6,8 @@ package commands
 import (
 	"strings"
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/conductor"
 )
 
 func TestSimplifyCommand_Properties(t *testing.T) {
@@ -102,5 +104,56 @@ func TestSimplifyCommand_ExamplesExist(t *testing.T) {
 		if !strings.Contains(simplifyCmd.Example, example) && !strings.Contains(simplifyCmd.Long, example) {
 			t.Errorf("Should mention %s in examples", example)
 		}
+	}
+}
+
+func TestResolveDiffMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		rangeFlag     string
+		branchFlag    string
+		branchChanged bool
+		files         []string
+		want          conductor.StandaloneDiffMode
+	}{
+		{
+			name:      "default is uncommitted",
+			rangeFlag: "", branchFlag: "", branchChanged: false, files: nil,
+			want: conductor.DiffModeUncommitted,
+		},
+		{
+			name:      "range flag wins over all",
+			rangeFlag: "HEAD~3..HEAD", branchFlag: "main", branchChanged: true, files: []string{"foo.go"},
+			want: conductor.DiffModeRange,
+		},
+		{
+			name:      "branch flag with value",
+			rangeFlag: "", branchFlag: "develop", branchChanged: false, files: nil,
+			want: conductor.DiffModeBranch,
+		},
+		{
+			name:      "branch flag changed (empty value auto-detects)",
+			rangeFlag: "", branchFlag: "", branchChanged: true, files: nil,
+			want: conductor.DiffModeBranch,
+		},
+		{
+			name:      "files when no branch or range",
+			rangeFlag: "", branchFlag: "", branchChanged: false, files: []string{"src/foo.go", "src/bar.go"},
+			want: conductor.DiffModeFiles,
+		},
+		{
+			name:      "branch beats files",
+			rangeFlag: "", branchFlag: "main", branchChanged: false, files: []string{"foo.go"},
+			want: conductor.DiffModeBranch,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveDiffMode(tt.rangeFlag, tt.branchFlag, tt.branchChanged, tt.files)
+			if got != tt.want {
+				t.Errorf("resolveDiffMode() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

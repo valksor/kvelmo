@@ -166,3 +166,25 @@ func TestAgentsExplainCommand_DocumentsPriorityLevels(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatAgentDescription(t *testing.T) {
+	tests := []struct {
+		name string
+		desc string
+		want string
+	}{
+		{"empty", "", "-"},
+		{"short", "A short desc", "A short desc"},
+		{"exactly 40 chars", "1234567890123456789012345678901234567890", "1234567890123456789012345678901234567890"},
+		{"41 chars truncates", "12345678901234567890123456789012345678901", "1234567890123456789012345678901234567..."},
+		{"long description", "This is a very long description that should be truncated for display", "This is a very long description that ..."},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatAgentDescription(tt.desc); got != tt.want {
+				t.Errorf("formatAgentDescription(%q) = %q, want %q", tt.desc, got, tt.want)
+			}
+		})
+	}
+}

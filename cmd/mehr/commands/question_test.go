@@ -108,3 +108,37 @@ func TestJoinArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestIsQuestionAllowedInState(t *testing.T) {
+	tests := []struct {
+		state   string
+		allowed bool
+	}{
+		// Valid states where questions are allowed
+		{"planning", true},
+		{"implementing", true},
+		{"reviewing", true},
+
+		// Invalid states where questions are not allowed
+		{"idle", false},
+		{"done", false},
+		{"failed", false},
+		{"waiting", false},
+		{"checkpointing", false},
+		{"reverting", false},
+		{"restoring", false},
+
+		// Edge cases
+		{"", false},
+		{"PLANNING", false}, // Case sensitive
+		{"Planning", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.state, func(t *testing.T) {
+			if got := isQuestionAllowedInState(tt.state); got != tt.allowed {
+				t.Errorf("isQuestionAllowedInState(%q) = %v, want %v", tt.state, got, tt.allowed)
+			}
+		})
+	}
+}

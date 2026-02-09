@@ -4,7 +4,13 @@
 package commands
 
 import (
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/helper_test"
+	"github.com/valksor/go-mehrhof/internal/storage"
 )
 
 func TestResetCommand_Properties(t *testing.T) {
@@ -133,5 +139,114 @@ func TestResetCommand_RegisteredInRoot(t *testing.T) {
 func TestResetCommand_NoAliases(t *testing.T) {
 	if len(resetCmd.Aliases) > 0 {
 		t.Errorf("reset command should have no aliases, got %v", resetCmd.Aliases)
+	}
+}
+
+// --- Behavioral tests using MockConductor ---
+
+func TestRunResetLogic_NoActiveTask(t *testing.T) {
+	// When no active task exists, runResetLogic should return an error
+	mock := helper_test.NewMockConductor()
+	// ActiveTask is nil by default
+
+	err := runResetLogic(context.Background(), mock, true)
+
+	if err == nil {
+		t.Error("runResetLogic() expected error for no active task, got nil")
+	}
+
+	if !containsString(err.Error(), "no active task") {
+		t.Errorf("error = %q, want to contain 'no active task'", err.Error())
+	}
+}
+
+func TestRunResetLogic_AlreadyIdle(t *testing.T) {
+	// When state is already idle, runResetLogic should return nil (no-op)
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{
+			ID:    "test-task",
+			State: "idle",
+		}).
+		WithStatus(&conductor.TaskStatus{
+			TaskID: "test-task",
+			State:  "idle",
+		})
+
+	err := runResetLogic(context.Background(), mock, true)
+	if err != nil {
+		t.Errorf("runResetLogic() unexpected error: %v", err)
+	}
+
+	// ResetState should NOT be called when already idle
+	if mock.ResetStateCalls != 0 {
+		t.Errorf("ResetState was called %d times, want 0", mock.ResetStateCalls)
+	}
+}
+
+func TestRunResetLogic_CallsResetState(t *testing.T) {
+	// When in non-idle state, runResetLogic should call ResetState
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{
+			ID:    "test-task",
+			State: "implementing",
+		}).
+		WithStatus(&conductor.TaskStatus{
+			TaskID: "test-task",
+			State:  "implementing",
+		})
+
+	err := runResetLogic(context.Background(), mock, true) // skipConfirm=true
+	if err != nil {
+		t.Errorf("runResetLogic() unexpected error: %v", err)
+	}
+
+	if mock.ResetStateCalls != 1 {
+		t.Errorf("ResetState was called %d times, want 1", mock.ResetStateCalls)
+	}
+}
+
+func TestRunResetLogic_PropagatesStatusError(t *testing.T) {
+	// When Status() returns an error, runResetLogic should propagate it
+	statusErr := errors.New("database connection failed")
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{
+			ID:    "test-task",
+			State: "implementing",
+		}).
+		WithStatusError(statusErr)
+
+	err := runResetLogic(context.Background(), mock, true)
+
+	if err == nil {
+		t.Error("runResetLogic() expected error from Status, got nil")
+	}
+
+	if !errors.Is(err, statusErr) {
+		t.Errorf("error = %v, want wrapped %v", err, statusErr)
+	}
+}
+
+func TestRunResetLogic_PropagatesResetError(t *testing.T) {
+	// When ResetState() returns an error, runResetLogic should propagate it
+	resetErr := errors.New("reset operation failed")
+	mock := helper_test.NewMockConductor().
+		WithActiveTask(&storage.ActiveTask{
+			ID:    "test-task",
+			State: "implementing",
+		}).
+		WithStatus(&conductor.TaskStatus{
+			TaskID: "test-task",
+			State:  "implementing",
+		}).
+		WithResetStateError(resetErr)
+
+	err := runResetLogic(context.Background(), mock, true)
+
+	if err == nil {
+		t.Error("runResetLogic() expected error from ResetState, got nil")
+	}
+
+	if !errors.Is(err, resetErr) {
+		t.Errorf("error = %v, want wrapped %v", err, resetErr)
 	}
 }
