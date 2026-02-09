@@ -27,6 +27,43 @@ var (
 	dedupWriter *output.DeduplicatingWriter
 )
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Conductor factory pattern for testability
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ConductorFactory creates a conductor. Tests can override the default.
+type ConductorFactory func(ctx context.Context, opts ...conductor.Option) (ConductorAPI, error)
+
+// conductorFactory is the current factory. Default uses real conductor.
+var conductorFactory ConductorFactory = defaultConductorFactory
+
+// defaultConductorFactory creates a real conductor with standard registration.
+func defaultConductorFactory(ctx context.Context, opts ...conductor.Option) (ConductorAPI, error) {
+	return initializeConductor(ctx, opts...)
+}
+
+// SetConductorFactory allows tests to inject a mock factory.
+// Returns a restore function that should be deferred.
+//
+// Example usage in tests:
+//
+//	restore := SetConductorFactory(func(ctx context.Context, opts ...conductor.Option) (ConductorAPI, error) {
+//	    return mockConductor, nil
+//	})
+//	defer restore()
+func SetConductorFactory(f ConductorFactory) func() {
+	old := conductorFactory
+	conductorFactory = f
+
+	return func() { conductorFactory = old }
+}
+
+// CreateConductor creates a conductor using the current factory.
+// Commands should use this instead of initializeConductor directly.
+func CreateConductor(ctx context.Context, opts ...conductor.Option) (ConductorAPI, error) {
+	return conductorFactory(ctx, opts...)
+}
+
 // getDeduplicatingStdout returns a deduplicating writer that wraps os.Stdout.
 // The writer suppresses consecutive identical lines.
 // Uses sync.Once to ensure thread-safe initialization.
