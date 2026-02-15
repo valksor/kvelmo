@@ -39,12 +39,18 @@ func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *n
 	cfg, _ := c.workspace.LoadConfig()
 
 	// Resolve external key: CLI flag > workUnit > taskID fallback
+	// Sanitize external key for use in branch names - removes/replaces git-invalid chars.
 	externalKey := c.opts.ExternalKey
 	if externalKey == "" {
 		externalKey = workUnit.ExternalKey
 	}
 	if externalKey == "" {
 		externalKey = taskID
+	}
+	// Slugify external key if it contains spaces/special chars (e.g., from empty provider).
+	// This ensures valid git branch names when {key} is used in branch patterns.
+	if strings.ContainsAny(externalKey, " ,!?@#$%^&*()[]{}|\\<>") {
+		externalKey = slug.Slugify(externalKey, 50)
 	}
 
 	// Resolve task type

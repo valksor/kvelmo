@@ -88,6 +88,50 @@ func (g *Git) CreateCheckpointWithPrefix(ctx context.Context, taskID, message, c
 	}, nil
 }
 
+// CreateCheckpointFromHead creates a checkpoint ref pointing to current HEAD.
+// Used when the agent has already committed changes (agent_commits mode).
+// Returns nil if HEAD is already the latest checkpoint.
+func (g *Git) CreateCheckpointFromHead(ctx context.Context, taskID string) (*Checkpoint, error) {
+	// Get HEAD commit
+	head, err := g.RevParse(ctx, "HEAD")
+	if err != nil {
+		return nil, fmt.Errorf("get HEAD: %w", err)
+	}
+
+	// Check if this commit is already a checkpoint
+	existing, _ := g.ListCheckpoints(ctx, taskID)
+	for _, cp := range existing {
+		if cp.ID == head {
+			//nolint:nilnil // Already checkpointed is not an error, caller checks for nil checkpoint
+			return nil, nil
+		}
+	}
+
+	// Get next checkpoint number
+	number := 1
+	if len(existing) > 0 {
+		number = existing[len(existing)-1].Number + 1
+	}
+
+	// Get commit message for the checkpoint
+	msg, _ := g.GetCommitMessage(ctx, head)
+
+	// Create checkpoint ref
+	refName := fmt.Sprintf("%s/%s/%d", CheckpointPrefix, taskID, number)
+	_, err = g.run(ctx, "update-ref", refName, head)
+	if err != nil {
+		return nil, fmt.Errorf("create checkpoint ref: %w", err)
+	}
+
+	return &Checkpoint{
+		ID:        head,
+		TaskID:    taskID,
+		Number:    number,
+		Message:   msg,
+		Timestamp: time.Now(),
+	}, nil
+}
+
 // ListCheckpoints returns all checkpoints for a task.
 func (g *Git) ListCheckpoints(ctx context.Context, taskID string) ([]*Checkpoint, error) {
 	prefix := fmt.Sprintf("%s/%s/", CheckpointPrefix, taskID)
