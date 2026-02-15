@@ -95,3 +95,126 @@ func ReinitConfig(old *WorkspaceConfig) *WorkspaceConfig {
 
 	return cfg
 }
+
+// ResetConfigPreserveEnv creates a fresh default config while preserving only
+// environment-related fields (API keys, tokens). This is for the "force reset"
+// use case where the user wants defaults but needs to keep secrets.
+func ResetConfigPreserveEnv(old *WorkspaceConfig) *WorkspaceConfig {
+	cfg := NewDefaultWorkspaceConfig()
+
+	// Preserve top-level Env map
+	if len(old.Env) > 0 {
+		cfg.Env = old.Env
+	}
+
+	// Preserve agent alias envs (only the Env field, not other alias settings)
+	for name, alias := range old.Agents {
+		if len(alias.Env) > 0 {
+			if cfg.Agents == nil {
+				cfg.Agents = make(map[string]AgentAliasConfig)
+			}
+			newAlias := cfg.Agents[name]
+			newAlias.Env = alias.Env
+			cfg.Agents[name] = newAlias
+		}
+	}
+
+	// Preserve provider tokens
+	preserveProviderTokens(cfg, old)
+
+	return cfg
+}
+
+// preserveProviderTokens copies provider authentication tokens from old to new config.
+func preserveProviderTokens(newCfg, oldCfg *WorkspaceConfig) {
+	if oldCfg.GitHub != nil && oldCfg.GitHub.Token != "" {
+		if newCfg.GitHub == nil {
+			newCfg.GitHub = &GitHubSettings{}
+		}
+		newCfg.GitHub.Token = oldCfg.GitHub.Token
+	}
+
+	if oldCfg.GitLab != nil && oldCfg.GitLab.Token != "" {
+		if newCfg.GitLab == nil {
+			newCfg.GitLab = &GitLabSettings{}
+		}
+		newCfg.GitLab.Token = oldCfg.GitLab.Token
+	}
+
+	if oldCfg.Notion != nil && oldCfg.Notion.Token != "" {
+		if newCfg.Notion == nil {
+			newCfg.Notion = &NotionSettings{}
+		}
+		newCfg.Notion.Token = oldCfg.Notion.Token
+	}
+
+	if oldCfg.Jira != nil && oldCfg.Jira.Token != "" {
+		if newCfg.Jira == nil {
+			newCfg.Jira = &JiraSettings{}
+		}
+		newCfg.Jira.Token = oldCfg.Jira.Token
+	}
+
+	if oldCfg.Linear != nil && oldCfg.Linear.Token != "" {
+		if newCfg.Linear == nil {
+			newCfg.Linear = &LinearSettings{}
+		}
+		newCfg.Linear.Token = oldCfg.Linear.Token
+	}
+
+	if oldCfg.Wrike != nil && oldCfg.Wrike.Token != "" {
+		if newCfg.Wrike == nil {
+			newCfg.Wrike = &WrikeSettings{}
+		}
+		newCfg.Wrike.Token = oldCfg.Wrike.Token
+	}
+
+	if oldCfg.YouTrack != nil && oldCfg.YouTrack.Token != "" {
+		if newCfg.YouTrack == nil {
+			newCfg.YouTrack = &YouTrackSettings{}
+		}
+		newCfg.YouTrack.Token = oldCfg.YouTrack.Token
+	}
+
+	if oldCfg.Bitbucket != nil && oldCfg.Bitbucket.AppPassword != "" {
+		if newCfg.Bitbucket == nil {
+			newCfg.Bitbucket = &BitbucketSettings{}
+		}
+		newCfg.Bitbucket.AppPassword = oldCfg.Bitbucket.AppPassword
+	}
+
+	if oldCfg.Asana != nil && oldCfg.Asana.Token != "" {
+		if newCfg.Asana == nil {
+			newCfg.Asana = &AsanaSettings{}
+		}
+		newCfg.Asana.Token = oldCfg.Asana.Token
+	}
+
+	if oldCfg.ClickUp != nil && oldCfg.ClickUp.Token != "" {
+		if newCfg.ClickUp == nil {
+			newCfg.ClickUp = &ClickUpSettings{}
+		}
+		newCfg.ClickUp.Token = oldCfg.ClickUp.Token
+	}
+
+	if oldCfg.AzureDevOps != nil && oldCfg.AzureDevOps.Token != "" {
+		if newCfg.AzureDevOps == nil {
+			newCfg.AzureDevOps = &AzureDevOpsSettings{}
+		}
+		newCfg.AzureDevOps.Token = oldCfg.AzureDevOps.Token
+	}
+
+	if oldCfg.Trello != nil {
+		if oldCfg.Trello.APIKey != "" || oldCfg.Trello.Token != "" {
+			if newCfg.Trello == nil {
+				newCfg.Trello = &TrelloSettings{}
+			}
+			if oldCfg.Trello.APIKey != "" {
+				newCfg.Trello.APIKey = oldCfg.Trello.APIKey
+			}
+			if oldCfg.Trello.Token != "" {
+				newCfg.Trello.Token = oldCfg.Trello.Token
+			}
+		}
+	}
+}

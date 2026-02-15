@@ -77,6 +77,15 @@ check_dependencies() {
     fi
 }
 
+# Kill running mehr processes to prevent "Text file busy"
+kill_running_processes() {
+    if pgrep -x "$BINARY_NAME" >/dev/null 2>&1; then
+        info "Stopping running $BINARY_NAME processes..."
+        pkill -x "$BINARY_NAME" 2>/dev/null || true
+        sleep 0.5
+    fi
+}
+
 # Check if running inside WSL
 is_wsl() {
     # Fast path: check WSL_DISTRO_NAME env var
@@ -337,6 +346,9 @@ main() {
     local install_path="${install_dir}/${BINARY_NAME}"
 
     info "Installing to ${install_path}..."
+
+    # Kill any running processes to prevent "Text file busy"
+    kill_running_processes
 
     # Install binary
     if [[ -w "$install_dir" ]]; then
