@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -702,26 +702,26 @@ func TestMapProviderPriorityToJira(t *testing.T) {
 	tests := []struct {
 		name     string
 		expected string
-		priority provider.Priority
+		priority workunit.Priority
 	}{
 		{
 			name:     "critical maps to Highest",
-			priority: provider.PriorityCritical,
+			priority: workunit.PriorityCritical,
 			expected: "Highest",
 		},
 		{
 			name:     "high maps to High",
-			priority: provider.PriorityHigh,
+			priority: workunit.PriorityHigh,
 			expected: "High",
 		},
 		{
 			name:     "normal maps to Medium",
-			priority: provider.PriorityNormal,
+			priority: workunit.PriorityNormal,
 			expected: "Medium",
 		},
 		{
 			name:     "low maps to Low",
-			priority: provider.PriorityLow,
+			priority: workunit.PriorityLow,
 			expected: "Low",
 		},
 	}
@@ -836,19 +836,19 @@ func TestBuildJQL(t *testing.T) {
 	tests := []struct {
 		name       string
 		projectKey string
-		opts       provider.ListOptions
+		opts       workunit.ListOptions
 		expected   string
 	}{
 		{
 			name:       "basic project filter",
 			projectKey: "PROJ",
-			opts:       provider.ListOptions{},
+			opts:       workunit.ListOptions{},
 			expected:   `project = PROJ ORDER BY created DESC`,
 		},
 		{
 			name:       "with status filter",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				Status: "In Progress",
 			},
 			expected: `project = PROJ AND status = "In Progress" ORDER BY created DESC`,
@@ -856,7 +856,7 @@ func TestBuildJQL(t *testing.T) {
 		{
 			name:       "with label filter",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				Labels: []string{"bug", "urgent"},
 			},
 			expected: `project = PROJ AND labels in ("bug", "urgent") ORDER BY created DESC`,
@@ -864,7 +864,7 @@ func TestBuildJQL(t *testing.T) {
 		{
 			name:       "with status and label filters",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				Status: "Done",
 				Labels: []string{"backend"},
 			},
@@ -873,7 +873,7 @@ func TestBuildJQL(t *testing.T) {
 		{
 			name:       "with custom ordering",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				OrderBy: "priority",
 			},
 			expected: `project = PROJ ORDER BY priority DESC`,
@@ -881,7 +881,7 @@ func TestBuildJQL(t *testing.T) {
 		{
 			name:       "with ascending order",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				OrderDir: "asc",
 			},
 			expected: `project = PROJ ORDER BY created ASC`,
@@ -889,7 +889,7 @@ func TestBuildJQL(t *testing.T) {
 		{
 			name:       "with custom ordering and direction",
 			projectKey: "PROJ",
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				OrderBy:  "updated",
 				OrderDir: "asc",
 			},
@@ -914,37 +914,37 @@ func TestBuildJQL(t *testing.T) {
 func TestMapProviderStatusToJiraTransitions(t *testing.T) {
 	tests := []struct {
 		name     string
-		status   provider.Status
+		status   workunit.Status
 		expected []string
 	}{
 		{
 			name:     "open status",
-			status:   provider.StatusOpen,
+			status:   workunit.StatusOpen,
 			expected: []string{"To Do", "Backlog", "Open", "Reopen", "New"},
 		},
 		{
 			name:     "in progress status",
-			status:   provider.StatusInProgress,
+			status:   workunit.StatusInProgress,
 			expected: []string{"In Progress", "Start Progress", "Start Development"},
 		},
 		{
 			name:     "review status",
-			status:   provider.StatusReview,
+			status:   workunit.StatusReview,
 			expected: []string{"In Review", "Code Review", "Ready for Review"},
 		},
 		{
 			name:     "done status",
-			status:   provider.StatusDone,
+			status:   workunit.StatusDone,
 			expected: []string{"Done", "Close", "Resolve", "Complete", "Mark as Done"},
 		},
 		{
 			name:     "closed status",
-			status:   provider.StatusClosed,
+			status:   workunit.StatusClosed,
 			expected: []string{"Closed", "Cancel", "Won't Fix", "Won't Do"},
 		},
 		{
 			name:     "unknown status defaults to To Do",
-			status:   provider.Status("unknown"),
+			status:   workunit.Status("unknown"),
 			expected: []string{"To Do"},
 		},
 	}

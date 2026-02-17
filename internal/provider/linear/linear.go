@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -31,26 +34,26 @@ func Info() provider.ProviderInfo {
 		Description: "Linear issue source",
 		Schemes:     []string{"linear", "ln"},
 		Priority:    20, // Same as GitHub and Wrike
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a Linear provider.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	token := cfg.GetString("token")
 	team := cfg.GetString("team")
 
@@ -85,7 +88,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a Linear issue and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -98,7 +101,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Identifier,
 		Provider:    ProviderName,
@@ -110,7 +113,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Assignees:   mapAssignees(issue.Assignee),
 		CreatedAt:   issue.CreatedAt,
 		UpdatedAt:   issue.UpdatedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Identifier,
 			SyncedAt:  time.Now(),
@@ -158,63 +161,63 @@ func (p *Provider) GetDefaultTeam() string {
 // ──────────────────────────────────────────────────────────────────────────────
 
 // mapLinearStatus converts Linear state to provider status.
-func mapLinearStatus(state *State) provider.Status {
+func mapLinearStatus(state *State) workunit.Status {
 	if state == nil {
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 
 	switch strings.ToLower(state.Name) {
 	case "backlog", "todo", "unstarted":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in progress", "started", "in review":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "done", "completed", "closed":
-		return provider.StatusDone
+		return workunit.StatusDone
 	case "canceled", "cancelled":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
 		// Check state type as fallback
 		switch strings.ToLower(state.Type) {
 		case "backlog", "unstarted":
-			return provider.StatusOpen
+			return workunit.StatusOpen
 		case "started", "in_progress":
-			return provider.StatusInProgress
+			return workunit.StatusInProgress
 		case "completed", "canceled":
-			return provider.StatusDone
+			return workunit.StatusDone
 		default:
-			return provider.StatusOpen
+			return workunit.StatusOpen
 		}
 	}
 }
 
 // mapLinearPriority converts Linear priority to provider priority
 // Linear priority: 0 = No priority, 1 = Urgent, 2 = High, 3 = Medium, 4 = Low.
-func mapLinearPriority(priority int) provider.Priority {
+func mapLinearPriority(priority int) workunit.Priority {
 	switch priority {
 	case 1: // Urgent
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case 2: // High
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case 4: // Low
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	case 0, 3: // No priority, Medium
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
 // mapProviderPriorityToLinear converts provider priority to Linear priority.
-func mapProviderPriorityToLinear(priority provider.Priority) *int {
+func mapProviderPriorityToLinear(priority workunit.Priority) *int {
 	var p int
 	switch priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		p = 1 // Urgent
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		p = 2 // High
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		p = 3 // Medium
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		p = 4 // Low
 	}
 
@@ -222,17 +225,17 @@ func mapProviderPriorityToLinear(priority provider.Priority) *int {
 }
 
 // mapProviderStatusToLinearStateName converts provider status to Linear state name.
-func mapProviderStatusToLinearStateName(status provider.Status) string {
+func mapProviderStatusToLinearStateName(status workunit.Status) string {
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "Todo"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "In Progress"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "In Review"
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		return "Done"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		return "Canceled"
 	default:
 		return "Todo"
@@ -252,10 +255,10 @@ func extractLabelNames(labels *LabelConnection) []string {
 	return names
 }
 
-func mapAttachments(attachments []*Attachment) []provider.Attachment {
-	result := make([]provider.Attachment, 0, len(attachments))
+func mapAttachments(attachments []*Attachment) []workunit.Attachment {
+	result := make([]workunit.Attachment, 0, len(attachments))
 	for _, a := range attachments {
-		result = append(result, provider.Attachment{
+		result = append(result, workunit.Attachment{
 			ID:        a.URL, // Use URL as ID for DownloadAttachment compatibility
 			Name:      a.Title,
 			URL:       a.URL,
@@ -267,12 +270,12 @@ func mapAttachments(attachments []*Attachment) []provider.Attachment {
 }
 
 // mapAssignees converts Linear assignee to provider Person.
-func mapAssignees(assignee *User) []provider.Person {
+func mapAssignees(assignee *User) []workunit.Person {
 	if assignee == nil {
-		return []provider.Person{}
+		return []workunit.Person{}
 	}
 
-	return []provider.Person{
+	return []workunit.Person{
 		{
 			ID:    assignee.ID,
 			Name:  assignee.Name,
@@ -282,21 +285,21 @@ func mapAssignees(assignee *User) []provider.Person {
 }
 
 // mapComments converts Linear comments to provider comments.
-func mapComments(comments []*Comment) []provider.Comment {
+func mapComments(comments []*Comment) []workunit.Comment {
 	if comments == nil {
 		return nil
 	}
 
-	result := make([]provider.Comment, 0, len(comments))
+	result := make([]workunit.Comment, 0, len(comments))
 	for _, c := range comments {
-		var author provider.Person
+		var author workunit.Person
 		if c.User != nil {
-			author = provider.Person{
+			author = workunit.Person{
 				ID:   c.User.ID,
 				Name: c.User.Name,
 			}
 		}
-		result = append(result, provider.Comment{
+		result = append(result, workunit.Comment{
 			ID:        c.ID,
 			Body:      c.Body,
 			CreatedAt: c.CreatedAt,

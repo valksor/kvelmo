@@ -3,7 +3,8 @@ package linear
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -160,15 +161,15 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	expectedCaps := provider.CapabilitySet{
-		provider.CapRead:           true,
-		provider.CapList:           true,
-		provider.CapFetchComments:  true,
-		provider.CapComment:        true,
-		provider.CapUpdateStatus:   true,
-		provider.CapManageLabels:   true,
-		provider.CapCreateWorkUnit: true,
-		provider.CapSnapshot:       true,
+	expectedCaps := capability.CapabilitySet{
+		capability.CapRead:           true,
+		capability.CapList:           true,
+		capability.CapFetchComments:  true,
+		capability.CapComment:        true,
+		capability.CapUpdateStatus:   true,
+		capability.CapManageLabels:   true,
+		capability.CapCreateWorkUnit: true,
+		capability.CapSnapshot:       true,
 	}
 
 	for cap, shouldHave := range expectedCaps {
@@ -186,67 +187,67 @@ func TestMapLinearStatus(t *testing.T) {
 	tests := []struct {
 		name  string
 		state *State
-		want  provider.Status
+		want  workunit.Status
 	}{
 		{
 			name:  "nil state",
 			state: nil,
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "Backlog state",
 			state: &State{Name: "Backlog"},
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "Todo state",
 			state: &State{Name: "Todo"},
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "Unstarted state",
 			state: &State{Name: "Unstarted"},
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "In Progress state",
 			state: &State{Name: "In Progress"},
-			want:  provider.StatusInProgress,
+			want:  workunit.StatusInProgress,
 		},
 		{
 			name:  "Started state",
 			state: &State{Name: "Started"},
-			want:  provider.StatusInProgress,
+			want:  workunit.StatusInProgress,
 		},
 		{
 			name:  "In Review state",
 			state: &State{Name: "In Review"},
-			want:  provider.StatusInProgress,
+			want:  workunit.StatusInProgress,
 		},
 		{
 			name:  "Done state",
 			state: &State{Name: "Done"},
-			want:  provider.StatusDone,
+			want:  workunit.StatusDone,
 		},
 		{
 			name:  "Completed state",
 			state: &State{Name: "Completed"},
-			want:  provider.StatusDone,
+			want:  workunit.StatusDone,
 		},
 		{
 			name:  "Canceled state",
 			state: &State{Name: "Canceled"},
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "Cancelled state",
 			state: &State{Name: "Cancelled"},
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "unknown state - defaults to open",
 			state: &State{Name: "UnknownState"},
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 	}
 
@@ -268,37 +269,37 @@ func TestMapLinearPriority(t *testing.T) {
 	tests := []struct {
 		name     string
 		priority int
-		want     provider.Priority
+		want     workunit.Priority
 	}{
 		{
 			name:     "Urgent priority",
 			priority: 1,
-			want:     provider.PriorityCritical,
+			want:     workunit.PriorityCritical,
 		},
 		{
 			name:     "High priority",
 			priority: 2,
-			want:     provider.PriorityHigh,
+			want:     workunit.PriorityHigh,
 		},
 		{
 			name:     "Medium priority",
 			priority: 3,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 		{
 			name:     "Low priority",
 			priority: 4,
-			want:     provider.PriorityLow,
+			want:     workunit.PriorityLow,
 		},
 		{
 			name:     "No priority",
 			priority: 0,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 		{
 			name:     "Unknown priority - defaults to normal",
 			priority: 99,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 	}
 
@@ -319,37 +320,37 @@ func TestMapLinearPriority(t *testing.T) {
 func TestMapProviderStatusToLinearStateName(t *testing.T) {
 	tests := []struct {
 		name   string
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
 		{
 			name:   "Open status",
-			status: provider.StatusOpen,
+			status: workunit.StatusOpen,
 			want:   "Todo",
 		},
 		{
 			name:   "In Progress status",
-			status: provider.StatusInProgress,
+			status: workunit.StatusInProgress,
 			want:   "In Progress",
 		},
 		{
 			name:   "Review status",
-			status: provider.StatusReview,
+			status: workunit.StatusReview,
 			want:   "In Review",
 		},
 		{
 			name:   "Done status",
-			status: provider.StatusDone,
+			status: workunit.StatusDone,
 			want:   "Done",
 		},
 		{
 			name:   "Closed status",
-			status: provider.StatusClosed,
+			status: workunit.StatusClosed,
 			want:   "Canceled",
 		},
 		{
 			name:   "Unknown status - defaults to Todo",
-			status: provider.Status("unknown"),
+			status: workunit.Status("unknown"),
 			want:   "Todo",
 		},
 	}
@@ -371,27 +372,27 @@ func TestMapProviderStatusToLinearStateName(t *testing.T) {
 func TestMapProviderPriorityToLinear(t *testing.T) {
 	tests := []struct {
 		name     string
-		priority provider.Priority
+		priority workunit.Priority
 		want     int
 	}{
 		{
 			name:     "Critical priority",
-			priority: provider.PriorityCritical,
+			priority: workunit.PriorityCritical,
 			want:     1, // Urgent
 		},
 		{
 			name:     "High priority",
-			priority: provider.PriorityHigh,
+			priority: workunit.PriorityHigh,
 			want:     2, // High
 		},
 		{
 			name:     "Normal priority",
-			priority: provider.PriorityNormal,
+			priority: workunit.PriorityNormal,
 			want:     3, // Medium
 		},
 		{
 			name:     "Low priority",
-			priority: provider.PriorityLow,
+			priority: workunit.PriorityLow,
 			want:     4, // Low
 		},
 	}

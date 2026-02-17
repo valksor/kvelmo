@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestInferTaskTypeFromLabelsAndLower(t *testing.T) {
@@ -37,7 +37,7 @@ func TestInferTaskTypeFromLabelsAndLower(t *testing.T) {
 func TestCreateWorkUnit(t *testing.T) {
 	t.Run("team required", func(t *testing.T) {
 		p := &Provider{client: NewClient("test-token")}
-		_, err := p.CreateWorkUnit(context.Background(), provider.CreateWorkUnitOptions{Title: "x"})
+		_, err := p.CreateWorkUnit(context.Background(), workunit.CreateWorkUnitOptions{Title: "x"})
 		if !errors.Is(err, ErrTeamRequired) {
 			t.Fatalf("expected ErrTeamRequired, got %v", err)
 		}
@@ -83,10 +83,10 @@ func TestCreateWorkUnit(t *testing.T) {
 		defer server.Close()
 
 		p := &Provider{client: newTestClient(server.URL), team: "ENG"}
-		wu, err := p.CreateWorkUnit(context.Background(), provider.CreateWorkUnitOptions{
+		wu, err := p.CreateWorkUnit(context.Background(), workunit.CreateWorkUnitOptions{
 			Title:       "Created issue",
 			Description: "Desc",
-			Priority:    provider.PriorityHigh,
+			Priority:    workunit.PriorityHigh,
 			Labels:      []string{"bug"},
 			Assignees:   []string{"u1"},
 		})

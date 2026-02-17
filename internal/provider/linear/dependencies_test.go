@@ -3,15 +3,15 @@ package linear
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
 )
 
 func TestInfo_DependencyCapabilities(t *testing.T) {
 	info := Info()
 
-	expectedCaps := []provider.Capability{
-		provider.CapCreateDependency,
-		provider.CapFetchDependencies,
+	expectedCaps := []capability.Capability{
+		capability.CapCreateDependency,
+		capability.CapFetchDependencies,
 	}
 
 	for _, cap := range expectedCaps {

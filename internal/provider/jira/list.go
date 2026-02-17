@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // List retrieves issues from Jira.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	projectKey := p.defaultProject
 
 	// Try to extract project key from labels filter (user may pass project as label)
@@ -49,7 +49,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(issues))
+	result := make([]*workunit.WorkUnit, 0, len(issues))
 	for _, issue := range issues {
 		wu := issueToWorkUnit(issue)
 		result = append(result, wu)
@@ -59,7 +59,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // buildJQL constructs a JQL query from list options.
-func buildJQL(projectKey string, opts provider.ListOptions) string {
+func buildJQL(projectKey string, opts workunit.ListOptions) string {
 	var jqlParts []string
 
 	// Project filter
@@ -124,8 +124,8 @@ func looksLikeProjectKey(s string) bool {
 
 // issueToWorkUnit converts an Issue to a WorkUnit without fetching nested data.
 // Used by List for efficiency when listing multiple issues.
-func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
-	return &provider.WorkUnit{
+func issueToWorkUnit(issue *Issue) *workunit.WorkUnit {
+	return &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Key,
 		Provider:    ProviderName,
@@ -137,7 +137,7 @@ func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
 		Assignees:   mapAssignees(issue.Fields.Assignee),
 		CreatedAt:   issue.Fields.Created,
 		UpdatedAt:   issue.Fields.Updated,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Key,
 			SyncedAt:  time.Now(),

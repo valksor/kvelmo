@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new Jira issue.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	// Determine project key
 	projectKey := p.defaultProject
 	if projectKey == "" {
@@ -47,7 +47,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Set priority if specified
-	if opts.Priority != provider.PriorityNormal {
+	if opts.Priority != workunit.PriorityNormal {
 		priorityName := mapProviderPriorityToJira(opts.Priority)
 		input.Fields.Priority = &Priority{
 			Name: priorityName,
@@ -73,7 +73,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Convert to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Key,
 		Provider:    ProviderName,
@@ -85,7 +85,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		Assignees:   mapAssignees(issue.Fields.Assignee),
 		CreatedAt:   issue.Fields.Created,
 		UpdatedAt:   issue.Fields.Updated,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Key,
 			SyncedAt:  time.Now(),

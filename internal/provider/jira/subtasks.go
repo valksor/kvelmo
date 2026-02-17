@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrNotASubtask is returned when a work unit is not a subtask.
 var ErrNotASubtask = errors.New("not a subtask")
 
-// FetchParent implements the provider.ParentFetcher interface.
+// FetchParent implements the workunit.ParentFetcher interface.
 // It retrieves the parent issue for a Jira subtask.
 //
 // In Jira, subtasks are first-class issues with a Parent field in their Fields.
-func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -48,7 +48,7 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	}
 
 	// Build parent WorkUnit
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          parentIssue.ID,
 		ExternalID:  parentIssue.Key,
 		ExternalKey: parentIssue.Key,
@@ -61,7 +61,7 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 		Assignees:   mapAssignees(parentIssue.Fields.Assignee),
 		CreatedAt:   parentIssue.Fields.Created,
 		UpdatedAt:   parentIssue.Fields.Updated,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: parentIssue.Key,
 			SyncedAt:  time.Now(),
@@ -72,9 +72,9 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	}, nil
 }
 
-// FetchSubtasks implements the provider.SubtaskFetcher interface.
+// FetchSubtasks implements the workunit.SubtaskFetcher interface.
 // It retrieves subtasks for a given Jira issue.
-func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
+func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -97,9 +97,9 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(subtasks))
+	result := make([]*workunit.WorkUnit, 0, len(subtasks))
 	for _, issue := range subtasks {
-		wu := &provider.WorkUnit{
+		wu := &workunit.WorkUnit{
 			ID:          issue.ID,
 			ExternalID:  issue.Key,
 			ExternalKey: issue.Key,
@@ -114,7 +114,7 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 			UpdatedAt:   issue.Fields.Updated,
 			TaskType:    "subtask",
 			Slug:        slug.Slugify(issue.Fields.Summary, 50),
-			Source: provider.SourceInfo{
+			Source: workunit.SourceInfo{
 				Type:      ProviderName,
 				Reference: issue.Key,
 				SyncedAt:  time.Now(),

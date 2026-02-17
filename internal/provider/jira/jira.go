@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -34,27 +37,27 @@ func Info() provider.ProviderInfo {
 		Description: "Jira issue source",
 		Schemes:     []string{"jira", "j"},
 		Priority:    20, // Same as GitHub and Linear
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
-			provider.CapFetchProject:       true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
+			capability.CapFetchProject:       true,
 		},
 	}
 }
 
 // New creates a Jira provider.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	token := cfg.GetString("token")
 	email := cfg.GetString("email")
 	baseURL := cfg.GetString("base_url")
@@ -93,7 +96,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a Jira issue and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -112,7 +115,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Key,
 		Provider:    ProviderName,
@@ -124,7 +127,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Assignees:   mapAssignees(issue.Fields.Assignee),
 		CreatedAt:   issue.Fields.Created,
 		UpdatedAt:   issue.Fields.Updated,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Key,
 			SyncedAt:  time.Now(),
@@ -171,36 +174,36 @@ func (p *Provider) GetBaseURL() string {
 // ──────────────────────────────────────────────────────────────────────────────
 
 // mapJiraStatus converts Jira status to provider status.
-func mapJiraStatus(status string) provider.Status {
+func mapJiraStatus(status string) workunit.Status {
 	switch strings.ToLower(status) {
 	case "to do", "backlog", "open", "new":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in progress", "started", "in development":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "in review", "code review", "under review", "verification":
-		return provider.StatusReview
+		return workunit.StatusReview
 	case "done", "closed", "resolved", "complete", "finished":
-		return provider.StatusDone
+		return workunit.StatusDone
 	case "won't fix", "cancelled", "canceled", "obsolete", "won't do":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
 // mapProviderStatusToJiraTransition converts provider status to common Jira transition names
 // Returns a list of possible transition names to try.
-func mapProviderStatusToJiraTransitions(status provider.Status) []string {
+func mapProviderStatusToJiraTransitions(status workunit.Status) []string {
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return []string{"To Do", "Backlog", "Open", "Reopen", "New"}
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return []string{"In Progress", "Start Progress", "Start Development"}
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return []string{"In Review", "Code Review", "Ready for Review"}
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		return []string{"Done", "Close", "Resolve", "Complete", "Mark as Done"}
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		return []string{"Closed", "Cancel", "Won't Fix", "Won't Do"}
 	default:
 		return []string{"To Do"}
@@ -208,35 +211,35 @@ func mapProviderStatusToJiraTransitions(status provider.Status) []string {
 }
 
 // mapJiraPriority converts Jira priority to provider priority.
-func mapJiraPriority(p *Priority) provider.Priority {
+func mapJiraPriority(p *Priority) workunit.Priority {
 	if p == nil {
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 
 	switch strings.ToLower(p.Name) {
 	case "highest", "critical":
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case "high":
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case "low", "lowest":
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	case "medium", "normal", "default":
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
 // mapProviderPriorityToJira converts provider priority to Jira priority name.
-func mapProviderPriorityToJira(priority provider.Priority) string {
+func mapProviderPriorityToJira(priority workunit.Priority) string {
 	switch priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		return "Highest"
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		return "High"
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		return "Medium"
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		return "Low"
 	}
 
@@ -244,12 +247,12 @@ func mapProviderPriorityToJira(priority provider.Priority) string {
 }
 
 // mapAssignees converts Jira assignee to provider Person.
-func mapAssignees(assignee *User) []provider.Person {
+func mapAssignees(assignee *User) []workunit.Person {
 	if assignee == nil {
-		return []provider.Person{}
+		return []workunit.Person{}
 	}
 
-	return []provider.Person{
+	return []workunit.Person{
 		{
 			ID:    assignee.AccountID,
 			Name:  assignee.DisplayName,
@@ -259,21 +262,21 @@ func mapAssignees(assignee *User) []provider.Person {
 }
 
 // mapComments converts Jira comments to provider comments.
-func mapComments(comments []*Comment) []provider.Comment {
+func mapComments(comments []*Comment) []workunit.Comment {
 	if comments == nil {
 		return nil
 	}
 
-	result := make([]provider.Comment, 0, len(comments))
+	result := make([]workunit.Comment, 0, len(comments))
 	for _, c := range comments {
-		var author provider.Person
+		var author workunit.Person
 		if c.Author != nil {
-			author = provider.Person{
+			author = workunit.Person{
 				ID:   c.Author.AccountID,
 				Name: c.Author.DisplayName,
 			}
 		}
-		result = append(result, provider.Comment{
+		result = append(result, workunit.Comment{
 			ID:        c.ID,
 			Body:      c.Body,
 			CreatedAt: c.Created,
@@ -286,14 +289,14 @@ func mapComments(comments []*Comment) []provider.Comment {
 }
 
 // mapAttachments converts Jira attachments to provider attachments.
-func mapAttachments(attachments []*Attachment) []provider.Attachment {
+func mapAttachments(attachments []*Attachment) []workunit.Attachment {
 	if attachments == nil {
 		return nil
 	}
 
-	result := make([]provider.Attachment, 0, len(attachments))
+	result := make([]workunit.Attachment, 0, len(attachments))
 	for _, a := range attachments {
-		result = append(result, provider.Attachment{
+		result = append(result, workunit.Attachment{
 			ID:          a.ID,
 			Name:        a.Filename,
 			URL:         a.Content,
