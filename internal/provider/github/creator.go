@@ -8,12 +8,12 @@ import (
 
 	"github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new GitHub issue.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	owner := p.owner
 	repo := p.repo
 
@@ -42,7 +42,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Convert to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          strconv.Itoa(issue.GetNumber()),
 		ExternalID:  fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber()),
 		Provider:    ProviderName,
@@ -54,7 +54,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		Assignees:   mapGitHubAssignees(opts.Assignees),
 		CreatedAt:   issue.GetCreatedAt().Time,
 		UpdatedAt:   issue.GetUpdatedAt().Time,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber()),
 			SyncedAt:  time.Now(),
@@ -79,10 +79,10 @@ func (c *Client) CreateIssue(ctx context.Context, issue *github.IssueRequest) (*
 }
 
 // mapGitHubAssignees converts assignee usernames to Person structs.
-func mapGitHubAssignees(assignees []string) []provider.Person {
-	persons := make([]provider.Person, len(assignees))
+func mapGitHubAssignees(assignees []string) []workunit.Person {
+	persons := make([]workunit.Person, len(assignees))
 	for i, a := range assignees {
-		persons[i] = provider.Person{
+		persons[i] = workunit.Person{
 			Name: a,
 		}
 	}

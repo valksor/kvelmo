@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // FetchComments retrieves all comments from a GitHub issue.
-func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -35,14 +35,14 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 		return nil, err
 	}
 
-	result := make([]provider.Comment, len(comments))
+	result := make([]workunit.Comment, len(comments))
 	for i, c := range comments {
-		result[i] = provider.Comment{
+		result[i] = workunit.Comment{
 			ID:        strconv.FormatInt(c.GetID(), 10),
 			Body:      c.GetBody(),
 			CreatedAt: c.GetCreatedAt().Time,
 			UpdatedAt: c.GetUpdatedAt().Time,
-			Author: provider.Person{
+			Author: workunit.Person{
 				ID:   strconv.FormatInt(c.GetUser().GetID(), 10),
 				Name: c.GetUser().GetLogin(),
 			},
@@ -53,7 +53,7 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 }
 
 // AddComment adds a comment to a GitHub issue.
-func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -75,11 +75,11 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 		return nil, err
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.FormatInt(comment.GetID(), 10),
 		Body:      comment.GetBody(),
 		CreatedAt: comment.GetCreatedAt().Time,
-		Author: provider.Person{
+		Author: workunit.Person{
 			ID:   strconv.FormatInt(comment.GetUser().GetID(), 10),
 			Name: comment.GetUser().GetLogin(),
 		},

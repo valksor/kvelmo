@@ -10,8 +10,7 @@ import (
 	"testing"
 
 	gh "github.com/google/go-github/v67/github"
-
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -54,11 +53,11 @@ func TestCreateWorkUnit(t *testing.T) {
 			config: &Config{},
 		}
 
-		opts := provider.CreateWorkUnitOptions{
+		opts := workunit.CreateWorkUnitOptions{
 			Title:       "New Feature",
 			Description: "Implement new feature",
 			Labels:      []string{"enhancement"},
-			Priority:    provider.PriorityNormal,
+			Priority:    workunit.PriorityNormal,
 		}
 
 		wu, err := p.CreateWorkUnit(context.Background(), opts)
@@ -114,7 +113,7 @@ func TestCreateWorkUnit(t *testing.T) {
 			config: &Config{},
 		}
 
-		opts := provider.CreateWorkUnitOptions{
+		opts := workunit.CreateWorkUnitOptions{
 			Title:       "Task",
 			Description: "Description",
 			Assignees:   []string{"user1", "user2"},
@@ -138,7 +137,7 @@ func TestCreateWorkUnit(t *testing.T) {
 			config: &Config{},
 		}
 
-		opts := provider.CreateWorkUnitOptions{
+		opts := workunit.CreateWorkUnitOptions{
 			Title:       "Test",
 			Description: "Test",
 		}
@@ -294,32 +293,32 @@ func TestMapGitHubAssignees_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name      string
 		assignees []string
-		want      []provider.Person
+		want      []workunit.Person
 	}{
 		{
 			name:      "empty assignees",
 			assignees: []string{},
-			want:      []provider.Person{},
+			want:      []workunit.Person{},
 		},
 		{
 			name:      "nil assignees",
 			assignees: nil,
-			want:      []provider.Person{},
+			want:      []workunit.Person{},
 		},
 		{
 			name:      "single assignee",
 			assignees: []string{"developer"},
-			want:      []provider.Person{{Name: "developer"}},
+			want:      []workunit.Person{{Name: "developer"}},
 		},
 		{
 			name:      "assignee with hyphen",
 			assignees: []string{"dev-user"},
-			want:      []provider.Person{{Name: "dev-user"}},
+			want:      []workunit.Person{{Name: "dev-user"}},
 		},
 		{
 			name:      "assignee with dot",
 			assignees: []string{"user.name"},
-			want:      []provider.Person{{Name: "user.name"}},
+			want:      []workunit.Person{{Name: "user.name"}},
 		},
 	}
 

@@ -8,19 +8,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrNotASubtask is returned when a work unit is not a subtask.
 var ErrNotASubtask = errors.New("not a subtask")
 
-// FetchParent implements the provider.ParentFetcher interface.
+// FetchParent implements the workunit.ParentFetcher interface.
 // It retrieves the parent issue for a GitHub subtask (task list item).
 //
 // GitHub subtasks are task list items within an issue body.
 // The subtask ID format is: {owner}/{repo}#{issue_number}-task-{n}.
-func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	// Check if this is a subtask (has "-task-" in the ID)
 	if !strings.Contains(workUnitID, "-task-") {
 		// Regular issue, not a subtask
@@ -83,7 +83,7 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	// Build parent WorkUnit
 	parentID := fmt.Sprintf("%s/%s#%d", owner, repo, issueNumber)
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          parentID,
 		ExternalID:  strconv.FormatInt(issue.GetID(), 10),
 		ExternalKey: strconv.FormatInt(issue.GetID(), 10),
@@ -96,7 +96,7 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 		Assignees:   mapAssignees(issue.Assignees),
 		CreatedAt:   issue.GetCreatedAt().Time,
 		UpdatedAt:   issue.GetUpdatedAt().Time,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: parentID,
 			SyncedAt:  time.Now(),
@@ -110,9 +110,9 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	}, nil
 }
 
-// FetchSubtasks implements the provider.SubtaskFetcher interface.
+// FetchSubtasks implements the workunit.SubtaskFetcher interface.
 // It parses task list items from the GitHub issue body.
-func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
+func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -147,30 +147,30 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(tasks))
+	result := make([]*workunit.WorkUnit, 0, len(tasks))
 	for i, task := range tasks {
 		// Determine status from completion state
-		status := provider.StatusOpen
+		status := workunit.StatusOpen
 		if task.Completed {
-			status = provider.StatusDone
+			status = workunit.StatusDone
 		}
 
 		// Create a unique ID for this task item
 		taskID := fmt.Sprintf("%s/%s#%d-task-%d", owner, repo, ref.IssueNumber, i+1)
 
-		wu := &provider.WorkUnit{
+		wu := &workunit.WorkUnit{
 			ID:          taskID,
 			ExternalID:  taskID,
 			ExternalKey: fmt.Sprintf("%d-task-%d", ref.IssueNumber, i+1),
 			Provider:    ProviderName,
 			Title:       task.Text,
 			Status:      status,
-			Priority:    provider.PriorityNormal,
+			Priority:    workunit.PriorityNormal,
 			TaskType:    "subtask",
 			Slug:        slug.Slugify(task.Text, 50),
 			CreatedAt:   issue.GetCreatedAt().Time,
 			UpdatedAt:   issue.GetUpdatedAt().Time,
-			Source: provider.SourceInfo{
+			Source: workunit.SourceInfo{
 				Type:      ProviderName,
 				Reference: taskID,
 				SyncedAt:  time.Now(),

@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/google/go-github/v67/github"
-
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // UpdateStatus changes the state of a GitHub issue.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return err
@@ -41,11 +40,11 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 }
 
 // mapStatusToGitHubState converts provider status to GitHub API state.
-func mapStatusToGitHubState(status provider.Status) string {
+func mapStatusToGitHubState(status workunit.Status) string {
 	switch status {
-	case provider.StatusOpen, provider.StatusInProgress, provider.StatusReview:
+	case workunit.StatusOpen, workunit.StatusInProgress, workunit.StatusReview:
 		return "open"
-	case provider.StatusClosed, provider.StatusDone:
+	case workunit.StatusClosed, workunit.StatusDone:
 		return "closed"
 	default:
 		return "open"

@@ -9,8 +9,7 @@ import (
 	"testing"
 
 	gh "github.com/google/go-github/v67/github"
-
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -52,7 +51,7 @@ func TestUpdateStatus(t *testing.T) {
 			config: &Config{},
 		}
 
-		err := p.UpdateStatus(context.Background(), "owner/repo#123", provider.StatusClosed)
+		err := p.UpdateStatus(context.Background(), "owner/repo#123", workunit.StatusClosed)
 		if err != nil {
 			t.Fatalf("UpdateStatus error = %v", err)
 		}
@@ -92,7 +91,7 @@ func TestUpdateStatus(t *testing.T) {
 			config: &Config{},
 		}
 
-		err := p.UpdateStatus(context.Background(), "123", provider.StatusOpen)
+		err := p.UpdateStatus(context.Background(), "123", workunit.StatusOpen)
 		if err != nil {
 			t.Fatalf("UpdateStatus error = %v", err)
 		}
@@ -106,7 +105,7 @@ func TestUpdateStatus(t *testing.T) {
 			config: &Config{},
 		}
 
-		err := p.UpdateStatus(context.Background(), "123", provider.StatusClosed)
+		err := p.UpdateStatus(context.Background(), "123", workunit.StatusClosed)
 		if !errors.Is(err, ErrRepoNotConfigured) {
 			t.Errorf("error = %v, want %v", err, ErrRepoNotConfigured)
 		}
@@ -120,15 +119,15 @@ func TestUpdateStatus(t *testing.T) {
 func TestMapStatusToGitHubState(t *testing.T) {
 	tests := []struct {
 		name   string
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
-		{"open maps to open", provider.StatusOpen, "open"},
-		{"in_progress maps to open", provider.StatusInProgress, "open"},
-		{"review maps to open", provider.StatusReview, "open"},
-		{"closed maps to closed", provider.StatusClosed, "closed"},
-		{"done maps to closed", provider.StatusDone, "closed"},
-		{"unknown maps to open", provider.Status("unknown"), "open"},
+		{"open maps to open", workunit.StatusOpen, "open"},
+		{"in_progress maps to open", workunit.StatusInProgress, "open"},
+		{"review maps to open", workunit.StatusReview, "open"},
+		{"closed maps to closed", workunit.StatusClosed, "closed"},
+		{"done maps to closed", workunit.StatusDone, "closed"},
+		{"unknown maps to open", workunit.Status("unknown"), "open"},
 	}
 
 	for _, tt := range tests {

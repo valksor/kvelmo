@@ -8,12 +8,12 @@ import (
 
 	gh "github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // List retrieves issues from the repository.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	owner := p.owner
 	repo := p.repo
 
@@ -31,11 +31,11 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	// Map status filter
 	if opts.Status != "" {
 		switch opts.Status {
-		case provider.StatusOpen:
+		case workunit.StatusOpen:
 			ghOpts.State = "open"
-		case provider.StatusClosed, provider.StatusDone:
+		case workunit.StatusClosed, workunit.StatusDone:
 			ghOpts.State = "closed"
-		case provider.StatusInProgress, provider.StatusReview:
+		case workunit.StatusInProgress, workunit.StatusReview:
 			// GitHub doesn't have these states, use all
 			ghOpts.State = "all"
 		}
@@ -78,14 +78,14 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(allIssues))
+	result := make([]*workunit.WorkUnit, 0, len(allIssues))
 	for _, issue := range allIssues {
 		// Skip pull requests from issues list
 		if issue.IsPullRequest() {
 			continue
 		}
 
-		wu := &provider.WorkUnit{
+		wu := &workunit.WorkUnit{
 			ID:          strconv.Itoa(issue.GetNumber()),
 			ExternalID:  fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber()),
 			Provider:    ProviderName,
@@ -97,7 +97,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 			Assignees:   mapAssignees(issue.Assignees),
 			CreatedAt:   issue.GetCreatedAt().Time,
 			UpdatedAt:   issue.GetUpdatedAt().Time,
-			Source: provider.SourceInfo{
+			Source: workunit.SourceInfo{
 				Type:      ProviderName,
 				Reference: fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber()),
 				SyncedAt:  time.Now(),
