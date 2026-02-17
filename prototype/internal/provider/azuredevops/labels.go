@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// AddLabels implements the provider.LabelManager interface.
+// AddLabels implements the workunit.LabelManager interface.
 // In Azure DevOps, labels are stored as tags (semicolon-separated string).
 func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []string) error {
 	ref, err := ParseReference(workUnitID)
@@ -61,7 +61,7 @@ func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []st
 	return nil
 }
 
-// RemoveLabels implements the provider.LabelManager interface.
+// RemoveLabels implements the workunit.LabelManager interface.
 // Removes specified labels from Azure DevOps work item tags.
 func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels []string) error {
 	ref, err := ParseReference(workUnitID)

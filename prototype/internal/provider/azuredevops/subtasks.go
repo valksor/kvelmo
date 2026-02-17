@@ -7,15 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrNotASubtask is returned when a work unit is not a subtask.
 var ErrNotASubtask = errors.New("not a subtask")
 
-// FetchParent implements the provider.ParentFetcher interface.
+// FetchParent implements the workunit.ParentFetcher interface.
 // It retrieves the parent work item for an Azure DevOps child work item.
-func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -70,9 +70,9 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	return wu, nil
 }
 
-// FetchSubtasks implements the provider.SubtaskFetcher interface.
+// FetchSubtasks implements the workunit.SubtaskFetcher interface.
 // It retrieves child work items for a given work item.
-func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
+func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -113,7 +113,7 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(workItems))
+	result := make([]*workunit.WorkUnit, 0, len(workItems))
 	for _, wi := range workItems {
 		wu := p.workItemToWorkUnit(&wi)
 		// Add parent reference
@@ -127,7 +127,7 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 }
 
 // fetchSubtasksFromRelations fetches child work items from the relations array.
-func (p *Provider) fetchSubtasksFromRelations(ctx context.Context, workItemID int) ([]*provider.WorkUnit, error) {
+func (p *Provider) fetchSubtasksFromRelations(ctx context.Context, workItemID int) ([]*workunit.WorkUnit, error) {
 	// Get work item with relations
 	workItem, err := p.client.GetWorkItem(ctx, workItemID)
 	if err != nil {
@@ -162,7 +162,7 @@ func (p *Provider) fetchSubtasksFromRelations(ctx context.Context, workItemID in
 
 	// Convert to WorkUnits
 	parentID := strconv.Itoa(workItemID)
-	result := make([]*provider.WorkUnit, 0, len(workItems))
+	result := make([]*workunit.WorkUnit, 0, len(workItems))
 	for _, wi := range workItems {
 		wu := p.workItemToWorkUnit(&wi)
 		wu.Metadata["parent_id"] = parentID

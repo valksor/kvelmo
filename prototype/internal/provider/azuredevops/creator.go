@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
-// CreateWorkUnit implements the provider.WorkUnitCreator interface.
+// CreateWorkUnit implements the workunit.WorkUnitCreator interface.
 // It creates a new work item in Azure DevOps.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	// Determine work item type - default to Task
 	workItemType := "Task"
 	if opts.CustomFields != nil {
@@ -46,7 +46,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Set priority
-	if opts.Priority != provider.PriorityNormal {
+	if opts.Priority != workunit.PriorityNormal {
 		azPriority := mapProviderPriorityToAzure(opts.Priority)
 		updates = append(updates, PatchOperation{
 			Op:    "add",
@@ -101,16 +101,16 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	return p.workItemToWorkUnit(workItem), nil
 }
 
-// mapProviderPriorityToAzure converts provider.Priority to Azure DevOps priority (1-4).
-func mapProviderPriorityToAzure(priority provider.Priority) int {
+// mapProviderPriorityToAzure converts workunit.Priority to Azure DevOps priority (1-4).
+func mapProviderPriorityToAzure(priority workunit.Priority) int {
 	switch priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		return 1
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		return 2
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		return 3
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		return 4
 	default:
 		return 3
