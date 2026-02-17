@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// AddLabels implements the provider.LabelManager interface.
+// AddLabels implements the workunit.LabelManager interface.
 // In ClickUp, labels are called tags.
 func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []string) error {
 	ref, err := ParseReference(workUnitID)
@@ -56,7 +56,7 @@ func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []st
 	return nil
 }
 
-// RemoveLabels implements the provider.LabelManager interface.
+// RemoveLabels implements the workunit.LabelManager interface.
 // Removes specified labels (tags) from the ClickUp task.
 func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels []string) error {
 	ref, err := ParseReference(workUnitID)

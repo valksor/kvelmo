@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreatePullRequest creates a new pull request on Bitbucket.
-// This implements the provider.PRCreator interface.
-func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequestOptions) (*provider.PullRequest, error) {
+// This implements the pullrequest.PRCreator interface.
+func (p *Provider) CreatePullRequest(ctx context.Context, opts pullrequest.PullRequestOptions) (*pullrequest.PullRequest, error) {
 	// Ensure workspace/repo is configured
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
@@ -53,7 +54,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequ
 		webURL = pr.Links.HTML.Href
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:     strconv.Itoa(pr.ID),
 		Number: pr.ID,
 		URL:    webURL,
@@ -156,11 +157,11 @@ func GeneratePRBody(taskWork *storage.TaskWork, specs []*storage.Specification, 
 }
 
 // CreatePRFromTask creates a pull request from task context.
-func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*provider.PullRequest, error) {
+func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*pullrequest.PullRequest, error) {
 	title := GeneratePRTitle(taskWork)
 	body := GeneratePRBody(taskWork, specs, diffStat)
 
-	opts := provider.PullRequestOptions{
+	opts := pullrequest.PullRequestOptions{
 		Title:        title,
 		Body:         body,
 		SourceBranch: sourceBranch,
@@ -175,7 +176,7 @@ func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskW
 // ─────────────────────────────────────────────────────────────────────────────
 
 // FetchPullRequest retrieves pull request details.
-func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*pullrequest.PullRequest, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -205,7 +206,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 		}
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:         strconv.Itoa(pr.ID),
 		URL:        webURL,
 		Title:      pr.Title,
@@ -224,7 +225,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 }
 
 // FetchPullRequestDiff retrieves the diff for a pull request.
-func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*pullrequest.PullRequestDiff, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -249,9 +250,9 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 	}
 
 	// Map files
-	providerFiles := make([]provider.FileDiff, len(diffs))
+	providerFiles := make([]pullrequest.FileDiff, len(diffs))
 	for i, d := range diffs {
-		providerFiles[i] = provider.FileDiff{
+		providerFiles[i] = pullrequest.FileDiff{
 			Path:      d.Path,
 			Mode:      d.Mode,
 			Patch:     "", // Not parsed from raw diff
@@ -260,7 +261,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 		}
 	}
 
-	return &provider.PullRequestDiff{
+	return &pullrequest.PullRequestDiff{
 		URL:        pr.Links.HTML.Href + "/diff",
 		BaseBranch: pr.Destination.Branch.Name,
 		HeadBranch: pr.Source.Branch.Name,
@@ -273,7 +274,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 }
 
 // AddPullRequestComment posts a comment to a pull request.
-func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*workunit.Comment, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -294,7 +295,7 @@ func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body s
 }
 
 // FetchPullRequestComments retrieves all comments on a pull request.
-func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]workunit.Comment, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -311,7 +312,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 		return nil, err
 	}
 
-	result := make([]provider.Comment, len(comments))
+	result := make([]workunit.Comment, len(comments))
 	for i, c := range comments {
 		result[i] = *mapPRCommentToProviderComment(&c)
 	}
@@ -320,7 +321,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 }
 
 // UpdatePullRequestComment updates an existing comment on a pull request.
-func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*workunit.Comment, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -351,7 +352,7 @@ func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, com
 // ─────────────────────────────────────────────────────────────────────────────
 
 // mapPRCommentToProviderComment converts a Bitbucket PR comment to a provider Comment.
-func mapPRCommentToProviderComment(c *Comment) *provider.Comment {
+func mapPRCommentToProviderComment(c *Comment) *workunit.Comment {
 	content := ""
 	if c.Content != nil {
 		content = c.Content.Raw
@@ -365,10 +366,10 @@ func mapPRCommentToProviderComment(c *Comment) *provider.Comment {
 		}
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.Itoa(c.ID),
 		Body:      content,
-		Author:    provider.Person{ID: author, Name: author},
+		Author:    workunit.Person{ID: author, Name: author},
 		CreatedAt: c.CreatedOn,
 		UpdatedAt: c.UpdatedOn,
 	}

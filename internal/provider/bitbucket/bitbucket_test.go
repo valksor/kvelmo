@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/httpclient"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestParseReference(t *testing.T) {
@@ -134,25 +135,25 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	if !info.Capabilities.Has(provider.CapRead) {
+	if !info.Capabilities.Has(capability.CapRead) {
 		t.Error("Info().Capabilities should have CapRead")
 	}
-	if !info.Capabilities.Has(provider.CapList) {
+	if !info.Capabilities.Has(capability.CapList) {
 		t.Error("Info().Capabilities should have CapList")
 	}
-	if !info.Capabilities.Has(provider.CapFetchComments) {
+	if !info.Capabilities.Has(capability.CapFetchComments) {
 		t.Error("Info().Capabilities should have CapFetchComments")
 	}
-	if !info.Capabilities.Has(provider.CapComment) {
+	if !info.Capabilities.Has(capability.CapComment) {
 		t.Error("Info().Capabilities should have CapComment")
 	}
-	if !info.Capabilities.Has(provider.CapUpdateStatus) {
+	if !info.Capabilities.Has(capability.CapUpdateStatus) {
 		t.Error("Info().Capabilities should have CapUpdateStatus")
 	}
-	if !info.Capabilities.Has(provider.CapSnapshot) {
+	if !info.Capabilities.Has(capability.CapSnapshot) {
 		t.Error("Info().Capabilities should have CapSnapshot")
 	}
-	if !info.Capabilities.Has(provider.CapCreatePR) {
+	if !info.Capabilities.Has(capability.CapCreatePR) {
 		t.Error("Info().Capabilities should have CapCreatePR")
 	}
 }
@@ -294,17 +295,17 @@ func TestGeneratePRBody(t *testing.T) {
 func TestMapBitbucketState(t *testing.T) {
 	tests := []struct {
 		input string
-		want  provider.Status
+		want  workunit.Status
 	}{
-		{"new", provider.StatusOpen},
-		{"open", provider.StatusOpen},
-		{"resolved", provider.StatusClosed},
-		{"on hold", provider.StatusOpen},
-		{"invalid", provider.StatusClosed},
-		{"duplicate", provider.StatusClosed},
-		{"wontfix", provider.StatusClosed},
-		{"closed", provider.StatusClosed},
-		{"unknown", provider.StatusOpen},
+		{"new", workunit.StatusOpen},
+		{"open", workunit.StatusOpen},
+		{"resolved", workunit.StatusClosed},
+		{"on hold", workunit.StatusOpen},
+		{"invalid", workunit.StatusClosed},
+		{"duplicate", workunit.StatusClosed},
+		{"wontfix", workunit.StatusClosed},
+		{"closed", workunit.StatusClosed},
+		{"unknown", workunit.StatusOpen},
 	}
 
 	for _, tt := range tests {
@@ -320,14 +321,14 @@ func TestMapBitbucketState(t *testing.T) {
 func TestMapBitbucketPriority(t *testing.T) {
 	tests := []struct {
 		input string
-		want  provider.Priority
+		want  workunit.Priority
 	}{
-		{"trivial", provider.PriorityLow},
-		{"minor", provider.PriorityNormal},
-		{"major", provider.PriorityHigh},
-		{"critical", provider.PriorityCritical},
-		{"blocker", provider.PriorityCritical},
-		{"unknown", provider.PriorityNormal},
+		{"trivial", workunit.PriorityLow},
+		{"minor", workunit.PriorityNormal},
+		{"major", workunit.PriorityHigh},
+		{"critical", workunit.PriorityCritical},
+		{"blocker", workunit.PriorityCritical},
+		{"unknown", workunit.PriorityNormal},
 	}
 
 	for _, tt := range tests {
@@ -1193,27 +1194,27 @@ func TestResolveCredentials(t *testing.T) {
 func TestMapProviderPriorityToBitbucket(t *testing.T) {
 	tests := []struct {
 		name     string
-		priority provider.Priority
+		priority workunit.Priority
 		want     string
 	}{
 		{
 			name:     "critical priority",
-			priority: provider.PriorityCritical,
+			priority: workunit.PriorityCritical,
 			want:     "critical",
 		},
 		{
 			name:     "high priority",
-			priority: provider.PriorityHigh,
+			priority: workunit.PriorityHigh,
 			want:     "major",
 		},
 		{
 			name:     "normal priority",
-			priority: provider.PriorityNormal,
+			priority: workunit.PriorityNormal,
 			want:     "minor",
 		},
 		{
 			name:     "low priority",
-			priority: provider.PriorityLow,
+			priority: workunit.PriorityLow,
 			want:     "trivial",
 		},
 	}

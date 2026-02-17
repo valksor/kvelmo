@@ -8,7 +8,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the canonical name for this provider.
@@ -35,26 +39,26 @@ func Info() provider.ProviderInfo {
 		Name:        ProviderName,
 		Description: "Load tasks from ClickUp",
 		Schemes:     []string{"clickup", "cu"},
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a new ClickUp provider instance.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	config := &Config{
 		Token:         cfg.GetString("token"),
 		TeamID:        cfg.GetString("team_id"),
@@ -109,7 +113,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch retrieves a task by its ID.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	// Determine if this is a custom ID or task ID
 	ref, err := ParseReference(id)
 	if err != nil {
@@ -135,7 +139,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot creates a snapshot of the task's current state.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -159,7 +163,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Build markdown content
 	content := buildSnapshotContent(task)
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    ProviderName,
 		Ref:     "clickup:" + task.ID,
 		Content: content,
@@ -167,14 +171,14 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 }
 
 // List retrieves tasks from a list.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	listID := p.config.DefaultList
 	if listID == "" {
 		return nil, ErrListRequired
 	}
 
 	// Include closed tasks based on status filter
-	includeClosed := opts.Status == "" || opts.Status == provider.StatusClosed || opts.Status == provider.StatusDone
+	includeClosed := opts.Status == "" || opts.Status == workunit.StatusClosed || opts.Status == workunit.StatusDone
 
 	limit := opts.Limit
 	if limit <= 0 {
@@ -186,7 +190,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
 
-	var units []*provider.WorkUnit
+	var units []*workunit.WorkUnit
 	for _, task := range tasks {
 		// Filter by status
 		if opts.Status != "" {
@@ -197,7 +201,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		}
 
 		// Filter closed tasks if only looking for open
-		if opts.Status == provider.StatusOpen && !includeClosed {
+		if opts.Status == workunit.StatusOpen && !includeClosed {
 			if task.Status != nil && task.Status.Type == "closed" {
 				continue
 			}
@@ -215,7 +219,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments for a task.
-func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, id string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -231,18 +235,18 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Com
 		return nil, fmt.Errorf("fetch comments for %s: %w", id, err)
 	}
 
-	var result []provider.Comment
+	var result []workunit.Comment
 	for _, comment := range comments {
 		// Parse date
 		createdAt := parseTimestamp(comment.Date)
 
-		author := provider.Person{
+		author := workunit.Person{
 			ID:    strconv.Itoa(comment.User.ID),
 			Name:  comment.User.Username,
 			Email: comment.User.Email,
 		}
 
-		result = append(result, provider.Comment{
+		result = append(result, workunit.Comment{
 			ID:        comment.ID,
 			Author:    author,
 			Body:      comment.CommentText,
@@ -254,7 +258,7 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Com
 }
 
 // AddComment adds a comment to a task.
-func (p *Provider) AddComment(ctx context.Context, id string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, id string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -270,9 +274,9 @@ func (p *Provider) AddComment(ctx context.Context, id string, body string) (*pro
 		return nil, fmt.Errorf("add comment to %s: %w", id, err)
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID: comment.ID,
-		Author: provider.Person{
+		Author: workunit.Person{
 			ID:    strconv.Itoa(comment.User.ID),
 			Name:  comment.User.Username,
 			Email: comment.User.Email,
@@ -283,7 +287,7 @@ func (p *Provider) AddComment(ctx context.Context, id string, body string) (*pro
 }
 
 // UpdateStatus updates the task status.
-func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, id string, status workunit.Status) error {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return fmt.Errorf("parse reference: %w", err)
@@ -310,8 +314,8 @@ func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.
 
 // --- Helper functions ---
 
-func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
-	unit := &provider.WorkUnit{
+func (p *Provider) taskToWorkUnit(task *Task) *workunit.WorkUnit {
+	unit := &workunit.WorkUnit{
 		ID:          task.ID,
 		ExternalID:  task.ID,
 		ExternalKey: task.ID,
@@ -325,7 +329,7 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 		Labels:      extractTagNames(task.Tags),
 		CreatedAt:   parseTimestamp(task.DateCreated),
 		UpdatedAt:   parseTimestamp(task.DateUpdated),
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: "clickup:" + task.ID,
 			SyncedAt:  time.Now(),
@@ -346,7 +350,7 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 
 	// Set assignees
 	for _, assignee := range task.Assignees {
-		unit.Assignees = append(unit.Assignees, provider.Person{
+		unit.Assignees = append(unit.Assignees, workunit.Person{
 			ID:    strconv.Itoa(assignee.ID),
 			Name:  assignee.Username,
 			Email: assignee.Email,
@@ -370,9 +374,9 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 
 	// Set attachments
 	if len(task.Attachments) > 0 {
-		unit.Attachments = make([]provider.Attachment, len(task.Attachments))
+		unit.Attachments = make([]workunit.Attachment, len(task.Attachments))
 		for i, att := range task.Attachments {
-			unit.Attachments[i] = provider.Attachment{
+			unit.Attachments[i] = workunit.Attachment{
 				ID:   att.URL, // Use URL as ID for consistency with DownloadAttachment
 				Name: att.Title,
 				URL:  att.URL,
@@ -383,75 +387,75 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 	return unit
 }
 
-func mapClickUpStatus(task *Task) provider.Status {
+func mapClickUpStatus(task *Task) workunit.Status {
 	if task.Status == nil {
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 
 	// Check status type
 	switch task.Status.Type {
 	case "closed", "done":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	case "open":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 
 	// Check status name
 	statusLower := strings.ToLower(task.Status.Status)
 	switch {
 	case strings.Contains(statusLower, "done") || strings.Contains(statusLower, "complete") || strings.Contains(statusLower, "closed"):
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	case strings.Contains(statusLower, "progress") || strings.Contains(statusLower, "doing") || strings.Contains(statusLower, "started"):
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case strings.Contains(statusLower, "review") || strings.Contains(statusLower, "qa"):
-		return provider.StatusReview
+		return workunit.StatusReview
 	case strings.Contains(statusLower, "todo") || strings.Contains(statusLower, "open") || strings.Contains(statusLower, "backlog"):
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 
-	return provider.StatusOpen
+	return workunit.StatusOpen
 }
 
-func mapClickUpPriority(priority *Priority) provider.Priority {
+func mapClickUpPriority(priority *Priority) workunit.Priority {
 	if priority == nil {
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 
 	switch strings.ToLower(priority.Priority) {
 	case "urgent", "1":
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case "high", "2":
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case "normal", "3":
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	case "low", "4":
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	}
 
-	return provider.PriorityNormal
+	return workunit.PriorityNormal
 }
 
-func mapToClickUpStatus(status provider.Status) string {
+func mapToClickUpStatus(status workunit.Status) string {
 	switch status {
-	case provider.StatusClosed, provider.StatusDone:
+	case workunit.StatusClosed, workunit.StatusDone:
 		return "complete"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "in progress"
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "to do"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "in review"
 	default:
 		return ""
 	}
 }
 
-func statusMatches(taskStatus, filterStatus provider.Status) bool {
+func statusMatches(taskStatus, filterStatus workunit.Status) bool {
 	// StatusDone and StatusClosed are equivalent
-	if filterStatus == provider.StatusDone && taskStatus == provider.StatusClosed {
+	if filterStatus == workunit.StatusDone && taskStatus == workunit.StatusClosed {
 		return true
 	}
-	if filterStatus == provider.StatusClosed && taskStatus == provider.StatusDone {
+	if filterStatus == workunit.StatusClosed && taskStatus == workunit.StatusDone {
 		return true
 	}
 
@@ -633,7 +637,7 @@ func buildSnapshotContent(task *Task) string {
 }
 
 // GetBranchSuggestion returns a suggested branch name for the task.
-func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
+func (p *Provider) GetBranchSuggestion(task *workunit.WorkUnit) string {
 	if p.config.BranchPattern == "" {
 		// Default pattern
 		return "task/" + task.ExternalKey

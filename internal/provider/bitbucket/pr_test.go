@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -19,10 +20,10 @@ import (
 
 // Compile-time interface checks for PR functionality.
 var (
-	_ provider.PRFetcher        = (*Provider)(nil)
-	_ provider.PRCommenter      = (*Provider)(nil)
-	_ provider.PRCommentFetcher = (*Provider)(nil)
-	_ provider.PRCommentUpdater = (*Provider)(nil)
+	_ pullrequest.PRFetcher        = (*Provider)(nil)
+	_ pullrequest.PRCommenter      = (*Provider)(nil)
+	_ pullrequest.PRCommentFetcher = (*Provider)(nil)
+	_ pullrequest.PRCommentUpdater = (*Provider)(nil)
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ func TestProviderFetchPullRequest(t *testing.T) {
 		prNumber    int
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.PullRequest)
+		validate    func(*testing.T, *pullrequest.PullRequest)
 	}{
 		{
 			name:      "success: fetches PR details",
@@ -45,7 +46,7 @@ func TestProviderFetchPullRequest(t *testing.T) {
 			repoSlug:  "myrepo",
 			prNumber:  42,
 			wantErr:   false,
-			validate: func(t *testing.T, pr *provider.PullRequest) {
+			validate: func(t *testing.T, pr *pullrequest.PullRequest) {
 				t.Helper()
 
 				if pr.Number != 42 {
@@ -178,7 +179,7 @@ func TestProviderFetchPullRequestDiff(t *testing.T) {
 		prNumber    int
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.PullRequestDiff)
+		validate    func(*testing.T, *pullrequest.PullRequestDiff)
 	}{
 		{
 			name:      "success: fetches PR diff",
@@ -186,7 +187,7 @@ func TestProviderFetchPullRequestDiff(t *testing.T) {
 			repoSlug:  "myrepo",
 			prNumber:  42,
 			wantErr:   false,
-			validate: func(t *testing.T, diff *provider.PullRequestDiff) {
+			validate: func(t *testing.T, diff *pullrequest.PullRequestDiff) {
 				t.Helper()
 
 				if diff.BaseBranch != "main" {
@@ -299,7 +300,7 @@ func TestProviderAddPullRequestComment(t *testing.T) {
 		body        string
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.Comment)
+		validate    func(*testing.T, *workunit.Comment)
 	}{
 		{
 			name:      "success: adds PR comment",
@@ -308,7 +309,7 @@ func TestProviderAddPullRequestComment(t *testing.T) {
 			prNumber:  42,
 			body:      "This is a test comment",
 			wantErr:   false,
-			validate: func(t *testing.T, comment *provider.Comment) {
+			validate: func(t *testing.T, comment *workunit.Comment) {
 				t.Helper()
 
 				if comment.Body != "This is a test comment" {
@@ -521,7 +522,7 @@ func TestProviderUpdatePullRequestComment(t *testing.T) {
 		newBody     string
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.Comment)
+		validate    func(*testing.T, *workunit.Comment)
 	}{
 		{
 			name:      "success: updates PR comment",
@@ -531,7 +532,7 @@ func TestProviderUpdatePullRequestComment(t *testing.T) {
 			commentID: "123",
 			newBody:   "Updated comment body",
 			wantErr:   false,
-			validate: func(t *testing.T, comment *provider.Comment) {
+			validate: func(t *testing.T, comment *workunit.Comment) {
 				t.Helper()
 
 				if comment.Body != "Updated comment body" {
@@ -661,7 +662,7 @@ func BenchmarkMapPRToProvider(b *testing.B) {
 		if pr.Author != nil {
 			author = pr.Author.Username
 		}
-		_ = &provider.PullRequest{
+		_ = &pullrequest.PullRequest{
 			ID:         "42",
 			URL:        webURL,
 			Title:      pr.Title,

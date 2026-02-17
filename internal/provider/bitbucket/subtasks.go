@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // taskListPattern matches GitHub/GitLab-style task list items
@@ -20,9 +20,9 @@ var taskListPattern = regexp.MustCompile(`(?m)^[\s]*[-*]\s*\[([ xX])\]\s*(.+)$`)
 // ErrNotASubtask is returned when a work unit is not a subtask.
 var ErrNotASubtask = errors.New("not a subtask")
 
-// FetchParent implements the provider.ParentFetcher interface.
+// FetchParent implements the workunit.ParentFetcher interface.
 // It retrieves the parent issue for a Bitbucket task list item.
-func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	// Check if this is a subtask (has ":task-" in the ID)
 	if !strings.Contains(workUnitID, ":task-") {
 		// Regular issue, not a subtask
@@ -74,7 +74,7 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 		description = issue.Content.Raw
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          displayID,
 		ExternalID:  displayID,
 		ExternalKey: strconv.Itoa(ref.IssueID),
@@ -82,11 +82,11 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 		Title:       issue.Title,
 		Description: description,
 		Status:      mapBitbucketState(issue.State),
-		Priority:    provider.PriorityNormal,
+		Priority:    workunit.PriorityNormal,
 		Labels:      []string{}, // Bitbucket uses components, not labels
 		CreatedAt:   issue.CreatedOn,
 		UpdatedAt:   issue.UpdatedOn,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: displayID,
 			SyncedAt:  time.Now(),
@@ -99,10 +99,10 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	}, nil
 }
 
-// FetchSubtasks implements the provider.SubtaskFetcher interface.
+// FetchSubtasks implements the workunit.SubtaskFetcher interface.
 // For Bitbucket, this parses task list items (- [ ] item) from the issue body.
 // Note: Bitbucket doesn't have native subtasks, so we parse markdown task lists.
-func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
+func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*workunit.WorkUnit, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -138,13 +138,13 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 }
 
 // parseTaskListToWorkUnits extracts task list items from markdown and converts them to WorkUnits.
-func parseTaskListToWorkUnits(body, parentID string) []*provider.WorkUnit {
+func parseTaskListToWorkUnits(body, parentID string) []*workunit.WorkUnit {
 	matches := taskListPattern.FindAllStringSubmatch(body, -1)
 	if len(matches) == 0 {
 		return nil
 	}
 
-	workUnits := make([]*provider.WorkUnit, 0, len(matches))
+	workUnits := make([]*workunit.WorkUnit, 0, len(matches))
 	for i, match := range matches {
 		if len(match) < 3 {
 			continue
@@ -153,26 +153,26 @@ func parseTaskListToWorkUnits(body, parentID string) []*provider.WorkUnit {
 		completed := strings.ToLower(match[1]) == "x"
 		title := strings.TrimSpace(match[2])
 
-		status := provider.StatusOpen
+		status := workunit.StatusOpen
 		if completed {
-			status = provider.StatusDone
+			status = workunit.StatusDone
 		}
 
 		// Generate a synthetic ID for the subtask
 		subtaskID := fmt.Sprintf("%s:task-%d", parentID, i)
 
-		wu := &provider.WorkUnit{
+		wu := &workunit.WorkUnit{
 			ID:          subtaskID,
 			ExternalID:  subtaskID,
 			Provider:    ProviderName,
 			Title:       title,
 			Description: "",
 			Status:      status,
-			Priority:    provider.PriorityNormal,
+			Priority:    workunit.PriorityNormal,
 			Labels:      []string{},
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Source: provider.SourceInfo{
+			Source: workunit.SourceInfo{
 				Type:      ProviderName,
 				Reference: parentID,
 				SyncedAt:  time.Now(),

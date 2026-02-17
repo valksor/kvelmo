@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
-// CreateWorkUnit implements the provider.WorkUnitCreator interface.
+// CreateWorkUnit implements the workunit.WorkUnitCreator interface.
 // It creates a new issue in Bitbucket.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -53,7 +53,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		webURL = issue.Links.HTML.Href
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          strconv.Itoa(issue.ID),
 		ExternalID:  fmt.Sprintf("%s/%s#%d", workspace, repoSlug, issue.ID),
 		Provider:    ProviderName,
@@ -65,7 +65,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		Assignees:   mapAssignee(issue.Assignee),
 		CreatedAt:   issue.CreatedOn,
 		UpdatedAt:   issue.UpdatedOn,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: fmt.Sprintf("%s/%s#%d", workspace, repoSlug, issue.ID),
 			SyncedAt:  time.Now(),
@@ -85,16 +85,16 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}, nil
 }
 
-// mapProviderPriorityToBitbucket converts provider.Priority to Bitbucket priority string.
-func mapProviderPriorityToBitbucket(priority provider.Priority) string {
+// mapProviderPriorityToBitbucket converts workunit.Priority to Bitbucket priority string.
+func mapProviderPriorityToBitbucket(priority workunit.Priority) string {
 	switch priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		return "critical"
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		return "major"
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		return "minor"
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		return "trivial"
 	}
 
