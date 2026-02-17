@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // List retrieves issues from YouTrack.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	// Build query from options
 	query := buildQuery(opts)
 
@@ -18,7 +18,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
 
-	result := make([]*provider.WorkUnit, 0, len(issues))
+	result := make([]*workunit.WorkUnit, 0, len(issues))
 	for _, issue := range issues {
 		result = append(result, p.issueToWorkUnit(&issue, nil, nil))
 	}
@@ -27,15 +27,15 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // buildQuery constructs YouTrack query from ListOptions.
-func buildQuery(opts provider.ListOptions) string {
+func buildQuery(opts workunit.ListOptions) string {
 	var parts []string
 
 	// Status filter
 	if opts.Status != "" {
 		switch opts.Status {
-		case provider.StatusOpen, provider.StatusInProgress, provider.StatusReview:
+		case workunit.StatusOpen, workunit.StatusInProgress, workunit.StatusReview:
 			parts = append(parts, "Unresolved")
-		case provider.StatusDone, provider.StatusClosed:
+		case workunit.StatusDone, workunit.StatusClosed:
 			parts = append(parts, "Resolved")
 		}
 	}

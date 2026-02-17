@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new Notion page.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	databaseID := p.databaseID
 	if databaseID == "" {
 		return nil, fmt.Errorf("%w: specify notion.database_id in config", ErrDatabaseRequired)
 	}
 
 	// Determine status from CustomFields or default to open
-	status := provider.StatusOpen
+	status := workunit.StatusOpen
 	if opts.CustomFields != nil {
-		if s, ok := opts.CustomFields["status"].(provider.Status); ok {
+		if s, ok := opts.CustomFields["status"].(workunit.Status); ok {
 			status = s
 		}
 	}
@@ -66,7 +66,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		return nil, err
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          page.ID,
 		ExternalID:  page.ID,
 		Provider:    ProviderName,
@@ -77,7 +77,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		Labels:      opts.Labels,
 		CreatedAt:   page.CreatedTime,
 		UpdatedAt:   page.LastEditedTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: page.URL,
 			SyncedAt:  page.CreatedTime,

@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -37,21 +40,21 @@ func Info() provider.ProviderInfo {
 		Description: "Notion page and database source",
 		Schemes:     []string{"notion", "nt"},
 		Priority:    20, // Same as GitHub, Wrike, Linear
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:           true,
-			provider.CapList:           true,
-			provider.CapFetchComments:  true,
-			provider.CapComment:        true,
-			provider.CapUpdateStatus:   true,
-			provider.CapManageLabels:   true,
-			provider.CapCreateWorkUnit: true,
-			provider.CapSnapshot:       true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:           true,
+			capability.CapList:           true,
+			capability.CapFetchComments:  true,
+			capability.CapComment:        true,
+			capability.CapUpdateStatus:   true,
+			capability.CapManageLabels:   true,
+			capability.CapCreateWorkUnit: true,
+			capability.CapSnapshot:       true,
 		},
 	}
 }
 
 // New creates a Notion provider.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	token := cfg.GetString("token")
 	databaseID := cfg.GetString("database_id")
 	statusProperty := cfg.GetString("status_property")
@@ -103,7 +106,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a Notion page and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -122,19 +125,19 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          page.ID,
 		ExternalID:  page.ID,
 		Provider:    ProviderName,
 		Title:       extractTitle(*page),
 		Description: extractDescription(*page, blocks, p.descriptionProperty),
 		Status:      extractStatus(*page, p.statusProperty),
-		Priority:    provider.PriorityNormal, // Notion doesn't have built-in priority
+		Priority:    workunit.PriorityNormal, // Notion doesn't have built-in priority
 		Labels:      extractLabelsFromPage(*page, p.labelsProperty),
 		Assignees:   extractAssignees(*page),
 		CreatedAt:   page.CreatedTime,
 		UpdatedAt:   page.LastEditedTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: ref.String(),
 			SyncedAt:  time.Now(),
@@ -208,7 +211,7 @@ func extractDescription(page Page, blocks []Block, descriptionProperty string) s
 }
 
 // extractStatus extracts the status from a page.
-func extractStatus(page Page, statusProperty string) provider.Status {
+func extractStatus(page Page, statusProperty string) workunit.Status {
 	if prop, ok := GetProperty(page, statusProperty); ok {
 		if prop.Status != nil {
 			return mapNotionStatus(prop.Status.Name)
@@ -218,39 +221,39 @@ func extractStatus(page Page, statusProperty string) provider.Status {
 		}
 	}
 
-	return provider.StatusOpen
+	return workunit.StatusOpen
 }
 
 // mapNotionStatus converts Notion status to provider status.
-func mapNotionStatus(status string) provider.Status {
+func mapNotionStatus(status string) workunit.Status {
 	switch strings.ToLower(status) {
 	case "not started", "backlog", "todo", "to do":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in progress", "started", "doing":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "in review", "review", "reviewing":
-		return provider.StatusReview
+		return workunit.StatusReview
 	case "done", "completed", "finished", "closed":
-		return provider.StatusDone
+		return workunit.StatusDone
 	case "cancelled", "canceled", "archived":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
 // mapProviderStatusToNotion converts provider status to Notion status name.
-func mapProviderStatusToNotion(status provider.Status) string {
+func mapProviderStatusToNotion(status workunit.Status) string {
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "Not Started"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "In Progress"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "In Review"
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		return "Done"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		return "Cancelled"
 	default:
 		return "Not Started"
@@ -267,13 +270,13 @@ func extractLabelsFromPage(page Page, labelsProperty string) []string {
 }
 
 // extractAssignees extracts assignees from a page.
-func extractAssignees(page Page) []provider.Person {
+func extractAssignees(page Page) []workunit.Person {
 	// Look for a people property (commonly named "Assignee" or "Owner")
 	for key, prop := range page.Properties {
 		if (prop.Type == "people" || strings.EqualFold(key, "Assignee") || strings.EqualFold(key, "Owner")) && prop.People != nil {
-			assignees := make([]provider.Person, len(prop.People.People))
+			assignees := make([]workunit.Person, len(prop.People.People))
 			for i, user := range prop.People.People {
-				assignees[i] = provider.Person{
+				assignees[i] = workunit.Person{
 					ID:    user.ID,
 					Name:  user.Name,
 					Email: getEmail(user),
@@ -284,7 +287,7 @@ func extractAssignees(page Page) []provider.Person {
 		}
 	}
 
-	return []provider.Person{}
+	return []workunit.Person{}
 }
 
 // getEmail extracts email from a user.

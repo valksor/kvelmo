@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // List retrieves pages from Notion database.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	databaseID := p.databaseID
 
 	if databaseID == "" {
@@ -79,7 +79,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(filtered))
+	result := make([]*workunit.WorkUnit, 0, len(filtered))
 	for i := range filtered {
 		wu := pageToWorkUnit(*filtered[i], p.statusProperty, p.labelsProperty)
 		result = append(result, wu)
@@ -115,20 +115,20 @@ func matchesLabels(page Page, labels []string, labelsProperty string) bool {
 
 // pageToWorkUnit converts a Page to a WorkUnit without fetching nested data
 // Used by List for efficiency when listing multiple pages.
-func pageToWorkUnit(page Page, statusProperty, labelsProperty string) *provider.WorkUnit {
-	return &provider.WorkUnit{
+func pageToWorkUnit(page Page, statusProperty, labelsProperty string) *workunit.WorkUnit {
+	return &workunit.WorkUnit{
 		ID:          page.ID,
 		ExternalID:  page.ID,
 		Provider:    ProviderName,
 		Title:       extractTitle(page),
 		Description: "", // Don't fetch blocks for list performance
 		Status:      extractStatus(page, statusProperty),
-		Priority:    provider.PriorityNormal,
+		Priority:    workunit.PriorityNormal,
 		Labels:      extractLabelsFromPage(page, labelsProperty),
 		Assignees:   extractAssignees(page),
 		CreatedAt:   page.CreatedTime,
 		UpdatedAt:   page.LastEditedTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: page.URL,
 			SyncedAt:  time.Now(),

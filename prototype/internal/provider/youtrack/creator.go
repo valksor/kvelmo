@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new YouTrack issue.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	// Map priority and type to custom fields
 	customFields := p.buildCustomFields(opts)
 
@@ -36,7 +36,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 }
 
 // buildCustomFields builds custom fields array from CreateWorkUnitOptions.
-func (p *Provider) buildCustomFields(opts provider.CreateWorkUnitOptions) []map[string]interface{} {
+func (p *Provider) buildCustomFields(opts workunit.CreateWorkUnitOptions) []map[string]interface{} {
 	var fields []map[string]interface{}
 
 	// Priority
@@ -63,15 +63,15 @@ func (p *Provider) buildCustomFields(opts provider.CreateWorkUnitOptions) []map[
 }
 
 // priorityToYouTrack maps provider Priority to YouTrack priority name.
-func priorityToYouTrack(p provider.Priority) string {
+func priorityToYouTrack(p workunit.Priority) string {
 	switch p {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		return "Critical"
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		return "High"
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		return "Normal"
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		return "Low"
 	}
 

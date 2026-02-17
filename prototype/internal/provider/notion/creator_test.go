@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Compile-time interface checks.
-var _ provider.WorkUnitCreator = (*Provider)(nil)
+var _ workunit.WorkUnitCreator = (*Provider)(nil)
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CreateWorkUnit Tests
@@ -28,20 +28,20 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 	tests := []struct {
 		name        string
 		databaseID  string
-		opts        provider.CreateWorkUnitOptions
+		opts        workunit.CreateWorkUnitOptions
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.WorkUnit)
+		validate    func(*testing.T, *workunit.WorkUnit)
 	}{
 		{
 			name:       "success: creates page with title and description",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:       "Test Task",
 				Description: "Test description",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if wu.Title != "Test Task" {
@@ -61,12 +61,12 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 		{
 			name:       "success: creates page with labels",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:  "Labeled Task",
 				Labels: []string{"bug", "urgent"},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if len(wu.Labels) != 2 {
@@ -77,12 +77,12 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 		{
 			name:       "success: creates page with assignee",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:     "Assigned Task",
 				Assignees: []string{"user-123"},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if wu.Title != "Assigned Task" {
@@ -93,46 +93,46 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 		{
 			name:       "success: uses status from CustomFields",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title: "Status Task",
 				CustomFields: map[string]any{
-					"status": provider.StatusInProgress,
+					"status": workunit.StatusInProgress,
 				},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
-				if wu.Status != provider.StatusInProgress {
-					t.Errorf("Status = %q, want %q", wu.Status, provider.StatusInProgress)
+				if wu.Status != workunit.StatusInProgress {
+					t.Errorf("Status = %q, want %q", wu.Status, workunit.StatusInProgress)
 				}
 			},
 		},
 		{
 			name:       "success: defaults to StatusOpen when no status",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title: "Default Status Task",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
-				if wu.Status != provider.StatusOpen {
-					t.Errorf("Status = %q, want %q", wu.Status, provider.StatusOpen)
+				if wu.Status != workunit.StatusOpen {
+					t.Errorf("Status = %q, want %q", wu.Status, workunit.StatusOpen)
 				}
 			},
 		},
 		{
 			name:       "success: maps WorkUnit fields correctly",
 			databaseID: "a1b2c3d4e5f678901234567890abcdef",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:       "Full Task",
 				Description: "Complete description",
-				Priority:    provider.PriorityHigh,
+				Priority:    workunit.PriorityHigh,
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				// Verify all required fields are set
@@ -148,8 +148,8 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 				if wu.Provider != ProviderName {
 					t.Errorf("Provider = %q, want %q", wu.Provider, ProviderName)
 				}
-				if wu.Priority != provider.PriorityHigh {
-					t.Errorf("Priority = %v, want %v", wu.Priority, provider.PriorityHigh)
+				if wu.Priority != workunit.PriorityHigh {
+					t.Errorf("Priority = %v, want %v", wu.Priority, workunit.PriorityHigh)
 				}
 				if wu.TaskType != "page" {
 					t.Errorf("TaskType = %q, want %q", wu.TaskType, "page")
@@ -168,7 +168,7 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 		{
 			name:       "error: no database configured",
 			databaseID: "",
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title: "Test Task",
 			},
 			wantErr:     true,
@@ -314,13 +314,13 @@ func TestProviderCreateWorkUnitRequestBody(t *testing.T) {
 		labelsProperty:      "Tags",
 	}
 
-	opts := provider.CreateWorkUnitOptions{
+	opts := workunit.CreateWorkUnitOptions{
 		Title:       "Test Title",
 		Description: "Test Description",
 		Labels:      []string{"label1", "label2"},
 		Assignees:   []string{"user-1"},
 		CustomFields: map[string]any{
-			"status": provider.StatusInProgress,
+			"status": workunit.StatusInProgress,
 		},
 	}
 
@@ -411,7 +411,7 @@ func TestProviderCreateWorkUnitAPIError(t *testing.T) {
 		labelsProperty:      "Tags",
 	}
 
-	_, err := p.CreateWorkUnit(context.Background(), provider.CreateWorkUnitOptions{
+	_, err := p.CreateWorkUnit(context.Background(), workunit.CreateWorkUnitOptions{
 		Title: "Test",
 	})
 
@@ -425,14 +425,14 @@ func TestProviderCreateWorkUnitAPIError(t *testing.T) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 func BenchmarkCreateWorkUnitOptionsMapping(b *testing.B) {
-	opts := provider.CreateWorkUnitOptions{
+	opts := workunit.CreateWorkUnitOptions{
 		Title:       "Benchmark Task",
 		Description: "This is a benchmark test task",
 		Labels:      []string{"benchmark", "test", "performance"},
 		Assignees:   []string{"user-1", "user-2"},
-		Priority:    provider.PriorityHigh,
+		Priority:    workunit.PriorityHigh,
 		CustomFields: map[string]any{
-			"status": provider.StatusInProgress,
+			"status": workunit.StatusInProgress,
 		},
 	}
 
@@ -446,9 +446,9 @@ func BenchmarkCreateWorkUnitOptionsMapping(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		// Test the mapping logic without making HTTP calls
-		status := provider.StatusOpen
+		status := workunit.StatusOpen
 		if opts.CustomFields != nil {
-			if s, ok := opts.CustomFields["status"].(provider.Status); ok {
+			if s, ok := opts.CustomFields["status"].(workunit.Status); ok {
 				status = s
 			}
 		}

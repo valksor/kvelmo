@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // Provider implements the YouTrack task provider.
@@ -17,7 +19,7 @@ type Provider struct {
 }
 
 // New creates a new YouTrack provider.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	token := cfg.GetString("token")
 	host := cfg.GetString("host")
 	defaultProject := cfg.GetString("default_project")
@@ -60,7 +62,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch retrieves a YouTrack issue and converts it to a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	issue, err := p.client.GetIssue(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("fetch issue: %w", err)
@@ -76,7 +78,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot captures the issue content from YouTrack.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	issue, err := p.client.GetIssue(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("fetch issue for snapshot: %w", err)
@@ -84,10 +86,10 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 
 	comments, _ := p.client.GetComments(ctx, id)
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type: ProviderName,
 		Ref:  id,
-		Files: []provider.SnapshotFile{
+		Files: []snapshot.SnapshotFile{
 			{
 				Path:    "issue.md",
 				Content: formatIssueMarkdown(issue, comments),
@@ -97,7 +99,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 }
 
 // issueToWorkUnit converts YouTrack Issue to provider WorkUnit.
-func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments []Attachment) *provider.WorkUnit {
+func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments []Attachment) *workunit.WorkUnit {
 	// Extract tag names
 	tagNames := make([]string, len(issue.Tags))
 	for i, tag := range issue.Tags {
@@ -114,9 +116,9 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 	status := p.mapStatus(issue)
 
 	// Convert attachments
-	providerAttachments := make([]provider.Attachment, len(attachments))
+	providerAttachments := make([]workunit.Attachment, len(attachments))
 	for i, att := range attachments {
-		providerAttachments[i] = provider.Attachment{
+		providerAttachments[i] = workunit.Attachment{
 			ID:          att.ID,
 			Name:        att.Name,
 			URL:         att.URL,
@@ -127,11 +129,11 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 	}
 
 	// Convert comments
-	providerComments := make([]provider.Comment, len(comments))
+	providerComments := make([]workunit.Comment, len(comments))
 	for i, c := range comments {
-		providerComments[i] = provider.Comment{
+		providerComments[i] = workunit.Comment{
 			ID:        c.ID,
-			Author:    provider.Person{ID: c.Author.ID, Name: c.Author.FullName},
+			Author:    workunit.Person{ID: c.Author.ID, Name: c.Author.FullName},
 			Body:      c.Text,
 			CreatedAt: timeFromMillis(c.Created),
 			UpdatedAt: timeFromMillis(c.Updated),
@@ -150,7 +152,7 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 		issueURL = "https://youtrack.cloud/issue/" + issue.IDReadable
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          issue.IDReadable,
 		ExternalID:  issue.ID,
 		Provider:    ProviderName,
@@ -165,7 +167,7 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 		Subtasks:    subtasks,
 		CreatedAt:   timeFromMillis(issue.Created),
 		UpdatedAt:   timeFromMillis(issue.Updated),
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.IDReadable,
 			SyncedAt:  time.Now(),
@@ -184,32 +186,32 @@ func (p *Provider) issueToWorkUnit(issue *Issue, comments []Comment, attachments
 }
 
 // extractAssignees extracts assignees from custom fields.
-func (p *Provider) extractAssignees(issue *Issue) []provider.Person {
+func (p *Provider) extractAssignees(issue *Issue) []workunit.Person {
 	for _, cf := range issue.CustomFields {
 		if cf.Name == "Assignee" && cf.Value != nil {
 			return mapAssigneeValue(cf.Value)
 		}
 	}
 
-	return []provider.Person{}
+	return []workunit.Person{}
 }
 
 // mapPriority extracts priority from custom fields.
-func (p *Provider) mapPriority(issue *Issue) provider.Priority {
+func (p *Provider) mapPriority(issue *Issue) workunit.Priority {
 	for _, cf := range issue.CustomFields {
 		if cf.Name == "Priority" {
 			return mapPriorityValue(cf.Value)
 		}
 	}
 
-	return provider.PriorityNormal
+	return workunit.PriorityNormal
 }
 
 // mapStatus extracts status from custom fields.
-func (p *Provider) mapStatus(issue *Issue) provider.Status {
+func (p *Provider) mapStatus(issue *Issue) workunit.Status {
 	// Check if resolved
 	if issue.Resolved > 0 {
-		return provider.StatusDone
+		return workunit.StatusDone
 	}
 
 	for _, cf := range issue.CustomFields {
@@ -218,7 +220,7 @@ func (p *Provider) mapStatus(issue *Issue) provider.Status {
 		}
 	}
 
-	return provider.StatusOpen
+	return workunit.StatusOpen
 }
 
 // inferTaskType infers task type from custom fields.
@@ -239,55 +241,55 @@ func (p *Provider) inferTaskType(issue *Issue) string {
 // ──────────────────────────────────────────────────────────────────────────────
 
 // mapPriorityValue converts a custom field value to Priority.
-func mapPriorityValue(value interface{}) provider.Priority {
+func mapPriorityValue(value interface{}) workunit.Priority {
 	s, ok := value.(map[string]interface{})
 	if !ok {
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 	name, _ := s["name"].(string)
 	switch strings.ToLower(name) {
 	case "critical", "urgent", "show-stopper":
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case "high", "major":
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case "low", "minor":
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
 // mapStatusValue converts a custom field value to Status.
-func mapStatusValue(value interface{}) provider.Status {
+func mapStatusValue(value interface{}) workunit.Status {
 	s, ok := value.(map[string]interface{})
 	if !ok {
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 	name, _ := s["name"].(string)
 	switch strings.ToLower(name) {
 	case "open", "new", "submitted", "to be done":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in progress", "inprogress", "active":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "review", "code review", "verification":
-		return provider.StatusReview
+		return workunit.StatusReview
 	case "fixed", "done", "completed", "verified", "resolved":
-		return provider.StatusDone
+		return workunit.StatusDone
 	case "closed", "won't fix", "can't reproduce", "duplicate", "obsolete":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
 // mapAssigneeValue converts a custom field value to Person slice.
-func mapAssigneeValue(value interface{}) []provider.Person {
-	var result []provider.Person
+func mapAssigneeValue(value interface{}) []workunit.Person {
+	var result []workunit.Person
 
 	switch v := value.(type) {
 	case map[string]interface{}:
 		// Single assignee
-		return []provider.Person{{
+		return []workunit.Person{{
 			ID:   getValue(v, "id"),
 			Name: getValue(v, "name"),
 		}}
@@ -295,7 +297,7 @@ func mapAssigneeValue(value interface{}) []provider.Person {
 		// Multiple assignees
 		for _, item := range v {
 			if m, ok := item.(map[string]interface{}); ok {
-				result = append(result, provider.Person{
+				result = append(result, workunit.Person{
 					ID:   getValue(m, "id"),
 					Name: getValue(m, "name"),
 				})
@@ -304,7 +306,7 @@ func mapAssigneeValue(value interface{}) []provider.Person {
 	}
 
 	if len(result) == 0 {
-		return []provider.Person{}
+		return []workunit.Person{}
 	}
 
 	return result
