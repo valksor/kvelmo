@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 var (
@@ -19,8 +19,8 @@ var (
 
 // ExtractAttachmentReferences parses markdown for local file links and image references.
 // Returns attachments for non-HTTP URLs found in the markdown content.
-func ExtractAttachmentReferences(content string) []provider.Attachment {
-	var attachments []provider.Attachment
+func ExtractAttachmentReferences(content string) []workunit.Attachment {
+	var attachments []workunit.Attachment
 	seen := make(map[string]bool)
 
 	// Extract images
@@ -31,7 +31,7 @@ func ExtractAttachmentReferences(content string) []provider.Attachment {
 		url := match[2]
 		if !isHTTPURL(url) && !seen[url] {
 			seen[url] = true
-			attachments = append(attachments, provider.Attachment{
+			attachments = append(attachments, workunit.Attachment{
 				ID:   url,
 				Name: filepath.Base(url),
 				URL:  url,
@@ -47,7 +47,7 @@ func ExtractAttachmentReferences(content string) []provider.Attachment {
 		url := match[2]
 		if !isHTTPURL(url) && !isImageURL(url) && !seen[url] {
 			seen[url] = true
-			attachments = append(attachments, provider.Attachment{
+			attachments = append(attachments, workunit.Attachment{
 				ID:   url,
 				Name: filepath.Base(url),
 				URL:  url,

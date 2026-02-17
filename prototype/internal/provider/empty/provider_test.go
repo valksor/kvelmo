@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestProvider_Parse(t *testing.T) {
@@ -71,11 +72,11 @@ func TestProvider_Fetch(t *testing.T) {
 	if wu.Provider != "empty" {
 		t.Errorf("Fetch() Provider = %v, want %v", wu.Provider, "empty")
 	}
-	if wu.Status != provider.StatusOpen {
-		t.Errorf("Fetch() Status = %v, want %v", wu.Status, provider.StatusOpen)
+	if wu.Status != workunit.StatusOpen {
+		t.Errorf("Fetch() Status = %v, want %v", wu.Status, workunit.StatusOpen)
 	}
-	if wu.Priority != provider.PriorityNormal {
-		t.Errorf("Fetch() Priority = %v, want %v", wu.Priority, provider.PriorityNormal)
+	if wu.Priority != workunit.PriorityNormal {
+		t.Errorf("Fetch() Priority = %v, want %v", wu.Priority, workunit.PriorityNormal)
 	}
 }
 

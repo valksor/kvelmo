@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestInfo(t *testing.T) {
@@ -24,14 +26,14 @@ func TestInfo(t *testing.T) {
 	if info.Schemes[0] != "file" {
 		t.Errorf("Schemes[0] = %q, want %q", info.Schemes[0], "file")
 	}
-	if !info.Capabilities[provider.CapRead] {
+	if !info.Capabilities[capability.CapRead] {
 		t.Error("should have read capability")
 	}
 }
 
 func TestNew(t *testing.T) {
 	ctx := context.Background()
-	cfg := provider.Config{}
+	cfg := providerconfig.Config{}
 
 	p, err := New(ctx, cfg)
 	if err != nil {
@@ -50,7 +52,7 @@ func TestNew(t *testing.T) {
 
 func TestNewWithBasePath(t *testing.T) {
 	ctx := context.Background()
-	cfg := provider.NewConfig().Set("base_path", "/custom/path")
+	cfg := providerconfig.NewConfig().Set("base_path", "/custom/path")
 
 	p, err := New(ctx, cfg)
 	if err != nil {
@@ -208,8 +210,8 @@ This is the task description.
 	if wu.Provider != ProviderName {
 		t.Errorf("Provider = %q, want %q", wu.Provider, ProviderName)
 	}
-	if wu.Priority != provider.PriorityHigh {
-		t.Errorf("Priority = %d, want %d (high)", wu.Priority, provider.PriorityHigh)
+	if wu.Priority != workunit.PriorityHigh {
+		t.Errorf("Priority = %d, want %d (high)", wu.Priority, workunit.PriorityHigh)
 	}
 	if len(wu.Labels) != 2 {
 		t.Errorf("Labels = %v, want 2 labels", wu.Labels)
@@ -238,7 +240,7 @@ Just a simple task without frontmatter.
 	if wu.Title != "Simple Task" {
 		t.Errorf("Title = %q, want %q", wu.Title, "Simple Task")
 	}
-	if wu.Priority != provider.PriorityNormal {
+	if wu.Priority != workunit.PriorityNormal {
 		t.Errorf("Priority should be normal without frontmatter")
 	}
 }
@@ -334,19 +336,19 @@ func TestSnapshotNotFound(t *testing.T) {
 func TestParsePriority(t *testing.T) {
 	tests := []struct {
 		input string
-		want  provider.Priority
+		want  workunit.Priority
 	}{
-		{"critical", provider.PriorityCritical},
-		{"CRITICAL", provider.PriorityCritical},
-		{"urgent", provider.PriorityCritical},
-		{"high", provider.PriorityHigh},
-		{"HIGH", provider.PriorityHigh},
-		{"low", provider.PriorityLow},
-		{"LOW", provider.PriorityLow},
-		{"normal", provider.PriorityNormal},
-		{"medium", provider.PriorityNormal},
-		{"unknown", provider.PriorityNormal},
-		{"", provider.PriorityNormal},
+		{"critical", workunit.PriorityCritical},
+		{"CRITICAL", workunit.PriorityCritical},
+		{"urgent", workunit.PriorityCritical},
+		{"high", workunit.PriorityHigh},
+		{"HIGH", workunit.PriorityHigh},
+		{"low", workunit.PriorityLow},
+		{"LOW", workunit.PriorityLow},
+		{"normal", workunit.PriorityNormal},
+		{"medium", workunit.PriorityNormal},
+		{"unknown", workunit.PriorityNormal},
+		{"", workunit.PriorityNormal},
 	}
 
 	for _, tt := range tests {
@@ -534,45 +536,45 @@ Task description here.
 func TestParseStatus(t *testing.T) {
 	tests := []struct {
 		input string
-		want  provider.Status
+		want  workunit.Status
 	}{
 		// Open status variations
-		{"open", provider.StatusOpen},
-		{"OPEN", provider.StatusOpen},
-		{"Open", provider.StatusOpen},
-		{"todo", provider.StatusOpen},
-		{"backlog", provider.StatusOpen},
+		{"open", workunit.StatusOpen},
+		{"OPEN", workunit.StatusOpen},
+		{"Open", workunit.StatusOpen},
+		{"todo", workunit.StatusOpen},
+		{"backlog", workunit.StatusOpen},
 
 		// In Progress status variations
-		{"in_progress", provider.StatusInProgress},
-		{"in-progress", provider.StatusInProgress},
-		{"in progress", provider.StatusInProgress},
-		{"In_Progress", provider.StatusInProgress},
-		{"doing", provider.StatusInProgress},
-		{"active", provider.StatusInProgress},
-		{"ACTIVE", provider.StatusInProgress},
+		{"in_progress", workunit.StatusInProgress},
+		{"in-progress", workunit.StatusInProgress},
+		{"in progress", workunit.StatusInProgress},
+		{"In_Progress", workunit.StatusInProgress},
+		{"doing", workunit.StatusInProgress},
+		{"active", workunit.StatusInProgress},
+		{"ACTIVE", workunit.StatusInProgress},
 
 		// Review status variations
-		{"review", provider.StatusReview},
-		{"in_review", provider.StatusReview},
-		{"in-review", provider.StatusReview},
-		{"in review", provider.StatusReview},
-		{"In_Review", provider.StatusReview},
-		{"code_review", provider.StatusReview},
-		{"code-review", provider.StatusReview},
+		{"review", workunit.StatusReview},
+		{"in_review", workunit.StatusReview},
+		{"in-review", workunit.StatusReview},
+		{"in review", workunit.StatusReview},
+		{"In_Review", workunit.StatusReview},
+		{"code_review", workunit.StatusReview},
+		{"code-review", workunit.StatusReview},
 
 		// Done status variations
-		{"done", provider.StatusDone},
-		{"DONE", provider.StatusDone},
-		{"closed", provider.StatusDone},
-		{"complete", provider.StatusDone},
-		{"completed", provider.StatusDone},
-		{"finished", provider.StatusDone},
+		{"done", workunit.StatusDone},
+		{"DONE", workunit.StatusDone},
+		{"closed", workunit.StatusDone},
+		{"complete", workunit.StatusDone},
+		{"completed", workunit.StatusDone},
+		{"finished", workunit.StatusDone},
 
 		// Unknown/empty defaults to Open
-		{"", provider.StatusOpen},
-		{"unknown", provider.StatusOpen},
-		{"random-text", provider.StatusOpen},
+		{"", workunit.StatusOpen},
+		{"unknown", workunit.StatusOpen},
+		{"random-text", workunit.StatusOpen},
 	}
 
 	for _, tt := range tests {

@@ -9,7 +9,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // Common errors for hierarchy operations.
@@ -86,11 +86,11 @@ func ExtractParentID(subtaskID string, pattern SubtaskPattern) (string, bool) {
 }
 
 // FetcherFunc is a function that fetches a work unit by ID.
-type FetcherFunc func(ctx context.Context, id string) (*provider.WorkUnit, error)
+type FetcherFunc func(ctx context.Context, id string) (*workunit.WorkUnit, error)
 
 // FetchParentByID is a helper for providers where the parent ID can be extracted from the subtask ID.
 // It extracts the parent ID using the pattern and fetches it using the provided function.
-func FetchParentByID(ctx context.Context, subtaskID string, pattern SubtaskPattern, fetcher FetcherFunc) (*provider.WorkUnit, error) {
+func FetchParentByID(ctx context.Context, subtaskID string, pattern SubtaskPattern, fetcher FetcherFunc) (*workunit.WorkUnit, error) {
 	parentID, isSubtask := ExtractParentID(subtaskID, pattern)
 	if !isSubtask {
 		return nil, ErrNotASubtask

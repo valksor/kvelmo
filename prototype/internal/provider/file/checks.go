@@ -1,12 +1,13 @@
 package file
 
 import (
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // Compile-time interface checks to ensure Provider implements declared capabilities.
 var (
-	_ provider.Reader      = (*Provider)(nil)
-	_ provider.Identifier  = (*Provider)(nil)
-	_ provider.Snapshotter = (*Provider)(nil)
+	_ workunit.Reader      = (*Provider)(nil)
+	_ workunit.Identifier  = (*Provider)(nil)
+	_ snapshot.Snapshotter = (*Provider)(nil)
 )

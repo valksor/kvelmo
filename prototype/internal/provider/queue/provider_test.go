@@ -6,6 +6,10 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestProviderName(t *testing.T) {
@@ -21,11 +25,11 @@ func TestInfo(t *testing.T) {
 		t.Errorf("Info.Name = %q, want %q", info.Name, ProviderName)
 	}
 
-	if !info.Capabilities[provider.CapRead] {
+	if !info.Capabilities[capability.CapRead] {
 		t.Error("Info should have CapRead capability")
 	}
 
-	if !info.Capabilities[provider.CapSnapshot] {
+	if !info.Capabilities[capability.CapSnapshot] {
 		t.Error("Info should have CapSnapshot capability")
 	}
 }
@@ -121,14 +125,14 @@ func TestMapPriority(t *testing.T) {
 	tests := []struct {
 		name     string
 		priority int
-		want     provider.Priority
+		want     workunit.Priority
 	}{
-		{"high priority 0", 0, provider.PriorityHigh},
-		{"high priority 1", 1, provider.PriorityHigh},
-		{"normal priority 2", 2, provider.PriorityNormal},
-		{"low priority 3", 3, provider.PriorityLow},
-		{"low priority 5", 5, provider.PriorityLow},
-		{"default priority", -1, provider.PriorityNormal},
+		{"high priority 0", 0, workunit.PriorityHigh},
+		{"high priority 1", 1, workunit.PriorityHigh},
+		{"normal priority 2", 2, workunit.PriorityNormal},
+		{"low priority 3", 3, workunit.PriorityLow},
+		{"low priority 5", 5, workunit.PriorityLow},
+		{"default priority", -1, workunit.PriorityNormal},
 	}
 
 	for _, tt := range tests {
@@ -141,14 +145,14 @@ func TestMapPriority(t *testing.T) {
 }
 
 func TestProviderInterfaces(t *testing.T) {
-	var _ provider.Reader = (*Provider)(nil)
-	var _ provider.Identifier = (*Provider)(nil)
-	var _ provider.Snapshotter = (*Provider)(nil)
+	var _ workunit.Reader = (*Provider)(nil)
+	var _ workunit.Identifier = (*Provider)(nil)
+	var _ snapshot.Snapshotter = (*Provider)(nil)
 }
 
 func TestNew(t *testing.T) {
 	ctx := context.Background()
-	cfg := provider.Config{}
+	cfg := providerconfig.Config{}
 
 	// When running from the repo directory, this will succeed
 	// The test verifies the function signature is correct
