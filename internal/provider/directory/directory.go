@@ -13,8 +13,12 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/file"
+	"github.com/valksor/go-toolkit/capability"
 	"github.com/valksor/go-toolkit/naming"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -44,16 +48,16 @@ func Info() provider.ProviderInfo {
 		Description: "Local directory task source",
 		Schemes:     []string{"dir"},
 		Priority:    15, // Higher than file provider
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:     true,
-			provider.CapList:     true,
-			provider.CapSnapshot: true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:     true,
+			capability.CapList:     true,
+			capability.CapSnapshot: true,
 		},
 	}
 }
 
 // New creates a directory provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	basePath := cfg.GetString("base_path")
 	if basePath == "" {
 		basePath = "."
@@ -89,7 +93,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads the directory and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	// Look for README or similar
 	readmePath, title, description, frontmatter := p.findReadme(id)
 
@@ -108,18 +112,18 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	externalKey := naming.KeyFromDirectory(id)
 	taskType := naming.TaskTypeFromFilename(dirName) // Works for directory names too
 
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          p.generateID(id),
 		ExternalID:  id,
 		Provider:    ProviderName,
 		Title:       title,
 		Description: description,
-		Status:      provider.StatusOpen,
-		Priority:    provider.PriorityNormal,
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
 		Labels:      []string{},
 		CreatedAt:   modTime,
 		UpdatedAt:   modTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: id,
 			SyncedAt:  time.Now(),
@@ -143,15 +147,15 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		}
 		// Agent configuration from frontmatter
 		if frontmatter.Agent != "" || len(frontmatter.AgentEnv) > 0 || len(frontmatter.AgentSteps) > 0 {
-			wu.AgentConfig = &provider.AgentConfig{
+			wu.AgentConfig = &workunit.AgentConfig{
 				Name: frontmatter.Agent,
 				Env:  frontmatter.AgentEnv,
 			}
 			// Map per-step agent configuration
 			if len(frontmatter.AgentSteps) > 0 {
-				wu.AgentConfig.Steps = make(map[string]provider.StepAgentConfig)
+				wu.AgentConfig.Steps = make(map[string]workunit.StepAgentConfig)
 				for step, stepCfg := range frontmatter.AgentSteps {
-					wu.AgentConfig.Steps[step] = provider.StepAgentConfig{
+					wu.AgentConfig.Steps[step] = workunit.StepAgentConfig{
 						Name: stepCfg.Agent,
 						Env:  stepCfg.Env,
 					}
@@ -160,7 +164,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		}
 		// Budget configuration from frontmatter
 		if frontmatter.Budget != nil {
-			wu.Budget = &provider.BudgetConfig{
+			wu.Budget = &workunit.BudgetConfig{
 				MaxTokens: frontmatter.Budget.MaxTokens,
 				MaxCost:   frontmatter.Budget.MaxCost,
 				Currency:  frontmatter.Budget.Currency,
@@ -177,9 +181,9 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		slog.Warn("Directory scan failed, continuing without attachments", "dir", id, "error", err)
 	}
 	// Pre-allocate slice for better performance
-	attachments := make([]provider.Attachment, 0, len(files))
+	attachments := make([]workunit.Attachment, 0, len(files))
 	for _, file := range files {
-		attachments = append(attachments, provider.Attachment{
+		attachments = append(attachments, workunit.Attachment{
 			ID:   file.Path,
 			Name: filepath.Base(file.Path),
 			URL:  file.Path,
@@ -249,8 +253,8 @@ func (p *Provider) scanDirectory(dir string) ([]FileInfo, error) {
 }
 
 // List returns all files in directory as WorkUnits.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
-	var units []*provider.WorkUnit
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
+	var units []*workunit.WorkUnit
 
 	entries, err := os.ReadDir(p.basePath)
 	if err != nil {
@@ -283,7 +287,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	return units, nil
 }
 
-func (p *Provider) fetchFile(_ context.Context, path string) (*provider.WorkUnit, error) {
+func (p *Provider) fetchFile(_ context.Context, path string) (*workunit.WorkUnit, error) {
 	// Extract filename without extension for fallback title
 	filename := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 
@@ -298,18 +302,18 @@ func (p *Provider) fetchFile(_ context.Context, path string) (*provider.WorkUnit
 		modTime = info.ModTime()
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          p.generateID(path),
 		ExternalID:  path,
 		Provider:    ProviderName,
 		Title:       parsed.Title,
 		Description: parsed.Body,
-		Status:      provider.StatusOpen,
-		Priority:    provider.PriorityNormal,
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
 		Labels:      []string{},
 		CreatedAt:   modTime,
 		UpdatedAt:   modTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: path,
 			SyncedAt:  time.Now(),
@@ -385,11 +389,11 @@ func (p *Provider) findSubtasks(dir string) []string {
 }
 
 // Snapshot captures all files in the directory for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
-	snapshot := &provider.Snapshot{
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
+	snap := &snapshot.Snapshot{
 		Type:  "directory",
 		Ref:   id,
-		Files: []provider.SnapshotFile{},
+		Files: []snapshot.SnapshotFile{},
 	}
 
 	// Walk directory and capture all markdown files
@@ -417,7 +421,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 
 		// Store relative path
 		relPath, _ := filepath.Rel(id, path)
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    relPath,
 			Content: string(content),
 		})
@@ -428,7 +432,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		return nil, fmt.Errorf("walk directory: %w", err)
 	}
 
-	return snapshot, nil
+	return snap, nil
 }
 
 // Register adds directory provider to registry.

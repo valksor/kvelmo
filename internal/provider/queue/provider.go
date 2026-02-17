@@ -10,6 +10,10 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 const ProviderName = "queue"
@@ -25,15 +29,15 @@ func Info() provider.ProviderInfo {
 		Description: "Local project queue tasks",
 		Schemes:     []string{"queue"},
 		Priority:    5,
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:     true,
-			provider.CapSnapshot: true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:     true,
+			capability.CapSnapshot: true,
 		},
 	}
 }
 
 // New creates a queue provider backed by the current workspace.
-func New(ctx context.Context, _ provider.Config) (any, error) {
+func New(ctx context.Context, _ providerconfig.Config) (any, error) {
 	root, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("get cwd: %w", err)
@@ -67,7 +71,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch loads a queued task and converts it into a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	queueID, taskID, err := splitQueueTaskID(id)
 	if err != nil {
 		return nil, err
@@ -84,19 +88,19 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	now := time.Now()
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          task.ID,
 		ExternalID:  id,
 		Provider:    ProviderName,
 		Title:       task.Title,
 		Description: task.Description,
-		Status:      provider.StatusOpen,
+		Status:      workunit.StatusOpen,
 		Priority:    mapPriority(task.Priority),
 		Labels:      append([]string(nil), task.Labels...),
 		Metadata:    make(map[string]any),
 		CreatedAt:   now,
 		UpdatedAt:   now,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: "queue:" + id,
 			SyncedAt:  now,
@@ -109,7 +113,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot returns a simple source snapshot for a queued task.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	queueID, taskID, err := splitQueueTaskID(id)
 	if err != nil {
 		return nil, err
@@ -130,7 +134,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		content += fmt.Sprintf("\nLabels: %s\n", strings.Join(task.Labels, ", "))
 	}
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    ProviderName,
 		Ref:     "queue:" + id,
 		Content: content,
@@ -146,16 +150,16 @@ func splitQueueTaskID(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func mapPriority(priority int) provider.Priority {
+func mapPriority(priority int) workunit.Priority {
 	switch {
 	case priority < 0:
-		return provider.PriorityNormal // Invalid priority, use default
+		return workunit.PriorityNormal // Invalid priority, use default
 	case priority <= 1:
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case priority == 2:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	default: // priority >= 3
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	}
 }
 
@@ -165,7 +169,7 @@ func Register(r *provider.Registry) {
 }
 
 var (
-	_ provider.Reader      = (*Provider)(nil)
-	_ provider.Identifier  = (*Provider)(nil)
-	_ provider.Snapshotter = (*Provider)(nil)
+	_ workunit.Reader      = (*Provider)(nil)
+	_ workunit.Identifier  = (*Provider)(nil)
+	_ snapshot.Snapshotter = (*Provider)(nil)
 )

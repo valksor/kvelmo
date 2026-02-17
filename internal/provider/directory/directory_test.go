@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestInfo(t *testing.T) {
@@ -24,17 +26,17 @@ func TestInfo(t *testing.T) {
 	if info.Schemes[0] != "dir" {
 		t.Errorf("Schemes[0] = %q, want %q", info.Schemes[0], "dir")
 	}
-	if !info.Capabilities[provider.CapRead] {
+	if !info.Capabilities[capability.CapRead] {
 		t.Error("should have read capability")
 	}
-	if !info.Capabilities[provider.CapList] {
+	if !info.Capabilities[capability.CapList] {
 		t.Error("should have list capability")
 	}
 }
 
 func TestNew(t *testing.T) {
 	ctx := context.Background()
-	cfg := provider.Config{}
+	cfg := providerconfig.Config{}
 
 	p, err := New(ctx, cfg)
 	if err != nil {
@@ -53,7 +55,7 @@ func TestNew(t *testing.T) {
 
 func TestNewWithBasePath(t *testing.T) {
 	ctx := context.Background()
-	cfg := provider.NewConfig().Set("base_path", "/custom/path")
+	cfg := providerconfig.NewConfig().Set("base_path", "/custom/path")
 
 	p, err := New(ctx, cfg)
 	if err != nil {
@@ -315,7 +317,7 @@ func TestList(t *testing.T) {
 	p := &Provider{basePath: tmpDir}
 	ctx := context.Background()
 
-	units, err := p.List(ctx, provider.ListOptions{})
+	units, err := p.List(ctx, workunit.ListOptions{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -346,7 +348,7 @@ func TestListSkipsReadmeFiles(t *testing.T) {
 	p := &Provider{basePath: tmpDir}
 	ctx := context.Background()
 
-	units, err := p.List(ctx, provider.ListOptions{})
+	units, err := p.List(ctx, workunit.ListOptions{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -363,7 +365,7 @@ func TestListEmptyDirectory(t *testing.T) {
 	p := &Provider{basePath: tmpDir}
 	ctx := context.Background()
 
-	units, err := p.List(ctx, provider.ListOptions{})
+	units, err := p.List(ctx, workunit.ListOptions{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}

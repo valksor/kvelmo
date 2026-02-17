@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestSubtaskPattern_IsSubtaskID(t *testing.T) {
@@ -156,7 +156,7 @@ func TestExtractParentID(t *testing.T) {
 }
 
 func TestFetchParentByID(t *testing.T) {
-	parentWorkUnit := &provider.WorkUnit{
+	parentWorkUnit := &workunit.WorkUnit{
 		ID:    "owner/repo#123",
 		Title: "Parent Issue",
 	}
@@ -173,7 +173,7 @@ func TestFetchParentByID(t *testing.T) {
 			name:      "successful fetch",
 			subtaskID: "owner/repo#123-task-1",
 			pattern:   GitHubSubtaskPattern,
-			fetcher: func(_ context.Context, id string) (*provider.WorkUnit, error) {
+			fetcher: func(_ context.Context, id string) (*workunit.WorkUnit, error) {
 				if id == "owner/repo#123" {
 					return parentWorkUnit, nil
 				}
@@ -187,7 +187,7 @@ func TestFetchParentByID(t *testing.T) {
 			name:      "not a subtask",
 			subtaskID: "owner/repo#123",
 			pattern:   GitHubSubtaskPattern,
-			fetcher: func(_ context.Context, _ string) (*provider.WorkUnit, error) {
+			fetcher: func(_ context.Context, _ string) (*workunit.WorkUnit, error) {
 				t.Error("fetcher should not be called for non-subtask")
 
 				return nil, errors.New("should not be called")
@@ -199,7 +199,7 @@ func TestFetchParentByID(t *testing.T) {
 			name:      "fetcher error",
 			subtaskID: "owner/repo#456-task-1",
 			pattern:   GitHubSubtaskPattern,
-			fetcher: func(_ context.Context, _ string) (*provider.WorkUnit, error) {
+			fetcher: func(_ context.Context, _ string) (*workunit.WorkUnit, error) {
 				return nil, errors.New("API error")
 			},
 			wantErr: nil, // Generic error, not our sentinel

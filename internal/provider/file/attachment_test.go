@@ -185,7 +185,7 @@ func TestExtractAttachmentReferences_PreservesAttachmentStructure(t *testing.T) 
 	}
 }
 
-// TestExtractAttachmentReferences_TypeCompatibility verifies the provider.Attachment type is correctly used.
+// TestExtractAttachmentReferences_TypeCompatibility verifies the workunit.Attachment type is correctly used.
 func TestExtractAttachmentReferences_TypeCompatibility(t *testing.T) {
 	content := `[file.txt](file.txt)`
 

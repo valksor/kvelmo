@@ -1,9 +1,9 @@
 package empty
 
-import "github.com/valksor/go-mehrhof/internal/provider"
+import "github.com/valksor/go-toolkit/workunit"
 
 // Compile-time interface checks.
 var (
-	_ provider.Reader     = (*Provider)(nil)
-	_ provider.Identifier = (*Provider)(nil)
+	_ workunit.Reader     = (*Provider)(nil)
+	_ workunit.Identifier = (*Provider)(nil)
 )

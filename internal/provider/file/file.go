@@ -10,8 +10,12 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
 	"github.com/valksor/go-toolkit/naming"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -29,15 +33,15 @@ func Info() provider.ProviderInfo {
 		Description: "Local file task source",
 		Schemes:     []string{"file"},
 		Priority:    10,
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:     true,
-			provider.CapSnapshot: true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:     true,
+			capability.CapSnapshot: true,
 		},
 	}
 }
 
 // New creates a file provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	basePath := cfg.GetString("base_path")
 	if basePath == "" {
 		basePath = "."
@@ -72,7 +76,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads the file and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	// Extract filename without extension for fallback title
 	filename := strings.TrimSuffix(filepath.Base(id), filepath.Ext(id))
 
@@ -91,19 +95,19 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	externalKey := naming.KeyFromFilename(filename)
 	taskType := naming.TaskTypeFromFilename(filename)
 
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          p.generateID(id),
 		ExternalID:  id,
 		Provider:    ProviderName,
 		Title:       parsed.Title,
 		Description: parsed.Body,
-		Status:      provider.StatusOpen,
-		Priority:    provider.PriorityNormal,
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
 		Labels:      []string{},
 		Metadata:    make(map[string]any),
 		CreatedAt:   modTime,
 		UpdatedAt:   modTime,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: id,
 			SyncedAt:  time.Now(),
@@ -140,16 +144,16 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		}
 		// Agent configuration from frontmatter
 		if parsed.Frontmatter.Agent != "" || len(parsed.Frontmatter.AgentEnv) > 0 || len(parsed.Frontmatter.AgentArgs) > 0 || len(parsed.Frontmatter.AgentSteps) > 0 {
-			wu.AgentConfig = &provider.AgentConfig{
+			wu.AgentConfig = &workunit.AgentConfig{
 				Name: parsed.Frontmatter.Agent,
 				Env:  parsed.Frontmatter.AgentEnv,
 				Args: parsed.Frontmatter.AgentArgs,
 			}
 			// Map per-step agent configuration
 			if len(parsed.Frontmatter.AgentSteps) > 0 {
-				wu.AgentConfig.Steps = make(map[string]provider.StepAgentConfig)
+				wu.AgentConfig.Steps = make(map[string]workunit.StepAgentConfig)
 				for step, stepCfg := range parsed.Frontmatter.AgentSteps {
-					wu.AgentConfig.Steps[step] = provider.StepAgentConfig{
+					wu.AgentConfig.Steps[step] = workunit.StepAgentConfig{
 						Name: stepCfg.Agent,
 						Env:  stepCfg.Env,
 						Args: stepCfg.Args,
@@ -159,7 +163,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		}
 		// Budget configuration from frontmatter
 		if parsed.Frontmatter.Budget != nil {
-			wu.Budget = &provider.BudgetConfig{
+			wu.Budget = &workunit.BudgetConfig{
 				MaxTokens: parsed.Frontmatter.Budget.MaxTokens,
 				MaxCost:   parsed.Frontmatter.Budget.MaxCost,
 				Currency:  parsed.Frontmatter.Budget.Currency,
@@ -192,20 +196,20 @@ func (p *Provider) generateID(path string) string {
 	return strings.TrimSuffix(base, ext)
 }
 
-func parsePriority(s string) provider.Priority {
+func parsePriority(s string) workunit.Priority {
 	switch strings.ToLower(s) {
 	case "critical", "urgent":
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case "high":
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case "low":
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
-func parseStatus(s string) provider.Status {
+func parseStatus(s string) workunit.Status {
 	// Normalize: replace hyphens with underscores, split on whitespace, join with underscores, lowercase
 	// Handles all Unicode whitespace (spaces, tabs, non-breaking spaces, etc.)
 	normalized := strings.ReplaceAll(s, "-", "_")
@@ -214,13 +218,13 @@ func parseStatus(s string) provider.Status {
 
 	switch normalized {
 	case "open", "todo", "backlog":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in_progress", "inprogress", "doing", "active":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "review", "in_review", "inreview", "code_review", "codereview":
-		return provider.StatusReview
+		return workunit.StatusReview
 	case "done", "closed", "complete", "completed", "finished":
-		return provider.StatusDone
+		return workunit.StatusDone
 	default:
 		// Log warning for unrecognized status values - this helps catch typos in frontmatter
 		// Default to StatusOpen for backward compatibility
@@ -228,18 +232,18 @@ func parseStatus(s string) provider.Status {
 			slog.Warn("Unrecognized status value, defaulting to 'open'", "value", s, "normalized", normalized)
 		}
 
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
 // Snapshot captures the file content for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	content, err := os.ReadFile(id)
 	if err != nil {
 		return nil, fmt.Errorf("read file: %w", err)
 	}
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    "file",
 		Ref:     id,
 		Content: string(content),

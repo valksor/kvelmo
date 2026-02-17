@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 const ProviderName = "empty"
@@ -95,14 +98,14 @@ func Info() provider.ProviderInfo {
 		Description: "Empty task source for creating tasks from scratch",
 		Schemes:     []string{"empty"},
 		Priority:    5,
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead: true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead: true,
 		},
 	}
 }
 
 // New creates an empty provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	return &Provider{}, nil
 }
 
@@ -124,25 +127,25 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch creates a minimal WorkUnit with empty description.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	now := time.Now()
 
 	// ID is the task identifier (e.g., "A-1" or "Implement auth")
 	// Title is set to the identifier
 	// Description is intentionally empty - user will add via 'mehr note'
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          id,
 		ExternalID:  id,
 		Provider:    ProviderName,
 		Title:       id,
 		Description: "", // Empty - user adds via 'mehr note'
-		Status:      provider.StatusOpen,
-		Priority:    provider.PriorityNormal,
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
 		Labels:      []string{},
 		Metadata:    make(map[string]any),
 		CreatedAt:   now,
 		UpdatedAt:   now,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: "empty:" + id,
 			SyncedAt:  now,
