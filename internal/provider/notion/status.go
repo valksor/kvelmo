@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // UpdateStatus updates the status of a Notion page.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	// Get the page first to find the status property ID
 	page, err := p.client.GetPage(ctx, workUnitID)
 	if err != nil {

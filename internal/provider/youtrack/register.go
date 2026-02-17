@@ -1,6 +1,9 @@
 package youtrack
 
-import "github.com/valksor/go-mehrhof/internal/provider"
+import (
+	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+)
 
 const (
 	// ProviderName is the registered name for this provider.
@@ -14,20 +17,20 @@ func Info() provider.ProviderInfo {
 		Description: "YouTrack issue tracker",
 		Schemes:     []string{"youtrack", "yt"},
 		Priority:    20, // Same as GitHub/Wrike
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }

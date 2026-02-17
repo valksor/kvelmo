@@ -3,7 +3,9 @@ package notion
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -11,14 +13,14 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 
 var (
-	_ provider.Reader         = (*Provider)(nil)
-	_ provider.Identifier     = (*Provider)(nil)
-	_ provider.Lister         = (*Provider)(nil)
-	_ provider.CommentFetcher = (*Provider)(nil)
-	_ provider.Commenter      = (*Provider)(nil)
-	_ provider.StatusUpdater  = (*Provider)(nil)
-	_ provider.LabelManager   = (*Provider)(nil)
-	_ provider.Snapshotter    = (*Provider)(nil)
+	_ workunit.Reader         = (*Provider)(nil)
+	_ workunit.Identifier     = (*Provider)(nil)
+	_ workunit.Lister         = (*Provider)(nil)
+	_ workunit.CommentFetcher = (*Provider)(nil)
+	_ workunit.Commenter      = (*Provider)(nil)
+	_ workunit.StatusUpdater  = (*Provider)(nil)
+	_ workunit.LabelManager   = (*Provider)(nil)
+	_ snapshot.Snapshotter    = (*Provider)(nil)
 )
 
 func TestParseReference(t *testing.T) {
@@ -188,42 +190,42 @@ func TestMapNotionStatus(t *testing.T) {
 	tests := []struct {
 		name   string
 		status string
-		want   provider.Status
+		want   workunit.Status
 	}{
 		{
 			name:   "Not Started -> open",
 			status: "Not Started",
-			want:   provider.StatusOpen,
+			want:   workunit.StatusOpen,
 		},
 		{
 			name:   "In Progress -> in_progress",
 			status: "In Progress",
-			want:   provider.StatusInProgress,
+			want:   workunit.StatusInProgress,
 		},
 		{
 			name:   "In Review -> review",
 			status: "In Review",
-			want:   provider.StatusReview,
+			want:   workunit.StatusReview,
 		},
 		{
 			name:   "Done -> done",
 			status: "Done",
-			want:   provider.StatusDone,
+			want:   workunit.StatusDone,
 		},
 		{
 			name:   "Cancelled -> closed",
 			status: "Cancelled",
-			want:   provider.StatusClosed,
+			want:   workunit.StatusClosed,
 		},
 		{
 			name:   "unknown -> open",
 			status: "Unknown Status",
-			want:   provider.StatusOpen,
+			want:   workunit.StatusOpen,
 		},
 		{
 			name:   "case insensitive",
 			status: "IN PROGRESS",
-			want:   provider.StatusInProgress,
+			want:   workunit.StatusInProgress,
 		},
 	}
 
@@ -239,32 +241,32 @@ func TestMapNotionStatus(t *testing.T) {
 func TestMapProviderStatusToNotion(t *testing.T) {
 	tests := []struct {
 		name   string
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
 		{
 			name:   "open -> Not Started",
-			status: provider.StatusOpen,
+			status: workunit.StatusOpen,
 			want:   "Not Started",
 		},
 		{
 			name:   "in_progress -> In Progress",
-			status: provider.StatusInProgress,
+			status: workunit.StatusInProgress,
 			want:   "In Progress",
 		},
 		{
 			name:   "review -> In Review",
-			status: provider.StatusReview,
+			status: workunit.StatusReview,
 			want:   "In Review",
 		},
 		{
 			name:   "done -> Done",
-			status: provider.StatusDone,
+			status: workunit.StatusDone,
 			want:   "Done",
 		},
 		{
 			name:   "closed -> Cancelled",
-			status: provider.StatusClosed,
+			status: workunit.StatusClosed,
 			want:   "Cancelled",
 		},
 	}
@@ -652,9 +654,9 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check all declared capabilities are present
-	expectedCaps := []provider.Capability{
-		provider.CapRead, provider.CapList, provider.CapFetchComments, provider.CapComment,
-		provider.CapUpdateStatus, provider.CapManageLabels, provider.CapCreateWorkUnit, provider.CapSnapshot,
+	expectedCaps := []capability.Capability{
+		capability.CapRead, capability.CapList, capability.CapFetchComments, capability.CapComment,
+		capability.CapUpdateStatus, capability.CapManageLabels, capability.CapCreateWorkUnit, capability.CapSnapshot,
 	}
 	for _, cap := range expectedCaps {
 		if !info.Capabilities.Has(cap) {

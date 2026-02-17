@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/snapshot"
 )
 
 // Snapshot captures the page content from Notion.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -98,10 +98,10 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Split into separate files for better organization
 	mainContent := content.String()
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type: ProviderName,
 		Ref:  id,
-		Files: []provider.SnapshotFile{
+		Files: []snapshot.SnapshotFile{
 			{
 				Path:    "page.md",
 				Content: mainContent,

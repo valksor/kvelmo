@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // UpdateStatus changes the status of an issue via the State custom field.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	// Map provider status to YouTrack state name
 	stateName := statusToYouTrackState(status)
 
@@ -35,17 +35,17 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 
 // statusToYouTrackState maps provider status to YouTrack state name.
 // This is a default mapping - users may need customization based on their workflow.
-func statusToYouTrackState(status provider.Status) string {
+func statusToYouTrackState(status workunit.Status) string {
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "New"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "In Progress"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "Review"
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		return "Done"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		return "Obsolete"
 	default:
 		return "New"

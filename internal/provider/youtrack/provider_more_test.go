@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestIssueToWorkUnitAndHelpers(t *testing.T) {
@@ -68,10 +68,10 @@ func TestIssueToWorkUnitAndHelpers(t *testing.T) {
 	if wu.ID != "ABC-123" || wu.ExternalID != "internal-1" {
 		t.Fatalf("unexpected IDs: %#v", wu)
 	}
-	if wu.Status != provider.StatusInProgress {
+	if wu.Status != workunit.StatusInProgress {
 		t.Fatalf("status = %q, want in_progress", wu.Status)
 	}
-	if wu.Priority != provider.PriorityHigh {
+	if wu.Priority != workunit.PriorityHigh {
 		t.Fatalf("priority = %q, want high", wu.Priority)
 	}
 	if len(wu.Labels) != 2 || wu.Labels[0] != "backend" {
@@ -97,13 +97,13 @@ func TestIssueToWorkUnitAndHelpers(t *testing.T) {
 func TestMapStatusAndTaskTypeFallbacks(t *testing.T) {
 	p := &Provider{}
 
-	if got := p.mapStatus(&Issue{Resolved: 1}); got != provider.StatusDone {
+	if got := p.mapStatus(&Issue{Resolved: 1}); got != workunit.StatusDone {
 		t.Fatalf("resolved issue status = %q, want done", got)
 	}
-	if got := p.mapStatus(&Issue{CustomFields: []CustomField{{Name: "State", Value: map[string]interface{}{"name": "Review"}}}}); got != provider.StatusReview {
+	if got := p.mapStatus(&Issue{CustomFields: []CustomField{{Name: "State", Value: map[string]interface{}{"name": "Review"}}}}); got != workunit.StatusReview {
 		t.Fatalf("state-derived status = %q, want review", got)
 	}
-	if got := p.mapStatus(&Issue{}); got != provider.StatusOpen {
+	if got := p.mapStatus(&Issue{}); got != workunit.StatusOpen {
 		t.Fatalf("default status = %q, want open", got)
 	}
 

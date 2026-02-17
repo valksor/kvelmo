@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrNotASubtask is returned when a work unit is not a subtask.
 var ErrNotASubtask = errors.New("not a subtask")
 
-// FetchParent implements the provider.ParentFetcher interface.
+// FetchParent implements the workunit.ParentFetcher interface.
 // It retrieves the parent issue for a YouTrack subtask.
-func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	// Get the issue to check if it has a parent
 	issue, err := p.client.GetIssue(ctx, workUnitID)
 	if err != nil {
@@ -43,9 +43,9 @@ func (p *Provider) FetchParent(ctx context.Context, workUnitID string) (*provide
 	return wu, nil
 }
 
-// FetchSubtasks implements the provider.SubtaskFetcher interface.
+// FetchSubtasks implements the workunit.SubtaskFetcher interface.
 // It retrieves subtasks for a given YouTrack issue.
-func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*provider.WorkUnit, error) {
+func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*workunit.WorkUnit, error) {
 	// First, get the parent issue to get subtask links
 	issue, err := p.client.GetIssue(ctx, workUnitID)
 	if err != nil {
@@ -57,7 +57,7 @@ func (p *Provider) FetchSubtasks(ctx context.Context, workUnitID string) ([]*pro
 	}
 
 	// Fetch each subtask as a full issue
-	result := make([]*provider.WorkUnit, 0, len(issue.Subtasks))
+	result := make([]*workunit.WorkUnit, 0, len(issue.Subtasks))
 	for _, subtaskLink := range issue.Subtasks {
 		// Fetch the subtask issue by its readable ID
 		subtaskIssue, err := p.client.GetIssue(ctx, subtaskLink.IDReadable)

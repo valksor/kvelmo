@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	providererrors "github.com/valksor/go-toolkit/errors"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestParseReference(t *testing.T) {
@@ -267,14 +267,14 @@ func TestExtractNameFromValue(t *testing.T) {
 
 func TestStatusToYouTrackState(t *testing.T) {
 	tests := []struct {
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
-		{provider.StatusOpen, "New"},
-		{provider.StatusInProgress, "In Progress"},
-		{provider.StatusReview, "Review"},
-		{provider.StatusDone, "Done"},
-		{provider.StatusClosed, "Obsolete"},
+		{workunit.StatusOpen, "New"},
+		{workunit.StatusInProgress, "In Progress"},
+		{workunit.StatusReview, "Review"},
+		{workunit.StatusDone, "Done"},
+		{workunit.StatusClosed, "Obsolete"},
 	}
 
 	for _, tt := range tests {
@@ -564,13 +564,13 @@ func findInStr(s, substr string) bool {
 func TestPriorityToYouTrack(t *testing.T) {
 	tests := []struct {
 		name     string
-		priority provider.Priority
+		priority workunit.Priority
 		want     string
 	}{
-		{"critical", provider.PriorityCritical, "Critical"},
-		{"high", provider.PriorityHigh, "High"},
-		{"normal", provider.PriorityNormal, "Normal"},
-		{"low", provider.PriorityLow, "Low"},
+		{"critical", workunit.PriorityCritical, "Critical"},
+		{"high", workunit.PriorityHigh, "High"},
+		{"normal", workunit.PriorityNormal, "Normal"},
+		{"low", workunit.PriorityLow, "Low"},
 	}
 
 	for _, tt := range tests {
@@ -586,48 +586,48 @@ func TestPriorityToYouTrack(t *testing.T) {
 func TestBuildQuery(t *testing.T) {
 	tests := []struct {
 		name string
-		opts provider.ListOptions
+		opts workunit.ListOptions
 		want string
 	}{
 		{
 			name: "empty options",
-			opts: provider.ListOptions{},
+			opts: workunit.ListOptions{},
 			want: "",
 		},
 		{
 			name: "open status",
-			opts: provider.ListOptions{Status: provider.StatusOpen},
+			opts: workunit.ListOptions{Status: workunit.StatusOpen},
 			want: "Unresolved",
 		},
 		{
 			name: "done status",
-			opts: provider.ListOptions{Status: provider.StatusDone},
+			opts: workunit.ListOptions{Status: workunit.StatusDone},
 			want: "Resolved",
 		},
 		{
 			name: "closed status",
-			opts: provider.ListOptions{Status: provider.StatusClosed},
+			opts: workunit.ListOptions{Status: workunit.StatusClosed},
 			want: "Resolved",
 		},
 		{
 			name: "with labels",
-			opts: provider.ListOptions{Labels: []string{"bug", "urgent"}},
+			opts: workunit.ListOptions{Labels: []string{"bug", "urgent"}},
 			want: "tag: bug tag: urgent",
 		},
 		{
 			name: "with order by asc",
-			opts: provider.ListOptions{OrderBy: "created"},
+			opts: workunit.ListOptions{OrderBy: "created"},
 			want: "sort by: created asc",
 		},
 		{
 			name: "with order by desc",
-			opts: provider.ListOptions{OrderBy: "updated", OrderDir: "desc"},
+			opts: workunit.ListOptions{OrderBy: "updated", OrderDir: "desc"},
 			want: "sort by: updated desc",
 		},
 		{
 			name: "combined filters",
-			opts: provider.ListOptions{
-				Status:   provider.StatusOpen,
+			opts: workunit.ListOptions{
+				Status:   workunit.StatusOpen,
 				Labels:   []string{"bug"},
 				OrderBy:  "priority",
 				OrderDir: "desc",
