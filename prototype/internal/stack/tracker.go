@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 // DefaultPollInterval is the default interval for PR status polling.
@@ -39,7 +39,7 @@ func (t *Tracker) SetPollInterval(d time.Duration) {
 
 // Sync synchronizes PR status for all stacked tasks.
 // This is the manual sync operation called by `mehr sync`.
-func (t *Tracker) Sync(ctx context.Context, prFetcher provider.PRFetcher) (*SyncResult, error) {
+func (t *Tracker) Sync(ctx context.Context, prFetcher pullrequest.PRFetcher) (*SyncResult, error) {
 	if err := t.storage.Load(); err != nil {
 		return nil, fmt.Errorf("load stacks: %w", err)
 	}
@@ -107,7 +107,7 @@ type TaskUpdate struct {
 
 // updateTaskFromPR updates a task's state based on PR information.
 // Returns a TaskUpdate if the state changed, nil otherwise.
-func (t *Tracker) updateTaskFromPR(s *Stack, task *StackedTask, pr *provider.PullRequest) *TaskUpdate {
+func (t *Tracker) updateTaskFromPR(s *Stack, task *StackedTask, pr *pullrequest.PullRequest) *TaskUpdate {
 	oldState := task.State
 	newState := prStateToStackState(pr.State)
 
@@ -172,7 +172,7 @@ func prStateToStackState(prState string) StackState {
 
 // StartPolling starts background polling for PR status updates.
 // This is used in auto mode.
-func (t *Tracker) StartPolling(ctx context.Context, prFetcher provider.PRFetcher, onUpdate func(*SyncResult)) {
+func (t *Tracker) StartPolling(ctx context.Context, prFetcher pullrequest.PRFetcher, onUpdate func(*SyncResult)) {
 	if !t.running.CompareAndSwap(false, true) {
 		return
 	}
@@ -211,7 +211,7 @@ func (t *Tracker) IsRunning() bool {
 	return t.running.Load()
 }
 
-func (t *Tracker) pollLoop(ctx context.Context, prFetcher provider.PRFetcher, onUpdate func(*SyncResult)) {
+func (t *Tracker) pollLoop(ctx context.Context, prFetcher pullrequest.PRFetcher, onUpdate func(*SyncResult)) {
 	ticker := time.NewTicker(t.pollInterval)
 	defer ticker.Stop()
 

@@ -9,10 +9,10 @@ import (
 	"log/slog"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/env"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrAgentNotFound indicates no agent was found at a priority level.
@@ -56,7 +56,7 @@ type ResolveRequest struct {
 	WorkspaceCfg   *storage.WorkspaceConfig // Workspace config (optional, can be loaded if nil)
 
 	// Task frontmatter values (may be nil)
-	TaskConfig *provider.AgentConfig
+	TaskConfig *workunit.AgentConfig
 
 	// Step to resolve for
 	Step workflow.Step

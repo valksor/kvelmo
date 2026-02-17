@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // mockAgent is a test implementation of Agent interface.
@@ -245,8 +245,8 @@ func TestResolveForStep_Priority3_TaskStepSpecific(t *testing.T) {
 	r := NewResolver(registry, workspace)
 
 	req := ResolveRequest{
-		TaskConfig: &provider.AgentConfig{
-			Steps: map[string]provider.StepAgentConfig{
+		TaskConfig: &workunit.AgentConfig{
+			Steps: map[string]workunit.StepAgentConfig{
 				"planning": {
 					Name: "task-step-agent",
 					Env:  map[string]string{"PLAN_KEY": "plan_val"},
@@ -286,7 +286,7 @@ func TestResolveForStep_Priority4_TaskDefault(t *testing.T) {
 	r := NewResolver(registry, workspace)
 
 	req := ResolveRequest{
-		TaskConfig: &provider.AgentConfig{
+		TaskConfig: &workunit.AgentConfig{
 			Name: "task-default-agent",
 			Env:  map[string]string{"TASK_KEY": "task_val"},
 			Args: []string{"--task-arg"},
@@ -417,8 +417,8 @@ func TestResolveForStep_PriorityOrder_CLIStepOverTaskStep(t *testing.T) {
 		CLISStepAgents: map[string]string{
 			"planning": "cli-agent",
 		},
-		TaskConfig: &provider.AgentConfig{
-			Steps: map[string]provider.StepAgentConfig{
+		TaskConfig: &workunit.AgentConfig{
+			Steps: map[string]workunit.StepAgentConfig{
 				"planning": {Name: "task-agent"},
 			},
 		},
@@ -600,7 +600,7 @@ func TestResolveRequestStruct(t *testing.T) {
 		CLISStepAgents: map[string]string{
 			"planning": "plan-agent",
 		},
-		TaskConfig: &provider.AgentConfig{
+		TaskConfig: &workunit.AgentConfig{
 			Name: "task-agent",
 		},
 		Step: workflow.StepPlanning,
