@@ -3,7 +3,9 @@ package asana
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -11,14 +13,14 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 
 var (
-	_ provider.Reader         = (*Provider)(nil)
-	_ provider.Identifier     = (*Provider)(nil)
-	_ provider.Lister         = (*Provider)(nil)
-	_ provider.CommentFetcher = (*Provider)(nil)
-	_ provider.Commenter      = (*Provider)(nil)
-	_ provider.StatusUpdater  = (*Provider)(nil)
-	_ provider.Snapshotter    = (*Provider)(nil)
-	_ provider.SubtaskFetcher = (*Provider)(nil)
+	_ workunit.Reader         = (*Provider)(nil)
+	_ workunit.Identifier     = (*Provider)(nil)
+	_ workunit.Lister         = (*Provider)(nil)
+	_ workunit.CommentFetcher = (*Provider)(nil)
+	_ workunit.Commenter      = (*Provider)(nil)
+	_ workunit.StatusUpdater  = (*Provider)(nil)
+	_ snapshot.Snapshotter    = (*Provider)(nil)
+	_ workunit.SubtaskFetcher = (*Provider)(nil)
 )
 
 func TestParseReference(t *testing.T) {
@@ -147,22 +149,22 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	if !info.Capabilities.Has(provider.CapRead) {
+	if !info.Capabilities.Has(capability.CapRead) {
 		t.Error("Info().Capabilities should have CapRead")
 	}
-	if !info.Capabilities.Has(provider.CapList) {
+	if !info.Capabilities.Has(capability.CapList) {
 		t.Error("Info().Capabilities should have CapList")
 	}
-	if !info.Capabilities.Has(provider.CapFetchComments) {
+	if !info.Capabilities.Has(capability.CapFetchComments) {
 		t.Error("Info().Capabilities should have CapFetchComments")
 	}
-	if !info.Capabilities.Has(provider.CapComment) {
+	if !info.Capabilities.Has(capability.CapComment) {
 		t.Error("Info().Capabilities should have CapComment")
 	}
-	if !info.Capabilities.Has(provider.CapUpdateStatus) {
+	if !info.Capabilities.Has(capability.CapUpdateStatus) {
 		t.Error("Info().Capabilities should have CapUpdateStatus")
 	}
-	if !info.Capabilities.Has(provider.CapSnapshot) {
+	if !info.Capabilities.Has(capability.CapSnapshot) {
 		t.Error("Info().Capabilities should have CapSnapshot")
 	}
 }
@@ -171,17 +173,17 @@ func TestMapAsanaStatus(t *testing.T) {
 	tests := []struct {
 		name string
 		task *Task
-		want provider.Status
+		want workunit.Status
 	}{
 		{
 			name: "completed task",
 			task: &Task{Completed: true},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 		{
 			name: "open task",
 			task: &Task{Completed: false},
-			want: provider.StatusOpen,
+			want: workunit.StatusOpen,
 		},
 		{
 			name: "task in Done section",
@@ -191,7 +193,7 @@ func TestMapAsanaStatus(t *testing.T) {
 					{Section: &Section{Name: "Done"}},
 				},
 			},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 		{
 			name: "task in In Progress section",
@@ -201,7 +203,7 @@ func TestMapAsanaStatus(t *testing.T) {
 					{Section: &Section{Name: "In Progress"}},
 				},
 			},
-			want: provider.StatusInProgress,
+			want: workunit.StatusInProgress,
 		},
 		{
 			name: "task in Review section",
@@ -211,7 +213,7 @@ func TestMapAsanaStatus(t *testing.T) {
 					{Section: &Section{Name: "Code Review"}},
 				},
 			},
-			want: provider.StatusReview,
+			want: workunit.StatusReview,
 		},
 		{
 			name: "approval task pending",
@@ -219,7 +221,7 @@ func TestMapAsanaStatus(t *testing.T) {
 				ResourceSubtype: "approval",
 				ApprovalStatus:  "pending",
 			},
-			want: provider.StatusInProgress,
+			want: workunit.StatusInProgress,
 		},
 		{
 			name: "approval task approved",
@@ -228,7 +230,7 @@ func TestMapAsanaStatus(t *testing.T) {
 				ResourceSubtype: "approval",
 				ApprovalStatus:  "approved",
 			},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 	}
 

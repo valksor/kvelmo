@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new task in Asana.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	// Determine target project
 	projectGID := opts.ParentID
 	if projectGID == "" {
@@ -30,18 +30,18 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Build WorkUnit response
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          task.GID,
 		ExternalID:  task.GID,
 		Provider:    ProviderName,
 		Title:       task.Name,
 		Description: task.Notes,
 		Status:      mapAsanaStatus(task),
-		Priority:    provider.PriorityNormal, // Asana doesn't have built-in priority
+		Priority:    workunit.PriorityNormal, // Asana doesn't have built-in priority
 		Labels:      extractTagNames(task.Tags),
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.ModifiedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: "asana:" + task.GID,
 			SyncedAt:  time.Now(),

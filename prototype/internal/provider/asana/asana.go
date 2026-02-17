@@ -7,7 +7,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the canonical name for this provider.
@@ -34,26 +38,26 @@ func Info() provider.ProviderInfo {
 		Name:        ProviderName,
 		Description: "Load tasks from Asana projects",
 		Schemes:     []string{"asana", "as"},
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a new Asana provider instance.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	config := &Config{
 		Token:          cfg.GetString("token"),
 		WorkspaceGID:   cfg.GetString("workspace_gid"),
@@ -105,7 +109,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch retrieves a task by its GID.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	task, err := p.client.GetTask(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("fetch task %s: %w", id, err)
@@ -123,7 +127,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot creates a snapshot of the task's current state.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	task, err := p.client.GetTask(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot task %s: %w", id, err)
@@ -132,7 +136,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Build markdown content
 	content := buildSnapshotContent(task)
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    ProviderName,
 		Ref:     "asana:" + id,
 		Content: content,
@@ -140,7 +144,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 }
 
 // List retrieves tasks from a project.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	projectGID := p.config.DefaultProject
 	if projectGID == "" {
 		return nil, ErrProjectRequired
@@ -148,7 +152,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 
 	// Filter by completion status
 	var completedSince *time.Time
-	if opts.Status == provider.StatusOpen || opts.Status == "" {
+	if opts.Status == workunit.StatusOpen || opts.Status == "" {
 		// Show only incomplete tasks
 		t := time.Now().Add(-365 * 24 * time.Hour) // Last year's completed tasks only
 		completedSince = &t
@@ -164,10 +168,10 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
 
-	var units []*provider.WorkUnit
+	var units []*workunit.WorkUnit
 	for _, task := range tasks {
 		// Filter completed tasks if looking for open
-		if opts.Status == provider.StatusOpen && task.Completed {
+		if opts.Status == workunit.StatusOpen && task.Completed {
 			continue
 		}
 
@@ -183,28 +187,28 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments (stories) for a task.
-func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, id string) ([]workunit.Comment, error) {
 	stories, err := p.client.GetTaskStories(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("fetch comments for %s: %w", id, err)
 	}
 
-	var comments []provider.Comment
+	var comments []workunit.Comment
 	for _, story := range stories {
 		// Only include comment-type stories
 		if story.ResourceSubtype != "comment_added" {
 			continue
 		}
 
-		author := provider.Person{}
+		author := workunit.Person{}
 		if story.CreatedBy != nil {
-			author = provider.Person{
+			author = workunit.Person{
 				Name:  story.CreatedBy.Name,
 				Email: story.CreatedBy.Email,
 			}
 		}
 
-		comments = append(comments, provider.Comment{
+		comments = append(comments, workunit.Comment{
 			ID:        story.GID,
 			Author:    author,
 			Body:      story.Text,
@@ -216,21 +220,21 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Com
 }
 
 // AddComment adds a comment to a task.
-func (p *Provider) AddComment(ctx context.Context, id string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, id string, body string) (*workunit.Comment, error) {
 	story, err := p.client.AddTaskComment(ctx, id, body)
 	if err != nil {
 		return nil, fmt.Errorf("add comment to %s: %w", id, err)
 	}
 
-	author := provider.Person{}
+	author := workunit.Person{}
 	if story.CreatedBy != nil {
-		author = provider.Person{
+		author = workunit.Person{
 			Name:  story.CreatedBy.Name,
 			Email: story.CreatedBy.Email,
 		}
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        story.GID,
 		Author:    author,
 		Body:      story.Text,
@@ -239,14 +243,14 @@ func (p *Provider) AddComment(ctx context.Context, id string, body string) (*pro
 }
 
 // UpdateStatus updates the task status (completes the task or moves to section).
-func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, id string, status workunit.Status) error {
 	switch status {
-	case provider.StatusClosed, provider.StatusDone:
+	case workunit.StatusClosed, workunit.StatusDone:
 		_, err := p.client.CompleteTask(ctx, id)
 		if err != nil {
 			return fmt.Errorf("complete task %s: %w", id, err)
 		}
-	case provider.StatusOpen, provider.StatusInProgress, provider.StatusReview:
+	case workunit.StatusOpen, workunit.StatusInProgress, workunit.StatusReview:
 		// For these statuses, we could potentially move to sections
 		// but this requires project context
 		return nil
@@ -257,8 +261,8 @@ func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.
 
 // --- Helper functions ---
 
-func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
-	unit := &provider.WorkUnit{
+func (p *Provider) taskToWorkUnit(task *Task) *workunit.WorkUnit {
+	unit := &workunit.WorkUnit{
 		ID:          task.GID,
 		ExternalID:  task.GID,
 		ExternalKey: task.GID,
@@ -267,12 +271,12 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 		Description: task.Notes,
 		Slug:        slug.Slugify(task.Name, 50),
 		Status:      mapAsanaStatus(task),
-		Priority:    provider.PriorityNormal, // Asana doesn't have built-in priority
+		Priority:    workunit.PriorityNormal, // Asana doesn't have built-in priority
 		TaskType:    mapTaskType(task),
 		Labels:      extractTagNames(task.Tags),
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.ModifiedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: "asana:" + task.GID,
 			SyncedAt:  time.Now(),
@@ -285,7 +289,7 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 
 	// Set assignees
 	if task.Assignee != nil {
-		unit.Assignees = []provider.Person{
+		unit.Assignees = []workunit.Person{
 			{
 				Name:  task.Assignee.Name,
 				Email: task.Assignee.Email,
@@ -301,20 +305,20 @@ func (p *Provider) taskToWorkUnit(task *Task) *provider.WorkUnit {
 	return unit
 }
 
-func mapAsanaStatus(task *Task) provider.Status {
+func mapAsanaStatus(task *Task) workunit.Status {
 	if task.Completed {
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	}
 
 	// Check approval status for approval tasks
 	if task.ResourceSubtype == "approval" {
 		switch task.ApprovalStatus {
 		case "approved":
-			return provider.StatusClosed
+			return workunit.StatusClosed
 		case "rejected":
-			return provider.StatusOpen
+			return workunit.StatusOpen
 		case "pending":
-			return provider.StatusInProgress
+			return workunit.StatusInProgress
 		}
 	}
 
@@ -324,18 +328,18 @@ func mapAsanaStatus(task *Task) provider.Status {
 			sectionName := strings.ToLower(membership.Section.Name)
 			switch {
 			case strings.Contains(sectionName, "done") || strings.Contains(sectionName, "complete"):
-				return provider.StatusClosed
+				return workunit.StatusClosed
 			case strings.Contains(sectionName, "progress") || strings.Contains(sectionName, "doing"):
-				return provider.StatusInProgress
+				return workunit.StatusInProgress
 			case strings.Contains(sectionName, "review"):
-				return provider.StatusReview
+				return workunit.StatusReview
 			case strings.Contains(sectionName, "blocked") || strings.Contains(sectionName, "hold"):
-				return provider.StatusOpen // Blocked tasks are still open
+				return workunit.StatusOpen // Blocked tasks are still open
 			}
 		}
 	}
 
-	return provider.StatusOpen
+	return workunit.StatusOpen
 }
 
 func mapTaskType(task *Task) string {
@@ -383,8 +387,8 @@ func extractProjectNames(projects []Project) []string {
 	return names
 }
 
-func mapAttachments(attachments []Attachment) []provider.Attachment {
-	result := make([]provider.Attachment, 0, len(attachments))
+func mapAttachments(attachments []Attachment) []workunit.Attachment {
+	result := make([]workunit.Attachment, 0, len(attachments))
 	for _, a := range attachments {
 		// Use download_url if available, otherwise permanent_url
 		url := a.DownloadURL
@@ -392,7 +396,7 @@ func mapAttachments(attachments []Attachment) []provider.Attachment {
 			url = a.PermanentURL
 		}
 
-		result = append(result, provider.Attachment{
+		result = append(result, workunit.Attachment{
 			ID:        url, // Use URL as ID for DownloadAttachment compatibility
 			Name:      a.Name,
 			URL:       url,
@@ -467,7 +471,7 @@ func buildSnapshotContent(task *Task) string {
 }
 
 // GetBranchSuggestion returns a suggested branch name for the task.
-func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
+func (p *Provider) GetBranchSuggestion(task *workunit.WorkUnit) string {
 	if p.config.BranchPattern == "" {
 		// Default pattern
 		return "task/" + task.ID
