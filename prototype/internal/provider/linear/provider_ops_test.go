@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestProviderListRequiresTeam(t *testing.T) {
@@ -15,7 +15,7 @@ func TestProviderListRequiresTeam(t *testing.T) {
 		client: NewClient("test-token"),
 	}
 
-	_, err := p.List(context.Background(), provider.ListOptions{})
+	_, err := p.List(context.Background(), workunit.ListOptions{})
 	if !errors.Is(err, ErrTeamRequired) {
 		t.Fatalf("expected ErrTeamRequired, got %v", err)
 	}
@@ -48,11 +48,11 @@ func TestProviderListFiltersOffsetAndLimit(t *testing.T) {
 		team:   "ENG",
 	}
 
-	got, err := p.List(context.Background(), provider.ListOptions{
+	got, err := p.List(context.Background(), workunit.ListOptions{
 		Labels: []string{"bug"},
 		Offset: 1,
 		Limit:  1,
-		Status: provider.StatusInProgress,
+		Status: workunit.StatusInProgress,
 	})
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
@@ -63,7 +63,7 @@ func TestProviderListFiltersOffsetAndLimit(t *testing.T) {
 	if got[0].ExternalID != "ENG-2" {
 		t.Fatalf("ExternalID = %q, want ENG-2", got[0].ExternalID)
 	}
-	if got[0].Status != provider.StatusInProgress {
+	if got[0].Status != workunit.StatusInProgress {
 		t.Fatalf("Status = %q, want in_progress", got[0].Status)
 	}
 }
@@ -162,7 +162,7 @@ func TestProviderStatusAndLabels(t *testing.T) {
 		defer server.Close()
 
 		p := &Provider{client: newTestClient(server.URL)}
-		if err := p.UpdateStatus(context.Background(), "ENG-1", provider.StatusReview); err != nil {
+		if err := p.UpdateStatus(context.Background(), "ENG-1", workunit.StatusReview); err != nil {
 			t.Fatalf("UpdateStatus returned error: %v", err)
 		}
 	})

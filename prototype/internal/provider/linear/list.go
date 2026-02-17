@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // List retrieves issues from Linear.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	teamKey := p.team
 
 	// If team key not configured, try to extract from labels filter
@@ -73,7 +73,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	}
 
 	// Convert to WorkUnits
-	result := make([]*provider.WorkUnit, 0, len(filtered))
+	result := make([]*workunit.WorkUnit, 0, len(filtered))
 	for _, issue := range filtered {
 		wu := issueToWorkUnit(issue)
 		result = append(result, wu)
@@ -106,8 +106,8 @@ func matchesLabels(issue *Issue, labels []string) bool {
 
 // issueToWorkUnit converts an Issue to a WorkUnit without fetching nested data.
 // Used by List for efficiency when listing multiple issues.
-func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
-	return &provider.WorkUnit{
+func issueToWorkUnit(issue *Issue) *workunit.WorkUnit {
+	return &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Identifier,
 		Provider:    ProviderName,
@@ -119,7 +119,7 @@ func issueToWorkUnit(issue *Issue) *provider.WorkUnit {
 		Assignees:   mapAssignees(issue.Assignee),
 		CreatedAt:   issue.CreatedAt,
 		UpdatedAt:   issue.UpdatedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Identifier,
 			SyncedAt:  time.Now(),

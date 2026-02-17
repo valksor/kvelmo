@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreateWorkUnit creates a new Linear issue
 // Note: Linear requires a team ID (not team key) for creating issues.
 // The team key from config must be resolved to a team ID first.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	// For now, we need to use the team key. In production, you'd resolve this to a team ID
 	// Since we don't have a team lookup function yet, we'll require the team to be configured
 	if p.team == "" {
@@ -28,7 +28,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Set priority if specified
-	if opts.Priority != provider.PriorityNormal {
+	if opts.Priority != workunit.PriorityNormal {
 		input.Priority = mapProviderPriorityToLinear(opts.Priority)
 	}
 
@@ -49,7 +49,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Convert to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Identifier,
 		Provider:    ProviderName,
@@ -61,7 +61,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 		Assignees:   mapAssignees(issue.Assignee),
 		CreatedAt:   issue.CreatedAt,
 		UpdatedAt:   issue.UpdatedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Identifier,
 			SyncedAt:  time.Now(),

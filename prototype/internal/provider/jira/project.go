@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
-// FetchProject implements provider.ProjectFetcher for Jira.
+// FetchProject implements workunit.ProjectFetcher for Jira.
 // Fetches an epic with all its child issues/stories recursively.
 //
 // Reference format:
@@ -20,7 +20,7 @@ import (
 //
 // Returns the epic issue plus all stories/issues in the epic, including subtasks.
 // Note: The epic itself is included as depth=0, with stories at depth=1.
-func (p *Provider) FetchProject(ctx context.Context, reference string) (*provider.ProjectStructure, error) {
+func (p *Provider) FetchProject(ctx context.Context, reference string) (*workunit.ProjectStructure, error) {
 	ref, err := ParseReference(reference)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -49,11 +49,11 @@ func (p *Provider) FetchProject(ctx context.Context, reference string) (*provide
 	issues := p.fetchEpicIssues(ctx, ref.IssueKey)
 
 	// Convert epic and its issues to ProjectTasks
-	tasks := make([]*provider.ProjectTask, 0, 1+len(issues))
+	tasks := make([]*workunit.ProjectTask, 0, 1+len(issues))
 
 	// Add the epic itself at depth 0
 	epicWorkUnit := convertIssueToWorkUnit(epic, "", 0)
-	tasks = append(tasks, &provider.ProjectTask{
+	tasks = append(tasks, &workunit.ProjectTask{
 		WorkUnit: epicWorkUnit,
 		Depth:    0,
 		Position: 0,
@@ -83,7 +83,7 @@ func (p *Provider) FetchProject(ctx context.Context, reference string) (*provide
 		}
 
 		wu := convertIssueToWorkUnit(issue, epic.ID, 1)
-		pt := &provider.ProjectTask{
+		pt := &workunit.ProjectTask{
 			WorkUnit: wu,
 			ParentID: parentID,
 			Depth:    1,
@@ -101,7 +101,7 @@ func (p *Provider) FetchProject(ctx context.Context, reference string) (*provide
 				}
 
 				subtaskWU := convertIssueToWorkUnit(fullSubtask, issue.ID, 2)
-				subtaskPT := &provider.ProjectTask{
+				subtaskPT := &workunit.ProjectTask{
 					WorkUnit: subtaskWU,
 					ParentID: issue.ID,
 					Depth:    2,
@@ -120,7 +120,7 @@ func (p *Provider) FetchProject(ctx context.Context, reference string) (*provide
 		url = "https://Atlassian.net/browse/" + epic.Key
 	}
 
-	return &provider.ProjectStructure{
+	return &workunit.ProjectStructure{
 		ID:          epic.ID,
 		Title:       "Epic: " + epic.Fields.Summary,
 		Description: epic.Fields.Description,
@@ -222,8 +222,8 @@ func getProjectName(issue *Issue) string {
 	return issue.Fields.Project.Name
 }
 
-// convertIssueToWorkUnit converts a Jira Issue to a provider.WorkUnit.
-func convertIssueToWorkUnit(issue *Issue, epicID string, depth int) *provider.WorkUnit {
+// convertIssueToWorkUnit converts a Jira Issue to a workunit.WorkUnit.
+func convertIssueToWorkUnit(issue *Issue, epicID string, depth int) *workunit.WorkUnit {
 	// Build metadata
 	metadata := buildMetadata(issue)
 	metadata["depth"] = depth
@@ -231,7 +231,7 @@ func convertIssueToWorkUnit(issue *Issue, epicID string, depth int) *provider.Wo
 		metadata["epic_id"] = epicID
 	}
 
-	return &provider.WorkUnit{
+	return &workunit.WorkUnit{
 		ID:          issue.ID,
 		ExternalID:  issue.Key,
 		Provider:    ProviderName,
@@ -243,7 +243,7 @@ func convertIssueToWorkUnit(issue *Issue, epicID string, depth int) *provider.Wo
 		Assignees:   mapAssignees(issue.Fields.Assignee),
 		CreatedAt:   issue.Fields.Created,
 		UpdatedAt:   issue.Fields.Updated,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: issue.Key,
 			SyncedAt:  time.Now(),

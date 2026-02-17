@@ -3,11 +3,11 @@ package jira
 import (
 	"context"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // AddComment adds a comment to a Jira issue.
-func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -26,15 +26,15 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 	}
 
 	// Convert to provider Comment
-	var author provider.Person
+	var author workunit.Person
 	if comment.Author != nil {
-		author = provider.Person{
+		author = workunit.Person{
 			ID:   comment.Author.AccountID,
 			Name: comment.Author.DisplayName,
 		}
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        comment.ID,
 		Body:      comment.Body,
 		CreatedAt: comment.Created,
@@ -44,7 +44,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 }
 
 // FetchComments retrieves comments for a Jira issue.
-func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err

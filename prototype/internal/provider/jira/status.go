@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // UpdateStatus changes the status of a Jira issue via workflow transitions
 // Jira requires using workflow transitions rather than directly setting status.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return err
@@ -55,6 +55,6 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 
 // GetAvailableStatuses returns a list of possible status names for a provider status.
 // This is useful for debugging or showing available options.
-func GetAvailableStatuses(status provider.Status) []string {
+func GetAvailableStatuses(status workunit.Status) []string {
 	return mapProviderStatusToJiraTransitions(status)
 }

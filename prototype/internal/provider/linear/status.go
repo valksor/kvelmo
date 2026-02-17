@@ -3,14 +3,14 @@ package linear
 import (
 	"context"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // UpdateStatus changes the state of a Linear issue
 // Note: Linear uses state IDs rather than names. This implementation uses
 // a simple state name mapping. In production, you'd want to query the
 // team's states and map names to IDs.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return err
