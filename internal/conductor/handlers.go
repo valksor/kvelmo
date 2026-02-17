@@ -15,6 +15,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/eventbus"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrPendingQuestion is returned when the agent asks a question.
@@ -218,10 +219,10 @@ func (c *Conductor) RunPlanning(ctx context.Context) error {
 				DefaultProvider: c.opts.DefaultProvider,
 			}
 			ref := c.activeTask.Ref
-			providerCfg := buildProviderConfig(workspaceCfg, parseScheme(ref))
+			providerCfg := buildProviderConfig(ctx, workspaceCfg, parseScheme(ref))
 			if p, id, err := c.providers.Resolve(ctx, ref, providerCfg, resolveOpts); err == nil {
 				// Get the current work unit for hierarchy detection
-				if reader, ok := p.(provider.Reader); ok {
+				if reader, ok := p.(workunit.Reader); ok {
 					if workUnit, err := reader.Fetch(ctx, id); err == nil {
 						hierarchy, _ = c.FetchHierarchicalContextFromConfig(ctx, p, workUnit)
 					}

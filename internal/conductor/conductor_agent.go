@@ -14,6 +14,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/env"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // applyStepArgs applies step-specific CLI args from the agent if it implements StepArgsProvider.
@@ -403,7 +404,7 @@ func (c *Conductor) loadPlugins(ctx context.Context, cfg *storage.WorkspaceConfi
 		}
 
 		// Register the provider
-		if err := c.providers.Register(providerInfo, func(ctx context.Context, cfg provider.Config) (any, error) {
+		if err := c.providers.Register(providerInfo, func(ctx context.Context, cfg providerconfig.Config) (any, error) {
 			return adapter, nil
 		}); err != nil {
 			// Log but continue - don't fail if one plugin can't register

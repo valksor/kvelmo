@@ -13,6 +13,7 @@ import (
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/eventbus"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 // Plan enters the planning phase to create specifications.
@@ -817,11 +818,11 @@ func (c *Conductor) providerSupportsPR(ctx context.Context) bool {
 
 		workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
 		scheme := parseScheme(c.activeTask.Ref)
-		providerCfg := buildProviderConfig(workspaceCfg, scheme)
+		providerCfg := buildProviderConfig(ctx, workspaceCfg, scheme)
 
 		p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, providerCfg, resolveOpts)
 		if err == nil {
-			if _, ok := p.(provider.PRCreator); ok {
+			if _, ok := p.(pullrequest.PRCreator); ok {
 				return true
 			}
 		}

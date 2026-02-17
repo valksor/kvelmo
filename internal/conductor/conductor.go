@@ -47,6 +47,9 @@ import (
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/eventbus"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // Conductor orchestrates the task automation workflow.
@@ -91,11 +94,11 @@ type Conductor struct {
 
 	// Active agent
 	activeAgent     agent.Agent
-	taskAgentConfig *provider.AgentConfig // Agent config from task source (if any)
+	taskAgentConfig *workunit.AgentConfig // Agent config from task source (if any)
 	agentOverride   string                // Temporary agent override (for Web UI API)
 
 	// Last PR creation result, accessible after Finish().
-	lastPRResult *provider.PullRequest
+	lastPRResult *pullrequest.PullRequest
 
 	// Session tracking (for conversation history and token usage)
 	currentSession     *storage.Session
@@ -553,7 +556,7 @@ func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRR
 
 	// 2. Create provider instance with minimal config
 	// Token is handled via environment variables or provider-specific config
-	providerCfg := provider.NewConfig()
+	providerCfg := providerconfig.NewConfig()
 	if opts.Token != "" {
 		providerCfg = providerCfg.Set("token", opts.Token)
 	}
@@ -564,12 +567,12 @@ func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRR
 	}
 
 	// 3. Check if provider implements required interfaces
-	prFetcher, ok := instance.(provider.PRFetcher)
+	prFetcher, ok := instance.(pullrequest.PRFetcher)
 	if !ok {
 		return nil, fmt.Errorf("provider %q does not implement PRFetcher", opts.Provider)
 	}
 
-	prCommenter, ok := instance.(provider.PRCommenter)
+	prCommenter, ok := instance.(pullrequest.PRCommenter)
 	if !ok {
 		return nil, fmt.Errorf("provider %q does not implement PRCommenter", opts.Provider)
 	}
@@ -610,9 +613,9 @@ func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRR
 
 	// 5. Fetch existing comments to find our previous review (if any)
 	var prevState *PRReviewState
-	var ourPreviousComment *provider.Comment
+	var ourPreviousComment *workunit.Comment
 
-	if prCommentFetcher, ok := instance.(provider.PRCommentFetcher); ok {
+	if prCommentFetcher, ok := instance.(pullrequest.PRCommentFetcher); ok {
 		c.logVerbosef("Fetching existing PR comments...")
 		comments, err := prCommentFetcher.FetchPullRequestComments(ctx, opts.PRNumber)
 		if err != nil {
@@ -696,7 +699,7 @@ func (c *Conductor) RunPRReview(ctx context.Context, opts PRReviewOptions) (*PRR
 	c.logVerbosef("Posting comment to PR...")
 	if ourPreviousComment != nil && opts.UpdateExisting {
 		// Update existing comment
-		if prCommentUpdater, ok := instance.(provider.PRCommentUpdater); ok {
+		if prCommentUpdater, ok := instance.(pullrequest.PRCommentUpdater); ok {
 			_, err = prCommentUpdater.UpdatePullRequestComment(ctx, opts.PRNumber, ourPreviousComment.ID, commentBody)
 			if err != nil {
 				return nil, fmt.Errorf("update comment: %w", err)

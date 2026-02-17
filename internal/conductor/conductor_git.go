@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/naming"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // gitInfo holds git branch/worktree information created during task start.
@@ -34,7 +34,7 @@ type namingInfo struct {
 }
 
 // resolveNaming resolves external key, branch name, and commit prefix from workUnit and options.
-func (c *Conductor) resolveNaming(workUnit *provider.WorkUnit, taskID string) *namingInfo {
+func (c *Conductor) resolveNaming(workUnit *workunit.WorkUnit, taskID string) *namingInfo {
 	// Load workspace config for templates
 	cfg, _ := c.workspace.LoadConfig()
 

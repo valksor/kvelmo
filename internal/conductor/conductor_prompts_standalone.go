@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 // buildPRReviewPrompt creates a prompt for PR/MR review.
 // Supports incremental reviews by including previous state if available.
-func buildPRReviewPrompt(pr *provider.PullRequest, diff *provider.PullRequestDiff, prevState *PRReviewState, scope string, workspace *storage.Workspace) string {
+func buildPRReviewPrompt(pr *pullrequest.PullRequest, diff *pullrequest.PullRequestDiff, prevState *PRReviewState, scope string, workspace *storage.Workspace) string {
 	currentTime := time.Now().Format("2006-01-02 15:04")
 	isRerun := prevState != nil
 
@@ -153,7 +153,7 @@ Your response MUST include:
 }
 
 // formatDiffForReview formats the PR diff based on scope.
-func formatDiffForReview(diff *provider.PullRequestDiff, scope string) string {
+func formatDiffForReview(diff *pullrequest.PullRequestDiff, scope string) string {
 	var sb strings.Builder
 
 	sb.WriteString("## Current Changes\n\n")

@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // SubmitProjectTasks submits tasks from a queue to an external provider.
@@ -42,14 +42,14 @@ func (c *Conductor) SubmitProjectTasks(ctx context.Context, queueID string, opts
 	}
 
 	workspaceCfg, _ := c.workspace.LoadConfig()
-	providerCfg := buildProviderConfig(workspaceCfg, opts.Provider)
+	providerCfg := buildProviderConfig(ctx, workspaceCfg, opts.Provider)
 	providerInst, err := factory(ctx, providerCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create provider: %w", err)
 	}
 
-	creator, _ := providerInst.(provider.WorkUnitCreator)
-	commenter, _ := providerInst.(provider.Commenter)
+	creator, _ := providerInst.(workunit.WorkUnitCreator)
+	commenter, _ := providerInst.(workunit.Commenter)
 
 	commentText := strings.TrimSpace(opts.Comment)
 	if commentText != "" && commenter == nil {
@@ -399,20 +399,20 @@ func mergeLabels(taskLabels, submitLabels []string) []string {
 	return labels
 }
 
-func mapQueuedPriority(priority int) provider.Priority {
+func mapQueuedPriority(priority int) workunit.Priority {
 	switch {
 	case priority <= 1:
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case priority == 2:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	case priority >= 3:
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
-func extractWorkUnitURL(workUnit *provider.WorkUnit) string {
+func extractWorkUnitURL(workUnit *workunit.WorkUnit) string {
 	if workUnit == nil {
 		return ""
 	}
@@ -437,7 +437,7 @@ func extractWorkUnitURL(workUnit *provider.WorkUnit) string {
 
 // submitTaskToProvider creates a work unit in the provider for the given task.
 // parentExternalID is the provider's ID for the parent task (if this is a subtask).
-func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.WorkUnitCreator, task *storage.QueuedTask, opts SubmitOptions, parentExternalID string) (*submittedWorkUnit, error) {
+func (c *Conductor) submitTaskToProvider(ctx context.Context, creator workunit.WorkUnitCreator, task *storage.QueuedTask, opts SubmitOptions, parentExternalID string) (*submittedWorkUnit, error) {
 	// Validate required fields
 	if task == nil || task.ID == "" {
 		return nil, errors.New("task is required")
@@ -455,7 +455,7 @@ func (c *Conductor) submitTaskToProvider(ctx context.Context, creator provider.W
 		assignees = append(assignees, task.Assignee)
 	}
 
-	createOpts := provider.CreateWorkUnitOptions{
+	createOpts := workunit.CreateWorkUnitOptions{
 		Title:       task.Title,
 		Description: task.Description,
 		Labels:      labels,

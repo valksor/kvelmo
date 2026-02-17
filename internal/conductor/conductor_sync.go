@@ -11,6 +11,8 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // SyncTaskResult describes task sync results for CLI/API consumers.
@@ -61,7 +63,7 @@ func (c *Conductor) SyncTask(ctx context.Context, taskID string) (*SyncTaskResul
 		return nil, fmt.Errorf("read source file: %w", err)
 	}
 
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:          work.Metadata.ID,
 		ExternalID:  work.Source.Ref,
 		Provider:    work.Source.Type,
@@ -140,14 +142,14 @@ func resolveTaskSourcePath(taskDir, sourceType string, sourceFiles []string) (st
 func fetchUpdatedFromProvider(
 	ctx context.Context,
 	registry *provider.Registry,
-	old *provider.WorkUnit,
-) (*provider.WorkUnit, error) {
-	providerInstance, id, err := registry.Resolve(ctx, old.ExternalID, provider.NewConfig(), provider.ResolveOptions{})
+	old *workunit.WorkUnit,
+) (*workunit.WorkUnit, error) {
+	providerInstance, id, err := registry.Resolve(ctx, old.ExternalID, providerconfig.NewConfig(), provider.ResolveOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("resolve provider: %w", err)
 	}
 
-	reader, ok := providerInstance.(provider.Reader)
+	reader, ok := providerInstance.(workunit.Reader)
 	if !ok {
 		return nil, fmt.Errorf("provider %s does not support reading", old.Provider)
 	}
@@ -160,7 +162,7 @@ func fetchUpdatedFromProvider(
 	return updated, nil
 }
 
-func extractSyncContent(wu *provider.WorkUnit) string {
+func extractSyncContent(wu *workunit.WorkUnit) string {
 	var content strings.Builder
 
 	if wu.Title != "" {
