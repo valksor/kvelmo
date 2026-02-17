@@ -9,7 +9,12 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/pullrequest"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the canonical name for this provider.
@@ -40,32 +45,32 @@ func Info() provider.ProviderInfo {
 		Name:        ProviderName,
 		Description: "Load work items from Azure DevOps",
 		Schemes:     []string{"azdo", "azure"},
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapCreatePR:           true,
-			provider.CapLinkBranch:         true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapFetchPR:            true,
-			provider.CapPRComment:          true,
-			provider.CapFetchPRComments:    true,
-			provider.CapUpdatePRComment:    true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapCreatePR:           true,
+			capability.CapLinkBranch:         true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapFetchPR:            true,
+			capability.CapPRComment:          true,
+			capability.CapFetchPRComments:    true,
+			capability.CapUpdatePRComment:    true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a new Azure DevOps provider instance.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	config := &Config{
 		Token:         cfg.GetString("token"),
 		Organization:  cfg.GetString("organization"),
@@ -128,7 +133,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch retrieves a work item by its ID.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -149,7 +154,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot creates a snapshot of the work item's current state.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -169,7 +174,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Build markdown content
 	content := buildSnapshotContent(workItem)
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    ProviderName,
 		Ref:     fmt.Sprintf("azdo:%d", workItem.ID),
 		Content: content,
@@ -177,7 +182,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 }
 
 // List retrieves work items based on filter criteria.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	// Build WIQL query
 	wiql := buildWIQLQuery(p.config, opts)
 
@@ -200,7 +205,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, fmt.Errorf("get work items: %w", err)
 	}
 
-	var units []*provider.WorkUnit
+	var units []*workunit.WorkUnit
 	for _, wi := range workItems {
 		units = append(units, p.workItemToWorkUnit(&wi))
 	}
@@ -209,7 +214,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments for a work item.
-func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, id string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -220,18 +225,18 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Com
 		return nil, fmt.Errorf("fetch comments for %d: %w", ref.WorkItemID, err)
 	}
 
-	var result []provider.Comment
+	var result []workunit.Comment
 	for _, comment := range comments {
-		author := provider.Person{}
+		author := workunit.Person{}
 		if comment.CreatedBy != nil {
-			author = provider.Person{
+			author = workunit.Person{
 				ID:    comment.CreatedBy.ID,
 				Name:  comment.CreatedBy.DisplayName,
 				Email: comment.CreatedBy.UniqueName,
 			}
 		}
 
-		result = append(result, provider.Comment{
+		result = append(result, workunit.Comment{
 			ID:        strconv.Itoa(comment.ID),
 			Author:    author,
 			Body:      comment.Text,
@@ -243,7 +248,7 @@ func (p *Provider) FetchComments(ctx context.Context, id string) ([]provider.Com
 }
 
 // AddComment adds a comment to a work item.
-func (p *Provider) AddComment(ctx context.Context, id string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, id string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, fmt.Errorf("parse reference: %w", err)
@@ -254,16 +259,16 @@ func (p *Provider) AddComment(ctx context.Context, id string, body string) (*pro
 		return nil, fmt.Errorf("add comment to %d: %w", ref.WorkItemID, err)
 	}
 
-	author := provider.Person{}
+	author := workunit.Person{}
 	if comment.CreatedBy != nil {
-		author = provider.Person{
+		author = workunit.Person{
 			ID:    comment.CreatedBy.ID,
 			Name:  comment.CreatedBy.DisplayName,
 			Email: comment.CreatedBy.UniqueName,
 		}
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.Itoa(comment.ID),
 		Author:    author,
 		Body:      comment.Text,
@@ -272,7 +277,7 @@ func (p *Provider) AddComment(ctx context.Context, id string, body string) (*pro
 }
 
 // UpdateStatus updates the work item state.
-func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, id string, status workunit.Status) error {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return fmt.Errorf("parse reference: %w", err)
@@ -294,7 +299,7 @@ func (p *Provider) UpdateStatus(ctx context.Context, id string, status provider.
 
 // CreatePullRequest creates a pull request.
 // Work items can be linked automatically via AB#123 syntax in title/body.
-func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequestOptions) (*provider.PullRequest, error) {
+func (p *Provider) CreatePullRequest(ctx context.Context, opts pullrequest.PullRequestOptions) (*pullrequest.PullRequest, error) {
 	repoName := p.config.RepoName
 	if repoName == "" {
 		// Try to find default repository
@@ -336,7 +341,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequ
 	prURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_git/%s/pullrequest/%d",
 		p.config.Organization, p.config.Project, repoName, pr.PullRequestID)
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:    strconv.Itoa(pr.PullRequestID),
 		URL:   prURL,
 		Title: pr.Title,
@@ -376,8 +381,8 @@ func (p *Provider) LinkBranch(ctx context.Context, id string, branch string) err
 
 // --- Helper functions ---
 
-func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
-	unit := &provider.WorkUnit{
+func (p *Provider) workItemToWorkUnit(wi *WorkItem) *workunit.WorkUnit {
+	unit := &workunit.WorkUnit{
 		ID:          strconv.Itoa(wi.ID),
 		ExternalID:  strconv.Itoa(wi.ID),
 		ExternalKey: strconv.Itoa(wi.ID),
@@ -390,7 +395,7 @@ func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
 		Labels:      parseTags(wi.Fields.Tags),
 		CreatedAt:   parseAzureTime(wi.Fields.CreatedDate),
 		UpdatedAt:   parseAzureTime(wi.Fields.ChangedDate),
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: fmt.Sprintf("azdo:%d", wi.ID),
 			SyncedAt:  time.Now(),
@@ -407,7 +412,7 @@ func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
 
 	// Set assignee
 	if wi.Fields.AssignedTo != nil {
-		unit.Assignees = []provider.Person{
+		unit.Assignees = []workunit.Person{
 			{
 				ID:    wi.Fields.AssignedTo.ID,
 				Name:  wi.Fields.AssignedTo.DisplayName,
@@ -434,49 +439,49 @@ func (p *Provider) workItemToWorkUnit(wi *WorkItem) *provider.WorkUnit {
 	return unit
 }
 
-func mapAzureState(state string) provider.Status {
+func mapAzureState(state string) workunit.Status {
 	stateLower := strings.ToLower(state)
 	switch {
 	case strings.Contains(stateLower, "done") || strings.Contains(stateLower, "closed") || strings.Contains(stateLower, "resolved"):
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	case strings.Contains(stateLower, "active") || strings.Contains(stateLower, "committed") || strings.Contains(stateLower, "in progress"):
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case strings.Contains(stateLower, "review") || strings.Contains(stateLower, "pr"):
-		return provider.StatusReview
+		return workunit.StatusReview
 	case strings.Contains(stateLower, "new") || strings.Contains(stateLower, "to do") || strings.Contains(stateLower, "proposed"):
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 
-	return provider.StatusOpen
+	return workunit.StatusOpen
 }
 
-func mapToAzureState(status provider.Status) string {
+func mapToAzureState(status workunit.Status) string {
 	switch status {
-	case provider.StatusClosed, provider.StatusDone:
+	case workunit.StatusClosed, workunit.StatusDone:
 		return "Done"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "Active"
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "New"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "Resolved" // Or could use custom state if available
 	default:
 		return ""
 	}
 }
 
-func mapAzurePriority(priority int) provider.Priority {
+func mapAzurePriority(priority int) workunit.Priority {
 	switch priority {
 	case 1:
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case 2:
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case 3:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	case 4:
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
@@ -517,8 +522,8 @@ func parseTags(tags string) []string {
 
 // extractAttachments extracts attachments from work item relations.
 // Azure DevOps stores attachments as relations with rel="AttachedFile".
-func extractAttachments(relations []WorkItemRelation) []provider.Attachment {
-	var attachments []provider.Attachment
+func extractAttachments(relations []WorkItemRelation) []workunit.Attachment {
+	var attachments []workunit.Attachment
 	for _, rel := range relations {
 		if rel.Rel == "AttachedFile" {
 			// Extract filename from attributes if available
@@ -529,7 +534,7 @@ func extractAttachments(relations []WorkItemRelation) []provider.Attachment {
 				}
 			}
 			// Use URL as the attachment ID for DownloadAttachment compatibility
-			attachments = append(attachments, provider.Attachment{
+			attachments = append(attachments, workunit.Attachment{
 				ID:   rel.URL,
 				Name: name,
 				URL:  rel.URL,
@@ -559,7 +564,7 @@ func parseAzureTime(ts string) time.Time {
 	return time.Time{}
 }
 
-func buildWIQLQuery(config *Config, opts provider.ListOptions) string {
+func buildWIQLQuery(config *Config, opts workunit.ListOptions) string {
 	var conditions []string
 
 	// Filter by area path
@@ -574,13 +579,13 @@ func buildWIQLQuery(config *Config, opts provider.ListOptions) string {
 
 	// Filter by status
 	switch opts.Status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		conditions = append(conditions, "[System.State] IN ('New', 'To Do', 'Proposed')")
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		conditions = append(conditions, "[System.State] IN ('Active', 'In Progress', 'Committed')")
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		conditions = append(conditions, "[System.State] IN ('Resolved', 'In Review')")
-	case provider.StatusClosed, provider.StatusDone:
+	case workunit.StatusClosed, workunit.StatusDone:
 		conditions = append(conditions, "[System.State] IN ('Done', 'Closed', 'Removed')")
 	}
 
@@ -676,7 +681,7 @@ func buildSnapshotContent(wi *WorkItem) string {
 }
 
 // GetBranchSuggestion returns a suggested branch name for the work item.
-func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
+func (p *Provider) GetBranchSuggestion(task *workunit.WorkUnit) string {
 	if p.config.BranchPattern == "" {
 		// Default pattern
 		return "ab" + task.ID
@@ -699,7 +704,7 @@ func (p *Provider) GetBranchSuggestion(task *provider.WorkUnit) string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // FetchPullRequest retrieves pull request details.
-func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*pullrequest.PullRequest, error) {
 	pr, err := p.client.GetPullRequest(ctx, number)
 	if err != nil {
 		return nil, err
@@ -713,7 +718,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 	createdAt := parseAzureTime(pr.CreationDate)
 	// We'll use creation date for both if modified date is not available
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:         strconv.Itoa(pr.PullRequestID),
 		URL:        pr.URL,
 		Title:      pr.Title,
@@ -732,7 +737,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 }
 
 // FetchPullRequestDiff retrieves the diff for a pull request.
-func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*pullrequest.PullRequestDiff, error) {
 	// Get PR details first for branch info
 	pr, err := p.client.GetPullRequest(ctx, number)
 	if err != nil {
@@ -749,9 +754,9 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 	}
 
 	// Map files
-	providerFiles := make([]provider.FileDiff, len(diffs))
+	providerFiles := make([]pullrequest.FileDiff, len(diffs))
 	for i, d := range diffs {
-		providerFiles[i] = provider.FileDiff{
+		providerFiles[i] = pullrequest.FileDiff{
 			Path:      d.Path,
 			Mode:      mapAzureChangeType(d.ChangeType),
 			Patch:     d.Patch,
@@ -760,7 +765,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 		}
 	}
 
-	return &provider.PullRequestDiff{
+	return &pullrequest.PullRequestDiff{
 		URL:        pr.URL + "/diff",
 		BaseBranch: targetBranch,
 		HeadBranch: sourceBranch,
@@ -773,7 +778,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 }
 
 // AddPullRequestComment posts a comment to a pull request.
-func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*workunit.Comment, error) {
 	thread, err := p.client.CreatePullRequestThread(ctx, number, body)
 	if err != nil {
 		return nil, err
@@ -785,20 +790,20 @@ func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body s
 	}
 
 	// Return empty comment if no comments returned
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:   thread.ID,
 		Body: body,
 	}, nil
 }
 
 // FetchPullRequestComments retrieves all comments on a pull request.
-func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]workunit.Comment, error) {
 	threads, err := p.client.GetPullRequestThreads(ctx, number)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []provider.Comment
+	var result []workunit.Comment
 	for _, t := range threads {
 		for i := range t.Comments {
 			// Skip system comments
@@ -813,7 +818,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 }
 
 // UpdatePullRequestComment updates an existing comment on a pull request.
-func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*workunit.Comment, error) {
 	// Azure DevOps uses threadID/commentID structure
 	// For simplicity, we'll create a new comment thread
 	// In a full implementation, you'd need to parse the thread ID from the comment ID
@@ -826,7 +831,7 @@ func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, com
 		return mapPRThreadToProviderComment(thread, &thread.Comments[0]), nil
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:   thread.ID,
 		Body: body,
 	}, nil
@@ -837,16 +842,16 @@ func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, com
 // ─────────────────────────────────────────────────────────────────────────────
 
 // mapPRThreadToProviderComment converts an Azure DevOps PR thread comment to a provider Comment.
-func mapPRThreadToProviderComment(_ *PRThread, comment *PRThreadComment) *provider.Comment {
+func mapPRThreadToProviderComment(_ *PRThread, comment *PRThreadComment) *workunit.Comment {
 	author := ""
 	if comment.Author != nil {
 		author = comment.Author.DisplayName
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.Itoa(comment.ID),
 		Body:      comment.Content,
-		Author:    provider.Person{ID: author, Name: author},
+		Author:    workunit.Person{ID: author, Name: author},
 		CreatedAt: parseAzureTime(comment.PublishedDate),
 		UpdatedAt: parseAzureTime(comment.PublishedDate),
 	}

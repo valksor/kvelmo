@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ provider.AttachmentDownloader = (*Provider)(nil)
+	_ workunit.AttachmentDownloader = (*Provider)(nil)
 )
 
 // ──────────────────────────────────────────────────────────────────────────────

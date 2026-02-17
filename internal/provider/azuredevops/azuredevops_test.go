@@ -3,7 +3,10 @@ package azuredevops
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -11,17 +14,17 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 
 var (
-	_ provider.Reader          = (*Provider)(nil)
-	_ provider.Identifier      = (*Provider)(nil)
-	_ provider.Lister          = (*Provider)(nil)
-	_ provider.CommentFetcher  = (*Provider)(nil)
-	_ provider.Commenter       = (*Provider)(nil)
-	_ provider.StatusUpdater   = (*Provider)(nil)
-	_ provider.LabelManager    = (*Provider)(nil)
-	_ provider.Snapshotter     = (*Provider)(nil)
-	_ provider.PRCreator       = (*Provider)(nil)
-	_ provider.WorkUnitCreator = (*Provider)(nil)
-	_ provider.SubtaskFetcher  = (*Provider)(nil)
+	_ workunit.Reader          = (*Provider)(nil)
+	_ workunit.Identifier      = (*Provider)(nil)
+	_ workunit.Lister          = (*Provider)(nil)
+	_ workunit.CommentFetcher  = (*Provider)(nil)
+	_ workunit.Commenter       = (*Provider)(nil)
+	_ workunit.StatusUpdater   = (*Provider)(nil)
+	_ workunit.LabelManager    = (*Provider)(nil)
+	_ snapshot.Snapshotter     = (*Provider)(nil)
+	_ pullrequest.PRCreator    = (*Provider)(nil)
+	_ workunit.WorkUnitCreator = (*Provider)(nil)
+	_ workunit.SubtaskFetcher  = (*Provider)(nil)
 )
 
 func TestParseReference(t *testing.T) {
@@ -164,28 +167,28 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	if !info.Capabilities.Has(provider.CapRead) {
+	if !info.Capabilities.Has(capability.CapRead) {
 		t.Error("Info().Capabilities should have CapRead")
 	}
-	if !info.Capabilities.Has(provider.CapList) {
+	if !info.Capabilities.Has(capability.CapList) {
 		t.Error("Info().Capabilities should have CapList")
 	}
-	if !info.Capabilities.Has(provider.CapFetchComments) {
+	if !info.Capabilities.Has(capability.CapFetchComments) {
 		t.Error("Info().Capabilities should have CapFetchComments")
 	}
-	if !info.Capabilities.Has(provider.CapComment) {
+	if !info.Capabilities.Has(capability.CapComment) {
 		t.Error("Info().Capabilities should have CapComment")
 	}
-	if !info.Capabilities.Has(provider.CapUpdateStatus) {
+	if !info.Capabilities.Has(capability.CapUpdateStatus) {
 		t.Error("Info().Capabilities should have CapUpdateStatus")
 	}
-	if !info.Capabilities.Has(provider.CapSnapshot) {
+	if !info.Capabilities.Has(capability.CapSnapshot) {
 		t.Error("Info().Capabilities should have CapSnapshot")
 	}
-	if !info.Capabilities.Has(provider.CapCreatePR) {
+	if !info.Capabilities.Has(capability.CapCreatePR) {
 		t.Error("Info().Capabilities should have CapCreatePR")
 	}
-	if !info.Capabilities.Has(provider.CapLinkBranch) {
+	if !info.Capabilities.Has(capability.CapLinkBranch) {
 		t.Error("Info().Capabilities should have CapLinkBranch")
 	}
 }
@@ -194,52 +197,52 @@ func TestMapAzureState(t *testing.T) {
 	tests := []struct {
 		name  string
 		state string
-		want  provider.Status
+		want  workunit.Status
 	}{
 		{
 			name:  "New state",
 			state: "New",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "To Do state",
 			state: "To Do",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "Active state",
 			state: "Active",
-			want:  provider.StatusInProgress,
+			want:  workunit.StatusInProgress,
 		},
 		{
 			name:  "In Progress state",
 			state: "In Progress",
-			want:  provider.StatusInProgress,
+			want:  workunit.StatusInProgress,
 		},
 		{
 			name:  "Resolved state",
 			state: "Resolved",
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "Done state",
 			state: "Done",
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "Closed state",
 			state: "Closed",
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "In Review state",
 			state: "In Review",
-			want:  provider.StatusReview,
+			want:  workunit.StatusReview,
 		},
 		{
 			name:  "Unknown state",
 			state: "Something Else",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 	}
 
@@ -257,32 +260,32 @@ func TestMapAzurePriority(t *testing.T) {
 	tests := []struct {
 		name     string
 		priority int
-		want     provider.Priority
+		want     workunit.Priority
 	}{
 		{
 			name:     "priority 1 (critical)",
 			priority: 1,
-			want:     provider.PriorityCritical,
+			want:     workunit.PriorityCritical,
 		},
 		{
 			name:     "priority 2 (high)",
 			priority: 2,
-			want:     provider.PriorityHigh,
+			want:     workunit.PriorityHigh,
 		},
 		{
 			name:     "priority 3 (normal)",
 			priority: 3,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 		{
 			name:     "priority 4 (low)",
 			priority: 4,
-			want:     provider.PriorityLow,
+			want:     workunit.PriorityLow,
 		},
 		{
 			name:     "priority 0 (default)",
 			priority: 0,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 	}
 
@@ -650,15 +653,15 @@ func TestProviderParse(t *testing.T) {
 
 func TestMapToAzureState(t *testing.T) {
 	tests := []struct {
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
-		{provider.StatusOpen, "New"},
-		{provider.StatusInProgress, "Active"},
-		{provider.StatusReview, "Resolved"},
-		{provider.StatusDone, "Done"},
-		{provider.StatusClosed, "Done"},
-		{provider.Status("unknown"), ""},
+		{workunit.StatusOpen, "New"},
+		{workunit.StatusInProgress, "Active"},
+		{workunit.StatusReview, "Resolved"},
+		{workunit.StatusDone, "Done"},
+		{workunit.StatusClosed, "Done"},
+		{workunit.Status("unknown"), ""},
 	}
 
 	for _, tt := range tests {
@@ -698,13 +701,13 @@ func TestBuildWIQLQuery(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *Config
-		opts   provider.ListOptions
+		opts   workunit.ListOptions
 		want   string
 	}{
 		{
 			name:   "no filters",
 			config: &Config{},
-			opts:   provider.ListOptions{},
+			opts:   workunit.ListOptions{},
 			want:   "SELECT [System.Id] FROM WorkItems ORDER BY [System.ChangedDate] DESC",
 		},
 		{
@@ -712,7 +715,7 @@ func TestBuildWIQLQuery(t *testing.T) {
 			config: &Config{
 				AreaPath: "MyProject",
 			},
-			opts: provider.ListOptions{},
+			opts: workunit.ListOptions{},
 			want: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' ORDER BY [System.ChangedDate] DESC",
 		},
 		{
@@ -720,37 +723,37 @@ func TestBuildWIQLQuery(t *testing.T) {
 			config: &Config{
 				IterationPath: "MyProject\\Sprint 1",
 			},
-			opts: provider.ListOptions{},
+			opts: workunit.ListOptions{},
 			want: "SELECT [System.Id] FROM WorkItems WHERE [System.IterationPath] UNDER 'MyProject\\Sprint 1' ORDER BY [System.ChangedDate] DESC",
 		},
 		{
 			name:   "status open filter",
 			config: &Config{},
-			opts:   provider.ListOptions{Status: provider.StatusOpen},
+			opts:   workunit.ListOptions{Status: workunit.StatusOpen},
 			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('New', 'To Do', 'Proposed') ORDER BY [System.ChangedDate] DESC",
 		},
 		{
 			name:   "status in progress filter",
 			config: &Config{},
-			opts:   provider.ListOptions{Status: provider.StatusInProgress},
+			opts:   workunit.ListOptions{Status: workunit.StatusInProgress},
 			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Active', 'In Progress', 'Committed') ORDER BY [System.ChangedDate] DESC",
 		},
 		{
 			name:   "status review filter",
 			config: &Config{},
-			opts:   provider.ListOptions{Status: provider.StatusReview},
+			opts:   workunit.ListOptions{Status: workunit.StatusReview},
 			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Resolved', 'In Review') ORDER BY [System.ChangedDate] DESC",
 		},
 		{
 			name:   "status closed filter",
 			config: &Config{},
-			opts:   provider.ListOptions{Status: provider.StatusClosed},
+			opts:   workunit.ListOptions{Status: workunit.StatusClosed},
 			want:   "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Done', 'Closed', 'Removed') ORDER BY [System.ChangedDate] DESC",
 		},
 		{
 			name:   "labels filter",
 			config: &Config{},
-			opts: provider.ListOptions{
+			opts: workunit.ListOptions{
 				Labels: []string{"bug", "urgent"},
 			},
 			want: "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'bug' AND [System.Tags] CONTAINS 'urgent' ORDER BY [System.ChangedDate] DESC",
@@ -761,8 +764,8 @@ func TestBuildWIQLQuery(t *testing.T) {
 				AreaPath:      "MyProject",
 				IterationPath: "MyProject\\Sprint 1",
 			},
-			opts: provider.ListOptions{
-				Status: provider.StatusOpen,
+			opts: workunit.ListOptions{
+				Status: workunit.StatusOpen,
 				Labels: []string{"bug"},
 			},
 			want: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.IterationPath] UNDER 'MyProject\\Sprint 1' AND [System.State] IN ('New', 'To Do', 'Proposed') AND [System.Tags] CONTAINS 'bug' ORDER BY [System.ChangedDate] DESC",
@@ -849,7 +852,7 @@ func TestExtractAttachments(t *testing.T) {
 	tests := []struct {
 		name string
 		rels []WorkItemRelation
-		want []provider.Attachment
+		want []workunit.Attachment
 	}{
 		{
 			name: "no attachments",
@@ -867,7 +870,7 @@ func TestExtractAttachments(t *testing.T) {
 					},
 				},
 			},
-			want: []provider.Attachment{
+			want: []workunit.Attachment{
 				{
 					ID:   "https://example.com/file.txt",
 					URL:  "https://example.com/file.txt",
@@ -893,7 +896,7 @@ func TestExtractAttachments(t *testing.T) {
 					},
 				},
 			},
-			want: []provider.Attachment{
+			want: []workunit.Attachment{
 				{
 					ID:   "https://example.com/file1.txt",
 					URL:  "https://example.com/file1.txt",
@@ -921,7 +924,7 @@ func TestExtractAttachments(t *testing.T) {
 					URL: "https://example.com/link/123",
 				},
 			},
-			want: []provider.Attachment{
+			want: []workunit.Attachment{
 				{
 					ID:   "https://example.com/file.txt",
 					URL:  "https://example.com/file.txt",
@@ -956,7 +959,7 @@ func TestWorkItemToWorkUnit(t *testing.T) {
 	tests := []struct {
 		name string
 		wi   *WorkItem
-		want provider.WorkUnit
+		want workunit.WorkUnit
 	}{
 		{
 			name: "basic work item",
@@ -968,10 +971,10 @@ func TestWorkItemToWorkUnit(t *testing.T) {
 				},
 				URL: "https://dev.azure.com/testorg/testproj/_workitems/edit/123",
 			},
-			want: provider.WorkUnit{
+			want: workunit.WorkUnit{
 				ID:          "123",
 				Title:       "Test Bug",
-				Status:      provider.StatusInProgress,
+				Status:      workunit.StatusInProgress,
 				TaskType:    "task",
 				Description: "",
 			},
@@ -990,12 +993,12 @@ func TestWorkItemToWorkUnit(t *testing.T) {
 				},
 				URL: "https://dev.azure.com/org/proj/_workitems/edit/456",
 			},
-			want: provider.WorkUnit{
+			want: workunit.WorkUnit{
 				ID:          "456",
 				Title:       "Fix bug",
-				Status:      provider.StatusOpen,
+				Status:      workunit.StatusOpen,
 				TaskType:    "fix",
-				Priority:    provider.PriorityCritical,
+				Priority:    workunit.PriorityCritical,
 				Labels:      []string{"urgent", "bug"},
 				Description: "Fix this bug",
 			},
