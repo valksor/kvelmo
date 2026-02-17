@@ -3,7 +3,7 @@ package plugin
 import (
 	"time"
 
-	"github.com/valksor/go-toolkit/jsonrpc"
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 )
 
 // Standard JSON-RPC error codes.

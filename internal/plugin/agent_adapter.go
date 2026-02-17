@@ -8,8 +8,8 @@ import (
 	"maps"
 	"time"
 
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 // AgentAdapter wraps a plugin process to implement the agent.Agent interface.

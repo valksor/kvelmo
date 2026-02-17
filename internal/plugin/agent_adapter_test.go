@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 	"github.com/valksor/go-mehrhof/internal/agent"
-	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 func TestNewAgentAdapter(t *testing.T) {

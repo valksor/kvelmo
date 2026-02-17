@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/valksor/go-toolkit/jsonrpc"
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ func TestNewRequest(t *testing.T) {
 		name     string
 		method   string
 		wantJSON string
-		id       int64
+		id       int
 	}{
 		{
 			name:   "basic request with params",
@@ -120,17 +120,17 @@ func TestRPCError_Error(t *testing.T) {
 		{
 			name:    "simple error message",
 			err:     &jsonrpc.RPCError{Code: ErrCodeInternalError, Message: "internal error"},
-			wantMsg: "internal error",
+			wantMsg: "JSON-RPC error -32603: internal error",
 		},
 		{
 			name:    "error with data",
 			err:     &jsonrpc.RPCError{Code: ErrCodePluginError, Message: "plugin failed", Data: map[string]string{"detail": "test"}},
-			wantMsg: "plugin failed",
+			wantMsg: "JSON-RPC error -32000: plugin failed",
 		},
 		{
 			name:    "empty message",
 			err:     &jsonrpc.RPCError{Code: ErrCodeParseError, Message: ""},
-			wantMsg: "",
+			wantMsg: "JSON-RPC error -32700: ",
 		},
 	}
 

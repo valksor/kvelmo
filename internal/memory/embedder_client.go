@@ -16,8 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 	"github.com/valksor/go-mehrhof/internal/storage"
-	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 const (
