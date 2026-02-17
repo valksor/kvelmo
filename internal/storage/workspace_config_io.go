@@ -533,11 +533,6 @@ func expandEnvInGitHubSettings(cfg *GitHubSettings) *GitHubSettings {
 	return expandEnvInStruct(cfg)
 }
 
-// expandEnvInWrikeSettings expands env vars in Wrike config.
-func expandEnvInWrikeSettings(cfg *WrikeSettings) *WrikeSettings {
-	return expandEnvInStruct(cfg)
-}
-
 // expandEnvInGitLabSettings expands env vars in GitLab config.
 func expandEnvInGitLabSettings(cfg *GitLabSettings) *GitLabSettings {
 	return expandEnvInStruct(cfg)
@@ -630,7 +625,6 @@ func (w *Workspace) LoadConfig() (*WorkspaceConfig, error) {
 	cfg.Notion = expandEnvInNotionSettings(cfg.Notion)
 	cfg.Jira = expandEnvInJiraSettings(cfg.Jira)
 	cfg.Linear = expandEnvInLinearSettings(cfg.Linear)
-	cfg.Wrike = expandEnvInWrikeSettings(cfg.Wrike)
 	cfg.YouTrack = expandEnvInYouTrackSettings(cfg.YouTrack)
 	cfg.Bitbucket = expandEnvInBitbucketSettings(cfg.Bitbucket)
 	cfg.Asana = expandEnvInAsanaSettings(cfg.Asana)

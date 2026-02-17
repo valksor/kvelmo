@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderAdapter wraps a plugin process to implement provider interfaces.
@@ -81,7 +84,7 @@ func (a *ProviderAdapter) Parse(input string) (string, error) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Fetch retrieves a work unit by ID.
-func (a *ProviderAdapter) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (a *ProviderAdapter) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	result, err := a.proc.Call(ctx, "provider.fetch", &FetchParams{ID: id})
 	if err != nil {
 		return nil, fmt.Errorf("fetch work unit: %w", err)
@@ -100,7 +103,7 @@ func (a *ProviderAdapter) Fetch(ctx context.Context, id string) (*provider.WorkU
 // ─────────────────────────────────────────────────────────────────────────────
 
 // List enumerates work units.
-func (a *ProviderAdapter) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (a *ProviderAdapter) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	if !a.manifest.HasCapability("list") {
 		return nil, errors.New("plugin does not support listing")
 	}
@@ -122,7 +125,7 @@ func (a *ProviderAdapter) List(ctx context.Context, opts provider.ListOptions) (
 		return nil, fmt.Errorf("parse work units: %w", err)
 	}
 
-	workUnits := make([]*provider.WorkUnit, len(resp))
+	workUnits := make([]*workunit.WorkUnit, len(resp))
 	for i, wu := range resp {
 		workUnits[i] = convertWorkUnit(&wu)
 	}
@@ -131,7 +134,7 @@ func (a *ProviderAdapter) List(ctx context.Context, opts provider.ListOptions) (
 }
 
 // AddComment adds a comment to a work unit.
-func (a *ProviderAdapter) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (a *ProviderAdapter) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	if !a.manifest.HasCapability("comment") {
 		return nil, errors.New("plugin does not support commenting")
 	}
@@ -149,10 +152,10 @@ func (a *ProviderAdapter) AddComment(ctx context.Context, workUnitID string, bod
 		return nil, fmt.Errorf("parse comment: %w", err)
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:   resp.ID,
 		Body: resp.Body,
-		Author: provider.Person{
+		Author: workunit.Person{
 			ID:    resp.Author.ID,
 			Name:  resp.Author.Name,
 			Email: resp.Author.Email,
@@ -162,7 +165,7 @@ func (a *ProviderAdapter) AddComment(ctx context.Context, workUnitID string, bod
 }
 
 // UpdateStatus changes a work unit's status.
-func (a *ProviderAdapter) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (a *ProviderAdapter) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	if !a.manifest.HasCapability("update_status") {
 		return errors.New("plugin does not support status updates")
 	}
@@ -176,7 +179,7 @@ func (a *ProviderAdapter) UpdateStatus(ctx context.Context, workUnitID string, s
 }
 
 // CreatePullRequest creates a pull request.
-func (a *ProviderAdapter) CreatePullRequest(ctx context.Context, opts provider.PullRequestOptions) (*provider.PullRequest, error) {
+func (a *ProviderAdapter) CreatePullRequest(ctx context.Context, opts pullrequest.PullRequestOptions) (*pullrequest.PullRequest, error) {
 	if !a.manifest.HasCapability("create_pr") {
 		return nil, errors.New("plugin does not support PR creation")
 	}
@@ -197,7 +200,7 @@ func (a *ProviderAdapter) CreatePullRequest(ctx context.Context, opts provider.P
 		return nil, fmt.Errorf("parse PR: %w", err)
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:     resp.ID,
 		Number: resp.Number,
 		URL:    resp.URL,
@@ -206,7 +209,7 @@ func (a *ProviderAdapter) CreatePullRequest(ctx context.Context, opts provider.P
 }
 
 // Snapshot captures source content.
-func (a *ProviderAdapter) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (a *ProviderAdapter) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	if !a.manifest.HasCapability("snapshot") {
 		return nil, errors.New("plugin does not support snapshots")
 	}
@@ -221,14 +224,14 @@ func (a *ProviderAdapter) Snapshot(ctx context.Context, id string) (*provider.Sn
 		return nil, fmt.Errorf("parse snapshot: %w", err)
 	}
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Content: resp.Content,
 		Ref:     id,
 	}, nil
 }
 
 // FetchComments retrieves comments for a work unit.
-func (a *ProviderAdapter) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (a *ProviderAdapter) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	if !a.manifest.HasCapability("fetch_comments") {
 		return nil, errors.New("plugin does not support fetching comments")
 	}
@@ -243,12 +246,12 @@ func (a *ProviderAdapter) FetchComments(ctx context.Context, workUnitID string) 
 		return nil, fmt.Errorf("parse comments: %w", err)
 	}
 
-	comments := make([]provider.Comment, len(resp))
+	comments := make([]workunit.Comment, len(resp))
 	for i, c := range resp {
-		comments[i] = provider.Comment{
+		comments[i] = workunit.Comment{
 			ID:   c.ID,
 			Body: c.Body,
-			Author: provider.Person{
+			Author: workunit.Person{
 				ID:    c.Author.ID,
 				Name:  c.Author.Name,
 				Email: c.Author.Email,
@@ -367,25 +370,25 @@ func (a *ProviderAdapter) DownloadAttachment(ctx context.Context, workUnitID, at
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Capabilities returns the provider's capability set.
-func (a *ProviderAdapter) Capabilities() provider.CapabilitySet {
-	caps := make(provider.CapabilitySet)
+func (a *ProviderAdapter) Capabilities() capability.CapabilitySet {
+	caps := make(capability.CapabilitySet)
 
-	capMap := map[string]provider.Capability{
-		"read":                provider.CapRead,
-		"list":                provider.CapList,
-		"download_attachment": provider.CapDownloadAttachment,
-		"fetch_comments":      provider.CapFetchComments,
-		"comment":             provider.CapComment,
-		"update_status":       provider.CapUpdateStatus,
-		"manage_labels":       provider.CapManageLabels,
-		"snapshot":            provider.CapSnapshot,
-		"create_pr":           provider.CapCreatePR,
-		"link_branch":         provider.CapLinkBranch,
-		"create_work_unit":    provider.CapCreateWorkUnit,
+	capMap := map[string]capability.Capability{
+		"read":                capability.CapRead,
+		"list":                capability.CapList,
+		"download_attachment": capability.CapDownloadAttachment,
+		"fetch_comments":      capability.CapFetchComments,
+		"comment":             capability.CapComment,
+		"update_status":       capability.CapUpdateStatus,
+		"manage_labels":       capability.CapManageLabels,
+		"snapshot":            capability.CapSnapshot,
+		"create_pr":           capability.CapCreatePR,
+		"link_branch":         capability.CapLinkBranch,
+		"create_work_unit":    capability.CapCreateWorkUnit,
 	}
 
 	// Always has read capability (required for providers)
-	caps[provider.CapRead] = true
+	caps[capability.CapRead] = true
 
 	for _, c := range a.manifest.Provider.Capabilities {
 		if mappedCap, ok := capMap[c]; ok {
@@ -400,15 +403,15 @@ func (a *ProviderAdapter) Capabilities() provider.CapabilitySet {
 // Conversion helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-func convertWorkUnit(r *WorkUnitResult) *provider.WorkUnit {
-	wu := &provider.WorkUnit{
+func convertWorkUnit(r *WorkUnitResult) *workunit.WorkUnit {
+	wu := &workunit.WorkUnit{
 		ID:          r.ID,
 		ExternalID:  r.ExternalID,
 		Provider:    r.Provider,
 		Title:       r.Title,
 		Description: r.Description,
-		Status:      provider.Status(r.Status),
-		Priority:    provider.Priority(r.Priority),
+		Status:      workunit.Status(r.Status),
+		Priority:    workunit.Priority(r.Priority),
 		Labels:      r.Labels,
 		Subtasks:    r.Subtasks,
 		ExternalKey: r.ExternalKey,
@@ -421,15 +424,15 @@ func convertWorkUnit(r *WorkUnitResult) *provider.WorkUnit {
 
 	// Convert source info
 	if r.Source.Reference != "" {
-		wu.Source = provider.SourceInfo{
+		wu.Source = workunit.SourceInfo{
 			Reference: r.Source.Reference,
 		}
 	}
 
 	// Convert assignees
-	wu.Assignees = make([]provider.Person, len(r.Assignees))
+	wu.Assignees = make([]workunit.Person, len(r.Assignees))
 	for i, p := range r.Assignees {
-		wu.Assignees[i] = provider.Person{
+		wu.Assignees[i] = workunit.Person{
 			ID:    p.ID,
 			Name:  p.Name,
 			Email: p.Email,
@@ -437,12 +440,12 @@ func convertWorkUnit(r *WorkUnitResult) *provider.WorkUnit {
 	}
 
 	// Convert comments
-	wu.Comments = make([]provider.Comment, len(r.Comments))
+	wu.Comments = make([]workunit.Comment, len(r.Comments))
 	for i, c := range r.Comments {
-		wu.Comments[i] = provider.Comment{
+		wu.Comments[i] = workunit.Comment{
 			ID:   c.ID,
 			Body: c.Body,
-			Author: provider.Person{
+			Author: workunit.Person{
 				ID:    c.Author.ID,
 				Name:  c.Author.Name,
 				Email: c.Author.Email,
@@ -452,9 +455,9 @@ func convertWorkUnit(r *WorkUnitResult) *provider.WorkUnit {
 	}
 
 	// Convert attachments
-	wu.Attachments = make([]provider.Attachment, len(r.Attachments))
+	wu.Attachments = make([]workunit.Attachment, len(r.Attachments))
 	for i, a := range r.Attachments {
-		wu.Attachments[i] = provider.Attachment{
+		wu.Attachments[i] = workunit.Attachment{
 			ID:          a.ID,
 			Name:        a.Name,
 			URL:         a.URL,
