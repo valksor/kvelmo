@@ -5,8 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/crealfy/crea-wrike/wrike"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // parseScheme extracts the provider scheme from a reference (e.g., "github:123" -> "github").
@@ -19,14 +20,14 @@ func parseScheme(reference string) string {
 	return ""
 }
 
-// buildProviderConfig creates a provider.Config from workspace configuration.
-// It extracts provider-specific settings and makes them available via provider.Config methods.
-func buildProviderConfig(workspaceCfg *storage.WorkspaceConfig, providerName string) provider.Config {
+// buildProviderConfig creates a providerconfig.Config from workspace configuration.
+// It extracts provider-specific settings and makes them available via providerconfig.Config methods.
+func buildProviderConfig(ctx context.Context, workspaceCfg *storage.WorkspaceConfig, providerName string) providerconfig.Config {
 	if workspaceCfg == nil || providerName == "" {
-		return provider.NewConfig()
+		return providerconfig.NewConfig()
 	}
 
-	cfg := provider.NewConfig()
+	cfg := providerconfig.NewConfig()
 
 	switch strings.ToLower(providerName) {
 	case "github", "gh":
@@ -57,12 +58,14 @@ func buildProviderConfig(workspaceCfg *storage.WorkspaceConfig, providerName str
 		}
 
 	case "wrike":
-		if workspaceCfg.Wrike != nil {
-			cfg.Set("token", workspaceCfg.Wrike.Token)
-			cfg.Set("host", workspaceCfg.Wrike.Host)
-			cfg.Set("space_id", workspaceCfg.Wrike.Space)
-			cfg.Set("folder_id", workspaceCfg.Wrike.Folder)
-			cfg.Set("project_id", workspaceCfg.Wrike.Project)
+		// Wrike config is managed by crea-wrike in .crealfy/wrike.yaml
+		wrikeMgr := wrike.NewConfigManager()
+		if wrikeCfg, err := wrikeMgr.Read(ctx); err == nil {
+			cfg.Set("token", wrikeCfg.GetString("token"))
+			cfg.Set("host", wrikeCfg.GetString("host"))
+			cfg.Set("space_id", wrikeCfg.GetString("space_id"))
+			cfg.Set("folder_id", wrikeCfg.GetString("folder_id"))
+			cfg.Set("project_id", wrikeCfg.GetString("project_id"))
 		}
 
 	case "notion", "nt":

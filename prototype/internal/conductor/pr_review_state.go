@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -247,7 +249,7 @@ func ExtractStateFromComment(commentBody string) (*PRReviewState, error) {
 // FindOurPreviousComment looks for our bot's previous comment with embedded state.
 // Returns the comment and its extracted state.
 // Optionally validates comment author if botUsername is provided.
-func FindOurPreviousComment(comments []provider.Comment, botUsername string) (*provider.Comment, *PRReviewState, error) {
+func FindOurPreviousComment(comments []workunit.Comment, botUsername string) (*workunit.Comment, *PRReviewState, error) {
 	// Look for comments that contain our state marker
 	for i := range comments {
 		comment := &comments[i]
@@ -356,7 +358,7 @@ func ComputeReviewDelta(prevState *PRReviewState, current *ParsedReview) ReviewD
 }
 
 // BuildPRReviewState creates a new PRReviewState from PR info and review.
-func BuildPRReviewState(pr *provider.PullRequest, diff *provider.PullRequestDiff, review *ParsedReview) *PRReviewState {
+func BuildPRReviewState(pr *pullrequest.PullRequest, diff *pullrequest.PullRequestDiff, review *ParsedReview) *PRReviewState {
 	state := &PRReviewState{
 		Version:      currentStateVersion,
 		Provider:     detectProviderFromPR(pr),
@@ -395,7 +397,7 @@ func BuildPRReviewState(pr *provider.PullRequest, diff *provider.PullRequestDiff
 
 // detectProviderFromPR detects the provider from a PR struct.
 // This is used when the provider might not be explicitly passed.
-func detectProviderFromPR(pr *provider.PullRequest) string {
+func detectProviderFromPR(pr *pullrequest.PullRequest) string {
 	if pr == nil {
 		return ""
 	}

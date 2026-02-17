@@ -6,17 +6,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // mockParentFetcher is a mock provider that implements ParentFetcher.
 type mockParentFetcher struct {
-	parent *provider.WorkUnit
+	parent *workunit.WorkUnit
 	err    error
 }
 
-func (m *mockParentFetcher) FetchParent(ctx context.Context, workUnitID string) (*provider.WorkUnit, error) {
+func (m *mockParentFetcher) FetchParent(ctx context.Context, workUnitID string) (*workunit.WorkUnit, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -26,11 +25,11 @@ func (m *mockParentFetcher) FetchParent(ctx context.Context, workUnitID string) 
 
 // mockSubtaskFetcher is a mock provider that implements SubtaskFetcher.
 type mockSubtaskFetcher struct {
-	subtasks []*provider.WorkUnit
+	subtasks []*workunit.WorkUnit
 	err      error
 }
 
-func (m *mockSubtaskFetcher) FetchSubtasks(ctx context.Context, parentID string) ([]*provider.WorkUnit, error) {
+func (m *mockSubtaskFetcher) FetchSubtasks(ctx context.Context, parentID string) ([]*workunit.WorkUnit, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -48,7 +47,7 @@ func TestFetchHierarchicalContext_NotASubtask(t *testing.T) {
 	c := &Conductor{}
 
 	// Create a work unit that is NOT a subtask
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "task-123",
 		Title: "Regular Task",
 		Metadata: map[string]any{
@@ -66,7 +65,7 @@ func TestFetchHierarchicalContext_NoParentFetcher(t *testing.T) {
 	c := &Conductor{}
 
 	// Create a subtask work unit
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-123",
 		Title: "Subtask",
 		Metadata: map[string]any{
@@ -88,7 +87,7 @@ func TestFetchHierarchicalContext_WithParent(t *testing.T) {
 	c := &Conductor{}
 
 	// Create a subtask work unit
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-123",
 		Title: "Subtask",
 		Metadata: map[string]any{
@@ -98,7 +97,7 @@ func TestFetchHierarchicalContext_WithParent(t *testing.T) {
 	}
 
 	// Create a mock parent fetcher
-	parentWorkUnit := &provider.WorkUnit{
+	parentWorkUnit := &workunit.WorkUnit{
 		ID:          "parent-123",
 		Title:       "Parent Task",
 		Description: "This is the parent task description",
@@ -125,7 +124,7 @@ func TestFetchHierarchicalContext_WithParentAndSiblings(t *testing.T) {
 	c := &Conductor{}
 
 	// Create a subtask work unit
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-2",
 		Title: "Subtask 2",
 		Metadata: map[string]any{
@@ -135,13 +134,13 @@ func TestFetchHierarchicalContext_WithParentAndSiblings(t *testing.T) {
 	}
 
 	// Create mock siblings (including the current task)
-	siblings := []*provider.WorkUnit{
+	siblings := []*workunit.WorkUnit{
 		{ID: "subtask-1", Title: "Subtask 1", Metadata: map[string]any{"state": "done"}},
 		{ID: "subtask-2", Title: "Subtask 2", Metadata: map[string]any{"state": "in_progress"}}, // Current task
 		{ID: "subtask-3", Title: "Subtask 3", Metadata: map[string]any{"state": "todo"}},
 	}
 
-	parentWorkUnit := &provider.WorkUnit{
+	parentWorkUnit := &workunit.WorkUnit{
 		ID:          "parent-123",
 		Title:       "Parent Task",
 		Description: "Parent description",
@@ -168,7 +167,7 @@ func TestFetchHierarchicalContext_WithParentAndSiblings(t *testing.T) {
 func TestFetchHierarchicalContext_ParentFetchError(t *testing.T) {
 	c := &Conductor{}
 
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-123",
 		Title: "Subtask",
 		Metadata: map[string]any{
@@ -190,7 +189,7 @@ func TestFetchHierarchicalContext_ParentFetchError(t *testing.T) {
 func TestFetchHierarchicalContext_SubtaskFetchError(t *testing.T) {
 	c := &Conductor{}
 
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-123",
 		Title: "Subtask",
 		Metadata: map[string]any{
@@ -199,7 +198,7 @@ func TestFetchHierarchicalContext_SubtaskFetchError(t *testing.T) {
 		},
 	}
 
-	parentWorkUnit := &provider.WorkUnit{
+	parentWorkUnit := &workunit.WorkUnit{
 		ID:    "parent-123",
 		Title: "Parent Task",
 	}
@@ -224,13 +223,13 @@ func TestBuildHierarchyMetadata_NilHierarchy(t *testing.T) {
 }
 
 func TestBuildHierarchyMetadata_WithParent(t *testing.T) {
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-1",
 		Title: "Subtask 1",
 	}
 
 	hierarchy := &HierarchicalContext{
-		Parent: &provider.WorkUnit{
+		Parent: &workunit.WorkUnit{
 			ID:          "parent-123",
 			Title:       "Parent Task",
 			Description: "Parent description",
@@ -246,17 +245,17 @@ func TestBuildHierarchyMetadata_WithParent(t *testing.T) {
 }
 
 func TestBuildHierarchyMetadata_WithSiblings(t *testing.T) {
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "subtask-1",
 		Title: "Subtask 1",
 	}
 
 	hierarchy := &HierarchicalContext{
-		Parent: &provider.WorkUnit{
+		Parent: &workunit.WorkUnit{
 			ID:    "parent-123",
 			Title: "Parent Task",
 		},
-		Siblings: []*provider.WorkUnit{
+		Siblings: []*workunit.WorkUnit{
 			{ID: "subtask-2", Title: "Subtask 2"},
 			{ID: "subtask-3", Title: "Subtask 3"},
 		},
@@ -272,14 +271,14 @@ func TestBuildHierarchyMetadata_WithSiblings(t *testing.T) {
 }
 
 func TestBuildHierarchyMetadata_NilParent(t *testing.T) {
-	workUnit := &provider.WorkUnit{
+	workUnit := &workunit.WorkUnit{
 		ID:    "task-1",
 		Title: "Task 1",
 	}
 
 	hierarchy := &HierarchicalContext{
 		Parent: nil,
-		Siblings: []*provider.WorkUnit{
+		Siblings: []*workunit.WorkUnit{
 			{ID: "sibling-1", Title: "Sibling 1"},
 		},
 	}
@@ -295,12 +294,12 @@ func TestBuildHierarchyMetadata_NilParent(t *testing.T) {
 func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 	tests := []struct {
 		name     string
-		workUnit *provider.WorkUnit
+		workUnit *workunit.WorkUnit
 		want     bool
 	}{
 		{
 			name: "explicit true flag",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID: "task-1",
 				Metadata: map[string]any{
 					"is_subtask": true,
@@ -310,7 +309,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "explicit false flag",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID: "task-2",
 				Metadata: map[string]any{
 					"is_subtask": false,
@@ -320,7 +319,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "parent_id present",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID: "task-3",
 				Metadata: map[string]any{
 					"parent_id": "parent-123",
@@ -330,7 +329,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "GitHub task pattern",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID:       "github:123:task-456",
 				Metadata: map[string]any{},
 			},
@@ -338,7 +337,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "GitLab task pattern",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID:       "gitlab:123-task-456",
 				Metadata: map[string]any{},
 			},
@@ -346,7 +345,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "regular task",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID:       "task-123",
 				Metadata: map[string]any{},
 			},
@@ -359,7 +358,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 		},
 		{
 			name: "nil metadata",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				ID:       "task-123",
 				Metadata: nil,
 			},
@@ -376,7 +375,7 @@ func TestIsSubtask_WithIsSubtaskFlag(t *testing.T) {
 }
 
 func TestFilterSelf(t *testing.T) {
-	siblings := []*provider.WorkUnit{
+	siblings := []*workunit.WorkUnit{
 		{ID: "sibling-1", Title: "Sibling 1"},
 		{ID: "self-id", Title: "Self"},
 		{ID: "sibling-2", Title: "Sibling 2"},
@@ -393,7 +392,7 @@ func TestFilterSelf(t *testing.T) {
 }
 
 // Helper function to extract IDs from work units.
-func getIDs(workUnits []*provider.WorkUnit) []string {
+func getIDs(workUnits []*workunit.WorkUnit) []string {
 	ids := make([]string, len(workUnits))
 	for i, wu := range workUnits {
 		ids[i] = wu.ID

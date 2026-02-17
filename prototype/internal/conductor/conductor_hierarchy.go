@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ErrNotASubtask is returned when a work unit is not a subtask.
@@ -16,8 +16,8 @@ var ErrNotASubtask = errors.New("not a subtask")
 // HierarchicalContext holds parent and sibling task information.
 // This provides agents with broader context when working on subtasks.
 type HierarchicalContext struct {
-	Parent   *provider.WorkUnit   // The parent task (if this is a subtask)
-	Siblings []*provider.WorkUnit // Sibling subtasks (if includeSiblings was requested)
+	Parent   *workunit.WorkUnit   // The parent task (if this is a subtask)
+	Siblings []*workunit.WorkUnit // Sibling subtasks (if includeSiblings was requested)
 }
 
 // FetchHierarchicalContext retrieves parent and optionally sibling tasks for a work unit.
@@ -32,14 +32,14 @@ type HierarchicalContext struct {
 // Returns:
 //   - *HierarchicalContext: Parent and optionally sibling tasks (nil if not a subtask or provider doesn't support parent fetching)
 //   - error: Any error during fetching
-func (c *Conductor) FetchHierarchicalContext(ctx context.Context, p any, workUnit *provider.WorkUnit, includeSiblings bool) (*HierarchicalContext, error) {
+func (c *Conductor) FetchHierarchicalContext(ctx context.Context, p any, workUnit *workunit.WorkUnit, includeSiblings bool) (*HierarchicalContext, error) {
 	// Check if this work unit is a subtask
 	if !isSubtask(workUnit) {
 		return nil, ErrNotASubtask
 	}
 
 	// Check if provider supports parent fetching
-	parentFetcher, ok := p.(provider.ParentFetcher)
+	parentFetcher, ok := p.(workunit.ParentFetcher)
 	if !ok {
 		// Provider doesn't support parent fetching, return gracefully
 		return nil, ErrNotASubtask
@@ -61,7 +61,7 @@ func (c *Conductor) FetchHierarchicalContext(ctx context.Context, p any, workUni
 	// Fetch siblings if requested and parent is available
 	if includeSiblings && result.Parent != nil {
 		// Check if provider supports subtask fetching
-		subtaskFetcher, ok := p.(provider.SubtaskFetcher)
+		subtaskFetcher, ok := p.(workunit.SubtaskFetcher)
 		if ok {
 			siblings, err := subtaskFetcher.FetchSubtasks(ctx, result.Parent.ID)
 			if err == nil && len(siblings) > 0 {
@@ -78,7 +78,7 @@ func (c *Conductor) FetchHierarchicalContext(ctx context.Context, p any, workUni
 // FetchHierarchicalContextFromConfig retrieves hierarchical context based on workspace configuration.
 // This reads the context section from workspace config to determine what to include.
 // CLI options (c.opts.WithParent, c.opts.WithSiblings, c.opts.MaxSiblings) override workspace config.
-func (c *Conductor) FetchHierarchicalContextFromConfig(ctx context.Context, p any, workUnit *provider.WorkUnit) (*HierarchicalContext, error) {
+func (c *Conductor) FetchHierarchicalContextFromConfig(ctx context.Context, p any, workUnit *workunit.WorkUnit) (*HierarchicalContext, error) {
 	cfg, err := c.workspace.LoadConfig()
 	if err != nil {
 		// Use defaults if config can't be loaded
@@ -130,7 +130,7 @@ func (c *Conductor) FetchHierarchicalContextFromConfig(ctx context.Context, p an
 
 // BuildHierarchyMetadata creates hierarchy metadata for storage.
 // This is called when saving task work to persist hierarchical context.
-func BuildHierarchyMetadata(workUnit *provider.WorkUnit, hierarchy *HierarchicalContext) *storage.HierarchyInfo {
+func BuildHierarchyMetadata(workUnit *workunit.WorkUnit, hierarchy *HierarchicalContext) *storage.HierarchyInfo {
 	if hierarchy == nil {
 		return nil
 	}
@@ -153,7 +153,7 @@ func BuildHierarchyMetadata(workUnit *provider.WorkUnit, hierarchy *Hierarchical
 }
 
 // isSubtask checks if a work unit is a subtask by examining its metadata.
-func isSubtask(wu *provider.WorkUnit) bool {
+func isSubtask(wu *workunit.WorkUnit) bool {
 	if wu == nil || wu.Metadata == nil {
 		return false
 	}
@@ -178,8 +178,8 @@ func isSubtask(wu *provider.WorkUnit) bool {
 }
 
 // filterSelf removes the current work unit from a list of siblings.
-func filterSelf(siblings []*provider.WorkUnit, selfID string) []*provider.WorkUnit {
-	result := make([]*provider.WorkUnit, 0, len(siblings))
+func filterSelf(siblings []*workunit.WorkUnit, selfID string) []*workunit.WorkUnit {
+	result := make([]*workunit.WorkUnit, 0, len(siblings))
 	for _, s := range siblings {
 		if s.ID != selfID {
 			result = append(result, s)

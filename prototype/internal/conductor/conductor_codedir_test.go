@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestCodeDir_WithWorkspace(t *testing.T) {
@@ -95,14 +96,14 @@ func TestCodeDir_FallbackToWorkDir(t *testing.T) {
 func TestMergeLocalMetadata(t *testing.T) {
 	tests := []struct {
 		name            string
-		workUnit        *provider.WorkUnit
+		workUnit        *workunit.WorkUnit
 		localTask       *storage.QueuedTask
 		wantDescription string
 		wantMetadata    map[string]any
 	}{
 		{
 			name: "local description longer replaces provider",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "Short desc",
 				Metadata:    map[string]any{"from_provider": true},
 			},
@@ -114,7 +115,7 @@ func TestMergeLocalMetadata(t *testing.T) {
 		},
 		{
 			name: "provider description longer preserved",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "A detailed provider description with lots of info",
 			},
 			localTask: &storage.QueuedTask{
@@ -124,7 +125,7 @@ func TestMergeLocalMetadata(t *testing.T) {
 		},
 		{
 			name: "local metadata fills gaps",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "Test",
 				Metadata:    map[string]any{"provider_key": "value"},
 			},
@@ -142,7 +143,7 @@ func TestMergeLocalMetadata(t *testing.T) {
 		},
 		{
 			name: "nil provider metadata initialized",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "Test",
 				Metadata:    nil,
 			},
@@ -154,7 +155,7 @@ func TestMergeLocalMetadata(t *testing.T) {
 		},
 		{
 			name: "source path stored in metadata",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "Test",
 			},
 			localTask: &storage.QueuedTask{
@@ -165,7 +166,7 @@ func TestMergeLocalMetadata(t *testing.T) {
 		},
 		{
 			name: "empty local task changes nothing",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Description: "Original",
 				Metadata:    map[string]any{"existing": true},
 			},
@@ -209,10 +210,10 @@ func TestMergeLocalSourceIntoSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		snapshot := &provider.Snapshot{
+		snapshot := &snapshot.Snapshot{
 			Type:  "wrike",
 			Ref:   "wrike:12345",
-			Files: []provider.SnapshotFile{{Path: "original.md", Content: "original"}},
+			Files: []snapshot.SnapshotFile{{Path: "original.md", Content: "original"}},
 		}
 
 		c := &Conductor{}
@@ -244,7 +245,7 @@ func TestMergeLocalSourceIntoSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		snapshot := &provider.Snapshot{Type: "test", Ref: "test:1"}
+		snapshot := &snapshot.Snapshot{Type: "test", Ref: "test:1"}
 
 		c := &Conductor{}
 		c.mergeLocalSourceIntoSnapshot(snapshot, sourceDir)
@@ -262,7 +263,7 @@ func TestMergeLocalSourceIntoSnapshot(t *testing.T) {
 	})
 
 	t.Run("nonexistent path skips gracefully", func(t *testing.T) {
-		snapshot := &provider.Snapshot{Type: "test", Ref: "test:1"}
+		snapshot := &snapshot.Snapshot{Type: "test", Ref: "test:1"}
 
 		c := &Conductor{}
 		c.mergeLocalSourceIntoSnapshot(snapshot, "/nonexistent/path/file.md")
@@ -291,7 +292,7 @@ func TestMergeLocalSourceIntoSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		snapshot := &provider.Snapshot{Type: "test", Ref: "test:1"}
+		snapshot := &snapshot.Snapshot{Type: "test", Ref: "test:1"}
 
 		c := &Conductor{}
 		c.mergeLocalSourceIntoSnapshot(snapshot, sourceDir)

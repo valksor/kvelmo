@@ -11,10 +11,12 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // finishWithPR creates a pull request instead of merging locally.
-func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*provider.PullRequest, error) {
+func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*pullrequest.PullRequest, error) {
 	if c.git == nil {
 		return nil, errors.New("git not available for PR creation")
 	}
@@ -41,9 +43,9 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 	taskProvider, resolveErr := c.resolveTaskProvider(ctx)
 
 	// Check if task source supports PRs
-	var prCreator provider.PRCreator
+	var prCreator pullrequest.PRCreator
 	if resolveErr == nil {
-		prCreator, _ = taskProvider.(provider.PRCreator)
+		prCreator, _ = taskProvider.(pullrequest.PRCreator)
 	}
 
 	// Fallback to git remote provider if task source doesn't support PRs
@@ -74,7 +76,7 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 	}
 
 	// Build PR options
-	prOpts := provider.PullRequestOptions{
+	prOpts := pullrequest.PullRequestOptions{
 		Title:        opts.PRTitle,
 		Body:         opts.PRBody,
 		SourceBranch: sourceBranch,
@@ -121,7 +123,7 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 	// Post comment to issue ONLY if task source provider supports commenting
 	// (remote fallback provider doesn't have issue context)
 	if !usedRemoteFallback && resolveErr == nil {
-		if commenter, ok := taskProvider.(provider.Commenter); ok {
+		if commenter, ok := taskProvider.(workunit.Commenter); ok {
 			issueID := c.taskWork.Metadata.ExternalKey
 			if issueID != "" {
 				comment := fmt.Sprintf("Pull request created: #%d\n%s\n\nThe PR includes all changes from branch `%s`.",
@@ -139,7 +141,7 @@ func (c *Conductor) finishWithPR(ctx context.Context, opts FinishOptions) (*prov
 
 // resolveRemotePRProvider resolves a PR-capable provider from the git remote URL.
 // This is used as a fallback when the task source provider doesn't support PRs.
-func (c *Conductor) resolveRemotePRProvider(ctx context.Context) (provider.PRCreator, error) {
+func (c *Conductor) resolveRemotePRProvider(ctx context.Context) (pullrequest.PRCreator, error) {
 	if c.git == nil {
 		return nil, errors.New("no git available")
 	}
@@ -172,7 +174,7 @@ func (c *Conductor) resolveRemotePRProvider(ctx context.Context) (provider.PRCre
 
 	// Build provider config from workspace settings
 	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
-	cfg := buildProviderConfig(workspaceCfg, providerName)
+	cfg := buildProviderConfig(ctx, workspaceCfg, providerName)
 
 	// Override owner/repo with URL-extracted values (remote URL is source of truth)
 	if providerName == "gitlab" {
@@ -201,7 +203,7 @@ func (c *Conductor) resolveRemotePRProvider(ctx context.Context) (provider.PRCre
 	}
 
 	// Type-assert to PRCreator
-	prCreator, ok := p.(provider.PRCreator)
+	prCreator, ok := p.(pullrequest.PRCreator)
 	if !ok {
 		return nil, fmt.Errorf("%s provider does not support pull requests", providerName)
 	}
@@ -223,7 +225,7 @@ func (c *Conductor) resolveTaskProvider(ctx context.Context) (any, error) {
 	// Load workspace config and build provider config
 	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
 	scheme := parseScheme(c.activeTask.Ref)
-	providerCfg := buildProviderConfig(workspaceCfg, scheme)
+	providerCfg := buildProviderConfig(ctx, workspaceCfg, scheme)
 
 	p, _, err := c.providers.Resolve(ctx, c.activeTask.Ref, providerCfg, resolveOpts)
 	if err != nil {

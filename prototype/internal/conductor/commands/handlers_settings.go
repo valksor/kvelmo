@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/crealfy/crea-wrike/wrike"
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/schema"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 func init() {
@@ -98,6 +100,9 @@ func handleSettingsGet(ctx context.Context, cond *conductor.Conductor, inv Invoc
 		cfg = storage.NewDefaultWorkspaceConfig()
 	}
 
+	// Load Wrike settings from .crealfy/wrike.yaml (separate config file)
+	cfg.Wrike = loadWrikeSettings(ctx)
+
 	// Strip sensitive fields in global mode
 	if mode == "global" {
 		cfg = stripSensitiveConfigFields(cfg)
@@ -163,6 +168,14 @@ func handleSettingsSave(ctx context.Context, cond *conductor.Conductor, inv Invo
 		if configMap, ok := configData.(*storage.WorkspaceConfig); ok {
 			cfg = configMap
 		}
+	}
+
+	// Save Wrike settings to .crealfy/wrike.yaml (separate config file)
+	if cfg.Wrike != nil {
+		if err := saveWrikeSettings(ctx, cfg.Wrike); err != nil {
+			return nil, fmt.Errorf("failed to save wrike config: %w", err)
+		}
+		cfg.Wrike = nil // Don't save to config.yaml
 	}
 
 	if err := ws.SaveConfig(cfg); err != nil {
@@ -309,6 +322,18 @@ func handleProviderHealth(_ context.Context, cond *conductor.Conductor, _ Invoca
 		Message: "Set BITBUCKET_APP_PASSWORD in .mehrhof/.env",
 	})
 
+	if cfg.Wrike != nil && cfg.Wrike.Token != "" {
+		health.Add("wrike", &provider.HealthInfo{
+			Status:  provider.HealthStatusConnected,
+			Message: "Connected",
+		})
+	} else {
+		health.Add("wrike", &provider.HealthInfo{
+			Status:  provider.HealthStatusNotConfigured,
+			Message: "Set WRIKE_TOKEN in .mehrhof/.env or configure in settings",
+		})
+	}
+
 	return NewResult("Provider health loaded").WithData(health), nil
 }
 
@@ -379,4 +404,42 @@ func stripSensitiveConfigFields(cfg *storage.WorkspaceConfig) *storage.Workspace
 	}
 
 	return &result
+}
+
+// loadWrikeSettings loads Wrike settings from .crealfy/wrike.yaml via crea-wrike.
+func loadWrikeSettings(ctx context.Context) *wrike.Settings {
+	cfg, err := wrike.ConfigManager().Read(ctx)
+	if err != nil {
+		return nil
+	}
+
+	return &wrike.Settings{
+		Token:     cfg.GetString("token"),
+		Host:      cfg.GetString("host"),
+		SpaceID:   cfg.GetString("space_id"),
+		FolderID:  cfg.GetString("folder_id"),
+		ProjectID: cfg.GetString("project_id"),
+	}
+}
+
+// saveWrikeSettings saves Wrike settings to .crealfy/wrike.yaml via crea-wrike.
+func saveWrikeSettings(ctx context.Context, settings *wrike.Settings) error {
+	cfg := providerconfig.NewConfig()
+	if settings.Token != "" {
+		cfg = cfg.Set("token", settings.Token)
+	}
+	if settings.Host != "" {
+		cfg = cfg.Set("host", settings.Host)
+	}
+	if settings.SpaceID != "" {
+		cfg = cfg.Set("space_id", settings.SpaceID)
+	}
+	if settings.FolderID != "" {
+		cfg = cfg.Set("folder_id", settings.FolderID)
+	}
+	if settings.ProjectID != "" {
+		cfg = cfg.Set("project_id", settings.ProjectID)
+	}
+
+	return wrike.ConfigManager().Write(ctx, cfg)
 }

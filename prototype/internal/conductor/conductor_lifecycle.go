@@ -12,10 +12,13 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/valksor/go-mehrhof/internal/config"
 	"github.com/valksor/go-mehrhof/internal/coordination"
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/vcs"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // TaskConflictInfo provides details when starting a task conflicts with an active one.
@@ -43,6 +46,10 @@ func (c *Conductor) Initialize(ctx context.Context) error {
 			return fmt.Errorf("parse config file: %w", err)
 		}
 	}
+
+	// Migrate provider configs from .mehrhof/config.yaml to .crealfy/<provider>.yaml
+	// This runs once per provider and is idempotent (skips if target exists).
+	config.MigrateAllProviders(c.opts.WorkDir)
 
 	// Determine git init directory: use code_dir if configured, otherwise opts.WorkDir
 	gitInitDir := c.opts.WorkDir
@@ -409,7 +416,7 @@ func (c *Conductor) prepareWorkspace(ctx context.Context) error {
 // Local data fills gaps in provider data — it does not overwrite existing provider fields.
 // This enables enriching external provider tasks (e.g., Wrike, GitHub) with local context
 // such as code examples, file references, and custom frontmatter from local task files.
-func (c *Conductor) mergeLocalMetadata(workUnit *provider.WorkUnit, local *storage.QueuedTask) {
+func (c *Conductor) mergeLocalMetadata(workUnit *workunit.WorkUnit, local *storage.QueuedTask) {
 	// Merge local description if provider description is shorter or empty
 	if local.Description != "" && len(local.Description) > len(workUnit.Description) {
 		slog.Debug("local description overrides provider",
@@ -442,8 +449,8 @@ func (c *Conductor) mergeLocalMetadata(workUnit *provider.WorkUnit, local *stora
 
 // mergeLocalSourceIntoSnapshot reads local source files and appends them to the snapshot.
 // This ensures the agent sees both provider content and local file content (code examples, etc.).
-func (c *Conductor) mergeLocalSourceIntoSnapshot(snapshot *provider.Snapshot, sourcePath string) {
-	if snapshot == nil || sourcePath == "" {
+func (c *Conductor) mergeLocalSourceIntoSnapshot(snap *snapshot.Snapshot, sourcePath string) {
+	if snap == nil || sourcePath == "" {
 		return
 	}
 
@@ -461,7 +468,7 @@ func (c *Conductor) mergeLocalSourceIntoSnapshot(snapshot *provider.Snapshot, so
 
 			return
 		}
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    "local/" + filepath.Base(sourcePath),
 			Content: string(content),
 		})
@@ -512,7 +519,7 @@ func (c *Conductor) mergeLocalSourceIntoSnapshot(snapshot *provider.Snapshot, so
 
 		accumulated += int64(len(content))
 		relPath, _ := filepath.Rel(sourcePath, path)
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    "local/" + relPath,
 			Content: string(content),
 		})
@@ -522,7 +529,7 @@ func (c *Conductor) mergeLocalSourceIntoSnapshot(snapshot *provider.Snapshot, so
 }
 
 // fetchWorkUnit resolves the provider and fetches the work unit.
-func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *provider.WorkUnit, error) {
+func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *workunit.WorkUnit, error) {
 	resolveOpts := provider.ResolveOptions{
 		DefaultProvider: c.opts.DefaultProvider,
 	}
@@ -530,14 +537,14 @@ func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *
 	// Load workspace config and build provider config
 	workspaceCfg, _ := c.workspace.LoadConfig() // ignore error, use defaults
 	scheme := parseScheme(reference)
-	providerCfg := buildProviderConfig(workspaceCfg, scheme)
+	providerCfg := buildProviderConfig(ctx, workspaceCfg, scheme)
 
 	p, id, err := c.providers.Resolve(ctx, reference, providerCfg, resolveOpts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve provider: %w", err)
 	}
 
-	reader, ok := p.(provider.Reader)
+	reader, ok := p.(workunit.Reader)
 	if !ok {
 		return nil, nil, errors.New("provider does not support reading")
 	}
@@ -551,8 +558,8 @@ func (c *Conductor) fetchWorkUnit(ctx context.Context, reference string) (any, *
 }
 
 // snapshotSource creates a snapshot of the source content.
-func (c *Conductor) snapshotSource(ctx context.Context, p any, reference string, workUnit *provider.WorkUnit) *provider.Snapshot {
-	if snapshotter, ok := p.(provider.Snapshotter); ok {
+func (c *Conductor) snapshotSource(ctx context.Context, p any, reference string, workUnit *workunit.WorkUnit) *snapshot.Snapshot {
+	if snapshotter, ok := p.(snapshot.Snapshotter); ok {
 		// Use ExternalID which contains the full reference (e.g., file path, issue URL).
 		// workUnit.ID may be a generated short identifier that providers can't resolve.
 		snapshot, err := snapshotter.Snapshot(ctx, workUnit.ExternalID)
@@ -564,14 +571,14 @@ func (c *Conductor) snapshotSource(ctx context.Context, p any, reference string,
 	}
 
 	// Fallback: return minimal snapshot with reference only
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type: workUnit.Provider,
 		Ref:  reference,
 	}
 }
 
 // buildSourceInfo creates storage.SourceInfo from provider snapshot (metadata only).
-func (c *Conductor) buildSourceInfo(snapshot *provider.Snapshot) storage.SourceInfo {
+func (c *Conductor) buildSourceInfo(snapshot *snapshot.Snapshot) storage.SourceInfo {
 	info := storage.SourceInfo{
 		Type:   snapshot.Type,
 		Ref:    snapshot.Ref,
@@ -602,7 +609,7 @@ func (c *Conductor) buildSourceInfo(snapshot *provider.Snapshot) storage.SourceI
 }
 
 // writeSourceFiles writes snapshot content to the work directory's source/ subdirectory.
-func (c *Conductor) writeSourceFiles(taskID string, snapshot *provider.Snapshot) error {
+func (c *Conductor) writeSourceFiles(taskID string, snapshot *snapshot.Snapshot) error {
 	if snapshot == nil {
 		return nil
 	}
@@ -652,7 +659,7 @@ func (c *Conductor) writeSourceFiles(taskID string, snapshot *provider.Snapshot)
 }
 
 // registerTask creates the work directory and active task reference.
-func (c *Conductor) registerTask(taskID, reference string, workUnit *provider.WorkUnit, snapshot *provider.Snapshot, gi *gitInfo, ni *namingInfo) error {
+func (c *Conductor) registerTask(taskID, reference string, workUnit *workunit.WorkUnit, snapshot *snapshot.Snapshot, gi *gitInfo, ni *namingInfo) error {
 	// Resolve agent for this task (uses priority: CLI > task > workspace > auto)
 	agentInst, agentSource, err := c.resolveAgentForTask()
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 // TestSignVerifyState tests HMAC signature generation and verification.
@@ -350,9 +350,9 @@ func TestDetectProviderFromPR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var pr *provider.PullRequest
+			var pr *pullrequest.PullRequest
 			if tt.url != "" {
-				pr = &provider.PullRequest{URL: tt.url}
+				pr = &pullrequest.PullRequest{URL: tt.url}
 			}
 			result := detectProviderFromPR(pr)
 			if result != tt.provider {

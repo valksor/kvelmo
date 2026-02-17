@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // SyncProject pulls an entire project/epic from a provider into a local queue.
@@ -32,7 +32,7 @@ func (c *Conductor) SyncProject(ctx context.Context, reference string, opts Sync
 	}
 
 	workspaceCfg, _ := c.workspace.LoadConfig()
-	providerCfg := buildProviderConfig(workspaceCfg, providerName)
+	providerCfg := buildProviderConfig(ctx, workspaceCfg, providerName)
 	providerInst, err := factory(ctx, providerCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create provider: %w", err)
@@ -41,14 +41,14 @@ func (c *Conductor) SyncProject(ctx context.Context, reference string, opts Sync
 	c.publishProgress(fmt.Sprintf("Fetching from %s...", providerName), 20)
 
 	// Check for project fetch capability
-	projectFetcher, hasProject := providerInst.(provider.ProjectFetcher)
-	_, hasSubtasks := providerInst.(provider.SubtaskFetcher)
+	projectFetcher, hasProject := providerInst.(workunit.ProjectFetcher)
+	_, hasSubtasks := providerInst.(workunit.SubtaskFetcher)
 
 	if !hasProject && !hasSubtasks {
 		return nil, fmt.Errorf("provider %s does not support project fetching (no ProjectFetcher or SubtaskFetcher)", providerName)
 	}
 
-	var projectStruct *provider.ProjectStructure
+	var projectStruct *workunit.ProjectStructure
 
 	// Try ProjectFetcher first (preferred for bulk operations)
 	if hasProject {
@@ -69,7 +69,7 @@ func (c *Conductor) SyncProject(ctx context.Context, reference string, opts Sync
 	c.publishProgress("Processing tasks...", 50)
 
 	// Apply status filtering
-	var tasks []*provider.ProjectTask
+	var tasks []*workunit.ProjectTask
 	if len(opts.IncludeStatus) > 0 {
 		tasks = c.applyStatusFilter(projectStruct.Tasks, opts.IncludeStatus)
 	} else {
@@ -117,12 +117,12 @@ func (c *Conductor) SyncProject(ctx context.Context, reference string, opts Sync
 
 // fetchProjectRecursive builds a project structure by recursively fetching subtasks.
 // Used as fallback when provider doesn't implement ProjectFetcher.
-func (c *Conductor) fetchProjectRecursive(ctx context.Context, p any, workUnitID string, maxDepth int) (*provider.ProjectStructure, error) {
-	reader, ok := p.(provider.Reader)
+func (c *Conductor) fetchProjectRecursive(ctx context.Context, p any, workUnitID string, maxDepth int) (*workunit.ProjectStructure, error) {
+	reader, ok := p.(workunit.Reader)
 	if !ok {
 		return nil, errors.New("provider does not implement Reader")
 	}
-	subtaskFetcher, ok := p.(provider.SubtaskFetcher)
+	subtaskFetcher, ok := p.(workunit.SubtaskFetcher)
 	if !ok {
 		return nil, errors.New("provider does not implement SubtaskFetcher")
 	}
@@ -133,21 +133,21 @@ func (c *Conductor) fetchProjectRecursive(ctx context.Context, p any, workUnitID
 		return nil, fmt.Errorf("fetch parent: %w", err)
 	}
 
-	structure := &provider.ProjectStructure{
+	structure := &workunit.ProjectStructure{
 		ID:          parent.ID,
 		Title:       parent.Title,
 		Description: parent.Description,
 		Source:      parent.Provider,
 		URL:         extractWorkUnitURL(parent),
-		Tasks:       make([]*provider.ProjectTask, 0),
+		Tasks:       make([]*workunit.ProjectTask, 0),
 		Metadata:    make(map[string]any),
 	}
 
 	// Recursively fetch all subtasks
 	visited := make(map[string]bool)
-	var fetchRecursive func(*provider.WorkUnit, string, int) error
+	var fetchRecursive func(*workunit.WorkUnit, string, int) error
 
-	fetchRecursive = func(wu *provider.WorkUnit, parentID string, depth int) error {
+	fetchRecursive = func(wu *workunit.WorkUnit, parentID string, depth int) error {
 		if maxDepth > 0 && depth >= maxDepth {
 			return nil
 		}
@@ -157,7 +157,7 @@ func (c *Conductor) fetchProjectRecursive(ctx context.Context, p any, workUnitID
 		visited[wu.ID] = true
 
 		// Add as a task
-		pt := &provider.ProjectTask{
+		pt := &workunit.ProjectTask{
 			WorkUnit: wu,
 			ParentID: parentID,
 			Depth:    depth,
@@ -189,13 +189,13 @@ func (c *Conductor) fetchProjectRecursive(ctx context.Context, p any, workUnitID
 }
 
 // applyStatusFilter filters tasks by status.
-func (c *Conductor) applyStatusFilter(tasks []*provider.ProjectTask, statuses []string) []*provider.ProjectTask {
+func (c *Conductor) applyStatusFilter(tasks []*workunit.ProjectTask, statuses []string) []*workunit.ProjectTask {
 	statusMap := make(map[string]bool)
 	for _, s := range statuses {
 		statusMap[strings.ToLower(strings.TrimSpace(s))] = true
 	}
 
-	var filtered []*provider.ProjectTask
+	var filtered []*workunit.ProjectTask
 	for _, task := range tasks {
 		if statusMap[string(task.Status)] {
 			filtered = append(filtered, task)
@@ -209,14 +209,14 @@ func (c *Conductor) applyStatusFilter(tasks []*provider.ProjectTask, statuses []
 // - Open tasks
 // - In-progress tasks
 // - Completed tasks from last 30 days.
-func applySmartStatusFilter(tasks []*provider.ProjectTask) []*provider.ProjectTask {
+func applySmartStatusFilter(tasks []*workunit.ProjectTask) []*workunit.ProjectTask {
 	cutoff := time.Now().AddDate(0, 0, -30) // 30 days ago
-	var filtered []*provider.ProjectTask
+	var filtered []*workunit.ProjectTask
 
 	for _, task := range tasks {
-		if task.Status == provider.StatusOpen ||
-			task.Status == provider.StatusInProgress ||
-			(task.Status == provider.StatusDone && task.UpdatedAt.After(cutoff)) {
+		if task.Status == workunit.StatusOpen ||
+			task.Status == workunit.StatusInProgress ||
+			(task.Status == workunit.StatusDone && task.UpdatedAt.After(cutoff)) {
 			filtered = append(filtered, task)
 		}
 	}
@@ -225,19 +225,19 @@ func applySmartStatusFilter(tasks []*provider.ProjectTask) []*provider.ProjectTa
 }
 
 // projectTaskToQueued converts a provider ProjectTask to a storage QueuedTask.
-func (c *Conductor) projectTaskToQueued(pt *provider.ProjectTask, queue *storage.TaskQueue, taskIDMap map[string]string) *storage.QueuedTask {
+func (c *Conductor) projectTaskToQueued(pt *workunit.ProjectTask, queue *storage.TaskQueue, taskIDMap map[string]string) *storage.QueuedTask {
 	taskID := queue.NextTaskID()
 
 	// Map provider status to queue status
 	var status storage.TaskStatus
 	switch pt.Status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		status = storage.TaskStatusReady
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		status = storage.TaskStatusReady
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		status = storage.TaskStatusReady
-	case provider.StatusDone, provider.StatusClosed:
+	case workunit.StatusDone, workunit.StatusClosed:
 		status = storage.TaskStatusSubmitted
 	default:
 		status = storage.TaskStatusPending
@@ -246,13 +246,13 @@ func (c *Conductor) projectTaskToQueued(pt *provider.ProjectTask, queue *storage
 	// Map priority
 	priority := 3 // default
 	switch pt.Priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		priority = 1
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		priority = 2
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		priority = 3
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		priority = 4
 	}
 

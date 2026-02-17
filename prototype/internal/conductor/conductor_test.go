@@ -12,10 +12,10 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/agent"
 	"github.com/valksor/go-mehrhof/internal/events"
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
 	"github.com/valksor/go-mehrhof/internal/workflow"
 	"github.com/valksor/go-toolkit/eventbus"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestDefaultOptions(t *testing.T) {
@@ -1231,7 +1231,7 @@ func TestResolveAgentForTask(t *testing.T) {
 	tests := []struct {
 		name             string
 		optsAgentName    string
-		taskAgentConfig  *provider.AgentConfig
+		taskAgentConfig  *workunit.AgentConfig
 		workspaceDefault string
 		registerAgent    string
 		wantAgentName    string
@@ -1248,7 +1248,7 @@ func TestResolveAgentForTask(t *testing.T) {
 		{
 			name:          "priority 2: task frontmatter agent",
 			optsAgentName: "",
-			taskAgentConfig: &provider.AgentConfig{
+			taskAgentConfig: &workunit.AgentConfig{
 				Name: "task-agent",
 			},
 			registerAgent: "task-agent",
@@ -1282,7 +1282,7 @@ func TestResolveAgentForTask(t *testing.T) {
 		{
 			name:          "task config with env vars",
 			optsAgentName: "",
-			taskAgentConfig: &provider.AgentConfig{
+			taskAgentConfig: &workunit.AgentConfig{
 				Name: "task-agent",
 				Env: map[string]string{
 					"TEST_VAR": "test-value",
@@ -1367,7 +1367,7 @@ func TestResolveAgentForStep(t *testing.T) {
 		name            string
 		optsAgentName   string
 		optsStepAgents  map[string]string
-		taskAgentConfig *provider.AgentConfig
+		taskAgentConfig *workunit.AgentConfig
 		workspaceConfig *storage.WorkspaceConfig
 		step            workflow.Step
 		wantAgentName   string
@@ -1400,8 +1400,8 @@ func TestResolveAgentForStep(t *testing.T) {
 			name:           "priority 3: task step-specific",
 			optsAgentName:  "",
 			optsStepAgents: nil,
-			taskAgentConfig: &provider.AgentConfig{
-				Steps: map[string]provider.StepAgentConfig{
+			taskAgentConfig: &workunit.AgentConfig{
+				Steps: map[string]workunit.StepAgentConfig{
 					"planning": {
 						Name: "task-step-agent",
 						Env:  map[string]string{"STEP_VAR": "step-value"},
@@ -1418,7 +1418,7 @@ func TestResolveAgentForStep(t *testing.T) {
 			name:           "priority 4: task default",
 			optsAgentName:  "",
 			optsStepAgents: nil,
-			taskAgentConfig: &provider.AgentConfig{
+			taskAgentConfig: &workunit.AgentConfig{
 				Name: "task-default-agent",
 				Env:  map[string]string{"TASK_VAR": "task-value"},
 				Args: []string{"--task-arg"},
@@ -1780,7 +1780,7 @@ func TestGetAgentForStep(t *testing.T) {
 func TestResolveNaming(t *testing.T) {
 	tests := []struct {
 		name              string
-		workUnit          *provider.WorkUnit
+		workUnit          *workunit.WorkUnit
 		taskID            string
 		optsExternalKey   string
 		workspaceConfig   *storage.WorkspaceConfig
@@ -1789,7 +1789,7 @@ func TestResolveNaming(t *testing.T) {
 	}{
 		{
 			name: "CLI external key override",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "Test Feature",
 				ExternalKey: "WORKUNIT-123",
 				TaskType:    "feature",
@@ -1808,7 +1808,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "workUnit external key",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "Test Feature",
 				ExternalKey: "WORKUNIT-123",
 				TaskType:    "feature",
@@ -1826,7 +1826,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "fallback to taskID",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:    "Test Feature",
 				TaskType: "feature",
 				Slug:     "test-feature",
@@ -1843,7 +1843,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "slug is generated from title",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "A Very Long Feature Title That Needs Slugification",
 				ExternalKey: "KEY-123",
 				TaskType:    "feature",
@@ -1860,7 +1860,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "task type defaults to 'task'",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "Test Feature",
 				ExternalKey: "KEY-123",
 			},
@@ -1876,7 +1876,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "multi-segment pattern with slash separator",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "Add authentication",
 				ExternalKey: "WRIKE-123",
 				TaskType:    "feature",
@@ -1894,7 +1894,7 @@ func TestResolveNaming(t *testing.T) {
 		},
 		{
 			name: "multi-segment pattern with custom type prefix",
-			workUnit: &provider.WorkUnit{
+			workUnit: &workunit.WorkUnit{
 				Title:       "Update dependencies",
 				ExternalKey: "WRIKE-456",
 				TaskType:    "chore",

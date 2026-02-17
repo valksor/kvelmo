@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // readResearchSource scans a directory and builds a research manifest.
@@ -312,14 +313,14 @@ func (c *Conductor) readProviderSource(ctx context.Context, reference string) (s
 	}
 
 	// Create provider instance
-	providerCfg := provider.NewConfig()
+	providerCfg := providerconfig.NewConfig()
 	instance, err := factory(ctx, providerCfg)
 	if err != nil {
 		return "", fmt.Errorf("create provider: %w", err)
 	}
 
 	// Check if provider implements Reader interface
-	reader, ok := instance.(provider.Reader)
+	reader, ok := instance.(workunit.Reader)
 	if !ok {
 		return "", fmt.Errorf("provider %s does not support fetching work units", providerName)
 	}
@@ -335,7 +336,7 @@ func (c *Conductor) readProviderSource(ctx context.Context, reference string) (s
 }
 
 // formatWorkUnitAsSource converts a WorkUnit to a markdown-formatted planning source.
-func formatWorkUnitAsSource(wu *provider.WorkUnit) string {
+func formatWorkUnitAsSource(wu *workunit.WorkUnit) string {
 	var sb strings.Builder
 
 	sb.WriteString("# " + wu.Title + "\n\n")

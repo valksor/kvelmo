@@ -6,25 +6,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestFormatWorkUnitAsSource(t *testing.T) {
 	tests := []struct {
 		name     string
-		wu       *provider.WorkUnit
+		wu       *workunit.WorkUnit
 		contains []string
 	}{
 		{
 			name: "full work unit",
-			wu: &provider.WorkUnit{
+			wu: &workunit.WorkUnit{
 				Title:       "Implement Auth",
 				Description: "Build JWT-based authentication",
 				Labels:      []string{"backend", "security"},
-				Priority:    provider.PriorityHigh,
-				Status:      provider.StatusInProgress,
-				Assignees: []provider.Person{
+				Priority:    workunit.PriorityHigh,
+				Status:      workunit.StatusInProgress,
+				Assignees: []workunit.Person{
 					{Name: "Alice", ID: "alice123"},
 					{ID: "bob456"},
 				},
@@ -40,7 +40,7 @@ func TestFormatWorkUnitAsSource(t *testing.T) {
 		},
 		{
 			name: "minimal work unit",
-			wu: &provider.WorkUnit{
+			wu: &workunit.WorkUnit{
 				Title: "Simple Task",
 			},
 			contains: []string{
@@ -49,9 +49,9 @@ func TestFormatWorkUnitAsSource(t *testing.T) {
 		},
 		{
 			name: "work unit with empty assignee names",
-			wu: &provider.WorkUnit{
+			wu: &workunit.WorkUnit{
 				Title: "Task",
-				Assignees: []provider.Person{
+				Assignees: []workunit.Person{
 					{Name: ""},
 					{ID: ""},
 				},
@@ -62,7 +62,7 @@ func TestFormatWorkUnitAsSource(t *testing.T) {
 		},
 		{
 			name: "work unit with description only",
-			wu: &provider.WorkUnit{
+			wu: &workunit.WorkUnit{
 				Title:       "Task",
 				Description: "Detailed description here",
 			},
@@ -935,52 +935,52 @@ func TestApplySmartStatusFilter(t *testing.T) {
 	oldDate := now.AddDate(0, 0, -60)    // 60 days ago
 	recentDate := now.AddDate(0, 0, -15) // 15 days ago
 
-	tasks := []*provider.ProjectTask{
+	tasks := []*workunit.ProjectTask{
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-1",
 				Title:     "Open task",
-				Status:    provider.StatusOpen,
+				Status:    workunit.StatusOpen,
 				UpdatedAt: now,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-2",
 				Title:     "In Progress task",
-				Status:    provider.StatusInProgress,
+				Status:    workunit.StatusInProgress,
 				UpdatedAt: now,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-3",
 				Title:     "Recently completed",
-				Status:    provider.StatusDone,
+				Status:    workunit.StatusDone,
 				UpdatedAt: recentDate,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-4",
 				Title:     "Old completed",
-				Status:    provider.StatusDone,
+				Status:    workunit.StatusDone,
 				UpdatedAt: oldDate,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-5",
 				Title:     "Closed task",
-				Status:    provider.StatusClosed,
+				Status:    workunit.StatusClosed,
 				UpdatedAt: recentDate,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:        "task-6",
 				Title:     "Review task",
-				Status:    provider.StatusReview,
+				Status:    workunit.StatusReview,
 				UpdatedAt: now,
 			},
 		},
@@ -1008,26 +1008,26 @@ func TestApplySmartStatusFilter(t *testing.T) {
 func TestApplyStatusFilter(t *testing.T) {
 	c := &Conductor{}
 
-	tasks := []*provider.ProjectTask{
+	tasks := []*workunit.ProjectTask{
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:     "task-1",
 				Title:  "Open",
-				Status: provider.StatusOpen,
+				Status: workunit.StatusOpen,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:     "task-2",
 				Title:  "In Progress",
-				Status: provider.StatusInProgress,
+				Status: workunit.StatusInProgress,
 			},
 		},
 		{
-			WorkUnit: &provider.WorkUnit{
+			WorkUnit: &workunit.WorkUnit{
 				ID:     "task-3",
 				Title:  "Done",
-				Status: provider.StatusDone,
+				Status: workunit.StatusDone,
 			},
 		},
 	}
@@ -1114,14 +1114,14 @@ func TestProjectTaskToQueued(t *testing.T) {
 		Title: "Test Project",
 	}
 
-	pt := &provider.ProjectTask{
-		WorkUnit: &provider.WorkUnit{
+	pt := &workunit.ProjectTask{
+		WorkUnit: &workunit.WorkUnit{
 			ID:          "ext-123",
 			ExternalID:  "EXT-123",
 			Title:       "Test Task",
 			Description: "Task description",
-			Status:      provider.StatusOpen,
-			Priority:    provider.PriorityHigh,
+			Status:      workunit.StatusOpen,
+			Priority:    workunit.PriorityHigh,
 			Labels:      []string{"bug", "urgent"},
 			ExternalKey: "EXT-123",
 		},
@@ -1171,40 +1171,40 @@ func TestProjectTaskToQueued_StatusMapping(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		status     provider.Status
+		status     workunit.Status
 		wantStatus storage.TaskStatus
 	}{
 		{
 			name:       "open -> ready",
-			status:     provider.StatusOpen,
+			status:     workunit.StatusOpen,
 			wantStatus: storage.TaskStatusReady,
 		},
 		{
 			name:       "in_progress -> ready",
-			status:     provider.StatusInProgress,
+			status:     workunit.StatusInProgress,
 			wantStatus: storage.TaskStatusReady,
 		},
 		{
 			name:       "review -> ready",
-			status:     provider.StatusReview,
+			status:     workunit.StatusReview,
 			wantStatus: storage.TaskStatusReady,
 		},
 		{
 			name:       "done -> submitted",
-			status:     provider.StatusDone,
+			status:     workunit.StatusDone,
 			wantStatus: storage.TaskStatusSubmitted,
 		},
 		{
 			name:       "closed -> submitted",
-			status:     provider.StatusClosed,
+			status:     workunit.StatusClosed,
 			wantStatus: storage.TaskStatusSubmitted,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pt := &provider.ProjectTask{
-				WorkUnit: &provider.WorkUnit{
+			pt := &workunit.ProjectTask{
+				WorkUnit: &workunit.WorkUnit{
 					ID:     "test-id",
 					Title:  "Test",
 					Status: tt.status,
@@ -1225,38 +1225,38 @@ func TestProjectTaskToQueued_PriorityMapping(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		priority     provider.Priority
+		priority     workunit.Priority
 		wantPriority int
 	}{
 		{
 			name:         "critical -> 1",
-			priority:     provider.PriorityCritical,
+			priority:     workunit.PriorityCritical,
 			wantPriority: 1,
 		},
 		{
 			name:         "high -> 2",
-			priority:     provider.PriorityHigh,
+			priority:     workunit.PriorityHigh,
 			wantPriority: 2,
 		},
 		{
 			name:         "normal -> 3",
-			priority:     provider.PriorityNormal,
+			priority:     workunit.PriorityNormal,
 			wantPriority: 3,
 		},
 		{
 			name:         "low -> 4",
-			priority:     provider.PriorityLow,
+			priority:     workunit.PriorityLow,
 			wantPriority: 4,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pt := &provider.ProjectTask{
-				WorkUnit: &provider.WorkUnit{
+			pt := &workunit.ProjectTask{
+				WorkUnit: &workunit.WorkUnit{
 					ID:       "test-id",
 					Title:    "Test",
-					Status:   provider.StatusOpen,
+					Status:   workunit.StatusOpen,
 					Priority: tt.priority,
 				},
 			}
