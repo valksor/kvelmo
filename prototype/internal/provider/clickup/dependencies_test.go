@@ -4,15 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestInfo_DependencyCapabilities(t *testing.T) {
 	info := Info()
 
-	expectedCaps := []provider.Capability{
-		provider.CapCreateDependency,
-		provider.CapFetchDependencies,
+	expectedCaps := []capability.Capability{
+		capability.CapCreateDependency,
+		capability.CapFetchDependencies,
 	}
 
 	for _, cap := range expectedCaps {
@@ -24,8 +25,8 @@ func TestInfo_DependencyCapabilities(t *testing.T) {
 
 func TestDependencyInterfaceImplementation(t *testing.T) {
 	// Verify Provider implements the dependency interfaces
-	var _ provider.DependencyCreator = (*Provider)(nil)
-	var _ provider.DependencyFetcher = (*Provider)(nil)
+	var _ workunit.DependencyCreator = (*Provider)(nil)
+	var _ workunit.DependencyFetcher = (*Provider)(nil)
 }
 
 func TestProviderNotInitialized(t *testing.T) {

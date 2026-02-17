@@ -3,7 +3,9 @@ package clickup
 import (
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -11,15 +13,15 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 
 var (
-	_ provider.Reader          = (*Provider)(nil)
-	_ provider.Identifier      = (*Provider)(nil)
-	_ provider.Lister          = (*Provider)(nil)
-	_ provider.CommentFetcher  = (*Provider)(nil)
-	_ provider.Commenter       = (*Provider)(nil)
-	_ provider.StatusUpdater   = (*Provider)(nil)
-	_ provider.Snapshotter     = (*Provider)(nil)
-	_ provider.WorkUnitCreator = (*Provider)(nil)
-	_ provider.SubtaskFetcher  = (*Provider)(nil)
+	_ workunit.Reader          = (*Provider)(nil)
+	_ workunit.Identifier      = (*Provider)(nil)
+	_ workunit.Lister          = (*Provider)(nil)
+	_ workunit.CommentFetcher  = (*Provider)(nil)
+	_ workunit.Commenter       = (*Provider)(nil)
+	_ workunit.StatusUpdater   = (*Provider)(nil)
+	_ snapshot.Snapshotter     = (*Provider)(nil)
+	_ workunit.WorkUnitCreator = (*Provider)(nil)
+	_ workunit.SubtaskFetcher  = (*Provider)(nil)
 )
 
 func TestParseReference(t *testing.T) {
@@ -164,22 +166,22 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	if !info.Capabilities.Has(provider.CapRead) {
+	if !info.Capabilities.Has(capability.CapRead) {
 		t.Error("Info().Capabilities should have CapRead")
 	}
-	if !info.Capabilities.Has(provider.CapList) {
+	if !info.Capabilities.Has(capability.CapList) {
 		t.Error("Info().Capabilities should have CapList")
 	}
-	if !info.Capabilities.Has(provider.CapFetchComments) {
+	if !info.Capabilities.Has(capability.CapFetchComments) {
 		t.Error("Info().Capabilities should have CapFetchComments")
 	}
-	if !info.Capabilities.Has(provider.CapComment) {
+	if !info.Capabilities.Has(capability.CapComment) {
 		t.Error("Info().Capabilities should have CapComment")
 	}
-	if !info.Capabilities.Has(provider.CapUpdateStatus) {
+	if !info.Capabilities.Has(capability.CapUpdateStatus) {
 		t.Error("Info().Capabilities should have CapUpdateStatus")
 	}
-	if !info.Capabilities.Has(provider.CapSnapshot) {
+	if !info.Capabilities.Has(capability.CapSnapshot) {
 		t.Error("Info().Capabilities should have CapSnapshot")
 	}
 }
@@ -188,47 +190,47 @@ func TestMapClickUpStatus(t *testing.T) {
 	tests := []struct {
 		name string
 		task *Task
-		want provider.Status
+		want workunit.Status
 	}{
 		{
 			name: "nil status",
 			task: &Task{Status: nil},
-			want: provider.StatusOpen,
+			want: workunit.StatusOpen,
 		},
 		{
 			name: "closed type",
 			task: &Task{Status: &Status{Type: "closed"}},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 		{
 			name: "done type",
 			task: &Task{Status: &Status{Type: "done"}},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 		{
 			name: "open type",
 			task: &Task{Status: &Status{Type: "open"}},
-			want: provider.StatusOpen,
+			want: workunit.StatusOpen,
 		},
 		{
 			name: "in progress status name",
 			task: &Task{Status: &Status{Status: "In Progress"}},
-			want: provider.StatusInProgress,
+			want: workunit.StatusInProgress,
 		},
 		{
 			name: "in review status name",
 			task: &Task{Status: &Status{Status: "In Review"}},
-			want: provider.StatusReview,
+			want: workunit.StatusReview,
 		},
 		{
 			name: "complete status name",
 			task: &Task{Status: &Status{Status: "Complete"}},
-			want: provider.StatusClosed,
+			want: workunit.StatusClosed,
 		},
 		{
 			name: "todo status name",
 			task: &Task{Status: &Status{Status: "To Do"}},
-			want: provider.StatusOpen,
+			want: workunit.StatusOpen,
 		},
 	}
 
@@ -246,42 +248,42 @@ func TestMapClickUpPriority(t *testing.T) {
 	tests := []struct {
 		name     string
 		priority *Priority
-		want     provider.Priority
+		want     workunit.Priority
 	}{
 		{
 			name:     "nil priority",
 			priority: nil,
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 		{
 			name:     "urgent",
 			priority: &Priority{Priority: "urgent"},
-			want:     provider.PriorityCritical,
+			want:     workunit.PriorityCritical,
 		},
 		{
 			name:     "high",
 			priority: &Priority{Priority: "high"},
-			want:     provider.PriorityHigh,
+			want:     workunit.PriorityHigh,
 		},
 		{
 			name:     "normal",
 			priority: &Priority{Priority: "normal"},
-			want:     provider.PriorityNormal,
+			want:     workunit.PriorityNormal,
 		},
 		{
 			name:     "low",
 			priority: &Priority{Priority: "low"},
-			want:     provider.PriorityLow,
+			want:     workunit.PriorityLow,
 		},
 		{
 			name:     "priority level 1",
 			priority: &Priority{Priority: "1"},
-			want:     provider.PriorityCritical,
+			want:     workunit.PriorityCritical,
 		},
 		{
 			name:     "priority level 4",
 			priority: &Priority{Priority: "4"},
-			want:     provider.PriorityLow,
+			want:     workunit.PriorityLow,
 		},
 	}
 

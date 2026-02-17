@@ -8,7 +8,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -39,29 +43,29 @@ func Info() provider.ProviderInfo {
 		Description: "Bitbucket Issues task source",
 		Schemes:     []string{"bitbucket", "bb"},
 		Priority:    20,
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:              true,
-			provider.CapList:              true,
-			provider.CapFetchComments:     true,
-			provider.CapComment:           true,
-			provider.CapUpdateStatus:      true,
-			provider.CapSnapshot:          true,
-			provider.CapCreatePR:          true,
-			provider.CapCreateWorkUnit:    true,
-			provider.CapFetchSubtasks:     true,
-			provider.CapFetchParent:       true,
-			provider.CapFetchPR:           true,
-			provider.CapPRComment:         true,
-			provider.CapFetchPRComments:   true,
-			provider.CapUpdatePRComment:   true,
-			provider.CapCreateDependency:  true,
-			provider.CapFetchDependencies: true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:              true,
+			capability.CapList:              true,
+			capability.CapFetchComments:     true,
+			capability.CapComment:           true,
+			capability.CapUpdateStatus:      true,
+			capability.CapSnapshot:          true,
+			capability.CapCreatePR:          true,
+			capability.CapCreateWorkUnit:    true,
+			capability.CapFetchSubtasks:     true,
+			capability.CapFetchParent:       true,
+			capability.CapFetchPR:           true,
+			capability.CapPRComment:         true,
+			capability.CapFetchPRComments:   true,
+			capability.CapUpdatePRComment:   true,
+			capability.CapCreateDependency:  true,
+			capability.CapFetchDependencies: true,
 		},
 	}
 }
 
 // New creates a Bitbucket provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	// Extract config values
 	configUsername := cfg.GetString("username")
 	configAppPassword := cfg.GetString("app_password")
@@ -134,7 +138,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a Bitbucket issue and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -173,7 +177,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		webURL = issue.Links.HTML.Href
 	}
 
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          strconv.Itoa(issue.ID),
 		ExternalID:  fmt.Sprintf("%s/%s#%d", workspace, repoSlug, issue.ID),
 		Provider:    ProviderName,
@@ -185,7 +189,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Assignees:   mapAssignee(issue.Assignee),
 		CreatedAt:   issue.CreatedOn,
 		UpdatedAt:   issue.UpdatedOn,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: id,
 			SyncedAt:  time.Now(),
@@ -228,9 +232,9 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		// Extract image URLs
 		imageURLs := ExtractImageURLs(issue.Content.Raw)
 		if len(imageURLs) > 0 {
-			wu.Attachments = make([]provider.Attachment, len(imageURLs))
+			wu.Attachments = make([]workunit.Attachment, len(imageURLs))
 			for i, url := range imageURLs {
-				wu.Attachments[i] = provider.Attachment{
+				wu.Attachments[i] = workunit.Attachment{
 					ID:   fmt.Sprintf("img-%d", i),
 					Name: fmt.Sprintf("image-%d", i),
 					URL:  url,
@@ -243,7 +247,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot captures the issue content for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -270,10 +274,10 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		return nil, err
 	}
 
-	snapshot := &provider.Snapshot{
+	snap := &snapshot.Snapshot{
 		Type: ProviderName,
 		Ref:  id,
-		Files: []provider.SnapshotFile{
+		Files: []snapshot.SnapshotFile{
 			{
 				Path:    "issue.md",
 				Content: formatIssueMarkdown(issue),
@@ -284,17 +288,17 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Fetch and include comments
 	comments, err := p.client.GetIssueComments(ctx, ref.IssueID)
 	if err == nil && len(comments) > 0 {
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    "comments.md",
 			Content: formatCommentsMarkdown(comments),
 		})
 	}
 
-	return snapshot, nil
+	return snap, nil
 }
 
 // List lists issues from the repository.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	workspace := p.config.Workspace
 	repoSlug := p.config.RepoSlug
 
@@ -307,11 +311,11 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	// Map status to Bitbucket state
 	state := ""
 	switch opts.Status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		state = "open"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		state = "closed"
-	case provider.StatusInProgress, provider.StatusReview, provider.StatusDone:
+	case workunit.StatusInProgress, workunit.StatusReview, workunit.StatusDone:
 		// Bitbucket doesn't have these states, treat as open
 		state = "open"
 	}
@@ -326,14 +330,14 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, err
 	}
 
-	result := make([]*provider.WorkUnit, len(issues))
+	result := make([]*workunit.WorkUnit, len(issues))
 	for i, issue := range issues {
 		description := ""
 		if issue.Content != nil {
 			description = issue.Content.Raw
 		}
 
-		result[i] = &provider.WorkUnit{
+		result[i] = &workunit.WorkUnit{
 			ID:          strconv.Itoa(issue.ID),
 			ExternalID:  fmt.Sprintf("%s/%s#%d", workspace, repoSlug, issue.ID),
 			Provider:    ProviderName,
@@ -351,7 +355,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments fetches comments for a work unit.
-func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -377,7 +381,7 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 }
 
 // AddComment adds a comment to a work unit.
-func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -404,7 +408,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 		content = comment.Content.Raw
 	}
 
-	author := provider.Person{
+	author := workunit.Person{
 		ID: "unknown",
 	}
 	if comment.User != nil {
@@ -415,7 +419,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 		}
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.Itoa(comment.ID),
 		Body:      content,
 		CreatedAt: comment.CreatedOn,
@@ -425,7 +429,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 }
 
 // UpdateStatus updates the status of a work unit.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return err
@@ -445,13 +449,13 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 	// Map provider status to Bitbucket state
 	var state string
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		state = "open"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		state = "closed"
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		state = "resolved"
-	case provider.StatusInProgress, provider.StatusReview:
+	case workunit.StatusInProgress, workunit.StatusReview:
 		// Bitbucket doesn't have these states, treat as open
 		state = "open"
 	}
@@ -473,33 +477,33 @@ func (p *Provider) GetClient() *Client {
 
 // --- Helper functions ---
 
-func mapBitbucketState(state string) provider.Status {
+func mapBitbucketState(state string) workunit.Status {
 	switch state {
 	case "new", "open":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "resolved", "closed":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	case "on hold":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "invalid", "duplicate", "wontfix":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
-func mapBitbucketPriority(priority string) provider.Priority {
+func mapBitbucketPriority(priority string) workunit.Priority {
 	switch priority {
 	case "blocker", "critical":
-		return provider.PriorityCritical
+		return workunit.PriorityCritical
 	case "major":
-		return provider.PriorityHigh
+		return workunit.PriorityHigh
 	case "minor":
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	case "trivial":
-		return provider.PriorityLow
+		return workunit.PriorityLow
 	default:
-		return provider.PriorityNormal
+		return workunit.PriorityNormal
 	}
 }
 
@@ -518,7 +522,7 @@ func mapBitbucketKind(kind string) string {
 	}
 }
 
-func mapAssignee(assignee *User) []provider.Person {
+func mapAssignee(assignee *User) []workunit.Person {
 	if assignee == nil {
 		return nil
 	}
@@ -528,7 +532,7 @@ func mapAssignee(assignee *User) []provider.Person {
 		name = assignee.Username
 	}
 
-	return []provider.Person{
+	return []workunit.Person{
 		{
 			ID:   assignee.UUID,
 			Name: name,
@@ -536,15 +540,15 @@ func mapAssignee(assignee *User) []provider.Person {
 	}
 }
 
-func mapComments(comments []Comment) []provider.Comment {
-	result := make([]provider.Comment, len(comments))
+func mapComments(comments []Comment) []workunit.Comment {
+	result := make([]workunit.Comment, len(comments))
 	for i, c := range comments {
 		content := ""
 		if c.Content != nil {
 			content = c.Content.Raw
 		}
 
-		author := provider.Person{
+		author := workunit.Person{
 			ID: "unknown",
 		}
 		if c.User != nil {
@@ -555,7 +559,7 @@ func mapComments(comments []Comment) []provider.Comment {
 			}
 		}
 
-		result[i] = provider.Comment{
+		result[i] = workunit.Comment{
 			ID:        strconv.Itoa(c.ID),
 			Body:      content,
 			CreatedAt: c.CreatedOn,

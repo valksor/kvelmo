@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
-// CreateWorkUnit implements the provider.WorkUnitCreator interface.
+// CreateWorkUnit implements the workunit.WorkUnitCreator interface.
 // It creates a new task in ClickUp.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	listID := p.config.DefaultList
 	if listID == "" {
 		return nil, ErrListRequired
@@ -22,7 +22,7 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	}
 
 	// Set priority
-	if opts.Priority != provider.PriorityNormal {
+	if opts.Priority != workunit.PriorityNormal {
 		reqBody["priority"] = mapProviderPriorityToClickUp(opts.Priority)
 	}
 
@@ -52,16 +52,16 @@ func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkU
 	return p.taskToWorkUnit(task), nil
 }
 
-// mapProviderPriorityToClickUp converts provider.Priority to ClickUp priority number.
-func mapProviderPriorityToClickUp(priority provider.Priority) int {
+// mapProviderPriorityToClickUp converts workunit.Priority to ClickUp priority number.
+func mapProviderPriorityToClickUp(priority workunit.Priority) int {
 	switch priority {
-	case provider.PriorityCritical:
+	case workunit.PriorityCritical:
 		return 1 // urgent
-	case provider.PriorityHigh:
+	case workunit.PriorityHigh:
 		return 2 // high
-	case provider.PriorityNormal:
+	case workunit.PriorityNormal:
 		return 3 // normal
-	case provider.PriorityLow:
+	case workunit.PriorityLow:
 		return 4 // low
 	default:
 		return 3
