@@ -126,6 +126,11 @@
       "unknown": false
     },
     {
+      "path": "github.com/crealfy/crea-wrike",
+      "license": "Apache-2.0",
+      "unknown": false
+    },
+    {
       "path": "github.com/danieljoos/wincred",
       "license": "MIT",
       "unknown": false
@@ -581,5 +586,5 @@
       "unknown": false
     }
   ],
-  "count": 116
+  "count": 117
 }
