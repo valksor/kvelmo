@@ -27,9 +27,10 @@ func openTestWorkspace(tb testing.TB, repoRoot string) *storage.Workspace {
 }
 
 // TestProviderRegistry ensures all expected providers are registered.
+// Note: wrike is excluded as it uses crea-wrike's external ConfigManager for login.
 func TestProviderRegistry(t *testing.T) {
 	expectedProviders := []string{
-		"github", "gitlab", "notion", "jira", "linear", "wrike", "youtrack",
+		"github", "gitlab", "notion", "jira", "linear", "youtrack",
 		"bitbucket", "asana", "clickup", "trello", "azuredevops",
 	}
 
@@ -281,14 +282,7 @@ func TestGetConfigToken(t *testing.T) {
 			},
 			want: "lin_api_test",
 		},
-		{
-			name:      "wrike token",
-			fieldPath: "Wrike.Token",
-			setup: func(cfg *storage.WorkspaceConfig) {
-				cfg.Wrike = &storage.WrikeSettings{Token: "wrike_test"}
-			},
-			want: "wrike_test",
-		},
+		// Note: Wrike is handled by crea-wrike (config in .crealfy/wrike.yaml)
 		{
 			name:      "youtrack token",
 			fieldPath: "YouTrack.Token",
@@ -517,24 +511,7 @@ func TestWriteTokenReferenceToConfig(t *testing.T) {
 				}
 			},
 		},
-		{
-			name:       "wrike - creates provider section",
-			provider:   "wrike",
-			envVar:     "WRIKE_TOKEN",
-			tokenValue: "test_wrike_token",
-			setup:      func(cfg *storage.WorkspaceConfig) {},
-			verify: func(t *testing.T, cfg *storage.WorkspaceConfig) {
-				t.Helper()
-				if cfg.Wrike == nil {
-					t.Error("Wrike config should not be nil")
-
-					return
-				}
-				if cfg.Wrike.Token != "test_wrike_token" {
-					t.Errorf("Wrike.Token = %q, want test_wrike_token", cfg.Wrike.Token)
-				}
-			},
-		},
+		// Note: Wrike is handled by crea-wrike (config in .crealfy/wrike.yaml)
 		{
 			name:       "youtrack - creates provider section",
 			provider:   "youtrack",
