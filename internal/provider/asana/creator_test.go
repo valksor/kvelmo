@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ provider.WorkUnitCreator = (*Provider)(nil)
+	_ workunit.WorkUnitCreator = (*Provider)(nil)
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -29,22 +29,22 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 	tests := []struct {
 		name        string
 		setup       func(*Provider)
-		opts        provider.CreateWorkUnitOptions
+		opts        workunit.CreateWorkUnitOptions
 		wantErr     bool
 		errContains string
-		validate    func(*testing.T, *provider.WorkUnit)
+		validate    func(*testing.T, *workunit.WorkUnit)
 	}{
 		{
 			name: "success: creates task with title and description",
 			setup: func(p *Provider) {
 				p.config.DefaultProject = "1234567890123456"
 			},
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:       "Test Task",
 				Description: "Test description",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if wu.Title != "Test Task" {
@@ -66,12 +66,12 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 			setup: func(p *Provider) {
 				p.config.DefaultProject = "default-project"
 			},
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:    "Test Task",
 				ParentID: "custom-project",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if wu.Title != "Test Task" {
@@ -84,12 +84,12 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 			setup: func(p *Provider) {
 				p.config.DefaultProject = "default-project-123"
 			},
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:    "Test Task",
 				ParentID: "",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				if wu.Title != "Test Task" {
@@ -102,12 +102,12 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 			setup: func(p *Provider) {
 				p.config.DefaultProject = "1234567890123456"
 			},
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:       "Full Task",
 				Description: "Complete description",
 			},
 			wantErr: false,
-			validate: func(t *testing.T, wu *provider.WorkUnit) {
+			validate: func(t *testing.T, wu *workunit.WorkUnit) {
 				t.Helper()
 
 				// Verify all required fields are set
@@ -126,8 +126,8 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 				if wu.Status == "" {
 					t.Error("Status should not be empty")
 				}
-				if wu.Priority != provider.PriorityNormal {
-					t.Errorf("Priority = %v, want %v", wu.Priority, provider.PriorityNormal)
+				if wu.Priority != workunit.PriorityNormal {
+					t.Errorf("Priority = %v, want %v", wu.Priority, workunit.PriorityNormal)
 				}
 				if wu.TaskType != "task" {
 					t.Errorf("TaskType = %q, want %q", wu.TaskType, "task")
@@ -157,7 +157,7 @@ func TestProviderCreateWorkUnit(t *testing.T) {
 			setup: func(p *Provider) {
 				p.config.DefaultProject = ""
 			},
-			opts: provider.CreateWorkUnitOptions{
+			opts: workunit.CreateWorkUnitOptions{
 				Title:    "Test Task",
 				ParentID: "",
 			},
@@ -308,7 +308,7 @@ func TestProviderCreateWorkUnitWithTags(t *testing.T) {
 		},
 	}
 
-	wu, err := p.CreateWorkUnit(context.Background(), provider.CreateWorkUnitOptions{
+	wu, err := p.CreateWorkUnit(context.Background(), workunit.CreateWorkUnitOptions{
 		Title: "Tagged Task",
 	})
 	if err != nil {

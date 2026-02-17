@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// AddLabels implements the provider.LabelManager interface.
+// AddLabels implements the workunit.LabelManager interface.
 // In Asana, labels are called tags and require GIDs.
 func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []string) error {
 	// Get current task to check existing tags
@@ -67,7 +67,7 @@ func (p *Provider) AddLabels(ctx context.Context, workUnitID string, labels []st
 	return nil
 }
 
-// RemoveLabels implements the provider.LabelManager interface.
+// RemoveLabels implements the workunit.LabelManager interface.
 // Removes specified labels (tags) from the Asana task.
 func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels []string) error {
 	// Get current task
