@@ -3,25 +3,27 @@ package provider
 import (
 	"strings"
 	"testing"
+
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestDetectChanges_NoChanges(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:       "Test Task",
 		Description: "Test description",
-		Status:      StatusOpen,
-		Priority:    PriorityNormal,
-		Comments:    []Comment{},
-		Attachments: []Attachment{},
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
+		Comments:    []workunit.Comment{},
+		Attachments: []workunit.Attachment{},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:       "Test Task",
 		Description: "Test description",
-		Status:      StatusOpen,
-		Priority:    PriorityNormal,
-		Comments:    []Comment{},
-		Attachments: []Attachment{},
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
+		Comments:    []workunit.Comment{},
+		Attachments: []workunit.Attachment{},
 	}
 
 	changes := DetectChanges(old, updated)
@@ -32,16 +34,16 @@ func TestDetectChanges_NoChanges(t *testing.T) {
 }
 
 func TestDetectChanges_DescriptionChanged(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:       "Test Task",
 		Description: "Original description",
-		Status:      StatusOpen,
+		Status:      workunit.StatusOpen,
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:       "Test Task",
 		Description: "Updated description",
-		Status:      StatusOpen,
+		Status:      workunit.StatusOpen,
 	}
 
 	changes := DetectChanges(old, updated)
@@ -55,14 +57,14 @@ func TestDetectChanges_DescriptionChanged(t *testing.T) {
 }
 
 func TestDetectChanges_StatusChanged(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:  "Test Task",
-		Status: StatusOpen,
+		Status: workunit.StatusOpen,
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:  "Test Task",
-		Status: StatusDone,
+		Status: workunit.StatusDone,
 	}
 
 	changes := DetectChanges(old, updated)
@@ -70,25 +72,25 @@ func TestDetectChanges_StatusChanged(t *testing.T) {
 	if !changes.StatusChanged {
 		t.Error("expected StatusChanged to be true")
 	}
-	if changes.OldStatus != StatusOpen {
+	if changes.OldStatus != workunit.StatusOpen {
 		t.Error("expected OldStatus to be Open")
 	}
-	if changes.NewStatus != StatusDone {
+	if changes.NewStatus != workunit.StatusDone {
 		t.Error("expected NewStatus to be Done")
 	}
 }
 
 func TestDetectChanges_NewComments(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title: "Test Task",
-		Comments: []Comment{
+		Comments: []workunit.Comment{
 			{ID: "1", Body: "Old comment"},
 		},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title: "Test Task",
-		Comments: []Comment{
+		Comments: []workunit.Comment{
 			{ID: "1", Body: "Old comment"},
 			{ID: "2", Body: "New comment"},
 		},
@@ -105,16 +107,16 @@ func TestDetectChanges_NewComments(t *testing.T) {
 }
 
 func TestDetectChanges_NewAttachments(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title: "Test Task",
-		Attachments: []Attachment{
+		Attachments: []workunit.Attachment{
 			{ID: "A1", Name: "old.pdf"},
 		},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title: "Test Task",
-		Attachments: []Attachment{
+		Attachments: []workunit.Attachment{
 			{ID: "A1", Name: "old.pdf"},
 			{ID: "A2", Name: "new.pdf"},
 		},
@@ -131,17 +133,17 @@ func TestDetectChanges_NewAttachments(t *testing.T) {
 }
 
 func TestDetectChanges_RemovedAttachments(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title: "Test Task",
-		Attachments: []Attachment{
+		Attachments: []workunit.Attachment{
 			{ID: "A1", Name: "file1.pdf"},
 			{ID: "A2", Name: "file2.pdf"},
 		},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title: "Test Task",
-		Attachments: []Attachment{
+		Attachments: []workunit.Attachment{
 			{ID: "A1", Name: "file1.pdf"},
 		},
 	}
@@ -161,14 +163,14 @@ func TestChangeSet_Summary(t *testing.T) {
 		HasChanges:         true,
 		DescriptionChanged: true,
 		StatusChanged:      true,
-		NewComments: []Comment{
+		NewComments: []workunit.Comment{
 			{ID: "1"},
 			{ID: "2"},
 		},
-		NewAttachments: []Attachment{
+		NewAttachments: []workunit.Attachment{
 			{ID: "A1"},
 		},
-		NewStatus: StatusDone,
+		NewStatus: workunit.StatusDone,
 	}
 
 	summary := changes.Summary()
@@ -181,10 +183,10 @@ func TestChangeSet_FormatDiff(t *testing.T) {
 	changes := ChangeSet{
 		HasChanges:         true,
 		DescriptionChanged: true,
-		NewComments: []Comment{
-			{ID: "1", Body: "New comment text here", Author: Person{ID: "user1"}},
+		NewComments: []workunit.Comment{
+			{ID: "1", Body: "New comment text here", Author: workunit.Person{ID: "user1"}},
 		},
-		NewAttachments: []Attachment{
+		NewAttachments: []workunit.Attachment{
 			{ID: "A1", Name: "document.pdf"},
 		},
 	}
@@ -201,19 +203,19 @@ func TestFindNewComments_Empty(t *testing.T) {
 		t.Error("expected nil for empty slices")
 	}
 
-	result = findNewComments([]Comment{}, []Comment{})
+	result = findNewComments([]workunit.Comment{}, []workunit.Comment{})
 	if result != nil {
 		t.Error("expected nil for empty slices")
 	}
 }
 
 func TestFindUpdatedComments(t *testing.T) {
-	old := []Comment{
+	old := []workunit.Comment{
 		{ID: "1", Body: "Original text"},
 		{ID: "2", Body: "Another comment"},
 	}
 
-	updatedComments := []Comment{
+	updatedComments := []workunit.Comment{
 		{ID: "1", Body: "Updated text"},
 		{ID: "2", Body: "Another comment"},
 	}
@@ -230,13 +232,13 @@ func TestFindUpdatedComments(t *testing.T) {
 func TestResolveAuthor(t *testing.T) {
 	tests := []struct {
 		name     string
-		comment  Comment
+		comment  workunit.Comment
 		expected string
 	}{
 		{
 			name: "author with name",
-			comment: Comment{
-				Author: Person{
+			comment: workunit.Comment{
+				Author: workunit.Person{
 					ID:   "123",
 					Name: "John Doe",
 				},
@@ -245,8 +247,8 @@ func TestResolveAuthor(t *testing.T) {
 		},
 		{
 			name: "author with ID only",
-			comment: Comment{
-				Author: Person{
+			comment: workunit.Comment{
+				Author: workunit.Person{
 					ID: "123",
 				},
 			},
@@ -254,7 +256,7 @@ func TestResolveAuthor(t *testing.T) {
 		},
 		{
 			name:     "empty author",
-			comment:  Comment{},
+			comment:  workunit.Comment{},
 			expected: "",
 		},
 	}
@@ -270,12 +272,12 @@ func TestResolveAuthor(t *testing.T) {
 }
 
 func TestDetectChanges_LabelsChanged(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:  "Test Task",
 		Labels: []string{"bug", "urgent"},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:  "Test Task",
 		Labels: []string{"bug", "enhancement"},
 	}
@@ -291,14 +293,14 @@ func TestDetectChanges_LabelsChanged(t *testing.T) {
 }
 
 func TestDetectChanges_AssigneesChanged(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:     "Test Task",
-		Assignees: []Person{{ID: "user1", Name: "Alice"}},
+		Assignees: []workunit.Person{{ID: "user1", Name: "Alice"}},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:     "Test Task",
-		Assignees: []Person{{ID: "user2", Name: "Bob"}},
+		Assignees: []workunit.Person{{ID: "user2", Name: "Bob"}},
 	}
 
 	changes := DetectChanges(old, updated)
@@ -312,12 +314,12 @@ func TestDetectChanges_AssigneesChanged(t *testing.T) {
 }
 
 func TestDetectChanges_LabelsOrderInsensitive(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:  "Test Task",
 		Labels: []string{"bug", "urgent", "enhancement"},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:  "Test Task",
 		Labels: []string{"enhancement", "bug", "urgent"},
 	}
@@ -330,14 +332,14 @@ func TestDetectChanges_LabelsOrderInsensitive(t *testing.T) {
 }
 
 func TestDetectChanges_AssigneesOrderInsensitive(t *testing.T) {
-	old := &WorkUnit{
+	old := &workunit.WorkUnit{
 		Title:     "Test Task",
-		Assignees: []Person{{ID: "user1"}, {ID: "user2"}},
+		Assignees: []workunit.Person{{ID: "user1"}, {ID: "user2"}},
 	}
 
-	updated := &WorkUnit{
+	updated := &workunit.WorkUnit{
 		Title:     "Test Task",
-		Assignees: []Person{{ID: "user2"}, {ID: "user1"}},
+		Assignees: []workunit.Person{{ID: "user2"}, {ID: "user1"}},
 	}
 
 	changes := DetectChanges(old, updated)
@@ -399,20 +401,20 @@ func TestEqualStringSlices_NilSafety(t *testing.T) {
 func TestEqualPersonSlices_Duplicates(t *testing.T) {
 	tests := []struct {
 		name     string
-		a        []Person
-		b        []Person
+		a        []workunit.Person
+		b        []workunit.Person
 		expected bool
 	}{
 		{
 			name:     "with duplicates in both",
-			a:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
-			b:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			a:        []workunit.Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			b:        []workunit.Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
 			expected: true,
 		},
 		{
 			name:     "different duplicate counts are equal after deduplication",
-			a:        []Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
-			b:        []Person{{ID: "1"}, {ID: "2"}},
+			a:        []workunit.Person{{ID: "1"}, {ID: "1"}, {ID: "2"}},
+			b:        []workunit.Person{{ID: "1"}, {ID: "2"}},
 			expected: true, // Now equal after deduplication
 		},
 		{
@@ -424,7 +426,7 @@ func TestEqualPersonSlices_Duplicates(t *testing.T) {
 		{
 			name:     "nil vs empty",
 			a:        nil,
-			b:        []Person{},
+			b:        []workunit.Person{},
 			expected: true,
 		},
 	}
@@ -442,27 +444,27 @@ func TestEqualPersonSlices_Duplicates(t *testing.T) {
 func TestPersonNames(t *testing.T) {
 	tests := []struct {
 		name     string
-		persons  []Person
+		persons  []workunit.Person
 		expected []string
 	}{
 		{
 			name:     "all have names",
-			persons:  []Person{{ID: "1", Name: "Alice"}, {ID: "2", Name: "Bob"}},
+			persons:  []workunit.Person{{ID: "1", Name: "Alice"}, {ID: "2", Name: "Bob"}},
 			expected: []string{"Alice", "Bob"},
 		},
 		{
 			name:     "mixed names and IDs",
-			persons:  []Person{{ID: "1", Name: "Alice"}, {ID: "2"}},
+			persons:  []workunit.Person{{ID: "1", Name: "Alice"}, {ID: "2"}},
 			expected: []string{"Alice", "2"},
 		},
 		{
 			name:     "all IDs only",
-			persons:  []Person{{ID: "1"}, {ID: "2"}},
+			persons:  []workunit.Person{{ID: "1"}, {ID: "2"}},
 			expected: []string{"1", "2"},
 		},
 		{
 			name:     "empty slice",
-			persons:  []Person{},
+			persons:  []workunit.Person{},
 			expected: []string{},
 		},
 		{
@@ -474,7 +476,7 @@ func TestPersonNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := PersonNames(tt.persons)
+			result := workunit.PersonNames(tt.persons)
 			if len(result) != len(tt.expected) {
 				t.Errorf("PersonNames() length = %d, want %d", len(result), len(tt.expected))
 
@@ -494,10 +496,10 @@ func TestChangeSet_Summary_StatusAndPriority(t *testing.T) {
 		HasChanges:      true,
 		StatusChanged:   true,
 		PriorityChanged: true,
-		OldStatus:       StatusOpen,
-		NewStatus:       StatusDone,
-		OldPriority:     PriorityNormal,
-		NewPriority:     PriorityHigh,
+		OldStatus:       workunit.StatusOpen,
+		NewStatus:       workunit.StatusDone,
+		OldPriority:     workunit.PriorityNormal,
+		NewPriority:     workunit.PriorityHigh,
 	}
 
 	summary := changes.Summary()

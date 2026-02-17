@@ -7,6 +7,10 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderInfo describes a registered provider.
@@ -14,12 +18,12 @@ type ProviderInfo struct {
 	Name         string
 	Description  string
 	Schemes      []string
-	Capabilities CapabilitySet
+	Capabilities capability.CapabilitySet
 	Priority     int // Higher priority = checked first for auto-detection
 }
 
 // Factory creates a provider instance.
-type Factory func(ctx context.Context, cfg Config) (any, error)
+type Factory func(ctx context.Context, cfg providerconfig.Config) (any, error)
 
 type registeredProvider struct {
 	info    ProviderInfo
@@ -117,7 +121,7 @@ type ResolveOptions struct {
 //  1. Explicit scheme prefix (e.g., "file:task.md") - uses that provider
 //  2. Default provider set in options - applies default scheme
 //  3. Error with helpful message listing available schemes
-func (r *Registry) Resolve(ctx context.Context, input string, cfg Config, opts ResolveOptions) (any, string, error) {
+func (r *Registry) Resolve(ctx context.Context, input string, cfg providerconfig.Config, opts ResolveOptions) (any, string, error) {
 	scheme, identifier := parseScheme(input)
 
 	if scheme != "" {
@@ -151,7 +155,7 @@ func parseScheme(input string) (string, string) {
 }
 
 // resolveWithScheme creates provider instance and parses identifier.
-func (r *Registry) resolveWithScheme(ctx context.Context, scheme, identifier string, cfg Config) (any, string, error) {
+func (r *Registry) resolveWithScheme(ctx context.Context, scheme, identifier string, cfg providerconfig.Config) (any, string, error) {
 	info, factory, ok := r.GetByScheme(scheme)
 	if !ok {
 		return nil, "", fmt.Errorf("unknown provider scheme: %s\nAvailable schemes: %s",
@@ -163,7 +167,7 @@ func (r *Registry) resolveWithScheme(ctx context.Context, scheme, identifier str
 		return nil, "", fmt.Errorf("create provider %s: %w", info.Name, err)
 	}
 
-	ident, ok := instance.(Identifier)
+	ident, ok := instance.(workunit.Identifier)
 	if !ok {
 		return nil, "", fmt.Errorf("provider %s does not support parsing", info.Name)
 	}
@@ -209,7 +213,7 @@ func (r *Registry) listSchemes() []string {
 }
 
 // Create creates a provider instance by name.
-func (r *Registry) Create(ctx context.Context, name string, cfg Config) (any, error) {
+func (r *Registry) Create(ctx context.Context, name string, cfg providerconfig.Config) (any, error) {
 	_, factory, ok := r.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("provider not found: %s", name)

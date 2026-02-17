@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // ValidationResult holds the result of configuration validation.
@@ -30,13 +32,13 @@ func (v *ValidationResult) Error() error {
 
 // Validator defines configuration validation rules for a provider.
 type Validator struct {
-	config       Config
+	config       providerconfig.Config
 	providerName string
 	result       ValidationResult
 }
 
 // NewValidator creates a new validator for a provider.
-func NewValidator(providerName string, cfg Config) *Validator {
+func NewValidator(providerName string, cfg providerconfig.Config) *Validator {
 	return &Validator{
 		config:       cfg,
 		providerName: providerName,
@@ -178,68 +180,9 @@ func (v *Validator) Positive(field string) *Validator {
 }
 
 // ValidateConfig is a convenience function for validating provider configuration.
-func ValidateConfig(providerName string, cfg Config, validations func(*Validator)) error {
+func ValidateConfig(providerName string, cfg providerconfig.Config, validations func(*Validator)) error {
 	v := NewValidator(providerName, cfg)
 	validations(v)
 
 	return v.Validate().Error()
-}
-
-// GetInt gets an int option from config.
-func (c Config) GetInt(key string) int {
-	if v, ok := c.options[key].(int); ok {
-		return v
-	}
-	if v, ok := c.options[key].(int64); ok {
-		return int(v)
-	}
-
-	return 0
-}
-
-// GetIntWithDefault gets an int option with a default value.
-func (c Config) GetIntWithDefault(key string, defaultVal int) int {
-	if v, ok := c.options[key].(int); ok {
-		return v
-	}
-	if v, ok := c.options[key].(int64); ok {
-		return int(v)
-	}
-
-	return defaultVal
-}
-
-// GetStringWithDefault gets a string option with a default value.
-func (c Config) GetStringWithDefault(key, defaultVal string) string {
-	if v, ok := c.options[key].(string); ok {
-		return v
-	}
-
-	return defaultVal
-}
-
-// GetStringSlice gets a string slice option.
-func (c Config) GetStringSlice(key string) []string {
-	if v, ok := c.options[key].([]string); ok {
-		return v
-	}
-
-	return nil
-}
-
-// Has checks if a key exists in the config.
-func (c Config) Has(key string) bool {
-	_, ok := c.options[key]
-
-	return ok
-}
-
-// Keys returns all keys in the config.
-func (c Config) Keys() []string {
-	keys := make([]string, 0, len(c.options))
-	for k := range c.options {
-		keys = append(keys, k)
-	}
-
-	return keys
 }

@@ -6,36 +6,38 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ChangeSet describes the differences between two versions of a work unit.
 type ChangeSet struct {
-	HasChanges         bool         // True if any changes were detected
-	DescriptionChanged bool         // True if the description changed
-	NewComments        []Comment    // Comments that exist in new but not old
-	UpdatedComments    []Comment    // Comments that exist in both but have different text
-	NewAttachments     []Attachment // Attachments that exist in new but not old
-	RemovedAttachments []Attachment // Attachments that exist in old but not new
-	OldDescription     string       // The old description for comparison
-	NewDescription     string       // The new description for comparison
-	OldTitle           string       // The old title
-	NewTitle           string       // The new title
-	StatusChanged      bool         // True if status changed
-	PriorityChanged    bool         // True if priority changed
-	OldStatus          Status
-	NewStatus          Status
-	OldPriority        Priority
-	NewPriority        Priority
-	LabelsChanged      bool     // True if labels changed
-	OldLabels          []string // Old labels
-	NewLabels          []string // New labels
-	AssigneesChanged   bool     // True if assignees changed
-	OldAssignees       []Person // Old assignees
-	NewAssignees       []Person // New assignees
+	HasChanges         bool                  // True if any changes were detected
+	DescriptionChanged bool                  // True if the description changed
+	NewComments        []workunit.Comment    // Comments that exist in new but not old
+	UpdatedComments    []workunit.Comment    // Comments that exist in both but have different text
+	NewAttachments     []workunit.Attachment // Attachments that exist in new but not old
+	RemovedAttachments []workunit.Attachment // Attachments that exist in old but not new
+	OldDescription     string                // The old description for comparison
+	NewDescription     string                // The new description for comparison
+	OldTitle           string                // The old title
+	NewTitle           string                // The new title
+	StatusChanged      bool                  // True if status changed
+	PriorityChanged    bool                  // True if priority changed
+	OldStatus          workunit.Status
+	NewStatus          workunit.Status
+	OldPriority        workunit.Priority
+	NewPriority        workunit.Priority
+	LabelsChanged      bool              // True if labels changed
+	OldLabels          []string          // Old labels
+	NewLabels          []string          // New labels
+	AssigneesChanged   bool              // True if assignees changed
+	OldAssignees       []workunit.Person // Old assignees
+	NewAssignees       []workunit.Person // New assignees
 }
 
 // DetectChanges compares two work units and returns a ChangeSet describing the differences.
-func DetectChanges(old, updated *WorkUnit) ChangeSet {
+func DetectChanges(old, updated *workunit.WorkUnit) ChangeSet {
 	changes := ChangeSet{
 		OldDescription: old.Description,
 		NewDescription: updated.Description,
@@ -116,7 +118,7 @@ func DetectChanges(old, updated *WorkUnit) ChangeSet {
 }
 
 // findNewComments returns comments that exist in updated but not in old.
-func findNewComments(old, updated []Comment) []Comment {
+func findNewComments(old, updated []workunit.Comment) []workunit.Comment {
 	if len(updated) == 0 {
 		return nil
 	}
@@ -126,7 +128,7 @@ func findNewComments(old, updated []Comment) []Comment {
 		oldIDs[c.ID] = true
 	}
 
-	var newComments []Comment
+	var newComments []workunit.Comment
 	for _, c := range updated {
 		if !oldIDs[c.ID] {
 			newComments = append(newComments, c)
@@ -137,17 +139,17 @@ func findNewComments(old, updated []Comment) []Comment {
 }
 
 // findUpdatedComments returns comments from updated that have different text than in old.
-func findUpdatedComments(old, updated []Comment) []Comment {
+func findUpdatedComments(old, updated []workunit.Comment) []workunit.Comment {
 	if len(old) == 0 || len(updated) == 0 {
 		return nil
 	}
 
-	oldComments := make(map[string]Comment)
+	oldComments := make(map[string]workunit.Comment)
 	for _, c := range old {
 		oldComments[c.ID] = c
 	}
 
-	var updatedComments []Comment
+	var updatedComments []workunit.Comment
 	for _, c := range updated {
 		if oldComment, exists := oldComments[c.ID]; exists {
 			// Compare text (trimmed)
@@ -163,7 +165,7 @@ func findUpdatedComments(old, updated []Comment) []Comment {
 }
 
 // findNewAttachments returns attachments that exist in updated but not in old.
-func findNewAttachments(old, updated []Attachment) []Attachment {
+func findNewAttachments(old, updated []workunit.Attachment) []workunit.Attachment {
 	if len(updated) == 0 {
 		return nil
 	}
@@ -173,7 +175,7 @@ func findNewAttachments(old, updated []Attachment) []Attachment {
 		oldIDs[a.ID] = true
 	}
 
-	var newAttachments []Attachment
+	var newAttachments []workunit.Attachment
 	for _, a := range updated {
 		if !oldIDs[a.ID] {
 			newAttachments = append(newAttachments, a)
@@ -184,7 +186,7 @@ func findNewAttachments(old, updated []Attachment) []Attachment {
 }
 
 // findRemovedAttachments returns attachments that exist in old but not in updated.
-func findRemovedAttachments(old, updated []Attachment) []Attachment {
+func findRemovedAttachments(old, updated []workunit.Attachment) []workunit.Attachment {
 	if len(old) == 0 {
 		return nil
 	}
@@ -194,7 +196,7 @@ func findRemovedAttachments(old, updated []Attachment) []Attachment {
 		updatedIDs[a.ID] = true
 	}
 
-	var removed []Attachment
+	var removed []workunit.Attachment
 	for _, a := range old {
 		if !updatedIDs[a.ID] {
 			removed = append(removed, a)
@@ -280,8 +282,8 @@ func (c ChangeSet) FormatDiff() string {
 	}
 
 	if c.AssigneesChanged {
-		oldAssignees := PersonNames(c.OldAssignees)
-		newAssignees := PersonNames(c.NewAssignees)
+		oldAssignees := workunit.PersonNames(c.OldAssignees)
+		newAssignees := workunit.PersonNames(c.NewAssignees)
 		oldStr := formatStringSlice(oldAssignees)
 		newStr := formatStringSlice(newAssignees)
 		builder.WriteString(fmt.Sprintf("  Assignees: %s → %s\n", oldStr, newStr))
@@ -359,7 +361,7 @@ func (c ChangeSet) GetMostRecentUpdate() time.Time {
 
 // ResolveAuthor extracts the author name from a comment.
 // This is a provider-agnostic helper that works with the standard Comment type.
-func ResolveAuthor(comment Comment) string {
+func ResolveAuthor(comment workunit.Comment) string {
 	if comment.Author.Name != "" {
 		return comment.Author.Name
 	}
@@ -451,7 +453,7 @@ func equalStringSlicesMap(a, b []string) bool {
 // The comparison is order-insensitive, compares by ID, and treats duplicates within
 // each slice as the same person (e.g., [{ID:"1"}, {ID:"1"}] has one unique person).
 // Returns true if both slices contain the same set of unique persons.
-func equalPersonSlices(a, b []Person) bool {
+func equalPersonSlices(a, b []workunit.Person) bool {
 	// Treat nil and empty slices as equal
 	if len(a) == 0 && len(b) == 0 {
 		return true
