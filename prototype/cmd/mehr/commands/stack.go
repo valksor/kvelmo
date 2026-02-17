@@ -14,6 +14,8 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/stack"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 var stackCmd = &cobra.Command{
@@ -552,7 +554,7 @@ func runStackSync(cmd *cobra.Command, _ []string) error {
 
 	// Try to resolve a provider that supports PR fetching
 	// For now, we'll use a simple approach - get the provider from the first task with a PR
-	var prFetcher provider.PRFetcher
+	var prFetcher pullrequest.PRFetcher
 	for _, s := range stacks {
 		for _, task := range s.Tasks {
 			if task.PRNumber > 0 {
@@ -562,12 +564,12 @@ func runStackSync(cmd *cobra.Command, _ []string) error {
 					continue
 				}
 
-				providerInstance, _, err := registry.Resolve(ctx, work.Source.Ref, provider.NewConfig(), provider.ResolveOptions{})
+				providerInstance, _, err := registry.Resolve(ctx, work.Source.Ref, providerconfig.NewConfig(), provider.ResolveOptions{})
 				if err != nil {
 					continue
 				}
 
-				if fetcher, ok := providerInstance.(provider.PRFetcher); ok {
+				if fetcher, ok := providerInstance.(pullrequest.PRFetcher); ok {
 					prFetcher = fetcher
 
 					break
