@@ -7,6 +7,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/conductor"
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // RegisterRegistryTools registers agent and provider registry tools.
@@ -124,7 +125,7 @@ func RegisterRegistryTools(registry *ToolRegistry, cond *conductor.Conductor) {
 			}
 
 			// Create empty config for resolution
-			cfg := provider.Config{}
+			cfg := providerconfig.Config{}
 
 			// Try to resolve
 			_, providerName, err := providerReg.Resolve(ctx, ref, cfg, provider.ResolveOptions{

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/browser"
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // SampleTaskContent returns a sample task markdown content.
@@ -16,16 +16,16 @@ func SampleTaskContent(title string) string {
 }
 
 // SampleWorkUnit returns a sample WorkUnit for testing.
-func SampleWorkUnit() *provider.WorkUnit {
-	return &provider.WorkUnit{
+func SampleWorkUnit() *workunit.WorkUnit {
+	return &workunit.WorkUnit{
 		ID:          "sample-task-123",
 		Title:       "Sample Task",
 		Description: "This is a sample task for testing",
 		ExternalKey: "SAMPLE-123",
 		Provider:    "file",
-		Status:      provider.StatusOpen,
-		Priority:    provider.PriorityNormal,
-		Source: provider.SourceInfo{
+		Status:      workunit.StatusOpen,
+		Priority:    workunit.PriorityNormal,
+		Source: workunit.SourceInfo{
 			Type:      "file",
 			Reference: "task.md",
 			SyncedAt:  time.Now(),
@@ -41,7 +41,7 @@ func SampleWorkUnit() *provider.WorkUnit {
 }
 
 // SampleWorkUnitWithOptions returns a configurable WorkUnit for testing.
-func SampleWorkUnitWithOptions(opts func(*provider.WorkUnit)) *provider.WorkUnit {
+func SampleWorkUnitWithOptions(opts func(*workunit.WorkUnit)) *workunit.WorkUnit {
 	wu := SampleWorkUnit()
 	if opts != nil {
 		opts(wu)
@@ -73,14 +73,14 @@ func SampleWorkspaceConfig() *storage.WorkspaceConfig {
 }
 
 // SampleAgentConfig returns a sample agent configuration.
-func SampleAgentConfig() *provider.AgentConfig {
-	return &provider.AgentConfig{
+func SampleAgentConfig() *workunit.AgentConfig {
+	return &workunit.AgentConfig{
 		Name: "test-agent",
 		Env: map[string]string{
 			"TEST_VAR": "test-value",
 		},
 		Args: []string{"--test-arg"},
-		Steps: map[string]provider.StepAgentConfig{
+		Steps: map[string]workunit.StepAgentConfig{
 			"planning": {
 				Name: "planning-agent",
 				Env:  map[string]string{"PLANNING_VAR": "planning-value"},
@@ -204,29 +204,29 @@ func SampleSession() *storage.Session {
 }
 
 // WithTitle sets a custom title on a WorkUnit.
-func WithTitle(title string) func(*provider.WorkUnit) {
-	return func(wu *provider.WorkUnit) {
+func WithTitle(title string) func(*workunit.WorkUnit) {
+	return func(wu *workunit.WorkUnit) {
 		wu.Title = title
 	}
 }
 
 // WithExternalKey sets a custom external key on a WorkUnit.
-func WithExternalKey(key string) func(*provider.WorkUnit) {
-	return func(wu *provider.WorkUnit) {
+func WithExternalKey(key string) func(*workunit.WorkUnit) {
+	return func(wu *workunit.WorkUnit) {
 		wu.ExternalKey = key
 	}
 }
 
 // WithAgentConfig sets agent configuration on a WorkUnit.
-func WithAgentConfig(cfg *provider.AgentConfig) func(*provider.WorkUnit) {
-	return func(wu *provider.WorkUnit) {
+func WithAgentConfig(cfg *workunit.AgentConfig) func(*workunit.WorkUnit) {
+	return func(wu *workunit.WorkUnit) {
 		wu.AgentConfig = cfg
 	}
 }
 
 // WithTaskType sets the task type on a WorkUnit.
-func WithTaskType(taskType string) func(*provider.WorkUnit) {
-	return func(wu *provider.WorkUnit) {
+func WithTaskType(taskType string) func(*workunit.WorkUnit) {
+	return func(wu *workunit.WorkUnit) {
 		wu.TaskType = taskType
 	}
 }

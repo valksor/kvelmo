@@ -72,7 +72,7 @@ type FetchParams struct {
 }
 
 // WorkUnitResult represents a work unit returned by a provider plugin.
-// This mirrors provider.WorkUnit but uses JSON-friendly types.
+// This mirrors workunit.WorkUnit but uses JSON-friendly types.
 type WorkUnitResult struct {
 	ID          string   `json:"id"`
 	ExternalID  string   `json:"externalId,omitempty"`

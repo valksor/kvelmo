@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestNewProviderAdapter(t *testing.T) {
@@ -37,8 +38,8 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 	tests := []struct {
 		name        string
 		manifest    *Manifest
-		wantCaps    []provider.Capability
-		wantNotCaps []provider.Capability
+		wantCaps    []capability.Capability
+		wantNotCaps []capability.Capability
 	}{
 		{
 			name: "no capabilities",
@@ -48,8 +49,8 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 					Capabilities: []string{},
 				},
 			},
-			wantCaps:    []provider.Capability{provider.CapRead}, // Always has read
-			wantNotCaps: []provider.Capability{provider.CapList, provider.CapComment},
+			wantCaps:    []capability.Capability{capability.CapRead}, // Always has read
+			wantNotCaps: []capability.Capability{capability.CapList, capability.CapComment},
 		},
 		{
 			name: "with list capability",
@@ -59,7 +60,7 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 					Capabilities: []string{"list"},
 				},
 			},
-			wantCaps: []provider.Capability{provider.CapRead, provider.CapList},
+			wantCaps: []capability.Capability{capability.CapRead, capability.CapList},
 		},
 		{
 			name: "with comment capability",
@@ -69,7 +70,7 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 					Capabilities: []string{"comment"},
 				},
 			},
-			wantCaps: []provider.Capability{provider.CapRead, provider.CapComment},
+			wantCaps: []capability.Capability{capability.CapRead, capability.CapComment},
 		},
 		{
 			name: "multiple capabilities",
@@ -89,17 +90,17 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 					},
 				},
 			},
-			wantCaps: []provider.Capability{
-				provider.CapRead,
-				provider.CapList,
-				provider.CapComment,
-				provider.CapUpdateStatus,
-				provider.CapManageLabels,
-				provider.CapSnapshot,
-				provider.CapCreatePR,
-				provider.CapLinkBranch,
-				provider.CapFetchComments,
-				provider.CapDownloadAttachment,
+			wantCaps: []capability.Capability{
+				capability.CapRead,
+				capability.CapList,
+				capability.CapComment,
+				capability.CapUpdateStatus,
+				capability.CapManageLabels,
+				capability.CapSnapshot,
+				capability.CapCreatePR,
+				capability.CapLinkBranch,
+				capability.CapFetchComments,
+				capability.CapDownloadAttachment,
 			},
 		},
 		{
@@ -110,8 +111,8 @@ func TestProviderAdapter_Capabilities(t *testing.T) {
 					Capabilities: []string{"unknown_cap", "list"},
 				},
 			},
-			wantCaps:    []provider.Capability{provider.CapRead, provider.CapList},
-			wantNotCaps: []provider.Capability{provider.CapComment},
+			wantCaps:    []capability.Capability{capability.CapRead, capability.CapList},
+			wantNotCaps: []capability.Capability{capability.CapComment},
 		},
 	}
 
@@ -197,10 +198,10 @@ func TestConvertWorkUnit(t *testing.T) {
 		t.Errorf("Description = %q, want %q", result.Description, "Description text")
 	}
 	if result.Status != ("open") {
-		t.Errorf("Status = %v, want %v", result.Status, provider.Status("open"))
+		t.Errorf("Status = %v, want %v", result.Status, workunit.Status("open"))
 	}
-	if result.Priority != provider.Priority(2) {
-		t.Errorf("Priority = %v, want %v", result.Priority, provider.Priority(2))
+	if result.Priority != workunit.Priority(2) {
+		t.Errorf("Priority = %v, want %v", result.Priority, workunit.Priority(2))
 	}
 	if len(result.Labels) != 2 {
 		t.Errorf("Labels count = %d, want 2", len(result.Labels))

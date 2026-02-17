@@ -67,7 +67,6 @@ func ReinitConfig(old *WorkspaceConfig) *WorkspaceConfig {
 	cfg.Jira = old.Jira
 	cfg.Linear = old.Linear
 	cfg.Notion = old.Notion
-	cfg.Wrike = old.Wrike
 	cfg.YouTrack = old.YouTrack
 	cfg.Bitbucket = old.Bitbucket
 	cfg.Asana = old.Asana

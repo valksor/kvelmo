@@ -1,5 +1,7 @@
 package storage
 
+import "github.com/crealfy/crea-wrike/wrike"
+
 // WorkspaceConfig holds workspace-specific configuration that users can customize.
 type WorkspaceConfig struct {
 	Version       int                         `yaml:"version" json:"version"`
@@ -15,13 +17,13 @@ type WorkspaceConfig struct {
 	Notion        *NotionSettings             `yaml:"notion,omitempty" json:"notion,omitempty"`
 	Jira          *JiraSettings               `yaml:"jira,omitempty" json:"jira,omitempty"`
 	Linear        *LinearSettings             `yaml:"linear,omitempty" json:"linear,omitempty"`
-	Wrike         *WrikeSettings              `yaml:"wrike,omitempty" json:"wrike,omitempty"`
 	YouTrack      *YouTrackSettings           `yaml:"youtrack,omitempty" json:"youtrack,omitempty"`
 	Bitbucket     *BitbucketSettings          `yaml:"bitbucket,omitempty" json:"bitbucket,omitempty"`
 	Asana         *AsanaSettings              `yaml:"asana,omitempty" json:"asana,omitempty"`
 	ClickUp       *ClickUpSettings            `yaml:"clickup,omitempty" json:"clickup,omitempty"`
 	AzureDevOps   *AzureDevOpsSettings        `yaml:"azure_devops,omitempty" json:"azure_devops,omitempty"`
 	Trello        *TrelloSettings             `yaml:"trello,omitempty" json:"trello,omitempty"`
+	Wrike         *wrike.Settings             `yaml:"wrike,omitempty" json:"wrike,omitempty"`
 	Plugins       PluginsConfig               `yaml:"plugins,omitempty" json:"plugins,omitempty"`
 	Update        UpdateSettings              `yaml:"update,omitempty" json:"update,omitempty"`
 	Storage       StorageSettings             `yaml:"storage,omitempty" json:"storage,omitempty"`
@@ -74,15 +76,6 @@ type GitHubCommentsSettings struct {
 	OnPlanDone      bool `yaml:"on_plan_done" json:"on_plan_done"`           // Post summary of planned implementation
 	OnImplementDone bool `yaml:"on_implement_done" json:"on_implement_done"` // Post changelog with files changed
 	OnPRCreated     bool `yaml:"on_pr_created" json:"on_pr_created"`         // Post PR link
-}
-
-// WrikeSettings holds Wrike provider configuration.
-type WrikeSettings struct {
-	Token   string `yaml:"token,omitempty" json:"token,omitempty" schema:"label=Token;desc=Wrike API token;sensitive"`
-	Host    string `yaml:"host,omitempty" json:"host,omitempty" schema:"label=Host;desc=API base URL override;default=https://www.wrike.com/api/v4;advanced"`
-	Space   string `yaml:"space,omitempty" json:"space,omitempty" schema:"label=Space;desc=Space ID"`
-	Folder  string `yaml:"folder,omitempty" json:"folder,omitempty" schema:"label=Folder;desc=Folder ID"`
-	Project string `yaml:"project,omitempty" json:"project,omitempty" schema:"label=Project;desc=Project ID"`
 }
 
 // GitLabSettings holds GitLab provider configuration.
