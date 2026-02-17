@@ -8,12 +8,13 @@ import (
 
 	gh "github.com/google/go-github/v67/github"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreatePullRequest creates a new pull request on GitHub.
-func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequestOptions) (*provider.PullRequest, error) {
+func (p *Provider) CreatePullRequest(ctx context.Context, opts pullrequest.PullRequestOptions) (*pullrequest.PullRequest, error) {
 	// Use provider's default owner/repo if not specified in metadata
 	owner := p.owner
 	repo := p.repo
@@ -52,7 +53,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequ
 		return nil, err
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:     strconv.FormatInt(ghPR.GetID(), 10),
 		Number: ghPR.GetNumber(),
 		URL:    ghPR.GetHTMLURL(),
@@ -144,9 +145,9 @@ func (p *Provider) GetDefaultBranch(ctx context.Context) (string, error) {
 	return p.client.GetDefaultBranch(ctx)
 }
 
-// PROptions holds options for PR creation (extends provider.PullRequestOptions).
+// PROptions holds options for PR creation (extends pullrequest.PullRequestOptions).
 type PROptions struct {
-	provider.PullRequestOptions
+	pullrequest.PullRequestOptions
 
 	// Additional GitHub-specific options
 	MaintainerCanModify bool
@@ -154,11 +155,11 @@ type PROptions struct {
 }
 
 // CreatePRFromTask creates a PR from task context.
-func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*provider.PullRequest, error) {
+func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*pullrequest.PullRequest, error) {
 	title := GeneratePRTitle(taskWork)
 	body := GeneratePRBody(taskWork, specs, diffStat)
 
-	opts := provider.PullRequestOptions{
+	opts := pullrequest.PullRequestOptions{
 		Title:        title,
 		Body:         body,
 		SourceBranch: sourceBranch,
@@ -176,7 +177,7 @@ func (p *Provider) CreatePRFromTask(ctx context.Context, taskWork *storage.TaskW
 // ─────────────────────────────────────────────────────────────────────────────
 
 // FetchPullRequest retrieves pull request details.
-func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*pullrequest.PullRequest, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -188,7 +189,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 		return nil, err
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:         strconv.FormatInt(ghPR.GetID(), 10),
 		URL:        ghPR.GetHTMLURL(),
 		Title:      ghPR.GetTitle(),
@@ -207,7 +208,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 }
 
 // FetchPullRequestDiff retrieves the diff for a pull request.
-func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*pullrequest.PullRequestDiff, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -227,9 +228,9 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 	}
 
 	// Map files
-	providerFiles := make([]provider.FileDiff, len(files))
+	providerFiles := make([]pullrequest.FileDiff, len(files))
 	for i, f := range files {
-		providerFiles[i] = provider.FileDiff{
+		providerFiles[i] = pullrequest.FileDiff{
 			Path:      f.GetFilename(),
 			Mode:      determineFileMode(f.GetStatus()),
 			Patch:     f.GetPatch(),
@@ -238,7 +239,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 		}
 	}
 
-	return &provider.PullRequestDiff{
+	return &pullrequest.PullRequestDiff{
 		URL:        fmt.Sprintf("https://github.com/%s/%s/pull/%d/files", p.owner, p.repo, number),
 		BaseBranch: ghPR.GetBase().GetRef(),
 		HeadBranch: ghPR.GetHead().GetRef(),
@@ -251,7 +252,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 }
 
 // AddPullRequestComment posts a comment to a pull request.
-func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*workunit.Comment, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -263,17 +264,17 @@ func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body s
 		return nil, err
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.FormatInt(ghComment.GetID(), 10),
 		Body:      ghComment.GetBody(),
-		Author:    provider.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
+		Author:    workunit.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
 		CreatedAt: ghComment.GetCreatedAt().Time,
 		UpdatedAt: ghComment.GetUpdatedAt().Time,
 	}, nil
 }
 
 // FetchPullRequestComments retrieves all comments on a pull request.
-func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]workunit.Comment, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -285,13 +286,13 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 		return nil, err
 	}
 
-	result := make([]provider.Comment, len(ghComments))
+	result := make([]workunit.Comment, len(ghComments))
 	for i, c := range ghComments {
 		userLogin := c.GetUser().GetLogin()
-		result[i] = provider.Comment{
+		result[i] = workunit.Comment{
 			ID:        strconv.FormatInt(c.GetID(), 10),
 			Body:      c.GetBody(),
-			Author:    provider.Person{ID: userLogin, Name: userLogin},
+			Author:    workunit.Person{ID: userLogin, Name: userLogin},
 			CreatedAt: c.GetCreatedAt().Time,
 			UpdatedAt: c.GetUpdatedAt().Time,
 		}
@@ -301,7 +302,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 }
 
 // UpdatePullRequestComment updates an existing comment on a pull request.
-func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*workunit.Comment, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -319,10 +320,10 @@ func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, com
 		return nil, err
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.FormatInt(ghComment.GetID(), 10),
 		Body:      ghComment.GetBody(),
-		Author:    provider.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
+		Author:    workunit.Person{ID: ghComment.GetUser().GetLogin(), Name: ghComment.GetUser().GetLogin()},
 		CreatedAt: ghComment.GetCreatedAt().Time,
 		UpdatedAt: ghComment.GetUpdatedAt().Time,
 	}, nil
@@ -382,7 +383,7 @@ func determineFileMode(status string) string {
 
 // SubmitReview submits a formal review to a pull request.
 // This creates a GitHub PR review with APPROVED/REQUEST_CHANGES/COMMENT.
-func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewOptions) (*provider.ReviewSubmission, error) {
+func (p *Provider) SubmitReview(ctx context.Context, opts pullrequest.SubmitReviewOptions) (*pullrequest.ReviewSubmission, error) {
 	if p.owner == "" || p.repo == "" {
 		return nil, ErrRepoNotConfigured
 	}
@@ -392,11 +393,11 @@ func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewO
 	// Map provider event to GitHub event
 	var event string
 	switch opts.Event {
-	case provider.ReviewEventApprove:
+	case pullrequest.ReviewEventApprove:
 		event = "APPROVE"
-	case provider.ReviewEventRequestChanges:
+	case pullrequest.ReviewEventRequestChanges:
 		event = "REQUEST_CHANGES"
-	case provider.ReviewEventComment:
+	case pullrequest.ReviewEventComment:
 		event = "COMMENT"
 	default:
 		event = "COMMENT"
@@ -434,7 +435,7 @@ func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewO
 		return nil, err
 	}
 
-	return &provider.ReviewSubmission{
+	return &pullrequest.ReviewSubmission{
 		ID:             strconv.FormatInt(review.GetID(), 10),
 		URL:            review.GetHTMLURL(),
 		CommentsPosted: len(comments),

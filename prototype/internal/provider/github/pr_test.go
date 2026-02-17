@@ -9,6 +9,7 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -293,7 +294,7 @@ func TestCreatePullRequest_ProviderErrors(t *testing.T) {
 				repo:  tt.repo,
 			}
 
-			_, err := p.CreatePullRequest(context.Background(), provider.PullRequestOptions{
+			_, err := p.CreatePullRequest(context.Background(), pullrequest.PullRequestOptions{
 				Title:        "Test",
 				Body:         "Body",
 				SourceBranch: "feature",
@@ -358,7 +359,7 @@ func TestCreatePullRequest_Success(t *testing.T) {
 			config: &Config{},
 		}
 
-		pr, err := p.CreatePullRequest(context.Background(), provider.PullRequestOptions{
+		pr, err := p.CreatePullRequest(context.Background(), pullrequest.PullRequestOptions{
 			Title:        "Test PR",
 			Body:         "Test body",
 			SourceBranch: "feature",
@@ -417,7 +418,7 @@ func TestCreatePullRequest_Success(t *testing.T) {
 			config: &Config{DraftPR: true},
 		}
 
-		pr, err := p.CreatePullRequest(context.Background(), provider.PullRequestOptions{
+		pr, err := p.CreatePullRequest(context.Background(), pullrequest.PullRequestOptions{
 			Title:        "Draft PR",
 			SourceBranch: "draft-branch",
 		})
@@ -460,7 +461,7 @@ func TestCreatePullRequest_Success(t *testing.T) {
 			config: &Config{},
 		}
 
-		pr, err := p.CreatePullRequest(context.Background(), provider.PullRequestOptions{
+		pr, err := p.CreatePullRequest(context.Background(), pullrequest.PullRequestOptions{
 			Title:        "PR to develop",
 			SourceBranch: "feature",
 			TargetBranch: "develop",

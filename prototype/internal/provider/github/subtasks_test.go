@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -97,16 +97,16 @@ func TestFetchSubtasks(t *testing.T) {
 		if subtasks[0].Title != "First task" {
 			t.Errorf("subtasks[0].Title = %q, want %q", subtasks[0].Title, "First task")
 		}
-		if subtasks[0].Status != provider.StatusOpen {
-			t.Errorf("subtasks[0].Status = %q, want %q", subtasks[0].Status, provider.StatusOpen)
+		if subtasks[0].Status != workunit.StatusOpen {
+			t.Errorf("subtasks[0].Status = %q, want %q", subtasks[0].Status, workunit.StatusOpen)
 		}
 
 		// Check second task (completed)
 		if subtasks[1].Title != "Completed task" {
 			t.Errorf("subtasks[1].Title = %q, want %q", subtasks[1].Title, "Completed task")
 		}
-		if subtasks[1].Status != provider.StatusDone {
-			t.Errorf("subtasks[1].Status = %q, want %q", subtasks[1].Status, provider.StatusDone)
+		if subtasks[1].Status != workunit.StatusDone {
+			t.Errorf("subtasks[1].Status = %q, want %q", subtasks[1].Status, workunit.StatusDone)
 		}
 
 		// Check metadata

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ func TestList(t *testing.T) {
 			config: &Config{},
 		}
 
-		result, err := p.List(context.Background(), provider.ListOptions{})
+		result, err := p.List(context.Background(), workunit.ListOptions{})
 		if err != nil {
 			t.Fatalf("List error = %v", err)
 		}
@@ -81,8 +81,8 @@ func TestList(t *testing.T) {
 		if result[0].ID != "123" {
 			t.Errorf("result[0].ID = %q, want %q", result[0].ID, "123")
 		}
-		if result[0].Status != provider.StatusOpen {
-			t.Errorf("result[0].Status = %q, want %q", result[0].Status, provider.StatusOpen)
+		if result[0].Status != workunit.StatusOpen {
+			t.Errorf("result[0].Status = %q, want %q", result[0].Status, workunit.StatusOpen)
 		}
 	})
 
@@ -131,7 +131,7 @@ func TestList(t *testing.T) {
 			config: &Config{},
 		}
 
-		result, err := p.List(context.Background(), provider.ListOptions{})
+		result, err := p.List(context.Background(), workunit.ListOptions{})
 		if err != nil {
 			t.Fatalf("List error = %v", err)
 		}
@@ -152,7 +152,7 @@ func TestList(t *testing.T) {
 			config: &Config{},
 		}
 
-		_, err := p.List(context.Background(), provider.ListOptions{})
+		_, err := p.List(context.Background(), workunit.ListOptions{})
 		if !errors.Is(err, ErrRepoNotConfigured) {
 			t.Errorf("error = %v, want %v", err, ErrRepoNotConfigured)
 		}
@@ -184,7 +184,7 @@ func TestList(t *testing.T) {
 			config: &Config{},
 		}
 
-		result, err := p.List(context.Background(), provider.ListOptions{Limit: 3})
+		result, err := p.List(context.Background(), workunit.ListOptions{Limit: 3})
 		if err != nil {
 			t.Fatalf("List error = %v", err)
 		}

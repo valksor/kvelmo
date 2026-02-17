@@ -8,8 +8,9 @@ import (
 	"time"
 
 	gh "github.com/google/go-github/v67/github"
-
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -44,13 +45,13 @@ func TestInfo(t *testing.T) {
 	}
 
 	// Check capabilities
-	expectedCaps := []provider.Capability{
-		provider.CapRead,
-		provider.CapFetchComments,
-		provider.CapComment,
-		provider.CapCreatePR,
-		provider.CapDownloadAttachment,
-		provider.CapSnapshot,
+	expectedCaps := []capability.Capability{
+		capability.CapRead,
+		capability.CapFetchComments,
+		capability.CapComment,
+		capability.CapCreatePR,
+		capability.CapDownloadAttachment,
+		capability.CapSnapshot,
 	}
 	for _, cap := range expectedCaps {
 		if !info.Capabilities.Has(cap) {
@@ -67,27 +68,27 @@ func TestMapGitHubState(t *testing.T) {
 	tests := []struct {
 		name  string
 		state string
-		want  provider.Status
+		want  workunit.Status
 	}{
 		{
 			name:  "open state",
 			state: "open",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "closed state",
 			state: "closed",
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "unknown state defaults to open",
 			state: "unknown",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "empty state defaults to open",
 			state: "",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 	}
 
@@ -206,57 +207,57 @@ func TestInferPriorityFromLabels(t *testing.T) {
 	tests := []struct {
 		name   string
 		labels []*gh.Label
-		want   provider.Priority
+		want   workunit.Priority
 	}{
 		{
 			name:   "critical label",
 			labels: []*gh.Label{{Name: ptr("critical")}},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 		{
 			name:   "urgent label",
 			labels: []*gh.Label{{Name: ptr("urgent")}},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 		{
 			name:   "priority:high label",
 			labels: []*gh.Label{{Name: ptr("priority:high")}},
-			want:   provider.PriorityHigh,
+			want:   workunit.PriorityHigh,
 		},
 		{
 			name:   "high-priority label",
 			labels: []*gh.Label{{Name: ptr("high-priority")}},
-			want:   provider.PriorityHigh,
+			want:   workunit.PriorityHigh,
 		},
 		{
 			name:   "priority:low label",
 			labels: []*gh.Label{{Name: ptr("priority:low")}},
-			want:   provider.PriorityLow,
+			want:   workunit.PriorityLow,
 		},
 		{
 			name:   "low-priority label",
 			labels: []*gh.Label{{Name: ptr("low-priority")}},
-			want:   provider.PriorityLow,
+			want:   workunit.PriorityLow,
 		},
 		{
 			name:   "case insensitive - CRITICAL",
 			labels: []*gh.Label{{Name: ptr("CRITICAL")}},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 		{
 			name:   "no priority label defaults to normal",
 			labels: []*gh.Label{{Name: ptr("bug")}},
-			want:   provider.PriorityNormal,
+			want:   workunit.PriorityNormal,
 		},
 		{
 			name:   "empty labels defaults to normal",
 			labels: []*gh.Label{},
-			want:   provider.PriorityNormal,
+			want:   workunit.PriorityNormal,
 		},
 		{
 			name:   "nil labels defaults to normal",
 			labels: nil,
-			want:   provider.PriorityNormal,
+			want:   workunit.PriorityNormal,
 		},
 	}
 
@@ -332,7 +333,7 @@ func TestMapAssignees(t *testing.T) {
 	tests := []struct {
 		name      string
 		assignees []*gh.User
-		want      []provider.Person
+		want      []workunit.Person
 	}{
 		{
 			name: "multiple assignees",
@@ -340,7 +341,7 @@ func TestMapAssignees(t *testing.T) {
 				{ID: ptr(int64(1)), Login: ptr("user1"), Email: ptr("user1@example.com")},
 				{ID: ptr(int64(2)), Login: ptr("user2"), Email: ptr("user2@example.com")},
 			},
-			want: []provider.Person{
+			want: []workunit.Person{
 				{ID: "1", Name: "user1", Email: "user1@example.com"},
 				{ID: "2", Name: "user2", Email: "user2@example.com"},
 			},
@@ -350,19 +351,19 @@ func TestMapAssignees(t *testing.T) {
 			assignees: []*gh.User{
 				{ID: ptr(int64(123)), Login: ptr("johndoe")},
 			},
-			want: []provider.Person{
+			want: []workunit.Person{
 				{ID: "123", Name: "johndoe", Email: ""},
 			},
 		},
 		{
 			name:      "empty assignees",
 			assignees: []*gh.User{},
-			want:      []provider.Person{},
+			want:      []workunit.Person{},
 		},
 		{
 			name:      "nil assignees",
 			assignees: nil,
-			want:      []provider.Person{},
+			want:      []workunit.Person{},
 		},
 	}
 
@@ -795,7 +796,7 @@ func TestNew(t *testing.T) {
 	// Note: New() requires a valid GitHub token from env or gh CLI for full integration.
 	// These tests only verify config parsing logic with minimal setup.
 	t.Run("creates provider with minimal config", func(t *testing.T) {
-		cfg := provider.NewConfig().
+		cfg := providerconfig.NewConfig().
 			Set("token", "test-token").
 			Set("owner", "test-owner").
 			Set("repo", "test-repo")
@@ -821,7 +822,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("creates provider with draft PR config", func(t *testing.T) {
-		cfg := provider.NewConfig().
+		cfg := providerconfig.NewConfig().
 			Set("token", "test-token").
 			Set("owner", "owner").
 			Set("repo", "repo").
@@ -842,7 +843,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("sets default values for branch pattern and commit prefix", func(t *testing.T) {
-		cfg := provider.NewConfig().
+		cfg := providerconfig.NewConfig().
 			Set("token", "test-token").
 			Set("owner", "owner").
 			Set("repo", "repo")
@@ -866,7 +867,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("uses custom target branch", func(t *testing.T) {
-		cfg := provider.NewConfig().
+		cfg := providerconfig.NewConfig().
 			Set("token", "test-token").
 			Set("owner", "owner").
 			Set("repo", "repo").
@@ -888,7 +889,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("parses comments config", func(t *testing.T) {
-		cfg := provider.NewConfig().
+		cfg := providerconfig.NewConfig().
 			Set("token", "test-token").
 			Set("owner", "owner").
 			Set("repo", "repo").

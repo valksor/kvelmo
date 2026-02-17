@@ -11,7 +11,11 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-toolkit/cache"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -54,31 +58,31 @@ func Info() provider.ProviderInfo {
 		Description: "GitHub Issues task source",
 		Schemes:     []string{"github", "gh"},
 		Priority:    20, // Higher than file/directory
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapCreatePR:           true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapFetchPR:            true,
-			provider.CapPRComment:          true,
-			provider.CapFetchPRComments:    true,
-			provider.CapUpdatePRComment:    true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapCreatePR:           true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapFetchPR:            true,
+			capability.CapPRComment:          true,
+			capability.CapFetchPRComments:    true,
+			capability.CapUpdatePRComment:    true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a GitHub provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	// Validate configuration
 	if err := provider.ValidateConfig("github", cfg, func(v *provider.Validator) {
 		// Token is required (may be resolved from config or env)
@@ -176,7 +180,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a GitHub issue and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -205,7 +209,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          strconv.Itoa(issue.GetNumber()),
 		ExternalID:  fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber()),
 		Provider:    ProviderName,
@@ -217,7 +221,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Assignees:   mapAssignees(issue.Assignees),
 		CreatedAt:   issue.GetCreatedAt().Time,
 		UpdatedAt:   issue.GetUpdatedAt().Time,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: id,
 			SyncedAt:  time.Now(),
@@ -259,9 +263,9 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	// Extract image URLs
 	imageURLs := ExtractImageURLs(issue.GetBody())
 	if len(imageURLs) > 0 {
-		wu.Attachments = make([]provider.Attachment, len(imageURLs))
+		wu.Attachments = make([]workunit.Attachment, len(imageURLs))
 		for i, url := range imageURLs {
-			wu.Attachments[i] = provider.Attachment{
+			wu.Attachments[i] = workunit.Attachment{
 				ID:   AttachmentIDFromURL(url), // Stable ID based on URL hash
 				Name: fmt.Sprintf("image-%d", i+1),
 				URL:  url,
@@ -273,7 +277,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot captures the issue content for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -299,10 +303,10 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		return nil, err
 	}
 
-	snapshot := &provider.Snapshot{
+	snap := &snapshot.Snapshot{
 		Type: ProviderName,
 		Ref:  id,
-		Files: []provider.SnapshotFile{
+		Files: []snapshot.SnapshotFile{
 			{
 				Path:    "issue.md",
 				Content: formatIssueMarkdown(issue),
@@ -313,7 +317,7 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Fetch and include comments
 	comments, err := p.client.GetIssueComments(ctx, ref.IssueNumber)
 	if err == nil && len(comments) > 0 {
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    "comments.md",
 			Content: formatCommentsMarkdown(comments),
 		})
@@ -329,13 +333,13 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		if err != nil {
 			continue // Skip issues we can't fetch
 		}
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    fmt.Sprintf("linked/issue-%d.md", num),
 			Content: formatIssueMarkdown(linked),
 		})
 	}
 
-	return snapshot, nil
+	return snap, nil
 }
 
 // GetConfig returns the provider configuration.
@@ -361,14 +365,14 @@ func (p *Provider) GetCache() *cache.Cache {
 
 // --- Helper functions ---
 
-func mapGitHubState(state string) provider.Status {
+func mapGitHubState(state string) workunit.Status {
 	switch state {
 	case "open":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "closed":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
@@ -399,16 +403,16 @@ func inferTypeFromLabels(labels []*gh.Label) string {
 }
 
 // labelPriorityMap maps GitHub labels to priorities.
-var labelPriorityMap = map[string]provider.Priority{
-	"critical":      provider.PriorityCritical,
-	"urgent":        provider.PriorityCritical,
-	"priority:high": provider.PriorityHigh,
-	"high-priority": provider.PriorityHigh,
-	"priority:low":  provider.PriorityLow,
-	"low-priority":  provider.PriorityLow,
+var labelPriorityMap = map[string]workunit.Priority{
+	"critical":      workunit.PriorityCritical,
+	"urgent":        workunit.PriorityCritical,
+	"priority:high": workunit.PriorityHigh,
+	"high-priority": workunit.PriorityHigh,
+	"priority:low":  workunit.PriorityLow,
+	"low-priority":  workunit.PriorityLow,
 }
 
-func inferPriorityFromLabels(labels []*gh.Label) provider.Priority {
+func inferPriorityFromLabels(labels []*gh.Label) workunit.Priority {
 	for _, label := range labels {
 		name := strings.ToLower(label.GetName())
 		if p, ok := labelPriorityMap[name]; ok {
@@ -416,7 +420,7 @@ func inferPriorityFromLabels(labels []*gh.Label) provider.Priority {
 		}
 	}
 
-	return provider.PriorityNormal
+	return workunit.PriorityNormal
 }
 
 func extractLabelNames(labels []*gh.Label) []string {
@@ -428,10 +432,10 @@ func extractLabelNames(labels []*gh.Label) []string {
 	return names
 }
 
-func mapAssignees(assignees []*gh.User) []provider.Person {
-	persons := make([]provider.Person, len(assignees))
+func mapAssignees(assignees []*gh.User) []workunit.Person {
+	persons := make([]workunit.Person, len(assignees))
 	for i, u := range assignees {
-		persons[i] = provider.Person{
+		persons[i] = workunit.Person{
 			ID:    strconv.FormatInt(u.GetID(), 10),
 			Name:  u.GetLogin(),
 			Email: u.GetEmail(),
@@ -441,14 +445,14 @@ func mapAssignees(assignees []*gh.User) []provider.Person {
 	return persons
 }
 
-func mapComments(comments []*gh.IssueComment) []provider.Comment {
-	result := make([]provider.Comment, len(comments))
+func mapComments(comments []*gh.IssueComment) []workunit.Comment {
+	result := make([]workunit.Comment, len(comments))
 	for i, c := range comments {
-		result[i] = provider.Comment{
+		result[i] = workunit.Comment{
 			ID:        strconv.FormatInt(c.GetID(), 10),
 			Body:      c.GetBody(),
 			CreatedAt: c.GetCreatedAt().Time,
-			Author: provider.Person{
+			Author: workunit.Person{
 				ID:   strconv.FormatInt(c.GetUser().GetID(), 10),
 				Name: c.GetUser().GetLogin(),
 			},
