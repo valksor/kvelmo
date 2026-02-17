@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/valksor/go-toolkit/jsonrpc"
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 )
 
 // mockEmbeddingModel implements embeddingModel for testing.
@@ -441,7 +441,7 @@ func TestRunServer_MultipleRequests(t *testing.T) {
 		if resp.Error != nil {
 			t.Errorf("response %d unexpected error: %v", i+1, resp.Error)
 		}
-		if resp.ID != int64(i+1) {
+		if resp.ID != i+1 {
 			t.Errorf("response %d: expected ID %d, got %d", i+1, i+1, resp.ID)
 		}
 	}

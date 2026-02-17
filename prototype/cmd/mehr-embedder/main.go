@@ -17,8 +17,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 	"github.com/valksor/go-mehrhof/internal/memory"
-	"github.com/valksor/go-toolkit/jsonrpc"
 )
 
 // Protocol types for the embedder.
@@ -74,7 +74,7 @@ type request struct {
 	Params  json.RawMessage `json:"params,omitempty"`
 	JSONRPC string          `json:"jsonrpc"`
 	Method  string          `json:"method"`
-	ID      int64           `json:"id"`
+	ID      int             `json:"id"`
 }
 
 // Embedder wraps the ONNX embedding model with JSON-RPC handlers.

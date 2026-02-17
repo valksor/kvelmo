@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/valksor/go-toolkit/jsonrpc"
+	"github.com/crealfy/crea-pipe/pkg/transport/jsonrpc"
 )
 
 const (
@@ -39,7 +39,7 @@ type Process struct {
 	stdout   *bufio.Reader
 	cancel   context.CancelFunc
 	manifest *Manifest
-	pending  map[int64]chan *jsonrpc.Response
+	pending  map[int]chan *jsonrpc.Response
 	streamCh chan json.RawMessage
 	reqID    atomic.Int64
 	mu       sync.Mutex
@@ -114,7 +114,7 @@ func startProcess(ctx context.Context, manifest *Manifest) (*Process, error) {
 		stdoutPipe: stdout, // Store original pipe for explicit cleanup
 		stdout:     bufio.NewReaderSize(stdout, defaultPluginBufferSize),
 		stderr:     stderr,
-		pending:    make(map[int64]chan *jsonrpc.Response),
+		pending:    make(map[int]chan *jsonrpc.Response),
 		done:       make(chan struct{}),
 		ctx:        procCtx,
 		cancel:     procCancel,
@@ -244,7 +244,7 @@ func (p *Process) Call(ctx context.Context, method string, params any) (json.Raw
 		return nil, errors.New("plugin is stopping")
 	}
 
-	id := p.reqID.Add(1)
+	id := int(p.reqID.Add(1))
 	ch := make(chan *jsonrpc.Response, 1)
 	p.pending[id] = ch
 	p.mu.Unlock()
