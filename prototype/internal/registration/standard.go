@@ -3,14 +3,17 @@
 package registration
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 
+	"github.com/crealfy/crea-wrike/wrike"
 	"github.com/valksor/go-mehrhof/internal/agent/claude"
 	"github.com/valksor/go-mehrhof/internal/agent/codex"
 	"github.com/valksor/go-mehrhof/internal/agent/noop"
 	"github.com/valksor/go-mehrhof/internal/conductor"
+	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/asana"
 	"github.com/valksor/go-mehrhof/internal/provider/azuredevops"
 	"github.com/valksor/go-mehrhof/internal/provider/bitbucket"
@@ -25,8 +28,9 @@ import (
 	"github.com/valksor/go-mehrhof/internal/provider/notion"
 	"github.com/valksor/go-mehrhof/internal/provider/queue"
 	"github.com/valksor/go-mehrhof/internal/provider/trello"
-	"github.com/valksor/go-mehrhof/internal/provider/wrike"
 	"github.com/valksor/go-mehrhof/internal/provider/youtrack"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // RegisterStandardProviders registers all standard providers with the conductor's provider registry.
@@ -38,7 +42,7 @@ func RegisterStandardProviders(cond *conductor.Conductor) {
 	empty.Register(registry)
 	github.Register(registry)
 	gitlab.Register(registry)
-	wrike.Register(registry)
+	registerWrike(registry)
 	linear.Register(registry)
 	jira.Register(registry)
 	notion.Register(registry)
@@ -49,6 +53,21 @@ func RegisterStandardProviders(cond *conductor.Conductor) {
 	asana.Register(registry)
 	clickup.Register(registry)
 	azuredevops.Register(registry)
+}
+
+// registerWrike registers the Wrike provider from crea-wrike.
+// The wrike provider self-discovers its configuration from .crealfy/wrike.yaml.
+func registerWrike(r *provider.Registry) {
+	_ = r.Register(provider.ProviderInfo{
+		Name:         "wrike",
+		Description:  "Wrike task management",
+		Schemes:      []string{"wrike", "wk"},
+		Priority:     20,
+		Capabilities: capability.Infer(&wrike.Provider{}),
+	}, func(ctx context.Context, _ providerconfig.Config) (any, error) {
+		// wrike.New() self-discovers config from .crealfy/wrike.yaml
+		return wrike.New(ctx)
+	})
 }
 
 // RegisterStandardAgents registers all standard agents with the conductor's agent registry.

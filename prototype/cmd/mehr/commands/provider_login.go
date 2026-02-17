@@ -10,8 +10,10 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/crealfy/crea-wrike/wrike"
 	"github.com/spf13/cobra"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/providerconfig"
 )
 
 // providerLoginConfig holds configuration for a provider's login command.
@@ -26,6 +28,7 @@ type providerLoginConfig struct {
 }
 
 // providerLoginConfigs maps provider names to their login configuration.
+// Note: Providers with external repos (wrike, etc.) are handled separately via their own ConfigManager.
 var providerLoginConfigs = map[string]providerLoginConfig{
 	"github": {
 		Name:        "GitHub",
@@ -71,15 +74,6 @@ var providerLoginConfigs = map[string]providerLoginConfig{
 		TokenPrefix: "lin_api_",
 		HelpSteps:   "Settings → API → Personal API keys → Create key",
 		Scopes:      "Workspace access",
-	},
-	"wrike": {
-		Name:        "Wrike",
-		EnvVar:      "WRIKE_TOKEN",
-		ConfigField: "Wrike.Token",
-		HelpURL:     "https://www.wrike.com/frontend/apps/index.html#/api",
-		TokenPrefix: "",
-		HelpSteps:   "Profile → Apps & Integrations → API",
-		Scopes:      "Full access (permanent token)",
 	},
 	"youtrack": {
 		Name:        "YouTrack",
@@ -231,10 +225,6 @@ func getConfigToken(cfg *storage.WorkspaceConfig, fieldPath string) string {
 	case "Linear":
 		if cfg.Linear != nil && parts[1] == "Token" {
 			return cfg.Linear.Token
-		}
-	case "Wrike":
-		if cfg.Wrike != nil && parts[1] == "Token" {
-			return cfg.Wrike.Token
 		}
 	case "YouTrack":
 		if cfg.YouTrack != nil && parts[1] == "Token" {
@@ -427,11 +417,6 @@ func writeTokenReferenceToConfig(ws *storage.Workspace, providerName, envVar str
 			cfg.Linear = &storage.LinearSettings{}
 		}
 		cfg.Linear.Token = "${" + envVar + "}"
-	case "wrike":
-		if cfg.Wrike == nil {
-			cfg.Wrike = &storage.WrikeSettings{}
-		}
-		cfg.Wrike.Token = "${" + envVar + "}"
 	case "youtrack":
 		if cfg.YouTrack == nil {
 			cfg.YouTrack = &storage.YouTrackSettings{}
@@ -535,10 +520,38 @@ func runProviderLogin(providerName string) func(*cobra.Command, []string) error 
 	}
 }
 
+// runWrikeLogin executes the login flow for Wrike via crea-wrike.
+// Wrike config is managed by crea-wrike in .crealfy/wrike.yaml.
+func runWrikeLogin(cmd *cobra.Command, _ []string) error {
+	result, err := providerconfig.RunLogin(
+		context.Background(),
+		wrike.ConfigManager(),
+		wrike.LoginConfig(),
+		providerconfig.LoginOptions{
+			Stdin:  cmd.InOrStdin(),
+			Stdout: cmd.OutOrStdout(),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.Cancelled {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Cancelled.")
+
+		return nil
+	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nToken saved to %s\n", result.ConfigPath)
+
+	return nil
+}
+
 // Create provider commands.
 func createProviderCommands() []*cobra.Command {
 	var commands []*cobra.Command
 
+	// Standard providers (config in .mehrhof/config.yaml)
 	for name := range providerLoginConfigs {
 		providerName := name // Capture loop variable
 		cmd := &cobra.Command{
@@ -557,6 +570,20 @@ func createProviderCommands() []*cobra.Command {
 		cmd.AddCommand(loginCmd)
 		commands = append(commands, cmd)
 	}
+
+	// Wrike - delegated to crea-wrike (config in .crealfy/wrike.yaml)
+	wrikeCmd := &cobra.Command{
+		Use:    "wrike",
+		Short:  "wrike provider commands",
+		Hidden: true,
+	}
+	wrikeLoginCmd := &cobra.Command{
+		Use:   "login",
+		Short: "Authenticate with Wrike",
+		RunE:  runWrikeLogin,
+	}
+	wrikeCmd.AddCommand(wrikeLoginCmd)
+	commands = append(commands, wrikeCmd)
 
 	return commands
 }
