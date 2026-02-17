@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // Generator creates delta specifications for updated work units.
@@ -122,8 +123,8 @@ func (g *Generator) buildUpdatePrompt(changes provider.ChangeSet, oldContent, ne
 
 	if changes.AssigneesChanged {
 		builder.WriteString("## Assignee Changes\n\n")
-		oldAssignees := provider.PersonNames(changes.OldAssignees)
-		newAssignees := provider.PersonNames(changes.NewAssignees)
+		oldAssignees := workunit.PersonNames(changes.OldAssignees)
+		newAssignees := workunit.PersonNames(changes.NewAssignees)
 		builder.WriteString(fmt.Sprintf("Old assignees: %s\n", strings.Join(oldAssignees, ", ")))
 		builder.WriteString(fmt.Sprintf("New assignees: %s\n\n", strings.Join(newAssignees, ", ")))
 	}

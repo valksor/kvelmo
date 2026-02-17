@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/pullrequest"
 )
 
-// mockPRFetcher implements provider.PRFetcher for testing.
+// mockPRFetcher implements pullrequest.PRFetcher for testing.
 type mockPRFetcher struct {
-	prs map[int]*provider.PullRequest
+	prs map[int]*pullrequest.PullRequest
 }
 
-func (m *mockPRFetcher) FetchPullRequest(_ context.Context, number int) (*provider.PullRequest, error) {
+func (m *mockPRFetcher) FetchPullRequest(_ context.Context, number int) (*pullrequest.PullRequest, error) {
 	if pr, ok := m.prs[number]; ok {
 		return pr, nil
 	}
@@ -22,7 +22,7 @@ func (m *mockPRFetcher) FetchPullRequest(_ context.Context, number int) (*provid
 	return nil, fmt.Errorf("PR #%d not found", number)
 }
 
-func (m *mockPRFetcher) FetchPullRequestDiff(_ context.Context, number int) (*provider.PullRequestDiff, error) {
+func (m *mockPRFetcher) FetchPullRequestDiff(_ context.Context, number int) (*pullrequest.PullRequestDiff, error) {
 	return nil, fmt.Errorf("PR diff #%d not found", number)
 }
 
@@ -97,7 +97,7 @@ func TestTracker_Sync(t *testing.T) {
 
 	// Create mock PR fetcher - only parent has PR
 	mockFetcher := &mockPRFetcher{
-		prs: map[int]*provider.PullRequest{
+		prs: map[int]*pullrequest.PullRequest{
 			100: {Number: 100, State: "merged"},
 		},
 	}
@@ -158,7 +158,7 @@ func TestTracker_SyncWithChildPR(t *testing.T) {
 
 	// Parent PR merged, child still open
 	mockFetcher := &mockPRFetcher{
-		prs: map[int]*provider.PullRequest{
+		prs: map[int]*pullrequest.PullRequest{
 			100: {Number: 100, State: "merged"},
 			101: {Number: 101, State: "open"},
 		},
@@ -207,7 +207,7 @@ func TestTracker_SyncNoChanges(t *testing.T) {
 	_ = storage.Save()
 
 	mockFetcher := &mockPRFetcher{
-		prs: map[int]*provider.PullRequest{
+		prs: map[int]*pullrequest.PullRequest{
 			100: {Number: 100, State: "open"}, // Still open, no change
 		},
 	}
@@ -238,7 +238,7 @@ func TestTracker_StartStopPolling(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mockFetcher := &mockPRFetcher{prs: map[int]*provider.PullRequest{}}
+	mockFetcher := &mockPRFetcher{prs: map[int]*pullrequest.PullRequest{}}
 	tracker.StartPolling(ctx, mockFetcher, nil)
 
 	if !tracker.IsRunning() {
