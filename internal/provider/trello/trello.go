@@ -6,7 +6,11 @@ import (
 	"time"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // ProviderName is the registered name for this provider.
@@ -32,26 +36,26 @@ func Info() provider.ProviderInfo {
 		Description: "Trello card source",
 		Schemes:     []string{"trello", "tr"},
 		Priority:    20,
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a Trello provider.
-func New(_ context.Context, cfg provider.Config) (any, error) {
+func New(_ context.Context, cfg providerconfig.Config) (any, error) {
 	apiKey := cfg.GetString("api_key")
 	token := cfg.GetString("token")
 	boardID := cfg.GetString("board")
@@ -86,7 +90,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a Trello card and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -106,20 +110,20 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          card.ID,
 		ExternalID:  card.ID,
 		Provider:    ProviderName,
 		Title:       card.Name,
 		Description: card.Desc,
 		Status:      mapTrelloListToStatus(list.Name),
-		Priority:    provider.PriorityNormal, // Trello doesn't have built-in priority
+		Priority:    workunit.PriorityNormal, // Trello doesn't have built-in priority
 		Labels:      extractLabels(card),
 		Assignees:   extractMembers(card),
 		Attachments: extractAttachments(card),
 		CreatedAt:   extractCreatedAt(card.ID),
 		UpdatedAt:   card.DateLastActivity,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: ref.String(),
 			SyncedAt:  time.Now(),
@@ -135,7 +139,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // List returns cards from a board.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	boardID := p.boardID
 	if boardID == "" {
 		return nil, ErrNoBoardConfigured
@@ -156,7 +160,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		listMap[l.ID] = l.Name
 	}
 
-	result := make([]*provider.WorkUnit, 0, len(cards))
+	result := make([]*workunit.WorkUnit, 0, len(cards))
 	for _, card := range cards {
 		listName := listMap[card.IDList]
 		status := mapTrelloListToStatus(listName)
@@ -171,18 +175,18 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 			continue
 		}
 
-		wu := &provider.WorkUnit{
+		wu := &workunit.WorkUnit{
 			ID:          card.ID,
 			ExternalID:  card.ID,
 			Provider:    ProviderName,
 			Title:       card.Name,
 			Description: card.Desc,
 			Status:      status,
-			Priority:    provider.PriorityNormal,
+			Priority:    workunit.PriorityNormal,
 			Labels:      extractLabels(&card),
 			CreatedAt:   extractCreatedAt(card.ID),
 			UpdatedAt:   card.DateLastActivity,
-			Source: provider.SourceInfo{
+			Source: workunit.SourceInfo{
 				Type:      ProviderName,
 				Reference: "trello:" + card.ID,
 				SyncedAt:  time.Now(),
@@ -203,18 +207,18 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments retrieves comments on a card.
-func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	actions, err := p.client.GetCardActions(ctx, workUnitID, "commentCard")
 	if err != nil {
 		return nil, err
 	}
 
-	comments := make([]provider.Comment, len(actions))
+	comments := make([]workunit.Comment, len(actions))
 	for i, action := range actions {
-		comments[i] = provider.Comment{
+		comments[i] = workunit.Comment{
 			ID:        action.ID,
 			Body:      action.Data.Text,
-			Author:    provider.Person{ID: action.MemberCreator.ID, Name: action.MemberCreator.FullName},
+			Author:    workunit.Person{ID: action.MemberCreator.ID, Name: action.MemberCreator.FullName},
 			CreatedAt: action.Date,
 		}
 	}
@@ -223,22 +227,22 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 }
 
 // AddComment adds a comment to a card.
-func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	action, err := p.client.AddComment(ctx, workUnitID, body)
 	if err != nil {
 		return nil, err
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        action.ID,
 		Body:      action.Data.Text,
-		Author:    provider.Person{ID: action.MemberCreator.ID, Name: action.MemberCreator.FullName},
+		Author:    workunit.Person{ID: action.MemberCreator.ID, Name: action.MemberCreator.FullName},
 		CreatedAt: action.Date,
 	}, nil
 }
 
 // UpdateStatus moves a card to a different list.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	// Get the board ID from the card
 	card, err := p.client.GetCard(ctx, workUnitID)
 	if err != nil {
@@ -284,13 +288,13 @@ func (p *Provider) DownloadAttachment(ctx context.Context, workUnitID, attachmen
 }
 
 // Snapshot captures the card content for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	card, err := p.client.GetCard(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &provider.Snapshot{
+	return &snapshot.Snapshot{
 		Type:    "card",
 		Ref:     "trello:" + id,
 		Content: buildSnapshotContent(card),
@@ -302,35 +306,35 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 // ──────────────────────────────────────────────────────────────────────────────
 
 // mapTrelloListToStatus converts Trello list name to provider status.
-func mapTrelloListToStatus(listName string) provider.Status {
+func mapTrelloListToStatus(listName string) workunit.Status {
 	switch strings.ToLower(listName) {
 	case "to do", "todo", "backlog", "open", "new":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "in progress", "doing", "wip", "started", "working":
-		return provider.StatusInProgress
+		return workunit.StatusInProgress
 	case "in review", "review", "reviewing", "pending review":
-		return provider.StatusReview
+		return workunit.StatusReview
 	case "done", "completed", "finished", "closed", "complete":
-		return provider.StatusDone
+		return workunit.StatusDone
 	case "cancelled", "canceled", "archived":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
 // mapProviderStatusToListName converts provider status to Trello list name.
-func mapProviderStatusToListName(status provider.Status) string {
+func mapProviderStatusToListName(status workunit.Status) string {
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		return "To Do"
-	case provider.StatusInProgress:
+	case workunit.StatusInProgress:
 		return "Doing"
-	case provider.StatusReview:
+	case workunit.StatusReview:
 		return "In Review"
-	case provider.StatusDone:
+	case workunit.StatusDone:
 		return "Done"
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		return "Done"
 	default:
 		return "To Do"
@@ -353,10 +357,10 @@ func extractLabels(card *Card) []string {
 }
 
 // extractMembers extracts members as assignees.
-func extractMembers(card *Card) []provider.Person {
-	members := make([]provider.Person, len(card.Members))
+func extractMembers(card *Card) []workunit.Person {
+	members := make([]workunit.Person, len(card.Members))
 	for i, member := range card.Members {
-		members[i] = provider.Person{
+		members[i] = workunit.Person{
 			ID:   member.ID,
 			Name: member.FullName,
 		}
@@ -366,10 +370,10 @@ func extractMembers(card *Card) []provider.Person {
 }
 
 // extractAttachments converts Trello attachments to provider attachments.
-func extractAttachments(card *Card) []provider.Attachment {
-	attachments := make([]provider.Attachment, len(card.Attachments))
+func extractAttachments(card *Card) []workunit.Attachment {
+	attachments := make([]workunit.Attachment, len(card.Attachments))
 	for i, att := range card.Attachments {
-		attachments[i] = provider.Attachment{
+		attachments[i] = workunit.Attachment{
 			ID:          att.ID,
 			Name:        att.Name,
 			URL:         att.URL,

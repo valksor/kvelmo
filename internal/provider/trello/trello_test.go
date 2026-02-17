@@ -4,7 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestInfo(t *testing.T) {
@@ -28,15 +30,15 @@ func TestInfo(t *testing.T) {
 
 	// Check capabilities
 	caps := info.Capabilities
-	expectedCaps := []provider.Capability{
-		provider.CapRead,
-		provider.CapList,
-		provider.CapFetchComments,
-		provider.CapComment,
-		provider.CapUpdateStatus,
-		provider.CapManageLabels,
-		provider.CapDownloadAttachment,
-		provider.CapSnapshot,
+	expectedCaps := []capability.Capability{
+		capability.CapRead,
+		capability.CapList,
+		capability.CapFetchComments,
+		capability.CapComment,
+		capability.CapUpdateStatus,
+		capability.CapManageLabels,
+		capability.CapDownloadAttachment,
+		capability.CapSnapshot,
 	}
 	for _, cap := range expectedCaps {
 		if !caps.Has(cap) {
@@ -46,7 +48,7 @@ func TestInfo(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	cfg := provider.NewConfig().
+	cfg := providerconfig.NewConfig().
 		Set("api_key", "test-key").
 		Set("token", "test-token").
 		Set("board", "test-board")
@@ -70,7 +72,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestMatch(t *testing.T) {
-	cfg := provider.NewConfig().
+	cfg := providerconfig.NewConfig().
 		Set("api_key", "test").
 		Set("token", "test")
 
@@ -108,7 +110,7 @@ func TestMatch(t *testing.T) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 func TestProviderParse(t *testing.T) {
-	cfg := provider.NewConfig().
+	cfg := providerconfig.NewConfig().
 		Set("api_key", "test").
 		Set("token", "test")
 
@@ -268,20 +270,20 @@ func TestParseReference(t *testing.T) {
 func TestMapTrelloListToStatus(t *testing.T) {
 	tests := []struct {
 		listName string
-		want     provider.Status
+		want     workunit.Status
 	}{
-		{"To Do", provider.StatusOpen},
-		{"TODO", provider.StatusOpen},
-		{"Backlog", provider.StatusOpen},
-		{"In Progress", provider.StatusInProgress},
-		{"Doing", provider.StatusInProgress},
-		{"WIP", provider.StatusInProgress},
-		{"In Review", provider.StatusReview},
-		{"Review", provider.StatusReview},
-		{"Done", provider.StatusDone},
-		{"Completed", provider.StatusDone},
-		{"Cancelled", provider.StatusClosed},
-		{"Unknown List", provider.StatusOpen}, // Default
+		{"To Do", workunit.StatusOpen},
+		{"TODO", workunit.StatusOpen},
+		{"Backlog", workunit.StatusOpen},
+		{"In Progress", workunit.StatusInProgress},
+		{"Doing", workunit.StatusInProgress},
+		{"WIP", workunit.StatusInProgress},
+		{"In Review", workunit.StatusReview},
+		{"Review", workunit.StatusReview},
+		{"Done", workunit.StatusDone},
+		{"Completed", workunit.StatusDone},
+		{"Cancelled", workunit.StatusClosed},
+		{"Unknown List", workunit.StatusOpen}, // Default
 	}
 
 	for _, tt := range tests {
@@ -296,14 +298,14 @@ func TestMapTrelloListToStatus(t *testing.T) {
 
 func TestMapProviderStatusToListName(t *testing.T) {
 	tests := []struct {
-		status provider.Status
+		status workunit.Status
 		want   string
 	}{
-		{provider.StatusOpen, "To Do"},
-		{provider.StatusInProgress, "Doing"},
-		{provider.StatusReview, "In Review"},
-		{provider.StatusDone, "Done"},
-		{provider.StatusClosed, "Done"},
+		{workunit.StatusOpen, "To Do"},
+		{workunit.StatusInProgress, "Doing"},
+		{workunit.StatusReview, "In Review"},
+		{workunit.StatusDone, "Done"},
+		{workunit.StatusClosed, "Done"},
 	}
 
 	for _, tt := range tests {

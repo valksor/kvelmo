@@ -11,6 +11,8 @@ import (
 
 	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/provider/token"
+	"github.com/valksor/go-toolkit/providerconfig"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 func TestParseReference(t *testing.T) {
@@ -679,27 +681,27 @@ func TestMapGitLabState(t *testing.T) {
 	tests := []struct {
 		name  string
 		state string
-		want  provider.Status
+		want  workunit.Status
 	}{
 		{
 			name:  "opened state",
 			state: "opened",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "closed state",
 			state: "closed",
-			want:  provider.StatusClosed,
+			want:  workunit.StatusClosed,
 		},
 		{
 			name:  "unknown state defaults to open",
 			state: "unknown",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 		{
 			name:  "empty state defaults to open",
 			state: "",
-			want:  provider.StatusOpen,
+			want:  workunit.StatusOpen,
 		},
 	}
 
@@ -805,52 +807,52 @@ func TestInferPriorityFromLabels(t *testing.T) {
 	tests := []struct {
 		name   string
 		labels []string
-		want   provider.Priority
+		want   workunit.Priority
 	}{
 		{
 			name:   "no labels",
 			labels: []string{},
-			want:   provider.PriorityNormal,
+			want:   workunit.PriorityNormal,
 		},
 		{
 			name:   "critical label",
 			labels: []string{"critical"},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 		{
 			name:   "urgent label",
 			labels: []string{"urgent"},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 		{
 			name:   "priority:high label",
 			labels: []string{"priority:high"},
-			want:   provider.PriorityHigh,
+			want:   workunit.PriorityHigh,
 		},
 		{
 			name:   "high-priority label",
 			labels: []string{"high-priority"},
-			want:   provider.PriorityHigh,
+			want:   workunit.PriorityHigh,
 		},
 		{
 			name:   "priority:low label",
 			labels: []string{"priority:low"},
-			want:   provider.PriorityLow,
+			want:   workunit.PriorityLow,
 		},
 		{
 			name:   "low-priority label",
 			labels: []string{"low-priority"},
-			want:   provider.PriorityLow,
+			want:   workunit.PriorityLow,
 		},
 		{
 			name:   "unknown label",
 			labels: []string{"random-label"},
-			want:   provider.PriorityNormal,
+			want:   workunit.PriorityNormal,
 		},
 		{
 			name:   "case insensitive",
 			labels: []string{"CRITICAL"},
-			want:   provider.PriorityCritical,
+			want:   workunit.PriorityCritical,
 		},
 	}
 
@@ -1062,20 +1064,20 @@ func TestProviderNew(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setupConfig func() provider.Config
+		setupConfig func() providerconfig.Config
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name: "minimal config with token",
-			setupConfig: func() provider.Config {
-				return provider.NewConfig().Set("token", "test-token")
+			setupConfig: func() providerconfig.Config {
+				return providerconfig.NewConfig().Set("token", "test-token")
 			},
 		},
 		{
 			name: "full config",
-			setupConfig: func() provider.Config {
-				return provider.NewConfig().
+			setupConfig: func() providerconfig.Config {
+				return providerconfig.NewConfig().
 					Set("token", "test-token").
 					Set("host", "https://custom.gitlab.com").
 					Set("project_path", "group/project").
@@ -1085,16 +1087,16 @@ func TestProviderNew(t *testing.T) {
 		},
 		{
 			name: "host without https",
-			setupConfig: func() provider.Config {
-				return provider.NewConfig().
+			setupConfig: func() providerconfig.Config {
+				return providerconfig.NewConfig().
 					Set("token", "test-token").
 					Set("host", "custom.gitlab.com/")
 			},
 		},
 		{
 			name: "empty token requires env",
-			setupConfig: func() provider.Config {
-				return provider.NewConfig()
+			setupConfig: func() providerconfig.Config {
+				return providerconfig.NewConfig()
 			},
 			wantErr:     true,
 			errContains: "no token found",
@@ -1295,7 +1297,7 @@ func TestProviderUpdateStatus(t *testing.T) {
 	tests := []struct {
 		name        string
 		workUnitID  string
-		status      provider.Status
+		status      workunit.Status
 		wantErr     bool
 		errContains string
 	}{
@@ -1307,7 +1309,7 @@ func TestProviderUpdateStatus(t *testing.T) {
 		{
 			name:       "valid reference but no client configured",
 			workUnitID: "group/project#123",
-			status:     provider.StatusClosed,
+			status:     workunit.StatusClosed,
 			wantErr:    true, // Will fail due to no project configured
 		},
 	}

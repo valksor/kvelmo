@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
-// CreateWorkUnit implements the provider.WorkUnitCreator interface.
+// CreateWorkUnit implements the workunit.WorkUnitCreator interface.
 // It creates a new card in Trello.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	if p.boardID == "" {
 		return nil, ErrNoBoardConfigured
 	}
