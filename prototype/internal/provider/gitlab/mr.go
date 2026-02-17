@@ -9,13 +9,14 @@ import (
 
 	gl "gitlab.com/gitlab-org/api/client-go"
 
-	"github.com/valksor/go-mehrhof/internal/provider"
 	"github.com/valksor/go-mehrhof/internal/storage"
+	"github.com/valksor/go-toolkit/pullrequest"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // CreatePullRequest creates a new merge request on GitLab
-// This implements the provider.PRCreator interface.
-func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequestOptions) (*provider.PullRequest, error) {
+// This implements the pullrequest.PRCreator interface.
+func (p *Provider) CreatePullRequest(ctx context.Context, opts pullrequest.PullRequestOptions) (*pullrequest.PullRequest, error) {
 	// Ensure project is configured
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
@@ -49,7 +50,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, opts provider.PullRequ
 		return nil, fmt.Errorf("create merge request: %w", err)
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:     strconv.FormatInt(mr.ID, 10),
 		Number: int(mr.IID),
 		URL:    mr.WebURL,
@@ -142,11 +143,11 @@ func GenerateMRBody(taskWork *storage.TaskWork, specs []*storage.Specification, 
 }
 
 // CreateMRFromTask creates a merge request from task context.
-func (p *Provider) CreateMRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*provider.PullRequest, error) {
+func (p *Provider) CreateMRFromTask(ctx context.Context, taskWork *storage.TaskWork, specs []*storage.Specification, sourceBranch, diffStat string) (*pullrequest.PullRequest, error) {
 	title := GenerateMRTitle(taskWork)
 	body := GenerateMRBody(taskWork, specs, diffStat)
 
-	opts := provider.PullRequestOptions{
+	opts := pullrequest.PullRequestOptions{
 		Title:        title,
 		Body:         body,
 		SourceBranch: sourceBranch,
@@ -162,7 +163,7 @@ func (p *Provider) CreateMRFromTask(ctx context.Context, taskWork *storage.TaskW
 // ─────────────────────────────────────────────────────────────────────────────
 
 // FetchPullRequest retrieves merge request details.
-func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.PullRequest, error) {
+func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*pullrequest.PullRequest, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -177,7 +178,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 		return nil, err
 	}
 
-	return &provider.PullRequest{
+	return &pullrequest.PullRequest{
 		ID:         strconv.FormatInt(glMR.ID, 10),
 		URL:        glMR.WebURL,
 		Title:      glMR.Title,
@@ -196,7 +197,7 @@ func (p *Provider) FetchPullRequest(ctx context.Context, number int) (*provider.
 }
 
 // FetchPullRequestDiff retrieves the diff for a merge request.
-func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provider.PullRequestDiff, error) {
+func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*pullrequest.PullRequestDiff, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -219,9 +220,9 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 	}
 
 	// Map files
-	providerFiles := make([]provider.FileDiff, len(diffs))
+	providerFiles := make([]pullrequest.FileDiff, len(diffs))
 	for i, d := range diffs {
-		providerFiles[i] = provider.FileDiff{
+		providerFiles[i] = pullrequest.FileDiff{
 			Path:      d.NewPath,
 			Mode:      determineMRFileMode(d.NewFile, d.RenamedFile, d.DeletedFile),
 			Patch:     getSafeDiff(d),
@@ -230,7 +231,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 		}
 	}
 
-	return &provider.PullRequestDiff{
+	return &pullrequest.PullRequestDiff{
 		URL:        fmt.Sprintf("%s/-/merge_requests/%d/diffs", glMR.WebURL, number),
 		BaseBranch: glMR.TargetBranch,
 		HeadBranch: glMR.SourceBranch,
@@ -243,7 +244,7 @@ func (p *Provider) FetchPullRequestDiff(ctx context.Context, number int) (*provi
 }
 
 // AddPullRequestComment posts a comment to a merge request.
-func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*provider.Comment, error) {
+func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body string) (*workunit.Comment, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -262,7 +263,7 @@ func (p *Provider) AddPullRequestComment(ctx context.Context, number int, body s
 }
 
 // FetchPullRequestComments retrieves all comments on a merge request.
-func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]provider.Comment, error) {
+func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]workunit.Comment, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -277,7 +278,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 		return nil, err
 	}
 
-	result := make([]provider.Comment, len(glNotes))
+	result := make([]workunit.Comment, len(glNotes))
 	for i, n := range glNotes {
 		result[i] = *mapMRNoteToComment(n)
 	}
@@ -286,7 +287,7 @@ func (p *Provider) FetchPullRequestComments(ctx context.Context, number int) ([]
 }
 
 // UpdatePullRequestComment updates an existing comment on a merge request.
-func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*provider.Comment, error) {
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, number int, commentID string, body string) (*workunit.Comment, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -352,8 +353,8 @@ func getSafeDiff(d *gl.MergeRequestDiff) string {
 }
 
 // mapMRNoteToComment converts a GitLab MR note to a provider Comment.
-func mapMRNoteToComment(note *gl.Note) *provider.Comment {
-	author := provider.Person{
+func mapMRNoteToComment(note *gl.Note) *workunit.Comment {
+	author := workunit.Person{
 		ID:   strconv.FormatInt(note.Author.ID, 10),
 		Name: note.Author.Username,
 	}
@@ -369,7 +370,7 @@ func mapMRNoteToComment(note *gl.Note) *provider.Comment {
 		updatedAt = *note.CreatedAt
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.FormatInt(note.ID, 10),
 		Body:      note.Body,
 		Author:    author,
@@ -387,7 +388,7 @@ func mapMRNoteToComment(note *gl.Note) *provider.Comment {
 // Instead, we post:
 // 1. A summary note with the overall review
 // 2. Individual diff notes for per-line comments.
-func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewOptions) (*provider.ReviewSubmission, error) {
+func (p *Provider) SubmitReview(ctx context.Context, opts pullrequest.SubmitReviewOptions) (*pullrequest.ReviewSubmission, error) {
 	projectPath := p.config.ProjectPath
 	if projectPath == "" {
 		return nil, ErrProjectNotConfigured
@@ -426,7 +427,7 @@ func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewO
 		return nil, fmt.Errorf("create summary note: %w", err)
 	}
 
-	return &provider.ReviewSubmission{
+	return &pullrequest.ReviewSubmission{
 		ID:             strconv.FormatInt(note.ID, 10),
 		URL:            mr.WebURL + "#note_" + strconv.FormatInt(note.ID, 10),
 		CommentsPosted: commentsPosted + 1, // +1 for summary
@@ -434,16 +435,16 @@ func (p *Provider) SubmitReview(ctx context.Context, opts provider.SubmitReviewO
 }
 
 // buildGitLabReviewSummary creates a formatted review summary note.
-func buildGitLabReviewSummary(opts provider.SubmitReviewOptions) string {
+func buildGitLabReviewSummary(opts pullrequest.SubmitReviewOptions) string {
 	var sb strings.Builder
 
 	// Add verdict header
 	switch opts.Event {
-	case provider.ReviewEventApprove:
+	case pullrequest.ReviewEventApprove:
 		sb.WriteString("### ✅ Mehr Review: Approved\n\n")
-	case provider.ReviewEventRequestChanges:
+	case pullrequest.ReviewEventRequestChanges:
 		sb.WriteString("### ⚠️ Mehr Review: Changes Requested\n\n")
-	case provider.ReviewEventComment:
+	case pullrequest.ReviewEventComment:
 		sb.WriteString("### 💬 Mehr Review: Comment\n\n")
 	default:
 		sb.WriteString("### 📝 Mehr Review\n\n")

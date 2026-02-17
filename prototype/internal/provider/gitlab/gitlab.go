@@ -12,7 +12,11 @@ import (
 	gl "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/valksor/go-mehrhof/internal/provider"
+	"github.com/valksor/go-toolkit/capability"
+	"github.com/valksor/go-toolkit/providerconfig"
 	"github.com/valksor/go-toolkit/slug"
+	"github.com/valksor/go-toolkit/snapshot"
+	"github.com/valksor/go-toolkit/workunit"
 )
 
 // hashURL generates a stable 8-character hash from a URL for attachment IDs.
@@ -53,31 +57,31 @@ func Info() provider.ProviderInfo {
 		Description: "GitLab Issues task source",
 		Schemes:     []string{"gitlab", "gl"},
 		Priority:    20, // Higher than file/directory
-		Capabilities: provider.CapabilitySet{
-			provider.CapRead:               true,
-			provider.CapList:               true,
-			provider.CapFetchComments:      true,
-			provider.CapComment:            true,
-			provider.CapUpdateStatus:       true,
-			provider.CapManageLabels:       true,
-			provider.CapCreateWorkUnit:     true,
-			provider.CapDownloadAttachment: true,
-			provider.CapSnapshot:           true,
-			provider.CapCreatePR:           true, // MR creation
-			provider.CapFetchSubtasks:      true,
-			provider.CapFetchParent:        true,
-			provider.CapFetchPR:            true,
-			provider.CapPRComment:          true,
-			provider.CapFetchPRComments:    true,
-			provider.CapUpdatePRComment:    true,
-			provider.CapCreateDependency:   true,
-			provider.CapFetchDependencies:  true,
+		Capabilities: capability.CapabilitySet{
+			capability.CapRead:               true,
+			capability.CapList:               true,
+			capability.CapFetchComments:      true,
+			capability.CapComment:            true,
+			capability.CapUpdateStatus:       true,
+			capability.CapManageLabels:       true,
+			capability.CapCreateWorkUnit:     true,
+			capability.CapDownloadAttachment: true,
+			capability.CapSnapshot:           true,
+			capability.CapCreatePR:           true, // MR creation
+			capability.CapFetchSubtasks:      true,
+			capability.CapFetchParent:        true,
+			capability.CapFetchPR:            true,
+			capability.CapPRComment:          true,
+			capability.CapFetchPRComments:    true,
+			capability.CapUpdatePRComment:    true,
+			capability.CapCreateDependency:   true,
+			capability.CapFetchDependencies:  true,
 		},
 	}
 }
 
 // New creates a GitLab provider.
-func New(ctx context.Context, cfg provider.Config) (any, error) {
+func New(ctx context.Context, cfg providerconfig.Config) (any, error) {
 	// Extract config values
 	token := cfg.GetString("token")
 	host := cfg.GetString("host")
@@ -169,7 +173,7 @@ func (p *Provider) Parse(input string) (string, error) {
 }
 
 // Fetch reads a GitLab issue and creates a WorkUnit.
-func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, error) {
+func (p *Provider) Fetch(ctx context.Context, id string) (*workunit.WorkUnit, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -208,7 +212,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	}
 
 	// Map to WorkUnit
-	wu := &provider.WorkUnit{
+	wu := &workunit.WorkUnit{
 		ID:          strconv.FormatInt(issue.IID, 10),
 		ExternalID:  fmt.Sprintf("%s#%d", displayProject, issue.IID),
 		Provider:    ProviderName,
@@ -220,7 +224,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 		Assignees:   mapAssignees(issue.Assignees),
 		CreatedAt:   *issue.CreatedAt,
 		UpdatedAt:   *issue.UpdatedAt,
-		Source: provider.SourceInfo{
+		Source: workunit.SourceInfo{
 			Type:      ProviderName,
 			Reference: id,
 			SyncedAt:  time.Now(),
@@ -257,9 +261,9 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 	// Extract image URLs
 	imageURLs := ExtractImageURLs(issue.Description)
 	if len(imageURLs) > 0 {
-		wu.Attachments = make([]provider.Attachment, len(imageURLs))
+		wu.Attachments = make([]workunit.Attachment, len(imageURLs))
 		for i, url := range imageURLs {
-			wu.Attachments[i] = provider.Attachment{
+			wu.Attachments[i] = workunit.Attachment{
 				ID:   "img-" + hashURL(url), // Hash-based ID for stability
 				Name: fmt.Sprintf("image-%d", i),
 				URL:  url,
@@ -271,7 +275,7 @@ func (p *Provider) Fetch(ctx context.Context, id string) (*provider.WorkUnit, er
 }
 
 // Snapshot captures the issue content for storage.
-func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot, error) {
+func (p *Provider) Snapshot(ctx context.Context, id string) (*snapshot.Snapshot, error) {
 	ref, err := ParseReference(id)
 	if err != nil {
 		return nil, err
@@ -300,10 +304,10 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 		return nil, err
 	}
 
-	snapshot := &provider.Snapshot{
+	snap := &snapshot.Snapshot{
 		Type: ProviderName,
 		Ref:  id,
-		Files: []provider.SnapshotFile{
+		Files: []snapshot.SnapshotFile{
 			{
 				Path:    "issue.md",
 				Content: formatIssueMarkdown(issue),
@@ -314,17 +318,17 @@ func (p *Provider) Snapshot(ctx context.Context, id string) (*provider.Snapshot,
 	// Fetch and include notes (comments)
 	notes, err := p.client.GetIssueNotes(ctx, ref.IssueIID)
 	if err == nil && len(notes) > 0 {
-		snapshot.Files = append(snapshot.Files, provider.SnapshotFile{
+		snap.Files = append(snap.Files, snapshot.SnapshotFile{
 			Path:    "notes.md",
 			Content: formatNotesMarkdown(notes),
 		})
 	}
 
-	return snapshot, nil
+	return snap, nil
 }
 
 // List lists issues from the project.
-func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*provider.WorkUnit, error) {
+func (p *Provider) List(ctx context.Context, opts workunit.ListOptions) ([]*workunit.WorkUnit, error) {
 	// Set up project
 	projectPath := p.config.ProjectPath
 	if projectPath != "" {
@@ -339,11 +343,11 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 	// Map status
 	if opts.Status != "" {
 		switch opts.Status {
-		case provider.StatusOpen:
+		case workunit.StatusOpen:
 			listOpts.State = ptr("opened")
-		case provider.StatusClosed:
+		case workunit.StatusClosed:
 			listOpts.State = ptr("closed")
-		case provider.StatusInProgress, provider.StatusReview, provider.StatusDone:
+		case workunit.StatusInProgress, workunit.StatusReview, workunit.StatusDone:
 			// GitLab doesn't have these exact states, treat as opened
 			listOpts.State = ptr("opened")
 		}
@@ -371,9 +375,9 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 		return nil, err
 	}
 
-	result := make([]*provider.WorkUnit, len(issues))
+	result := make([]*workunit.WorkUnit, len(issues))
 	for i, issue := range issues {
-		result[i] = &provider.WorkUnit{
+		result[i] = &workunit.WorkUnit{
 			ID:          strconv.FormatInt(issue.IID, 10),
 			ExternalID:  fmt.Sprintf("%s#%d", p.config.ProjectPath, issue.IID),
 			Provider:    ProviderName,
@@ -392,7 +396,7 @@ func (p *Provider) List(ctx context.Context, opts provider.ListOptions) ([]*prov
 }
 
 // FetchComments fetches comments for a work unit.
-func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]provider.Comment, error) {
+func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -407,7 +411,7 @@ func (p *Provider) FetchComments(ctx context.Context, workUnitID string) ([]prov
 }
 
 // AddComment adds a comment to a work unit.
-func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*provider.Comment, error) {
+func (p *Provider) AddComment(ctx context.Context, workUnitID string, body string) (*workunit.Comment, error) {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return nil, err
@@ -418,7 +422,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 		return nil, err
 	}
 
-	author := provider.Person{
+	author := workunit.Person{
 		ID:   strconv.FormatInt(note.Author.ID, 10),
 		Name: note.Author.Username,
 	}
@@ -435,7 +439,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 		updatedAt = *note.CreatedAt
 	}
 
-	return &provider.Comment{
+	return &workunit.Comment{
 		ID:        strconv.FormatInt(note.ID, 10),
 		Body:      note.Body,
 		CreatedAt: *note.CreatedAt,
@@ -445,7 +449,7 @@ func (p *Provider) AddComment(ctx context.Context, workUnitID string, body strin
 }
 
 // UpdateStatus updates the status of a work unit.
-func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status provider.Status) error {
+func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status workunit.Status) error {
 	ref, err := ParseReference(workUnitID)
 	if err != nil {
 		return err
@@ -453,11 +457,11 @@ func (p *Provider) UpdateStatus(ctx context.Context, workUnitID string, status p
 
 	var stateEvent *string
 	switch status {
-	case provider.StatusOpen:
+	case workunit.StatusOpen:
 		stateEvent = ptr("reopen")
-	case provider.StatusClosed:
+	case workunit.StatusClosed:
 		stateEvent = ptr("close")
-	case provider.StatusInProgress, provider.StatusReview, provider.StatusDone:
+	case workunit.StatusInProgress, workunit.StatusReview, workunit.StatusDone:
 		// GitLab doesn't have these exact states, no state change
 		stateEvent = nil
 	}
@@ -496,7 +500,7 @@ func (p *Provider) RemoveLabels(ctx context.Context, workUnitID string, labels [
 }
 
 // CreateWorkUnit creates a new work unit.
-func (p *Provider) CreateWorkUnit(ctx context.Context, opts provider.CreateWorkUnitOptions) (*provider.WorkUnit, error) {
+func (p *Provider) CreateWorkUnit(ctx context.Context, opts workunit.CreateWorkUnitOptions) (*workunit.WorkUnit, error) {
 	createOpts := &gl.CreateIssueOptions{
 		Title:       ptr(opts.Title),
 		Description: ptr(opts.Description),
@@ -529,14 +533,14 @@ func (p *Provider) GetClient() *Client {
 
 // --- Helper functions ---
 
-func mapGitLabState(state string) provider.Status {
+func mapGitLabState(state string) workunit.Status {
 	switch state {
 	case "opened":
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	case "closed":
-		return provider.StatusClosed
+		return workunit.StatusClosed
 	default:
-		return provider.StatusOpen
+		return workunit.StatusOpen
 	}
 }
 
@@ -567,16 +571,16 @@ func inferTypeFromLabels(labels []string) string {
 }
 
 // labelPriorityMap maps GitLab labels to priorities.
-var labelPriorityMap = map[string]provider.Priority{
-	"critical":      provider.PriorityCritical,
-	"urgent":        provider.PriorityCritical,
-	"priority:high": provider.PriorityHigh,
-	"high-priority": provider.PriorityHigh,
-	"priority:low":  provider.PriorityLow,
-	"low-priority":  provider.PriorityLow,
+var labelPriorityMap = map[string]workunit.Priority{
+	"critical":      workunit.PriorityCritical,
+	"urgent":        workunit.PriorityCritical,
+	"priority:high": workunit.PriorityHigh,
+	"high-priority": workunit.PriorityHigh,
+	"priority:low":  workunit.PriorityLow,
+	"low-priority":  workunit.PriorityLow,
 }
 
-func inferPriorityFromLabels(labels []string) provider.Priority {
+func inferPriorityFromLabels(labels []string) workunit.Priority {
 	for _, label := range labels {
 		name := strings.ToLower(label)
 		if p, ok := labelPriorityMap[name]; ok {
@@ -584,13 +588,13 @@ func inferPriorityFromLabels(labels []string) provider.Priority {
 		}
 	}
 
-	return provider.PriorityNormal
+	return workunit.PriorityNormal
 }
 
-func mapAssignees(assignees []*gl.IssueAssignee) []provider.Person {
-	persons := make([]provider.Person, len(assignees))
+func mapAssignees(assignees []*gl.IssueAssignee) []workunit.Person {
+	persons := make([]workunit.Person, len(assignees))
 	for i, a := range assignees {
-		persons[i] = provider.Person{
+		persons[i] = workunit.Person{
 			ID:   strconv.FormatInt(a.ID, 10),
 			Name: a.Username,
 		}
@@ -599,10 +603,10 @@ func mapAssignees(assignees []*gl.IssueAssignee) []provider.Person {
 	return persons
 }
 
-func mapNotes(notes []*gl.Note) []provider.Comment {
-	result := make([]provider.Comment, len(notes))
+func mapNotes(notes []*gl.Note) []workunit.Comment {
+	result := make([]workunit.Comment, len(notes))
 	for i, n := range notes {
-		author := provider.Person{
+		author := workunit.Person{
 			ID:   strconv.FormatInt(n.Author.ID, 10),
 			Name: n.Author.Username,
 		}
@@ -614,7 +618,7 @@ func mapNotes(notes []*gl.Note) []provider.Comment {
 			updatedAt = *n.CreatedAt
 		}
 
-		result[i] = provider.Comment{
+		result[i] = workunit.Comment{
 			ID:        strconv.FormatInt(n.ID, 10),
 			Body:      n.Body,
 			CreatedAt: *n.CreatedAt,
