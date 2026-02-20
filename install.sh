@@ -28,15 +28,15 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 success() {
-    echo -e "${GREEN}[OK]${NC} $1"
+    echo -e "${GREEN}[OK]${NC} $1" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 error() {
