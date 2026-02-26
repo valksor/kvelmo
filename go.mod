@@ -24,7 +24,7 @@ require (
 	github.com/valksor/go-toolkit v0.0.0-20260217184419-7f9a76fec714
 	github.com/yalue/onnxruntime_go v1.26.0
 	github.com/yuin/goldmark v1.7.16
-	gitlab.com/gitlab-org/api/client-go v1.36.0
+	gitlab.com/gitlab-org/api/client-go v1.44.0
 	golang.org/x/mod v0.33.0
 	golang.org/x/net v0.50.0
 	golang.org/x/oauth2 v0.35.0
