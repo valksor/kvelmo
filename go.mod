@@ -26,7 +26,7 @@ require (
 	github.com/yuin/goldmark v1.7.16
 	gitlab.com/gitlab-org/api/client-go v1.36.0
 	golang.org/x/mod v0.33.0
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sys v0.41.0
 	golang.org/x/term v0.40.0
