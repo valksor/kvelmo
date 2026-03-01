@@ -1,0 +1,459 @@
+// Package custom implements a configurable custom agent.
+// This allows users to integrate any CLI tool that follows the streaming JSON output pattern.
+package custom
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os/exec"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/agent"
+)
+
+// Agent wraps a custom CLI command as an agent.
+type Agent struct {
+	name   string
+	config Config
+
+	cmd       *exec.Cmd
+	cmdMu     sync.Mutex
+	stdin     io.WriteCloser
+	stdout    io.ReadCloser
+	stderr    io.ReadCloser
+	connected atomic.Bool
+	closed    atomic.Bool
+
+	events chan agent.Event
+}
+
+// Config holds custom agent configuration.
+type Config struct {
+	// Name is the agent's identifier
+	Name string
+
+	// Command is the CLI command to execute (e.g., ["my-agent", "run"])
+	Command []string
+
+	// Args are additional arguments to pass
+	Args []string
+
+	// Environment variables to set
+	Environment map[string]string
+
+	// WorkDir is the working directory
+	WorkDir string
+
+	// Timeout for execution
+	Timeout time.Duration
+
+	// PermissionHandler evaluates permission requests
+	PermissionHandler agent.PermissionHandler
+
+	// InputFormat defines how prompts are sent to the command
+	// Options: "json" (default), "text", "stdin"
+	InputFormat string
+
+	// OutputFormat defines how responses are parsed
+	// Options: "ndjson" (default), "json", "text"
+	OutputFormat string
+}
+
+// DefaultConfig returns sensible defaults for custom agents.
+func DefaultConfig(name string, command []string) Config {
+	return Config{
+		Name:              name,
+		Command:           command,
+		Environment:       make(map[string]string),
+		Timeout:           30 * time.Minute,
+		PermissionHandler: agent.DefaultPermissionHandler,
+		InputFormat:       "json",
+		OutputFormat:      "ndjson",
+	}
+}
+
+// New creates a custom agent with the given name and command.
+func New(name string, command []string) *Agent {
+	return NewWithConfig(DefaultConfig(name, command))
+}
+
+// NewWithConfig creates a custom agent with full configuration.
+func NewWithConfig(cfg Config) *Agent {
+	if cfg.Name == "" {
+		cfg.Name = "custom"
+	}
+	if len(cfg.Command) == 0 {
+		cfg.Command = []string{"echo"}
+	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 30 * time.Minute
+	}
+	if cfg.InputFormat == "" {
+		cfg.InputFormat = "json"
+	}
+	if cfg.OutputFormat == "" {
+		cfg.OutputFormat = "ndjson"
+	}
+	if cfg.PermissionHandler == nil {
+		cfg.PermissionHandler = agent.DefaultPermissionHandler
+	}
+
+	return &Agent{
+		name:   cfg.Name,
+		config: cfg,
+		events: make(chan agent.Event, 100),
+	}
+}
+
+// Name returns the agent identifier.
+func (a *Agent) Name() string {
+	return a.name
+}
+
+// Available checks if the command is available.
+func (a *Agent) Available() error {
+	if len(a.config.Command) == 0 {
+		return errors.New("no command configured")
+	}
+
+	binary := a.config.Command[0]
+	_, err := exec.LookPath(binary)
+	if err != nil {
+		return fmt.Errorf("command not found: %s: %w", binary, err)
+	}
+
+	return nil
+}
+
+// Connect starts the custom command process.
+func (a *Agent) Connect(ctx context.Context) error {
+	a.cmdMu.Lock()
+	defer a.cmdMu.Unlock()
+
+	if a.connected.Load() {
+		return nil
+	}
+
+	args := append(a.config.Command[1:], a.config.Args...)
+	a.cmd = exec.CommandContext(ctx, a.config.Command[0], args...)
+
+	if a.config.WorkDir != "" {
+		a.cmd.Dir = a.config.WorkDir
+	}
+
+	// Set environment
+	for k, v := range a.config.Environment {
+		a.cmd.Env = append(a.cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// Get stdin for sending prompts
+	stdin, err := a.cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("stdin pipe: %w", err)
+	}
+	a.stdin = stdin
+
+	// Get stdout for reading responses
+	stdout, err := a.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdout pipe: %w", err)
+	}
+	a.stdout = stdout
+
+	// Get stderr for errors
+	stderr, err := a.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderr pipe: %w", err)
+	}
+	a.stderr = stderr
+
+	if err := a.cmd.Start(); err != nil {
+		return fmt.Errorf("start %s: %w", a.name, err)
+	}
+
+	a.connected.Store(true)
+
+	// Start output reader
+	go a.readOutput()
+
+	// Start error reader
+	go a.readErrors()
+
+	// Wait for process in background
+	go func() {
+		_ = a.cmd.Wait()
+		a.connected.Store(false)
+	}()
+
+	return nil
+}
+
+// Connected returns true if the process is running.
+func (a *Agent) Connected() bool {
+	return a.connected.Load()
+}
+
+// readOutput reads from stdout based on OutputFormat.
+func (a *Agent) readOutput() {
+	scanner := bufio.NewScanner(a.stdout)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		switch a.config.OutputFormat {
+		case "ndjson", "json":
+			a.parseJSONLine(line)
+		case "text":
+			a.events <- agent.Event{
+				Type:      agent.EventStream,
+				Content:   line,
+				Timestamp: time.Now(),
+			}
+		}
+	}
+
+	if !a.closed.Load() {
+		a.events <- agent.Event{
+			Type:      agent.EventComplete,
+			Timestamp: time.Now(),
+		}
+		close(a.events)
+	}
+}
+
+// parseJSONLine parses a single JSON line.
+func (a *Agent) parseJSONLine(line string) {
+	var msg struct {
+		Type    string          `json:"type"`
+		Content string          `json:"content,omitempty"`
+		Text    string          `json:"text,omitempty"`
+		Delta   string          `json:"delta,omitempty"`
+		Error   string          `json:"error,omitempty"`
+		Tool    string          `json:"tool,omitempty"`
+		Input   json.RawMessage `json:"input,omitempty"`
+		Success bool            `json:"success,omitempty"`
+	}
+
+	if err := json.Unmarshal([]byte(line), &msg); err != nil {
+		// Not JSON, treat as text
+		a.events <- agent.Event{
+			Type:      agent.EventStream,
+			Content:   line,
+			Timestamp: time.Now(),
+		}
+
+		return
+	}
+
+	switch msg.Type {
+	case "stream", "text", "content", "assistant", "delta":
+		content := msg.Content
+		if content == "" {
+			content = msg.Text
+		}
+		if content == "" {
+			content = msg.Delta
+		}
+		a.events <- agent.Event{
+			Type:      agent.EventStream,
+			Content:   content,
+			Timestamp: time.Now(),
+		}
+
+	case "tool_use":
+		var input map[string]any
+		if msg.Input != nil {
+			_ = json.Unmarshal(msg.Input, &input)
+		}
+		a.events <- agent.Event{
+			Type:      agent.EventToolUse,
+			Content:   msg.Tool,
+			Data:      input,
+			Timestamp: time.Now(),
+		}
+
+	case "error":
+		a.events <- agent.Event{
+			Type:      agent.EventError,
+			Error:     msg.Error,
+			Timestamp: time.Now(),
+		}
+
+	case "complete", "done", "result":
+		if msg.Success || msg.Type == "complete" || msg.Type == "done" {
+			a.events <- agent.Event{
+				Type:      agent.EventComplete,
+				Timestamp: time.Now(),
+			}
+		} else {
+			a.events <- agent.Event{
+				Type:      agent.EventError,
+				Error:     msg.Error,
+				Timestamp: time.Now(),
+			}
+		}
+
+	default:
+		// Unknown type, output as stream
+		content := msg.Content
+		if content == "" {
+			content = msg.Text
+		}
+		if content != "" {
+			a.events <- agent.Event{
+				Type:      agent.EventStream,
+				Content:   content,
+				Timestamp: time.Now(),
+			}
+		}
+	}
+}
+
+// readErrors reads stderr for error messages.
+func (a *Agent) readErrors() {
+	scanner := bufio.NewScanner(a.stderr)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			a.events <- agent.Event{
+				Type:      agent.EventError,
+				Content:   line,
+				Timestamp: time.Now(),
+			}
+		}
+	}
+}
+
+// SendPrompt sends a prompt to the custom command.
+func (a *Agent) SendPrompt(ctx context.Context, prompt string) (<-chan agent.Event, error) {
+	if !a.connected.Load() {
+		return nil, errors.New("not connected")
+	}
+
+	// Create new event channel for this prompt
+	a.events = make(chan agent.Event, 100)
+
+	// Write prompt based on input format
+	a.cmdMu.Lock()
+	if a.stdin != nil {
+		var data []byte
+		switch a.config.InputFormat {
+		case "json":
+			msg := map[string]string{"prompt": prompt}
+			if jsonData, err := json.Marshal(msg); err == nil {
+				data = append(jsonData, '\n')
+			}
+		case "text", "stdin":
+			data = []byte(prompt + "\n")
+		}
+		_, _ = a.stdin.Write(data)
+	}
+	a.cmdMu.Unlock()
+
+	// Return filtered event channel
+	filtered := make(chan agent.Event, 100)
+	go func() {
+		defer close(filtered)
+		for {
+			select {
+			case event, ok := <-a.events:
+				if !ok {
+					return
+				}
+				filtered <- event
+				if event.Type == agent.EventComplete || event.Type == agent.EventError {
+					return
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return filtered, nil
+}
+
+// HandlePermission is a no-op for custom agents.
+func (a *Agent) HandlePermission(requestID string, approved bool) error {
+	return nil
+}
+
+// Close stops the process.
+func (a *Agent) Close() error {
+	if a.closed.Swap(true) {
+		return nil
+	}
+
+	a.connected.Store(false)
+
+	a.cmdMu.Lock()
+	defer a.cmdMu.Unlock()
+
+	if a.stdin != nil {
+		_ = a.stdin.Close()
+	}
+
+	if a.cmd != nil && a.cmd.Process != nil {
+		_ = a.cmd.Process.Kill()
+	}
+
+	return nil
+}
+
+// WithEnv returns a new Agent with an added environment variable.
+func (a *Agent) WithEnv(key, value string) agent.Agent {
+	newCfg := a.config
+	if newCfg.Environment == nil {
+		newCfg.Environment = make(map[string]string)
+	}
+	env := make(map[string]string, len(a.config.Environment)+1)
+	for k, v := range a.config.Environment {
+		env[k] = v
+	}
+	env[key] = value
+	newCfg.Environment = env
+
+	return NewWithConfig(newCfg)
+}
+
+// WithArgs returns a new Agent with additional CLI arguments.
+func (a *Agent) WithArgs(args ...string) agent.Agent {
+	newCfg := a.config
+	newArgs := make([]string, len(a.config.Args)+len(args))
+	copy(newArgs, a.config.Args)
+	copy(newArgs[len(a.config.Args):], args)
+	newCfg.Args = newArgs
+
+	return NewWithConfig(newCfg)
+}
+
+// WithWorkDir returns a new Agent with a different working directory.
+func (a *Agent) WithWorkDir(dir string) agent.Agent {
+	newCfg := a.config
+	newCfg.WorkDir = dir
+
+	return NewWithConfig(newCfg)
+}
+
+// WithTimeout returns a new Agent with a different timeout.
+func (a *Agent) WithTimeout(d time.Duration) agent.Agent {
+	newCfg := a.config
+	newCfg.Timeout = d
+
+	return NewWithConfig(newCfg)
+}
+
+// Ensure Agent implements agent.Agent.
+var _ agent.Agent = (*Agent)(nil)
