@@ -1,0 +1,71 @@
+package commands
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/socket"
+)
+
+var SubmitCmd = &cobra.Command{
+	Use:   "submit",
+	Short: "Submit the current task (push changes, create PR)",
+	Long: `Pushes the current branch and creates a pull request (or equivalent)
+on the provider. Requires the task to be in 'reviewed' state.`,
+	RunE: runSubmit,
+}
+
+func init() {
+	SubmitCmd.Flags().StringP("title", "t", "", "PR/MR title (defaults to task title)")
+	SubmitCmd.Flags().StringP("body", "b", "", "PR/MR body (defaults to task description)")
+	SubmitCmd.Flags().Bool("draft", false, "Create as draft PR")
+	SubmitCmd.Flags().StringSlice("reviewers", nil, "Assign reviewers")
+	SubmitCmd.Flags().StringSlice("labels", nil, "Add labels")
+	SubmitCmd.Flags().Bool("delete-branch", false, "Delete local branch after successful submission")
+}
+
+func runSubmit(cmd *cobra.Command, args []string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get cwd: %w", err)
+	}
+
+	socketPath := socket.WorktreeSocketPath(cwd)
+
+	client, err := socket.NewClient(socketPath, socket.WithTimeout(60*time.Second))
+	if err != nil {
+		return fmt.Errorf("connect to socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	title, _ := cmd.Flags().GetString("title")
+	body, _ := cmd.Flags().GetString("body")
+	draft, _ := cmd.Flags().GetBool("draft")
+	reviewers, _ := cmd.Flags().GetStringSlice("reviewers")
+	labels, _ := cmd.Flags().GetStringSlice("labels")
+	deleteBranch, _ := cmd.Flags().GetBool("delete-branch")
+
+	params := map[string]any{
+		"title":         title,
+		"body":          body,
+		"draft":         draft,
+		"reviewers":     reviewers,
+		"labels":        labels,
+		"delete_branch": deleteBranch,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	result, err := client.Call(ctx, "submit", params)
+	if err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
+
+	fmt.Printf("Submitted: %v\n", result)
+
+	return nil
+}
