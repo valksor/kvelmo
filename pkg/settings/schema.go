@@ -1,0 +1,557 @@
+package settings
+
+import (
+	"reflect"
+	"strconv"
+	"strings"
+)
+
+// SchemaVersion is the current schema format version.
+const SchemaVersion = "1.0"
+
+// Generate creates a Schema from a Go struct type using reflection.
+// It uses reflect.Type traversal to safely handle nil pointer fields.
+//
+// Usage:
+//
+//	schema := settings.Generate(reflect.TypeOf(settings.Settings{}))
+func Generate(cfgType reflect.Type) *Schema {
+	// Handle pointer types by getting underlying type
+	if cfgType.Kind() == reflect.Ptr {
+		cfgType = cfgType.Elem()
+	}
+
+	if cfgType.Kind() != reflect.Struct {
+		return &Schema{Version: SchemaVersion}
+	}
+
+	sections := make(map[string]*Section)
+	var sectionOrder []string
+
+	// Traverse all fields in the config struct
+	for i := range cfgType.NumField() {
+		structField := cfgType.Field(i)
+		processField(structField, "", sections, &sectionOrder)
+	}
+
+	// Build ordered sections list
+	result := &Schema{
+		Version:  SchemaVersion,
+		Sections: make([]Section, 0, len(sectionOrder)),
+	}
+
+	for _, sectionID := range sectionOrder {
+		if section, ok := sections[sectionID]; ok && len(section.Fields) > 0 {
+			result.Sections = append(result.Sections, *section)
+		}
+	}
+
+	return result
+}
+
+// GenerateSchema is a convenience function that generates the schema for Settings.
+func GenerateSchema() *Schema {
+	return Generate(reflect.TypeOf(Settings{}))
+}
+
+// GenerateSchemaWithCustomAgents generates the schema and adds custom agents to the agent selection options.
+func GenerateSchemaWithCustomAgents(s *Settings) *Schema {
+	schema := GenerateSchema()
+
+	// Collect custom agent names
+	var customAgentNames []string
+	if s != nil && len(s.CustomAgents) > 0 {
+		for name := range s.CustomAgents {
+			customAgentNames = append(customAgentNames, name)
+		}
+	}
+
+	if len(customAgentNames) == 0 {
+		return schema
+	}
+
+	// Add custom agents to relevant options
+	for i := range schema.Sections {
+		section := &schema.Sections[i]
+
+		// Add to agent.default and agent.allowed options
+		if section.ID == "agent" {
+			for j := range section.Fields {
+				field := &section.Fields[j]
+				if field.Path == "agent.default" || field.Path == "agent.allowed" {
+					for _, name := range customAgentNames {
+						field.Options = append(field.Options, SelectOption{
+							Value: name,
+							Label: name + " (custom)",
+						})
+					}
+				}
+			}
+		}
+
+		// Add to custom_agents extends options (so custom agents can extend other custom agents)
+		if section.ID == "custom_agents" {
+			for j := range section.Fields {
+				field := &section.Fields[j]
+				if field.Path == "custom_agents" && field.ItemSchema != nil {
+					for k := range field.ItemSchema {
+						itemField := &field.ItemSchema[k]
+						if itemField.Path == "extends" {
+							for _, name := range customAgentNames {
+								itemField.Options = append(itemField.Options, SelectOption{
+									Value: name,
+									Label: name + " (custom)",
+								})
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return schema
+}
+
+// processField recursively processes a struct field and adds it to the appropriate section.
+func processField(structField reflect.StructField, pathPrefix string, sections map[string]*Section, sectionOrder *[]string) {
+	// Skip unexported fields
+	if !structField.IsExported() {
+		return
+	}
+
+	// Get JSON tag for path building (prefer yaml tag for yaml-based config)
+	yamlTag := structField.Tag.Get("yaml")
+	jsonTag := structField.Tag.Get("json")
+
+	// Use yaml tag if available, otherwise json
+	tag := yamlTag
+	if tag == "" {
+		tag = jsonTag
+	}
+
+	if tag == "-" {
+		// Skip fields with yaml:"-" or json:"-" UNLESS they have an env tag
+		// (sensitive fields have yaml:"-" but should still appear in schema)
+		schemaTag := structField.Tag.Get("schema")
+		if schemaTag == "" || !strings.Contains(schemaTag, "env=") {
+			return
+		}
+	}
+
+	// Extract field name from tag
+	fieldName := strings.Split(tag, ",")[0]
+	if fieldName == "" || fieldName == "-" {
+		fieldName = toSnakeCase(structField.Name)
+	}
+
+	// Build the full path
+	var path string
+	if pathPrefix == "" {
+		path = fieldName
+	} else {
+		path = pathPrefix + "." + fieldName
+	}
+
+	// Get field type, handling pointers
+	fieldType := structField.Type
+	if fieldType.Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem()
+	}
+
+	// Check for schema tag
+	schemaTag := structField.Tag.Get("schema")
+
+	// Handle nested structs
+	if fieldType.Kind() == reflect.Struct {
+		// Check if this is a struct with its own schema tags (leaf struct)
+		// or a container struct that should be recursed into
+		hasSchemaTag := schemaTag != ""
+
+		if hasSchemaTag {
+			// Treat as a single field
+			addFieldToSection(path, schemaTag, fieldType, sections, sectionOrder)
+		} else {
+			// Recurse into nested struct
+			for j := range fieldType.NumField() {
+				processField(fieldType.Field(j), path, sections, sectionOrder)
+			}
+		}
+
+		return
+	}
+
+	// Handle map types - special handling for custom_agents
+	if fieldType.Kind() == reflect.Map {
+		if path == "custom_agents" {
+			addCustomAgentsSection(sections, sectionOrder)
+		}
+
+		return
+	}
+
+	// Handle slice types - include if has schema tag
+	if fieldType.Kind() == reflect.Slice {
+		if schemaTag != "" {
+			addFieldToSection(path, schemaTag, fieldType, sections, sectionOrder)
+		}
+
+		return
+	}
+
+	// Process primitive fields with schema tags
+	if schemaTag != "" {
+		addFieldToSection(path, schemaTag, fieldType, sections, sectionOrder)
+	}
+}
+
+// addFieldToSection parses the schema tag and adds a field to the appropriate section.
+func addFieldToSection(path, schemaTag string, fieldType reflect.Type, sections map[string]*Section, sectionOrder *[]string) {
+	// Parse the schema tag
+	tags := parseSchemaTag(schemaTag)
+
+	// Skip fields without a label (not intended for UI)
+	label := tags["label"]
+	if label == "" {
+		return
+	}
+
+	// Determine section from path prefix
+	sectionID := strings.Split(path, ".")[0]
+
+	// Create section if needed
+	if _, ok := sections[sectionID]; !ok {
+		meta := GetSectionMeta(sectionID)
+		sections[sectionID] = &Section{
+			ID:          sectionID,
+			Title:       meta.Title,
+			Description: meta.Description,
+			Icon:        meta.Icon,
+			Category:    meta.Category,
+			Fields:      []Field{},
+		}
+		*sectionOrder = append(*sectionOrder, sectionID)
+	}
+
+	// Determine field type
+	uiType := inferFieldType(fieldType, tags)
+
+	// Build the field
+	field := Field{
+		Path:        path,
+		Type:        uiType,
+		Label:       label,
+		Description: tags["desc"],
+		Placeholder: tags["placeholder"],
+		Sensitive:   tags["sensitive"] == "true",
+		EnvVar:      tags["env"],
+		HelpURL:     tags["helpUrl"],
+		Advanced:    tags["advanced"] == "true",
+		ShowWhen:    parseShowWhen(tags["showWhen"]),
+		Options:     parseOptions(tags["options"]),
+		Multiple:    tags["type"] == "multiselect",
+	}
+
+	// Parse default value based on type
+	if defaultStr := tags["default"]; defaultStr != "" {
+		field.Default = parseDefaultValue(defaultStr, fieldType)
+	}
+
+	// Build validation rules
+	validation := buildValidation(tags)
+	if validation != nil {
+		field.Validation = validation
+	}
+
+	// Add field to section
+	sections[sectionID].Fields = append(sections[sectionID].Fields, field)
+}
+
+// inferFieldType determines the UI field type from the Go type and tags.
+func inferFieldType(goType reflect.Type, tags map[string]string) FieldType {
+	// Check for explicit type in tags
+	if explicitType := tags["type"]; explicitType != "" {
+		switch explicitType {
+		case "multiselect":
+			return TypeSelect
+		case "tags":
+			return TypeTags
+		case "keyvalue":
+			return TypeKeyValue
+		case "textarea":
+			return TypeTextarea
+		case "password":
+			return TypePassword
+		}
+	}
+
+	if tags["options"] != "" {
+		return TypeSelect
+	}
+	if tags["sensitive"] == "true" {
+		return TypePassword
+	}
+
+	// Infer from Go type
+	switch goType.Kind() { //nolint:exhaustive // Only common Go types are handled
+	case reflect.Bool:
+		return TypeBoolean
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return TypeNumber
+	case reflect.Slice:
+		return TypeTags
+	default:
+		return TypeString
+	}
+}
+
+// parseDefaultValue converts a default value string to the appropriate Go type.
+func parseDefaultValue(defaultStr string, goType reflect.Type) any {
+	switch goType.Kind() { //nolint:exhaustive // Only common Go types are handled
+	case reflect.Bool:
+		return defaultStr == "true"
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if v, err := strconv.ParseInt(defaultStr, 10, 64); err == nil {
+			return v
+		}
+
+		return 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if v, err := strconv.ParseUint(defaultStr, 10, 64); err == nil {
+			return v
+		}
+
+		return 0
+	case reflect.Float32, reflect.Float64:
+		if v, err := strconv.ParseFloat(defaultStr, 64); err == nil {
+			return v
+		}
+
+		return 0.0
+	default:
+		return defaultStr
+	}
+}
+
+// buildValidation creates ValidationRules from tag values.
+func buildValidation(tags map[string]string) *ValidationRules {
+	validation := &ValidationRules{
+		Required:       tags["required"] == "true",
+		Pattern:        tags["pattern"],
+		PatternMessage: tags["patternMsg"],
+	}
+
+	if minStr := tags["min"]; minStr != "" {
+		if v, err := strconv.Atoi(minStr); err == nil {
+			validation.Min = &v
+		}
+	}
+	if maxStr := tags["max"]; maxStr != "" {
+		if v, err := strconv.Atoi(maxStr); err == nil {
+			validation.Max = &v
+		}
+	}
+	if maxlenStr := tags["maxlen"]; maxlenStr != "" {
+		if v, err := strconv.Atoi(maxlenStr); err == nil {
+			validation.MaxLength = &v
+		}
+	}
+
+	// Return nil if no validation is specified
+	if !validation.Required &&
+		validation.Min == nil &&
+		validation.Max == nil &&
+		validation.MaxLength == nil &&
+		validation.Pattern == "" {
+		return nil
+	}
+
+	return validation
+}
+
+// parseSchemaTag parses a schema struct tag using semicolon-separated syntax.
+// Format: schema:"key=value;key=value;flag".
+func parseSchemaTag(tag string) map[string]string {
+	result := make(map[string]string)
+	if tag == "" {
+		return result
+	}
+
+	pairs := strings.Split(tag, ";")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+
+		if idx := strings.Index(pair, "="); idx > 0 {
+			key := strings.TrimSpace(pair[:idx])
+			value := strings.TrimSpace(pair[idx+1:])
+			result[key] = value
+		} else {
+			// Flag without value (e.g., "sensitive", "advanced", "required")
+			result[pair] = "true"
+		}
+	}
+
+	return result
+}
+
+// parseShowWhen parses a showWhen value in the format "path:value".
+func parseShowWhen(value string) *Condition {
+	if value == "" {
+		return nil
+	}
+
+	idx := strings.Index(value, ":")
+	if idx <= 0 {
+		return nil
+	}
+
+	field := strings.TrimSpace(value[:idx])
+	condValue := strings.TrimSpace(value[idx+1:])
+
+	if strings.HasPrefix(condValue, "!") {
+		return &Condition{
+			Field:     field,
+			NotEquals: strings.TrimPrefix(condValue, "!"),
+		}
+	}
+
+	var equalValue any = condValue
+	switch condValue {
+	case "true":
+		equalValue = true
+	case "false":
+		equalValue = false
+	}
+
+	return &Condition{
+		Field:  field,
+		Equals: equalValue,
+	}
+}
+
+// parseOptions parses pipe-separated select options.
+// Format: "option1|option2|option3" or "value:label|value:label".
+func parseOptions(value string) []SelectOption {
+	if value == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, "|")
+	options := make([]SelectOption, 0, len(parts))
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		if idx := strings.Index(part, ":"); idx > 0 {
+			options = append(options, SelectOption{
+				Value: strings.TrimSpace(part[:idx]),
+				Label: strings.TrimSpace(part[idx+1:]),
+			})
+		} else {
+			options = append(options, SelectOption{
+				Value: part,
+				Label: capitalizeFirst(part),
+			})
+		}
+	}
+
+	return options
+}
+
+// GetSectionMeta returns the metadata for a section by its ID.
+func GetSectionMeta(sectionID string) SectionMeta {
+	if meta, ok := SectionRegistry[sectionID]; ok {
+		return meta
+	}
+
+	return SectionMeta{
+		Title:    capitalizeFirst(sectionID),
+		Category: "features",
+	}
+}
+
+// capitalizeFirst capitalizes the first letter of a string.
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// toSnakeCase converts a string from PascalCase to snake_case.
+func toSnakeCase(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result.WriteByte('_')
+		}
+		result.WriteRune(r)
+	}
+
+	return strings.ToLower(result.String())
+}
+
+// addCustomAgentsSection adds a special section for custom_agents configuration.
+// Custom agents use a dynamic list UI since they're stored as map[string]CustomAgent.
+func addCustomAgentsSection(sections map[string]*Section, sectionOrder *[]string) {
+	sectionID := "custom_agents"
+	meta := GetSectionMeta(sectionID)
+
+	// Create section
+	sections[sectionID] = &Section{
+		ID:          sectionID,
+		Title:       meta.Title,
+		Description: meta.Description,
+		Icon:        meta.Icon,
+		Category:    meta.Category,
+		Fields:      []Field{},
+	}
+	*sectionOrder = append(*sectionOrder, sectionID)
+
+	// Build itemSchema from CustomAgent struct schema tags
+	itemSchema := []Field{
+		{
+			Path:        "extends",
+			Type:        TypeSelect,
+			Label:       "Base Agent",
+			Description: "Agent to wrap",
+			Options:     parseOptions("claude|codex"),
+		},
+		{
+			Path:        "description",
+			Type:        TypeString,
+			Label:       "Description",
+			Description: "Human-readable description",
+		},
+		{
+			Path:        "args",
+			Type:        TypeTags,
+			Label:       "CLI Arguments",
+			Description: "Additional arguments passed to agent",
+		},
+		{
+			Path:        "env",
+			Type:        TypeKeyValue,
+			Label:       "Environment",
+			Description: "Environment variables for this agent",
+		},
+	}
+
+	// Add the list field
+	sections[sectionID].Fields = append(sections[sectionID].Fields, Field{
+		Path:        "custom_agents",
+		Type:        TypeList,
+		Label:       "Custom Agents",
+		Description: "Define custom agent configurations that wrap base agents with additional settings",
+		ItemSchema:  itemSchema,
+	})
+}
