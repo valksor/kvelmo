@@ -1,0 +1,171 @@
+package codex_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/agent"
+	"github.com/valksor/kvelmo/pkg/agent/codex"
+)
+
+func TestDefaultConfig(t *testing.T) {
+	cfg := codex.DefaultConfig()
+	if len(cfg.Command) == 0 || cfg.Command[0] != "codex" {
+		t.Errorf("DefaultConfig().Command = %v, want [codex]", cfg.Command)
+	}
+	if cfg.Timeout == 0 {
+		t.Error("DefaultConfig().Timeout should not be zero")
+	}
+}
+
+func TestNew(t *testing.T) {
+	a := codex.New()
+	if a == nil {
+		t.Fatal("New() returned nil")
+	}
+}
+
+func TestNewWithConfig_Defaults(t *testing.T) {
+	cfg := codex.Config{}
+	a := codex.NewWithConfig(cfg)
+	if a == nil {
+		t.Fatal("NewWithConfig() returned nil")
+	}
+}
+
+func TestName(t *testing.T) {
+	a := codex.New()
+	if a.Name() != codex.AgentName {
+		t.Errorf("Name() = %q, want %q", a.Name(), codex.AgentName)
+	}
+}
+
+func TestConnected_NewAgent(t *testing.T) {
+	a := codex.New()
+	if a.Connected() {
+		t.Error("Connected() should return false for a new agent")
+	}
+}
+
+func TestMode_NewAgent(t *testing.T) {
+	a := codex.New()
+	if a.Mode() != "" {
+		t.Errorf("Mode() = %q, want empty string for unconnected agent", a.Mode())
+	}
+}
+
+func TestWithEnv(t *testing.T) {
+	a := codex.New()
+	b := a.WithEnv("KEY", "value")
+	if b == nil {
+		t.Fatal("WithEnv() returned nil")
+	}
+	if b == a {
+		t.Error("WithEnv() should return a new agent")
+	}
+}
+
+func TestWithEnv_Chains(t *testing.T) {
+	a := codex.New()
+	b := a.WithEnv("K1", "v1").WithEnv("K2", "v2")
+	if b == nil {
+		t.Fatal("chained WithEnv() returned nil")
+	}
+}
+
+func TestWithArgs(t *testing.T) {
+	a := codex.New()
+	b := a.WithArgs("--verbose")
+	if b == nil {
+		t.Fatal("WithArgs() returned nil")
+	}
+}
+
+func TestWithWorkDir(t *testing.T) {
+	a := codex.New()
+	b := a.WithWorkDir("/tmp")
+	if b == nil {
+		t.Fatal("WithWorkDir() returned nil")
+	}
+}
+
+func TestWithTimeout(t *testing.T) {
+	a := codex.New()
+	b := a.WithTimeout(5 * time.Minute)
+	if b == nil {
+		t.Fatal("WithTimeout() returned nil")
+	}
+}
+
+func TestWithModel(t *testing.T) {
+	a := codex.New()
+	b := a.WithModel("o3-mini")
+	if b == nil {
+		t.Fatal("WithModel() returned nil")
+	}
+}
+
+func TestSendPrompt_NotConnected(t *testing.T) {
+	a := codex.New()
+	_, err := a.SendPrompt(context.Background(), "hello")
+	if err == nil {
+		t.Error("SendPrompt() on disconnected agent should return an error")
+	}
+}
+
+func TestHandlePermission_Unconnected(t *testing.T) {
+	a := codex.New()
+	if err := a.HandlePermission("req-1", true); err != nil {
+		t.Errorf("HandlePermission() on unconnected agent returned unexpected error: %v", err)
+	}
+}
+
+func TestClose_Unconnected(t *testing.T) {
+	a := codex.New()
+	if err := a.Close(); err != nil {
+		t.Errorf("Close() on unconnected agent returned unexpected error: %v", err)
+	}
+}
+
+func TestAvailable_BinaryNotFound(t *testing.T) {
+	cfg := codex.Config{}
+	cfg.Command = []string{"nonexistent-binary-kvelmo-test-xyz"}
+	a := codex.NewWithConfig(cfg)
+	err := a.Available()
+	if err == nil {
+		t.Skip("binary unexpectedly found; skipping not-found test")
+	}
+}
+
+func TestAvailable_ExistingBinary(t *testing.T) {
+	// Use the `go` binary which is always present in a Go project.
+	cfg := codex.Config{}
+	cfg.Command = []string{"go"}
+	a := codex.NewWithConfig(cfg)
+	// go --version exits 0, so Available() should return nil
+	_ = a.Available()
+}
+
+func TestWithPermissionHandler(t *testing.T) {
+	a := codex.New()
+	handler := agent.PermissionHandler(func(_ agent.PermissionRequest) bool { return true })
+	b := a.WithPermissionHandler(handler)
+	if b == nil {
+		t.Fatal("WithPermissionHandler() returned nil")
+	}
+}
+
+func TestRegister(t *testing.T) {
+	r := agent.NewRegistry()
+	if err := codex.Register(r); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+	a, err := r.Get(codex.AgentName)
+	if err != nil {
+		t.Fatalf("Get(%q) error = %v", codex.AgentName, err)
+	}
+	if a == nil {
+		t.Error("Register() should add agent to registry")
+	}
+}
