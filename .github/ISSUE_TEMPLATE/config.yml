@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/valksor/kvelmo
+    about: Check the repository for documentation and guides
+  - name: Troubleshooting
+    url: https://github.com/valksor/kvelmo/issues
+    about: Search existing issues for solutions to common problems
