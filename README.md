@@ -5,6 +5,7 @@
 [![GitHub Release](https://img.shields.io/github/release/valksor/kvelmo.svg?style=flat)](https://github.com/valksor/kvelmo/releases/latest)
 [![GitHub last commit](https://img.shields.io/github/last-commit/valksor/kvelmo.svg?style=flat)](https://github.com/valksor/kvelmo/commits/master)
 
+[![Coverage Status](https://coveralls.io/repos/github/valksor/kvelmo/badge.svg?branch=master)](https://coveralls.io/github/valksor/kvelmo?branch=master) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/valksor/kvelmo)](https://goreportcard.com/report/github.com/valksor/kvelmo)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/valksor/kvelmo)
 
