@@ -1,0 +1,422 @@
+import { create } from 'zustand'
+import { useGlobalStore } from './globalStore'
+import { useProjectStore } from './projectStore'
+import { cliCmd } from '../meta'
+
+export type MessageRole = 'user' | 'assistant' | 'system' | 'subagent' | 'permission'
+export type MessageStatus = 'pending' | 'streaming' | 'complete' | 'error'
+
+// Subagent status for display
+export type SubagentStatus = 'started' | 'completed' | 'failed'
+
+// Danger level for permission requests
+export type DangerLevel = 'safe' | 'caution' | 'dangerous'
+
+export interface ChatMessage {
+  id: string
+  role: MessageRole
+  content: string
+  timestamp: Date
+  status: MessageStatus
+  jobId?: string
+  mentions?: string[]  // File paths mentioned with @
+  actions?: Array<{
+    id: string
+    label: string
+    type: 'approve' | 'reject' | 'custom'
+  }>
+  // Subagent info (when role='subagent')
+  subagent?: {
+    subagentId: string
+    type: string
+    description: string
+    status: SubagentStatus
+    duration?: number  // ms
+    exitReason?: string
+  }
+  // Permission info (when role='permission')
+  permission?: {
+    requestId: string
+    tool: string
+    dangerLevel: DangerLevel
+    dangerReason?: string
+    approved?: boolean
+  }
+}
+
+interface BackendMessage {
+  id: string
+  role: string
+  content: string
+  mentions?: string[]
+  timestamp?: string
+  job_id?: string
+}
+
+// ChatEvent is a streaming event pushed by the server for chat jobs
+interface ChatEvent {
+  type: string        // job_started, stream, job_completed, job_failed, subagent, permission
+  job_id: string      // The job this event relates to
+  content?: string    // Streaming content or message
+  result?: string     // Final result on completion
+  error?: string      // Error message on failure
+  timestamp?: string
+  // Subagent event fields
+  subagent?: {
+    id: string
+    type: string
+    description: string
+    status: SubagentStatus
+    duration?: number
+    exit_reason?: string
+  }
+  // Permission event fields
+  permission_request?: {
+    id: string
+    tool: string
+    danger_level?: DangerLevel
+    danger_reason?: string
+  }
+}
+
+interface ChatState {
+  messages: ChatMessage[]
+  isTyping: boolean
+  error: string | null
+  activeJobId: string | null
+  taskId: string | null      // Current task ID for chat persistence
+  isDisabled: boolean        // True when no active task
+
+  // Actions
+  sendMessage: (content: string, worktreeId?: string) => Promise<void>
+  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => string
+  updateMessage: (id: string, updates: Partial<ChatMessage>) => void
+  appendToMessage: (id: string, content: string) => void
+  setTyping: (typing: boolean) => void
+  clearMessages: () => Promise<void>
+  loadHistory: (worktreeId: string) => Promise<void>
+  setTaskId: (taskId: string | null) => void
+  handleAction: (messageId: string, actionId: string) => void
+}
+
+let messageIdCounter = 0
+const generateId = () => `msg-${++messageIdCounter}-${Date.now()}`
+
+// Convert backend message to frontend format
+const convertMessage = (msg: BackendMessage): ChatMessage => ({
+  id: msg.id || generateId(),
+  role: msg.role as MessageRole,
+  content: msg.content,
+  timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+  status: 'complete',
+  mentions: msg.mentions,
+  jobId: msg.job_id
+})
+
+export const useChatStore = create<ChatState>((set, get) => ({
+  messages: [],
+  isTyping: false,
+  error: null,
+  activeJobId: null,
+  taskId: null,
+  isDisabled: true,  // Disabled by default until task is loaded
+
+  loadHistory: async (worktreeId: string) => {
+    const client = useGlobalStore.getState().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{ messages: BackendMessage[]; task_id: string }>('chat.history', {
+        worktree_id: worktreeId
+      })
+
+      const messages = (result.messages || []).map(convertMessage)
+      set({
+        messages,
+        taskId: result.task_id,
+        isDisabled: false,
+        error: null
+      })
+    } catch (err) {
+      // If error is "no active task", disable chat
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load history'
+      if (errorMsg.includes('no active task')) {
+        set({
+          messages: [],
+          taskId: null,
+          isDisabled: true,
+          error: null
+        })
+      } else {
+        set({ error: errorMsg })
+      }
+    }
+  },
+
+  setTaskId: (taskId: string | null) => {
+    set({
+      taskId,
+      isDisabled: !taskId,
+      messages: taskId ? get().messages : []
+    })
+  },
+
+  sendMessage: async (content: string, worktreeId?: string) => {
+    if (!content.trim()) return
+
+    const { isDisabled } = get()
+    if (isDisabled) {
+      set({ error: `No active task. Start a task first with ${cliCmd('start')}.` })
+      return
+    }
+
+    const client = useGlobalStore.getState().client
+    if (!client) {
+      set({ error: 'Not connected to server' })
+      return
+    }
+
+    // Add user message
+    get().addMessage({
+      role: 'user',
+      content: content.trim(),
+      status: 'complete'
+    })
+
+    set({ isTyping: true, error: null })
+
+    try {
+      // Submit chat to backend
+      const result = await client.call<{ job_id: string; status: string }>('chat.send', {
+        message: content.trim(),
+        worktree_id: worktreeId
+      })
+
+      const jobId = result.job_id
+      set({ activeJobId: jobId })
+
+      // Create assistant message for streaming
+      const assistantMsgId = get().addMessage({
+        role: 'assistant',
+        content: '',
+        status: 'streaming',
+        jobId
+      })
+
+      // Subscribe to streaming events from the server
+      // Events are pushed via WebSocket instead of polling
+      client.subscribe((data: unknown) => {
+        const event = data as ChatEvent
+
+        // Only handle events for our job
+        if (event.job_id !== jobId) return
+
+        switch (event.type) {
+          case 'job_started':
+            get().updateMessage(assistantMsgId, {
+              content: event.content || 'Processing...',
+              status: 'streaming'
+            })
+            break
+
+          case 'stream':
+          case 'assistant':
+            // Append streaming content
+            get().appendToMessage(assistantMsgId, event.content || '')
+            break
+
+          case 'job_completed':
+            get().updateMessage(assistantMsgId, {
+              content: event.result || get().messages.find(m => m.id === assistantMsgId)?.content || 'Task completed.',
+              status: 'complete',
+              actions: [
+                { id: 'approve', label: 'Approve', type: 'approve' },
+                { id: 'reject', label: 'Reject', type: 'reject' }
+              ]
+            })
+            set({ isTyping: false, activeJobId: null })
+            break
+
+          case 'job_failed':
+            get().updateMessage(assistantMsgId, {
+              content: event.error || 'Job failed',
+              status: 'error'
+            })
+            set({ isTyping: false, activeJobId: null, error: event.error || 'Job failed' })
+            break
+
+          case 'subagent':
+            // Add a subagent status message to chat
+            if (event.subagent) {
+              const subagent = event.subagent
+              const statusText = subagent.status === 'started'
+                ? `Starting ${subagent.type}: "${subagent.description}"`
+                : subagent.status === 'completed'
+                ? `Completed ${subagent.type}: "${subagent.description}" (${(subagent.duration || 0) / 1000}s)`
+                : `Failed ${subagent.type}: "${subagent.description}" - ${subagent.exit_reason || 'unknown error'}`
+
+              get().addMessage({
+                role: 'subagent',
+                content: statusText,
+                status: 'complete',
+                jobId,
+                subagent: {
+                  subagentId: subagent.id,
+                  type: subagent.type,
+                  description: subagent.description,
+                  status: subagent.status,
+                  duration: subagent.duration,
+                  exitReason: subagent.exit_reason
+                }
+              })
+            }
+            break
+
+          case 'permission':
+            // Add permission request to chat (with danger warning if applicable)
+            if (event.permission_request) {
+              const perm = event.permission_request
+              const dangerLevel = perm.danger_level || 'safe'
+              let content = `Permission requested: ${perm.tool}`
+              if (dangerLevel !== 'safe' && perm.danger_reason) {
+                content += `\n⚠️ ${dangerLevel.toUpperCase()}: ${perm.danger_reason}`
+              }
+
+              get().addMessage({
+                role: 'permission',
+                content,
+                status: 'complete',
+                jobId,
+                permission: {
+                  requestId: perm.id,
+                  tool: perm.tool,
+                  dangerLevel,
+                  dangerReason: perm.danger_reason
+                }
+              })
+            }
+            break
+        }
+      })
+
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to send message'
+
+      // Check if error indicates no active task
+      if (errorMsg.includes('no active task')) {
+        set({
+          isTyping: false,
+          isDisabled: true,
+          error: 'No active task. Start a task first.',
+          activeJobId: null
+        })
+      } else {
+        set({
+          isTyping: false,
+          error: errorMsg,
+          activeJobId: null
+        })
+      }
+
+      get().addMessage({
+        role: 'system',
+        content: `Error: ${errorMsg}`,
+        status: 'error'
+      })
+    }
+  },
+
+  addMessage: (message) => {
+    const id = generateId()
+    const newMessage: ChatMessage = {
+      ...message,
+      id,
+      timestamp: new Date()
+    }
+    set(state => ({
+      messages: [...state.messages, newMessage]
+    }))
+    return id
+  },
+
+  updateMessage: (id, updates) => {
+    set(state => ({
+      messages: state.messages.map(msg =>
+        msg.id === id ? { ...msg, ...updates } : msg
+      )
+    }))
+  },
+
+  appendToMessage: (id, content) => {
+    set(state => ({
+      messages: state.messages.map(msg =>
+        msg.id === id ? { ...msg, content: msg.content + content } : msg
+      )
+    }))
+  },
+
+  setTyping: (typing) => {
+    set({ isTyping: typing })
+  },
+
+  clearMessages: async () => {
+    const client = useGlobalStore.getState().client
+    const worktreeId = useProjectStore.getState().worktreeId
+
+    // Try to clear on backend first
+    if (client && worktreeId) {
+      try {
+        await client.call('chat.clear', { worktree_id: worktreeId })
+      } catch (err) {
+        // Log but don't fail - still clear local state
+        console.warn('Failed to clear chat on backend:', err)
+      }
+    }
+
+    set({ messages: [], error: null, activeJobId: null })
+  },
+
+  handleAction: async (messageId, actionId) => {
+    const message = get().messages.find(m => m.id === messageId)
+    if (!message) return
+
+    const action = message.actions?.find(a => a.id === actionId)
+    if (!action) return
+
+    // Remove actions immediately so buttons disappear
+    get().updateMessage(messageId, { actions: undefined })
+
+    // Add system message confirming the action
+    get().addMessage({
+      role: 'system',
+      content: `Action "${action.label}" ${action.type === 'approve' ? 'approved' : action.type === 'reject' ? 'rejected' : 'executed'}.`,
+      status: 'complete'
+    })
+
+    // Send approve/reject to the review socket
+    if (action.type === 'approve') {
+      await useProjectStore.getState().review({ approve: true })
+    } else if (action.type === 'reject') {
+      await useProjectStore.getState().review({ reject: true })
+    }
+  }
+}))
+
+// Subscribe to project state changes to load chat history
+let prevWorktreeId: string | null = null
+useProjectStore.subscribe((state) => {
+  const worktreeId = state.worktreeId
+  if (worktreeId !== prevWorktreeId) {
+    prevWorktreeId = worktreeId
+    if (worktreeId) {
+      useChatStore.getState().loadHistory(worktreeId)
+    } else {
+      useChatStore.setState({
+        messages: [],
+        taskId: null,
+        isDisabled: true,
+        error: null
+      })
+    }
+  }
+})
