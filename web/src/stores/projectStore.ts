@@ -1,0 +1,815 @@
+import { create } from 'zustand'
+import { SocketClient } from '../lib/socket'
+import { useScreenshotStore, Screenshot } from './screenshotStore'
+
+type TaskState =
+  | 'none'
+  | 'loaded'
+  | 'planning'
+  | 'planned'
+  | 'implementing'
+  | 'implemented'
+  | 'simplifying'
+  | 'optimizing'
+  | 'reviewing'
+  | 'submitted'
+  | 'failed'
+  | 'waiting'
+  | 'paused'
+
+interface Task {
+  id: string
+  title: string
+  state: TaskState
+  source: string
+  description?: string
+  branch?: string
+  worktreePath?: string
+}
+
+interface Checkpoint {
+  sha: string
+  message: string
+  timestamp: string
+}
+
+interface FileChange {
+  path: string
+  status: 'added' | 'modified' | 'deleted' | 'renamed'
+}
+
+interface GitStatus {
+  branch: string
+  hasChanges: boolean
+}
+
+interface GitLogEntry {
+  sha: string
+  message: string
+  author: string
+  date: string
+}
+
+export interface BrowseEntry {
+  name: string
+  path: string
+  is_dir: boolean
+  size?: number
+  modified?: string
+}
+
+export interface FilesEntry {
+  path: string
+  size?: number
+  modified?: string
+}
+
+export interface Review {
+  number: number
+  timestamp: string
+  approved: boolean
+  message: string
+}
+
+export interface ReviewDetail {
+  number: number
+  timestamp: string
+  approved: boolean
+  message: string
+  content: string
+  findings: string[]
+}
+
+interface ReviewOptions {
+  approve?: boolean
+  reject?: boolean
+  message?: string
+  fix?: boolean
+}
+
+interface SubmitOptions {
+  title?: string
+  body?: string
+  draft?: boolean
+  reviewers?: string[]
+  labels?: string[]
+  delete_branch?: boolean
+}
+
+interface FinishOptions {
+  delete_remote?: boolean
+  force?: boolean
+}
+
+interface FinishResult {
+  previous_branch: string
+  current_branch: string
+  branch_deleted: boolean
+  remote_branch_deleted: boolean
+}
+
+interface RefreshResult {
+  task_id: string
+  branch: string
+  pr_status: string
+  pr_merged: boolean
+  pr_url: string
+  commits_behind_base: number
+  action: string
+  message: string
+}
+
+interface UpdateResult {
+  changed: boolean
+  specification_generated: boolean
+}
+
+interface ProjectState {
+  // Connection
+  connected: boolean
+  connecting: boolean
+  worktreeId: string | null
+  client: SocketClient | null
+
+  // Task state
+  task: Task | null
+  state: TaskState
+
+  // Output stream
+  output: string[]
+  lastSeq: number
+
+  // Git state
+  checkpoints: Checkpoint[]
+  redoStack: Checkpoint[]
+  gitStatus: GitStatus | null
+  fileChanges: FileChange[]
+
+  // Review history
+  reviews: Review[]
+  reviewDetails: Record<number, ReviewDetail>
+
+  // UI state
+  loading: boolean
+  error: string | null
+
+  // Connection
+  connect: (worktreeId: string) => Promise<void>
+  disconnect: () => void
+
+  // Task actions
+  start: (source: string) => Promise<void>
+  plan: (force?: boolean) => Promise<void>
+  implement: (force?: boolean) => Promise<void>
+  simplify: () => Promise<void>
+  optimize: () => Promise<void>
+  review: (options?: ReviewOptions) => Promise<void>
+  submit: (options?: SubmitOptions) => Promise<void>
+  abort: () => Promise<void>
+  reset: () => Promise<void>
+  abandon: (keepBranch?: boolean) => Promise<void>
+  update: () => Promise<UpdateResult>
+  finish: (options?: FinishOptions) => Promise<FinishResult | null>
+  refresh: () => Promise<RefreshResult | null>
+
+  // Checkpoint navigation
+  undo: (steps?: number) => Promise<void>
+  redo: (steps?: number) => Promise<void>
+  goToCheckpoint: (sha: string) => Promise<void>
+
+  // Git operations
+  refreshGitStatus: () => Promise<void>
+  getGitDiff: (cached?: boolean) => Promise<string>
+  getGitLog: (count?: number) => Promise<GitLogEntry[]>
+
+  // Review history
+  loadReviews: () => Promise<void>
+  loadReview: (number: number) => Promise<ReviewDetail | null>
+
+  // File browser
+  browseFiles: (path?: string, filesOnly?: boolean) => Promise<BrowseEntry[]>
+  listFiles: (path?: string, extensions?: string[], maxDepth?: number) => Promise<FilesEntry[]>
+
+  // Output
+  appendOutput: (line: string) => void
+  clearOutput: () => void
+
+  // Status refresh
+  refreshStatus: () => Promise<void>
+}
+
+export const useProjectStore = create<ProjectState>((set, get) => ({
+  connected: false,
+  connecting: false,
+  worktreeId: null,
+  client: null,
+
+  task: null,
+  state: 'none',
+  output: [],
+  lastSeq: 0,
+  checkpoints: [],
+  redoStack: [],
+  gitStatus: null,
+  fileChanges: [],
+  reviews: [],
+  reviewDetails: {},
+  loading: false,
+  error: null,
+
+  connect: async (worktreeId: string) => {
+    console.log('[kvelmo] projectStore.connect called with:', worktreeId)
+    if (get().connected || get().connecting) {
+      console.log('[kvelmo] projectStore already connected/connecting, skipping')
+      return
+    }
+
+    set({ connecting: true, worktreeId, error: null })
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = `${protocol}//${window.location.host}/ws/worktree/${encodeURIComponent(worktreeId)}`
+    console.log('[kvelmo] Connecting to worktree:', url)
+
+    try {
+      const client = new SocketClient(url)
+
+      // Handle streaming events
+      client.subscribe((data: unknown) => {
+        const msg = data as {
+          seq?: number
+          type?: string
+          state?: TaskState
+          message?: string
+          content?: string
+          job_id?: string
+          error?: string
+        }
+
+        // Deduplicate: skip events already processed (can occur when replay and
+        // live channel overlap briefly on reconnect). Must check before updating lastSeq.
+        if (msg.seq !== undefined && msg.seq <= get().lastSeq) {
+          return
+        }
+
+        // Track the highest seq seen for reconnect replay
+        if (msg.seq !== undefined) {
+          set(s => ({ lastSeq: Math.max(s.lastSeq, msg.seq!) }))
+        }
+
+        if (msg.type === 'heartbeat') {
+          return
+        } else if (msg.type === 'state_changed') {
+          set({ state: msg.state || 'none' })
+          get().appendOutput(`State: ${msg.state}`)
+        } else if (msg.type === 'job_output' || msg.type === 'stream') {
+          if (msg.content || msg.message) {
+            get().appendOutput(msg.content || msg.message || '')
+          }
+        } else if (msg.type === 'checkpoint_created') {
+          get().appendOutput(`Checkpoint created: ${msg.message}`)
+          get().refreshStatus()
+        } else if (msg.type === 'job_completed') {
+          get().appendOutput('Job completed')
+          get().refreshStatus()
+        } else if (msg.type === 'job_failed') {
+          get().appendOutput(`Job failed: ${msg.error || msg.content}`)
+          set({ error: msg.error || 'Job failed' })
+        } else if (msg.type === 'screenshot_captured') {
+          const screenshot = (msg as { data?: Screenshot }).data
+          if (screenshot) {
+            useScreenshotStore.getState().handleScreenshotCaptured(screenshot)
+          }
+        } else if (msg.type === 'screenshot_deleted') {
+          const data = (msg as { data?: { id?: string } }).data
+          if (data?.id) {
+            useScreenshotStore.getState().handleScreenshotDeleted(data.id)
+          }
+        }
+      })
+
+      console.log('[kvelmo] Worktree WebSocket connecting...')
+      await client.connect()
+      console.log('[kvelmo] Worktree WebSocket connected!')
+      set({ client, connected: true, connecting: false })
+
+      // Activate server-side event streaming. Pass last known seq so missed
+      // events are replayed if this is a reconnect.
+      await client.call('stream.subscribe', { last_seq: get().lastSeq })
+
+      // Initial status fetch
+      await get().refreshStatus()
+
+      // Load screenshots
+      await useScreenshotStore.getState().load()
+    } catch (err) {
+      console.error('[kvelmo] Worktree connection error:', err)
+      set({
+        connected: false,
+        connecting: false,
+        error: err instanceof Error ? err.message : 'Connection failed'
+      })
+    }
+  },
+
+  disconnect: () => {
+    const client = get().client
+    if (client) {
+      client.close()
+    }
+    set({
+      connected: false,
+      connecting: false,
+      worktreeId: null,
+      client: null,
+      task: null,
+      state: 'none',
+      output: [],
+      lastSeq: 0,
+      checkpoints: [],
+      redoStack: [],
+      gitStatus: null,
+      reviews: [],
+      reviewDetails: {}
+    })
+  },
+
+  start: async (source: string) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput(`Loading task from ${source}...`)
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('start', { source })
+      set({ state: result.state, loading: false })
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Start failed' })
+    }
+  },
+
+  plan: async (force: boolean = false) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput(force ? 'Force re-running planning...' : 'Starting planning...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; job_id?: string }>('plan', { force })
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Planning job started: ${result.job_id || ''}`)
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Plan failed' })
+    }
+  },
+
+  implement: async (force: boolean = false) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput(force ? 'Force re-running implementation...' : 'Starting implementation...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; job_id?: string }>('implement', { force })
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Implementation job started: ${result.job_id || ''}`)
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Implement failed' })
+    }
+  },
+
+  simplify: async () => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Starting simplification...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; job_id?: string }>('simplify', {})
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Simplification job started: ${result.job_id || ''}`)
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Simplify failed' })
+    }
+  },
+
+  optimize: async () => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Starting optimization...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; job_id?: string }>('optimize', {})
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Optimization job started: ${result.job_id || ''}`)
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Optimize failed' })
+    }
+  },
+
+  review: async (options?: ReviewOptions) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Starting review...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('review', {
+        approve: options?.approve ?? false,
+        reject: options?.reject ?? false,
+        message: options?.message,
+        fix: options?.fix ?? false
+      })
+      set({ state: result.state, loading: false })
+      await get().loadReviews()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Review failed' })
+    }
+  },
+
+  submit: async (options?: SubmitOptions) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Submitting...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('submit', {
+        title: options?.title,
+        body: options?.body,
+        draft: options?.draft ?? false,
+        reviewers: options?.reviewers ?? [],
+        labels: options?.labels ?? [],
+        delete_branch: options?.delete_branch ?? false
+      })
+      set({ state: result.state, loading: false })
+      get().appendOutput('Task submitted!')
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Submit failed' })
+    }
+  },
+
+  abort: async () => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('abort', {})
+      set({ state: result.state, loading: false })
+      get().appendOutput('Task aborted')
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Abort failed' })
+    }
+  },
+
+  reset: async () => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('reset', {})
+      set({ state: result.state, loading: false })
+      get().appendOutput('Task reset')
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Reset failed' })
+    }
+  },
+
+  abandon: async (keepBranch: boolean = false) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Abandoning task...')
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState }>('abandon', { keep_branch: keepBranch })
+      set({ state: result.state, loading: false })
+      get().appendOutput('Task abandoned')
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Abandon failed' })
+    }
+  },
+
+  update: async (): Promise<UpdateResult> => {
+    const client = get().client
+    if (!client) return { changed: false, specification_generated: false }
+
+    set({ loading: true, error: null })
+    get().appendOutput('Updating task from source...')
+
+    try {
+      const result = await client.call<UpdateResult>('update', {})
+      set({ loading: false })
+      get().appendOutput(
+        result.changed
+          ? `Task updated from source${result.specification_generated ? ' — new specification generated' : ''}`
+          : 'Task is already up to date'
+      )
+      await get().refreshStatus()
+      return result
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Update failed' })
+      return { changed: false, specification_generated: false }
+    }
+  },
+
+  finish: async (options?: FinishOptions): Promise<FinishResult | null> => {
+    const client = get().client
+    if (!client) return null
+
+    set({ loading: true, error: null })
+    get().appendOutput('Finishing task...')
+
+    try {
+      const result = await client.call<FinishResult>('task.finish', {
+        delete_remote: options?.delete_remote ?? false,
+        force: options?.force ?? false
+      })
+      set({ state: 'none', task: null, loading: false })
+      get().appendOutput(`Finished! Switched to ${result.current_branch}`)
+      if (result.branch_deleted) {
+        get().appendOutput(`Deleted local branch: ${result.previous_branch}`)
+      }
+      if (result.remote_branch_deleted) {
+        get().appendOutput(`Deleted remote branch: ${result.previous_branch}`)
+      }
+      await get().refreshStatus()
+      return result
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Finish failed' })
+      return null
+    }
+  },
+
+  refresh: async (): Promise<RefreshResult | null> => {
+    const client = get().client
+    if (!client) return null
+
+    set({ loading: true, error: null })
+    get().appendOutput('Checking PR status...')
+
+    try {
+      const result = await client.call<RefreshResult>('task.refresh', {})
+      set({ loading: false })
+      get().appendOutput(result.message)
+      if (result.pr_url) {
+        get().appendOutput(`PR: ${result.pr_url}`)
+      }
+      return result
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Refresh failed' })
+      return null
+    }
+  },
+
+  undo: async (steps: number = 1) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; steps: number }>('undo', { steps })
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Undo complete (${result.steps} step${result.steps > 1 ? 's' : ''})`)
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Undo failed' })
+    }
+  },
+
+  redo: async (steps: number = 1) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+
+    try {
+      const result = await client.call<{ status: string; state: TaskState; steps: number }>('redo', { steps })
+      set({ state: result.state, loading: false })
+      get().appendOutput(`Redo complete (${result.steps} step${result.steps > 1 ? 's' : ''})`)
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Redo failed' })
+    }
+  },
+
+  goToCheckpoint: async (sha: string) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput(`Navigating to checkpoint ${sha.slice(0, 8)}...`)
+
+    try {
+      await client.call<{ status: string; sha: string }>('checkpoint.goto', { sha })
+      get().appendOutput(`Restored to checkpoint ${sha.slice(0, 8)}`)
+      await get().refreshStatus()
+      set({ loading: false })
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Checkpoint navigation failed' })
+    }
+  },
+
+  refreshGitStatus: async () => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{
+        branch: string
+        has_changes: boolean
+        files: Array<{ path: string; status: 'added' | 'modified' | 'deleted' | 'renamed' }>
+      }>('git.status', {})
+      set({
+        gitStatus: {
+          branch: result.branch,
+          hasChanges: result.has_changes,
+        },
+        fileChanges: (result.files || []).map(f => ({
+          path: f.path,
+          status: f.status,
+        }))
+      })
+    } catch (err) {
+      // Git status may not be available
+      console.warn('Could not fetch git status:', err)
+    }
+  },
+
+  getGitDiff: async (cached: boolean = false): Promise<string> => {
+    const client = get().client
+    if (!client) return ''
+
+    try {
+      const result = await client.call<{ diff: string }>('git.diff', { cached })
+      return result.diff || ''
+    } catch (err) {
+      console.warn('Could not fetch git diff:', err)
+      return ''
+    }
+  },
+
+  getGitLog: async (count: number = 10): Promise<GitLogEntry[]> => {
+    const client = get().client
+    if (!client) return []
+
+    try {
+      const result = await client.call<{ entries: GitLogEntry[] }>('git.log', { count })
+      return result.entries || []
+    } catch (err) {
+      console.warn('Could not fetch git log:', err)
+      return []
+    }
+  },
+
+  loadReviews: async () => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{ reviews: Review[] }>('review.list', {})
+      set({ reviews: result.reviews || [] })
+    } catch (err) {
+      console.warn('Could not fetch review history:', err)
+    }
+  },
+
+  loadReview: async (number: number): Promise<ReviewDetail | null> => {
+    const client = get().client
+    if (!client) return null
+
+    // Return cached if available
+    const cached = get().reviewDetails[number]
+    if (cached) return cached
+
+    try {
+      const result = await client.call<ReviewDetail>('review.view', { number })
+      set(state => ({
+        reviewDetails: { ...state.reviewDetails, [number]: result }
+      }))
+      return result
+    } catch (err) {
+      console.warn('Could not fetch review detail:', err)
+      return null
+    }
+  },
+
+  browseFiles: async (path?: string, filesOnly: boolean = false): Promise<BrowseEntry[]> => {
+    const client = get().client
+    if (!client) return []
+
+    try {
+      const result = await client.call<{ entries: BrowseEntry[] }>('browse', { path, files: filesOnly })
+      return result.entries || []
+    } catch (err) {
+      console.warn('Could not browse files:', err)
+      return []
+    }
+  },
+
+  listFiles: async (path?: string, extensions?: string[], maxDepth?: number): Promise<FilesEntry[]> => {
+    const client = get().client
+    if (!client) return []
+
+    try {
+      const result = await client.call<{ files: FilesEntry[] }>('files.list', {
+        path,
+        extensions,
+        max_depth: maxDepth
+      })
+      return result.files || []
+    } catch (err) {
+      console.warn('Could not list files:', err)
+      return []
+    }
+  },
+
+  appendOutput: (line: string) => {
+    set(state => ({
+      output: [...state.output, `[${new Date().toLocaleTimeString()}] ${line}`]
+    }))
+  },
+
+  clearOutput: () => {
+    set({ output: [] })
+  },
+
+  refreshStatus: async () => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{
+        state: TaskState
+        path: string
+        task?: {
+          id: string
+          title: string
+          source: string
+          branch?: string
+          worktree_path?: string
+        }
+      }>('status', {})
+
+      set({ state: result.state })
+
+      if (result.task) {
+        set({
+          task: {
+            id: result.task.id,
+            title: result.task.title,
+            state: result.state,
+            source: result.task.source,
+            branch: result.task.branch,
+            worktreePath: result.task.worktree_path
+          }
+        })
+      }
+
+      // Also fetch checkpoints
+      try {
+        const checkpointsResult = await client.call<{
+          checkpoints: Array<{ sha: string; message: string; author: string; timestamp: string }>
+          redo_stack: Array<{ sha: string; message: string; author: string; timestamp: string }>
+        }>('checkpoints', {})
+        set({
+          checkpoints: (checkpointsResult.checkpoints || []).map(c => ({
+            sha: c.sha,
+            message: c.message,
+            timestamp: c.timestamp,
+          })),
+          redoStack: (checkpointsResult.redo_stack || []).map(c => ({
+            sha: c.sha,
+            message: c.message,
+            timestamp: c.timestamp,
+          })),
+        })
+      } catch {
+        // Checkpoints may not be available
+      }
+
+      // Refresh git status
+      await get().refreshGitStatus()
+
+      // Refresh review history
+      await get().loadReviews()
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Status refresh failed' })
+    }
+  }
+}))
