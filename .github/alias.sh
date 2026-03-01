@@ -13,7 +13,7 @@ find . -type f -name '*.go' \
   -not -name '*.qtpl.go' \
   -not -path '*/vendor/*' \
   -not -path '*/.claude/*' \
-  -not -path '*/v1/*' \
+  -not -path '*/prototype/*' \
   | while read -r file; do
     gawk '
       BEGIN {
