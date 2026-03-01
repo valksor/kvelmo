@@ -1,0 +1,17 @@
+packages:
+  - path: "github.com/valksor/kvelmo/pkg/socket"
+    output_path: "web/src/types/socket.ts"
+    # Type mappings for Go types that don't translate well
+    type_mappings:
+      time.Time: "string"
+      time.Duration: "number"
+      json.RawMessage: "unknown"
+      worker.Pool: "unknown"
+      storage.Review: "unknown"
+    # Only include API-relevant files, skip internal ones
+    include_files:
+      - "global.go"
+      - "worktree.go"
+      - "memory.go"
+      - "chat.go"
+      - "protocol.go"

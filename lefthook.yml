@@ -1,0 +1,41 @@
+# Lefthook configuration for pre-commit hooks
+# Install: go install github.com/evilmartians/lefthook@latest && lefthook install
+#
+# Note: This coexists with .githooks/commit-msg which handles [skip ci] tagging
+#
+# These hooks mirror make quality: fmt (gofmt + goimports + gofumpt),
+# golangci-lint, govulncheck, and alias checking
+
+pre-commit:
+  parallel: true
+  commands:
+    # Formatting - combine all 3 formatters like make fmt does
+    fmt:
+      glob: "*.go"
+      run: |
+        go fmt {staged_files}
+        goimports -w {staged_files}
+        gofumpt -l -w {staged_files}
+      stage_fixed: true
+
+    # Linting - use incremental check for speed
+    lint:
+      glob: "*.go"
+      run: golangci-lint run --new-from-rev=HEAD~1 --fix
+
+    # Vulnerability check - must run on entire module
+    vuln:
+      run: govulncheck ./...
+
+    # Alias check - runs the custom script
+    alias:
+      run: .github/alias.sh
+
+    # Web Frontend - lint TypeScript/React files
+    web-lint:
+      root: "web/"
+      glob: "web/**/*.{ts,tsx}"
+      run: bun run lint
+      skip:
+        - merge
+        - rebase

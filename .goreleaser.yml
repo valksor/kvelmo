@@ -1,0 +1,71 @@
+version: 2
+
+project_name: kvelmo
+
+snapshot:
+  version_template: "nightly"
+
+before:
+    hooks:
+        - go mod tidy
+        - go mod verify
+
+builds:
+    -   id: kvelmo
+        binary: kvelmo
+        main: ./cmd/kvelmo
+        env:
+            - CGO_ENABLED=0
+        goos:
+            - linux
+            - darwin
+        goarch:
+            - amd64
+            - arm64
+        flags:
+            - -trimpath
+        ldflags:
+            - -s -w
+            - -X github.com/valksor/kvelmo/pkg/meta.Version={{.Version}}
+            - -X github.com/valksor/kvelmo/pkg/meta.Commit={{.ShortCommit}}
+            - -X github.com/valksor/kvelmo/pkg/meta.BuildTime={{.Date}}
+
+# Binary-only releases (no tarballs)
+archives:
+    -   id: binaries
+        builds: [kvelmo]
+        format: binary
+        name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+    name_template: 'checksums.txt'
+    algorithm: sha256
+
+# Minisign signing (signs a checksum file only - simpler)
+signs:
+    -   id: minisign
+        cmd: minisign
+        signature: "${artifact}.minisig"
+        stdin: "{{ .Env.MINISIGN_PASSWORD }}"
+        args:
+            - "-S"
+            - "-m"
+            - "${artifact}"
+            - "-s"
+            - "/tmp/minisign.key"
+            - "-x"
+            - "${signature}"
+        artifacts: checksum
+
+# SBOM generation
+sboms:
+    -   artifacts: binary
+        documents:
+            - "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}.sbom.spdx.json"
+
+changelog:
+    sort: ""
+
+release:
+    # Append changelog to existing release notes (keeps "Full Changelog" link and custom text)
+    mode: append

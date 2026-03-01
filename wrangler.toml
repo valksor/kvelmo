@@ -1,0 +1,26 @@
+name = "kvelmo-docs"
+main = ".github/index.min.js"
+compatibility_date = "2026-01-03"
+compatibility_flags = ["nodejs_compat"]
+
+# Top-level site config required for Wrangler to generate __STATIC_CONTENT_MANIFEST
+[site]
+bucket = "./docs"
+
+[env.nightly]
+routes = [
+    { pattern = "valksor.com/docs/kvelmo/nightly", zone_name = "valksor.com" },
+    { pattern = "valksor.com/docs/kvelmo/nightly/*", zone_name = "valksor.com" }
+]
+
+[env.nightly.site]
+bucket = "./docs"
+
+[env.latest]
+routes = [
+    { pattern = "valksor.com/docs/kvelmo/latest", zone_name = "valksor.com" },
+    { pattern = "valksor.com/docs/kvelmo/latest/*", zone_name = "valksor.com" }
+]
+
+[env.latest.site]
+bucket = "./docs"
