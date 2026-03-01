@@ -1,0 +1,95 @@
+- Getting Started
+  - [Home](/)
+  - [Quickstart](/quickstart.md)
+  - [FAQ](/faq.md)
+  - [Glossary](/glossary.md)
+
+- Desktop App
+  - [Overview](/desktop/index.md)
+  - [Getting Started](/desktop/getting-started.md)
+
+- Web UI
+  - [Getting Started](/web-ui/getting-started.md)
+  - [Dashboard](/web-ui/dashboard.md)
+  - [Creating Tasks](/web-ui/creating-tasks.md)
+  - [Planning](/web-ui/planning.md)
+  - [Implementing](/web-ui/implementing.md)
+  - [Reviewing](/web-ui/reviewing.md)
+  - [Settings](/web-ui/settings.md)
+
+- CLI Reference
+  - [Overview](/cli/index.md)
+  - Workflow
+    - [start](/cli/start.md)
+    - [plan](/cli/plan.md)
+    - [implement](/cli/implement.md)
+    - [simplify](/cli/simplify.md)
+    - [optimize](/cli/optimize.md)
+    - [review](/cli/review.md)
+    - [submit](/cli/submit.md)
+    - [refresh](/cli/refresh.md)
+    - [finish](/cli/finish.md)
+  - Navigation
+    - [undo](/cli/undo.md)
+    - [redo](/cli/redo.md)
+    - [reset](/cli/reset.md)
+    - [abort](/cli/abort.md)
+    - [abandon](/cli/abandon.md)
+  - Information
+    - [status](/cli/status.md)
+    - [list](/cli/list.md)
+    - [checkpoints](/cli/checkpoints.md)
+    - [jobs](/cli/jobs.md)
+  - Management
+    - [serve](/cli/serve.md)
+    - [config](/cli/config.md)
+    - [projects](/cli/projects.md)
+    - [workers](/cli/workers.md)
+    - [delete](/cli/delete.md)
+    - [update](/cli/update.md)
+    - [stop](/cli/stop.md)
+  - Utilities
+    - [chat](/cli/chat.md)
+    - [memory](/cli/memory.md)
+    - [files](/cli/files.md)
+    - [screenshots](/cli/screenshots.md)
+    - [browse](/cli/browse.md)
+    - [browser](/cli/browser.md)
+    - [git](/cli/git.md)
+    - [completion](/cli/completion.md)
+
+- Concepts
+  - [Workflow](/concepts/workflow.md)
+  - [State Machine](/concepts/state-machine.md)
+  - [Checkpoints](/concepts/checkpoints.md)
+  - [Sockets](/concepts/sockets.md)
+
+- Agents
+  - [Overview](/agents/index.md)
+  - [Claude](/agents/claude.md)
+  - [Codex](/agents/codex.md)
+  - [Custom](/agents/custom.md)
+
+- Providers
+  - [Overview](/providers/index.md)
+  - [File](/providers/file.md)
+  - [GitHub](/providers/github.md)
+  - [GitLab](/providers/gitlab.md)
+  - [Linear](/providers/linear.md)
+  - [Wrike](/providers/wrike.md)
+
+- Configuration
+  - [Overview](/configuration/index.md)
+  - [Settings](/configuration/settings.md)
+  - [Environment](/configuration/environment.md)
+
+- Guides
+  - [First Task](/guides/first-task.md)
+  - [Web UI vs CLI](/guides/web-ui-vs-cli.md)
+  - [Recovery](/guides/recovery.md)
+  - [Windows WSL](/guides/windows-wsl.md)
+
+- Advanced
+  - [Memory](/advanced/memory.md)
+  - [Browser Automation](/advanced/browser.md)
+  - [Workers](/advanced/workers.md)
