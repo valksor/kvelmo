@@ -1,0 +1,330 @@
+// conductor_quality.go — quality gate checks run during the Review phase.
+package conductor
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io/fs"
+	"log/slog"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/settings"
+)
+
+// runQualityGate checks code quality before submission.
+// Detects project type and runs language-specific checks, then always
+// runs the CodeRabbit check if installed.
+func (c *Conductor) runQualityGate(ctx context.Context) error {
+	workDir := c.getWorkDir()
+
+	// Language-specific checks are mutually exclusive by project type.
+	// Each gate function creates its own context with timeout via qualityCtx().
+	//nolint:contextcheck // quality gate functions create their own time-limited context
+	if _, err := os.Stat(filepath.Join(workDir, "go.mod")); err == nil {
+		if err := c.qualityGateGo(workDir); err != nil {
+			return err
+		}
+	} else if _, err := os.Stat(filepath.Join(workDir, "package.json")); err == nil {
+		if err := c.qualityGateNode(workDir); err != nil {
+			return err
+		}
+	} else if _, err := os.Stat(filepath.Join(workDir, "setup.py")); err == nil {
+		if err := c.qualityGatePython(workDir); err != nil {
+			return err
+		}
+	} else if _, err := os.Stat(filepath.Join(workDir, "pyproject.toml")); err == nil {
+		if err := c.qualityGatePython(workDir); err != nil {
+			return err
+		}
+	} else {
+		slog.Warn("quality gate: unrecognised project type, skipping language checks", "dir", workDir)
+	}
+
+	// CodeRabbit runs for all project types if installed and configured.
+	return c.qualityGateCodeRabbit(ctx, workDir)
+}
+
+// runQualityGateAsync runs the quality gate in a background goroutine
+// and caches the result in WorkUnit. Called during Review() so the result
+// is ready by the time Submit() is called, avoiding a blocking wait.
+func (c *Conductor) runQualityGateAsync() {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("quality gate goroutine panicked", "panic", r)
+				// Update state to reflect failure
+				c.mu.Lock()
+				if c.workUnit != nil {
+					passed := false
+					c.workUnit.QualityGatePassed = &passed
+					c.workUnit.QualityGateError = fmt.Sprintf("panic: %v", r)
+					c.workUnit.UpdatedAt = time.Now()
+					c.persistState()
+				}
+				c.mu.Unlock()
+			}
+		}()
+
+		err := c.runQualityGate(c.lifecycleCtx)
+
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		if c.workUnit == nil {
+			return
+		}
+
+		passed := err == nil
+		c.workUnit.QualityGatePassed = &passed
+		if err != nil {
+			c.workUnit.QualityGateError = err.Error()
+		} else {
+			c.workUnit.QualityGateError = ""
+		}
+		c.workUnit.UpdatedAt = time.Now()
+		c.persistState()
+
+		slog.Debug("quality gate completed async", "passed", passed, "error", c.workUnit.QualityGateError)
+	}()
+}
+
+// qualityGateGo runs go vet for Go projects.
+func (c *Conductor) qualityGateGo(workDir string) error {
+	ctx, cancel := qualityCtx()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "vet", "./...")
+	cmd.Dir = workDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("go vet failed:\n%s", string(output))
+	}
+
+	return nil
+}
+
+// qualityGateNode runs npm lint and typecheck for Node.js projects.
+// Each script is only executed when it exists in package.json.
+func (c *Conductor) qualityGateNode(workDir string) error {
+	scripts, err := readPackageJSONScripts(workDir)
+	if err != nil {
+		slog.Warn("quality gate: cannot read package.json scripts", "err", err)
+
+		return nil
+	}
+
+	for _, script := range []string{"lint", "typecheck"} {
+		if _, ok := scripts[script]; !ok {
+			continue
+		}
+
+		ctx, cancel := qualityCtx()
+		out, runErr := runNPMScript(ctx, workDir, script)
+		cancel()
+		if runErr != nil {
+			return fmt.Errorf("npm run %s failed:\n%s", script, out)
+		}
+	}
+
+	return nil
+}
+
+// qualityGatePython checks Python syntax on changed .py files.
+// Uses ruff when available, otherwise falls back to py_compile.
+func (c *Conductor) qualityGatePython(workDir string) error {
+	if ruffPath, err := exec.LookPath("ruff"); err == nil {
+		ctx, cancel := qualityCtx()
+		defer cancel()
+		cmd := exec.CommandContext(ctx, ruffPath, "check", ".")
+		cmd.Dir = workDir
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("ruff check failed:\n%s", string(output))
+		}
+
+		return nil
+	}
+
+	// Fallback: py_compile on all .py files in the working directory.
+	// Skip if python3 is not available (consistent with ruff check above).
+	if _, err := exec.LookPath("python3"); err != nil {
+		return nil
+	}
+
+	pyFiles, err := collectPyFiles(workDir)
+	if err != nil || len(pyFiles) == 0 {
+		return nil
+	}
+
+	ctx, cancel := qualityCtx()
+	defer cancel()
+
+	// Process files in batches to avoid exceeding OS command-line length limits.
+	// Large projects can have thousands of .py files; ~100 files per batch is safe.
+	const batchSize = 100
+	for i := 0; i < len(pyFiles); i += batchSize {
+		end := i + batchSize
+		if end > len(pyFiles) {
+			end = len(pyFiles)
+		}
+		batch := pyFiles[i:end]
+
+		args := append([]string{"-m", "py_compile"}, batch...)
+		cmd := exec.CommandContext(ctx, "python3", args...)
+		cmd.Dir = workDir
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("python -m py_compile failed:\n%s", string(output))
+		}
+	}
+
+	return nil
+}
+
+// qualityGateCodeRabbit runs CodeRabbit CLI review if installed and configured.
+// Skips silently if the CLI is not found. Mode comes from workflow settings:
+//   - never  → skip silently
+//   - always → run without prompting
+//   - ask    → block on a user prompt (default)
+func (c *Conductor) qualityGateCodeRabbit(ctx context.Context, workDir string) error {
+	crPath, err := exec.LookPath("coderabbit")
+	if err != nil {
+		slog.Debug("quality gate: coderabbit not found, skipping")
+
+		return nil
+	}
+
+	mode := c.getEffectiveSettings().Workflow.CodeRabbit.Mode
+	if mode == "" {
+		mode = settings.CodeRabbitModeAsk
+	}
+
+	switch mode {
+	case settings.CodeRabbitModeNever:
+		slog.Debug("quality gate: coderabbit mode=never, skipping")
+
+		return nil
+
+	case settings.CodeRabbitModeAlways:
+		// fall through to run
+
+	case settings.CodeRabbitModeAsk:
+		run, promptErr := c.promptUser(ctx, "Run CodeRabbit review? (this may take several minutes)")
+		if promptErr != nil {
+			slog.Warn("quality gate: coderabbit prompt cancelled, skipping", "err", promptErr)
+
+			return nil
+		}
+
+		if !run {
+			slog.Debug("quality gate: user declined coderabbit review")
+
+			return nil
+		}
+
+	default:
+		slog.Warn("quality gate: unknown coderabbit mode, skipping", "mode", mode)
+
+		return nil
+	}
+
+	crCtx, cancel := coderabbitCtx()
+	defer cancel()
+
+	//nolint:contextcheck // coderabbitCtx() creates a time-limited context for the subprocess
+	cmd := exec.CommandContext(crCtx, crPath, "review")
+	cmd.Dir = workDir
+	output, runErr := cmd.CombinedOutput()
+	if runErr != nil {
+		return fmt.Errorf("coderabbit review failed:\n%s", string(output))
+	}
+
+	slog.Debug("quality gate: coderabbit review passed")
+
+	return nil
+}
+
+// qualityCtx returns a context with the standard 60-second quality-gate timeout.
+func qualityCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 60*time.Second)
+}
+
+// coderabbitCtx returns a context with a 5-minute timeout for CodeRabbit CLI.
+// CodeRabbit is significantly slower than local linters.
+func coderabbitCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 5*time.Minute)
+}
+
+// readPackageJSONScripts parses the "scripts" object from package.json.
+func readPackageJSONScripts(workDir string) (map[string]string, error) {
+	data, err := os.ReadFile(filepath.Join(workDir, "package.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return nil, err
+	}
+
+	if pkg.Scripts == nil {
+		return map[string]string{}, nil
+	}
+
+	return pkg.Scripts, nil
+}
+
+// runNPMScript invokes npm run <script> with --if-present and returns
+// (combined output, error). A non-zero exit code is returned as an error.
+func runNPMScript(ctx context.Context, workDir, script string) (string, error) {
+	cmd := exec.CommandContext(ctx, "npm", "run", script, "--if-present")
+	cmd.Dir = workDir
+
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Run()
+
+	return buf.String(), err
+}
+
+// collectPyFiles walks workDir recursively and returns .py file paths
+// relative to workDir. Skips common virtual environment and cache directories
+// (.venv, venv, __pycache__, .git, node_modules).
+func collectPyFiles(workDir string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(workDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// Skip common virtual environment and cache directories
+		if d.IsDir() {
+			name := d.Name()
+			if name == ".venv" || name == "venv" || name == "__pycache__" || name == ".git" || name == "node_modules" {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+		if strings.HasSuffix(d.Name(), ".py") {
+			// Use relative path so cmd.Dir = workDir works correctly
+			relPath, relErr := filepath.Rel(workDir, path)
+			if relErr != nil {
+				return relErr
+			}
+			files = append(files, relPath)
+		}
+
+		return nil
+	})
+
+	return files, err
+}

@@ -1,0 +1,325 @@
+package conductor
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/storage"
+	"github.com/valksor/kvelmo/pkg/worker"
+)
+
+// Plan begins the planning phase.
+// Submits a planning job to the worker pool.
+// Accepts force parameter to allow re-running from already-planned state.
+func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.workUnit == nil {
+		return "", errors.New("no task loaded")
+	}
+
+	// Check pool BEFORE transitioning state to avoid leaving machine in bad state
+	if c.pool == nil {
+		return "", errors.New("no worker pool available")
+	}
+
+	// Handle force: allow re-running from planned state
+	if force && c.machine.State() == StatePlanned {
+		c.machine.ForceState(StateLoaded)
+	}
+
+	// Dispatch plan event to transition state
+	if err := c.machine.Dispatch(ctx, EventPlan); err != nil {
+		return "", fmt.Errorf("cannot plan: %w", err)
+	}
+
+	// Auto-detect complexity and choose appropriate prompt
+	complexity := DetectTaskComplexity(
+		c.workUnit.Title,
+		c.workUnit.Description,
+		0, // file count hint not available here
+		"",
+		nil,
+		false,
+	)
+	prompt := c.buildPlanPromptForComplexity(complexity)
+
+	opts := c.buildJobOptions()
+	job, err := c.pool.SubmitWithOptions(worker.JobTypePlan, c.getWorkDir(), prompt, opts)
+	if err != nil {
+		// Rollback state
+		_ = c.machine.Dispatch(ctx, EventError)
+
+		return "", fmt.Errorf("submit plan job: %w", err)
+	}
+
+	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
+	c.workUnit.UpdatedAt = time.Now()
+	c.saveJobSession(job.ID, "planning", "")
+	c.persistState()
+
+	c.emit(ConductorEvent{
+		Type:    "planning_started",
+		State:   c.machine.State(),
+		JobID:   job.ID,
+		Message: fmt.Sprintf("Planning started (complexity: %s)", complexity),
+	})
+
+	// Watch job completion in background using lifecycle context
+	// (not request ctx which may be cancelled when handler returns)
+	go c.watchJob(c.lifecycleCtx, job.ID, EventPlanDone) //nolint:contextcheck // intentionally uses lifecycle context
+
+	return job.ID, nil
+}
+
+// GenerateDeltaSpecification creates a specification file describing what changed between old and new content.
+// Caller must hold c.mu (either Lock or RLock) before calling this method.
+func (c *Conductor) GenerateDeltaSpecification(ctx context.Context, oldContent, newContent string) (string, error) {
+	// Access shared state directly - caller holds the lock.
+	wu := c.workUnit
+	store := c.store
+
+	if wu == nil {
+		return "", errors.New("no task loaded")
+	}
+	if store == nil {
+		return "", errors.New("no storage configured")
+	}
+
+	// Build the delta specification content
+	deltaContent := buildDeltaSpecificationContent(oldContent, newContent)
+
+	specStore := storage.NewSpecStore(store)
+	num, err := specStore.NextSpecificationNumber(wu.ID)
+	if err != nil {
+		return "", fmt.Errorf("find next specification number: %w", err)
+	}
+	if err := specStore.SaveSpecification(wu.ID, num, deltaContent); err != nil {
+		return "", fmt.Errorf("save delta specification: %w", err)
+	}
+
+	return specStore.SpecificationPath(wu.ID, num), nil
+}
+
+// buildDeltaSpecificationContent builds the markdown content for a delta specification.
+func buildDeltaSpecificationContent(oldContent, newContent string) string {
+	var sb strings.Builder
+
+	sb.WriteString("# Delta Specification\n\n")
+	sb.WriteString("This specification describes changes detected in the task since the last planning cycle.\n\n")
+	sb.WriteString("## Summary of Changes\n\n")
+
+	// Simple line-based diff summary
+	oldLines := strings.Split(oldContent, "\n")
+	newLines := strings.Split(newContent, "\n")
+	added := 0
+	removed := 0
+
+	oldSet := make(map[string]bool)
+	for _, l := range oldLines {
+		oldSet[l] = true
+	}
+	newSet := make(map[string]bool)
+	for _, l := range newLines {
+		newSet[l] = true
+	}
+
+	for _, l := range newLines {
+		if !oldSet[l] {
+			added++
+		}
+	}
+	for _, l := range oldLines {
+		if !newSet[l] {
+			removed++
+		}
+	}
+
+	fmt.Fprintf(&sb, "- Lines added: %d\n", added)
+	fmt.Fprintf(&sb, "- Lines removed: %d\n\n", removed)
+
+	sb.WriteString("## Previous Content\n\n")
+	sb.WriteString("```\n")
+	sb.WriteString(oldContent)
+	sb.WriteString("\n```\n\n")
+
+	sb.WriteString("## New Content\n\n")
+	sb.WriteString("```\n")
+	sb.WriteString(newContent)
+	sb.WriteString("\n```\n\n")
+
+	sb.WriteString("## Implementation Notes\n\n")
+	sb.WriteString("Review the changes above and update the implementation accordingly.\n")
+	sb.WriteString("Focus only on what has changed — do not re-implement existing functionality.\n")
+
+	return sb.String()
+}
+
+// SaveSpecification saves planning output as the next specification file.
+// Specification files are named specification-1.md, specification-2.md, etc.
+func (c *Conductor) SaveSpecification(content string) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.workUnit == nil {
+		return "", errors.New("no task loaded")
+	}
+	if c.store == nil {
+		return "", errors.New("no storage configured")
+	}
+
+	specStore := storage.NewSpecStore(c.store)
+	num, err := specStore.NextSpecificationNumber(c.workUnit.ID)
+	if err != nil {
+		return "", fmt.Errorf("find next specification number: %w", err)
+	}
+	if err := specStore.SaveSpecification(c.workUnit.ID, num, content); err != nil {
+		return "", fmt.Errorf("save specification: %w", err)
+	}
+	specPath := specStore.SpecificationPath(c.workUnit.ID, num)
+	c.workUnit.Specifications = append(c.workUnit.Specifications, specPath)
+	c.workUnit.UpdatedAt = time.Now()
+	c.persistState()
+
+	return specPath, nil
+}
+
+// buildPlanPromptForComplexity selects the appropriate planning prompt based on detected complexity.
+func (c *Conductor) buildPlanPromptForComplexity(complexity TaskComplexity) string {
+	wu := c.workUnit
+	hierarchySection := buildHierarchySection(wu.Hierarchy)
+
+	// Get specification path based on storage config
+	specPath := c.getSpecificationPath()
+	if specPath == "" {
+		// Fallback to a sensible default if storage isn't configured
+		specPath = ".kvelmo/specifications/specification-1.md"
+	}
+
+	// Critical instruction to write spec file - this is the PRIMARY deliverable
+	fileWriteInstruction := fmt.Sprintf(`
+## CRITICAL: Your Primary Deliverable
+
+YOUR ONLY JOB IS TO WRITE A SPECIFICATION FILE. Do NOT just output text.
+
+You MUST use the Write tool to create this file:
+- Path: %s
+- Create the parent directory if it doesn't exist
+
+The implementation phase CANNOT proceed without this file. This is not optional.
+
+Do this FIRST before any other output.
+
+`, specPath)
+
+	specReminder := fmt.Sprintf("\nRemember: Use the Write tool to save the spec to `%s`\n", specPath)
+
+	switch complexity { //nolint:exhaustive // ComplexitySimple is the only special case
+	case ComplexitySimple:
+		return fmt.Sprintf(
+			"%s"+
+				"Create a concise implementation plan for this straightforward task.\n\n"+
+				"Title: %s\nDescription: %s\n%s\n"+
+				"Provide:\n"+
+				"1. Brief overview of the approach\n"+
+				"2. Files to create/modify\n"+
+				"3. Key changes needed\n\n"+
+				"%s"+
+				"%s",
+			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, browserToolsSection(), specReminder)
+
+	default: // ComplexityMedium, ComplexityComplex
+		return fmt.Sprintf(
+			"%s"+
+				"You are an expert software engineer. Create a detailed implementation specification for the following task.\n\n"+
+				"Title: %s\nDescription: %s\n%s\n"+
+				"Think step by step through the problem before writing the specification.\n\n"+
+				"## Constraints\n"+
+				"- Follow existing code patterns and conventions\n"+
+				"- Ensure backward compatibility unless explicitly breaking\n"+
+				"- Consider edge cases and error handling\n"+
+				"- Include testing strategy\n\n"+
+				"## Required Sections\n"+
+				"1. **Overview**: High-level approach and rationale\n"+
+				"2. **Implementation Plan**: Step-by-step with specific files to create/modify\n"+
+				"3. **Data Structures / Interfaces**: Any new types or interface changes\n"+
+				"4. **Testing Strategy**: What to test and how\n"+
+				"5. **Risks & Mitigations**: Potential issues and how to address them\n\n"+
+				"%s"+
+				"%s",
+			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, browserToolsSection(), specReminder)
+	}
+}
+
+// getSpecificationPath returns the path where specifications should be written.
+// Respects the saveInProject setting from config.
+func (c *Conductor) getSpecificationPath() string {
+	if c.store == nil || c.workUnit == nil {
+		slog.Warn("getSpecificationPath called without store or workUnit")
+
+		return ""
+	}
+
+	specStore := storage.NewSpecStore(c.store)
+	num, err := specStore.NextSpecificationNumber(c.workUnit.ID)
+	if err != nil {
+		slog.Warn("failed to determine next specification number, defaulting to 1",
+			"error", err, "task_id", c.workUnit.ID)
+		num = 1
+	}
+
+	return specStore.SpecificationPath(c.workUnit.ID, num)
+}
+
+// buildHierarchySection formats parent and sibling task context as a markdown
+// section suitable for inclusion in AI planning and implementation prompts.
+// Returns an empty string when hierarchy is nil or contains no data.
+func buildHierarchySection(hierarchy *HierarchyContext) string {
+	if hierarchy == nil {
+		return ""
+	}
+
+	var sections []string
+
+	if hierarchy.Parent != nil {
+		parentDesc := hierarchy.Parent.Description
+		const maxParentDesc = 500
+		if len(parentDesc) > maxParentDesc {
+			parentDesc = parentDesc[:maxParentDesc] + "..."
+		}
+		descPart := ""
+		if parentDesc != "" {
+			descPart = fmt.Sprintf("\n**Description:**\n%s\n", parentDesc)
+		}
+		sections = append(sections, fmt.Sprintf(
+			"### Parent Task Context\n**Title:** %s\n**Status:** %s%s\nThis is a subtask of the parent task above. Consider how your work fits into the broader context.\n",
+			hierarchy.Parent.Title, hierarchy.Parent.Status, descPart,
+		))
+	}
+
+	if len(hierarchy.Siblings) > 0 {
+		var lines []string
+		for _, s := range hierarchy.Siblings {
+			line := fmt.Sprintf("- **%s**", s.Title)
+			if s.Status != "" {
+				line += fmt.Sprintf(" (Status: %s)", s.Status)
+			}
+			lines = append(lines, line)
+		}
+		sections = append(sections, fmt.Sprintf(
+			"### Related Subtasks\n%s\n\nConsider how your implementation relates to these sibling tasks. Avoid duplicating work and ensure consistency.\n",
+			strings.Join(lines, "\n"),
+		))
+	}
+
+	if len(sections) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("\n## Hierarchical Context\n%s\n", strings.Join(sections, "\n"))
+}
