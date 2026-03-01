@@ -1,0 +1,370 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: corporate --default, business;
+}
+
+/* Base styles */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/* Custom component styles */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: oklch(var(--b2));
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   ELEVATION SYSTEM
+   ============================================ */
+
+.elevation-1 {
+  box-shadow:
+    0 1px 2px oklch(0% 0 0 / 0.05),
+    0 1px 3px oklch(0% 0 0 / 0.04);
+}
+
+.elevation-2 {
+  box-shadow:
+    0 4px 6px -1px oklch(0% 0 0 / 0.08),
+    0 2px 4px -2px oklch(0% 0 0 / 0.05);
+}
+
+.elevation-3 {
+  box-shadow:
+    0 10px 15px -3px oklch(0% 0 0 / 0.1),
+    0 4px 6px -4px oklch(0% 0 0 / 0.07);
+}
+
+/* ============================================
+   WIDGET SYSTEM
+   ============================================ */
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  background: oklch(var(--b2));
+  border-radius: 0.5rem;
+  border: 1px solid oklch(var(--bc) / 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.widget:hover {
+  box-shadow:
+    0 4px 8px -2px oklch(0% 0 0 / 0.1),
+    0 2px 4px -2px oklch(0% 0 0 / 0.06);
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: oklch(var(--b3) / 0.3);
+  border-bottom: 1px solid oklch(var(--bc) / 0.04);
+  min-height: 2rem;
+}
+
+.widget-header:hover {
+  background: oklch(var(--b3) / 0.5);
+}
+
+.widget-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  color: oklch(var(--bc) / 0.6);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.widget-chevron:hover {
+  background: oklch(var(--bc) / 0.1);
+  color: oklch(var(--bc) / 0.9);
+}
+
+.widget-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: oklch(var(--bc) / 0.8);
+}
+
+.widget-icon {
+  color: oklch(var(--p));
+  flex-shrink: 0;
+}
+
+.widget-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.widget-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  color: oklch(var(--bc) / 0.5);
+  transition: all 0.15s ease;
+}
+
+.widget-close:hover {
+  background: oklch(var(--er) / 0.15);
+  color: oklch(var(--er));
+}
+
+.widget-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.widget-body-padded {
+  padding: 0.75rem;
+}
+
+/* ============================================
+   STATUS INDICATORS
+   ============================================ */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-idle {
+  background: oklch(var(--bc) / 0.3);
+}
+
+.status-running {
+  background: oklch(var(--su));
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.status-success {
+  background: oklch(var(--su));
+  box-shadow: 0 0 6px oklch(var(--su) / 0.5);
+}
+
+.status-warning {
+  background: oklch(var(--wa));
+  box-shadow: 0 0 6px oklch(var(--wa) / 0.5);
+}
+
+.status-error {
+  background: oklch(var(--er));
+  box-shadow: 0 0 6px oklch(var(--er) / 0.5);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 6px oklch(var(--su) / 0.4);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 14px oklch(var(--su) / 0.6);
+  }
+}
+
+/* ============================================
+   MICRO-INTERACTIONS
+   ============================================ */
+
+.card-interactive {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+}
+
+.btn-enhanced {
+  transition: all 0.15s ease;
+}
+
+.btn-enhanced:active {
+  transform: scale(0.98);
+}
+
+/* List item stagger animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-in-up 0.25s ease forwards;
+}
+
+/* Skeleton loading */
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    oklch(var(--b3)) 25%,
+    oklch(var(--b2)) 50%,
+    oklch(var(--b3)) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================
+   TAB SYSTEM
+   ============================================ */
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: oklch(var(--b3) / 0.3);
+  border-bottom: 1px solid oklch(var(--bc) / 0.05);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: oklch(var(--bc) / 0.6);
+  background: transparent;
+  border: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.tab:hover {
+  color: oklch(var(--bc) / 0.9);
+  background: oklch(var(--bc) / 0.05);
+}
+
+.tab.tab-active {
+  color: oklch(var(--bc));
+  background: oklch(var(--b2));
+}
+
+.tab.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: oklch(var(--p));
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.25rem;
+  color: oklch(var(--bc) / 0.4);
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.tab:hover .tab-close,
+.tab.tab-active .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: oklch(var(--bc) / 0.15);
+  color: oklch(var(--bc) / 0.8);
+}
+
+/* ============================================
+   PANEL LAYOUT
+   ============================================ */
+
+.panel-resize-handle {
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle[data-resize-handle-active] {
+  background: oklch(var(--p) / 0.3);
+}
+
+.panel-resize-handle-horizontal {
+  width: 4px;
+  cursor: col-resize;
+}
+
+.panel-resize-handle-vertical {
+  height: 4px;
+  cursor: row-resize;
+}
+
+/* ============================================
+   HEADER ENHANCEMENT
+   ============================================ */
+
+.header-enhanced {
+  border-bottom: 1px solid oklch(var(--bc) / 0.06);
+  background: oklch(var(--b1) / 0.9);
+  backdrop-filter: blur(12px) saturate(150%);
+}
