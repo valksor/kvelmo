@@ -17,7 +17,7 @@ No prior experience with command-line tools is required if you choose the Deskto
 
 **Git** — kvelmo uses Git for version control and checkpoints. [Install Git](https://git-scm.com/downloads) if you don't have it.
 
-**Agent CLI** — kvelmo coordinates your local AI agent. Claude is recommended, but Codex and custom agents are also supported.
+**Agent CLI** — kvelmo coordinates your local AI agent. Claude is recommended. Codex and other agents are also supported.
 
 > **Agent Ready?**
 >
