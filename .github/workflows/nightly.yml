@@ -3,7 +3,7 @@ name: Nightly Release
 on:
     push:
         branches:
-            - non-existing-branch
+            - master
 
 permissions:
     contents: write
