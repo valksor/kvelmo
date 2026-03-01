@@ -1,11 +1,11 @@
 # kvelmo
 
-> Structured Development Workflow
+> Turn ideas into merged pull requests
 
-- Socket-first task lifecycle orchestration
-- Web UI and CLI interfaces
 - Human oversight at every step
-- Git checkpoint recovery
+- Desktop App, Web UI, and CLI
+- Undo anything that doesn't look right
+- Free — uses your existing Claude CLI
 
 [Get Started](/quickstart.md)
 [GitHub](https://github.com/valksor/kvelmo)
