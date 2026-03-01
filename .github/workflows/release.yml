@@ -52,6 +52,11 @@ jobs:
                 with:
                     bun-version: latest
 
+            -   name: Generate TypeScript types
+                run: |
+                    go install github.com/gzuidhof/tygo@latest
+                    make types
+
             -   name: Build Web UI
                 working-directory: web
                 run: |
