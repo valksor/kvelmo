@@ -1,0 +1,160 @@
+package commands
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/agent"
+	"github.com/valksor/kvelmo/pkg/agent/claude"
+	"github.com/valksor/kvelmo/pkg/agent/codex"
+	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/settings"
+)
+
+var PipeCmd = &cobra.Command{
+	Use:   "pipe [prompt]",
+	Short: "Run a one-shot prompt through the configured AI agent",
+	Long: fmt.Sprintf(`Run a single prompt through the configured AI agent and stream the response to stdout.
+
+No running '%[1]s serve' instance is required — the agent is invoked directly.
+
+The prompt can be provided as arguments or piped via stdin:
+
+  %[1]s pipe "summarize the README"
+  echo "what files are here?" | %[1]s pipe
+
+The agent is resolved from settings (global then project), and can be
+overridden per-invocation with flags.`, meta.Name),
+	Args: cobra.ArbitraryArgs,
+	RunE: runPipe,
+}
+
+var (
+	pipeAgent   string
+	pipeTimeout time.Duration
+)
+
+func init() {
+	PipeCmd.Flags().StringVarP(&pipeAgent, "agent", "a", "", "Agent to use (claude, codex, or custom agent name)")
+	PipeCmd.Flags().DurationVar(&pipeTimeout, "timeout", 10*time.Minute, "Maximum execution time")
+}
+
+func runPipe(cmd *cobra.Command, args []string) error {
+	// Resolve prompt: args first, then stdin.
+	prompt := strings.Join(args, " ")
+	if prompt == "" {
+		data, err := io.ReadAll(bufio.NewReader(os.Stdin))
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+		prompt = strings.TrimSpace(string(data))
+	}
+	if prompt == "" {
+		return fmt.Errorf("no prompt provided\n\nUsage: %s pipe \"your prompt here\"\n   or: echo \"prompt\" | %s pipe", meta.Name, meta.Name)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	// Load effective settings (global merged with project).
+	effective, _, _, err := settings.LoadEffective(cwd)
+	if err != nil {
+		return fmt.Errorf("load settings: %w", err)
+	}
+
+	// Determine agent name.
+	agentName := pipeAgent
+	if agentName == "" {
+		agentName = effective.Agent.Default
+	}
+
+	// Build registry with built-in agents.
+	reg := agent.NewRegistry()
+	if err := claude.Register(reg); err != nil {
+		return fmt.Errorf("register claude agent: %w", err)
+	}
+	if err := codex.Register(reg); err != nil {
+		return fmt.Errorf("register codex agent: %w", err)
+	}
+
+	// Resolve the agent instance.
+	var ag agent.Agent
+
+	if customCfg, ok := effective.CustomAgents[agentName]; ok {
+		// Custom agent: extend a base agent with extra args/env.
+		base, err := reg.Get(customCfg.Extends)
+		if err != nil {
+			return fmt.Errorf("custom agent %q extends unknown base %q: %w", agentName, customCfg.Extends, err)
+		}
+		ag = base
+		for k, v := range customCfg.Env {
+			ag = ag.WithEnv(k, v)
+		}
+		if len(customCfg.Args) > 0 {
+			ag = ag.WithArgs(customCfg.Args...)
+		}
+	} else {
+		ag, err = reg.GetOrDetect(agentName)
+		if err != nil {
+			return fmt.Errorf("resolve agent: %w", err)
+		}
+	}
+
+	ag = ag.WithWorkDir(cwd).WithTimeout(pipeTimeout)
+
+	// Set up context with timeout and signal handling.
+	ctx, cancel := context.WithTimeout(context.Background(), pipeTimeout)
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
+
+	// Connect the agent.
+	if err := ag.Connect(ctx); err != nil {
+		return fmt.Errorf("connect agent: %w", err)
+	}
+	defer func() { _ = ag.Close() }()
+
+	// Send the prompt and stream output.
+	events, err := ag.SendPrompt(ctx, prompt)
+	if err != nil {
+		return fmt.Errorf("send prompt: %w", err)
+	}
+
+	for event := range events {
+		switch event.Type {
+		case agent.EventStream:
+			fmt.Print(event.Content)
+		case agent.EventPermission:
+			if event.PermissionRequest != nil {
+				approved := agent.DefaultPermissionHandler(*event.PermissionRequest)
+				_ = ag.HandlePermission(event.PermissionRequest.ID, approved)
+			}
+		case agent.EventComplete:
+			fmt.Println()
+
+			return nil
+		case agent.EventError:
+			return fmt.Errorf("agent error: %s", event.Error)
+		case agent.EventAssistant, agent.EventToolUse, agent.EventToolResult,
+			agent.EventInit, agent.EventKeepAlive, agent.EventSubagent:
+			// Not relevant to the pipe command; silently ignored.
+		}
+	}
+
+	return nil
+}
