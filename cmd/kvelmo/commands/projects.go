@@ -1,0 +1,82 @@
+package commands
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/socket"
+)
+
+var (
+	projectsTimeout time.Duration
+	projectsVerbose bool
+)
+
+var ProjectsCmd = &cobra.Command{
+	Use:   "projects",
+	Short: "List all registered worktrees",
+	Long:  "Query the global socket for all registered worktrees and their status.",
+	RunE:  runProjects,
+}
+
+func init() {
+	ProjectsCmd.Flags().DurationVarP(&projectsTimeout, "timeout", "t", 5*time.Second, "Connection timeout")
+	ProjectsCmd.Flags().BoolVarP(&projectsVerbose, "verbose", "v", false, "Show socket paths")
+}
+
+func runProjects(cmd *cobra.Command, args []string) error {
+	globalPath := socket.GlobalSocketPath()
+
+	if projectsVerbose {
+		fmt.Printf("Global socket: %s\n\n", globalPath)
+	}
+
+	if !socket.SocketExists(globalPath) {
+		return errors.New("global socket not running\nRun '" + meta.Name + " start' in a project first")
+	}
+
+	client, err := socket.NewClient(globalPath, socket.WithTimeout(projectsTimeout))
+	if err != nil {
+		return fmt.Errorf("connect to global socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), projectsTimeout)
+	defer cancel()
+
+	resp, err := client.Call(ctx, "projects.list", nil)
+	if err != nil {
+		return fmt.Errorf("list projects: %w", err)
+	}
+
+	var result socket.ProjectListResult
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("parse projects: %w", err)
+	}
+
+	if len(result.Projects) == 0 {
+		fmt.Println("No projects registered")
+
+		return nil
+	}
+
+	fmt.Println("Registered Projects:")
+	fmt.Println("--------------------")
+	for _, p := range result.Projects {
+		stateStr := "Task: " + capitalize(p.State)
+		fmt.Printf("  %s\n", p.Path)
+		fmt.Printf("    State: %s\n", stateStr)
+		fmt.Printf("    Last seen: %s\n", p.LastSeen.Format(time.RFC3339))
+		if projectsVerbose {
+			fmt.Printf("    Socket: %s\n", p.SocketPath)
+		}
+		fmt.Println()
+	}
+
+	return nil
+}
