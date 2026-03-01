@@ -1,0 +1,1956 @@
+package socket
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/browser"
+	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/metrics"
+	"github.com/valksor/kvelmo/pkg/settings"
+	"github.com/valksor/kvelmo/pkg/worker"
+)
+
+// WorktreeInfo represents a registered worktree/project.
+type WorktreeInfo struct {
+	ID         string    `json:"id"`
+	Path       string    `json:"path"`
+	SocketPath string    `json:"socket_path,omitempty"`
+	State      string    `json:"state"`
+	LastSeen   time.Time `json:"last_seen,omitempty"`
+}
+
+// ProjectListResult is the response for projects.list.
+type ProjectListResult struct {
+	Projects []WorktreeInfo `json:"projects"`
+}
+
+// RegisterParams is the request for projects.register.
+type RegisterParams struct {
+	Path       string `json:"path"`
+	SocketPath string `json:"socket_path"`
+}
+
+// UnregisterParams is the request for projects.unregister.
+type UnregisterParams struct {
+	ID string `json:"id"`
+}
+
+// StatusParams is the request for projects.status.
+type StatusParams struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
+}
+
+// WorkerInfo represents a worker for API responses.
+type WorkerInfo struct {
+	ID         string `json:"id"`
+	AgentName  string `json:"agent_name"`
+	Status     string `json:"status"`
+	CurrentJob string `json:"current_job,omitempty"`
+	IsDefault  bool   `json:"is_default"`
+}
+
+// WorkersStats contains aggregate worker pool statistics.
+type WorkersStats struct {
+	TotalWorkers     int `json:"total_workers"`
+	AvailableWorkers int `json:"available_workers"`
+	WorkingWorkers   int `json:"working_workers"`
+	QueuedJobs       int `json:"queued_jobs"`
+	InProgressJobs   int `json:"in_progress_jobs"`
+	CompletedJobs    int `json:"completed_jobs"`
+	FailedJobs       int `json:"failed_jobs"`
+}
+
+// WorkersListResult is the response for workers.list.
+type WorkersListResult struct {
+	Workers []WorkerInfo `json:"workers"`
+	Stats   WorkersStats `json:"stats"`
+}
+
+// AddWorkerParams is the request for workers.add.
+type AddWorkerParams struct {
+	Agent string `json:"agent"`
+}
+
+// RemoveWorkerParams is the request for workers.remove.
+type RemoveWorkerParams struct {
+	ID string `json:"id"`
+}
+
+// JobSubmitParams is the request for jobs.submit.
+type JobSubmitParams struct {
+	Type       string `json:"type"`
+	WorktreeID string `json:"worktree_id"`
+	Prompt     string `json:"prompt"`
+
+	// Execution context for multi-project support
+	WorkDir     string            `json:"work_dir,omitempty"`
+	Environment map[string]string `json:"environment,omitempty"`
+	Metadata    map[string]any    `json:"metadata,omitempty"`
+}
+
+// GlobalSocket manages the global kvelmo socket.
+// Per flow_v2.md: "Global socket handles project registry, worker pool, job queue".
+//
+//nolint:containedctx // Lifecycle context required for managed socket coordination
+type GlobalSocket struct {
+	server      *Server
+	worktrees   map[string]*WorktreeInfo
+	pool        *worker.Pool
+	projectsDir string // directory for projects.json; defaults to BaseDir()
+	mu          sync.RWMutex
+
+	// Managed worktree sockets (created on-demand with worker pool access)
+	wtSockets   map[string]*WorktreeSocket
+	wtSocketsMu sync.RWMutex
+	ctx         context.Context    // For managed socket lifecycle
+	cancel      context.CancelFunc // To stop managed sockets on shutdown
+}
+
+// projectsFile returns the path to the projects JSON file.
+func (g *GlobalSocket) projectsFile() string {
+	dir := g.projectsDir
+	if dir == "" {
+		dir = BaseDir()
+	}
+
+	return filepath.Join(dir, "projects.json")
+}
+
+// loadProjectsFromFile loads projects from the JSON file.
+func (g *GlobalSocket) loadProjectsFromFile() {
+	data, err := os.ReadFile(g.projectsFile())
+	if err != nil {
+		return
+	}
+	var projects []WorktreeInfo
+	if err := json.Unmarshal(data, &projects); err != nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	for _, p := range projects {
+		g.worktrees[p.ID] = &WorktreeInfo{
+			ID:       p.ID,
+			Path:     p.Path,
+			State:    p.State,
+			LastSeen: time.Now(),
+		}
+	}
+}
+
+// saveProjectsToFile saves projects to the JSON file.
+func (g *GlobalSocket) saveProjectsToFile() {
+	g.mu.RLock()
+	projects := make([]WorktreeInfo, 0, len(g.worktrees))
+	for _, w := range g.worktrees {
+		projects = append(projects, *w)
+	}
+	g.mu.RUnlock()
+
+	data, err := json.MarshalIndent(projects, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(g.projectsFile(), data, 0o644)
+}
+
+// GlobalSocketConfig configures the global socket.
+type GlobalSocketConfig struct {
+	SocketPath string
+	Pool       *worker.Pool
+}
+
+// NewGlobalSocket creates a new global socket.
+func NewGlobalSocket(path string) *GlobalSocket {
+	return NewGlobalSocketWithPool(path, nil)
+}
+
+// NewGlobalSocketWithPool creates a global socket with worker pool integration.
+func NewGlobalSocketWithPool(path string, pool *worker.Pool) *GlobalSocket {
+	ctx, cancel := context.WithCancel(context.Background())
+	g := &GlobalSocket{
+		server:      NewServer(path),
+		worktrees:   make(map[string]*WorktreeInfo),
+		pool:        pool,
+		projectsDir: filepath.Dir(path),
+		wtSockets:   make(map[string]*WorktreeSocket),
+		ctx:         ctx,
+		cancel:      cancel,
+	}
+
+	// Load existing projects from file
+	g.loadProjectsFromFile()
+
+	g.registerHandlers()
+
+	return g
+}
+
+func (g *GlobalSocket) registerHandlers() {
+	// Ping
+	g.server.Handle("ping", g.handlePing)
+
+	// System info
+	g.server.Handle("system.docsURL", g.handleDocsURL)
+
+	// Project management
+	g.server.Handle("projects.list", g.handleListProjects)
+	g.server.Handle("tasks.list", g.handleTasksList)
+	g.server.Handle("projects.register", g.handleRegisterProject)
+	g.server.Handle("projects.unregister", g.handleUnregisterProject)
+	g.server.Handle("projects.status", g.handleProjectStatus)
+
+	// Worker management
+	g.server.Handle("workers.list", g.handleListWorkers)
+	g.server.Handle("workers.add", g.handleAddWorker)
+	g.server.Handle("workers.remove", g.handleRemoveWorker)
+	g.server.Handle("workers.stats", g.handleWorkerStats)
+
+	// Metrics
+	g.server.Handle("metrics", g.handleMetrics)
+
+	// Job management
+	g.server.Handle("jobs.submit", g.handleSubmitJob)
+	g.server.Handle("jobs.list", g.handleListJobs)
+	g.server.Handle("jobs.get", g.handleGetJob)
+
+	// Settings management (new - two-tier with schema)
+	g.server.Handle("settings.get", g.handleSettingsGet)
+	g.server.Handle("settings.set", g.handleSettingsSet)
+
+	// File browsing
+	g.server.Handle("browse", g.handleBrowse)
+
+	// Chat (uses worker pool for AI responses)
+	g.server.HandleWithConn("chat.send", g.handleChatSendEnhanced) // Enhanced with mentions + streaming
+	g.server.Handle("chat.stop", g.handleChatStop)                 // Stop current chat (keep worker)
+	g.server.Handle("chat.history", g.handleChatHistory)           // Get chat history for task
+	g.server.Handle("chat.clear", g.handleChatClear)               // Clear chat history for task
+
+	// Files (for mentions/autocomplete)
+	g.server.Handle("files.list", g.handleFilesList)
+	g.server.Handle("files.search", g.handleFilesSearch)
+
+	// Browser tools (playwright-cli wrapper)
+	g.server.Handle("browser.install", g.handleBrowserInstall)
+	g.server.Handle("browser.status", g.handleBrowserStatus)
+	g.server.Handle("browser.config.get", g.handleBrowserConfigGet)
+	g.server.Handle("browser.config.set", g.handleBrowserConfigSet)
+	g.server.Handle("browser.snapshot", g.handleBrowserSnapshot)
+	g.server.Handle("browser.eval", g.handleBrowserEval)
+	g.server.Handle("browser.console", g.handleBrowserConsole)
+	g.server.Handle("browser.network", g.handleBrowserNetwork)
+	g.server.Handle("browser.screenshot", g.handleBrowserScreenshot)
+	g.server.Handle("browser.navigate", g.handleBrowserNavigate)
+	g.server.Handle("browser.click", g.handleBrowserClick)
+	g.server.Handle("browser.type", g.handleBrowserType)
+	g.server.Handle("browser.wait", g.handleBrowserWait)
+	g.server.Handle("browser.fill", g.handleBrowserFill)
+	g.server.Handle("browser.select", g.handleBrowserSelect)
+	g.server.Handle("browser.hover", g.handleBrowserHover)
+	g.server.Handle("browser.focus", g.handleBrowserFocus)
+	g.server.Handle("browser.scroll", g.handleBrowserScroll)
+	g.server.Handle("browser.press", g.handleBrowserPress)
+	g.server.Handle("browser.back", g.handleBrowserBack)
+	g.server.Handle("browser.forward", g.handleBrowserForward)
+	g.server.Handle("browser.reload", g.handleBrowserReload)
+	g.server.Handle("browser.dialog", g.handleBrowserDialog)
+	g.server.Handle("browser.upload", g.handleBrowserUpload)
+	g.server.Handle("browser.pdf", g.handleBrowserPDF)
+
+	// Memory
+	g.server.Handle("memory.search", g.handleMemorySearch)
+	g.server.Handle("memory.stats", g.handleMemoryStats)
+	g.server.Handle("memory.clear", g.handleMemoryClear)
+}
+
+// --- Ping ---
+
+func (g *GlobalSocket) handlePing(ctx context.Context, req *Request) (*Response, error) {
+	return NewResultResponse(req.ID, map[string]string{"status": "ok"})
+}
+
+// --- System Info ---
+
+func (g *GlobalSocket) handleDocsURL(ctx context.Context, req *Request) (*Response, error) {
+	return NewResultResponse(req.ID, map[string]string{
+		"url":     meta.DocsURL(),
+		"version": meta.Version,
+	})
+}
+
+// --- Project Handlers ---
+
+func (g *GlobalSocket) handleListProjects(ctx context.Context, req *Request) (*Response, error) {
+	// Snapshot registered worktrees under a short read lock.
+	g.mu.RLock()
+	infos := make([]*WorktreeInfo, 0, len(g.worktrees))
+	for _, w := range g.worktrees {
+		cp := *w
+		infos = append(infos, &cp)
+	}
+	g.mu.RUnlock()
+
+	// Query live state from each worktree socket (2-second timeout each).
+	const liveTimeout = 2 * time.Second
+	type liveResult struct {
+		idx   int
+		state string
+	}
+	results := make(chan liveResult, len(infos))
+
+	for i, info := range infos {
+		go func(i int, info *WorktreeInfo) {
+			if info.SocketPath == "" {
+				results <- liveResult{i, "offline"}
+
+				return
+			}
+			client, err := NewClient(info.SocketPath, WithTimeout(liveTimeout))
+			if err != nil {
+				results <- liveResult{i, "offline"}
+
+				return
+			}
+			defer func() { _ = client.Close() }()
+			queryCtx, cancel := context.WithTimeout(ctx, liveTimeout)
+			defer cancel()
+			resp, err := client.Call(queryCtx, "status", nil)
+			if err != nil {
+				results <- liveResult{i, "offline"}
+
+				return
+			}
+			var sr StatusResult
+			if err := json.Unmarshal(resp.Result, &sr); err != nil {
+				results <- liveResult{i, "offline"}
+
+				return
+			}
+			results <- liveResult{i, string(sr.State)}
+		}(i, info)
+	}
+
+	for range infos {
+		r := <-results
+		infos[r.idx].State = r.state
+	}
+
+	// Persist updated states back to the registry (skip offline so last-known state is preserved).
+	g.mu.Lock()
+	for _, info := range infos {
+		if w, ok := g.worktrees[info.ID]; ok && info.State != "offline" {
+			w.State = info.State
+			w.LastSeen = time.Now()
+		}
+	}
+	g.mu.Unlock()
+
+	projects := make([]WorktreeInfo, 0, len(infos))
+	for _, info := range infos {
+		projects = append(projects, *info)
+	}
+
+	return NewResultResponse(req.ID, ProjectListResult{Projects: projects})
+}
+
+func (g *GlobalSocket) handleRegisterProject(ctx context.Context, req *Request) (*Response, error) {
+	var params RegisterParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	g.mu.Lock()
+	id := WorktreeIDFromPath(params.Path)
+	g.worktrees[id] = &WorktreeInfo{
+		ID:         id,
+		Path:       params.Path,
+		SocketPath: params.SocketPath,
+		State:      "none",
+		LastSeen:   time.Now(),
+	}
+	g.mu.Unlock()
+
+	// Persist to file
+	g.saveProjectsToFile()
+
+	return NewResultResponse(req.ID, map[string]string{"id": id})
+}
+
+func (g *GlobalSocket) handleUnregisterProject(ctx context.Context, req *Request) (*Response, error) {
+	var params UnregisterParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	g.mu.Lock()
+	delete(g.worktrees, params.ID)
+	g.mu.Unlock()
+
+	// Persist to file
+	g.saveProjectsToFile()
+
+	return NewResultResponse(req.ID, map[string]bool{"ok": true})
+}
+
+func (g *GlobalSocket) handleProjectStatus(ctx context.Context, req *Request) (*Response, error) {
+	var params StatusParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if w, ok := g.worktrees[params.ID]; ok {
+		w.State = params.State
+		w.LastSeen = time.Now()
+	}
+
+	return NewResultResponse(req.ID, map[string]bool{"ok": true})
+}
+
+// --- Worker Handlers ---
+
+func (g *GlobalSocket) handleListWorkers(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewResultResponse(req.ID, WorkersListResult{
+			Workers: []WorkerInfo{},
+			Stats:   WorkersStats{},
+		})
+	}
+
+	workers := g.pool.ListWorkers()
+	stats := g.pool.Stats()
+
+	result := WorkersListResult{
+		Workers: make([]WorkerInfo, len(workers)),
+		Stats: WorkersStats{
+			TotalWorkers:     stats.TotalWorkers,
+			AvailableWorkers: stats.AvailableWorkers,
+			WorkingWorkers:   stats.WorkingWorkers,
+			QueuedJobs:       stats.QueuedJobs,
+			InProgressJobs:   stats.InProgressJobs,
+			CompletedJobs:    stats.CompletedJobs,
+			FailedJobs:       stats.FailedJobs,
+		},
+	}
+
+	for i, w := range workers {
+		result.Workers[i] = WorkerInfo{
+			ID:         w.ID,
+			AgentName:  w.AgentName,
+			Status:     string(w.Status),
+			CurrentJob: w.CurrentJob,
+			IsDefault:  w.IsDefault,
+		}
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleAddWorker(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewErrorResponse(req.ID, -32603, "no worker pool configured"), nil
+	}
+
+	var params AddWorkerParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	// Default agent to claude if not specified
+	if params.Agent == "" {
+		params.Agent = "claude"
+	}
+
+	w := g.pool.AddWorkerWithAgent(params.Agent)
+	if w == nil {
+		return NewErrorResponse(req.ID, -32603, "max workers reached"), nil
+	}
+
+	return NewResultResponse(req.ID, WorkerInfo{
+		ID:        w.ID,
+		AgentName: w.AgentName,
+		Status:    string(w.Status),
+	})
+}
+
+func (g *GlobalSocket) handleRemoveWorker(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewErrorResponse(req.ID, -32603, "no worker pool configured"), nil
+	}
+
+	var params RemoveWorkerParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if err := g.pool.RemoveWorker(params.ID); err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]bool{"ok": true})
+}
+
+func (g *GlobalSocket) handleWorkerStats(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewResultResponse(req.ID, WorkersStats{})
+	}
+
+	stats := g.pool.Stats()
+
+	return NewResultResponse(req.ID, WorkersStats{
+		TotalWorkers:     stats.TotalWorkers,
+		AvailableWorkers: stats.AvailableWorkers,
+		WorkingWorkers:   stats.WorkingWorkers,
+		QueuedJobs:       stats.QueuedJobs,
+		InProgressJobs:   stats.InProgressJobs,
+		CompletedJobs:    stats.CompletedJobs,
+		FailedJobs:       stats.FailedJobs,
+	})
+}
+
+func (g *GlobalSocket) handleMetrics(ctx context.Context, req *Request) (*Response, error) {
+	snapshot := metrics.Global().Snapshot()
+
+	return NewResultResponse(req.ID, snapshot)
+}
+
+// --- Job Handlers ---
+
+func (g *GlobalSocket) handleSubmitJob(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewErrorResponse(req.ID, -32603, "no worker pool configured"), nil
+	}
+
+	var params JobSubmitParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	// Build job options from params
+	var opts *worker.JobOptions
+	if params.WorkDir != "" || params.Environment != nil || params.Metadata != nil {
+		opts = &worker.JobOptions{
+			WorkDir:     params.WorkDir,
+			Environment: params.Environment,
+			Metadata:    params.Metadata,
+		}
+	}
+
+	jobType := worker.JobType(params.Type)
+	job, err := g.pool.SubmitWithOptions(jobType, params.WorktreeID, params.Prompt, opts)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]string{
+		"job_id": job.ID,
+		"status": string(job.Status),
+	})
+}
+
+func (g *GlobalSocket) handleListJobs(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewResultResponse(req.ID, map[string]any{"jobs": []any{}})
+	}
+
+	jobs := g.pool.ListJobs()
+	result := make([]map[string]any, len(jobs))
+	for i, j := range jobs {
+		result[i] = map[string]any{
+			"id":         j.ID,
+			"type":       j.Type,
+			"status":     j.Status,
+			"worktree":   j.WorktreeID,
+			"created_at": j.CreatedAt.Format(time.RFC3339),
+		}
+	}
+
+	return NewResultResponse(req.ID, map[string]any{"jobs": result})
+}
+
+func (g *GlobalSocket) handleGetJob(ctx context.Context, req *Request) (*Response, error) {
+	if g.pool == nil {
+		return NewErrorResponse(req.ID, -32603, "no worker pool configured"), nil
+	}
+
+	var params struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	job := g.pool.GetJob(params.ID)
+	if job == nil {
+		return NewErrorResponse(req.ID, -32604, "job not found: "+params.ID), nil
+	}
+
+	result := map[string]any{
+		"id":         job.ID,
+		"type":       job.Type,
+		"status":     job.Status,
+		"worktree":   job.WorktreeID,
+		"prompt":     job.Prompt,
+		"created_at": job.CreatedAt.Format(time.RFC3339),
+	}
+
+	if job.WorkerID != "" {
+		result["worker_id"] = job.WorkerID
+	}
+	if job.StartedAt != nil {
+		result["started_at"] = job.StartedAt.Format(time.RFC3339)
+	}
+	if job.CompletedAt != nil {
+		result["completed_at"] = job.CompletedAt.Format(time.RFC3339)
+	}
+	if job.Result != "" {
+		result["result"] = job.Result
+	}
+	if job.Error != "" {
+		result["error"] = job.Error
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// --- Settings Handlers (new two-tier system) ---
+
+// SettingsGetParams holds params for settings.get.
+type SettingsGetParams struct {
+	ProjectPath string `json:"project_path,omitempty"` // Path to project for project-level settings
+}
+
+func (g *GlobalSocket) handleSettingsGet(ctx context.Context, req *Request) (*Response, error) {
+	var params SettingsGetParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params: "+err.Error()), nil //nolint:nilerr // JSON-RPC error response
+		}
+	}
+
+	// Determine project path
+	projectPath := params.ProjectPath
+	if projectPath == "" {
+		// Try to get from first registered worktree
+		g.mu.RLock()
+		for _, w := range g.worktrees {
+			projectPath = w.Path
+
+			break
+		}
+		g.mu.RUnlock()
+	}
+
+	// Load effective settings (merged global + project)
+	effective, global, project, err := settings.LoadEffective(projectPath)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	// Generate schema with custom agents added to agent selection options
+	schema := settings.GenerateSchemaWithCustomAgents(effective)
+
+	// Mask sensitive fields before sending to client
+	effectiveMasked := settings.MaskSettings(effective)
+	globalMasked := settings.MaskSettings(global)
+	projectMasked := settings.MaskSettings(project)
+
+	return NewResultResponse(req.ID, settings.SettingsResponse{
+		Schema:    schema,
+		Effective: effectiveMasked,
+		Global:    globalMasked,
+		Project:   projectMasked,
+	})
+}
+
+func (g *GlobalSocket) handleSettingsSet(ctx context.Context, req *Request) (*Response, error) {
+	var params struct {
+		Scope       settings.Scope `json:"scope"`
+		Values      map[string]any `json:"values"`
+		ProjectPath string         `json:"project_path,omitempty"`
+	}
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	// Validate scope
+	if params.Scope != settings.ScopeGlobal && params.Scope != settings.ScopeProject {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "scope must be 'global' or 'project'"), nil
+	}
+
+	// Determine project path for project scope
+	projectPath := params.ProjectPath
+	if params.Scope == settings.ScopeProject && projectPath == "" {
+		g.mu.RLock()
+		for _, w := range g.worktrees {
+			projectPath = w.Path
+
+			break
+		}
+		g.mu.RUnlock()
+		if projectPath == "" {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "project_path required for project scope"), nil
+		}
+	}
+
+	// Load current settings for the target scope
+	var current *settings.Settings
+	var err error
+
+	if params.Scope == settings.ScopeGlobal {
+		current, err = settings.LoadGlobal()
+	} else {
+		current, err = settings.LoadProject(projectPath)
+	}
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+	if current == nil {
+		current = &settings.Settings{}
+	}
+
+	// Apply each value
+	for path, value := range params.Values {
+		// Skip masked tokens
+		if strVal, ok := value.(string); ok && settings.IsMaskedToken(strVal) {
+			continue
+		}
+
+		// Check if this is a sensitive field
+		if settings.IsSensitivePath(path) {
+			// Write to .env file
+			envVar := settings.GetEnvVarForPath(path)
+			if strVal, ok := value.(string); ok && strVal != "" {
+				if err := settings.SaveEnvVar(params.Scope, projectPath, envVar, strVal); err != nil {
+					return NewErrorResponse(req.ID, -32603, fmt.Sprintf("save env var: %v", err)), nil
+				}
+			}
+
+			continue
+		}
+
+		// Regular field - update settings struct
+		if err := settings.SetValue(current, path, value); err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+		}
+	}
+
+	// Save settings
+	if params.Scope == settings.ScopeGlobal {
+		err = settings.SaveGlobal(current)
+	} else {
+		err = settings.SaveProject(projectPath, current)
+	}
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	// Return updated effective settings
+	effective, global, project, err := settings.LoadEffective(projectPath)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, settings.SettingsResponse{
+		Schema:    settings.GenerateSchemaWithCustomAgents(effective),
+		Effective: settings.MaskSettings(effective),
+		Global:    settings.MaskSettings(global),
+		Project:   settings.MaskSettings(project),
+	})
+}
+
+// --- Browse Handler ---
+
+// BrowseParams holds params for browse.
+type BrowseParams struct {
+	Path  string `json:"path"`
+	Files bool   `json:"files"` // include .md/.txt files
+}
+
+// BrowseEntry represents a file or directory entry.
+type BrowseEntry struct {
+	Name  string `json:"name"`
+	Path  string `json:"path"`
+	IsDir bool   `json:"is_dir"`
+}
+
+func (g *GlobalSocket) handleBrowse(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowseParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, -32602, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+		}
+	}
+
+	// Build list of allowed roots: home directory + registered project paths
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, "cannot determine home directory"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	allowedRoots := []string{homeDir}
+	g.mu.RLock()
+	for _, w := range g.worktrees {
+		allowedRoots = append(allowedRoots, w.Path)
+	}
+	g.mu.RUnlock()
+
+	path := params.Path
+	if path == "" {
+		path = homeDir
+	}
+
+	// Validate path is within allowed roots
+	path, err = ValidatePathWithRoots(allowedRoots, path)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32602, "access denied: path outside allowed directories"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32602, "path not found"), nil //nolint:nilerr // JSON-RPC error response
+	}
+	if !info.IsDir() {
+		return NewErrorResponse(req.ID, -32602, "not a directory"), nil
+	}
+
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, "cannot read directory"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	result := []BrowseEntry{}
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, ".") {
+			continue // skip hidden
+		}
+
+		if e.IsDir() {
+			result = append(result, BrowseEntry{
+				Name:  name,
+				Path:  filepath.Join(path, name),
+				IsDir: true,
+			})
+		} else if params.Files {
+			// Include .md and .txt files
+			ext := strings.ToLower(filepath.Ext(name))
+			if ext == ".md" || ext == ".txt" {
+				result = append(result, BrowseEntry{
+					Name:  name,
+					Path:  filepath.Join(path, name),
+					IsDir: false,
+				})
+			}
+		}
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"path":    path,
+		"parent":  filepath.Dir(path),
+		"entries": result,
+	})
+}
+
+// --- Chat Handlers ---
+
+// --- File Handlers ---
+
+// FilesListParams holds params for files.list.
+type FilesListParams struct {
+	Path       string   `json:"path"`
+	Extensions []string `json:"extensions,omitempty"` // Filter by extension
+	MaxDepth   int      `json:"max_depth,omitempty"`  // Max directory depth
+}
+
+// FileEntry represents a file for autocomplete/mentions.
+type FileEntry struct {
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	RelPath string `json:"rel_path"`
+	IsDir   bool   `json:"is_dir"`
+	Size    int64  `json:"size,omitempty"`
+}
+
+func (g *GlobalSocket) handleFilesList(ctx context.Context, req *Request) (*Response, error) {
+	var params FilesListParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, -32602, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+		}
+	}
+
+	// Build list of allowed roots from registered projects
+	var allowedRoots []string
+	g.mu.RLock()
+	for _, w := range g.worktrees {
+		allowedRoots = append(allowedRoots, w.Path)
+	}
+	g.mu.RUnlock()
+
+	path := params.Path
+	if path == "" {
+		// Use first registered project as default
+		if len(allowedRoots) > 0 {
+			path = allowedRoots[0]
+		}
+	}
+
+	if path == "" {
+		return NewErrorResponse(req.ID, -32602, "no path specified and no projects registered"), nil
+	}
+
+	// Validate path is within registered projects
+	basePath, err := ValidatePathWithRoots(allowedRoots, path)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32602, "access denied: path outside registered projects"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	maxDepth := params.MaxDepth
+	if maxDepth <= 0 {
+		maxDepth = 3
+	}
+
+	entries := []FileEntry{}
+
+	_ = filepath.WalkDir(basePath, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // Continue walking on individual file errors
+		}
+
+		// Skip hidden files/dirs
+		if strings.HasPrefix(d.Name(), ".") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		// Calculate depth
+		relPath, _ := filepath.Rel(basePath, p)
+		depth := strings.Count(relPath, string(filepath.Separator))
+		if depth > maxDepth {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		// Skip common non-source directories
+		if d.IsDir() {
+			skipDirs := map[string]bool{
+				"node_modules": true, "vendor": true, "dist": true,
+				"build": true, "__pycache__": true, ".git": true,
+			}
+			if skipDirs[d.Name()] {
+				return filepath.SkipDir
+			}
+		}
+
+		// Filter by extensions if specified
+		if len(params.Extensions) > 0 && !d.IsDir() {
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			found := false
+			for _, e := range params.Extensions {
+				if ext == e || ext == "."+e {
+					found = true
+
+					break
+				}
+			}
+			if !found {
+				return nil
+			}
+		}
+
+		info, _ := d.Info()
+		var size int64
+		if info != nil && !d.IsDir() {
+			size = info.Size()
+		}
+
+		entries = append(entries, FileEntry{
+			Name:    d.Name(),
+			Path:    p,
+			RelPath: relPath,
+			IsDir:   d.IsDir(),
+			Size:    size,
+		})
+
+		// Limit results
+		if len(entries) >= 500 {
+			return filepath.SkipAll
+		}
+
+		return nil
+	})
+
+	return NewResultResponse(req.ID, map[string]any{
+		"path":    basePath,
+		"entries": entries,
+	})
+}
+
+// FilesSearchParams holds params for files.search.
+type FilesSearchParams struct {
+	Query      string `json:"query"`
+	Path       string `json:"path,omitempty"`
+	MaxResults int    `json:"max_results,omitempty"`
+}
+
+func (g *GlobalSocket) handleFilesSearch(ctx context.Context, req *Request) (*Response, error) {
+	var params FilesSearchParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Query == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "query is required"), nil
+	}
+
+	// Build list of allowed roots from registered projects
+	var allowedRoots []string
+	g.mu.RLock()
+	for _, w := range g.worktrees {
+		allowedRoots = append(allowedRoots, w.Path)
+	}
+	g.mu.RUnlock()
+
+	path := params.Path
+	if path == "" {
+		// Use first registered project as default
+		if len(allowedRoots) > 0 {
+			path = allowedRoots[0]
+		}
+	}
+
+	if path == "" {
+		return NewErrorResponse(req.ID, -32602, "no path specified and no projects registered"), nil
+	}
+
+	// Validate path is within registered projects
+	basePath, err := ValidatePathWithRoots(allowedRoots, path)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32602, "access denied: path outside registered projects"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	maxResults := params.MaxResults
+	if maxResults <= 0 {
+		maxResults = 20
+	}
+
+	query := strings.ToLower(params.Query)
+	entries := []FileEntry{}
+
+	_ = filepath.WalkDir(basePath, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // Continue walking on individual file errors
+		}
+
+		// Skip hidden and common non-source dirs
+		if strings.HasPrefix(d.Name(), ".") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+		if d.IsDir() {
+			skipDirs := map[string]bool{
+				"node_modules": true, "vendor": true, "dist": true,
+				"build": true, "__pycache__": true,
+			}
+			if skipDirs[d.Name()] {
+				return filepath.SkipDir
+			}
+		}
+
+		// Match query against filename
+		if strings.Contains(strings.ToLower(d.Name()), query) {
+			relPath, _ := filepath.Rel(basePath, p)
+			entries = append(entries, FileEntry{
+				Name:    d.Name(),
+				Path:    p,
+				RelPath: relPath,
+				IsDir:   d.IsDir(),
+			})
+		}
+
+		if len(entries) >= maxResults {
+			return filepath.SkipAll
+		}
+
+		return nil
+	})
+
+	return NewResultResponse(req.ID, map[string]any{
+		"query":   params.Query,
+		"path":    basePath,
+		"entries": entries,
+	})
+}
+
+// --- Browser Handlers ---
+
+// BrowserParams holds common browser operation params.
+type BrowserParams struct {
+	WorktreeID  string `json:"worktree_id,omitempty"`
+	SessionName string `json:"session_name,omitempty"`
+}
+
+func (g *GlobalSocket) getBrowserOpts(params BrowserParams) *browser.ExecOptions {
+	opts := &browser.ExecOptions{
+		SessionName: params.SessionName,
+	}
+
+	// Get worktree path if specified
+	if params.WorktreeID != "" {
+		g.mu.RLock()
+		if wt, ok := g.worktrees[params.WorktreeID]; ok {
+			opts.WorktreePath = wt.Path
+		}
+		g.mu.RUnlock()
+	}
+
+	return opts
+}
+
+func (g *GlobalSocket) handleBrowserSnapshot(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Snapshot(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserEvalParams holds params for browser.eval.
+type BrowserEvalParams struct {
+	BrowserParams
+
+	JS string `json:"js"`
+}
+
+func (g *GlobalSocket) handleBrowserEval(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserEvalParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.JS == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "js is required"), nil
+	}
+
+	result, err := browser.Eval(ctx, g.getBrowserOpts(params.BrowserParams), params.JS)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserConsole(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Console(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserNetwork(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Network(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserScreenshotParams holds params for browser.screenshot.
+type BrowserScreenshotParams struct {
+	BrowserParams
+
+	Path     string `json:"path,omitempty"`
+	FullPage bool   `json:"full_page,omitempty"`
+	Element  string `json:"element,omitempty"`
+	Format   string `json:"format,omitempty"`
+	Quality  int    `json:"quality,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserScreenshot(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserScreenshotParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	screenshotOpts := &browser.ScreenshotOptions{
+		Path:     params.Path,
+		FullPage: params.FullPage,
+		Element:  params.Element,
+		Format:   params.Format,
+		Quality:  params.Quality,
+	}
+
+	result, err := browser.Screenshot(ctx, g.getBrowserOpts(params.BrowserParams), screenshotOpts)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	if params.WorktreeID == "" {
+		return NewResultResponse(req.ID, result)
+	}
+
+	// worktree_id provided — store via screenshots.capture
+	g.mu.RLock()
+	wt, ok := g.worktrees[params.WorktreeID]
+	g.mu.RUnlock()
+	if !ok {
+		return NewResultResponse(req.ID, result)
+	}
+
+	imageData, err := os.ReadFile(result.Path)
+	if err != nil {
+		return NewResultResponse(req.ID, result)
+	}
+
+	format := params.Format
+	if format == "" {
+		format = "png"
+	}
+
+	captureParams, err := json.Marshal(map[string]any{
+		"source": "user",
+		"format": format,
+		"data":   base64.StdEncoding.EncodeToString(imageData),
+	})
+	if err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "failed to marshal params"), nil
+	}
+
+	client, err := NewClient(wt.SocketPath, WithTimeout(5*time.Second))
+	if err != nil {
+		return NewResultResponse(req.ID, result)
+	}
+	defer func() { _ = client.Close() }()
+
+	captureResp, err := client.Call(ctx, "screenshots.capture", captureParams)
+	if err != nil || captureResp == nil || captureResp.Result == nil {
+		return NewResultResponse(req.ID, result)
+	}
+
+	var ss map[string]any
+	if err := json.Unmarshal(captureResp.Result, &ss); err != nil {
+		return NewResultResponse(req.ID, result)
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"id":   ss["id"],
+		"path": result.Path,
+	})
+}
+
+// BrowserNavigateParams holds params for browser.navigate.
+type BrowserNavigateParams struct {
+	BrowserParams
+
+	URL string `json:"url"`
+}
+
+func (g *GlobalSocket) handleBrowserNavigate(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserNavigateParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.URL == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "url is required"), nil
+	}
+
+	result, err := browser.Navigate(ctx, g.getBrowserOpts(params.BrowserParams), params.URL)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserClickParams holds params for browser.click.
+type BrowserClickParams struct {
+	BrowserParams
+
+	Selector string `json:"selector"`
+}
+
+func (g *GlobalSocket) handleBrowserClick(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserClickParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Click(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserTypeParams holds params for browser.type.
+type BrowserTypeParams struct {
+	BrowserParams
+
+	Selector string `json:"selector"`
+	Text     string `json:"text"`
+}
+
+func (g *GlobalSocket) handleBrowserType(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserTypeParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Type(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector, params.Text)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserWaitParams holds params for browser.wait.
+type BrowserWaitParams struct {
+	BrowserParams
+
+	Selector  string `json:"selector"`
+	TimeoutMs int    `json:"timeout_ms,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserWait(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserWaitParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Wait(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector, params.TimeoutMs)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserInstall(ctx context.Context, req *Request) (*Response, error) {
+	if err := browser.Install(ctx); err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("install runtime: %v", err)), nil
+	}
+	if err := browser.InstallBrowsers(ctx); err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("install browsers: %v", err)), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"ok":      true,
+		"message": "Browser runtime installed successfully",
+		"path":    browser.Paths(),
+	})
+}
+
+func (g *GlobalSocket) handleBrowserStatus(ctx context.Context, req *Request) (*Response, error) {
+	installed := browser.IsInstalled()
+	result := map[string]any{
+		"installed":   installed,
+		"runtime_dir": browser.Paths(),
+		"binary_path": browser.BinaryPath(),
+	}
+
+	if installed {
+		version, err := browser.Version()
+		if err != nil {
+			result["version_error"] = err.Error()
+		} else {
+			result["version"] = version
+		}
+	}
+
+	cfg, err := browser.LoadConfig()
+	if err != nil {
+		result["config_error"] = err.Error()
+	} else {
+		result["config"] = cfg
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserConfigGet(ctx context.Context, req *Request) (*Response, error) {
+	cfg, err := browser.LoadConfig()
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, cfg)
+}
+
+// BrowserConfigSetParams holds params for browser.config.set.
+type BrowserConfigSetParams struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (g *GlobalSocket) handleBrowserConfigSet(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserConfigSetParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	cfg, err := browser.LoadConfig()
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("load config: %v", err)), nil
+	}
+
+	switch strings.ToLower(params.Key) {
+	case "headless":
+		cfg.Headless = params.Value == "true" || params.Value == "1" || params.Value == "yes"
+	case "browser":
+		if params.Value != "chromium" && params.Value != "firefox" && params.Value != "webkit" {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "browser must be chromium, firefox, or webkit"), nil
+		}
+		cfg.Browser = params.Value
+	case "profile":
+		cfg.Profile = params.Value
+	case "timeout":
+		var timeout int
+		if _, scanErr := fmt.Sscanf(params.Value, "%d", &timeout); scanErr != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "timeout must be a number"), nil //nolint:nilerr // JSON-RPC error response
+		}
+		cfg.Timeout = timeout
+	default:
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "unknown config key: "+params.Key), nil
+	}
+
+	if err := cfg.Save(); err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("save config: %v", err)), nil
+	}
+
+	return NewResultResponse(req.ID, cfg)
+}
+
+// BrowserFillParams holds params for browser.fill.
+type BrowserFillParams struct {
+	BrowserParams
+
+	Selector string `json:"selector"`
+	Value    string `json:"value"`
+}
+
+func (g *GlobalSocket) handleBrowserFill(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserFillParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Fill(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector, params.Value)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserSelectParams holds params for browser.select.
+type BrowserSelectParams struct {
+	BrowserParams
+
+	Selector string   `json:"selector"`
+	Values   []string `json:"values"`
+}
+
+func (g *GlobalSocket) handleBrowserSelect(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserSelectParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	if len(params.Values) == 0 {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "values is required"), nil
+	}
+
+	result, err := browser.Select(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector, params.Values...)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserHoverParams holds params for browser.hover.
+type BrowserHoverParams struct {
+	BrowserParams
+
+	Selector string `json:"selector"`
+}
+
+func (g *GlobalSocket) handleBrowserHover(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserHoverParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Hover(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserFocusParams holds params for browser.focus.
+type BrowserFocusParams struct {
+	BrowserParams
+
+	Selector string `json:"selector"`
+}
+
+func (g *GlobalSocket) handleBrowserFocus(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserFocusParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	result, err := browser.Focus(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserScrollParams holds params for browser.scroll.
+type BrowserScrollParams struct {
+	BrowserParams
+
+	Direction string `json:"direction"` // up, down, left, right
+	Amount    int    `json:"amount,omitempty"`
+	Selector  string `json:"selector,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserScroll(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserScrollParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Direction == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "direction is required"), nil
+	}
+
+	result, err := browser.Scroll(ctx, g.getBrowserOpts(params.BrowserParams), params.Direction, params.Amount, params.Selector)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserPressParams holds params for browser.press.
+type BrowserPressParams struct {
+	BrowserParams
+
+	Key      string `json:"key"`
+	Selector string `json:"selector,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserPress(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserPressParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Key == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "key is required"), nil
+	}
+
+	result, err := browser.Press(ctx, g.getBrowserOpts(params.BrowserParams), params.Key, params.Selector)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserBack(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Back(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserForward(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Forward(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+func (g *GlobalSocket) handleBrowserReload(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	result, err := browser.Reload(ctx, g.getBrowserOpts(params))
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserDialogParams holds params for browser.dialog.
+type BrowserDialogParams struct {
+	BrowserParams
+
+	Action string `json:"action"` // accept or dismiss
+	Text   string `json:"text,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserDialog(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserDialogParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Action != "accept" && params.Action != "dismiss" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "action must be 'accept' or 'dismiss'"), nil
+	}
+
+	result, err := browser.Dialog(ctx, g.getBrowserOpts(params.BrowserParams), params.Action, params.Text)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserUploadParams holds params for browser.upload.
+type BrowserUploadParams struct {
+	BrowserParams
+
+	Selector string   `json:"selector"`
+	Files    []string `json:"files"`
+}
+
+func (g *GlobalSocket) handleBrowserUpload(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserUploadParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Selector == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "selector is required"), nil
+	}
+
+	if len(params.Files) == 0 {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "files is required"), nil
+	}
+
+	result, err := browser.Upload(ctx, g.getBrowserOpts(params.BrowserParams), params.Selector, params.Files)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// BrowserPDFParams holds params for browser.pdf.
+type BrowserPDFParams struct {
+	BrowserParams
+
+	Path      string `json:"path,omitempty"`
+	Format    string `json:"format,omitempty"`
+	Landscape bool   `json:"landscape,omitempty"`
+}
+
+func (g *GlobalSocket) handleBrowserPDF(ctx context.Context, req *Request) (*Response, error) {
+	var params BrowserPDFParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	pdfOpts := &browser.PDFOptions{
+		Path:      params.Path,
+		Format:    params.Format,
+		Landscape: params.Landscape,
+	}
+
+	result, err := browser.GeneratePDF(ctx, g.getBrowserOpts(params.BrowserParams), pdfOpts)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// --- Lifecycle ---
+
+func (g *GlobalSocket) Start(ctx context.Context) error {
+	return g.server.Start(ctx)
+}
+
+func (g *GlobalSocket) Stop() error {
+	// Cancel context to stop all managed worktree sockets
+	if g.cancel != nil {
+		g.cancel()
+	}
+
+	// Collect sockets to stop, then release lock before stopping
+	// This avoids potential deadlock if Stop() tries to acquire wtSocketsMu
+	g.wtSocketsMu.Lock()
+	socketsToStop := make([]*WorktreeSocket, 0, len(g.wtSockets))
+	for _, wt := range g.wtSockets {
+		socketsToStop = append(socketsToStop, wt)
+	}
+	g.wtSockets = make(map[string]*WorktreeSocket)
+	g.wtSocketsMu.Unlock()
+
+	// Stop sockets without holding the lock
+	for _, wt := range socketsToStop {
+		_ = wt.Stop()
+	}
+
+	return g.server.Stop()
+}
+
+// GetOrCreateWorktreeSocket returns an existing worktree socket or creates one on-demand.
+// This allows projects to use the global worker pool for planning/implementation.
+func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{}, error) {
+	id := WorktreeIDFromPath(projectPath)
+	socketPath := WorktreeSocketPath(projectPath)
+
+	// Fast path: check if socket already exists
+	g.wtSocketsMu.RLock()
+	if wt, ok := g.wtSockets[id]; ok {
+		g.wtSocketsMu.RUnlock()
+
+		return wt, nil
+	}
+	g.wtSocketsMu.RUnlock()
+
+	// Slow path: create new socket
+	g.wtSocketsMu.Lock()
+
+	// Double-check after acquiring write lock
+	if wt, ok := g.wtSockets[id]; ok {
+		g.wtSocketsMu.Unlock()
+
+		return wt, nil
+	}
+
+	// Check if we're shutting down
+	select {
+	case <-g.ctx.Done():
+		g.wtSocketsMu.Unlock()
+
+		return nil, errors.New("global socket is shutting down")
+	default:
+	}
+
+	// Create new worktree socket with pool access
+	wt, err := NewWorktreeSocket(WorktreeConfig{
+		WorktreePath: projectPath,
+		SocketPath:   socketPath,
+		GlobalPath:   g.server.Path(),
+		Pool:         g.pool,
+	})
+	if err != nil {
+		g.wtSocketsMu.Unlock()
+
+		return nil, fmt.Errorf("create worktree socket: %w", err)
+	}
+
+	// Add to map before starting goroutine to avoid race condition
+	g.wtSockets[id] = wt
+
+	// Start the socket in background
+	// Note: Callers should handle connection retries if socket isn't ready yet
+	go func() {
+		if err := wt.Start(g.ctx); err != nil && !errors.Is(err, context.Canceled) {
+			// Log error but don't panic - socket can be recreated
+			slog.Error("worktree socket error", "id", id, "error", err)
+		}
+
+		// Remove from map when socket stops
+		g.wtSocketsMu.Lock()
+		delete(g.wtSockets, id)
+		g.wtSocketsMu.Unlock()
+	}()
+
+	g.wtSocketsMu.Unlock()
+
+	return wt, nil
+}
+
+func (g *GlobalSocket) Server() *Server {
+	return g.server
+}
+
+func (g *GlobalSocket) Pool() *worker.Pool {
+	return g.pool
+}
+
+func (g *GlobalSocket) SetPool(pool *worker.Pool) {
+	g.pool = pool
+}
+
+// GetWorktree returns worktree info by ID.
+func (g *GlobalSocket) GetWorktree(id string) *WorktreeInfo {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.worktrees[id]
+}
+
+// ListWorktrees returns all registered worktrees.
+func (g *GlobalSocket) ListWorktrees() []*WorktreeInfo {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	result := make([]*WorktreeInfo, 0, len(g.worktrees))
+	for _, w := range g.worktrees {
+		result = append(result, w)
+	}
+
+	return result
+}
+
+// --- Tasks List Handler ---
+
+// TaskListSummary represents a task for the tasks.list response.
+type TaskListSummary struct {
+	ID        string `json:"id"`
+	Path      string `json:"path"`
+	State     string `json:"state"`
+	TaskID    string `json:"task_id,omitempty"`
+	TaskTitle string `json:"task_title,omitempty"`
+	Source    string `json:"source,omitempty"`
+}
+
+// TasksListResult is the response for tasks.list.
+type TasksListResult struct {
+	Tasks []TaskListSummary `json:"tasks"`
+}
+
+func (g *GlobalSocket) handleTasksList(ctx context.Context, req *Request) (*Response, error) {
+	g.mu.RLock()
+	worktrees := make([]*WorktreeInfo, 0, len(g.worktrees))
+	for _, w := range g.worktrees {
+		worktrees = append(worktrees, w)
+	}
+	g.mu.RUnlock()
+
+	tasks := make([]TaskListSummary, 0, len(worktrees))
+	for _, wt := range worktrees {
+		summary := TaskListSummary{
+			ID:    wt.ID,
+			Path:  wt.Path,
+			State: wt.State,
+		}
+
+		// Try to get more task details by calling the worktree socket
+		if wt.SocketPath != "" && SocketExists(wt.SocketPath) {
+			client, err := NewClient(wt.SocketPath, WithTimeout(1*time.Second))
+			if err == nil {
+				resp, callErr := client.Call(ctx, "status", nil)
+				if callErr == nil && resp != nil && resp.Result != nil {
+					var status StatusResult
+					if jsonErr := json.Unmarshal(resp.Result, &status); jsonErr == nil {
+						if status.Task != nil {
+							summary.TaskID = status.Task.ID
+							summary.TaskTitle = status.Task.Title
+							summary.Source = status.Task.Source
+						}
+						summary.State = string(status.State)
+					}
+				}
+				_ = client.Close()
+			}
+		}
+
+		tasks = append(tasks, summary)
+	}
+
+	return NewResultResponse(req.ID, TasksListResult{Tasks: tasks})
+}
