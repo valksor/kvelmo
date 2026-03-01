@@ -1,0 +1,52 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: What problem are you trying to solve? Describe the situation where you need this feature.
+      placeholder: "When I'm working on..., I need to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-workaround
+    attributes:
+      label: Current Workaround
+      description: How do you currently handle this? If there's no workaround, say so.
+      placeholder: "Currently I work around this by..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe what you'd like to see. Include examples of how it would work if possible.
+      placeholder: "I'd like to be able to..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Which interface(s) would this apply to?
+      multiple: true
+      options:
+        - CLI
+        - Web UI
+        - Both CLI and Web UI
+        - API
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Who else would benefit?
+      description: Would this help other users? Is this specific to your workflow or broadly useful?
+    validations:
+      required: false

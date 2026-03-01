@@ -1,0 +1,186 @@
+name: CI
+
+on:
+    pull_request:
+    workflow_run:
+        workflows: [Release]
+        types: [completed]
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test:
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+        strategy:
+            matrix:
+                include:
+                    -   goos: linux
+                        goarch: amd64
+                        runner: ubuntu-latest
+                    -   goos: darwin
+                        goarch: arm64
+                        runner: macos-latest
+
+        runs-on: ${{ matrix.runner }}
+
+        env:
+            GO_VERSION: '1.25'
+            GOLANGCI_LINT_VERSION: v2.8.0
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Set up Go
+                uses: actions/setup-go@v6
+                with:
+                    go-version: ${{ env.GO_VERSION }}
+                    cache: true
+
+            -   name: Install golangci-lint
+                run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+
+            -   name: Install govulncheck
+                run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+            -   name: Install goimports
+                run: go install golang.org/x/tools/cmd/goimports@latest
+
+            -   name: Install gofumpt
+                run: go install mvdan.cc/gofumpt@latest
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Build Web UI
+                working-directory: web
+                run: |
+                    bun install
+                    bun run build
+
+            -   name: Verify dependencies
+                run: |
+                    go mod tidy
+                    git diff --exit-code go.mod go.sum
+
+            -   name: Lint
+                run: make quality
+
+            -   name: Test
+                run: make test
+
+            -   name: Test (Race Detector)
+                if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+                run: go test -v -race ./...
+
+            -   name: Generate coverage
+                if: github.event_name != 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+                run: go test -coverprofile=covprofile ./...
+
+            -   name: Upload Go coverage to Coveralls
+                if: github.event_name != 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: covprofile
+                    format: golang
+                    parallel: true
+                    flag-name: go-coverage
+
+            -   name: Build
+                run: make build
+
+            -   name: Verify binary
+                run: ./build/kvelmo version
+
+    web:
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Bun
+                uses: oven-sh/setup-bun@v2
+                with:
+                    bun-version: latest
+
+            -   name: Install Dependencies
+                working-directory: web
+                run: bun install
+
+            -   name: Lint
+                working-directory: web
+                run: bun run lint
+
+            -   name: Run Tests with Coverage
+                working-directory: web
+                run: bun run test:coverage
+
+            -   name: Build Production Bundle
+                working-directory: web
+                run: bun run build
+
+            -   name: Verify Build Artifacts
+                run: |
+                    test -d web/dist || (echo "Build failed: web/dist missing" && exit 1)
+                    test -f web/dist/index.html || (echo "Build failed: index.html missing" && exit 1)
+
+            -   name: Upload Web coverage to Coveralls
+                if: github.event_name != 'pull_request'
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: web/coverage/lcov.info
+                    format: lcov
+                    parallel: true
+                    flag-name: web-coverage
+                    base-path: web
+
+    coverage-finish:
+        needs: [test, web]
+        runs-on: ubuntu-latest
+        if: >-
+            github.event_name != 'pull_request' &&
+            always() &&
+            needs.test.result == 'success' &&
+            needs.web.result == 'success'
+        steps:
+            -   name: Finish Coveralls parallel build
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    parallel-finished: true
+                    carryforward: "go-coverage,web-coverage"
+
+    cleanup:
+        needs: [test, web, coverage-finish]
+        if: always()
+        strategy:
+            matrix:
+                include:
+                    -   runner: ubuntu-latest
+                    -   runner: macos-latest
+        runs-on: ${{ matrix.runner }}
+
+        steps:
+            -   name: Cleanup Go caches
+                run: |
+                    go clean -cache -testcache || true
+                    rm -rf .coverage covprofile
+
+            -   name: Cleanup Bun caches
+                if: matrix.runner == 'ubuntu-latest'
+                run: |
+                    rm -rf ~/.bun/install/cache/
+                    rm -rf web/node_modules/ || true
+                    rm -rf web/coverage/ || true

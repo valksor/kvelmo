@@ -1,0 +1,44 @@
+#!/bin/bash
+# commit-msg hook: Add [skip ci] when no code changes
+#
+# Code paths that trigger CI:
+#   - cmd/       (CLI commands)
+#   - pkg/       (core packages)
+#   - go.mod     (dependencies)
+#   - go.sum     (dependency checksums)
+#   - Makefile   (build configuration)
+
+COMMIT_MSG_FILE="$1"
+
+# Skip hook for amend/rebase operations - only run on initial commit creation
+# Detect via: no staged changes + HEAD exists = editing existing commit
+if git rev-parse HEAD >/dev/null 2>&1; then
+    STAGED_FILES=$(git diff --cached --name-only)
+    if [ -z "$STAGED_FILES" ]; then
+        # No staged changes - this is an amend or message edit, skip the hook
+        exit 0
+    fi
+else
+    # First commit - get staged files
+    STAGED_FILES=$(git diff --cached --name-only)
+fi
+
+# Code paths regex (triggers CI build)
+CODE_PATHS="^cmd/|^pkg/|^go\.mod$|^go\.sum$|^Makefile$"
+
+# Check if any staged file matches code paths
+if echo "$STAGED_FILES" | grep -qE "$CODE_PATHS"; then
+    # Has code changes - do nothing
+    exit 0
+fi
+
+# No code changes - add [skip ci] if not already present
+FIRST_LINE=$(head -n 1 "$COMMIT_MSG_FILE")
+
+if [[ "$FIRST_LINE" != *"[skip ci]"* ]] && [[ "$FIRST_LINE" != *"[ci skip]"* ]]; then
+    # macOS sed requires '' after -i, Linux doesn't - use temp file for portability
+    sed "1s/$/ [skip ci]/" "$COMMIT_MSG_FILE" > "$COMMIT_MSG_FILE.tmp"
+    mv "$COMMIT_MSG_FILE.tmp" "$COMMIT_MSG_FILE"
+fi
+
+exit 0
