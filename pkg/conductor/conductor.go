@@ -1,0 +1,464 @@
+// Package conductor orchestrates the task lifecycle workflow.
+// Based on flow_v2.md design specification.
+package conductor
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/valksor/kvelmo/pkg/git"
+	"github.com/valksor/kvelmo/pkg/memory"
+	"github.com/valksor/kvelmo/pkg/provider"
+	"github.com/valksor/kvelmo/pkg/settings"
+	"github.com/valksor/kvelmo/pkg/storage"
+	"github.com/valksor/kvelmo/pkg/worker"
+)
+
+// Conductor orchestrates the task automation workflow.
+// Per flow_v2.md: "One conductor, one entrypoint. The socket IS the conductor.".
+//
+//nolint:containedctx // lifecycleCtx is intentionally stored to manage background goroutines that outlive request contexts
+type Conductor struct {
+	mu sync.RWMutex
+
+	// Core components
+	machine    *Machine
+	worktree   string // Worktree path (current directory or git worktree)
+	pool       *worker.Pool
+	git        *git.Repository
+	providers  *provider.Registry
+	globalPath string
+
+	// Lifecycle context for background goroutines (watchJob, indexer)
+	// Cancelled when Close() is called
+	lifecycleCtx    context.Context
+	lifecycleCancel context.CancelFunc
+
+	// Close protection
+	closeOnce sync.Once
+	closed    atomic.Bool
+
+	// Current task state
+	workUnit *WorkUnit
+
+	// Event streaming
+	events      chan ConductorEvent
+	eventsMu    sync.Mutex // Protects events channel send during close
+	listeners   []EventListener
+	listenersMu sync.RWMutex // Protects listeners (separate from mu to avoid deadlock in emit)
+
+	// pendingPrompts holds channels for blocking user prompts.
+	// Key: UUID prompt ID. Protected by c.mu.
+	pendingPrompts map[string]chan bool
+
+	// Configuration
+	opts Options
+
+	// Output writers
+	stdout io.Writer
+	stderr io.Writer
+
+	// Memory indexer (optional, set via SetMemoryIndexer)
+	memoryIndexer *memory.Indexer
+
+	// Storage (optional, set via SetStore)
+	store *storage.Store
+
+	// Cached settings (loaded once, reused across phases).
+	// Uses atomic.Pointer for lock-free access to avoid deadlock when called
+	// from methods that already hold c.mu.
+	cachedSettings atomic.Pointer[settings.Settings]
+}
+
+// ConductorEvent represents an event emitted by the conductor.
+type ConductorEvent struct {
+	Type      string          `json:"type"`
+	State     State           `json:"state,omitempty"`
+	JobID     string          `json:"job_id,omitempty"`
+	Message   string          `json:"message,omitempty"`
+	Data      json.RawMessage `json:"data,omitempty"`
+	Error     string          `json:"error,omitempty"`
+	Timestamp time.Time       `json:"timestamp"`
+}
+
+// EventListener is called when events occur.
+type EventListener func(event ConductorEvent)
+
+// Options configures the conductor.
+type Options struct {
+	WorkDir    string
+	Verbose    bool
+	GlobalPath string
+	Pool       *worker.Pool
+	Stdout     io.Writer
+	Stderr     io.Writer
+	// Settings overrides file-based settings loading when non-nil (useful in tests).
+	Settings *settings.Settings
+}
+
+// DefaultOptions returns default conductor options.
+func DefaultOptions() Options {
+	return Options{
+		WorkDir: ".",
+		Stdout:  os.Stdout,
+		Stderr:  os.Stderr,
+	}
+}
+
+// Option is a functional option for the conductor.
+type Option func(*Options)
+
+// WithWorkDir sets the working directory.
+func WithWorkDir(dir string) Option {
+	return func(o *Options) { o.WorkDir = dir }
+}
+
+// WithVerbose enables verbose output.
+func WithVerbose(v bool) Option {
+	return func(o *Options) { o.Verbose = v }
+}
+
+// WithPool sets the worker pool.
+func WithPool(p *worker.Pool) Option {
+	return func(o *Options) { o.Pool = p }
+}
+
+// WithStdout sets the stdout writer.
+func WithStdout(w io.Writer) Option {
+	return func(o *Options) { o.Stdout = w }
+}
+
+// WithStderr sets the stderr writer.
+func WithStderr(w io.Writer) Option {
+	return func(o *Options) { o.Stderr = w }
+}
+
+// WithSettings overrides file-based settings loading with the provided settings.
+// Useful in tests to inject specific configuration without filesystem access.
+func WithSettings(s *settings.Settings) Option {
+	return func(o *Options) { o.Settings = s }
+}
+
+// New creates a new Conductor with the given options.
+func New(opts ...Option) (*Conductor, error) {
+	options := DefaultOptions()
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	// Resolve working directory
+	workDir, err := filepath.Abs(options.WorkDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolve work dir: %w", err)
+	}
+
+	// Load settings so provider tokens are available.
+	// Settings come from local .env files (never global env vars).
+	// WithSettings() can override this for testing.
+	var effectiveSettings *settings.Settings
+	if options.Settings != nil {
+		effectiveSettings = options.Settings
+	} else {
+		var err error
+		effectiveSettings, _, _, err = settings.LoadEffective(workDir)
+		if err != nil {
+			// Non-fatal: use defaults if settings fail to load.
+			effectiveSettings = settings.DefaultSettings()
+		}
+	}
+
+	// Create state machine
+	machine := NewMachine()
+
+	// Create provider registry with tokens from settings
+	providers := provider.NewRegistry(effectiveSettings)
+
+	lifecycleCtx, lifecycleCancel := context.WithCancel(context.Background())
+
+	c := &Conductor{
+		machine:         machine,
+		worktree:        workDir,
+		pool:            options.Pool,
+		providers:       providers,
+		globalPath:      options.GlobalPath,
+		lifecycleCtx:    lifecycleCtx,
+		lifecycleCancel: lifecycleCancel,
+		events:          make(chan ConductorEvent, 100),
+		pendingPrompts:  make(map[string]chan bool),
+		opts:            options,
+		stdout:          options.Stdout,
+		stderr:          options.Stderr,
+	}
+	c.cachedSettings.Store(effectiveSettings) // Cache pre-loaded settings (atomic)
+
+	// Subscribe to state machine changes
+	machine.AddListener(c.onStateChanged)
+
+	return c, nil
+}
+
+// Initialize initializes the conductor with git repository.
+func (c *Conductor) Initialize(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Open git repository
+	repo, err := git.Open(c.worktree)
+	if err != nil {
+		c.logVerbosef("Warning: not a git repository: %v", err)
+		// Continue without git - some operations will be limited
+	} else {
+		c.git = repo
+	}
+
+	return nil
+}
+
+// State returns the current workflow state.
+func (c *Conductor) State() State {
+	return c.machine.State()
+}
+
+// WorkUnit returns the current work unit (alias for GetWorkUnit).
+func (c *Conductor) WorkUnit() *WorkUnit {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.workUnit
+}
+
+// GetWorkUnit returns the current work unit.
+func (c *Conductor) GetWorkUnit() *WorkUnit {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.workUnit == nil {
+		return nil
+	}
+	// Return a copy
+	wu := *c.workUnit
+
+	return &wu
+}
+
+// Machine returns the state machine.
+func (c *Conductor) Machine() *Machine {
+	return c.machine
+}
+
+// getWorkDir returns the effective working directory for operations.
+// When worktree isolation is active, returns the isolated worktree path.
+// Otherwise returns the main worktree (project root).
+func (c *Conductor) getWorkDir() string {
+	if c.workUnit != nil && c.workUnit.WorktreePath != "" {
+		return c.workUnit.WorktreePath
+	}
+
+	return c.worktree
+}
+
+// getBaseBranch returns the base branch from settings or git detection.
+// Returns error if neither is available (no silent fallback).
+// This method is lock-free to allow calling from methods that already hold c.mu.
+func (c *Conductor) getBaseBranch(ctx context.Context) (string, error) {
+	// 1. Check settings override
+	if settings := c.getEffectiveSettings(); settings != nil && settings.Git.BaseBranch != "" {
+		return settings.Git.BaseBranch, nil
+	}
+
+	// 2. Auto-detect from git
+	if c.git != nil {
+		return c.git.DefaultBranch(ctx)
+	}
+
+	return "", errors.New("cannot determine base branch: git not available and git.base_branch not configured")
+}
+
+// getEffectiveSettings returns cached settings, loading them on first access.
+// Settings are cached to avoid repeated file I/O across phases.
+// This method is lock-free to allow calling from methods that already hold c.mu.
+func (c *Conductor) getEffectiveSettings() *settings.Settings {
+	// Fast path: return cached settings (lock-free)
+	if cached := c.cachedSettings.Load(); cached != nil {
+		return cached
+	}
+
+	// Slow path: load settings (only happens if ReloadSettings() was called)
+	effectiveSettings, _, _, err := settings.LoadEffective(c.worktree)
+	if err != nil {
+		// Non-fatal: fall back to defaults when settings cannot be loaded.
+		effectiveSettings = settings.DefaultSettings()
+		c.logVerbosef("Warning: could not load settings: %v — using defaults", err)
+	}
+
+	// Compare-and-swap to avoid race with concurrent reload
+	c.cachedSettings.CompareAndSwap(nil, effectiveSettings)
+
+	return c.cachedSettings.Load()
+}
+
+// ReloadSettings clears the cached settings, forcing a reload on next access.
+// Use this if settings have been changed and need to be refreshed.
+func (c *Conductor) ReloadSettings() {
+	c.cachedSettings.Store(nil)
+}
+
+// EventTypeUserPrompt is emitted when the conductor needs a yes/no answer from the user.
+const EventTypeUserPrompt = "user_prompt"
+
+// promptUser emits a user_prompt event and blocks until the socket delivers
+// an answer via RespondToPrompt, or ctx is cancelled.
+// Must NOT be called while holding c.mu.
+func (c *Conductor) promptUser(ctx context.Context, question string) (bool, error) {
+	promptID := "prompt-" + uuid.New().String()
+	ch := make(chan bool, 1)
+
+	c.mu.Lock()
+	c.pendingPrompts[promptID] = ch
+	c.mu.Unlock()
+
+	c.emit(ConductorEvent{
+		Type:    EventTypeUserPrompt,
+		Message: question,
+		Data: mustMarshalJSON(map[string]string{
+			"prompt_id": promptID,
+			"question":  question,
+		}),
+	})
+
+	select {
+	case answer := <-ch:
+		return answer, nil
+	case <-ctx.Done():
+		c.mu.Lock()
+		delete(c.pendingPrompts, promptID)
+		c.mu.Unlock()
+
+		return false, ctx.Err()
+	}
+}
+
+// RespondToPrompt delivers an answer to a pending promptUser call.
+// Called by the quality.respond socket handler.
+func (c *Conductor) RespondToPrompt(promptID string, answer bool) error {
+	c.mu.Lock()
+	ch, ok := c.pendingPrompts[promptID]
+	if ok {
+		delete(c.pendingPrompts, promptID)
+	}
+	c.mu.Unlock()
+
+	if !ok {
+		return fmt.Errorf("prompt %q not found or already answered", promptID)
+	}
+
+	ch <- answer
+
+	return nil
+}
+
+// mustMarshalJSON marshals v to JSON, panicking on error.
+// Only for use with known-good data types where marshaling cannot fail.
+func mustMarshalJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(fmt.Sprintf("mustMarshalJSON: %v", err))
+	}
+
+	return b
+}
+
+func (c *Conductor) logVerbosef(format string, args ...any) {
+	if c.opts.Verbose && c.stdout != nil {
+		_, _ = fmt.Fprintf(c.stdout, format+"\n", args...)
+	}
+}
+
+// Status returns the current status for display.
+func (c *Conductor) Status() map[string]interface{} {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	status := map[string]interface{}{
+		"state":    c.machine.State(),
+		"worktree": c.worktree,
+	}
+
+	if c.workUnit != nil {
+		status["task"] = map[string]interface{}{
+			"id":          c.workUnit.ID,
+			"title":       c.workUnit.Title,
+			"branch":      c.workUnit.Branch,
+			"checkpoints": len(c.workUnit.Checkpoints),
+			"jobs":        len(c.workUnit.Jobs),
+		}
+	}
+
+	return status
+}
+
+// OnEvent registers an event listener (alias for AddListener).
+func (c *Conductor) OnEvent(listener EventListener) {
+	c.AddListener(listener)
+}
+
+// ForceWorkUnit directly sets the work unit on the conductor.
+// Intended for use in tests and internal tooling that need to
+// set up a known state without going through the full Start flow.
+func (c *Conductor) ForceWorkUnit(wu *WorkUnit) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.workUnit = wu
+	c.machine.SetWorkUnit(wu)
+}
+
+// ConductorConfig configures a conductor instance for use by socket layer.
+type ConductorConfig struct {
+	Repo      *git.Repository
+	Pool      *worker.Pool
+	Providers *provider.Registry
+}
+
+// NewConductor creates a new conductor with explicit configuration.
+// This is used by the socket package to avoid circular imports.
+func NewConductor(cfg ConductorConfig) *Conductor {
+	machine := NewMachine()
+
+	providers := cfg.Providers
+	if providers == nil {
+		// Fallback to default settings if no providers passed.
+		// In practice, callers should always pass providers with proper tokens.
+		providers = provider.NewRegistry(settings.DefaultSettings())
+	}
+
+	lifecycleCtx, lifecycleCancel := context.WithCancel(context.Background())
+
+	c := &Conductor{
+		machine:         machine,
+		git:             cfg.Repo,
+		pool:            cfg.Pool,
+		providers:       providers,
+		lifecycleCtx:    lifecycleCtx,
+		lifecycleCancel: lifecycleCancel,
+		events:          make(chan ConductorEvent, 100),
+		pendingPrompts:  make(map[string]chan bool),
+		stdout:          os.Stdout,
+		stderr:          os.Stderr,
+	}
+
+	if cfg.Repo != nil {
+		c.worktree = cfg.Repo.Path()
+	}
+
+	machine.AddListener(c.onStateChanged)
+
+	return c
+}

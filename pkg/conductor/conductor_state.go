@@ -1,0 +1,191 @@
+package conductor
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"os"
+
+	"github.com/valksor/kvelmo/pkg/memory"
+	"github.com/valksor/kvelmo/pkg/storage"
+)
+
+// SetMemoryIndexer configures the memory indexer used to index task artefacts
+// after major phase completions (plan, implement, submit).
+// Calling this is optional; if not set, memory indexing is skipped.
+func (c *Conductor) SetMemoryIndexer(indexer *memory.Indexer) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.memoryIndexer = indexer
+}
+
+// SetStore configures the storage.Store used for persisting specifications,
+// reviews, and session metadata. Must be called before using storage-dependent
+// operations like saving specifications.
+func (c *Conductor) SetStore(store *storage.Store) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.store = store
+}
+
+// persistState writes the current WorkUnit and state to task.yaml.
+// Non-fatal: logs on error and never blocks the caller.
+// Safe to call without c.mu held - reads only stable/atomic fields.
+func (c *Conductor) persistState() {
+	if c.store == nil || c.workUnit == nil {
+		return
+	}
+	ts := workUnitToTaskState(c.machine.State(), c.workUnit)
+	if err := c.store.SaveTaskState(ts); err != nil {
+		slog.Warn("persist task state failed", "task_id", c.workUnit.ID, "error", err)
+	}
+}
+
+// LoadState restores WorkUnit and state machine from task.yaml written by a prior session.
+// No-op if task.yaml does not exist or no store is configured.
+func (c *Conductor) LoadState(ctx context.Context) error {
+	// Read store under lock to avoid race with SetStore
+	c.mu.RLock()
+	store := c.store
+	c.mu.RUnlock()
+
+	if store == nil {
+		return nil
+	}
+
+	taskID, err := store.FindActiveTask()
+	if err != nil {
+		return fmt.Errorf("find active task: %w", err)
+	}
+	if taskID == "" {
+		return nil
+	}
+
+	ts, err := store.LoadTaskState(taskID)
+	if err != nil {
+		// Use errors.Is for proper handling of wrapped errors
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+
+		return fmt.Errorf("load task state: %w", err)
+	}
+
+	state, wu := taskStateToWorkUnit(ts)
+	c.mu.Lock()
+	c.workUnit = wu
+	c.machine.ForceState(state)
+	c.machine.SetWorkUnit(wu)
+	c.mu.Unlock()
+
+	slog.Info("task state restored", "task_id", taskID, "state", state)
+
+	return nil
+}
+
+// workUnitToTaskState converts a WorkUnit + state to the on-disk TaskState struct.
+func workUnitToTaskState(state State, wu *WorkUnit) *storage.TaskState {
+	ts := &storage.TaskState{
+		State:          string(state),
+		ID:             wu.ID,
+		ExternalID:     wu.ExternalID,
+		Title:          wu.Title,
+		Description:    wu.Description,
+		Branch:         wu.Branch,
+		WorktreePath:   wu.WorktreePath,
+		Specifications: wu.Specifications,
+		Checkpoints:    wu.Checkpoints,
+		RedoStack:      wu.RedoStack,
+		Jobs:           wu.Jobs,
+		Metadata:       wu.Metadata,
+		CreatedAt:      wu.CreatedAt,
+		UpdatedAt:      wu.UpdatedAt,
+	}
+	if wu.Source != nil {
+		ts.Source = &storage.TaskSource{
+			Provider:  wu.Source.Provider,
+			Reference: wu.Source.Reference,
+			URL:       wu.Source.URL,
+			Content:   wu.Source.Content,
+		}
+	}
+	if wu.Hierarchy != nil {
+		h := &storage.TaskHierarchy{}
+		if wu.Hierarchy.Parent != nil {
+			h.Parent = &storage.TaskHierarchySummary{
+				ID:          wu.Hierarchy.Parent.ID,
+				Title:       wu.Hierarchy.Parent.Title,
+				Description: wu.Hierarchy.Parent.Description,
+				URL:         wu.Hierarchy.Parent.URL,
+				Status:      wu.Hierarchy.Parent.Status,
+			}
+		}
+		for _, s := range wu.Hierarchy.Siblings {
+			h.Siblings = append(h.Siblings, storage.TaskHierarchySummary{
+				ID:          s.ID,
+				Title:       s.Title,
+				Description: s.Description,
+				URL:         s.URL,
+				Status:      s.Status,
+			})
+		}
+		ts.Hierarchy = h
+	}
+
+	return ts
+}
+
+// taskStateToWorkUnit converts an on-disk TaskState back to a State + WorkUnit pair.
+func taskStateToWorkUnit(ts *storage.TaskState) (State, *WorkUnit) {
+	wu := &WorkUnit{
+		ID:             ts.ID,
+		ExternalID:     ts.ExternalID,
+		Title:          ts.Title,
+		Description:    ts.Description,
+		Branch:         ts.Branch,
+		WorktreePath:   ts.WorktreePath,
+		Specifications: ts.Specifications,
+		Checkpoints:    ts.Checkpoints,
+		RedoStack:      ts.RedoStack,
+		Jobs:           ts.Jobs,
+		Metadata:       ts.Metadata,
+		CreatedAt:      ts.CreatedAt,
+		UpdatedAt:      ts.UpdatedAt,
+	}
+	if wu.Metadata == nil {
+		wu.Metadata = make(map[string]string)
+	}
+	if ts.Source != nil {
+		wu.Source = &Source{
+			Provider:  ts.Source.Provider,
+			Reference: ts.Source.Reference,
+			URL:       ts.Source.URL,
+			Content:   ts.Source.Content,
+		}
+	}
+	if ts.Hierarchy != nil {
+		h := &HierarchyContext{}
+		if ts.Hierarchy.Parent != nil {
+			h.Parent = &TaskSummary{
+				ID:          ts.Hierarchy.Parent.ID,
+				Title:       ts.Hierarchy.Parent.Title,
+				Description: ts.Hierarchy.Parent.Description,
+				URL:         ts.Hierarchy.Parent.URL,
+				Status:      ts.Hierarchy.Parent.Status,
+			}
+		}
+		for _, s := range ts.Hierarchy.Siblings {
+			h.Siblings = append(h.Siblings, TaskSummary{
+				ID:          s.ID,
+				Title:       s.Title,
+				Description: s.Description,
+				URL:         s.URL,
+				Status:      s.Status,
+			})
+		}
+		wu.Hierarchy = h
+	}
+
+	return State(ts.State), wu
+}
