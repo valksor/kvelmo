@@ -1,0 +1,362 @@
+package git
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"os/exec"
+	"strings"
+)
+
+type Repository struct {
+	path string
+}
+
+func Open(path string) (*Repository, error) {
+	// Verify it's a git repo
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--git-dir") //nolint:noctx // Quick one-shot existence check, no meaningful context to propagate
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("not a git repository: %s", path)
+	}
+
+	return &Repository{path: path}, nil
+}
+
+func (r *Repository) Path() string {
+	return r.path
+}
+
+func (r *Repository) run(ctx context.Context, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.path}, args...)...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		slog.Debug("git: command failed", "args", args, "error", err, "stderr", stderr.String())
+
+		return "", fmt.Errorf("%w: %s", err, stderr.String())
+	}
+
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+func (r *Repository) CurrentBranch(ctx context.Context) (string, error) {
+	return r.run(ctx, "rev-parse", "--abbrev-ref", "HEAD")
+}
+
+func (r *Repository) CurrentCommit(ctx context.Context) (string, error) {
+	return r.run(ctx, "rev-parse", "HEAD")
+}
+
+func (r *Repository) CreateBranch(ctx context.Context, name string) error {
+	slog.Debug("git: creating branch", "name", name)
+	_, err := r.run(ctx, "checkout", "-b", name)
+
+	return err
+}
+
+func (r *Repository) SwitchBranch(ctx context.Context, name string) error {
+	_, err := r.run(ctx, "checkout", name)
+
+	return err
+}
+
+// Checkout is an alias for SwitchBranch.
+func (r *Repository) Checkout(ctx context.Context, name string) error {
+	return r.SwitchBranch(ctx, name)
+}
+
+func (r *Repository) DeleteBranch(ctx context.Context, name string) error {
+	slog.Debug("git: deleting branch", "name", name)
+	_, err := r.run(ctx, "branch", "-D", name)
+
+	return err
+}
+
+// DeleteRemoteBranch deletes a branch from the remote (origin).
+func (r *Repository) DeleteRemoteBranch(ctx context.Context, name string) error {
+	slog.Debug("git: deleting remote branch", "name", name)
+	_, err := r.run(ctx, "push", "origin", "--delete", name)
+
+	return err
+}
+
+// BranchExists checks if a branch exists (local or remote).
+func (r *Repository) BranchExists(ctx context.Context, name string) bool {
+	_, err := r.run(ctx, "rev-parse", "--verify", name)
+
+	return err == nil
+}
+
+func (r *Repository) HasUncommittedChanges(ctx context.Context) (bool, error) {
+	out, err := r.run(ctx, "status", "--porcelain")
+	if err != nil {
+		return false, err
+	}
+
+	return len(out) > 0, nil
+}
+
+func (r *Repository) StageAll(ctx context.Context) error {
+	_, err := r.run(ctx, "add", "-A")
+
+	return err
+}
+
+func (r *Repository) Commit(ctx context.Context, message string) (string, error) {
+	slog.Debug("git: committing", "message", message)
+	_, err := r.run(ctx, "commit", "-m", message)
+	if err != nil {
+		return "", err
+	}
+
+	sha, err := r.CurrentCommit(ctx)
+	if err != nil {
+		slog.Warn("git: committed but failed to get SHA", "error", err)
+
+		return "", fmt.Errorf("commit succeeded but failed to get SHA: %w", err)
+	}
+	if sha == "" {
+		slog.Error("git: committed but empty SHA")
+
+		return "", errors.New("commit succeeded but SHA is empty")
+	}
+	slog.Debug("git: committed", "sha", sha)
+
+	return sha, nil
+}
+
+func (r *Repository) Reset(ctx context.Context, commit string, hard bool) error {
+	slog.Debug("git: resetting", "commit", commit, "hard", hard)
+	args := []string{"reset"}
+	if hard {
+		args = append(args, "--hard")
+	}
+	args = append(args, commit)
+	_, err := r.run(ctx, args...)
+
+	return err
+}
+
+func (r *Repository) Stash(ctx context.Context) error {
+	_, err := r.run(ctx, "stash")
+
+	return err
+}
+
+func (r *Repository) StashPop(ctx context.Context) error {
+	_, err := r.run(ctx, "stash", "pop")
+
+	return err
+}
+
+// Push pushes to the remote repository.
+func (r *Repository) Push(ctx context.Context, remote, branch string) error {
+	slog.Debug("git: pushing", "remote", remote, "branch", branch)
+	_, err := r.run(ctx, "push", remote, branch)
+
+	return err
+}
+
+// PushDefault pushes to origin with the current branch.
+func (r *Repository) PushDefault(ctx context.Context) error {
+	branch, err := r.CurrentBranch(ctx)
+	if err != nil {
+		return err
+	}
+
+	return r.Push(ctx, "origin", branch)
+}
+
+// Pull pulls from the remote repository.
+func (r *Repository) Pull(ctx context.Context) error {
+	slog.Debug("git: pulling")
+	_, err := r.run(ctx, "pull")
+
+	return err
+}
+
+// Fetch fetches from the remote repository.
+func (r *Repository) Fetch(ctx context.Context) error {
+	slog.Debug("git: fetching")
+	_, err := r.run(ctx, "fetch")
+
+	return err
+}
+
+// CommitsBehind returns how many commits the current branch is behind the given branch.
+func (r *Repository) CommitsBehind(ctx context.Context, branch string) (int, error) {
+	current, err := r.CurrentBranch(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count commits that are in branch but not in current
+	out, err := r.run(ctx, "rev-list", "--count", fmt.Sprintf("%s..origin/%s", current, branch))
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	if _, err := fmt.Sscanf(out, "%d", &count); err != nil {
+		return 0, fmt.Errorf("parse count: %w", err)
+	}
+
+	return count, nil
+}
+
+func (r *Repository) Log(ctx context.Context, n int) ([]LogEntry, error) {
+	format := "%H|%s|%an|%ai"
+	out, err := r.run(ctx, "log", fmt.Sprintf("-n%d", n), "--format="+format)
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []LogEntry
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "|", 4)
+		if len(parts) < 4 {
+			continue
+		}
+		entries = append(entries, LogEntry{
+			SHA:     parts[0],
+			Message: parts[1],
+			Author:  parts[2],
+			Date:    parts[3],
+		})
+	}
+
+	return entries, nil
+}
+
+// CommitInfo returns metadata for a single commit SHA.
+func (r *Repository) CommitInfo(ctx context.Context, sha string) (LogEntry, error) {
+	format := "%H|%s|%an|%ai"
+	out, err := r.run(ctx, "log", "-1", "--format="+format, sha)
+	if err != nil {
+		return LogEntry{}, fmt.Errorf("commit %s not found: %w", sha, err)
+	}
+	if out == "" {
+		return LogEntry{}, fmt.Errorf("commit %s not found", sha)
+	}
+	parts := strings.SplitN(out, "|", 4)
+	if len(parts) < 4 {
+		return LogEntry{}, fmt.Errorf("unexpected log format: %q", out)
+	}
+
+	return LogEntry{
+		SHA:     parts[0],
+		Message: parts[1],
+		Author:  parts[2],
+		Date:    parts[3],
+	}, nil
+}
+
+func (r *Repository) Diff(ctx context.Context, cached bool) (string, error) {
+	args := []string{"diff"}
+	if cached {
+		args = append(args, "--cached")
+	}
+
+	return r.run(ctx, args...)
+}
+
+func (r *Repository) DiffFiles(ctx context.Context) ([]string, error) {
+	out, err := r.run(ctx, "diff", "--name-only")
+	if err != nil {
+		return nil, err
+	}
+	if out == "" {
+		return nil, nil
+	}
+
+	return strings.Split(out, "\n"), nil
+}
+
+type LogEntry struct {
+	SHA     string
+	Message string
+	Author  string
+	Date    string
+}
+
+// FileStatus holds a path and its change status from git.
+type FileStatus struct {
+	Path   string `json:"path"`
+	Status string `json:"status"` // "added", "modified", "deleted", "renamed"
+}
+
+// parseNameStatusLine parses one line of `git diff --name-status` output.
+//
+//nolint:nonamedreturns // Named returns document the return values
+func parseNameStatusLine(line string) (path, status string) {
+	parts := strings.SplitN(line, "\t", 3)
+	if len(parts) < 2 {
+		return line, "modified"
+	}
+	code := parts[0]
+	// Renames/copies have destination path in parts[2]
+	if len(parts) == 3 {
+		path = parts[2]
+	} else {
+		path = parts[1]
+	}
+	switch {
+	case strings.HasPrefix(code, "A"):
+		status = "added"
+	case strings.HasPrefix(code, "D"):
+		status = "deleted"
+	case strings.HasPrefix(code, "R"), strings.HasPrefix(code, "C"):
+		status = "renamed"
+	default:
+		status = "modified"
+	}
+
+	return path, status
+}
+
+// DiffFilesWithStatus returns changed files with their git change status.
+func (r *Repository) DiffFilesWithStatus(ctx context.Context) ([]FileStatus, error) {
+	out, err := r.run(ctx, "diff", "--name-status")
+	if err != nil {
+		return nil, err
+	}
+	if out == "" {
+		return nil, nil
+	}
+	var result []FileStatus
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		path, status := parseNameStatusLine(line)
+		result = append(result, FileStatus{Path: path, Status: status})
+	}
+
+	return result, nil
+}
+
+// DefaultBranch returns the default branch name for the remote origin.
+// It queries git symbolic-ref for origin/HEAD and extracts the branch name.
+// Returns an error if detection fails (no silent fallback).
+func (r *Repository) DefaultBranch(ctx context.Context) (string, error) {
+	out, err := r.run(ctx, "symbolic-ref", "refs/remotes/origin/HEAD")
+	if err != nil || out == "" {
+		return "", errors.New("cannot detect default branch: run 'git remote set-head origin --auto' or configure git.base_branch in settings")
+	}
+	// Output is like "refs/remotes/origin/main" - trim the known prefix.
+	// Using prefix trim (not split) to handle branch names with slashes like "feature/login".
+	if strings.HasPrefix(out, "refs/remotes/origin/") {
+		return strings.TrimPrefix(out, "refs/remotes/origin/"), nil
+	}
+	if strings.HasPrefix(out, "refs/heads/") {
+		return strings.TrimPrefix(out, "refs/heads/"), nil
+	}
+
+	return "", fmt.Errorf("cannot parse default branch from: %s", out)
+}

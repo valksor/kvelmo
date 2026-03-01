@@ -1,0 +1,647 @@
+package browser
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// SnapshotResult represents the result of a browser snapshot.
+type SnapshotResult struct {
+	URL      string `json:"url,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Snapshot string `json:"snapshot"` // Accessibility tree as text
+}
+
+// Snapshot captures the accessibility snapshot of the current page.
+func Snapshot(ctx context.Context, opts *ExecOptions) (*SnapshotResult, error) {
+	output, err := Exec(ctx, opts, "snapshot")
+	if err != nil {
+		return nil, fmt.Errorf("snapshot: %w", err)
+	}
+
+	// playwright-cli snapshot returns plain text accessibility tree
+	return &SnapshotResult{
+		Snapshot: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// EvalResult represents the result of JavaScript evaluation.
+type EvalResult struct {
+	Result string `json:"result"`
+	Error  string `json:"error,omitempty"`
+}
+
+// Eval executes JavaScript in the browser and returns the result.
+func Eval(ctx context.Context, opts *ExecOptions, js string) (*EvalResult, error) {
+	output, err := Exec(ctx, opts, "eval", js)
+	if err != nil {
+		// Check if error message contains eval result
+		errStr := err.Error()
+		if strings.Contains(errStr, "playwright-cli:") {
+			return &EvalResult{
+				Error: errStr,
+			}, nil
+		}
+
+		return nil, fmt.Errorf("eval: %w", err)
+	}
+
+	return &EvalResult{
+		Result: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// ConsoleMessage represents a browser console message.
+type ConsoleMessage struct {
+	Type      string `json:"type"` // "log", "warn", "error", "info", "debug"
+	Text      string `json:"text"`
+	Timestamp string `json:"timestamp,omitempty"`
+	Location  string `json:"location,omitempty"` // source:line:col
+}
+
+// ConsoleResult represents console messages from the browser.
+type ConsoleResult struct {
+	Messages []ConsoleMessage `json:"messages"`
+}
+
+// Console retrieves console messages from the browser.
+func Console(ctx context.Context, opts *ExecOptions) (*ConsoleResult, error) {
+	output, err := Exec(ctx, opts, "console")
+	if err != nil {
+		return nil, fmt.Errorf("console: %w", err)
+	}
+
+	// Try to parse as JSON first
+	var result ConsoleResult
+	if err := json.Unmarshal(output, &result); err != nil {
+		// Fallback: treat output as plain text messages
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		result.Messages = make([]ConsoleMessage, 0, len(lines))
+		for _, line := range lines {
+			if line == "" {
+				continue
+			}
+			result.Messages = append(result.Messages, ConsoleMessage{
+				Type: "log",
+				Text: line,
+			})
+		}
+	}
+
+	return &result, nil
+}
+
+// NetworkRequest represents a network request captured by the browser.
+type NetworkRequest struct {
+	URL        string            `json:"url"`
+	Method     string            `json:"method"`
+	Status     int               `json:"status,omitempty"`
+	StatusText string            `json:"status_text,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
+	Timing     *RequestTiming    `json:"timing,omitempty"`
+}
+
+// RequestTiming contains timing information for a request.
+type RequestTiming struct {
+	StartTime float64 `json:"start_time,omitempty"`
+	EndTime   float64 `json:"end_time,omitempty"`
+	Duration  float64 `json:"duration,omitempty"`
+}
+
+// NetworkResult represents network requests from the browser.
+type NetworkResult struct {
+	Requests []NetworkRequest `json:"requests"`
+}
+
+// Network retrieves network requests from the browser.
+func Network(ctx context.Context, opts *ExecOptions) (*NetworkResult, error) {
+	output, err := Exec(ctx, opts, "network")
+	if err != nil {
+		return nil, fmt.Errorf("network: %w", err)
+	}
+
+	// Try to parse as JSON first
+	var result NetworkResult
+	if err := json.Unmarshal(output, &result); err != nil {
+		// Fallback: parse plain text format
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		result.Requests = make([]NetworkRequest, 0, len(lines))
+		for _, line := range lines {
+			if line == "" {
+				continue
+			}
+			// Try to parse common formats like "GET https://example.com 200"
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				req := NetworkRequest{
+					Method: parts[0],
+					URL:    parts[1],
+				}
+				result.Requests = append(result.Requests, req)
+			}
+		}
+	}
+
+	return &result, nil
+}
+
+// ScreenshotOptions configures screenshot capture.
+type ScreenshotOptions struct {
+	Path     string // Output file path
+	FullPage bool   // Capture full scrollable page
+	Element  string // CSS selector for element to capture
+	Format   string // "png" or "jpeg"
+	Quality  int    // JPEG quality (1-100)
+}
+
+// ScreenshotResult represents the result of a screenshot capture.
+type ScreenshotResult struct {
+	Path string `json:"path"`
+	Size int64  `json:"size"`
+}
+
+// Screenshot captures a screenshot of the current page.
+func Screenshot(ctx context.Context, opts *ExecOptions, screenshotOpts *ScreenshotOptions) (*ScreenshotResult, error) {
+	if screenshotOpts == nil {
+		screenshotOpts = &ScreenshotOptions{}
+	}
+
+	// Build args
+	args := []string{"screenshot"}
+
+	if screenshotOpts.Path != "" {
+		args = append(args, "--output="+screenshotOpts.Path)
+	}
+
+	if screenshotOpts.FullPage {
+		args = append(args, "--full-page")
+	}
+
+	if screenshotOpts.Element != "" {
+		args = append(args, "--element="+screenshotOpts.Element)
+	}
+
+	if screenshotOpts.Format != "" {
+		args = append(args, "--format="+screenshotOpts.Format)
+	}
+
+	if screenshotOpts.Quality > 0 {
+		args = append(args, fmt.Sprintf("--quality=%d", screenshotOpts.Quality))
+	}
+
+	output, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("screenshot: %w", err)
+	}
+
+	// Determine output path
+	path := screenshotOpts.Path
+	if path == "" {
+		// playwright-cli may output the path
+		path = strings.TrimSpace(string(output))
+	}
+
+	// Get file size
+	var size int64
+	if info, err := os.Stat(path); err == nil {
+		size = info.Size()
+	}
+
+	return &ScreenshotResult{
+		Path: path,
+		Size: size,
+	}, nil
+}
+
+// NavigateResult represents the result of navigation.
+type NavigateResult struct {
+	URL    string `json:"url"`
+	Title  string `json:"title,omitempty"`
+	Status int    `json:"status,omitempty"`
+}
+
+// Navigate navigates to a URL.
+func Navigate(ctx context.Context, opts *ExecOptions, url string) (*NavigateResult, error) {
+	output, err := Exec(ctx, opts, "navigate", url)
+	if err != nil {
+		return nil, fmt.Errorf("navigate: %w", err)
+	}
+
+	return &NavigateResult{
+		URL: url,
+		// Title may be in output
+		Title: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// ClickResult represents the result of a click action.
+type ClickResult struct {
+	Success bool   `json:"success"`
+	Element string `json:"element,omitempty"`
+}
+
+// Click performs a click on an element.
+func Click(ctx context.Context, opts *ExecOptions, selector string) (*ClickResult, error) {
+	_, err := Exec(ctx, opts, "click", selector)
+	if err != nil {
+		return nil, fmt.Errorf("click: %w", err)
+	}
+
+	return &ClickResult{
+		Success: true,
+		Element: selector,
+	}, nil
+}
+
+// TypeResult represents the result of typing text.
+type TypeResult struct {
+	Success bool   `json:"success"`
+	Element string `json:"element,omitempty"`
+	Text    string `json:"text,omitempty"`
+}
+
+// Type types text into an element.
+func Type(ctx context.Context, opts *ExecOptions, selector, text string) (*TypeResult, error) {
+	_, err := Exec(ctx, opts, "type", selector, text)
+	if err != nil {
+		return nil, fmt.Errorf("type: %w", err)
+	}
+
+	return &TypeResult{
+		Success: true,
+		Element: selector,
+		Text:    text,
+	}, nil
+}
+
+// WaitResult represents the result of a wait operation.
+type WaitResult struct {
+	Success  bool   `json:"success"`
+	Selector string `json:"selector,omitempty"`
+	Timeout  int    `json:"timeout_ms,omitempty"`
+}
+
+// Wait waits for an element to appear.
+func Wait(ctx context.Context, opts *ExecOptions, selector string, timeoutMs int) (*WaitResult, error) {
+	args := []string{"wait", selector}
+	if timeoutMs > 0 {
+		args = append(args, fmt.Sprintf("--timeout=%d", timeoutMs))
+	}
+
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("wait: %w", err)
+	}
+
+	return &WaitResult{
+		Success:  true,
+		Selector: selector,
+		Timeout:  timeoutMs,
+	}, nil
+}
+
+// PDF generates a PDF of the current page.
+func PDF(ctx context.Context, opts *ExecOptions, outputPath string) error {
+	if outputPath == "" {
+		outputPath = filepath.Join(os.TempDir(), "page.pdf")
+	}
+
+	_, err := Exec(ctx, opts, "pdf", "--output="+outputPath)
+	if err != nil {
+		return fmt.Errorf("pdf: %w", err)
+	}
+
+	return nil
+}
+
+// GetAttribute gets an attribute value from an element.
+func GetAttribute(ctx context.Context, opts *ExecOptions, selector, attribute string) (string, error) {
+	output, err := Exec(ctx, opts, "eval", fmt.Sprintf(
+		`document.querySelector('%s')?.getAttribute('%s')`,
+		selector, attribute,
+	))
+	if err != nil {
+		return "", fmt.Errorf("get attribute: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+// GetText gets the text content of an element.
+func GetText(ctx context.Context, opts *ExecOptions, selector string) (string, error) {
+	output, err := Exec(ctx, opts, "eval", fmt.Sprintf(
+		`document.querySelector('%s')?.textContent`,
+		selector,
+	))
+	if err != nil {
+		return "", fmt.Errorf("get text: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+// GetHTML gets the inner HTML of an element.
+func GetHTML(ctx context.Context, opts *ExecOptions, selector string) (string, error) {
+	output, err := Exec(ctx, opts, "eval", fmt.Sprintf(
+		`document.querySelector('%s')?.innerHTML`,
+		selector,
+	))
+	if err != nil {
+		return "", fmt.Errorf("get html: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+// FillResult represents the result of filling an input.
+type FillResult struct {
+	Success  bool   `json:"success"`
+	Selector string `json:"selector,omitempty"`
+	Value    string `json:"value,omitempty"`
+}
+
+// Fill clears an input and sets its value.
+func Fill(ctx context.Context, opts *ExecOptions, selector, value string) (*FillResult, error) {
+	_, err := Exec(ctx, opts, "fill", selector, value)
+	if err != nil {
+		return nil, fmt.Errorf("fill: %w", err)
+	}
+
+	return &FillResult{
+		Success:  true,
+		Selector: selector,
+		Value:    value,
+	}, nil
+}
+
+// SelectResult represents the result of selecting an option.
+type SelectResult struct {
+	Success  bool     `json:"success"`
+	Selector string   `json:"selector,omitempty"`
+	Values   []string `json:"values,omitempty"`
+}
+
+// Select selects an option from a dropdown.
+func Select(ctx context.Context, opts *ExecOptions, selector string, values ...string) (*SelectResult, error) {
+	args := append([]string{"select", selector}, values...)
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+
+	return &SelectResult{
+		Success:  true,
+		Selector: selector,
+		Values:   values,
+	}, nil
+}
+
+// HoverResult represents the result of a hover action.
+type HoverResult struct {
+	Success  bool   `json:"success"`
+	Selector string `json:"selector,omitempty"`
+}
+
+// Hover hovers over an element.
+func Hover(ctx context.Context, opts *ExecOptions, selector string) (*HoverResult, error) {
+	_, err := Exec(ctx, opts, "hover", selector)
+	if err != nil {
+		return nil, fmt.Errorf("hover: %w", err)
+	}
+
+	return &HoverResult{
+		Success:  true,
+		Selector: selector,
+	}, nil
+}
+
+// FocusResult represents the result of focusing an element.
+type FocusResult struct {
+	Success  bool   `json:"success"`
+	Selector string `json:"selector,omitempty"`
+}
+
+// Focus focuses an element.
+func Focus(ctx context.Context, opts *ExecOptions, selector string) (*FocusResult, error) {
+	_, err := Exec(ctx, opts, "focus", selector)
+	if err != nil {
+		return nil, fmt.Errorf("focus: %w", err)
+	}
+
+	return &FocusResult{
+		Success:  true,
+		Selector: selector,
+	}, nil
+}
+
+// ScrollResult represents the result of a scroll action.
+type ScrollResult struct {
+	Success   bool   `json:"success"`
+	Direction string `json:"direction,omitempty"`
+	Amount    int    `json:"amount,omitempty"`
+}
+
+// Scroll scrolls the page or an element.
+func Scroll(ctx context.Context, opts *ExecOptions, direction string, amount int, selector string) (*ScrollResult, error) {
+	args := []string{"scroll", direction}
+
+	if amount > 0 {
+		args = append(args, strconv.Itoa(amount))
+	}
+
+	if selector != "" {
+		args = append(args, "--element="+selector)
+	}
+
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("scroll: %w", err)
+	}
+
+	return &ScrollResult{
+		Success:   true,
+		Direction: direction,
+		Amount:    amount,
+	}, nil
+}
+
+// PressResult represents the result of pressing a key.
+type PressResult struct {
+	Success  bool   `json:"success"`
+	Key      string `json:"key,omitempty"`
+	Selector string `json:"selector,omitempty"`
+}
+
+// Press presses a key or key combination.
+func Press(ctx context.Context, opts *ExecOptions, key string, selector string) (*PressResult, error) {
+	args := []string{"press", key}
+
+	if selector != "" {
+		args = append(args, "--element="+selector)
+	}
+
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("press: %w", err)
+	}
+
+	return &PressResult{
+		Success:  true,
+		Key:      key,
+		Selector: selector,
+	}, nil
+}
+
+// Back navigates back in browser history.
+func Back(ctx context.Context, opts *ExecOptions) (*NavigateResult, error) {
+	output, err := Exec(ctx, opts, "back")
+	if err != nil {
+		return nil, fmt.Errorf("back: %w", err)
+	}
+
+	return &NavigateResult{
+		Title: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// Forward navigates forward in browser history.
+func Forward(ctx context.Context, opts *ExecOptions) (*NavigateResult, error) {
+	output, err := Exec(ctx, opts, "forward")
+	if err != nil {
+		return nil, fmt.Errorf("forward: %w", err)
+	}
+
+	return &NavigateResult{
+		Title: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// Reload reloads the current page.
+func Reload(ctx context.Context, opts *ExecOptions) (*NavigateResult, error) {
+	output, err := Exec(ctx, opts, "reload")
+	if err != nil {
+		return nil, fmt.Errorf("reload: %w", err)
+	}
+
+	return &NavigateResult{
+		Title: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// DialogResult represents the result of handling a dialog.
+type DialogResult struct {
+	Success bool   `json:"success"`
+	Action  string `json:"action,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+// Dialog handles alert/confirm/prompt dialogs.
+func Dialog(ctx context.Context, opts *ExecOptions, action string, text string) (*DialogResult, error) {
+	args := []string{"dialog", action}
+
+	if text != "" && action == "accept" {
+		args = append(args, "--text="+text)
+	}
+
+	output, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dialog: %w", err)
+	}
+
+	return &DialogResult{
+		Success: true,
+		Action:  action,
+		Message: strings.TrimSpace(string(output)),
+	}, nil
+}
+
+// UploadResult represents the result of a file upload.
+type UploadResult struct {
+	Success  bool     `json:"success"`
+	Selector string   `json:"selector,omitempty"`
+	Files    []string `json:"files,omitempty"`
+}
+
+// Upload uploads files to a file input.
+func Upload(ctx context.Context, opts *ExecOptions, selector string, files []string) (*UploadResult, error) {
+	args := []string{"upload", selector}
+	args = append(args, files...)
+
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("upload: %w", err)
+	}
+
+	return &UploadResult{
+		Success:  true,
+		Selector: selector,
+		Files:    files,
+	}, nil
+}
+
+// PDFOptions configures PDF generation.
+type PDFOptions struct {
+	Path      string // Output file path
+	Format    string // Paper format: A4, Letter, etc.
+	Landscape bool   // Landscape orientation
+}
+
+// PDFResult represents the result of PDF generation.
+type PDFResult struct {
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+	Base64 string `json:"base64,omitempty"`
+}
+
+// GeneratePDF generates a PDF of the current page.
+func GeneratePDF(ctx context.Context, opts *ExecOptions, pdfOpts *PDFOptions) (*PDFResult, error) {
+	if pdfOpts == nil {
+		pdfOpts = &PDFOptions{}
+	}
+
+	args := []string{"pdf"}
+
+	outputPath := pdfOpts.Path
+	if outputPath == "" {
+		outputPath = filepath.Join(os.TempDir(), fmt.Sprintf("page-%d.pdf", time.Now().UnixNano()))
+	}
+	args = append(args, "--output="+outputPath)
+
+	if pdfOpts.Format != "" {
+		args = append(args, "--format="+pdfOpts.Format)
+	}
+
+	if pdfOpts.Landscape {
+		args = append(args, "--landscape")
+	}
+
+	_, err := Exec(ctx, opts, args...)
+	if err != nil {
+		return nil, fmt.Errorf("pdf: %w", err)
+	}
+
+	result := &PDFResult{
+		Path: outputPath,
+	}
+
+	// Get file size
+	if info, err := os.Stat(outputPath); err == nil {
+		result.Size = info.Size()
+	}
+
+	// If no output path was specified, include base64 in result
+	if pdfOpts.Path == "" {
+		if data, err := os.ReadFile(outputPath); err == nil {
+			result.Base64 = base64.StdEncoding.EncodeToString(data)
+		}
+	}
+
+	return result, nil
+}
