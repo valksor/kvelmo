@@ -1,0 +1,165 @@
+package socket
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
+
+	"github.com/valksor/kvelmo/pkg/memory"
+)
+
+// memoryState lazily creates and caches the global memory adapter.
+// It is initialised on first use so startup is not blocked by model probing.
+var (
+	memOnce    sync.Once
+	memAdapter *memory.Adapter
+)
+
+// getMemoryAdapter returns the singleton global memory adapter, creating it on
+// first call.  The store is persisted at ~/.valksor/kvelmo/memory/.
+func getMemoryAdapter(ctx context.Context) (*memory.Adapter, error) {
+	var initErr error
+	memOnce.Do(func() {
+		storeDir := filepath.Join(BaseDir(), "memory")
+		if err := os.MkdirAll(storeDir, 0o755); err != nil {
+			initErr = fmt.Errorf("create memory store dir: %w", err)
+
+			return
+		}
+		adapter, _, err := memory.NewAdapterAuto(ctx, storeDir)
+		if err != nil {
+			initErr = fmt.Errorf("init memory adapter: %w", err)
+
+			return
+		}
+		memAdapter = adapter
+	})
+	if initErr != nil {
+		// Reset once so the next call retries.
+		memOnce = sync.Once{}
+
+		return nil, initErr
+	}
+
+	return memAdapter, nil
+}
+
+// --- memory.search ---
+
+type memorySearchParams struct {
+	Query         string   `json:"query"`
+	Limit         int      `json:"limit"`
+	MinScore      float32  `json:"min_score"`
+	DocumentTypes []string `json:"document_types"`
+}
+
+type memorySearchResult struct {
+	Results []memoryHit `json:"results"`
+	Total   int         `json:"total"`
+}
+
+type memoryHit struct {
+	ID      string  `json:"id"`
+	TaskID  string  `json:"task_id"`
+	Type    string  `json:"type"`
+	Content string  `json:"content"`
+	Score   float32 `json:"score"`
+}
+
+func (g *GlobalSocket) handleMemorySearch(ctx context.Context, req *Request) (*Response, error) {
+	adapter, err := getMemoryAdapter(ctx)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("memory unavailable: %s", err)), nil
+	}
+
+	var params memorySearchParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+		}
+	}
+
+	if params.Query == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "query is required"), nil
+	}
+	if params.Limit <= 0 {
+		params.Limit = 10
+	}
+
+	var docTypes []memory.DocumentType
+	for _, t := range params.DocumentTypes {
+		docTypes = append(docTypes, memory.DocumentType(t))
+	}
+
+	results, err := adapter.Store().Search(ctx, params.Query, memory.SearchOptions{
+		Limit:         params.Limit,
+		MinScore:      params.MinScore,
+		DocumentTypes: docTypes,
+	})
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("search failed: %s", err)), nil
+	}
+
+	hits := make([]memoryHit, len(results))
+	for i, r := range results {
+		hits[i] = memoryHit{
+			ID:      r.Document.ID,
+			TaskID:  r.Document.TaskID,
+			Type:    string(r.Document.Type),
+			Content: r.Document.Content,
+			Score:   r.Score,
+		}
+	}
+
+	return NewResultResponse(req.ID, memorySearchResult{
+		Results: hits,
+		Total:   len(hits),
+	})
+}
+
+// --- memory.stats ---
+
+// MemoryStatsResponse is the response for memory.stats calls.
+type MemoryStatsResponse struct {
+	TotalEntries   int   `json:"total_entries"`
+	TotalSizeBytes int64 `json:"total_size_bytes"`
+	IndexReady     bool  `json:"index_ready"`
+}
+
+func (g *GlobalSocket) handleMemoryStats(ctx context.Context, req *Request) (*Response, error) {
+	adapter, err := getMemoryAdapter(ctx)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("memory unavailable: %s", err)), nil
+	}
+
+	stats := adapter.Stats()
+
+	// Index is ready when we have a functioning embedder (TF-IDF)
+	indexReady := stats.Embedder != "" && stats.Embedder != "hash"
+
+	resp := MemoryStatsResponse{
+		TotalEntries:   stats.TotalDocuments,
+		TotalSizeBytes: 0,
+		IndexReady:     indexReady,
+	}
+
+	return NewResultResponse(req.ID, resp)
+}
+
+// --- memory.clear ---
+
+func (g *GlobalSocket) handleMemoryClear(ctx context.Context, req *Request) (*Response, error) {
+	adapter, err := getMemoryAdapter(ctx)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("memory unavailable: %s", err)), nil
+	}
+
+	if err := adapter.Clear(ctx); err != nil {
+		return NewErrorResponse(req.ID, -32603, fmt.Sprintf("clear failed: %s", err)), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]bool{"ok": true})
+}
