@@ -1,0 +1,37 @@
+# Binaries
+/kvelmo
+*.exe
+
+# Build artifacts
+build/
+web/dist/
+
+# Tauri
+web/src-tauri/target/
+web/src-tauri/binaries/
+web/src-tauri/resources/*
+!web/src-tauri/resources/.gitkeep
+web/src-tauri/gen/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Go
+vendor/
+
+# Runtime
+~/.valksor/
+.playwright-cli/
+
+web/node_modules/
+web/src/types/socket.ts
+
+.claude/worktrees/
+.worktrees/
+
+node_modules/
+
+*.out
+coverage.html
