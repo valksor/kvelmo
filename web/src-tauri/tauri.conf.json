@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "kvelmo",
+  "identifier": "com.valksor.kvelmo",
+  "version": "0.1.0",
+  "build": {
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build"
+  },
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "targets": "all",
+    "externalBin": ["binaries/kvelmo"],
+    "resources": ["resources/*"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "kvelmo",
+        "label": "main",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "devtools": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "plugins": {}
+}
