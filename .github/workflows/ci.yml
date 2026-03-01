@@ -58,6 +58,11 @@ jobs:
                 with:
                     bun-version: latest
 
+            -   name: Generate TypeScript types
+                run: |
+                    go install github.com/gzuidhof/tygo@latest
+                    make types
+
             -   name: Build Web UI
                 working-directory: web
                 run: |
@@ -105,14 +110,28 @@ jobs:
             (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
         runs-on: ubuntu-latest
 
+        env:
+            GO_VERSION: '1.26.0'
+
         steps:
             -   name: Checkout
                 uses: actions/checkout@v6
+
+            -   name: Set up Go
+                uses: actions/setup-go@v6
+                with:
+                    go-version: ${{ env.GO_VERSION }}
+                    cache: true
 
             -   name: Setup Bun
                 uses: oven-sh/setup-bun@v2
                 with:
                     bun-version: latest
+
+            -   name: Generate TypeScript types
+                run: |
+                    go install github.com/gzuidhof/tygo@latest
+                    make types
 
             -   name: Install Dependencies
                 working-directory: web
