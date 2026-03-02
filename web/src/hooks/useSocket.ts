@@ -10,6 +10,8 @@ export function useSocket(
   const clientRef = useRef<SocketClient | null>(null)
   const reconnectTimer = useRef<number | null>(null)
   const attemptRef = useRef(0)
+  // Ref to hold the connect function for recursive setTimeout calls
+  const connectRef = useRef<(() => Promise<void>) | null>(null)
 
   const connect = useCallback(async () => {
     if (clientRef.current) return
@@ -33,10 +35,15 @@ export function useSocket(
       attemptRef.current += 1
       reconnectTimer.current = window.setTimeout(() => {
         reconnectTimer.current = null
-        connect()
+        connectRef.current?.()
       }, delay)
     }
   }, [url, onConnect, onMessage])
+
+  // Keep ref in sync with the latest connect function
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   const disconnect = useCallback(() => {
     if (reconnectTimer.current) {

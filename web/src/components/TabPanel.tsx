@@ -114,8 +114,12 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
     if (!filePath) return
 
     let cancelled = false
-    setLoading(true)
-    setError(null)
+    // Schedule state updates outside synchronous effect execution
+    queueMicrotask(() => {
+      if (cancelled) return
+      setLoading(true)
+      setError(null)
+    })
 
     getGitDiff(false)
       .then((fullDiff) => {

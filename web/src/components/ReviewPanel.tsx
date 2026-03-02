@@ -1,5 +1,5 @@
 import { useProjectStore, Review, ReviewDetail } from '../stores/projectStore'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface ReviewPanelProps {
   data?: Record<string, unknown>
@@ -12,6 +12,8 @@ export function ReviewPanel({ data }: ReviewPanelProps) {
   const [selectedSummary, setSelectedSummary] = useState<Review | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Track the last loaded review number to avoid re-loading
+  const lastLoadedNumber = useRef<number | undefined>(undefined)
 
   // Use data from props if available (with runtime check), otherwise from store
   const displayReviews = Array.isArray(data?.reviews)
@@ -28,6 +30,7 @@ export function ReviewPanel({ data }: ReviewPanelProps) {
     setLoading(true)
     setError(null)
     setSelectedSummary(review)
+    lastLoadedNumber.current = review.number
     loadReview(review.number)
       .then((detail) => {
         setSelectedReview(detail)
@@ -44,13 +47,14 @@ export function ReviewPanel({ data }: ReviewPanelProps) {
   // Load the latest review details when latestNumber changes
   useEffect(() => {
     if (latestNumber !== undefined && displayReviews.length > 0) {
-      const latest = displayReviews[displayReviews.length - 1]
-      // Only load if we haven't loaded this review yet
-      if (selectedSummary?.number !== latestNumber) {
-        handleLoadReview(latest)
+      // Only load if we haven't loaded this review yet (use ref to avoid dependency cycle)
+      if (lastLoadedNumber.current !== latestNumber) {
+        const latest = displayReviews[displayReviews.length - 1]
+        // Schedule outside effect to avoid synchronous setState warning
+        queueMicrotask(() => handleLoadReview(latest))
       }
     }
-  }, [latestNumber, displayReviews, selectedSummary?.number, handleLoadReview])
+  }, [latestNumber, displayReviews, handleLoadReview])
 
   if (displayReviews.length === 0) {
     return (

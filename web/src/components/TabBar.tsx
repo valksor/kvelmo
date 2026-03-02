@@ -43,7 +43,7 @@ export function TabBar({ className = '' }: TabBarProps) {
   }
 
   const handleAddTab = (type: TabType) => {
-    const newId = `tab-${Date.now()}`
+    const newId = `tab-${crypto.randomUUID()}`
     const labels: Record<TabType, string> = {
       chat: 'Chat',
       output: 'Output',
