@@ -8,69 +8,163 @@ interface TaskWidgetProps {
 
 export function TaskWidget({ embedded = false }: TaskWidgetProps) {
   const { task, state, start, loading, error, connected, connecting } = useProjectStore()
-  const [source, setSource] = useState('')
+  const [inputMode, setInputMode] = useState<'quick' | 'file' | 'url'>('quick')
+  const [taskDescription, setTaskDescription] = useState('')
+  const [urlInput, setUrlInput] = useState('')
+  const [selectedFile, setSelectedFile] = useState('')
   const [showFilePicker, setShowFilePicker] = useState(false)
 
-  const handleLoad = () => {
-    if (source.trim()) {
-      start(source.trim())
-      setSource('')
+  const handleQuickLoad = () => {
+    if (taskDescription.trim()) {
+      start(`empty:${taskDescription.trim()}`)
+      setTaskDescription('')
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && source.trim() && connected && !loading) {
-      handleLoad()
+  const handleUrlLoad = () => {
+    if (urlInput.trim()) {
+      start(urlInput.trim())
+      setUrlInput('')
+    }
+  }
+
+  const handleFileLoad = () => {
+    if (selectedFile) {
+      start(`file:${selectedFile}`)
+      setSelectedFile('')
     }
   }
 
   const handleFileSelect = (path: string) => {
-    setSource(`file:${path}`)
+    setSelectedFile(path)
+  }
+
+  const handleQuickKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.ctrlKey && taskDescription.trim() && connected && !loading) {
+      handleQuickLoad()
+    }
+  }
+
+  const handleUrlKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && urlInput.trim() && connected && !loading) {
+      handleUrlLoad()
+    }
   }
 
   // Content when no task is loaded
   const loadTaskContent = (
     <>
-      <div className="flex gap-2">
-        {/* File picker button */}
+      {/* Tab selector */}
+      <div role="tablist" className="tabs tabs-boxed tabs-sm mb-3 bg-base-300 gap-1 p-1">
         <button
-          onClick={() => setShowFilePicker(true)}
-          disabled={loading}
-          className="btn btn-ghost btn-square btn-sm"
-          aria-label="Browse for task file"
+          role="tab"
+          className={`tab rounded ${inputMode === 'quick' ? 'tab-active' : 'border border-base-content/10'}`}
+          onClick={() => setInputMode('quick')}
         >
-          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
+          Quick Task
         </button>
-
-        {/* Source input */}
-        <input
-          type="text"
-          value={source}
-          onChange={e => setSource(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="file:task.md, github:owner/repo#123"
-          className="input input-bordered flex-1 font-mono text-sm input-sm"
-          disabled={loading}
-        />
-
-        {/* Load button */}
         <button
-          onClick={handleLoad}
-          disabled={loading || !source.trim() || !connected}
-          className="btn btn-primary btn-sm"
+          role="tab"
+          className={`tab rounded ${inputMode === 'file' ? 'tab-active' : 'border border-base-content/10'}`}
+          onClick={() => setInputMode('file')}
         >
-          {loading ? (
-            <span className="loading loading-spinner loading-xs"></span>
-          ) : (
-            'Load'
-          )}
+          From File
+        </button>
+        <button
+          role="tab"
+          className={`tab rounded ${inputMode === 'url' ? 'tab-active' : 'border border-base-content/10'}`}
+          onClick={() => setInputMode('url')}
+        >
+          From URL
         </button>
       </div>
 
-      {/* Connection status indicator - use single expression to avoid overlap */}
-      <p className={`text-sm mt-2 ${
+      {/* Quick Task tab */}
+      {inputMode === 'quick' && (
+        <div className="space-y-2">
+          <textarea
+            value={taskDescription}
+            onChange={e => setTaskDescription(e.target.value)}
+            onKeyDown={handleQuickKeyDown}
+            placeholder="Describe what you want to work on..."
+            className="textarea textarea-bordered w-full text-sm resize-none"
+            rows={3}
+            disabled={loading}
+          />
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-base-content/50">Ctrl+Enter to load</span>
+            <button
+              onClick={handleQuickLoad}
+              disabled={loading || !taskDescription.trim() || !connected}
+              className="btn btn-primary btn-sm"
+            >
+              {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* From File tab */}
+      {inputMode === 'file' && (
+        <div className="space-y-2">
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setShowFilePicker(true)}
+              disabled={loading || !connected}
+              className="btn btn-outline btn-sm gap-2"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Browse
+            </button>
+            {selectedFile ? (
+              <code className="flex-1 text-sm bg-base-300 px-2 py-1 rounded truncate">{selectedFile}</code>
+            ) : (
+              <span className="flex-1 text-sm text-base-content/50">No file selected</span>
+            )}
+          </div>
+          {selectedFile && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleFileLoad}
+                disabled={loading || !connected}
+                className="btn btn-primary btn-sm"
+              >
+                {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* From URL tab */}
+      {inputMode === 'url' && (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={urlInput}
+            onChange={e => setUrlInput(e.target.value)}
+            onKeyDown={handleUrlKeyDown}
+            placeholder="github.com/owner/repo/issues/123"
+            className="input input-bordered w-full font-mono text-sm input-sm"
+            disabled={loading}
+          />
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-base-content/50">GitHub, GitLab, or Linear URLs</span>
+            <button
+              onClick={handleUrlLoad}
+              disabled={loading || !urlInput.trim() || !connected}
+              className="btn btn-primary btn-sm"
+            >
+              {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Connection status */}
+      <p className={`text-sm mt-3 ${
         connecting ? 'text-warning' :
         connected ? 'text-success' :
         'text-base-content/50'
@@ -83,22 +177,6 @@ export function TaskWidget({ embedded = false }: TaskWidgetProps) {
       {error && (
         <p className="text-sm text-error bg-error/10 px-3 py-2 rounded-lg border border-error/20 mt-2">{error}</p>
       )}
-
-      <div className="flex gap-1.5 flex-wrap items-center mt-3">
-        <span className="text-xs text-base-content/60">Examples:</span>
-        {[
-          'file:./tasks/feature.md',
-          'github:owner/repo#123',
-        ].map(example => (
-          <button
-            key={example}
-            onClick={() => setSource(example)}
-            className="text-xs font-mono px-1.5 py-0.5 rounded bg-neutral text-neutral-content hover:bg-neutral-focus transition-colors"
-          >
-            {example}
-          </button>
-        ))}
-      </div>
 
       {/* File Picker Modal */}
       <FilePicker

@@ -30,7 +30,9 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
   const [error, setError] = useState<string | null>(null)
 
   const browse = useCallback(async (path?: string) => {
+    console.log('[FilePicker] browse called, client:', !!client, 'path:', path)
     if (!client) {
+      console.log('[FilePicker] No client, showing not connected')
       setError('Not connected')
       return
     }
@@ -38,10 +40,12 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
     setLoading(true)
     setError(null)
     try {
+      console.log('[FilePicker] Calling browse RPC...')
       const data = await client.call<BrowseResponse>('browse', {
         path: path || '',
         files: true
       })
+      console.log('[FilePicker] browse response:', data)
 
       if (data.error) {
         setError(data.error)
@@ -52,6 +56,7 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
       setParentPath(data.parent)
       setEntries(data.entries || [])
     } catch (err) {
+      console.error('[FilePicker] browse error:', err)
       setError('Failed to browse directory')
     } finally {
       setLoading(false)
@@ -126,11 +131,18 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
               {error}
             </div>
           ) : entries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-base-content/60">
+            <div className="flex flex-col items-center justify-center h-full text-base-content/60 p-4 text-center">
               <svg className="w-8 h-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>No files or folders</span>
+              <span className="font-medium mb-1">No task files found</span>
+              <span className="text-xs mb-2">
+                in <code className="bg-base-300 px-1 rounded">{currentPath || 'project root'}</code>
+              </span>
+              <span className="text-xs">
+                Create a <code className="bg-base-300 px-1 rounded">.md</code> file to define a task,
+                or use <strong>Quick Task</strong> to start without a file.
+              </span>
             </div>
           ) : (
             <ul className="p-2 space-y-1">
