@@ -1,0 +1,25 @@
+# CodeRabbit configuration
+# https://docs.coderabbit.ai/configuration
+
+experimental: true
+
+reviews:
+  # Project context for better reviews
+  path_instructions:
+    - path: "pkg/socket/**"
+      instructions: |
+        This is a Unix-only socket package using Unix domain sockets.
+        Do NOT suggest Windows build constraints or Windows compatibility.
+        The desktop app uses Tauri + WSL, so Go always runs on Linux.
+
+    - path: "**/*.go"
+      instructions: |
+        - Target platform is Linux/macOS only. Windows builds are not needed.
+        - Desktop app on Windows uses Tauri calling WSL (Linux).
+        - Do not suggest Windows-specific changes or build constraints.
+
+    - path: "web/**"
+      instructions: |
+        - Uses bun, not npm/node
+        - React 19 + TypeScript + Vite 7
+        - Zustand for state management
