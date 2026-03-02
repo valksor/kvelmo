@@ -9,7 +9,11 @@ import { startBrowserLeakWatchdog } from '../lib/watchdog'
  */
 export function useLeakWatchdog(onLeak: (growthMB: number) => void): void {
     const onLeakRef = useRef(onLeak)
-    onLeakRef.current = onLeak
+
+    // Keep ref in sync with latest callback without causing watchdog to restart
+    useEffect(() => {
+        onLeakRef.current = onLeak
+    }, [onLeak])
 
     useEffect(() => {
         return startBrowserLeakWatchdog((growthMB) => onLeakRef.current(growthMB))

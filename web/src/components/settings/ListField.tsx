@@ -218,7 +218,8 @@ export function ListField({ field, value, onChange, disabled, error }: ListField
                 disabled={disabled}
                 className="input input-bordered input-sm w-full font-mono"
                 placeholder="my-agent"
-                autoFocus  
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- Intentional: focus new item input when add form appears
+                autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleAdd()
                   if (e.key === 'Escape') setShowAddForm(false)

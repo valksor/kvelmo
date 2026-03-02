@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useProjectStore, type BrowseEntry } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
 
@@ -11,8 +11,9 @@ export function FileBrowserWidget() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pathHistory, setPathHistory] = useState<Array<string | undefined>>([undefined])
+  const initialLoadDone = useRef(false)
 
-  const loadEntries = async (path?: string) => {
+  const loadEntries = useCallback(async (path?: string) => {
     if (!connected) return
     setLoading(true)
     setError(null)
@@ -24,13 +25,18 @@ export function FileBrowserWidget() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [connected, browseFiles])
 
+  // Initial load when connected (only once per connection)
   useEffect(() => {
-    if (connected) {
+    if (connected && !initialLoadDone.current) {
+      initialLoadDone.current = true
       loadEntries(currentPath)
     }
-  }, [connected])
+    if (!connected) {
+      initialLoadDone.current = false
+    }
+  }, [connected, currentPath, loadEntries])
 
   const handleEntryClick = async (entry: BrowseEntry) => {
     if (entry.is_dir) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
 import { Widget } from './Widget'
 
@@ -38,7 +38,7 @@ export function AgentPanel() {
   // Default to first available agent type
   const [newAgent, setNewAgent] = useState(AGENT_OPTIONS[0].value)
 
-  const fetchWorkers = async () => {
+  const fetchWorkers = useCallback(async () => {
     if (!client || !connected) return
     setLoading(true)
     try {
@@ -51,14 +51,14 @@ export function AgentPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [client, connected])
 
   useEffect(() => {
     if (!connected) return
     fetchWorkers()
     const interval = setInterval(fetchWorkers, 3000)
     return () => clearInterval(interval)
-  }, [connected, client])
+  }, [connected, fetchWorkers])
 
   const handleAddWorker = async () => {
     if (!client) return

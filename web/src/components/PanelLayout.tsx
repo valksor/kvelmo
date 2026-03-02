@@ -95,12 +95,13 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
           </aside>
 
           {/* Left resize handle - hidden on mobile */}
-          { }
           <div
-            role="separator"
+            role="slider"
             aria-label="Resize left sidebar"
-            aria-orientation="vertical"
-             
+            aria-orientation="horizontal"
+            aria-valuenow={leftWidth}
+            aria-valuemin={15}
+            aria-valuemax={35}
             tabIndex={0}
             className="hidden md:block w-1 flex-shrink-0 bg-base-300 hover:bg-primary/50 cursor-col-resize transition-colors focus:bg-primary/70 focus:outline-none"
             onMouseDown={() => setIsResizingLeft(true)}
@@ -131,12 +132,13 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
           </div>
 
           {/* Right resize handle - hidden on mobile */}
-          { }
           <div
-            role="separator"
+            role="slider"
             aria-label="Resize right sidebar"
-            aria-orientation="vertical"
-             
+            aria-orientation="horizontal"
+            aria-valuenow={rightWidth}
+            aria-valuemin={15}
+            aria-valuemax={35}
             tabIndex={0}
             className="hidden md:block w-1 flex-shrink-0 bg-base-300 hover:bg-primary/50 cursor-col-resize transition-colors focus:bg-primary/70 focus:outline-none"
             onMouseDown={() => setIsResizingRight(true)}
