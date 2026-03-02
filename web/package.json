@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
