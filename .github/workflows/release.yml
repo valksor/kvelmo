@@ -63,6 +63,13 @@ jobs:
                     bun install
                     bun run build
 
+            -   name: Upload web dist for desktop builds
+                uses: actions/upload-artifact@v4
+                with:
+                    name: web-dist
+                    path: web/dist
+                    retention-days: 1
+
             -   name: Save release title
                 id: release-title
                 env:
@@ -288,9 +295,15 @@ jobs:
                     }
                     bun x json -I -f tauri.conf.json -e "this.version='$VERSION'"
 
+            -   name: Download pre-built web dist
+                uses: actions/download-artifact@v4
+                with:
+                    name: web-dist
+                    path: web/dist
+
             -   name: Build Tauri app
                 working-directory: web
-                run: cargo tauri build --target ${{ matrix.target }}
+                run: cargo tauri build --target ${{ matrix.target }} --config '{"build":{"beforeBuildCommand":""}}'
 
             -   name: Upload to release (macOS)
                 if: matrix.platform == 'macos'
