@@ -12,7 +12,7 @@ import { StateAnnouncer } from './components/StateAnnouncer'
 const DEMO_MODE = new URLSearchParams(window.location.search).has('demo')
 
 export default function App() {
-  const { selectedProject, selectProject, connect, connected, connecting } = useGlobalStore()
+  const { selectedProject, selectProject, connect, connected, connecting, projects } = useGlobalStore()
   const { connect: connectWorktree, disconnect: disconnectWorktree } = useProjectStore()
   const { theme, setTheme } = useThemeStore()
 
@@ -27,9 +27,26 @@ export default function App() {
     }
   }, [connect])
 
-  // Initialize theme on mount
+  // Restore selected project from sessionStorage after projects load
+  useEffect(() => {
+    if (DEMO_MODE || !connected || selectedProject) return
+
+    const savedProjectId = sessionStorage.getItem('kvelmo-selectedProjectId')
+    if (savedProjectId && projects.length > 0) {
+      const project = projects.find(p => p.path === savedProjectId)
+      if (project) {
+        selectProject(project)
+      } else {
+        // Project no longer exists, clear sessionStorage
+        sessionStorage.removeItem('kvelmo-selectedProjectId')
+      }
+    }
+  }, [connected, projects, selectedProject, selectProject])
+
+  // Initialize theme on mount (intentionally run once with initial theme value)
   useEffect(() => {
     setTheme(theme)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Connect to worktree socket when a project is selected
@@ -43,19 +60,18 @@ export default function App() {
     }
   }, [selectedProject?.path, connectWorktree, disconnectWorktree])
 
+  // Demo mode: set mock project on mount
+  useEffect(() => {
+    if (!DEMO_MODE || selectedProject) return
+    selectProject({
+      id: 'demo-project',
+      path: '/Users/demo/workspace/my-project',
+      state: 'idle'
+    })
+  }, [selectedProject, selectProject])
+
   // Demo mode: show ProjectView with mock data
   if (DEMO_MODE) {
-    // Set a mock project if not already set
-    useEffect(() => {
-      if (!selectedProject) {
-        selectProject({
-          id: 'demo-project',
-          path: '/Users/demo/workspace/my-project',
-          state: 'idle'
-        })
-      }
-    }, [])
-
     return (
       <ErrorBoundary>
         <main id="main-content" tabIndex={-1} className="min-h-screen bg-base-100 transition-colors">

@@ -245,6 +245,12 @@ export const useGlobalStore = create<GlobalState>()(
           selectedProject: project,
           selectedProjectId: project?.path || null
         })
+        // Persist to sessionStorage for page refresh survival (cleared on tab close)
+        if (project) {
+          sessionStorage.setItem('kvelmo-selectedProjectId', project.path)
+        } else {
+          sessionStorage.removeItem('kvelmo-selectedProjectId')
+        }
       },
 
       loadWorkers: async () => {
@@ -408,7 +414,7 @@ export const useGlobalStore = create<GlobalState>()(
     }),
     {
       name: storeName('global'),
-      // Don't persist selectedProjectId - always start with project list
+      // Project selection persisted via sessionStorage in selectProject() - survives refresh but not tab close
       partialize: () => ({})
     }
   )
