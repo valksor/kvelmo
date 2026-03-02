@@ -42,6 +42,9 @@ interface GlobalState {
   // Connection
   connected: boolean
   connecting: boolean
+  reconnectAttempt: number
+  reconnectTimeoutId: ReturnType<typeof setTimeout> | null
+  connectionVersion: number // Incremented on each connect attempt to prevent stale disconnect handlers
   client: SocketClient | null
 
   // Data
@@ -97,6 +100,9 @@ export const useGlobalStore = create<GlobalState>()(
     (set, get) => ({
       connected: false,
       connecting: false,
+      reconnectAttempt: 0,
+      reconnectTimeoutId: null,
+      connectionVersion: 0,
       client: null,
 
       projects: [],
@@ -113,7 +119,9 @@ export const useGlobalStore = create<GlobalState>()(
       connect: async () => {
         if (get().connected || get().connecting) return
 
-        set({ connecting: true, error: null })
+        // Increment connection version to invalidate stale disconnect handlers
+        const thisVersion = get().connectionVersion + 1
+        set({ connecting: true, error: null, connectionVersion: thisVersion })
 
         // Support dynamic port injection for Tauri desktop app
         // In dev mode (Vite), connect directly to Go server on 6337
@@ -131,23 +139,36 @@ export const useGlobalStore = create<GlobalState>()(
         console.log('[kvelmo] Connecting to:', url, 'DEV:', import.meta.env.DEV)
         const client = new SocketClient(url)
 
-        // Handle disconnection with auto-reconnect
+        // Handle disconnection with auto-reconnect (exponential backoff)
+        // Capture thisVersion to detect stale handlers from previous connect attempts
         client.setOnDisconnect(() => {
+          // Ignore if this handler is from a stale connection attempt
+          if (get().connectionVersion !== thisVersion) return
+
+          const attempt = get().reconnectAttempt + 1
+          // Exponential backoff: 1s → 2s → 4s → ... capped at 30s, ±20% jitter
+          const base = Math.min(1000 * Math.pow(2, attempt - 1), 30000)
+          const delay = Math.round(base * (0.8 + Math.random() * 0.4))
+          const delaySec = Math.round(delay / 1000)
+
+          const timeoutId = setTimeout(() => {
+            set({ reconnectTimeoutId: null })
+            get().connect()
+          }, delay)
+
           set({
             connected: false,
             connecting: false,
+            reconnectAttempt: attempt,
+            reconnectTimeoutId: timeoutId,
             client: null,
-            error: 'Connection lost - reconnecting...'
+            error: `Connection lost. Reconnecting in ${delaySec}s... (attempt ${attempt})`
           })
-          // Auto-reconnect after a delay
-          setTimeout(() => {
-            get().connect()
-          }, 2000)
         })
 
         try {
           await client.connect()
-          set({ client, connected: true, connecting: false })
+          set({ client, connected: true, connecting: false, reconnectAttempt: 0, error: null })
 
           // Load initial data
           await get().loadProjects()
@@ -167,9 +188,16 @@ export const useGlobalStore = create<GlobalState>()(
         if (client) {
           client.close()
         }
+        // Clear any pending reconnect timeout
+        const timeoutId = get().reconnectTimeoutId
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
         set({
           connected: false,
           connecting: false,
+          reconnectAttempt: 0,
+          reconnectTimeoutId: null,
           client: null
         })
       },
@@ -243,11 +271,11 @@ export const useGlobalStore = create<GlobalState>()(
       selectProject: (project) => {
         set({
           selectedProject: project,
-          selectedProjectId: project?.path || null
+          selectedProjectId: project?.id || null
         })
         // Persist to sessionStorage for page refresh survival (cleared on tab close)
         if (project) {
-          sessionStorage.setItem('kvelmo-selectedProjectId', project.path)
+          sessionStorage.setItem('kvelmo-selectedProjectId', project.id)
         } else {
           sessionStorage.removeItem('kvelmo-selectedProjectId')
         }
