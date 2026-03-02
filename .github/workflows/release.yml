@@ -52,6 +52,13 @@ jobs:
                 with:
                     bun-version: latest
 
+            -   name: Cache Bun dependencies
+                uses: actions/cache@v4
+                with:
+                    path: ~/.bun/install/cache
+                    key: ${{ runner.os }}-bun-${{ hashFiles('web/bun.lock') }}
+                    restore-keys: ${{ runner.os }}-bun-
+
             -   name: Generate TypeScript types
                 run: |
                     go install github.com/gzuidhof/tygo@latest
@@ -239,6 +246,13 @@ jobs:
                 uses: oven-sh/setup-bun@v2
                 with:
                     bun-version: latest
+
+            -   name: Cache Bun dependencies
+                uses: actions/cache@v5
+                with:
+                    path: ~/.bun/install/cache
+                    key: ${{ runner.os }}-bun-${{ hashFiles('web/bun.lock') }}
+                    restore-keys: ${{ runner.os }}-bun-
 
             -   name: Set up Go
                 uses: actions/setup-go@v6
