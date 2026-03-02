@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { Settings } from './Settings'
 import { ActiveTasksWidget } from './ActiveTasksWidget'
 import { MemoryPanel } from './MemoryPanel'
+import { Onboarding } from './Onboarding'
 import { name } from '../meta'
 
 export function GlobalView() {
@@ -15,6 +16,7 @@ export function GlobalView() {
     error,
     connected,
     connecting,
+    reconnectAttempt,
     selectedProject,
     connect,
     loadProjects,
@@ -54,7 +56,7 @@ export function GlobalView() {
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Connection status */}
-          {!connected && !connecting && (
+          {!connected && !connecting && reconnectAttempt === 0 && (
             <button
               onClick={() => connect()}
               className="btn btn-warning btn-sm"
@@ -65,6 +67,14 @@ export function GlobalView() {
               </svg>
               <span className="hidden sm:inline">Reconnect</span>
             </button>
+          )}
+
+          {/* Auto-reconnecting indicator */}
+          {!connected && !connecting && reconnectAttempt > 0 && (
+            <span className="text-sm text-warning flex items-center gap-2 bg-warning/10 px-3 py-1.5 rounded-lg" role="status" aria-live="polite">
+              <span className="loading loading-spinner loading-xs" aria-hidden="true"></span>
+              <span>Reconnecting (#{reconnectAttempt})...</span>
+            </span>
           )}
 
           {connecting && (
@@ -171,49 +181,73 @@ export function GlobalView() {
                 </svg>
               </div>
               <p className="text-base-content font-medium mb-1">No projects yet</p>
-              <p className="text-base-content/60 text-sm">Tap "Add Project" to browse for a folder</p>
+              <p className="text-base-content/60 text-sm mb-4">Add a project folder to get started with {name}</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                <button
+                  onClick={() => setShowFolderPicker(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Project
+                </button>
+                {docsData?.url && (
+                  <a
+                    href={docsData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    Read the docs
+                  </a>
+                )}
+              </div>
             </div>
           ) : (
-            <ul role="listbox" aria-label="Projects" className="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-auto">
+            <ul aria-label="Projects" className="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-auto">
               {projects.map(p => (
-                <li
-                  key={p.id}
-                  onClick={() => selectProject(p)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProject(p) } }}
-                  tabIndex={0}
-                  role="option"
-                  aria-selected={selectedProject?.id === p.id}
-                  className={`group p-3 sm:p-4 rounded-lg cursor-pointer transition-all duration-150 ${
-                    selectedProject?.id === p.id
-                      ? 'bg-primary/20 border border-primary/50'
-                      : 'bg-base-100 hover:bg-base-300 border border-transparent hover:border-primary/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-medium text-sm sm:text-base text-base-content group-hover:text-base-content transition-colors truncate">
-                      {p.path.split('/').pop()}
-                    </span>
-                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                      <span className={`badge badge-sm sm:badge-md ${
-                        p.state === 'none' ? 'badge-ghost' :
-                        p.state === 'implemented' ? 'badge-success' :
-                        p.state === 'planning' || p.state === 'implementing' ? 'badge-warning' :
-                        'badge-primary'
-                      }`}>
-                        {p.state}
+                <li key={p.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => selectProject(p)}
+                    aria-current={selectedProject?.id === p.id ? 'true' : undefined}
+                    className={`w-full text-left p-3 sm:p-4 rounded-lg cursor-pointer transition-all duration-150 ${
+                      selectedProject?.id === p.id
+                        ? 'bg-primary/20 border border-primary/50'
+                        : 'bg-base-100 hover:bg-base-300 border border-transparent hover:border-primary/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-medium text-sm sm:text-base text-base-content group-hover:text-base-content transition-colors truncate">
+                        {p.path.split('/').pop()}
                       </span>
-                      <button
-                        onClick={(e) => handleRemoveProject(e, p.id)}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-base-content/50 hover:text-error transition-all p-1"
-                        aria-label={`Remove ${p.path.split('/').pop()}`}
-                      >
-                        <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                        <span className={`badge badge-sm sm:badge-md ${
+                          p.state === 'none' ? 'badge-ghost' :
+                          p.state === 'implemented' ? 'badge-success' :
+                          p.state === 'planning' || p.state === 'implementing' ? 'badge-warning' :
+                          'badge-primary'
+                        }`}>
+                          {p.state}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-xs sm:text-sm text-base-content/60 truncate font-mono">{p.path}</p>
+                    <p className="text-xs sm:text-sm text-base-content/60 truncate font-mono">{p.path}</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveProject(e, p.id)}
+                    className="absolute top-3 right-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-base-content/50 hover:text-error transition-all p-1"
+                    aria-label={`Remove ${p.path.split('/').pop()}`}
+                  >
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -239,6 +273,11 @@ export function GlobalView() {
         isOpen={showMemory}
         onClose={() => setShowMemory(false)}
       />
+
+      {/* First-run onboarding (only shows once) */}
+      {projects.length === 0 && connected && (
+        <Onboarding onAddProject={() => setShowFolderPicker(true)} />
+      )}
     </div>
   )
 }

@@ -33,7 +33,7 @@ export default function App() {
 
     const savedProjectId = sessionStorage.getItem('kvelmo-selectedProjectId')
     if (savedProjectId && projects.length > 0) {
-      const project = projects.find(p => p.path === savedProjectId)
+      const project = projects.find(p => p.id === savedProjectId)
       if (project) {
         selectProject(project)
       } else {
