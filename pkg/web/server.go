@@ -257,10 +257,12 @@ func (s *Server) handleWorktreeWS(w http.ResponseWriter, r *http.Request) {
 	// Connect to worktree Unix socket with retry (socket may still be starting)
 	var unixConn net.Conn
 	dialer := &net.Dialer{Timeout: 2 * time.Second}
-	for attempt := 0; attempt < 5; attempt++ {
+connectLoop:
+	for attempt := range 5 {
 		// Check context before attempting
 		if r.Context().Err() != nil {
 			err = r.Context().Err()
+
 			break
 		}
 		unixConn, err = dialer.DialContext(r.Context(), "unix", sockPath)
@@ -272,7 +274,8 @@ func (s *Server) handleWorktreeWS(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 			err = r.Context().Err()
-			break
+
+			break connectLoop
 		case <-time.After(backoff):
 			// Continue to next attempt
 		}
