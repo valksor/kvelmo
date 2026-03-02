@@ -46,7 +46,7 @@ export function ScreenshotModal({ screenshot, onClose }: ScreenshotModalProps) {
   }
 
   return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+     
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       onClick={handleBackdropClick}
