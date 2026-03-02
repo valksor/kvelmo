@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -47,6 +48,20 @@ func runStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
+	// Check if this is a git repository
+	if !isGitRepository(cwd) {
+		fmt.Println()
+		fmt.Println("  Warning: Not a git repository")
+		fmt.Println()
+		fmt.Println("  Some features will be limited:")
+		fmt.Println("    • No branch creation for tasks")
+		fmt.Println("    • No checkpoint/undo functionality")
+		fmt.Println("    • No PR submission")
+		fmt.Println()
+		fmt.Println("  Run 'git init' to enable full functionality.")
+		fmt.Println()
+	}
+
 	if err := socket.EnsureDir(); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
@@ -79,6 +94,8 @@ func startForeground(cwd, globalPath, wtPath string) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
+	// Track global socket errors for later reporting
+	var globalErrCh chan error
 	if !socket.SocketExists(globalPath) {
 		release, err := socket.AcquireGlobalLock(socket.GlobalLockPath())
 		if err != nil {
@@ -86,12 +103,21 @@ func startForeground(cwd, globalPath, wtPath string) error {
 			time.Sleep(500 * time.Millisecond)
 		} else {
 			fmt.Println("Starting global socket...")
+			globalErrCh = make(chan error, 1)
 			go func() {
 				defer release()
 				global := socket.NewGlobalSocket(globalPath)
-				_ = global.Start(ctx)
+				globalErrCh <- global.Start(ctx)
 			}()
-			time.Sleep(100 * time.Millisecond)
+			// Wait briefly to catch immediate startup failures
+			select {
+			case err := <-globalErrCh:
+				if err != nil && !errors.Is(err, context.Canceled) {
+					return fmt.Errorf("global socket: %w", err)
+				}
+			case <-time.After(100 * time.Millisecond):
+				// Socket is starting, proceed
+			}
 		}
 	} else {
 		fmt.Println("Global socket already running")
@@ -127,7 +153,19 @@ func startForeground(cwd, globalPath, wtPath string) error {
 		if err != nil && !errors.Is(err, context.Canceled) {
 			return fmt.Errorf("worktree socket: %w", err)
 		}
+	case err := <-globalErrCh:
+		// globalErrCh is nil if we didn't start the global socket, so this case won't fire
+		if err != nil && !errors.Is(err, context.Canceled) {
+			return fmt.Errorf("global socket: %w", err)
+		}
 	}
 
 	return nil
+}
+
+// isGitRepository checks if the given path is inside a git repository.
+func isGitRepository(path string) bool {
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--git-dir") //nolint:noctx // Quick one-shot check
+
+	return cmd.Run() == nil
 }
