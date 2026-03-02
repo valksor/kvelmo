@@ -62,10 +62,14 @@ type WorktreeConfig struct {
 }
 
 // NewWorktreeSocket creates a new worktree socket with conductor integration.
+// Git is optional - if the directory is not a git repository, git-dependent
+// features (checkpoints, branches, PR workflow) will be unavailable but the
+// socket will still work for basic operations.
 func NewWorktreeSocket(cfg WorktreeConfig) (*WorktreeSocket, error) {
 	repo, err := git.Open(cfg.WorktreePath)
 	if err != nil {
-		return nil, fmt.Errorf("open git repository: %w", err)
+		slog.Debug("git not available, some features disabled", "path", cfg.WorktreePath, "error", err)
+		// Continue with repo = nil - conductor handles this gracefully
 	}
 
 	// Load settings first so provider tokens are available.
@@ -79,9 +83,10 @@ func NewWorktreeSocket(cfg WorktreeConfig) (*WorktreeSocket, error) {
 	providers := provider.NewRegistry(effective)
 
 	cond := conductor.NewConductor(conductor.ConductorConfig{
-		Repo:      repo,
-		Pool:      cfg.Pool,
-		Providers: providers,
+		Repo:         repo,
+		Pool:         cfg.Pool,
+		Providers:    providers,
+		WorktreePath: cfg.WorktreePath,
 	})
 
 	// Wire storage.Store so specs/reviews/sessions are persisted via pkg/storage.
