@@ -238,7 +238,7 @@ jobs:
             -   name: Install ARM64 Tauri CLI binding
                 if: matrix.platform == 'windows' && matrix.arch == 'arm64'
                 working-directory: web
-                run: bun add --no-save @tauri-apps/cli-win32-arm64-msvc@2.10.0
+                run: bun add @tauri-apps/cli-win32-arm64-msvc@2
 
             -   name: Download kvelmo binary (sidecar for macOS/Linux)
                 if: matrix.kvelmo_asset != ''
