@@ -422,9 +422,10 @@ func (c *Conductor) ForceWorkUnit(wu *WorkUnit) {
 
 // ConductorConfig configures a conductor instance for use by socket layer.
 type ConductorConfig struct {
-	Repo      *git.Repository
-	Pool      *worker.Pool
-	Providers *provider.Registry
+	Repo         *git.Repository
+	Pool         *worker.Pool
+	Providers    *provider.Registry
+	WorktreePath string // Optional: explicit project directory path; falls back to Repo.Path() if empty
 }
 
 // NewConductor creates a new conductor with explicit configuration.
@@ -454,7 +455,10 @@ func NewConductor(cfg ConductorConfig) *Conductor {
 		stderr:          os.Stderr,
 	}
 
-	if cfg.Repo != nil {
+	// Set worktree path - prefer explicit config, fallback to repo path
+	if cfg.WorktreePath != "" {
+		c.worktree = cfg.WorktreePath
+	} else if cfg.Repo != nil {
 		c.worktree = cfg.Repo.Path()
 	}
 
