@@ -48,6 +48,8 @@
     - [delete](/cli/delete.md)
     - [update](/cli/update.md)
     - [stop](/cli/stop.md)
+    - [diagnose](/cli/diagnose.md)
+    - [cleanup](/cli/cleanup.md)
   - Utilities
     - [chat](/cli/chat.md)
     - [memory](/cli/memory.md)

@@ -71,6 +71,8 @@ Commands for managing the kvelmo system:
 | [delete](/cli/delete.md) | Delete terminal task |
 | [update](/cli/update.md) | Re-fetch task from provider |
 | [stop](/cli/stop.md) | Stop running job |
+| [diagnose](/cli/diagnose.md) | Check system requirements |
+| [cleanup](/cli/cleanup.md) | Remove stale socket files |
 
 ### Authentication Commands
 
