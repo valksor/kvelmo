@@ -18,8 +18,10 @@ func TestListCommand_NoSocket(t *testing.T) {
 	if err == nil {
 		t.Fatal("runList() expected error when no socket running, got nil")
 	}
-	if !strings.Contains(err.Error(), "not running") {
-		t.Errorf("runList() error = %q, want 'not running'", err.Error())
+	// Check for either old or new error message format
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "not running") && !strings.Contains(errMsg, "socket not found") && !strings.Contains(errMsg, "socket not responding") {
+		t.Errorf("runList() error = %q, want socket connection error", errMsg)
 	}
 }
 

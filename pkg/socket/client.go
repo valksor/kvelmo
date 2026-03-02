@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 )
 
@@ -89,7 +91,7 @@ func NewClient(path string, opts ...ClientOption) (*Client, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("connect: %w", err)
+		return nil, formatConnectionError(path, err)
 	}
 
 	scanner := bufio.NewScanner(conn)
@@ -183,4 +185,29 @@ func encodeParams(v interface{}) ([]byte, error) {
 	default:
 		return json.Marshal(v)
 	}
+}
+
+// formatConnectionError converts socket connection errors to user-friendly messages.
+func formatConnectionError(path string, err error) error {
+	// Check for specific error types
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return fmt.Errorf("socket not responding at %s\nThe server may have crashed. Try restarting with 'kvelmo serve'", path)
+	}
+
+	if errors.Is(err, syscall.ENOENT) || os.IsNotExist(err) {
+		return fmt.Errorf("socket not found at %s\nRun 'kvelmo serve' to start the server", path)
+	}
+
+	if errors.Is(err, syscall.EACCES) || os.IsPermission(err) {
+		return fmt.Errorf("permission denied for socket at %s\nCheck file permissions or run with appropriate privileges", path)
+	}
+
+	// Check for timeout
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return fmt.Errorf("connection timed out for socket at %s\nThe server may be overloaded or not responding", path)
+	}
+
+	// Default: wrap with path context
+	return fmt.Errorf("connect to %s: %w", path, err)
 }
