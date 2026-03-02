@@ -164,13 +164,13 @@ jobs:
                     # macOS
                     -   platform: macos
                         arch: arm64
-                        runner: macos-latest
+                        runner: macos-26
                         target: aarch64-apple-darwin
                         kvelmo_asset: kvelmo-darwin-arm64
                         wsl_asset: ''
                     -   platform: macos
                         arch: x64
-                        runner: macos-13
+                        runner: macos-26-intel
                         target: x86_64-apple-darwin
                         kvelmo_asset: kvelmo-darwin-amd64
                         wsl_asset: ''
@@ -181,7 +181,13 @@ jobs:
                         target: x86_64-unknown-linux-gnu
                         kvelmo_asset: kvelmo-linux-amd64
                         wsl_asset: ''
-                    # Windows (uses WSL - bundle Linux binary as resource)
+                    -   platform: linux
+                        arch: arm64
+                        runner: ubuntu-24.04-arm
+                        target: aarch64-unknown-linux-gnu
+                        kvelmo_asset: kvelmo-linux-arm64
+                        wsl_asset: ''
+                    # Windows (uses WSL - bundle Linux binary as a resource)
                     -   platform: windows
                         arch: x64
                         runner: windows-latest
