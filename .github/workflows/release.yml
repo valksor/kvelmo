@@ -235,10 +235,14 @@ jobs:
                 working-directory: web
                 run: bun install
 
-            -   name: Install ARM64 native bindings
+            -   name: Reinstall with ARM64 bindings
                 if: matrix.platform == 'windows' && matrix.arch == 'arm64'
                 working-directory: web
-                run: bun add @rollup/rollup-win32-arm64-msvc
+                shell: pwsh
+                run: |
+                    Remove-Item -Recurse -Force node_modules
+                    bun add @rollup/rollup-win32-arm64-msvc@4.59.0
+                    bun install
 
             -   name: Install Tauri CLI
                 run: cargo install tauri-cli --locked
