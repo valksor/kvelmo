@@ -254,9 +254,29 @@ func (s *Server) handleWorktreeWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = wsConn.Close() }()
 
-	// Connect to worktree Unix socket
-	dialer := &net.Dialer{Timeout: 5 * time.Second}
-	unixConn, err := dialer.DialContext(r.Context(), "unix", sockPath)
+	// Connect to worktree Unix socket with retry (socket may still be starting)
+	var unixConn net.Conn
+	dialer := &net.Dialer{Timeout: 2 * time.Second}
+	for attempt := 0; attempt < 5; attempt++ {
+		// Check context before attempting
+		if r.Context().Err() != nil {
+			err = r.Context().Err()
+			break
+		}
+		unixConn, err = dialer.DialContext(r.Context(), "unix", sockPath)
+		if err == nil {
+			break
+		}
+		// Context-aware backoff (50ms, 100ms, 200ms, 400ms)
+		backoff := time.Duration(50<<attempt) * time.Millisecond
+		select {
+		case <-r.Context().Done():
+			err = r.Context().Err()
+			break
+		case <-time.After(backoff):
+			// Continue to next attempt
+		}
+	}
 	if err != nil {
 		_ = wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"error":"failed to connect to worktree socket: %v"}`, err)))
 
