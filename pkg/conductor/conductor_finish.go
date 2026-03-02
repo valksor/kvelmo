@@ -173,7 +173,7 @@ func (c *Conductor) Refresh(ctx context.Context) (*RefreshResult, error) {
 			}
 
 			// Check if base branch has new commits
-			behind, err := c.git.CommitsBehind(ctx, baseBranch)
+			behind, err := c.git.CommitsBehind(ctx, "origin/"+baseBranch)
 			if err == nil {
 				result.CommitsBehindBase = behind
 			}

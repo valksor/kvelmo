@@ -36,10 +36,53 @@ func (r *Repository) run(ctx context.Context, args ...string) (string, error) {
 	if err := cmd.Run(); err != nil {
 		slog.Debug("git: command failed", "args", args, "error", err, "stderr", stderr.String())
 
-		return "", fmt.Errorf("%w: %s", err, stderr.String())
+		return "", formatGitError(args, stderr.String(), err)
 	}
 
 	return strings.TrimSpace(stdout.String()), nil
+}
+
+// formatGitError converts git command errors to user-friendly messages.
+func formatGitError(args []string, stderr string, err error) error {
+	stderr = strings.TrimSpace(stderr)
+
+	// Common error patterns with user-friendly messages
+	switch {
+	case strings.Contains(stderr, "not a git repository"):
+		return errors.New("not a git repository\nRun 'git init' to initialize one, or navigate to a project directory")
+
+	case strings.Contains(stderr, "already exists"):
+		if len(args) > 0 && args[0] == "checkout" {
+			return fmt.Errorf("branch already exists: %s", stderr)
+		}
+
+		return fmt.Errorf("already exists: %s", stderr)
+
+	case strings.Contains(stderr, "did not match any"):
+		return fmt.Errorf("branch or commit not found: %s", stderr)
+
+	case strings.Contains(stderr, "Your local changes"):
+		return errors.New("uncommitted changes would be overwritten\nCommit or stash your changes first")
+
+	case strings.Contains(stderr, "CONFLICT"):
+		return errors.New("merge conflict detected\nResolve conflicts manually, then run 'git add' and 'git commit'")
+
+	case strings.Contains(stderr, "Permission denied"):
+		return fmt.Errorf("permission denied: %s", stderr)
+
+	case strings.Contains(stderr, "Could not resolve host"):
+		return errors.New("cannot reach remote server\nCheck your network connection")
+
+	case strings.Contains(stderr, "Authentication failed"):
+		return errors.New("authentication failed\nCheck your credentials or token")
+	}
+
+	// Default: include stderr if present
+	if stderr != "" {
+		return fmt.Errorf("%w: %s", err, stderr)
+	}
+
+	return err
 }
 
 func (r *Repository) CurrentBranch(ctx context.Context) (string, error) {
@@ -186,15 +229,16 @@ func (r *Repository) Fetch(ctx context.Context) error {
 	return err
 }
 
-// CommitsBehind returns how many commits the current branch is behind the given branch.
-func (r *Repository) CommitsBehind(ctx context.Context, branch string) (int, error) {
+// CommitsBehind returns how many commits the current branch is behind the given ref.
+// ref should be a full remote ref like "origin/main" or "upstream/develop".
+func (r *Repository) CommitsBehind(ctx context.Context, ref string) (int, error) {
 	current, err := r.CurrentBranch(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	// Count commits that are in branch but not in current
-	out, err := r.run(ctx, "rev-list", "--count", fmt.Sprintf("%s..origin/%s", current, branch))
+	// Count commits that are in ref but not in current
+	out, err := r.run(ctx, "rev-list", "--count", fmt.Sprintf("%s..%s", current, ref))
 	if err != nil {
 		return 0, err
 	}
