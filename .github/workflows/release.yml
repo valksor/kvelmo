@@ -249,7 +249,7 @@ jobs:
                 run: bun install
 
             -   name: Install Tauri CLI
-                run: cargo install tauri-cli --locked
+                run: cargo install tauri-cli
 
             -   name: Download kvelmo binary (sidecar for macOS/Linux)
                 if: matrix.kvelmo_asset != ''
