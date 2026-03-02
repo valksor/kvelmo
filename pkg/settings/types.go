@@ -21,7 +21,13 @@ type Settings struct {
 	Storage      StorageSettings        `yaml:"storage,omitempty" json:"storage,omitempty"`
 	Workflow     WorkflowSettings       `yaml:"workflow,omitempty" json:"workflow,omitempty"`
 	Watchdog     WatchdogSettings       `yaml:"watchdog,omitempty" json:"watchdog,omitempty"`
+	UI           UISettings             `yaml:"ui,omitempty" json:"ui,omitempty"`
 	CustomAgents map[string]CustomAgent `yaml:"custom_agents,omitempty" json:"custom_agents,omitempty"`
+}
+
+// UISettings configures UI state that persists across sessions.
+type UISettings struct {
+	OnboardingDismissed bool `yaml:"onboarding_dismissed,omitempty" json:"onboarding_dismissed,omitempty"`
 }
 
 // AgentSettings configures AI agent behavior.

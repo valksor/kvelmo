@@ -216,6 +216,11 @@ func Merge(dst, src *Settings) {
 		dst.Workflow.UseWorktreeIsolation = src.Workflow.UseWorktreeIsolation
 	}
 
+	// UI settings
+	if src.UI.OnboardingDismissed {
+		dst.UI.OnboardingDismissed = true
+	}
+
 	// Custom agents - merge by key
 	if len(src.CustomAgents) > 0 {
 		if dst.CustomAgents == nil {
@@ -553,6 +558,16 @@ func SetValue(s *Settings, path string, value any) error {
 
 		return errors.New("workflow.use_worktree_isolation must be a boolean")
 
+	// UI
+	case "ui.onboarding_dismissed":
+		if v, ok := value.(bool); ok {
+			s.UI.OnboardingDismissed = v
+
+			return nil
+		}
+
+		return errors.New("ui.onboarding_dismissed must be a boolean")
+
 	// Custom Agents
 	case "custom_agents":
 		// Expect a map of agent name -> agent config
@@ -672,6 +687,10 @@ func GetValue(s *Settings, path string) (any, error) {
 	// Workflow
 	case "workflow.use_worktree_isolation":
 		return BoolValue(s.Workflow.UseWorktreeIsolation, true), nil
+
+	// UI
+	case "ui.onboarding_dismissed":
+		return s.UI.OnboardingDismissed, nil
 
 	// Custom Agents
 	case "custom_agents":
