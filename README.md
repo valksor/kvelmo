@@ -161,6 +161,7 @@ kvelmo status                          # Show current state
 # Management
 kvelmo serve                           # Start web server
 kvelmo config                          # Configuration management
+kvelmo diagnose                        # Check system requirements
 ```
 
 **[Full CLI Reference](https://valksor.com/docs/kvelmo/nightly/#/cli/index)** — All commands, flags, and options

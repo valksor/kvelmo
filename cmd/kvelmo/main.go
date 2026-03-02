@@ -65,6 +65,8 @@ func init() {
 	rootCmd.AddCommand(commands.JobsCmd)
 	rootCmd.AddCommand(commands.PipeCmd)
 	rootCmd.AddCommand(commands.RecordingsCmd)
+	rootCmd.AddCommand(commands.DiagnoseCmd)
+	rootCmd.AddCommand(commands.CleanupCmd)
 
 	// Provider commands (login, etc.)
 	rootCmd.AddCommand(commands.GitHubCmd)
