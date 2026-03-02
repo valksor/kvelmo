@@ -2,10 +2,15 @@ package commands
 
 import (
 	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/valksor/kvelmo/pkg/meta"
@@ -251,6 +256,16 @@ func runProviderLogin(providerName string) func(*cobra.Command, []string) error 
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Note: Token doesn't start with expected prefix '%s'\n", cfg.TokenPrefix)
 		}
 
+		// Validate token with API call
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Validating token...")
+		if err := testProviderToken(providerName, token); err != nil {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), " ✗\n")
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Warning: Token validation failed: %v\n", err)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "The token will be saved but may not work.\n")
+		} else {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), " ✓\n")
+		}
+
 		// Save token
 		if err := settings.SaveEnvVar(scope, projectRoot, cfg.EnvVar, token); err != nil {
 			return fmt.Errorf("save token: %w", err)
@@ -298,6 +313,83 @@ Get your token at: %s`, cfg.Name, meta.Name, cfg.HelpURL),
 	providerCmd.AddCommand(loginCmd)
 
 	return providerCmd
+}
+
+// testProviderToken validates a token by making a simple API call.
+func testProviderToken(provider, token string) error {
+	ctx := context.Background()
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	var req *http.Request
+	var err error
+
+	switch provider {
+	case "github":
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user", nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Accept", "application/vnd.github+json")
+
+	case "gitlab":
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, "https://gitlab.com/api/v4/user", nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Private-Token", token)
+
+	case "linear":
+		body := []byte(`{"query":"{ viewer { id } }"}`)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, "https://api.linear.app/graphql", bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", token)
+		req.Header.Set("Content-Type", "application/json")
+
+	case "wrike":
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, "https://www.wrike.com/api/v4/contacts?me=true", nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+
+	default:
+		return nil // Unknown provider, skip validation
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("connection failed: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		_, _ = io.Copy(io.Discard, resp.Body) // Drain body for connection reuse
+
+		return fmt.Errorf("authentication failed (HTTP %d)", resp.StatusCode)
+	}
+
+	if resp.StatusCode >= 400 {
+		_, _ = io.Copy(io.Discard, resp.Body) // Drain body for connection reuse
+
+		return fmt.Errorf("API error (HTTP %d)", resp.StatusCode)
+	}
+
+	// For Linear, check GraphQL response for errors
+	if provider == "linear" {
+		var result struct {
+			Errors []struct {
+				Message string `json:"message"`
+			} `json:"errors"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err == nil && len(result.Errors) > 0 {
+			return fmt.Errorf("GraphQL error: %s", result.Errors[0].Message)
+		}
+	}
+
+	return nil
 }
 
 // Provider commands exported for registration in main.go.
