@@ -15,6 +15,15 @@
  * @param noiseToleranceMB    - Allowed dip before considering GC recovered memory
  * @returns stop              - Call to cancel the interval
  */
+// Chromium-specific Memory Measurement API (behind cross-origin isolation)
+interface MemoryMeasurement {
+    bytes: number
+}
+
+interface PerformanceWithMemory extends Performance {
+    measureUserAgentSpecificMemory?: () => Promise<MemoryMeasurement>
+}
+
 export function startBrowserLeakWatchdog(
     onLeak: (growthMB: number) => void,
     intervalMs = 15_000,
@@ -22,8 +31,8 @@ export function startBrowserLeakWatchdog(
     growthThresholdMB = 100,
     noiseToleranceMB = 2,
 ): () => void {
-    const measure = (performance as any).measureUserAgentSpecificMemory
-    if (typeof measure !== 'function') {
+    const perf = performance as PerformanceWithMemory
+    if (typeof perf.measureUserAgentSpecificMemory !== 'function') {
         console.warn(
             'LeakWatchdog: measureUserAgentSpecificMemory not available — ' +
             'cross-origin isolation (COOP/COEP headers) required'
@@ -35,7 +44,7 @@ export function startBrowserLeakWatchdog(
 
     const id = setInterval(async () => {
         try {
-            const result = await (performance as any).measureUserAgentSpecificMemory()
+            const result = await perf.measureUserAgentSpecificMemory!()
             const mb: number = result.bytes / 1024 / 1024
             samples.push(mb)
             if (samples.length > windowSize) samples.shift()
