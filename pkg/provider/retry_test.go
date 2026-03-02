@@ -240,13 +240,12 @@ func TestDoWithRetry_ExponentialBackoff(t *testing.T) {
 	delay1 := ts[1].Sub(ts[0])
 	delay2 := ts[2].Sub(ts[1])
 
-	// With jitter ±25%, base delay of 20ms gives 15-25ms for first delay
-	// Second delay should be roughly 2x (30-50ms range)
+	// With jitter ±25% and 2x multiplier, worst-case ratio is 2*0.75/1.25 = 1.2x
+	// Use 1.1x threshold to account for timing measurement overhead
 	if delay1 < 10*time.Millisecond {
 		t.Errorf("first delay too short: %v", delay1)
 	}
-	// Second delay should be at least 1.5x first to confirm exponential growth
-	if delay2 < time.Duration(float64(delay1)*1.5) {
-		t.Errorf("expected exponential increase (>=1.5x), delay1=%v delay2=%v", delay1, delay2)
+	if delay2 < time.Duration(float64(delay1)*1.1) {
+		t.Errorf("expected exponential increase (>=1.1x), delay1=%v delay2=%v", delay1, delay2)
 	}
 }
