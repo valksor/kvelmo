@@ -3,7 +3,7 @@ version: 2
 project_name: kvelmo
 
 snapshot:
-  version_template: "nightly"
+  version_template: "0.0.{{ .Now.Format \"20060102\" }}"
 
 before:
     hooks:
