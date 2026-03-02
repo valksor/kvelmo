@@ -222,6 +222,13 @@ jobs:
                 with:
                     targets: ${{ matrix.target }}
 
+            -   name: Cache Rust dependencies
+                uses: Swatinem/rust-cache@v2
+                with:
+                    workspaces: web/src-tauri
+                    cache-targets: false
+                    cache-on-failure: true
+
             -   name: Install Linux dependencies
                 if: matrix.platform == 'linux'
                 run: |
@@ -249,7 +256,7 @@ jobs:
                 run: bun install
 
             -   name: Install Tauri CLI
-                run: cargo install tauri-cli
+                run: cargo install tauri-cli@2 --locked
 
             -   name: Download kvelmo binary (sidecar for macOS/Linux)
                 if: matrix.kvelmo_asset != ''
