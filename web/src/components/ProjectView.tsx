@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
@@ -14,6 +14,7 @@ import { AgentPanel } from './AgentPanel'
 import { ThemeToggle } from './ThemeToggle'
 import { StatusBadge } from './StatusIndicator'
 import { Settings } from './Settings'
+import { LogsPanel } from './LogsPanel'
 
 function ReviewIcon() {
   return (
@@ -23,42 +24,46 @@ function ReviewIcon() {
   )
 }
 
+// State labels - defined at module level to avoid recreation on every render
+const STATE_LABELS: Record<string, string> = {
+  'none': 'No Task',
+  'loaded': 'Ready',
+  'planning': 'Planning...',
+  'planned': 'Planned',
+  'implementing': 'Implementing...',
+  'implemented': 'Implemented',
+  'reviewing': 'Reviewing...',
+  'reviewed': 'Reviewed',
+  'submitted': 'Submitted',
+  'failed': 'Failed',
+}
+
 export function ProjectView() {
   const { selectedProject, selectProject } = useGlobalStore()
-  const { task, state, fileChanges, reviews } = useProjectStore()
+  const { task, state, fileChanges, reviews, output } = useProjectStore()
   const { widgetStates } = useLayoutStore()
   const [showSettings, setShowSettings] = useState(false)
+  const [showLogs, setShowLogs] = useState(false)
   const docsData = useDocsURL()
 
-  if (!selectedProject) return null
-
-  const projectName = selectedProject.path.split('/').pop() || 'Project'
-
-  // Map task state to status type
-  const getStatusType = () => {
+  // Memoize status type to avoid recalculation on every render
+  // Must be before early return to satisfy React hooks rules
+  const statusType = useMemo(() => {
     if (!task?.state || state === 'none') return 'idle'
     if (state === 'implemented' || state === 'submitted') return 'success'
     if (state === 'planning' || state === 'implementing' || state === 'reviewing') return 'running'
     if (state === 'failed') return 'error'
     return 'idle'
-  }
+  }, [task?.state, state])
 
-  // Map state to user-friendly labels
-  const getStateLabel = () => {
-    const labels: Record<string, string> = {
-      'none': 'No Task',
-      'loaded': 'Ready',
-      'planning': 'Planning...',
-      'planned': 'Planned',
-      'implementing': 'Implementing...',
-      'implemented': 'Implemented',
-      'reviewing': 'Reviewing...',
-      'reviewed': 'Reviewed',
-      'submitted': 'Submitted',
-      'failed': 'Failed',
-    }
-    return labels[state || 'none'] || state || 'No Task'
-  }
+  // Memoize state label
+  const stateLabel = useMemo(() => {
+    return STATE_LABELS[state || 'none'] || state || 'No Task'
+  }, [state])
+
+  if (!selectedProject) return null
+
+  const projectName = selectedProject.path.split('/').pop() || 'Project'
 
   // Header component
   const header = (
@@ -104,6 +109,18 @@ export function ProjectView() {
               </a>
             )}
             <button
+              onClick={() => setShowLogs(true)}
+              className="btn btn-ghost btn-xs sm:btn-sm btn-circle relative"
+              aria-label="View logs"
+            >
+              <svg aria-hidden="true" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+              {output.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+              )}
+            </button>
+            <button
               onClick={() => setShowSettings(true)}
               className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
               aria-label="Settings"
@@ -115,7 +132,7 @@ export function ProjectView() {
             </button>
             <ThemeToggle />
           </div>
-          <StatusBadge status={getStatusType()} label={getStateLabel()} />
+          <StatusBadge status={statusType} label={stateLabel} />
         </div>
       </div>
     </header>
@@ -200,6 +217,10 @@ export function ProjectView() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         defaultScope="project"
+      />
+      <LogsPanel
+        isOpen={showLogs}
+        onClose={() => setShowLogs(false)}
       />
     </div>
   )
