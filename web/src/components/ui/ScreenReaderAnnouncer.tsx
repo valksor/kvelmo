@@ -8,37 +8,54 @@ export function ScreenReaderAnnouncer({ children }: { children: ReactNode }) {
   const [assertiveMessage, setAssertiveMessage] = useState('')
 
   // Track pending timeouts to prevent race conditions when announce is called rapidly
-  const politeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const assertiveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // We track both "set" (the 0ms deferred set) and "clear" (the 1000ms auto-clear) timeouts
+  const timeoutsRef = useRef<{
+    politeSet: ReturnType<typeof setTimeout> | null
+    politeClear: ReturnType<typeof setTimeout> | null
+    assertiveSet: ReturnType<typeof setTimeout> | null
+    assertiveClear: ReturnType<typeof setTimeout> | null
+  }>({ politeSet: null, politeClear: null, assertiveSet: null, assertiveClear: null })
 
   // Cleanup timeouts on unmount
   useEffect(() => {
+    const t = timeoutsRef.current
     return () => {
-      if (politeTimeoutRef.current) clearTimeout(politeTimeoutRef.current)
-      if (assertiveTimeoutRef.current) clearTimeout(assertiveTimeoutRef.current)
+      if (t.politeSet) clearTimeout(t.politeSet)
+      if (t.politeClear) clearTimeout(t.politeClear)
+      if (t.assertiveSet) clearTimeout(t.assertiveSet)
+      if (t.assertiveClear) clearTimeout(t.assertiveClear)
     }
   }, [])
 
   const announce = useCallback((message: string, priority: Priority = 'polite') => {
     const setter = priority === 'assertive' ? setAssertiveMessage : setPoliteMessage
-    const timeoutRef = priority === 'assertive' ? assertiveTimeoutRef : politeTimeoutRef
+    const setKey = priority === 'assertive' ? 'assertiveSet' : 'politeSet'
+    const clearKey = priority === 'assertive' ? 'assertiveClear' : 'politeClear'
+    const t = timeoutsRef.current
 
-    // Cancel any pending clear timeout for this priority level
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
+    // Cancel any pending set/clear timeouts for this priority level
+    if (t[setKey]) {
+      clearTimeout(t[setKey])
+      t[setKey] = null
+    }
+    if (t[clearKey]) {
+      clearTimeout(t[clearKey])
+      t[clearKey] = null
     }
 
     // Clear first so re-announcing the same message still triggers screen readers.
     // setTimeout(fn, 0) defers the set to the next task, same effect as rAF but
     // testable with vi.runAllTimers() without needing to advance animation frames.
     setter('')
-    setTimeout(() => setter(message), 0)
+    t[setKey] = setTimeout(() => {
+      setter(message)
+      t[setKey] = null
+    }, 0)
 
     // Schedule clear and track the timeout
-    timeoutRef.current = setTimeout(() => {
+    t[clearKey] = setTimeout(() => {
       setter('')
-      timeoutRef.current = null
+      t[clearKey] = null
     }, 1000)
   }, [])
 
