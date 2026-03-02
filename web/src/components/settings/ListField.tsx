@@ -218,7 +218,7 @@ export function ListField({ field, value, onChange, disabled, error }: ListField
                 disabled={disabled}
                 className="input input-bordered input-sm w-full font-mono"
                 placeholder="my-agent"
-                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+                autoFocus  
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleAdd()
                   if (e.key === 'Escape') setShowAddForm(false)
