@@ -7,7 +7,7 @@ interface TaskWidgetProps {
 }
 
 export function TaskWidget({ embedded = false }: TaskWidgetProps) {
-  const { task, state, start, loading, error, connected, connecting } = useProjectStore()
+  const { task, state, start, loading, error, connected, connecting, undo, reset } = useProjectStore()
   const [inputMode, setInputMode] = useState<'quick' | 'file' | 'url'>('quick')
   const [taskDescription, setTaskDescription] = useState('')
   const [urlInput, setUrlInput] = useState('')
@@ -229,6 +229,35 @@ export function TaskWidget({ embedded = false }: TaskWidgetProps) {
       )}
       {error && (
         <p className="text-sm text-error bg-error/10 px-3 py-2 rounded-lg border border-error/20 mt-3">{error}</p>
+      )}
+
+      {/* Recovery hints when task has failed */}
+      {state === 'failed' && (
+        <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+          <p className="text-sm text-warning-content mb-2">Task encountered an error. You can:</p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => undo()}
+              disabled={loading || !connected}
+              className="btn btn-sm btn-outline"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Undo
+            </button>
+            <button
+              onClick={() => reset()}
+              disabled={loading || !connected}
+              className="btn btn-sm btn-outline btn-warning"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reset
+            </button>
+          </div>
+        </div>
       )}
     </>
   )
