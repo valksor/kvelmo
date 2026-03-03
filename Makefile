@@ -1,7 +1,7 @@
 .PHONY: build test clean install run web-build web-dev fmt vet all help \
         desktop-dev desktop-build desktop-sidecar desktop-sidecar-all desktop-clean tauri-install \
         tidy deps version run-args check-alias web-test web-test-coverage \
-        test-e2e test-e2e-provider test-e2e-workflow
+        test-e2e test-e2e-provider test-e2e-workflow test-e2e-cli
 
 # Build variables
 BINARY_NAME := kvelmo
@@ -78,6 +78,10 @@ test-e2e-provider:
 ## Run E2E workflow tests only
 test-e2e-workflow:
 	go test -tags=e2e -v ./pkg/conductor/... -run TestE2E
+
+## Run full CLI E2E cycle test (requires GITHUB_TOKEN and E2E_GITHUB_REPO)
+test-e2e-cli:
+	go test -tags=e2e -v -timeout=30m ./test/e2e/... -run TestCLIFullCycle
 
 ## Format code
 fmt:
