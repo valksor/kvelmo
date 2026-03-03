@@ -274,3 +274,140 @@ func TestCreateTaskWorktree(t *testing.T) {
 		t.Errorf("worktree path %q should exist: %v", wt.Path, err)
 	}
 }
+
+func TestCreateTaskWorktree_InjectsGuardrails(t *testing.T) {
+	ctx := context.Background()
+	dir, cleanup := setupTestRepo(t)
+	defer cleanup()
+
+	repo, err := Open(dir)
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+
+	basePath := t.TempDir()
+
+	wt, err := repo.CreateTaskWorktree(ctx, "task-guardrails", basePath)
+	if err != nil {
+		t.Fatalf("CreateTaskWorktree() error = %v", err)
+	}
+
+	// Check that .claude/CLAUDE.md was created
+	claudeMdPath := filepath.Join(wt.Path, ".claude", "CLAUDE.md")
+	content, err := os.ReadFile(claudeMdPath)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", claudeMdPath, err)
+	}
+
+	// Verify guardrails content
+	contentStr := string(content)
+	if !contains(contentStr, "Branch Guardrails") {
+		t.Error("CLAUDE.md should contain 'Branch Guardrails'")
+	}
+	if !contains(contentStr, wt.Branch) {
+		t.Errorf("CLAUDE.md should contain branch name %q", wt.Branch)
+	}
+	if !contains(contentStr, "DO NOT run git checkout") {
+		t.Error("CLAUDE.md should contain git checkout warning")
+	}
+}
+
+func TestInjectBranchGuardrails_Idempotent(t *testing.T) {
+	// Test that calling injectBranchGuardrails twice doesn't duplicate content
+	tmpDir := t.TempDir()
+	branch := "kvelmo/test-branch"
+
+	// First injection
+	if err := injectBranchGuardrails(tmpDir, branch); err != nil {
+		t.Fatalf("first injectBranchGuardrails() error = %v", err)
+	}
+
+	claudeMdPath := filepath.Join(tmpDir, ".claude", "CLAUDE.md")
+	content1, err := os.ReadFile(claudeMdPath)
+	if err != nil {
+		t.Fatalf("failed to read first CLAUDE.md: %v", err)
+	}
+
+	// Second injection (should be no-op)
+	if err := injectBranchGuardrails(tmpDir, branch); err != nil {
+		t.Fatalf("second injectBranchGuardrails() error = %v", err)
+	}
+
+	content2, err := os.ReadFile(claudeMdPath)
+	if err != nil {
+		t.Fatalf("failed to read second CLAUDE.md: %v", err)
+	}
+
+	// Content should be identical (no duplication)
+	if string(content1) != string(content2) {
+		t.Errorf("CLAUDE.md content changed after second injection\nfirst len=%d, second len=%d", len(content1), len(content2))
+	}
+
+	// Guardrails should appear exactly once
+	count := countOccurrences(string(content2), "Branch Guardrails")
+	if count != 1 {
+		t.Errorf("CLAUDE.md contains %d 'Branch Guardrails', want 1", count)
+	}
+}
+
+func TestInjectBranchGuardrails_AppendsToExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	branch := "kvelmo/test-branch"
+
+	// Create .claude directory with existing content
+	claudeDir := filepath.Join(tmpDir, ".claude")
+	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
+		t.Fatalf("mkdir error: %v", err)
+	}
+
+	existingContent := "# Existing Project Rules\n\nSome existing rules here.\n"
+	claudeMdPath := filepath.Join(claudeDir, "CLAUDE.md")
+	if err := os.WriteFile(claudeMdPath, []byte(existingContent), 0o644); err != nil {
+		t.Fatalf("write error: %v", err)
+	}
+
+	// Inject guardrails
+	if err := injectBranchGuardrails(tmpDir, branch); err != nil {
+		t.Fatalf("injectBranchGuardrails() error = %v", err)
+	}
+
+	content, err := os.ReadFile(claudeMdPath)
+	if err != nil {
+		t.Fatalf("read error: %v", err)
+	}
+
+	contentStr := string(content)
+
+	// Should contain both existing content and guardrails
+	if !contains(contentStr, "Existing Project Rules") {
+		t.Error("CLAUDE.md should preserve existing content")
+	}
+	if !contains(contentStr, "Branch Guardrails") {
+		t.Error("CLAUDE.md should contain guardrails")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+
+	return false
+}
+
+func countOccurrences(s, substr string) int {
+	count := 0
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			count++
+		}
+	}
+
+	return count
+}
