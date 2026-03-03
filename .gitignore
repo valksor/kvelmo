@@ -22,20 +22,17 @@ web/src-tauri/gen/
 vendor/
 
 # Runtime
-~/.valksor/
+*.out
+.claude/worktrees/
 .playwright-cli/
-
+.playwright-mcp/
+web/playwright-report/
+web/test-results/
+.worktrees/
+.wrangler/
+coverage.html
+node_modules/
+web/coverage/
 web/node_modules/
 web/src/types/socket.ts
-
-.claude/worktrees/
-.worktrees/
-
-node_modules/
-
-*.out
-coverage.html
-
-web/coverage/
-
-.wrangler/
+~/.valksor/

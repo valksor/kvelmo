@@ -1,7 +1,7 @@
 # CodeRabbit configuration
 # https://docs.coderabbit.ai/configuration
 
-experimental: true
+early_access: true
 
 reviews:
   # Project context for better reviews
