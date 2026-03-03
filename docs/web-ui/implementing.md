@@ -68,8 +68,8 @@ Or run optimization:
 
 ## State Transition
 
-| Before | After |
-|--------|-------|
+| Before    | After         |
+|-----------|---------------|
 | `planned` | `implemented` |
 
 A checkpoint is created after successful implementation.

@@ -13,12 +13,12 @@ The kvelmo Desktop App provides a native experience for managing your developmen
 
 Download the latest version for your platform:
 
-| Platform | Download |
-|----------|----------|
-| macOS (Apple Silicon) | [kvelmo-darwin-arm64.dmg](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-darwin-arm64.dmg) |
-| macOS (Intel) | [kvelmo-darwin-amd64.dmg](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-darwin-amd64.dmg) |
-| Windows | [kvelmo-windows-amd64.exe](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-windows-amd64.exe) |
-| Linux | [kvelmo-linux-amd64.AppImage](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-linux-amd64.AppImage) |
+| Platform              | Download                                                                                                              |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------|
+| macOS (Apple Silicon) | [kvelmo-darwin-arm64.dmg](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-darwin-arm64.dmg)         |
+| macOS (Intel)         | [kvelmo-darwin-amd64.dmg](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-darwin-amd64.dmg)         |
+| Windows               | [kvelmo-windows-amd64.exe](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-windows-amd64.exe)       |
+| Linux                 | [kvelmo-linux-amd64.AppImage](https://github.com/valksor/kvelmo/releases/latest/download/kvelmo-linux-amd64.AppImage) |
 
 Or visit the [Releases page](https://github.com/valksor/kvelmo/releases) for all versions.
 
@@ -52,11 +52,11 @@ Your work is portable — start a task in the Desktop App, continue it in CLI, r
 
 ## Documentation
 
-| Guide | Description |
-|-------|-------------|
+| Guide                                          | Description                    |
+|------------------------------------------------|--------------------------------|
 | [Getting Started](/desktop/getting-started.md) | First launch and project setup |
-| [Workflow](/concepts/workflow.md) | Understanding the process |
-| [Configuration](/configuration/index.md) | Customize behavior |
+| [Workflow](/concepts/workflow.md)              | Understanding the process      |
+| [Configuration](/configuration/index.md)       | Customize behavior             |
 
 ---
 

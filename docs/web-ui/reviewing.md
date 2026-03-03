@@ -65,11 +65,11 @@ You can edit files manually before submitting:
 
 The Changes panel shows:
 
-| Column | Description |
-|--------|-------------|
-| File | Modified file path |
+| Column | Description            |
+|--------|------------------------|
+| File   | Modified file path     |
 | Status | Added/Modified/Deleted |
-| Lines | Lines changed |
+| Lines  | Lines changed          |
 
 Click a file to see the diff.
 
@@ -82,8 +82,8 @@ The diff view shows:
 
 ## State Transition
 
-| Before | After (approve) | After (reject) |
-|--------|-----------------|----------------|
-| `implemented` | `submitted` | `implemented` (via undo) |
+| Before        | After (approve) | After (reject)           |
+|---------------|-----------------|--------------------------|
+| `implemented` | `submitted`     | `implemented` (via undo) |
 
 Prefer the command line? See [kvelmo review](/cli/review.md).

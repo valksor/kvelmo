@@ -13,12 +13,12 @@ Project values override global values.
 
 ## Supported Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable       | Description      |
+|----------------|------------------|
 | `GITHUB_TOKEN` | GitHub API token |
 | `GITLAB_TOKEN` | GitLab API token |
 | `LINEAR_TOKEN` | Linear API token |
-| `WRIKE_TOKEN` | Wrike API token |
+| `WRIKE_TOKEN`  | Wrike API token  |
 
 ## Setting Variables
 

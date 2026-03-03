@@ -68,12 +68,12 @@ Specifications are stored in:
 .kvelmo/specifications/specification.md
 ```
 
-Multiple planning attempts create numbered versions.
+Multiple planning attempts add numbered versions.
 
 ## State Transition
 
-| Before | After |
-|--------|-------|
+| Before   | After     |
+|----------|-----------|
 | `loaded` | `planned` |
 
 A checkpoint is created after successful planning.

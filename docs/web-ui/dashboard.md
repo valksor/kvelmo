@@ -63,27 +63,27 @@ Access to additional panels:
 
 The dashboard shows the current state with visual indicators:
 
-| State | Indicator | Description |
-|-------|-----------|-------------|
-| `none` | Gray | No active task |
-| `loaded` | Blue | Task loaded, ready to plan |
-| `planning` | Yellow spinner | Planning in progress |
-| `planned` | Green | Ready to implement |
+| State          | Indicator      | Description                |
+|----------------|----------------|----------------------------|
+| `none`         | Gray           | No active task             |
+| `loaded`       | Blue           | Task loaded, ready to plan |
+| `planning`     | Yellow spinner | Planning in progress       |
+| `planned`      | Green          | Ready to implement         |
 | `implementing` | Yellow spinner | Implementation in progress |
-| `implemented` | Green | Ready to review |
-| `reviewing` | Yellow | Review in progress |
-| `submitted` | Green check | Task complete |
-| `failed` | Red | Error occurred |
+| `implemented`  | Green          | Ready to review            |
+| `reviewing`    | Yellow         | Review in progress         |
+| `submitted`    | Green check    | Task complete              |
+| `failed`       | Red            | Error occurred             |
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+P` | Plan |
+| Shortcut | Action    |
+|----------|-----------|
+| `Ctrl+P` | Plan      |
 | `Ctrl+I` | Implement |
-| `Ctrl+R` | Review |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
+| `Ctrl+R` | Review    |
+| `Ctrl+Z` | Undo      |
+| `Ctrl+Y` | Redo      |
 
 ## Refreshing
 

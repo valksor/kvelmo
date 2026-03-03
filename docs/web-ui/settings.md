@@ -10,49 +10,49 @@ Click **Settings** in the sidebar to open the configuration panel.
 
 ### General
 
-| Setting | Description |
-|---------|-------------|
+| Setting       | Description                             |
+|---------------|-----------------------------------------|
 | Default Agent | AI agent to use (claude, codex, custom) |
-| Web Port | Port for the Web UI (default: 6337) |
+| Web Port      | Port for the Web UI (default: 6337)     |
 
 ### Agents
 
 Configure AI agent settings:
 
-| Setting | Description |
-|---------|-------------|
-| Agent | Agent to use for each phase |
+| Setting     | Description                  |
+|-------------|------------------------------|
+| Agent       | Agent to use for each phase  |
 | Retry Count | Number of retries on failure |
-| Retry Delay | Delay between retries |
+| Retry Delay | Delay between retries        |
 
 ### Workers
 
 Worker pool configuration:
 
-| Setting | Description |
-|---------|-------------|
+| Setting     | Description                |
+|-------------|----------------------------|
 | Max Workers | Maximum concurrent workers |
-| Queue Size | Maximum jobs in queue |
+| Queue Size  | Maximum jobs in queue      |
 
 ### Git
 
 Git integration settings:
 
-| Setting | Description |
-|---------|-------------|
-| Auto Commit | Automatically commit changes |
-| Branch Pattern | Pattern for branch names |
-| Target Branch | Default merge target |
+| Setting        | Description                  |
+|----------------|------------------------------|
+| Auto Commit    | Automatically commit changes |
+| Branch Pattern | Pattern for branch names     |
+| Target Branch  | Default merge target         |
 
 ### Providers
 
 Task source configuration:
 
-| Setting | Description |
-|---------|-------------|
+| Setting      | Description           |
+|--------------|-----------------------|
 | GitHub Token | Personal access token |
 | GitLab Token | Personal access token |
-| Wrike Token | API token |
+| Wrike Token  | API token             |
 
 ## Saving Settings
 
@@ -83,12 +83,12 @@ Project settings override global settings.
 
 Some settings can be set via environment variables:
 
-| Variable | Setting |
-|----------|---------|
+| Variable            | Setting          |
+|---------------------|------------------|
 | `KVELMO_SOCKET_DIR` | Socket directory |
-| `KVELMO_WEB_ADDR` | Web UI address |
-| `GITHUB_TOKEN` | GitHub API token |
-| `GITLAB_TOKEN` | GitLab API token |
+| `KVELMO_WEB_ADDR`   | Web UI address   |
+| `GITHUB_TOKEN`      | GitHub API token |
+| `GITLAB_TOKEN`      | GitLab API token |
 
 Environment variables override config file settings.
 

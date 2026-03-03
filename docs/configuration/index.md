@@ -4,10 +4,10 @@ kvelmo uses a layered configuration system with global, project, and environment
 
 ## Configuration Files
 
-| File | Scope | Location |
-|------|-------|----------|
-| Global | All projects | `~/.valksor/kvelmo/kvelmo.yaml` |
-| Project | Single project | `.valksor/kvelmo.yaml` |
+| File    | Scope          | Location                        |
+|---------|----------------|---------------------------------|
+| Global  | All projects   | `~/.valksor/kvelmo/kvelmo.yaml` |
+| Project | Single project | `.valksor/kvelmo.yaml`          |
 
 ## Priority Order
 
@@ -34,11 +34,11 @@ kvelmo config set default_agent claude
 
 ## Common Settings
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `default_agent` | AI agent to use | Auto-detect |
-| `max_workers` | Maximum concurrent workers | 4 |
-| `web_port` | Web UI port | 6337 |
+| Setting         | Description                | Default     |
+|-----------------|----------------------------|-------------|
+| `default_agent` | AI agent to use            | Auto-detect |
+| `max_workers`   | Maximum concurrent workers | 4           |
+| `web_port`      | Web UI port                | 6337        |
 
 ## Configuration Topics
 
