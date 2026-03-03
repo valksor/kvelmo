@@ -135,11 +135,11 @@ That's it — no terminal, no commands, no setup. The app handles everything.
 The Web UI is ideal if you're comfortable running one terminal command but prefer a visual interface afterward.
 
 ```text
-┌─────────────────┐     ┌───────────────────────────┐     ┌───────────────────┐     ┌───────────────────┐
+┌─────────────────┐     ┌────────────────────────────┐     ┌───────────────────┐     ┌───────────────────┐
 │ Install Mehrhof │ ──▶ │ mehr serve --global --open │ ──▶ │ Click Open Folder │ ──▶ │ Click Create Task │
-└─────────────────┘     └───────────────────────────┘     └───────────────────┘     └─────────┬─────────┘
-                                                                                              │
-                                                                                              ▼
+└─────────────────┘     └────────────────────────────┘     └───────────────────┘     └─────────┬─────────┘
+                                                                                               │
+                                                                                               ▼
 ┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────┐
 │ Review & Finish │ ◀── │ Click Create │ ◀── │ Review Plans │ ◀── │ Click Plan │
 └─────────────────┘     └──────────────┘     └──────────────┘     └────────────┘

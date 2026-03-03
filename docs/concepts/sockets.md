@@ -6,11 +6,11 @@ kvelmo uses Unix domain sockets for inter-process communication. This enables re
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      CLI / Web UI                            │
+│                      CLI / Web UI                           │
 └─────────────────────────┬───────────────────────────────────┘
                           │ JSON-RPC
 ┌─────────────────────────┴───────────────────────────────────┐
-│                    Socket Layer                              │
+│                    Socket Layer                             │
 │  ┌─────────────────┐    ┌─────────────────────────────────┐ │
 │  │  Global Socket  │    │  Worktree Sockets (per-project) │ │
 │  │  - Registry     │    │  - State Machine                │ │

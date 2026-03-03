@@ -18,13 +18,13 @@ Run mehrhof (`mehr`) inside Docker Sandbox for isolated, secure AI agent executi
 ┌─────────────────────────────────────────────────────────┐
 │ Docker Sandbox (microVM isolation)                      │
 │                                                         │
-│  cagent (optional) ─── CLI wrapper for conversation    │
+│  cagent (optional) ─── CLI wrapper for conversation     │
 │     │                                                   │
-│     ▼ or user directly calls                           │
-│  mehr ──────────────── workflow COORDINATOR            │
+│     ▼ or user directly calls                            │
+│  mehr ──────────────── workflow COORDINATOR             │
 │     │                  (manages state machine)          │
-│     ▼ spawns                                           │
-│  Claude/Codex ──────── actual AI agents (do the work)  │
+│     ▼ spawns                                            │
+│  Claude/Codex ──────── actual AI agents (do the work)   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
