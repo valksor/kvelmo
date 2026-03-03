@@ -7,5 +7,5 @@
 - Undo anything that doesn't look right
 - Free — uses your existing Claude CLI
 
+[valksor.com](https://valksor.com)
 [Get Started](/quickstart.md)
-[GitHub](https://github.com/valksor/kvelmo)
