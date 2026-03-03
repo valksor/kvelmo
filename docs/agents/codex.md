@@ -19,7 +19,7 @@ Install the Codex CLI:
 kvelmo config set default_agent codex
 ```
 
-Or in `~/.valksor/kvelmo/config.json`:
+Or in `~/.valksor/kvelmo/kvelmo.yaml`:
 ```json
 {
   "default_agent": "codex"

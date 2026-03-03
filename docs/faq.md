@@ -113,8 +113,8 @@ kvelmo serve
 
 ### Where is the config file?
 
-Global: `~/.valksor/kvelmo/config.json`
-Project: `.kvelmo/config.json`
+Global: `~/.valksor/kvelmo/kvelmo.yaml`
+Project: `.valksor/kvelmo.yaml`
 
 ### How do I change settings?
 

@@ -58,7 +58,7 @@ Task source configuration:
 
 1. Make your changes
 2. Click **Save**
-3. Settings are persisted to `~/.valksor/kvelmo/config.json`
+3. Settings are persisted to `~/.valksor/kvelmo/kvelmo.yaml`
 
 ## Resetting to Defaults
 
@@ -66,7 +66,7 @@ Click **Reset** to restore default settings.
 
 ## Project-Specific Settings
 
-Some settings can be overridden per-project in `.kvelmo/config.json`:
+Some settings can be overridden per-project in `.valksor/kvelmo.yaml`:
 
 ```json
 {
@@ -97,8 +97,8 @@ Environment variables override config file settings.
 Settings are applied in this order (highest priority first):
 
 1. Environment variables
-2. Project config (`.kvelmo/config.json`)
-3. Global config (`~/.valksor/kvelmo/config.json`)
+2. Project config (`.valksor/kvelmo.yaml`)
+3. Global config (`~/.valksor/kvelmo/kvelmo.yaml`)
 4. Defaults
 
 Prefer the command line? See [kvelmo config](/cli/config.md).

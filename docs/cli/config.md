@@ -34,8 +34,8 @@ kvelmo config set max_workers 8
 
 | Scope | Location |
 |-------|----------|
-| Global | `~/.valksor/kvelmo/config.json` |
-| Project | `.kvelmo/config.json` |
+| Global | `~/.valksor/kvelmo/kvelmo.yaml` |
+| Project | `.valksor/kvelmo.yaml` |
 
 ## Common Settings
 

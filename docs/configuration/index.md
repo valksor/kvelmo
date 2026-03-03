@@ -6,8 +6,8 @@ kvelmo uses a layered configuration system with global, project, and environment
 
 | File | Scope | Location |
 |------|-------|----------|
-| Global | All projects | `~/.valksor/kvelmo/config.json` |
-| Project | Single project | `.kvelmo/config.json` |
+| Global | All projects | `~/.valksor/kvelmo/kvelmo.yaml` |
+| Project | Single project | `.valksor/kvelmo.yaml` |
 
 ## Priority Order
 
