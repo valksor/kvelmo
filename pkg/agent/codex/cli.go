@@ -1,14 +1,13 @@
 package codex
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os/exec"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"github.com/valksor/kvelmo/pkg/agent"
 )
 
-// CLIConnection manages Codex via CLI subprocess.
+// CLIConnection manages Codex via app-server subprocess with JSON-RPC.
 // This is the fallback mode when WebSocket is unavailable.
 type CLIConnection struct {
 	config Config
@@ -27,41 +26,25 @@ type CLIConnection struct {
 	stdin     io.WriteCloser
 	stdout    io.ReadCloser
 	stderr    io.ReadCloser
+	transport *JsonRpcTransport
+	threadID  string
+
 	connected atomic.Bool
 	closed    atomic.Bool
 
 	// Event channel for current prompt
-	events chan agent.Event
+	events   chan agent.Event
+	eventsMu sync.Mutex
 
 	// Subagent tracker for detecting Task tool calls
 	subagents *agent.SubagentTracker
-}
 
-// cliMessage represents JSON output from Codex CLI.
-type cliMessage struct {
-	Type string `json:"type"`
+	// Pending approval requests
+	pendingApprovals   map[string]int64 // requestID -> jsonrpc ID
+	pendingApprovalsMu sync.Mutex
 
-	// For content
-	Content string `json:"content,omitempty"`
-	Text    string `json:"text,omitempty"`
-
-	// For tool_use
-	ID    string          `json:"id,omitempty"`
-	Name  string          `json:"name,omitempty"`
-	Input json.RawMessage `json:"input,omitempty"`
-
-	// For tool_result
-	ToolUseID string `json:"tool_use_id,omitempty"`
-	IsError   bool   `json:"is_error,omitempty"`
-
-	// For result
-	Result  string `json:"result,omitempty"`
-	Success bool   `json:"success,omitempty"`
-	Error   string `json:"error,omitempty"`
-
-	// For message
-	Role    string `json:"role,omitempty"`
-	Message string `json:"message,omitempty"`
+	// Track current turn state
+	turnActive atomic.Bool
 }
 
 // NewCLIConnection creates a new CLI connection for Codex.
@@ -69,13 +52,14 @@ func NewCLIConnection(cfg Config) *CLIConnection {
 	events := make(chan agent.Event, 100)
 
 	return &CLIConnection{
-		config:    cfg,
-		events:    events,
-		subagents: agent.NewSubagentTracker(events),
+		config:           cfg,
+		events:           events,
+		subagents:        agent.NewSubagentTracker(events),
+		pendingApprovals: make(map[string]int64),
 	}
 }
 
-// Connect starts the Codex CLI process.
+// Connect starts the Codex app-server process and initializes JSON-RPC.
 func (c *CLIConnection) Connect(ctx context.Context) error {
 	c.cmdMu.Lock()
 	defer c.cmdMu.Unlock()
@@ -96,14 +80,14 @@ func (c *CLIConnection) Connect(ctx context.Context) error {
 		c.cmd.Env = append(c.cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Get stdin for sending prompts
+	// Get stdin for JSON-RPC
 	stdin, err := c.cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("stdin pipe: %w", err)
 	}
 	c.stdin = stdin
 
-	// Get stdout for reading responses
+	// Get stdout for JSON-RPC
 	stdout, err := c.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("stdout pipe: %w", err)
@@ -121,12 +105,13 @@ func (c *CLIConnection) Connect(ctx context.Context) error {
 		return fmt.Errorf("start codex: %w", err)
 	}
 
-	c.connected.Store(true)
+	// Create JSON-RPC transport
+	c.transport = NewJsonRpcTransport(c.stdout, c.stdin)
+	c.transport.OnNotification(c.handleNotification)
+	c.transport.OnRequest(c.handleRequest)
+	c.transport.Start(ctx)
 
-	// Start output reader
-	go c.readOutput()
-
-	// Start error reader
+	// Start stderr reader
 	go c.readErrors()
 
 	// Wait for process in background
@@ -135,144 +120,291 @@ func (c *CLIConnection) Connect(ctx context.Context) error {
 		c.connected.Store(false)
 	}()
 
+	// Initialize JSON-RPC handshake
+	if err := c.initialize(ctx); err != nil {
+		_ = c.Close()
+
+		return fmt.Errorf("initialize: %w", err)
+	}
+
+	c.connected.Store(true)
+
+	c.events <- agent.Event{
+		Type:      agent.EventInit,
+		Content:   "Codex app-server initialized",
+		Timestamp: time.Now(),
+	}
+
 	return nil
 }
 
-// buildArgs constructs CLI arguments for Codex.
+// buildArgs constructs CLI arguments for Codex app-server.
 func (c *CLIConnection) buildArgs() []string {
 	args := []string{
-		"exec",
-		"--json",
+		"app-server",
+		// Multi-agent mode configured via ~/.codex/config.toml, not CLI flags
 	}
 
 	// Add configured arguments
 	args = append(args, c.config.Args...)
 
-	// Add model if specified
-	if c.config.Model != "" {
-		args = append(args, "--model", c.config.Model)
-	}
-
 	return args
 }
 
-// readOutput reads JSON from Codex's stdout.
-func (c *CLIConnection) readOutput() {
-	scanner := bufio.NewScanner(c.stdout)
-	// Increase buffer for large outputs
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		var msg cliMessage
-		if err := json.Unmarshal([]byte(line), &msg); err != nil {
-			continue
-		}
-
-		c.handleMessage(msg)
+// initialize performs the JSON-RPC initialization handshake.
+func (c *CLIConnection) initialize(ctx context.Context) error {
+	// Step 1: Send initialize request
+	_, err := c.transport.Call(ctx, "initialize", map[string]any{
+		"clientInfo": map[string]any{
+			"name":    "kvelmo",
+			"title":   "kvelmo",
+			"version": "1.0.0",
+		},
+		"capabilities": map[string]any{
+			"experimentalApi": false,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("initialize call: %w", err)
 	}
 
-	// Scanner done - close events
-	if !c.closed.Load() {
-		close(c.events)
+	// Step 2: Send initialized notification
+	if err := c.transport.Notify("initialized", map[string]any{}); err != nil {
+		return fmt.Errorf("initialized notify: %w", err)
+	}
+
+	// Step 3: Start a thread
+	result, err := c.transport.Call(ctx, "thread/start", map[string]any{
+		"model":          c.config.Model,
+		"cwd":            c.config.WorkDir,
+		"approvalPolicy": "always", // Ask for approval
+		"sandbox":        "workspace-write",
+	})
+	if err != nil {
+		return fmt.Errorf("thread/start: %w", err)
+	}
+
+	// Extract thread ID
+	var threadResult struct {
+		Thread struct {
+			ID string `json:"id"`
+		} `json:"thread"`
+	}
+	if err := json.Unmarshal(result, &threadResult); err != nil {
+		return fmt.Errorf("parse thread result: %w", err)
+	}
+
+	c.threadID = threadResult.Thread.ID
+	slog.Debug("codex thread started", "threadId", c.threadID)
+
+	return nil
+}
+
+// handleNotification processes incoming JSON-RPC notifications.
+func (c *CLIConnection) handleNotification(method string, params json.RawMessage) {
+	switch method {
+	case "item/agentMessage/delta":
+		// Streaming text delta
+		var delta struct {
+			Text string `json:"text"`
+		}
+		if err := json.Unmarshal(params, &delta); err == nil && delta.Text != "" {
+			c.emitEvent(agent.Event{
+				Type:      agent.EventStream,
+				Content:   delta.Text,
+				Timestamp: time.Now(),
+			})
+		}
+
+	case "item/started":
+		// Item started (command execution, file change, etc.)
+		var item struct {
+			ItemID string `json:"itemId"`
+			Type   string `json:"type"`
+		}
+		if err := json.Unmarshal(params, &item); err == nil {
+			switch item.Type {
+			case "commandExecution":
+				c.emitEvent(agent.Event{
+					Type:      agent.EventToolUse,
+					Content:   "Bash",
+					Timestamp: time.Now(),
+				})
+			case "fileChange":
+				c.emitEvent(agent.Event{
+					Type:      agent.EventToolUse,
+					Content:   "Edit",
+					Timestamp: time.Now(),
+				})
+			}
+		}
+
+	case "item/completed":
+		// Item completed
+		var item struct {
+			ItemID string `json:"itemId"`
+			Type   string `json:"type"`
+		}
+		if err := json.Unmarshal(params, &item); err == nil {
+			c.emitEvent(agent.Event{
+				Type:      agent.EventToolResult,
+				Content:   item.Type + " completed",
+				Timestamp: time.Now(),
+			})
+		}
+
+	case "turn/completed":
+		// Turn completed - signal completion
+		c.turnActive.Store(false)
+		c.emitEvent(agent.Event{
+			Type:      agent.EventComplete,
+			Timestamp: time.Now(),
+		})
+
+	case "turn/failed":
+		// Turn failed
+		c.turnActive.Store(false)
+		var failure struct {
+			Error string `json:"error"`
+		}
+		_ = json.Unmarshal(params, &failure)
+		c.emitEvent(agent.Event{
+			Type:      agent.EventError,
+			Error:     failure.Error,
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// handleRequest processes incoming JSON-RPC requests (need response).
+func (c *CLIConnection) handleRequest(method string, id int64, params json.RawMessage) {
+	switch method {
+	case "item/commandExecution/requestApproval":
+		c.handleCommandApproval(id, params)
+	case "item/fileChange/requestApproval":
+		c.handleFileChangeApproval(id, params)
+	case "item/mcpToolCall/requestApproval":
+		c.handleMcpApproval(id, params)
+	default:
+		// Unknown request - auto-approve
+		_ = c.transport.Respond(id, map[string]any{"decision": "accept"})
+	}
+}
+
+func (c *CLIConnection) handleCommandApproval(id int64, params json.RawMessage) {
+	var req struct {
+		ItemID  string   `json:"itemId"`
+		Command []string `json:"command"`
+	}
+	if err := json.Unmarshal(params, &req); err != nil {
+		slog.Warn("rejecting malformed command approval request", "error", err)
+		_ = c.transport.Respond(id, map[string]any{"decision": "reject"})
+
+		return
+	}
+
+	// Create permission request
+	requestID := uuid.NewString()
+	c.pendingApprovalsMu.Lock()
+	c.pendingApprovals[requestID] = id
+	c.pendingApprovalsMu.Unlock()
+
+	command := ""
+	if len(req.Command) > 0 {
+		command = req.Command[0]
+	}
+
+	// Check with permission handler
+	permReq := agent.PermissionRequest{
+		ID:    requestID,
+		Tool:  "Bash",
+		Input: map[string]any{"command": command},
+	}
+
+	if c.config.PermissionHandler != nil {
+		approved := c.config.PermissionHandler(permReq)
+		_ = c.HandlePermission(requestID, approved)
+	} else {
+		// Emit event for external handling
+		c.emitEvent(agent.Event{
+			Type:              agent.EventPermission,
+			PermissionRequest: &permReq,
+			Timestamp:         time.Now(),
+		})
+	}
+}
+
+func (c *CLIConnection) handleFileChangeApproval(id int64, params json.RawMessage) {
+	var req struct {
+		ItemID  string `json:"itemId"`
+		Changes []struct {
+			Path string `json:"path"`
+			Kind string `json:"kind"`
+		} `json:"changes"`
+	}
+	if err := json.Unmarshal(params, &req); err != nil {
+		slog.Warn("rejecting malformed file change approval request", "error", err)
+		_ = c.transport.Respond(id, map[string]any{"decision": "reject"})
+
+		return
+	}
+
+	// Create permission request
+	requestID := uuid.NewString()
+	c.pendingApprovalsMu.Lock()
+	c.pendingApprovals[requestID] = id
+	c.pendingApprovalsMu.Unlock()
+
+	paths := make([]string, len(req.Changes))
+	for i, ch := range req.Changes {
+		paths[i] = ch.Path
+	}
+
+	permReq := agent.PermissionRequest{
+		ID:    requestID,
+		Tool:  "Edit",
+		Input: map[string]any{"paths": paths},
+	}
+
+	if c.config.PermissionHandler != nil {
+		approved := c.config.PermissionHandler(permReq)
+		_ = c.HandlePermission(requestID, approved)
+	} else {
+		c.emitEvent(agent.Event{
+			Type:              agent.EventPermission,
+			PermissionRequest: &permReq,
+			Timestamp:         time.Now(),
+		})
+	}
+}
+
+func (c *CLIConnection) handleMcpApproval(id int64, _ json.RawMessage) {
+	// Auto-approve MCP tool calls
+	_ = c.transport.Respond(id, map[string]any{"decision": "accept"})
+}
+
+func (c *CLIConnection) emitEvent(event agent.Event) {
+	c.eventsMu.Lock()
+	ch := c.events
+	c.eventsMu.Unlock()
+
+	select {
+	case ch <- event:
+	default:
+		// Channel full, drop event
 	}
 }
 
 // readErrors reads stderr for error messages.
 func (c *CLIConnection) readErrors() {
-	scanner := bufio.NewScanner(c.stderr)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			c.events <- agent.Event{
-				Type:      agent.EventError,
-				Content:   line,
-				Timestamp: time.Now(),
-			}
+	buf := make([]byte, 4096)
+	for {
+		n, err := c.stderr.Read(buf)
+		if err != nil {
+			return
 		}
-	}
-}
-
-// handleMessage processes a CLI message.
-func (c *CLIConnection) handleMessage(msg cliMessage) {
-	switch msg.Type {
-	case "text", "content", "assistant":
-		content := msg.Content
-		if content == "" {
-			content = msg.Text
-		}
-		if content != "" {
-			c.events <- agent.Event{
-				Type:      agent.EventStream,
-				Content:   content,
-				Timestamp: time.Now(),
-			}
-		}
-
-	case "tool_use":
-		var input map[string]any
-		if msg.Input != nil {
-			_ = json.Unmarshal(msg.Input, &input)
-		}
-
-		// Check for subagent spawn (Task tool)
-		toolCallID := msg.ID
-		if toolCallID == "" {
-			toolCallID = uuid.NewString()
-		}
-		c.subagents.OnToolUse(toolCallID, msg.Name, input)
-
-		c.events <- agent.Event{
-			Type:      agent.EventToolUse,
-			Content:   msg.Name,
-			Data:      input,
-			Timestamp: time.Now(),
-		}
-
-	case "tool_result":
-		// Check for subagent completion
-		toolCallID := msg.ToolUseID
-		if toolCallID != "" {
-			c.subagents.OnToolResult(toolCallID, !msg.IsError, msg.Error)
-		}
-
-		c.events <- agent.Event{
-			Type:      agent.EventToolResult,
-			Content:   msg.Result,
-			Timestamp: time.Now(),
-		}
-
-	case "result":
-		if msg.Success {
-			c.events <- agent.Event{
-				Type:      agent.EventComplete,
-				Timestamp: time.Now(),
-			}
-		} else {
-			c.events <- agent.Event{
-				Type:      agent.EventError,
-				Error:     msg.Error,
-				Timestamp: time.Now(),
-			}
-		}
-
-	case "error":
-		c.events <- agent.Event{
-			Type:      agent.EventError,
-			Error:     msg.Error,
-			Content:   msg.Message,
-			Timestamp: time.Now(),
-		}
-
-	case "done", "complete":
-		c.events <- agent.Event{
-			Type:      agent.EventComplete,
-			Timestamp: time.Now(),
+		if n > 0 {
+			slog.Debug("codex stderr", "output", string(buf[:n]))
 		}
 	}
 }
@@ -282,30 +414,37 @@ func (c *CLIConnection) Connected() bool {
 	return c.connected.Load()
 }
 
-// SendPrompt sends a prompt to Codex CLI.
+// SendPrompt sends a prompt to Codex via JSON-RPC.
 func (c *CLIConnection) SendPrompt(ctx context.Context, prompt string) (<-chan agent.Event, error) {
 	if !c.connected.Load() {
 		return nil, errors.New("not connected")
 	}
 
-	// Create new event channel for this prompt
-	c.events = make(chan agent.Event, 100)
-	c.subagents.SetEventChannel(c.events)
-
-	// Write prompt to stdin
-	c.cmdMu.Lock()
-	if c.stdin != nil {
-		// Codex expects plain text or JSON input
-		msg := map[string]any{
-			"prompt": prompt,
-		}
-		data, err := json.Marshal(msg)
-		if err == nil {
-			data = append(data, '\n')
-			_, _ = c.stdin.Write(data)
-		}
+	if c.threadID == "" {
+		return nil, errors.New("no thread started")
 	}
-	c.cmdMu.Unlock()
+
+	// Create new event channel for this prompt
+	c.eventsMu.Lock()
+	c.events = make(chan agent.Event, 100)
+	ch := c.events
+	c.eventsMu.Unlock()
+	c.subagents.SetEventChannel(ch)
+
+	// Start a turn
+	c.turnActive.Store(true)
+	_, err := c.transport.Call(ctx, "turn/start", map[string]any{
+		"threadId": c.threadID,
+		"message": map[string]any{
+			"role":    "user",
+			"content": prompt,
+		},
+	})
+	if err != nil {
+		c.turnActive.Store(false)
+
+		return nil, fmt.Errorf("turn/start: %w", err)
+	}
 
 	// Return filtered event channel
 	filtered := make(chan agent.Event, 100)
@@ -313,7 +452,7 @@ func (c *CLIConnection) SendPrompt(ctx context.Context, prompt string) (<-chan a
 		defer close(filtered)
 		for {
 			select {
-			case event, ok := <-c.events:
+			case event, ok := <-ch:
 				if !ok {
 					return
 				}
@@ -330,9 +469,25 @@ func (c *CLIConnection) SendPrompt(ctx context.Context, prompt string) (<-chan a
 	return filtered, nil
 }
 
-// HandlePermission is a no-op in CLI mode.
+// HandlePermission responds to a permission request.
 func (c *CLIConnection) HandlePermission(requestID string, approved bool) error {
-	return nil
+	c.pendingApprovalsMu.Lock()
+	rpcID, ok := c.pendingApprovals[requestID]
+	if ok {
+		delete(c.pendingApprovals, requestID)
+	}
+	c.pendingApprovalsMu.Unlock()
+
+	if !ok {
+		return fmt.Errorf("no pending approval for %s", requestID)
+	}
+
+	decision := "accept"
+	if !approved {
+		decision = "reject"
+	}
+
+	return c.transport.Respond(rpcID, map[string]any{"decision": decision})
 }
 
 // Close stops the CLI process.
@@ -342,6 +497,10 @@ func (c *CLIConnection) Close() error {
 	}
 
 	c.connected.Store(false)
+
+	if c.transport != nil {
+		_ = c.transport.Close()
+	}
 
 	c.cmdMu.Lock()
 	defer c.cmdMu.Unlock()
