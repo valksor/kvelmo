@@ -219,6 +219,15 @@ jobs:
                     sudo apt-get update
                     sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+            -   name: Create stub sidecar binary
+                run: |
+                    mkdir -p web/src-tauri/binaries web/src-tauri/resources
+                    TARGET=$(rustc -vV | grep host | cut -d' ' -f2)
+                    touch web/src-tauri/binaries/kvelmo-$TARGET
+                    chmod +x web/src-tauri/binaries/kvelmo-$TARGET
+                    touch web/src-tauri/resources/kvelmo-wsl-x64
+                    touch web/src-tauri/resources/kvelmo-wsl-arm64
+
             -   name: Check formatting
                 working-directory: web/src-tauri
                 run: cargo fmt --check
