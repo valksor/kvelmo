@@ -316,7 +316,7 @@ jobs:
                     bun x json -I -f tauri.conf.json -e "this.version='$VERSION'"
 
             -   name: Download pre-built web dist
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v8
                 with:
                     name: web-dist
                     path: web/dist
