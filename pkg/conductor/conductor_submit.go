@@ -16,8 +16,11 @@ import (
 // The lock is released during network operations to avoid blocking other callers.
 // State transition happens AFTER successful operations to avoid terminal state on failure.
 func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
+	slog.Info("submit: called", "delete_branch", deleteBranch)
 	// Phase 1: Pre-flight checks and validate state transition is possible
+	slog.Info("submit: acquiring lock")
 	c.mu.Lock()
+	slog.Info("submit: lock acquired")
 	if c.workUnit == nil {
 		c.mu.Unlock()
 
@@ -26,6 +29,7 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 
 	// Check quality gate - use cached result from Review() if available,
 	// otherwise run synchronously (when Review was skipped)
+	slog.Info("submit: checking quality gate", "cached", c.workUnit.QualityGatePassed != nil)
 	if c.workUnit.QualityGatePassed != nil {
 		// Use cached result from async quality gate
 		if !*c.workUnit.QualityGatePassed {
@@ -34,23 +38,28 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 
 			return fmt.Errorf("quality gate failed: %s", errMsg)
 		}
-		slog.Debug("quality gate passed (cached)")
+		slog.Info("submit: quality gate passed (cached)")
 	} else {
 		// No cached result - run synchronously (Review was skipped or old state)
+		slog.Info("submit: running quality gate synchronously")
 		if err := c.runQualityGate(ctx); err != nil {
 			c.mu.Unlock()
 
 			return fmt.Errorf("quality gate failed: %w", err)
 		}
+		slog.Info("submit: quality gate passed (sync)")
 	}
 
 	// Verify state transition is possible before starting network operations.
 	// Don't dispatch yet - we dispatch after success to avoid terminal state on failure.
+	slog.Info("submit: checking state transition")
 	if can, reason := c.machine.CanDispatch(ctx, EventSubmit); !can {
 		c.mu.Unlock()
+		slog.Info("submit: cannot dispatch", "reason", reason)
 
 		return fmt.Errorf("cannot submit: %s", reason)
 	}
+	slog.Info("submit: state transition ok")
 
 	// Phase 2: Copy state needed for network operations
 	branch := c.workUnit.Branch
@@ -73,11 +82,14 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 	c.mu.Unlock()
 
 	// Phase 3: Network operations (no lock held)
-	var prURL string
+	slog.Info("submit: starting network operations", "branch", branch, "has_git", git != nil)
+	var prURL, prID string
 	if git != nil && branch != "" {
+		slog.Info("submit: pushing branch", "branch", branch)
 		if err := git.Push(ctx, "origin", branch); err != nil {
 			return fmt.Errorf("push branch %s: %w", branch, err)
 		}
+		slog.Info("submit: push completed")
 
 		// Create PR via provider if supported
 		if sourceProvider != "" && providers != nil {
@@ -99,6 +111,7 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 					}
 					if result, err := sp.CreatePR(ctx, prOpts); err == nil {
 						prURL = result.URL
+						prID = result.ID // Store PR ID for approve/merge operations
 						c.logVerbosef("Created PR: %s", prURL)
 						// Add comment linking to PR on original task (if enabled)
 						if shouldComment {
@@ -151,6 +164,11 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 	// Clear worktree path so we don't try again
 	if c.workUnit != nil && c.workUnit.WorktreePath != "" {
 		c.workUnit.WorktreePath = ""
+	}
+
+	// Store PR ID for approve/merge operations
+	if c.workUnit != nil && prID != "" {
+		c.workUnit.PRID = prID
 	}
 
 	// Build event data
