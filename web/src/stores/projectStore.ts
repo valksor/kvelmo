@@ -153,6 +153,9 @@ interface ProjectState {
   loading: boolean
   error: string | null
 
+  // Quality gate prompt (set when conductor needs a yes/no answer)
+  qualityPrompt: { id: string; question: string } | null
+
   // Connection
   connect: (worktreeId: string) => Promise<void>
   disconnect: () => void
@@ -168,9 +171,15 @@ interface ProjectState {
   abort: () => Promise<void>
   reset: () => Promise<void>
   abandon: (keepBranch?: boolean) => Promise<void>
+  deleteTask: () => Promise<void>
   update: () => Promise<UpdateResult>
   finish: (options?: FinishOptions) => Promise<FinishResult | null>
   refresh: () => Promise<RefreshResult | null>
+  approveRemote: (comment?: string) => Promise<void>
+  mergeRemote: (method?: string) => Promise<void>
+
+  // Quality gate
+  respondToPrompt: (promptId: string, answer: boolean) => Promise<void>
 
   // Checkpoint navigation
   undo: (steps?: number) => Promise<void>
@@ -216,6 +225,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   reviewDetails: {},
   loading: false,
   error: null,
+  qualityPrompt: null,
 
   connect: async (worktreeId: string) => {
     console.log('[kvelmo] projectStore.connect called with:', worktreeId)
@@ -284,6 +294,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           if (data?.id) {
             useScreenshotStore.getState().handleScreenshotDeleted(data.id)
           }
+        } else if (msg.type === 'user_prompt') {
+          const data = (msg as { data?: { prompt_id?: string; question?: string } }).data
+          if (data?.prompt_id) {
+            set({ qualityPrompt: { id: data.prompt_id, question: data.question ?? 'Quality gate question' } })
+          }
         }
       })
 
@@ -329,7 +344,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       redoStack: [],
       gitStatus: null,
       reviews: [],
-      reviewDetails: {}
+      reviewDetails: {},
+      qualityPrompt: null
     })
   },
 
@@ -573,6 +589,68 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     } catch (err) {
       set({ loading: false, error: err instanceof Error ? err.message : 'Refresh failed' })
       return null
+    }
+  },
+
+  deleteTask: async () => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Deleting task...')
+
+    try {
+      await client.call('delete', {})
+      set({ state: 'none', task: null, loading: false })
+      get().appendOutput('Task deleted')
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Delete failed' })
+    }
+  },
+
+  approveRemote: async (comment?: string) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Approving PR...')
+
+    try {
+      await client.call('remote.approve', { comment: comment ?? '' })
+      set({ loading: false })
+      get().appendOutput('PR approved')
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Approve failed' })
+    }
+  },
+
+  mergeRemote: async (method?: string) => {
+    const client = get().client
+    if (!client) return
+
+    set({ loading: true, error: null })
+    get().appendOutput('Merging PR...')
+
+    try {
+      await client.call('remote.merge', { method: method ?? 'rebase' })
+      set({ loading: false })
+      get().appendOutput('PR merged')
+      await get().refreshStatus()
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : 'Merge failed' })
+    }
+  },
+
+  respondToPrompt: async (promptId: string, answer: boolean) => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      await client.call('quality.respond', { prompt_id: promptId, answer })
+      set({ qualityPrompt: null })
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Quality response failed' })
     }
   },
 

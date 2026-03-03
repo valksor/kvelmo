@@ -368,3 +368,55 @@ func (p *GitHubProvider) GetPRStatus(ctx context.Context, taskID string) (*PRSta
 
 	return nil, fmt.Errorf("could not find issue or PR: %s", taskID)
 }
+
+// ApprovePR approves a pull request with an optional comment.
+// The taskID should be in format "owner/repo#number".
+func (p *GitHubProvider) ApprovePR(ctx context.Context, taskID string, comment string) error {
+	owner, repo, number, err := parseGitHubIDFull(taskID)
+	if err != nil {
+		return err
+	}
+
+	event := "APPROVE"
+	review := &github.PullRequestReviewRequest{
+		Event: &event,
+	}
+
+	// Only set body if non-empty
+	if comment != "" {
+		review.Body = &comment
+	}
+
+	_, _, err = p.client.PullRequests.CreateReview(ctx, owner, repo, number, review)
+	if err != nil {
+		return fmt.Errorf("approve pull request: %w", err)
+	}
+
+	return nil
+}
+
+// MergePR merges a pull request using the specified method.
+// The taskID should be in format "owner/repo#number".
+// Method should be one of: "merge", "squash", "rebase" (default: "rebase").
+func (p *GitHubProvider) MergePR(ctx context.Context, taskID string, method string) error {
+	owner, repo, number, err := parseGitHubIDFull(taskID)
+	if err != nil {
+		return err
+	}
+
+	// Default to rebase
+	if method == "" {
+		method = "rebase"
+	}
+
+	options := &github.PullRequestOptions{
+		MergeMethod: method,
+	}
+
+	_, _, err = p.client.PullRequests.Merge(ctx, owner, repo, number, "", options)
+	if err != nil {
+		return fmt.Errorf("merge pull request: %w", err)
+	}
+
+	return nil
+}

@@ -218,3 +218,122 @@ type RefreshResult struct {
 	Message           string    `json:"message"`
 	RefreshedAt       time.Time `json:"refreshed_at"`
 }
+
+// ApprovePR approves the PR/MR for the current work unit.
+// This is typically called after reviewing the submitted PR.
+func (c *Conductor) ApprovePR(ctx context.Context, comment string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.workUnit == nil {
+		return errors.New("no task loaded")
+	}
+
+	if c.machine.State() != StateSubmitted {
+		return fmt.Errorf("cannot approve: task is %s (expected submitted)", c.machine.State())
+	}
+
+	if c.providers == nil || c.workUnit.Source == nil {
+		return errors.New("no provider configured")
+	}
+
+	// Get provider and check if it supports merge operations
+	provider, err := c.providers.Get(c.workUnit.Source.Provider)
+	if err != nil {
+		return fmt.Errorf("get provider: %w", err)
+	}
+
+	// Check if provider implements MergeProvider
+	type mergeProvider interface {
+		ApprovePR(ctx context.Context, taskID string, comment string) error
+	}
+
+	mp, ok := provider.(mergeProvider)
+	if !ok {
+		return fmt.Errorf("provider %s does not support PR approval", c.workUnit.Source.Provider)
+	}
+
+	// Get PR ID from work unit (should be stored after submit)
+	prID := c.workUnit.PRID
+	if prID == "" {
+		return errors.New("no PR ID found (task may not have been submitted yet)")
+	}
+
+	if err := mp.ApprovePR(ctx, prID, comment); err != nil {
+		return fmt.Errorf("approve PR: %w", err)
+	}
+
+	c.emit(ConductorEvent{
+		Type:    "pr_approved",
+		State:   c.machine.State(),
+		Message: "PR approved: " + prID,
+		Data: mustMarshalJSON(map[string]any{
+			"pr_id":   prID,
+			"comment": comment,
+		}),
+	})
+
+	return nil
+}
+
+// MergePR merges the PR/MR for the current work unit.
+// Method should be one of: "merge", "squash", "rebase" (default: "rebase").
+func (c *Conductor) MergePR(ctx context.Context, method string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.workUnit == nil {
+		return errors.New("no task loaded")
+	}
+
+	if c.machine.State() != StateSubmitted {
+		return fmt.Errorf("cannot merge: task is %s (expected submitted)", c.machine.State())
+	}
+
+	if c.providers == nil || c.workUnit.Source == nil {
+		return errors.New("no provider configured")
+	}
+
+	// Get provider and check if it supports merge operations
+	provider, err := c.providers.Get(c.workUnit.Source.Provider)
+	if err != nil {
+		return fmt.Errorf("get provider: %w", err)
+	}
+
+	// Check if provider implements MergeProvider
+	type mergeProvider interface {
+		MergePR(ctx context.Context, taskID string, method string) error
+	}
+
+	mp, ok := provider.(mergeProvider)
+	if !ok {
+		return fmt.Errorf("provider %s does not support PR merging", c.workUnit.Source.Provider)
+	}
+
+	// Get PR ID from work unit
+	prID := c.workUnit.PRID
+	if prID == "" {
+		return errors.New("no PR ID found (task may not have been submitted yet)")
+	}
+
+	// Default to rebase
+	if method == "" {
+		method = "rebase"
+	}
+
+	if err := mp.MergePR(ctx, prID, method); err != nil {
+		return fmt.Errorf("merge PR: %w", err)
+	}
+
+	c.emit(ConductorEvent{
+		Type:    "pr_merged",
+		State:   c.machine.State(),
+		Message: "PR merged: " + prID,
+		Data: mustMarshalJSON(map[string]any{
+			"pr_id":  prID,
+			"method": method,
+		}),
+	})
+
+	return nil
+}

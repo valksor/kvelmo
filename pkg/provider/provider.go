@@ -188,6 +188,19 @@ type SubmitProvider interface {
 	AddComment(ctx context.Context, id string, comment string) error
 }
 
+// MergeProvider extends SubmitProvider with PR/MR approval and merge capabilities.
+// Providers that support programmatic PR approval and merging implement this interface.
+type MergeProvider interface {
+	SubmitProvider
+	// ApprovePR approves a PR/MR with an optional comment.
+	// The taskID format is provider-specific (e.g., "owner/repo#number" for GitHub).
+	ApprovePR(ctx context.Context, taskID string, comment string) error
+	// MergePR merges a PR/MR using the specified method.
+	// Method should be one of: "merge", "squash", "rebase".
+	// An empty method uses the provider's default (typically "rebase").
+	MergePR(ctx context.Context, taskID string, method string) error
+}
+
 // PROptions contains options for creating a pull request.
 type PROptions struct {
 	Title     string   // PR title
