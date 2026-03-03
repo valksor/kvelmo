@@ -271,7 +271,7 @@ describe('SocketClient', () => {
       getLatestWs().simulateClose()
 
       // Reconnect and send new message
-      const reconnectPromise = client.connect()
+      client.connect()
       getLatestWs().simulateOpen()
 
       // New message should work without old buffer
