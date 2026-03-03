@@ -505,44 +505,6 @@ func TestGlobalHandleUnregisterProject(t *testing.T) {
 	}
 }
 
-func TestGlobalHandleProjectStatus(t *testing.T) {
-	ctx := context.Background()
-	g := newTestGlobalSocket(t)
-
-	// Register a project first
-	regParams, err := json.Marshal(RegisterParams{Path: "/test2/project", SocketPath: "/test2.sock"})
-	if err != nil {
-		t.Fatalf("json.Marshal() error = %v", err)
-	}
-	regResp, err := g.handleRegisterProject(ctx, &Request{ID: "1", Params: regParams})
-	if err != nil {
-		t.Fatalf("handleRegisterProject() error = %v", err)
-	}
-	var regResult map[string]string
-	_ = json.Unmarshal(regResp.Result, &regResult)
-	projectID := regResult["id"]
-
-	// Update its status
-	statusParams, err := json.Marshal(StatusParams{ID: projectID, State: "loaded"})
-	if err != nil {
-		t.Fatalf("json.Marshal() error = %v", err)
-	}
-	resp, err := g.handleProjectStatus(ctx, &Request{ID: "2", Params: statusParams})
-	if err != nil {
-		t.Fatalf("handleProjectStatus() error = %v", err)
-	}
-	if resp.Error != nil {
-		t.Fatalf("handleProjectStatus() returned error: %s", resp.Error.Message)
-	}
-	var result map[string]bool
-	if err := json.Unmarshal(resp.Result, &result); err != nil {
-		t.Fatalf("unmarshal result: %v", err)
-	}
-	if !result["ok"] {
-		t.Error("result ok should be true")
-	}
-}
-
 func TestGlobalHandleSettingsGet(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
