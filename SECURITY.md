@@ -82,7 +82,7 @@ Security updates are announced via:
 
 ## Security-Related Features
 
-- **Secrets management**: API keys stored in `.kvelmo/.env` (gitignored)
+- **Secrets management**: API keys stored in `.kvelmo/.env` (gitignore)
 - **No credential leakage**: Secrets are never logged or included in error messages
 - **Dependency scanning**: `govulncheck` runs in `make quality`
 - **HTTPS only**: All provider communications use HTTPS/TLS

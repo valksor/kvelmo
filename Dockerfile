@@ -1,5 +1,5 @@
 # Build stage for Go binary
-FROM golang:1.22-alpine AS go-builder
+FROM golang:1.26-alpine AS go-builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o kvelmo ./cmd/kvelmo
 
 # Build stage for web UI
-FROM node:20-alpine AS web-builder
+FROM node:24-alpine AS web-builder
 
 WORKDIR /app/web
 
@@ -32,7 +32,7 @@ COPY web/ ./
 RUN npm run build
 
 # Final stage
-FROM alpine:3.19
+FROM alpine:3.23
 
 WORKDIR /app
 
