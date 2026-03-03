@@ -14,3 +14,8 @@ updates:
     directory: "/web"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/web/src-tauri"
+    schedule:
+      interval: "weekly"
