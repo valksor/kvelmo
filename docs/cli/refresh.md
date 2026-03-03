@@ -29,11 +29,11 @@ Run: kvelmo finish
 
 ## PR Status Actions
 
-| PR Status | Suggested Action |
-|-----------|------------------|
-| merged | `kvelmo finish` |
-| closed | `kvelmo finish --force` |
-| open | Wait for review, or check rebase status |
+| PR Status | Suggested Action                        |
+|-----------|-----------------------------------------|
+| merged    | `kvelmo finish`                         |
+| closed    | `kvelmo finish --force`                 |
+| open      | Wait for review, or check rebase status |
 
 ## Examples
 

@@ -10,11 +10,11 @@ kvelmo completion <shell>
 
 ## Supported Shells
 
-| Shell | Command |
-|-------|---------|
-| bash | `kvelmo completion bash` |
-| zsh | `kvelmo completion zsh` |
-| fish | `kvelmo completion fish` |
+| Shell      | Command                        |
+|------------|--------------------------------|
+| bash       | `kvelmo completion bash`       |
+| zsh        | `kvelmo completion zsh`        |
+| fish       | `kvelmo completion fish`       |
 | powershell | `kvelmo completion powershell` |
 
 ## Installation

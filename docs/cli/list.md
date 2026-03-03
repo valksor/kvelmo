@@ -10,8 +10,8 @@ kvelmo list
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
+| Flag     | Description    |
+|----------|----------------|
 | `--json` | Output as JSON |
 
 ## Output

@@ -10,21 +10,21 @@ kvelmo start
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `--from` | Load task from provider (optional) |
-| `--verbose`, `-v` | Show socket paths |
+| Flag              | Description                        |
+|-------------------|------------------------------------|
+| `--from`          | Load task from provider (optional) |
+| `--verbose`, `-v` | Show socket paths                  |
 
 ## Provider Formats
 
 When using `--from`:
 
-| Provider | Format | Example |
-|----------|--------|---------|
-| File | `file:<path>` | `file:task.md` |
-| GitHub | `github:<owner>/<repo>#<num>` | `github:valksor/kvelmo#123` |
-| GitLab | `gitlab:<project>#<num>` | `gitlab:group/project#456` |
-| Wrike | `wrike:<id>` | `wrike:abc123` |
+| Provider | Format                        | Example                     |
+|----------|-------------------------------|-----------------------------|
+| File     | `file:<path>`                 | `file:task.md`              |
+| GitHub   | `github:<owner>/<repo>#<num>` | `github:valksor/kvelmo#123` |
+| GitLab   | `gitlab:<project>#<num>`      | `gitlab:group/project#456`  |
+| Wrike    | `wrike:<id>`                  | `wrike:abc123`              |
 
 ## Examples
 

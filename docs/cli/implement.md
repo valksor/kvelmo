@@ -10,8 +10,8 @@ kvelmo implement
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
+| Flag      | Description                        |
+|-----------|------------------------------------|
 | `--force` | Re-run even if already implemented |
 
 ## Prerequisites

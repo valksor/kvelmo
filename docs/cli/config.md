@@ -10,11 +10,11 @@ kvelmo config <subcommand>
 
 ## Subcommands
 
-| Command | Description |
-|---------|-------------|
-| `show` | Show current configuration |
-| `init` | Initialize default configuration |
-| `set <key> <value>` | Set a configuration value |
+| Command             | Description                      |
+|---------------------|----------------------------------|
+| `show`              | Show current configuration       |
+| `init`              | Initialize default configuration |
+| `set <key> <value>` | Set a configuration value        |
 
 ## Examples
 
@@ -32,18 +32,18 @@ kvelmo config set max_workers 8
 
 ## Configuration Files
 
-| Scope | Location |
-|-------|----------|
-| Global | `~/.valksor/kvelmo/kvelmo.yaml` |
-| Project | `.valksor/kvelmo.yaml` |
+| Scope   | Location                        |
+|---------|---------------------------------|
+| Global  | `~/.valksor/kvelmo/kvelmo.yaml` |
+| Project | `.valksor/kvelmo.yaml`          |
 
 ## Common Settings
 
-| Key | Description |
-|-----|-------------|
-| `default_agent` | Default AI agent |
-| `max_workers` | Maximum concurrent workers |
-| `web_port` | Web UI port |
+| Key             | Description                |
+|-----------------|----------------------------|
+| `default_agent` | Default AI agent           |
+| `max_workers`   | Maximum concurrent workers |
+| `web_port`      | Web UI port                |
 
 ## Related
 

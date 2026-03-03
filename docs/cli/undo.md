@@ -38,7 +38,7 @@ Undo doesn't lose work. You can always redo:
 kvelmo redo
 ```
 
-## Multiple Undos
+## Multiple Undo
 
 Each undo goes back one checkpoint:
 ```

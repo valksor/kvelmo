@@ -10,8 +10,8 @@ kvelmo status
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
+| Flag     | Description    |
+|----------|----------------|
 | `--json` | Output as JSON |
 
 ## Examples
@@ -39,16 +39,16 @@ Checkpoints:
 
 ## States
 
-| State | Description |
-|-------|-------------|
-| `none` | No active task |
-| `loaded` | Task loaded |
-| `planning` | Planning in progress |
-| `planned` | Ready to implement |
+| State          | Description                |
+|----------------|----------------------------|
+| `none`         | No active task             |
+| `loaded`       | Task loaded                |
+| `planning`     | Planning in progress       |
+| `planned`      | Ready to implement         |
 | `implementing` | Implementation in progress |
-| `implemented` | Ready to review |
-| `reviewing` | Review in progress |
-| `submitted` | Task complete |
+| `implemented`  | Ready to review            |
+| `reviewing`    | Review in progress         |
+| `submitted`    | Task complete              |
 
 Also in Web UI: [Dashboard](/web-ui/dashboard.md).
 

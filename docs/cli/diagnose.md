@@ -14,13 +14,13 @@ The `diagnose` command checks that all required tools are installed and configur
 
 ## Checks Performed
 
-| Check | Description |
-|-------|-------------|
-| Git | Verifies git is installed |
-| Claude CLI | Checks for Claude CLI installation and authentication |
-| Codex CLI | Checks for Codex CLI installation (optional) |
-| Global socket | Verifies the kvelmo server is running |
-| Provider tokens | Lists configured provider authentication |
+| Check           | Description                                           |
+|-----------------|-------------------------------------------------------|
+| Git             | Verifies git is installed                             |
+| Claude CLI      | Checks for Claude CLI installation and authentication |
+| Codex CLI       | Checks for Codex CLI installation (optional)          |
+| Global socket   | Verifies the kvelmo server is running                 |
+| Provider tokens | Lists configured provider authentication              |
 
 ## Example Output
 
@@ -44,10 +44,10 @@ kvelmo diagnose
 
 ## Exit Codes
 
-| Code | Description |
-|------|-------------|
-| 0 | All required checks passed |
-| 1 | One or more checks failed |
+| Code | Description                |
+|------|----------------------------|
+| 0    | All required checks passed |
+| 1    | One or more checks failed  |
 
 ## See Also
 

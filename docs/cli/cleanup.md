@@ -10,10 +10,10 @@ kvelmo cleanup [flags]
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag        | Description                                 |
+|-------------|---------------------------------------------|
 | `--dry-run` | Show what would be removed without deleting |
-| `--force` | Remove sockets without confirmation |
+| `--force`   | Remove sockets without confirmation         |
 
 ## Description
 
