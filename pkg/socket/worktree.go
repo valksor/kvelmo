@@ -182,6 +182,8 @@ func (w *WorktreeSocket) registerHandlers() {
 	w.server.Handle("submit", w.handleSubmit)
 	w.server.Handle("task.finish", w.handleFinish)
 	w.server.Handle("task.refresh", w.handleRefresh)
+	w.server.Handle("remote.approve", w.handleRemoteApprove)
+	w.server.Handle("remote.merge", w.handleRemoteMerge)
 	w.server.Handle("abort", w.handleAbort)
 	w.server.Handle("reset", w.handleReset)
 	w.server.Handle("shutdown", w.handleShutdown)
@@ -316,6 +318,10 @@ func (w *WorktreeSocket) handleStatus(ctx context.Context, req *Request) (*Respo
 				WorktreePath: wu.WorktreePath,
 			}
 		}
+
+		if ids := w.conductor.PendingPromptIDs(); len(ids) > 0 {
+			result.PendingPromptID = ids[0]
+		}
 	}
 
 	return NewResultResponse(req.ID, result)
@@ -363,7 +369,12 @@ func (w *WorktreeSocket) handleStart(ctx context.Context, req *Request) (*Respon
 				if err == nil {
 					wu.WorktreePath = wt.Path
 					wu.Branch = wt.Branch
+					slog.Info("handleStart: created worktree isolation", "path", wt.Path, "branch", wt.Branch)
+				} else {
+					slog.Warn("handleStart: worktree creation failed", "error", err)
 				}
+			} else {
+				slog.Warn("handleStart: mkdir failed for worktree base", "path", isolationBasePath, "error", err)
 			}
 		}
 	}
@@ -601,6 +612,56 @@ func (w *WorktreeSocket) handleRefresh(ctx context.Context, req *Request) (*Resp
 		"commits_behind_base": result.CommitsBehindBase,
 		"action":              result.Action,
 		"message":             result.Message,
+	})
+}
+
+// RemoteApproveParams holds params for the remote.approve handler.
+type RemoteApproveParams struct {
+	Comment string `json:"comment,omitempty"`
+}
+
+func (w *WorktreeSocket) handleRemoteApprove(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, -32600, "no conductor configured"), nil
+	}
+
+	var params RemoteApproveParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	if err := w.conductor.ApprovePR(ctx, params.Comment); err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"status": "approved",
+		"state":  w.conductor.State(),
+	})
+}
+
+// RemoteMergeParams holds params for the remote.merge handler.
+type RemoteMergeParams struct {
+	Method string `json:"method,omitempty"` // merge, squash, rebase (default: rebase)
+}
+
+func (w *WorktreeSocket) handleRemoteMerge(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, -32600, "no conductor configured"), nil
+	}
+
+	var params RemoteMergeParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	if err := w.conductor.MergePR(ctx, params.Method); err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"status": "merged",
+		"state":  w.conductor.State(),
 	})
 }
 
@@ -1446,9 +1507,10 @@ const (
 )
 
 type StatusResult struct {
-	State TaskState `json:"state"`
-	Path  string    `json:"path"`
-	Task  *TaskInfo `json:"task,omitempty"`
+	State           TaskState `json:"state"`
+	Path            string    `json:"path"`
+	Task            *TaskInfo `json:"task,omitempty"`
+	PendingPromptID string    `json:"pending_prompt_id,omitempty"`
 }
 
 type TaskInfo struct {

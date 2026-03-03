@@ -8,7 +8,7 @@ interface ActionsWidgetProps {
 export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
   const {
     state, plan, implement, simplify, optimize, review, submit, undo, redo, abort, abandon, update,
-    finish, refresh,
+    finish, refresh, approveRemote, mergeRemote, deleteTask,
     loading, checkpoints, redoStack
   } = useProjectStore()
 
@@ -18,6 +18,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
   const [submitDeleteBranch, setSubmitDeleteBranch] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [finishDeleteRemote, setFinishDeleteRemote] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [updateNotice, setUpdateNotice] = useState<string | null>(null)
   const [refreshResult, setRefreshResult] = useState<{ action: string; message: string } | null>(null)
 
@@ -72,6 +73,11 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
       setRefreshResult({ action: result.action, message: result.message })
       setTimeout(() => setRefreshResult(null), 6000)
     }
+  }
+
+  const handleDelete = async () => {
+    setShowDeleteModal(false)
+    await deleteTask()
   }
 
   const content = (
@@ -260,6 +266,30 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
               </div>
             )}
 
+            {/* Approve PR */}
+            <button
+              onClick={() => approveRemote()}
+              disabled={loading}
+              className="btn btn-primary btn-outline w-full"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Approve PR
+            </button>
+
+            {/* Merge PR */}
+            <button
+              onClick={() => mergeRemote('rebase')}
+              disabled={loading}
+              className="btn btn-secondary w-full"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              Merge PR
+            </button>
+
             {/* Finish — cleanup after PR merge */}
             <button
               onClick={() => setShowFinishModal(true)}
@@ -315,16 +345,28 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
       {/* Abandon Task */}
       {isActive && (
-        <button
-          onClick={() => setShowAbandonModal(true)}
-          disabled={loading}
-          className="btn btn-error btn-sm w-full mt-1"
-        >
-          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Abandon Task
-        </button>
+        <>
+          <button
+            onClick={() => setShowAbandonModal(true)}
+            disabled={loading}
+            className="btn btn-error btn-sm w-full mt-1"
+          >
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Abandon Task
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            disabled={loading}
+            className="btn btn-error btn-outline btn-sm w-full mt-1"
+          >
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete Task
+          </button>
+        </>
       )}
 
       {/* Loading Indicator */}
@@ -454,6 +496,33 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
             </div>
           </div>
           <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowFinishModal(false)} aria-label="Close dialog" tabIndex={-1} />
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="modal modal-open">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" className="modal-box bg-base-100 max-w-sm">
+            <h3 id="delete-modal-title" className="font-bold text-lg text-error mb-2">Delete Task?</h3>
+            <p className="text-sm text-base-content/80 mb-4">
+              This will permanently delete the task data. This action cannot be undone.
+            </p>
+            <div className="modal-action">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="btn btn-error"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+          <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowDeleteModal(false)} aria-label="Close dialog" tabIndex={-1} />
         </div>
       )}
     </>
