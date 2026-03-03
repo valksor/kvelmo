@@ -66,21 +66,21 @@
 
 **Two socket types:**
 
-| Socket | Purpose | Lifecycle |
-|--------|---------|-----------|
-| **Global** | Management: settings, project registry, **shared worker pool**, job queue | Starts on first `kvelmo` command or app/web launch. Stays alive. |
-| **Worktree** | Task state machine, git ops for ONE worktree. Submits jobs to global. | Starts on `init` or `start`. Stopped via `disconnect`. |
+| Socket       | Purpose                                                                   | Lifecycle                                                        |
+|--------------|---------------------------------------------------------------------------|------------------------------------------------------------------|
+| **Global**   | Management: settings, project registry, **shared worker pool**, job queue | Starts on first `kvelmo` command or app/web launch. Stays alive. |
+| **Worktree** | Task state machine, git ops for ONE worktree. Submits jobs to global.     | Starts on `init` or `start`. Stopped via `disconnect`.           |
 
 **Critical: Worker pool is GLOBAL**
 - LLM agents consume CPU/RAM — can't have unlimited
-- **Max 5-6 workers total** across all projects
+- **Max 5–6 workers total** across all projects
 - Jobs from ANY project go into ONE shared queue
 - Prevents resource exhaustion when working on multiple projects
 
 **Socket-per-worktree logic:**
 - Non-worktree project = 1 worktree socket (root is the "worktree")
 - Git worktree = 1 socket per worktree
-- Each worktree is independent for state, but shares workers via global
+- Each worktree is independent for state but shares workers via global
 
 **Startup sequences:**
 
@@ -117,7 +117,7 @@ CLI: kvelmo disconnect
 **Global socket responsibilities:**
 - Settings (global preferences)
 - Worktree registry (list all registered projects/worktrees)
-- **Worker pool** (5-6 max workers, shared)
+- **Worker pool** (5–6 max workers, shared)
 - **Job queue** (jobs from all worktrees)
 - Status aggregation (see all worktree states at once)
 
@@ -130,10 +130,10 @@ CLI: kvelmo disconnect
 
 ### Protocol
 
-| Type | Protocol | Use Case |
-|------|----------|----------|
-| Commands | JSON-RPC 2.0 | `start`, `plan`, `implement`, `submit`, etc. |
-| Streaming | NDJSON passthrough | Agent output streams directly, no parsing |
+| Type      | Protocol           | Use Case                                     |
+|-----------|--------------------|----------------------------------------------|
+| Commands  | JSON-RPC 2.0       | `start`, `plan`, `implement`, `submit`, etc. |
+| Streaming | NDJSON passthrough | Agent output streams directly, no parsing    |
 
 ---
 
@@ -280,18 +280,18 @@ CLI            Worktree Socket        Global Socket           Worker (Claude)
 
 ```
 Browser                      Web Server                    Socket Server
- │                              │                              │
- ├─[HTTP GET /]────────────────►│                              │
- │◄─[Dashboard HTML]────────────┤                              │
- │                              │                              │
- ├─[WebSocket connect]─────────►│                              │
+ │                              │                               │
+ ├─[HTTP GET /]────────────────►│                               │
+ │◄─[Dashboard HTML]────────────┤                               │
+ │                              │                               │
+ ├─[WebSocket connect]─────────►│                               │
  │                              ├─[connect to project socket]──►│
- │                              │                              │
+ │                              │                               │
  │                              │◄─[state snapshot]─────────────┤
- │◄─[state via WS]──────────────┤                              │
- │                              │                              │
- │  (agent streaming)           │                              │
- │◄─[NDJSON via WS]◄────────────┤◄─[NDJSON passthrough]────────┤
+ │◄─[state via WS]──────────────┤                               │
+ │                              │                               │
+ │  (agent streaming)           │                               │
+ │◄─[NDJSON via WS]◄────────────┤◄─[NDJSON passthrough]─────────┤
 ```
 
 ---
@@ -302,9 +302,9 @@ Browser                      Web Server                    Socket Server
                     ┌────────────────────────────────────────────┐
                     │                                            │
                     ▼                                            │
-        ┌───────────────┐  start  ┌──────────────┐  plan  ┌─────────────┐
+        ┌───────────────┐  start  ┌──────────────┐  plan  ┌──────────────┐
  ──────►│ Task: None    │────────►│ Task: Loaded │───────►│Task: Planning│
-        └───────────────┘         └──────────────┘        └──────┬──────┘
+        └───────────────┘         └──────────────┘        └──────┬───────┘
                  ▲                                               │
                  │                                               │ complete
                  │                                               ▼
@@ -314,9 +314,9 @@ Browser                      Web Server                    Socket Server
                                          │                       │
                                          │ reject                │ implement
                                          ▼                       ▼
-                                  ┌─────────────┐        ┌────────────────┐
-                                  │Task: Planning│◄──────│Task: Implemented│
-                                  └─────────────┘  revise└────────────────┘
+                                  ┌──────────────┐        ┌─────────────────┐
+                                  │Task: Planning│◄───────│Task: Implemented│
+                                  └──────────────┘  revise└─────────────────┘
 ```
 
 ### States (descriptive, not ambiguous)
@@ -326,7 +326,7 @@ Browser                      Web Server                    Socket Server
 - **Task: Planned** — Specification complete, ready for implementation
 - **Task: Implementing** — Agent executing specification (in progress)
 - **Task: Implemented** — Implementation complete, ready for review
-- **Task: Reviewing** — Human review + security scan (in progress)
+- **Task: Reviewing** — Human review plus security scan (in progress)
 - **Task: Submitted** — Task submitted to provider (PR created, etc.)
 
 ### Key Transitions
@@ -348,28 +348,28 @@ Browser                      Web Server                    Socket Server
 
 **Problem with per-project workers:** Multiple projects × multiple workers = resource explosion. 5 projects × 3 workers = 15 agents eating CPU/RAM.
 
-**Solution:** Global worker pool with shared job queue. All worktrees submit to one queue. Max 5-6 workers total.
+**Solution:** Global worker pool with shared job queue. All worktrees submit to one queue. Max 5–6 workers total.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         GLOBAL SOCKET                                       │
-│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │                      Shared Job Queue                                  │ │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                      │ │
-│  │  │Project A│ │Project B│ │Project A│ │Project C│  ← Jobs from ANY     │ │
-│  │  │ Plan    │ │ Impl    │ │ Impl    │ │ Plan    │    worktree          │ │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘                      │ │
-│  └───────────────────────────┬───────────────────────────────────────────┘ │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                       │ │
+│  │  │Project A│ │Project B│ │Project A│ │Project C│  ← Jobs from ANY      │ │
+│  │  │ Plan    │ │ Impl    │ │ Impl    │ │ Plan    │    worktree           │ │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘                       │ │
+│  └───────────────────────────┬────────────────────────────────────────────┘ │
 │                              │                                              │
-│           ┌──────────────────┼──────────────────┐                          │
-│           ▼                  ▼                  ▼                          │
-│     ┌──────────┐       ┌──────────┐       ┌──────────┐                    │
-│     │ Worker 1 │       │ Worker 2 │       │ Worker 3 │   MAX 5-6 TOTAL    │
-│     │ (Opus)   │       │ (Sonnet) │       │ (Sonnet) │                    │
-│     │ Proj A   │       │ Proj B   │       │ Available│                    │
-│     └──────────┘       └──────────┘       └──────────┘                    │
-│          │                  │                                              │
-└──────────┼──────────────────┼──────────────────────────────────────────────┘
+│           ┌──────────────────┼──────────────────┐                           │
+│           ▼                  ▼                  ▼                           │
+│     ┌──────────┐       ┌──────────┐       ┌──────────┐                      │
+│     │ Worker 1 │       │ Worker 2 │       │ Worker 3 │   MAX 5-6 TOTAL      │
+│     │ (Opus)   │       │ (Sonnet) │       │ (Sonnet) │                      │
+│     │ Proj A   │       │ Proj B   │       │ Available│                      │
+│     └──────────┘       └──────────┘       └──────────┘                      │
+│          │                  │                                               │
+└──────────┼──────────────────┼───────────────────────────────────────────────┘
            │                  │
            ▼                  ▼
       Claude WS          Claude WS
@@ -383,12 +383,12 @@ Browser                      Web Server                    Socket Server
 
 ### Worker Types (personas)
 
-| Worker | Model | Purpose | Tools |
-|--------|-------|---------|-------|
-| **Planner** | Opus | Generate specifications | Read, search, analyze |
-| **Implementer** | Sonnet | Write code, execute | Read, write, git, terminal |
-| **Reviewer** | Sonnet | Review, suggest fixes | Read, analyze, comment |
-| **Optimizer** | Sonnet | Refactor, improve | Read, write, refactor |
+| Worker          | Model  | Purpose                 | Tools                      |
+|-----------------|--------|-------------------------|----------------------------|
+| **Planner**     | Opus   | Generate specifications | Read, search, analyze      |
+| **Implementer** | Sonnet | Write code, execute     | Read, write, git, terminal |
+| **Reviewer**    | Sonnet | Review, suggest fixes   | Read, analyze, comment     |
+| **Optimizer**   | Sonnet | Refactor, improve       | Read, write, refactor      |
 
 ### Job Queue Flow (Global)
 
@@ -405,7 +405,7 @@ Browser                      Web Server                    Socket Server
 
 **Job routing:**
 - Jobs tagged with source worktree ID
-- Global routes output back to correct worktree
+- Global routes output back to the correct worktree
 - Worktree doesn't know/care about other projects' jobs
 
 ### Parallelism Examples
@@ -426,9 +426,9 @@ All three run simultaneously!
 ```
 
 **Task splitting strategy:**
-- By file/component: Each major file gets own job
+- By file/component: Each major file gets an own job
 - By concern: UI vs. backend vs. tests
-- By phase: Multiple planning alternatives, pick best
+- By phase: Multiple planning alternatives, pick the best
 
 ### WebSocket-First Architecture
 
@@ -459,7 +459,7 @@ type Pool struct {
     results  map[string]*Job
 }
 
-func (p *Pool) Submit(job *Job) error  // Add job to queue
+func (p *Pool) Submit(job *Job) error  // Add a job to the queue
 func (p *Pool) Stream(jobID string) <-chan Event  // Get job output stream
 ```
 
@@ -475,20 +475,20 @@ claude --sdk-url ws://localhost:8765 --print \
 
 **Message Types We Receive (CLI → Server):**
 
-| Type | Purpose | Key Fields |
-|------|---------|------------|
-| `system/init` | Session start, capabilities | `session_id`, `tools[]` |
-| `stream_event` | Token-by-token streaming | `content`, `delta` |
-| `assistant` | Full LLM response | `message.role`, `message.content` |
-| `control_request` | Permission request | `id`, `tool`, `input` |
-| `result` | Task complete | `success` |
-| `keep_alive` | Heartbeat (10s) | — |
+| Type              | Purpose                     | Key Fields                        |
+|-------------------|-----------------------------|-----------------------------------|
+| `system/init`     | Session start, capabilities | `session_id`, `tools[]`           |
+| `stream_event`    | Token-by-token streaming    | `content`, `delta`                |
+| `assistant`       | Full LLM response           | `message.role`, `message.content` |
+| `control_request` | Permission request          | `id`, `tool`, `input`             |
+| `result`          | Task complete               | `success`                         |
+| `keep_alive`      | Heartbeat (10s)             | —                                 |
 
 **Message Types We Send (Server → CLI):**
 
-| Type | Purpose | Key Fields |
-|------|---------|------------|
-| `user` | Send prompt | `message.content`, `session_id` |
+| Type               | Purpose                 | Key Fields                       |
+|--------------------|-------------------------|----------------------------------|
+| `user`             | Send prompt             | `message.content`, `session_id`  |
 | `control_response` | Approve/deny permission | `control_request_id`, `approved` |
 
 **Protocol: NDJSON over WebSocket** — one JSON object per line.
@@ -558,7 +558,7 @@ Spawn as subprocess ──► Binary mode (parse stdout NDJSON)
 Error: No agent available
 ```
 
-**Binary fallback** uses same NDJSON format, just over stdin/stdout instead of WebSocket. Message parsing is identical.
+**Binary fallback** uses the same NDJSON format, just over stdin/stdout instead of WebSocket. Message parsing is identical.
 
 ---
 
@@ -566,15 +566,15 @@ Error: No agent available
 
 ### Tech Stack
 
-| Layer | Technology | Why |
-|-------|------------|-----|
-| **Framework** | React 19 | Stable, already used in go-mehrhof |
-| **Styling** | TailwindCSS 4 | Utility-first, fast iteration |
-| **Components** | shadcn/ui | Copy-paste primitives, full control, Radix accessibility |
-| **State** | Zustand | Simple, already used in go-mehrhof |
-| **Data** | TanStack Query | Caching, background refresh |
-| **Layout** | react-resizable-panels | VS Code-like resizable splits |
-| **Build** | Vite | Fast dev server, good HMR |
+| Layer          | Technology             | Why                                                      |
+|----------------|------------------------|----------------------------------------------------------|
+| **Framework**  | React 19               | Stable, already used in go-mehrhof                       |
+| **Styling**    | TailwindCSS 4          | Utility-first, fast iteration                            |
+| **Components** | shadcn/ui              | Copy-paste primitives, full control, Radix accessibility |
+| **State**      | Zustand                | Simple, already used in go-mehrhof                       |
+| **Data**       | TanStack Query         | Caching, background refresh                              |
+| **Layout**     | react-resizable-panels | VS Code-like resizable splits                            |
+| **Build**      | Vite                   | Fast dev server, good HMR                                |
 
 ### Design Elements
 
@@ -582,7 +582,7 @@ Error: No agent available
 - Resizable panels (like VS Code) — sidebar, main, output
 - Command palette (Cmd+K) for quick actions
 - Collapsible drawers for secondary info
-- Tabs + split views for multiple worktrees
+- Tabs plus split views for multiple worktrees
 
 **Visual Style:**
 - Dark mode first (developer tool aesthetic)
@@ -600,7 +600,7 @@ Error: No agent available
 ### Philosophy
 - **App feel, not website feel**
 - Widgets, drawers, unified view
-- See all active state at once
+- See all active states at once
 - Developer tool aesthetic
 - **Global mode by default** — project picker on launch
 
@@ -611,27 +611,27 @@ Error: No agent available
 │  kvelmo                                             [Settings]  │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
+│  ┌──────────────────────────────────────────────────────────┐   │
 │  │  Recent Projects                              [+ Open]   │   │
 │  │  ──────────────────────────────────────────────────────  │   │
 │  │  ● ~/workspace/project-a     Task: Implementing  ▶       │   │
 │  │  ○ ~/workspace/project-b     Task: None                  │   │
-│  │  ○ ~/workspace/mono/feat-x   Task: Planned      ▶       │   │
+│  │  ○ ~/workspace/mono/feat-x   Task: Planned      ▶        │   │
 │  │  ○ ~/workspace/mono/fix-y    Task: Reviewing             │   │
 │  │  ──────────────────────────────────────────────────────  │   │
 │  │  [Browse...] or drag folder here                         │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  └──────────────────────────────────────────────────────────┘   │
 │                                                                 │
-│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
-│  │  Worker Pool (Global)   │  │  Job Queue                  │  │
-│  │  ────────────────────   │  │  ────────────────────────   │  │
-│  │  ● Worker 1: Proj A     │  │  1. project-a: Implement    │  │
-│  │  ● Worker 2: Proj B     │  │  2. feat-x: Review          │  │
-│  │  ○ Worker 3: Available  │  │  3. project-a: Optimize     │  │
-│  │  ○ Worker 4: Available  │  │  ────────────────────────   │  │
-│  │  ────────────────────   │  │  3 jobs queued              │  │
-│  │  2/5 active             │  └─────────────────────────────┘  │
-│  └─────────────────────────┘                                   │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐   │
+│  │  Worker Pool (Global)   │  │  Job Queue                  │   │
+│  │  ────────────────────   │  │  ────────────────────────   │   │
+│  │  ● Worker 1: Proj A     │  │  1. project-a: Implement    │   │
+│  │  ● Worker 2: Proj B     │  │  2. feat-x: Review          │   │
+│  │  ○ Worker 3: Available  │  │  3. project-a: Optimize     │   │
+│  │  ○ Worker 4: Available  │  │  ────────────────────────   │   │
+│  │  ────────────────────   │  │  3 jobs queued              │   │
+│  │  2/5 active             │  └─────────────────────────────┘   │
+│  └─────────────────────────┘                                    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -643,21 +643,21 @@ Error: No agent available
 │  kvelmo                 [← All Projects] [Project ▾] [Settings] │
 ├───────────┬─────────────────────────────────────────────────────┤
 │           │                                                     │
-│ Worktrees │  ┌─────────────────────┐  ┌─────────────────────┐  │
-│           │  │   Task: #123        │  │   Agent Output      │  │
-│ ● main    │  │   State: Planning   │  │                     │  │
-│ ○ feat-x  │  │   ────────────────  │  │   > Analyzing...    │  │
-│ ○ fix-y   │  │   [Plan] [Impl]     │  │   > Found 3 files   │  │
-│           │  │   [Review] [Submit] │  │   > Generating...   │  │
-│           │  └─────────────────────┘  └─────────────────────┘  │
+│ Worktrees │  ┌─────────────────────┐  ┌─────────────────────┐   │
+│           │  │   Task: #123        │  │   Agent Output      │   │
+│ ● main    │  │   State: Planning   │  │                     │   │
+│ ○ feat-x  │  │   ────────────────  │  │   > Analyzing...    │   │
+│ ○ fix-y   │  │   [Plan] [Impl]     │  │   > Found 3 files   │   │
+│           │  │   [Review] [Submit] │  │   > Generating...   │   │
+│           │  └─────────────────────┘  └─────────────────────┘   │
 │───────────│                                                     │
-│           │  ┌─────────────────────┐  ┌─────────────────────┐  │
-│ Workers   │  │   Git Status        │  │   Checkpoints       │  │
-│           │  │                     │  │                     │  │
-│ ● 1 busy  │  │   branch: feat-123  │  │   ◉ Plan v2         │  │
-│ ○ 4 avail │  │   +3 -1 modified    │  │   ○ Plan v1         │  │
-│           │  │   ✓ clean           │  │   ○ Started         │  │
-│           │  └─────────────────────┘  └─────────────────────┘  │
+│           │  ┌─────────────────────┐  ┌─────────────────────┐   │
+│ Workers   │  │   Git Status        │  │   Checkpoints       │   │
+│           │  │                     │  │                     │   │
+│ ● 1 busy  │  │   branch: feat-123  │  │   ◉ Plan v2         │   │
+│ ○ 4 avail │  │   +3 -1 modified    │  │   ○ Plan v1         │   │
+│           │  │   ✓ clean           │  │   ○ Started         │   │
+│           │  └─────────────────────┘  └─────────────────────┘   │
 │           │                                                     │
 └───────────┴─────────────────────────────────────────────────────┘
 ```
@@ -675,7 +675,7 @@ Error: No agent available
 **Level 2: Project View**
 | Widget | Purpose | Conductor Handler |
 |--------|---------|-------------------|
-| `TaskList` | Active tasks in project | `project.ListTasks()` |
+| `TaskList` | Active tasks in a project | `project.ListTasks()` |
 | `ProjectStats` | Costs for this project, job count | `project.GetStats()` |
 | `ProjectQueue` | Jobs from this project only | `project.ListQueue()` |
 | `WorktreeList` | Worktrees in this project | `project.ListWorktrees()` |
@@ -736,7 +736,7 @@ kvelmo disconnect              # Stop current worktree socket, unregister from g
 
 ### Phase 1: Core Socket Infrastructure
 1. pkg/socket - Server, client, protocol (JSON-RPC + NDJSON)
-2. Global socket + worktree socket lifecycle
+2. Global socket plus worktree socket lifecycle
 3. cmd/kvelmo - Binary with socket discovery
 4. Minimal CLI: `init`, `status`, `disconnect`
 
@@ -749,7 +749,7 @@ kvelmo disconnect              # Stop current worktree socket, unregister from g
 
 ### Phase 2.5: Conductor + State Machine
 1. pkg/conductor - State machine (Task: None → Loaded → Planning → ...)
-2. Integration with worker pool (submit jobs, receive results)
+2. Integration with the worker pool (submit jobs, receive results)
 3. State transitions trigger git operations
 
 ### Phase 3: Git Operations
@@ -874,9 +874,9 @@ kvelmo serve  # Starts web server, connects to global socket
 
 ## Success Criteria
 
-1. **Socket per worktree** — Each worktree has own state machine socket
-2. **Global socket owns workers** — Shared pool (max 5-6), shared queue, cross-project
-3. **Global mode UI** — Web/App starts with project picker, not project-specific
+1. **Socket per worktree** — Each worktree has its own state machine socket
+2. **Global socket owns workers** — Shared pool (max 5–6), shared queue, cross-project
+3. **Global mode UI** — Web/App starts with a project picker, not project-specific
 4. **Seamless project switching** — Work on multiple projects, see all in one view
 5. **Worker pool architecture** — Queue-based, parallel execution, not 1:1 blocking
 6. **Model-per-role** — Opus for planning, Sonnet for implementation

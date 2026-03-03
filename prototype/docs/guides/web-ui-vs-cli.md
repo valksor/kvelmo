@@ -8,8 +8,8 @@ Mehrhof offers two ways to work: a graphical Web UI and a command-line interface
                                     Visual & interactive ──▶ ┌─────────┐ ──▶ Dashboard, real-time updates, settings UI
                                ┌─────────────────────────────│ Web UI  │
 ┌────────────────────────┐     │    ┌───────────────────────┐└─────────┘
-│ Choose Your Interface  │ ──▶ │    │ How do you prefer    │
-└────────────────────────┘     │    │ to work?             │
+│ Choose Your Interface  │ ──▶ │    │ How do you prefer     │
+└────────────────────────┘     │    │ to work?              │
                                │    └───────────────────────┘┌─────────┐
                                └─────────────────────────────│   CLI   │ ──▶ Scripts, git workflows, CI/CD
                                     Commands & automation ──▶└─────────┘
