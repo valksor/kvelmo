@@ -45,12 +45,6 @@ type UnregisterParams struct {
 	ID string `json:"id"`
 }
 
-// StatusParams is the request for projects.status.
-type StatusParams struct {
-	ID    string `json:"id"`
-	State string `json:"state"`
-}
-
 // WorkerInfo represents a worker for API responses.
 type WorkerInfo struct {
 	ID         string `json:"id"`
@@ -209,7 +203,6 @@ func (g *GlobalSocket) registerHandlers() {
 	g.server.Handle("tasks.list", g.handleTasksList)
 	g.server.Handle("projects.register", g.handleRegisterProject)
 	g.server.Handle("projects.unregister", g.handleUnregisterProject)
-	g.server.Handle("projects.status", g.handleProjectStatus)
 
 	// Worker management
 	g.server.Handle("workers.list", g.handleListWorkers)
@@ -400,23 +393,6 @@ func (g *GlobalSocket) handleUnregisterProject(ctx context.Context, req *Request
 
 	// Persist to file
 	g.saveProjectsToFile()
-
-	return NewResultResponse(req.ID, map[string]bool{"ok": true})
-}
-
-func (g *GlobalSocket) handleProjectStatus(ctx context.Context, req *Request) (*Response, error) {
-	var params StatusParams
-	if err := json.Unmarshal(req.Params, &params); err != nil {
-		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
-	}
-
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	if w, ok := g.worktrees[params.ID]; ok {
-		w.State = params.State
-		w.LastSeen = time.Now()
-	}
 
 	return NewResultResponse(req.ID, map[string]bool{"ok": true})
 }

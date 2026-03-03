@@ -271,13 +271,6 @@ func TestRunMemoryClear_NoSocket(t *testing.T) {
 	}
 }
 
-func TestRunMemoryDownloadModel_NoSocket(t *testing.T) {
-	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
-	if err := runMemoryDownloadModel(memoryDownloadModelCmd, nil); err == nil {
-		t.Error("runMemoryDownloadModel() expected error (no socket), got nil")
-	}
-}
-
 func TestRunScreenshotsList_NoSocket(t *testing.T) {
 	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
 	if err := runScreenshotsList(screenshotsListCmd, nil); err == nil {

@@ -18,6 +18,14 @@ var (
 	memAdapter *memory.Adapter
 )
 
+// PrewarmMemory starts background initialization of the memory adapter so
+// model download completes before the first memory.search call.
+func PrewarmMemory(ctx context.Context) {
+	go func() {
+		_, _ = getMemoryAdapter(ctx) // result is cached; errors are non-fatal
+	}()
+}
+
 // getMemoryAdapter returns the singleton global memory adapter, creating it on
 // first call.  The store is persisted at ~/.valksor/kvelmo/memory/.
 func getMemoryAdapter(ctx context.Context) (*memory.Adapter, error) {
