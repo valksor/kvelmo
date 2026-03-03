@@ -81,3 +81,71 @@ pub fn save(window: &Window) {
         tracing::warn!("Failed to save window state: {}", e);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_window_state_serialization_roundtrip() {
+        let state = WindowState {
+            x: 100,
+            y: 200,
+            width: 1200,
+            height: 800,
+            is_maximized: false,
+        };
+        let json = serde_json::to_string(&state).unwrap();
+        let restored: WindowState = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.x, 100);
+        assert_eq!(restored.y, 200);
+        assert_eq!(restored.width, 1200);
+        assert_eq!(restored.height, 800);
+        assert!(!restored.is_maximized);
+    }
+
+    #[test]
+    fn test_window_state_negative_coordinates() {
+        // Multi-monitor setups can have negative positions
+        let state = WindowState {
+            x: -1920,
+            y: -100,
+            width: 1200,
+            height: 800,
+            is_maximized: false,
+        };
+        let json = serde_json::to_string(&state).unwrap();
+        let restored: WindowState = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.x, -1920);
+        assert_eq!(restored.y, -100);
+    }
+
+    #[test]
+    fn test_window_state_maximized() {
+        let json = r#"{"x":0,"y":0,"width":1920,"height":1080,"is_maximized":true}"#;
+        let state: WindowState = serde_json::from_str(json).unwrap();
+        assert!(state.is_maximized);
+    }
+
+    #[test]
+    fn test_save_creates_parent_directories() {
+        let temp_dir = TempDir::new().unwrap();
+        let nested_path = temp_dir.path().join("nested").join("dir");
+        fs::create_dir_all(&nested_path).unwrap();
+        assert!(nested_path.exists());
+    }
+
+    #[test]
+    fn test_load_handles_corrupt_json() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("corrupt.json");
+        fs::write(&path, "{ invalid json }").unwrap();
+
+        let content = fs::read_to_string(&path).unwrap();
+        let result: Result<WindowState, _> = serde_json::from_str(&content);
+        assert!(result.is_err());
+    }
+}

@@ -36,5 +36,8 @@ strip = true
 codegen-units = 1
 panic = "abort"
 
+[dev-dependencies]
+tempfile = "3"
+
 [profile.dev]
 incremental = true
