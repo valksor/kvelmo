@@ -62,11 +62,11 @@ claude --version
 
 Your Windows files are at `/mnt/c/`:
 
-| Windows Path | WSL Path |
-|--------------|----------|
+| Windows Path            | WSL Path                    |
+|-------------------------|-----------------------------|
 | `C:\Users\Name\Desktop` | `/mnt/c/Users/Name/Desktop` |
-| `C:\Projects` | `/mnt/c/Projects` |
-| `D:\Work` | `/mnt/d/Work` |
+| `C:\Projects`           | `/mnt/c/Projects`           |
+| `D:\Work`               | `/mnt/d/Work`               |
 
 ### Navigate to Your Project
 

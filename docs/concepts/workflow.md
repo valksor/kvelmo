@@ -135,11 +135,11 @@ You can experiment freely. Try an approach, undo if it doesn't work, try somethi
 
 If something goes wrong, you have options:
 
-| Situation | Solution |
-|-----------|----------|
+| Situation          | Solution                                           |
+|--------------------|----------------------------------------------------|
 | Bad implementation | `kvelmo undo` to revert to the previous checkpoint |
-| Stuck state | `kvelmo reset` to recover without losing work |
-| Want to start over | `kvelmo abandon` for full cleanup |
+| Stuck state        | `kvelmo reset` to recover without losing work      |
+| Want to start over | `kvelmo abandon` for full cleanup                  |
 
 **The key insight:** Every step is reversible. You're never stuck with a bad outcome.
 

@@ -63,7 +63,7 @@ This:
 2. Restores the working directory to that checkpoint
 3. Updates the task state accordingly
 
-## Multiple Undos
+## Multiple Undo
 
 You can undo multiple times:
 
