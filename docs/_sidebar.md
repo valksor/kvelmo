@@ -95,3 +95,7 @@
   - [Memory](/advanced/memory.md)
   - [Browser Automation](/advanced/browser.md)
   - [Workers](/advanced/workers.md)
+
+- Created By
+- [**Valksor**](https://valksor.com)
+- &copy; 2026 Valksor. All Rights Reserved.
