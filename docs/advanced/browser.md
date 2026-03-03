@@ -64,11 +64,11 @@ The Browser panel in the Web UI shows:
 }
 ```
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `headless` | Run without GUI | true |
-| `viewport.width` | Browser width | 1280 |
-| `viewport.height` | Browser height | 720 |
+| Option            | Description     | Default |
+|-------------------|-----------------|---------|
+| `headless`        | Run without GUI | true    |
+| `viewport.width`  | Browser width   | 1280    |
+| `viewport.height` | Browser height  | 720     |
 
 ## Use Cases
 

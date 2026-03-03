@@ -74,14 +74,14 @@ kvelmo plan --agent claude-opus
 
 Claude supports these tools during execution:
 
-| Tool | Description |
-|------|-------------|
-| Read | Read file contents |
-| Write | Write file contents |
-| Edit | Edit file with diff |
-| Glob | Find files by pattern |
-| Grep | Search file contents |
-| Bash | Execute shell commands |
+| Tool  | Description            |
+|-------|------------------------|
+| Read  | Read file contents     |
+| Write | Write file contents    |
+| Edit  | Edit file with diff    |
+| Glob  | Find files by pattern  |
+| Grep  | Search file contents   |
+| Bash  | Execute shell commands |
 
 ## Permissions
 

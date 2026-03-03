@@ -4,13 +4,13 @@ Providers are task sources that kvelmo can load tasks from.
 
 ## Supported Providers
 
-| Provider | Description | Reference Format |
-|----------|-------------|------------------|
-| [File](/providers/file.md) | Local markdown files | `file:path/to/task.md` |
+| Provider                       | Description           | Reference Format        |
+|--------------------------------|-----------------------|-------------------------|
+| [File](/providers/file.md)     | Local markdown files  | `file:path/to/task.md`  |
 | [GitHub](/providers/github.md) | GitHub issues and PRs | `github:owner/repo#123` |
-| [GitLab](/providers/gitlab.md) | GitLab issues and MRs | `gitlab:project#123` |
-| [Linear](/providers/linear.md) | Linear app issues | `linear:ENG-123` |
-| [Wrike](/providers/wrike.md) | Wrike tasks | `wrike:taskid` |
+| [GitLab](/providers/gitlab.md) | GitLab issues and MRs | `gitlab:project#123`    |
+| [Linear](/providers/linear.md) | Linear app issues     | `linear:ENG-123`        |
+| [Wrike](/providers/wrike.md)   | Wrike tasks           | `wrike:taskid`          |
 
 ## Using Providers
 
@@ -39,11 +39,11 @@ Some providers require authentication:
 
 | Provider | Token Variable |
 |----------|----------------|
-| File | None |
-| GitHub | `GITHUB_TOKEN` |
-| GitLab | `GITLAB_TOKEN` |
-| Linear | `LINEAR_TOKEN` |
-| Wrike | `WRIKE_TOKEN` |
+| File     | None           |
+| GitHub   | `GITHUB_TOKEN` |
+| GitLab   | `GITLAB_TOKEN` |
+| Linear   | `LINEAR_TOKEN` |
+| Wrike    | `WRIKE_TOKEN`  |
 
 ### Setting Tokens
 
@@ -68,13 +68,13 @@ echo "GITHUB_TOKEN=ghp_yyyy" >> .valksor/.env
 
 Providers extract:
 
-| Field | Description |
-|-------|-------------|
-| Title | Task title |
-| Description | Task body/description |
-| External ID | Provider-specific ID |
-| URL | Link to original task |
-| Metadata | Provider-specific data |
+| Field       | Description            |
+|-------------|------------------------|
+| Title       | Task title             |
+| Description | Task body/description  |
+| External ID | Provider-specific ID   |
+| URL         | Link to original task  |
+| Metadata    | Provider-specific data |
 
 ## Provider Registry
 

@@ -35,11 +35,11 @@ Add login and signup pages with JWT tokens.
 
 ## Frontmatter Fields
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `title` | Task title | Recommended |
-| `agent` | Agent to use | Optional |
-| `branch` | Custom branch name | Optional |
+| Field    | Description        | Required    |
+|----------|--------------------|-------------|
+| `title`  | Task title         | Recommended |
+| `agent`  | Agent to use       | Optional    |
+| `branch` | Custom branch name | Optional    |
 
 If no title is provided, kvelmo uses the filename.
 

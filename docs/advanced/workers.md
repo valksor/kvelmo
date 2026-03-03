@@ -19,10 +19,10 @@ The worker pool:
 }
 ```
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `max_workers` | Maximum concurrent workers | 4 |
-| `queue_size` | Maximum jobs in queue | 100 |
+| Option        | Description                | Default |
+|---------------|----------------------------|---------|
+| `max_workers` | Maximum concurrent workers | 4       |
+| `queue_size`  | Maximum jobs in queue      | 100     |
 
 ## Viewing Workers
 
@@ -72,12 +72,12 @@ kvelmo stop <job-id>
 
 The worker pool emits events:
 
-| Event | Description |
-|-------|-------------|
-| `job_started` | Worker began execution |
+| Event           | Description                  |
+|-----------------|------------------------------|
+| `job_started`   | Worker began execution       |
 | `job_completed` | Worker finished successfully |
-| `job_failed` | Worker encountered error |
-| `job_queued` | Job added to queue |
+| `job_failed`    | Worker encountered error     |
+| `job_queued`    | Job added to queue           |
 
 ## Scaling
 

@@ -25,10 +25,10 @@ Memory is enabled by default. Configure in settings:
 
 ## Embedding Models
 
-| Model | Description | Requirements |
-|-------|-------------|--------------|
-| `tfidf` | TF-IDF based (default) | None |
-| `cybertron` | Neural embeddings | Go-based |
+| Model       | Description            | Requirements |
+|-------------|------------------------|--------------|
+| `tfidf`     | TF-IDF based (default) | None         |
+| `cybertron` | Neural embeddings      | Go-based     |
 
 ### TF-IDF
 
@@ -120,9 +120,9 @@ kvelmo memory index
 }
 ```
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `enabled` | Enable memory | true |
-| `embedding_model` | Model to use | tfidf |
-| `chunk_size` | Characters per chunk | 1000 |
-| `max_results` | Max search results | 20 |
+| Option            | Description          | Default |
+|-------------------|----------------------|---------|
+| `enabled`         | Enable memory        | true    |
+| `embedding_model` | Model to use         | tfidf   |
+| `chunk_size`      | Characters per chunk | 1000    |
+| `max_results`     | Max search results   | 20      |
