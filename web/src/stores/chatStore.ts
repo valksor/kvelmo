@@ -386,6 +386,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // Remove actions immediately so buttons disappear
     get().updateMessage(messageId, { actions: undefined })
 
+    // Quality gate response: actionId is "quality:<promptId>:yes|no"
+    if (actionId.startsWith('quality:')) {
+      const parts = actionId.split(':')
+      if (parts.length === 3) {
+        const promptId = parts[1]
+        const answer = parts[2] === 'yes'
+        get().addMessage({
+          role: 'system',
+          content: `Quality gate: ${answer ? 'Yes, proceed' : 'No, skip'}`,
+          status: 'complete'
+        })
+        await useProjectStore.getState().respondToPrompt(promptId, answer)
+      }
+      return
+    }
+
     // Add system message confirming the action
     get().addMessage({
       role: 'system',
@@ -402,8 +418,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   }
 }))
 
-// Subscribe to project state changes to load chat history
+// Subscribe to project state changes to load chat history and surface quality prompts
 let prevWorktreeId: string | null = null
+let prevQualityPromptId: string | null = null
 useProjectStore.subscribe((state) => {
   const worktreeId = state.worktreeId
   if (worktreeId !== prevWorktreeId) {
@@ -418,5 +435,24 @@ useProjectStore.subscribe((state) => {
         error: null
       })
     }
+  }
+
+  // Surface quality gate prompts as chat messages with yes/no buttons
+  const qp = state.qualityPrompt
+  const newId = qp?.id ?? null
+  if (newId !== prevQualityPromptId && newId !== null && qp) {
+    prevQualityPromptId = newId
+    useChatStore.getState().addMessage({
+      role: 'system',
+      content: `Quality gate: ${qp.question}`,
+      status: 'complete',
+      actions: [
+        { id: `quality:${qp.id}:yes`, label: 'Yes, proceed', type: 'custom' },
+        { id: `quality:${qp.id}:no`, label: 'No, skip', type: 'custom' }
+      ]
+    })
+  }
+  if (newId === null) {
+    prevQualityPromptId = null
   }
 })
