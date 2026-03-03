@@ -7,27 +7,20 @@ import (
 	"path/filepath"
 
 	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/paths"
 	"gopkg.in/yaml.v3"
 )
 
 // GlobalPath returns the path to the global settings file.
+// Uses paths.Paths().BaseDir() for test isolation support.
 func GlobalPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("get home dir: %w", err)
-	}
-
-	return filepath.Join(home, meta.GlobalDir, meta.ConfigFile), nil
+	return filepath.Join(paths.BaseDir(), meta.ConfigFile), nil
 }
 
 // GlobalDirPath returns the path to the global settings directory.
+// Uses paths.Paths().BaseDir() for test isolation support.
 func GlobalDirPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("get home dir: %w", err)
-	}
-
-	return filepath.Join(home, meta.GlobalDir), nil
+	return paths.BaseDir(), nil
 }
 
 // ProjectPath returns the path to the project settings file.
