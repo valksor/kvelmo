@@ -178,7 +178,7 @@ jobs:
                     # macOS
                     -   platform: macos
                         arch: arm64
-                        runner: macos-26
+                        runner: macos-arm
                         target: aarch64-apple-darwin
                         kvelmo_asset: kvelmo-darwin-arm64
                         wsl_asset: ''
