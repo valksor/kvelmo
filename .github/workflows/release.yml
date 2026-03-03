@@ -53,7 +53,7 @@ jobs:
                     bun-version: latest
 
             -   name: Cache Bun dependencies
-                uses: actions/cache@v4
+                uses: actions/cache@v5
                 with:
                     path: ~/.bun/install/cache
                     key: ${{ runner.os }}-bun-${{ hashFiles('web/bun.lock') }}
@@ -71,7 +71,7 @@ jobs:
                     bun run build
 
             -   name: Upload web dist for desktop builds
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v7
                 with:
                     name: web-dist
                     path: web/dist
@@ -316,7 +316,7 @@ jobs:
                     bun x json -I -f tauri.conf.json -e "this.version='$VERSION'"
 
             -   name: Download pre-built web dist
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v8
                 with:
                     name: web-dist
                     path: web/dist

@@ -23,7 +23,7 @@ jobs:
                         runner: ubuntu-latest
                     -   goos: darwin
                         goarch: arm64
-                        runner: macos-latest
+                        runner: macos-arm
 
         runs-on: ${{ matrix.runner }}
 
@@ -59,7 +59,7 @@ jobs:
                     bun-version: latest
 
             -   name: Cache Bun dependencies
-                uses: actions/cache@v4
+                uses: actions/cache@v5
                 with:
                     path: ~/.bun/install/cache
                     key: ${{ runner.os }}-bun-${{ hashFiles('web/bun.lock') }}
@@ -179,30 +179,99 @@ jobs:
                     flag-name: web-coverage
                     base-path: web
 
+    tauri:
+        if: >-
+            !contains(github.event.head_commit.message, '[skip test]') &&
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+        strategy:
+            matrix:
+                include:
+                    -   runner: ubuntu-latest
+                    -   runner: macos-arm
+
+        runs-on: ${{ matrix.runner }}
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Install Rust
+                uses: dtolnay/rust-action@stable
+                with:
+                    components: clippy, rustfmt
+
+            -   name: Install cargo-llvm-cov
+                uses: taiki-e/install-action@cargo-llvm-cov
+
+            -   name: Cache Cargo
+                uses: actions/cache@v5
+                with:
+                    path: |
+                        ~/.cargo/registry/
+                        ~/.cargo/git/
+                        web/src-tauri/target/
+                    key: ${{ runner.os }}-cargo-${{ hashFiles('web/src-tauri/Cargo.lock') }}
+                    restore-keys: ${{ runner.os }}-cargo-
+
+            -   name: Install Tauri deps (Linux)
+                if: runner.os == 'Linux'
+                run: |
+                    sudo apt-get update
+                    sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+            -   name: Check formatting
+                working-directory: web/src-tauri
+                run: cargo fmt --check
+
+            -   name: Clippy
+                working-directory: web/src-tauri
+                run: cargo clippy -- -D warnings
+
+            -   name: Run tests
+                working-directory: web/src-tauri
+                run: cargo test --lib
+
+            -   name: Generate coverage
+                if: github.event_name != 'pull_request' && runner.os == 'Linux'
+                working-directory: web/src-tauri
+                run: cargo llvm-cov --lib --lcov --output-path lcov.info
+
+            -   name: Upload Tauri coverage to Coveralls
+                if: github.event_name != 'pull_request' && runner.os == 'Linux'
+                uses: coverallsapp/github-action@v2
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    file: web/src-tauri/lcov.info
+                    format: lcov
+                    parallel: true
+                    flag-name: tauri-coverage
+                    base-path: web/src-tauri
+
     coverage-finish:
-        needs: [test, web]
+        needs: [test, web, tauri]
         runs-on: ubuntu-latest
         if: >-
             github.event_name != 'pull_request' &&
             always() &&
             needs.test.result == 'success' &&
-            needs.web.result == 'success'
+            needs.web.result == 'success' &&
+            needs.tauri.result == 'success'
         steps:
             -   name: Finish Coveralls parallel build
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
                     parallel-finished: true
-                    carryforward: "go-coverage,web-coverage"
+                    carryforward: "go-coverage,web-coverage,tauri-coverage"
 
     cleanup:
-        needs: [test, web, coverage-finish]
+        needs: [test, web, tauri, coverage-finish]
         if: always()
         strategy:
             matrix:
                 include:
                     -   runner: ubuntu-latest
-                    -   runner: macos-latest
+                    -   runner: macos-arm
         runs-on: ${{ matrix.runner }}
 
         steps:
