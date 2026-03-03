@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -44,13 +45,17 @@ func init() {
 }
 
 func runFinish(cmd *cobra.Command, args []string) error {
-	globalPath := socket.GlobalSocketPath()
-
-	if !socket.SocketExists(globalPath) {
-		return errors.New("no global socket running\nRun '" + meta.Name + " serve' first")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	client, err := socket.NewClient(globalPath, socket.WithTimeout(30*time.Second))
+	socketPath := socket.WorktreeSocketPath(cwd)
+	if !socket.SocketExists(socketPath) {
+		return errors.New("no worktree socket running\nRun '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(socketPath, socket.WithTimeout(30*time.Second))
 	if err != nil {
 		return fmt.Errorf("connect to socket: %w", err)
 	}
@@ -94,13 +99,17 @@ func runFinish(cmd *cobra.Command, args []string) error {
 }
 
 func runRefresh(cmd *cobra.Command, args []string) error {
-	globalPath := socket.GlobalSocketPath()
-
-	if !socket.SocketExists(globalPath) {
-		return errors.New("no global socket running\nRun '" + meta.Name + " serve' first")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	client, err := socket.NewClient(globalPath, socket.WithTimeout(10*time.Second))
+	socketPath := socket.WorktreeSocketPath(cwd)
+	if !socket.SocketExists(socketPath) {
+		return errors.New("no worktree socket running\nRun '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(socketPath, socket.WithTimeout(10*time.Second))
 	if err != nil {
 		return fmt.Errorf("connect to socket: %w", err)
 	}

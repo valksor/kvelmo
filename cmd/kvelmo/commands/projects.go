@@ -24,9 +24,18 @@ var ProjectsCmd = &cobra.Command{
 	RunE:  runProjects,
 }
 
+var projectsAddCmd = &cobra.Command{
+	Use:   "add <path>",
+	Short: "Register a project with the global socket",
+	Long:  "Register a project directory so it appears in the global project list.",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runProjectsAdd,
+}
+
 func init() {
 	ProjectsCmd.Flags().DurationVarP(&projectsTimeout, "timeout", "t", 5*time.Second, "Connection timeout")
 	ProjectsCmd.Flags().BoolVarP(&projectsVerbose, "verbose", "v", false, "Show socket paths")
+	ProjectsCmd.AddCommand(projectsAddCmd)
 }
 
 func runProjects(cmd *cobra.Command, args []string) error {
@@ -77,6 +86,43 @@ func runProjects(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Println()
 	}
+
+	return nil
+}
+
+func runProjectsAdd(cmd *cobra.Command, args []string) error {
+	path := args[0]
+	globalPath := socket.GlobalSocketPath()
+
+	if !socket.SocketExists(globalPath) {
+		return errors.New("global socket not running\nRun '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(globalPath, socket.WithTimeout(projectsTimeout))
+	if err != nil {
+		return fmt.Errorf("connect to global socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), projectsTimeout)
+	defer cancel()
+
+	resp, err := client.Call(ctx, "projects.register", socket.RegisterParams{
+		Path:       path,
+		SocketPath: socket.WorktreeSocketPath(path),
+	})
+	if err != nil {
+		return fmt.Errorf("register project: %w", err)
+	}
+
+	var result struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("parse result: %w", err)
+	}
+
+	fmt.Printf("Project registered: %s (id: %s)\n", path, result.ID)
 
 	return nil
 }

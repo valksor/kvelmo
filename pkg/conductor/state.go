@@ -117,6 +117,9 @@ type WorkUnit struct {
 	RedoStack      []string          `json:"redo_stack"`     // For redo after undo
 	Jobs           []string          `json:"jobs"`           // Job IDs submitted
 	Metadata       map[string]string `json:"metadata"`
+	// PRID stores the PR/MR ID after submission (e.g., "owner/repo#123").
+	// Used by ApprovePR and MergePR conductor methods.
+	PRID string `json:"pr_id,omitempty"`
 	// Hierarchy holds parent and sibling context fetched from the provider.
 	// Nil when hierarchy fetching is disabled or the provider does not support it.
 	Hierarchy *HierarchyContext `json:"hierarchy,omitempty"`

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/valksor/kvelmo/pkg/git"
 	"github.com/valksor/kvelmo/pkg/memory"
 	"github.com/valksor/kvelmo/pkg/storage"
 	"github.com/valksor/kvelmo/pkg/worker"
@@ -45,10 +46,24 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 				}
 
 				// Create checkpoint after job completion
-				if c.git != nil {
-					sha, err := c.git.Commit(ctx, fmt.Sprintf("kvelmo: %s complete", completionEvent))
-					if err == nil {
-						c.workUnit.Checkpoints = append(c.workUnit.Checkpoints, sha)
+				// Use work directory (isolated worktree if active, main worktree otherwise)
+				workDir := c.getWorkDir()
+				if repo, err := git.Open(workDir); err != nil {
+					slog.Debug("checkpoint: git open failed", "error", err, "workDir", workDir)
+				} else {
+					// Stage all changes first
+					if stageErr := repo.StageAll(ctx); stageErr != nil {
+						slog.Warn("checkpoint: stage failed", "error", stageErr, "workDir", workDir)
+					} else if hasChanges, _ := repo.HasUncommittedChanges(ctx); hasChanges {
+						sha, commitErr := repo.Commit(ctx, fmt.Sprintf("kvelmo: %s complete", completionEvent))
+						if commitErr == nil {
+							c.workUnit.Checkpoints = append(c.workUnit.Checkpoints, sha)
+							slog.Info("checkpoint created", "sha", sha, "event", completionEvent)
+						} else {
+							slog.Warn("checkpoint: commit failed", "error", commitErr, "workDir", workDir)
+						}
+					} else {
+						slog.Debug("checkpoint: no changes to commit", "event", completionEvent)
 					}
 				}
 
@@ -223,7 +238,7 @@ func (c *Conductor) shouldPostTicketComment() bool {
 // This ensures jobs carry full context (WorkDir, metadata) so any worker can execute them.
 func (c *Conductor) buildJobOptions() *worker.JobOptions {
 	opts := &worker.JobOptions{
-		WorkDir:  c.worktree,
+		WorkDir:  c.getWorkDir(), // Use isolated worktree if available
 		Metadata: make(map[string]any),
 	}
 
