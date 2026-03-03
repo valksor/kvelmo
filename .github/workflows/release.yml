@@ -299,7 +299,7 @@ jobs:
                 run: |
                     VERSION="${RELEASE_TAG#v}"
                     if [ "$VERSION" = "nightly" ]; then
-                        VERSION=$(date +%-y.%-m.%-d)
+                        VERSION="0.$(date +%-y).$(date +%-m%d)"
                     fi
                     bun x json -I -f tauri.conf.json -e "this.version='$VERSION'"
 
@@ -311,7 +311,7 @@ jobs:
                     $VERSION = $env:RELEASE_TAG -replace '^v', ''
                     if ($VERSION -eq 'nightly') {
                         $d = Get-Date
-                        $VERSION = "$($d.Year % 100).$($d.Month).$($d.Day)"
+                        $VERSION = "0.$($d.Year % 100).$($d.Month * 100 + $d.Day)"
                     }
                     bun x json -I -f tauri.conf.json -e "this.version='$VERSION'"
 
