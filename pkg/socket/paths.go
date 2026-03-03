@@ -1,55 +1,45 @@
 package socket
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
 
-	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/paths"
 )
 
+// BaseDir returns the base directory for kvelmo data.
+// Delegates to paths.Paths().BaseDir().
 func BaseDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = "."
-	}
-
-	return filepath.Join(home, meta.GlobalDir)
+	return paths.BaseDir()
 }
 
+// GlobalSocketPath returns the path to the global socket.
+// Delegates to paths.Paths().GlobalSocketPath().
 func GlobalSocketPath() string {
-	return filepath.Join(BaseDir(), "global.sock")
+	return paths.GlobalSocketPath()
 }
 
+// GlobalLockPath returns the path to the global lock file.
+// Delegates to paths.Paths().GlobalLockPath().
 func GlobalLockPath() string {
-	return filepath.Join(BaseDir(), "global.lock")
+	return paths.GlobalLockPath()
 }
 
+// WorktreeSocketPath returns the socket path for a worktree directory.
+// Delegates to paths.Paths().WorktreeSocketPath().
 func WorktreeSocketPath(worktreeDir string) string {
-	absPath, err := filepath.Abs(worktreeDir)
-	if err != nil {
-		absPath = worktreeDir
-	}
-
-	hash := sha256.Sum256([]byte(absPath))
-	hashStr := hex.EncodeToString(hash[:8])
-
-	return filepath.Join(BaseDir(), "worktrees", hashStr+".sock")
+	return paths.WorktreeSocketPath(worktreeDir)
 }
 
+// WorktreeIDFromPath returns a hash-based ID for a worktree directory.
+// Delegates to paths.WorktreeIDFromPath().
 func WorktreeIDFromPath(worktreeDir string) string {
-	absPath, err := filepath.Abs(worktreeDir)
-	if err != nil {
-		absPath = worktreeDir
-	}
-	hash := sha256.Sum256([]byte(absPath))
-
-	return hex.EncodeToString(hash[:8])
+	return paths.WorktreeIDFromPath(worktreeDir)
 }
 
+// SocketExists checks if a socket file exists at the given path.
 func SocketExists(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -59,21 +49,14 @@ func SocketExists(path string) bool {
 	return info.Mode()&os.ModeSocket != 0
 }
 
+// EnsureDir creates the required socket directories.
+// Delegates to paths.Paths().EnsureDir().
 func EnsureDir() error {
-	dirs := []string{
-		BaseDir(),
-		filepath.Join(BaseDir(), "worktrees"),
-	}
-
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return paths.EnsureDir()
 }
 
+// AcquireGlobalLock acquires an exclusive lock on the given lock file.
+// Returns a release function that must be called to release the lock.
 func AcquireGlobalLock(lockPath string) (func(), error) {
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, fmt.Errorf("create lock dir: %w", err)
