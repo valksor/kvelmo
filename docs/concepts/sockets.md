@@ -113,18 +113,18 @@ The worktree socket supports event streaming for real-time updates:
 
 ### Compared to HTTP
 
-| Aspect | Sockets | HTTP |
-|--------|---------|------|
-| Latency | ~1ms | ~10ms |
-| Connection | Persistent | Per-request |
-| Streaming | Native | Requires SSE/WebSocket |
-| Local-only | Yes | Needs CORS, auth |
+| Aspect     | Sockets    | HTTP                   |
+|------------|------------|------------------------|
+| Latency    | ~1ms       | ~10ms                  |
+| Connection | Persistent | Per-request            |
+| Streaming  | Native     | Requires SSE/WebSocket |
+| Local-only | Yes        | Needs CORS, auth       |
 
 ## Socket Locations
 
-| Socket | Location | Purpose |
-|--------|----------|---------|
-| Global | `~/.valksor/kvelmo/global.sock` | Registry, workers |
+| Socket   | Location                          | Purpose           |
+|----------|-----------------------------------|-------------------|
+| Global   | `~/.valksor/kvelmo/global.sock`   | Registry, workers |
 | Worktree | `<project>/.kvelmo/worktree.sock` | Per-project state |
 
 ## CLI and Sockets

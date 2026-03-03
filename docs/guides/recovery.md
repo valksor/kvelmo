@@ -4,11 +4,11 @@ How to recover from common problems in kvelmo.
 
 ## Quick Recovery Commands
 
-| Problem | Solution |
-|---------|----------|
-| Bad implementation | `kvelmo undo` |
-| Stuck state | `kvelmo reset` |
-| Want to start over | `kvelmo abandon` |
+| Problem               | Solution               |
+|-----------------------|------------------------|
+| Bad implementation    | `kvelmo undo`          |
+| Stuck state           | `kvelmo reset`         |
+| Want to start over    | `kvelmo abandon`       |
 | Server not responding | Restart `kvelmo serve` |
 
 ## Undo a Bad Implementation

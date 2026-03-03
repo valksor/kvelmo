@@ -6,35 +6,35 @@ kvelmo uses a state machine to manage the task lifecycle. Understanding states h
 
 The main workflow progresses through these states:
 
-| State | Description |
-|-------|-------------|
-| `none` | No active task |
-| `loaded` | Task fetched from provider, branch created |
-| `planning` | Agent generating specification (in progress) |
-| `planned` | Specification complete, ready for implementation |
-| `implementing` | Agent executing specification (in progress) |
-| `implemented` | Implementation complete, ready for review |
-| `reviewing` | Human review in progress |
-| `submitted` | Task submitted to provider (PR created) |
+| State          | Description                                      |
+|----------------|--------------------------------------------------|
+| `none`         | No active task                                   |
+| `loaded`       | Task fetched from provider, branch created       |
+| `planning`     | Agent generating specification (in progress)     |
+| `planned`      | Specification complete, ready for implementation |
+| `implementing` | Agent executing specification (in progress)      |
+| `implemented`  | Implementation complete, ready for review        |
+| `reviewing`    | Human review in progress                         |
+| `submitted`    | Task submitted to provider (PR created)          |
 
 ## Optional States
 
 These states are available from `implemented`:
 
-| State | Description |
-|-------|-------------|
+| State         | Description                        |
+|---------------|------------------------------------|
 | `simplifying` | Agent simplifying code for clarity |
-| `optimizing` | Agent improving code quality |
+| `optimizing`  | Agent improving code quality       |
 
 ## Auxiliary States
 
 These states handle special situations:
 
-| State | Description |
-|-------|-------------|
-| `failed` | Error state (recoverable via `reset`) |
-| `waiting` | Waiting for user input |
-| `paused` | Execution paused (budget limits, manual pause) |
+| State     | Description                                    |
+|-----------|------------------------------------------------|
+| `failed`  | Error state (recoverable via `reset`)          |
+| `waiting` | Waiting for user input                         |
+| `paused`  | Execution paused (budget limits, manual pause) |
 
 ## State Transitions
 
@@ -52,11 +52,11 @@ From `implemented`, you can optionally run:
 
 ### Recovery Transitions
 
-| From | Event | To | Description |
-|------|-------|-----|-------------|
-| `failed` | `reset` | `loaded` | Recover from failure |
+| From      | Event    | To             | Description             |
+|-----------|----------|----------------|-------------------------|
+| `failed`  | `reset`  | `loaded`       | Recover from failure    |
 | `waiting` | `answer` | Previous state | Resume after user input |
-| `paused` | `resume` | Previous state | Resume after pause |
+| `paused`  | `resume` | Previous state | Resume after pause      |
 
 ### Abort Transitions
 
@@ -76,12 +76,12 @@ kvelmo status --json
 
 Some transitions have guards that must pass:
 
-| Transition | Guard |
-|------------|-------|
-| `none` → `loaded` | Must have a source reference |
-| `loaded` → `planning` | Must have a description |
-| `planned` → `implementing` | Must have specifications |
-| `reviewing` → `submitted` | Must have a provider |
+| Transition                 | Guard                        |
+|----------------------------|------------------------------|
+| `none` → `loaded`          | Must have a source reference |
+| `loaded` → `planning`      | Must have a description      |
+| `planned` → `implementing` | Must have specifications     |
+| `reviewing` → `submitted`  | Must have a provider         |
 
 ## Events
 

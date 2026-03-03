@@ -4,14 +4,14 @@ kvelmo offers two interfaces. Choose the one that fits your workflow.
 
 ## Quick Comparison
 
-| Aspect | Web UI | CLI |
-|--------|--------|-----|
-| Best for | Non-technical users | Developers |
-| Learning curve | Lower | Higher |
-| Visual feedback | Yes | Limited |
-| Scripting | No | Yes |
-| Keyboard-first | No | Yes |
-| Real-time output | Yes | Yes |
+| Aspect           | Web UI              | CLI        |
+|------------------|---------------------|------------|
+| Best for         | Non-technical users | Developers |
+| Learning curve   | Lower               | Higher     |
+| Visual feedback  | Yes                 | Limited    |
+| Scripting        | No                  | Yes        |
+| Keyboard-first   | No                  | Yes        |
+| Real-time output | Yes                 | Yes        |
 
 ## When to Use Web UI
 
@@ -111,17 +111,17 @@ kvelmo submit
 
 ## Feature Availability
 
-| Feature | Web UI | CLI |
-|---------|--------|-----|
-| Start task | Yes | Yes |
-| Plan | Yes | Yes |
-| Implement | Yes | Yes |
-| Review | Yes | Yes |
-| Submit | Yes | Yes |
-| Undo/Redo | Yes | Yes |
-| File browser | Yes | `ls` / `cat` |
-| Diff viewer | Yes | `git diff` |
-| Settings | Yes | `kvelmo config` |
+| Feature      | Web UI | CLI             |
+|--------------|--------|-----------------|
+| Start task   | Yes    | Yes             |
+| Plan         | Yes    | Yes             |
+| Implement    | Yes    | Yes             |
+| Review       | Yes    | Yes             |
+| Submit       | Yes    | Yes             |
+| Undo/Redo    | Yes    | Yes             |
+| File browser | Yes    | `ls` / `cat`    |
+| Diff viewer  | Yes    | `git diff`      |
+| Settings     | Yes    | `kvelmo config` |
 
 ## Recommendations
 

@@ -52,11 +52,11 @@ kvelmo version
 
 kvelmo works through multiple interfaces. Choose what matches your comfort level:
 
-| Interface | Best For | Setup |
-|-----------|----------|-------|
-| **Desktop App** | Visual users, no terminal needed | [Download](https://github.com/valksor/kvelmo/releases) |
-| **Web UI** | Visual users, one terminal command | `kvelmo serve --open` |
-| **CLI** | Power users, scripting, CI/CD | Terminal commands |
+| Interface       | Best For                           | Setup                                                  |
+|-----------------|------------------------------------|--------------------------------------------------------|
+| **Desktop App** | Visual users, no terminal needed   | [Download](https://github.com/valksor/kvelmo/releases) |
+| **Web UI**      | Visual users, one terminal command | `kvelmo serve --open`                                  |
+| **CLI**         | Power users, scripting, CI/CD      | Terminal commands                                      |
 
 All interfaces have the same features — the choice is about preference, not capability.
 
