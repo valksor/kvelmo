@@ -215,6 +215,9 @@ func Merge(dst, src *Settings) {
 	if src.Workflow.UseWorktreeIsolation != nil {
 		dst.Workflow.UseWorktreeIsolation = src.Workflow.UseWorktreeIsolation
 	}
+	if src.Workflow.CodeRabbit.Mode != "" {
+		dst.Workflow.CodeRabbit.Mode = src.Workflow.CodeRabbit.Mode
+	}
 
 	// UI settings
 	if src.UI.OnboardingDismissed {
@@ -558,6 +561,21 @@ func SetValue(s *Settings, path string, value any) error {
 
 		return errors.New("workflow.use_worktree_isolation must be a boolean")
 
+	case "workflow.coderabbit.mode":
+		if v, ok := value.(string); ok {
+			mode := CodeRabbitMode(v)
+			switch mode {
+			case CodeRabbitModeAsk, CodeRabbitModeAlways, CodeRabbitModeNever:
+				s.Workflow.CodeRabbit.Mode = mode
+
+				return nil
+			default:
+				return errors.New("workflow.coderabbit.mode must be one of: ask, always, never")
+			}
+		}
+
+		return errors.New("workflow.coderabbit.mode must be a string")
+
 	// UI
 	case "ui.onboarding_dismissed":
 		if v, ok := value.(bool); ok {
@@ -687,6 +705,12 @@ func GetValue(s *Settings, path string) (any, error) {
 	// Workflow
 	case "workflow.use_worktree_isolation":
 		return BoolValue(s.Workflow.UseWorktreeIsolation, true), nil
+	case "workflow.coderabbit.mode":
+		if s.Workflow.CodeRabbit.Mode == "" {
+			return string(CodeRabbitModeAsk), nil
+		}
+
+		return string(s.Workflow.CodeRabbit.Mode), nil
 
 	// UI
 	case "ui.onboarding_dismissed":
