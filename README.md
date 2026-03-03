@@ -43,7 +43,7 @@ No magic. No "just press go." A structured way to work with tools you already ha
 ```
 
 1. **Start** — Describe what you want in plain language, or pull a task from GitHub, GitLab, Linear, or Wrike
-2. **Plan** — Review the generated specification before any changes happen. Add notes to refine direction. Nothing proceeds without your approval
+2. **Plan** — Review the generated specification before any changes happen. Add notes to refine a direction. Nothing proceeds without your approval
 3. **Implement** — Watch as your agent builds the changes. Every step creates a checkpoint — undo anytime to try a different approach
 4. **Review** — Approve the output before it ships. Make adjustments if needed
 5. **Submit** — Create a PR and push to your repository
@@ -58,7 +58,7 @@ Close your laptop, come back tomorrow. `kvelmo status` shows where you left off.
 
 Start with the **Desktop App** or **Web UI** — comfortable visual experiences that don't require command-line expertise.
 
-**Desktop App** — Download from [Releases](https://github.com/valksor/kvelmo/releases) for a fully native experience. No terminal needed after installation.
+**Desktop App** — Download from [Releases](https://github.com/valksor/kvelmo/releases) for a fully native experience. No terminal is needed after installation.
 
 **Web UI** — Run one command to start:
 
@@ -130,15 +130,15 @@ curl -fsSL https://raw.githubusercontent.com/valksor/kvelmo/master/install.sh | 
 
 ## Key Features
 
-| Feature | What It Does |
-|---------|--------------|
+| Feature                 | What It Does                                              |
+|-------------------------|-----------------------------------------------------------|
 | **Structured workflow** | Breaks work into plan → implement → review → submit steps |
-| **Human review gates** | Nothing ships without your explicit approval |
-| **Undo/redo support** | Roll back to any checkpoint if something goes wrong |
-| **Multiple providers** | Pull tasks from files, GitHub, GitLab, Linear, or Wrike |
-| **Git integration** | Automatic branches, commits, and PR creation |
-| **Multi-interface** | Same workflow in CLI, Web UI, and Desktop App |
-| **Real-time progress** | Watch your agent work in the Web UI or CLI |
+| **Human review gates**  | Nothing ships without your explicit approval              |
+| **Undo/redo support**   | Roll back to any checkpoint if something goes wrong       |
+| **Multiple providers**  | Pull tasks from files, GitHub, GitLab, Linear, or Wrike   |
+| **Git integration**     | Automatic branches, commits, and PR creation              |
+| **Multi-interface**     | Same workflow in CLI, Web UI, and Desktop App             |
+| **Real-time progress**  | Watch your agent work in the Web UI or CLI                |
 
 ---
 
@@ -170,15 +170,15 @@ kvelmo diagnose                        # Check system requirements
 
 ## Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [Quickstart](https://valksor.com/docs/kvelmo/nightly/#/quickstart) | Install and run your first task |
-| [Web UI Guide](https://valksor.com/docs/kvelmo/nightly/#/web-ui/getting-started) | Visual walkthrough |
-| [Desktop App](https://valksor.com/docs/kvelmo/nightly/#/desktop/index) | Native application guide |
-| [CLI Reference](https://valksor.com/docs/kvelmo/nightly/#/cli/index) | All commands and options |
-| [Workflow Concepts](https://valksor.com/docs/kvelmo/nightly/#/concepts/workflow) | Understanding the process |
-| [Providers](https://valksor.com/docs/kvelmo/nightly/#/providers/index) | GitHub, GitLab, Linear, Wrike |
-| [Configuration](https://valksor.com/docs/kvelmo/nightly/#/configuration/index) | Customize behavior |
+| Guide                                                                            | Description                     |
+|----------------------------------------------------------------------------------|---------------------------------|
+| [Quickstart](https://valksor.com/docs/kvelmo/nightly/#/quickstart)               | Install and run your first task |
+| [Web UI Guide](https://valksor.com/docs/kvelmo/nightly/#/web-ui/getting-started) | Visual walkthrough              |
+| [Desktop App](https://valksor.com/docs/kvelmo/nightly/#/desktop/index)           | Native application guide        |
+| [CLI Reference](https://valksor.com/docs/kvelmo/nightly/#/cli/index)             | All commands and options        |
+| [Workflow Concepts](https://valksor.com/docs/kvelmo/nightly/#/concepts/workflow) | Understanding the process       |
+| [Providers](https://valksor.com/docs/kvelmo/nightly/#/providers/index)           | GitHub, GitLab, Linear, Wrike   |
+| [Configuration](https://valksor.com/docs/kvelmo/nightly/#/configuration/index)   | Customize behavior              |
 
 ---
 
@@ -196,7 +196,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines.
 
 ## Prototype
 
-The `prototype/` directory contains the original working prototype that informed kvelmo's design. This code is preserved for historical reference only and is not maintained. See [flow_v2.md](flow_v2.md) for how the prototype's patterns were adapted into the current architecture.
+The `prototype/` directory contains the original working prototype that informed kvelmo's design. This code is preserved for historical reference only and is not maintained. See [flow_v2.md](.github/flow_v2.md) for how the prototype's patterns were adapted into the current architecture.
 
 ---
 

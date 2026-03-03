@@ -7,7 +7,7 @@ Thank you for your interest in contributing to kvelmo! This document provides gu
 ### Prerequisites
 
 - **Go 1.25+** - Required for building from source
-- **bun** - Required for the web frontend
+- **bun** – Required for the web frontend
 - **Git** – Required for version control operations
 - **make** – For build automation
 
@@ -121,7 +121,7 @@ if len(errs) > 0 {
 
 ## Critical Rules
 
-These rules are enforced by CI. Violating them will cause your PR to fail.
+CI enforces these rules. Violating them will cause your PR to fail.
 
 ### Import Discipline
 
@@ -153,7 +153,7 @@ CI enforces this via `make check-alias`.
 - `//nolint:gosec` (fix the security issue)
 - `//nolint:all` (never suppress all linters)
 
-Always: specify linter name, include justification, place on specific line.
+Always: specify a linter name, include justification, place on a specific line.
 
 ### File Size Limit
 
@@ -272,8 +272,8 @@ Maintainers will review your PR and provide feedback. Please address review comm
 
 Before submitting a bug report, please verify the issue against different versions:
 
-1. **Check the latest release** - Confirm the bug exists in the latest stable release
-2. **Check the nightly build** - Test against the latest nightly build to see if it's already fixed
+1. **Check the latest release** – Confirm the bug exists in the latest stable release
+2. **Check the nightly build** – Test against the latest nightly build to see if it's already fixed
 3. **Decide whether to report**:
    - ✅ **Submit an issue** if: Bug exists in both release AND nightly
    - ✅ **Submit an issue** if: Bug exists ONLY in nightly (newly introduced)
@@ -285,7 +285,7 @@ Before submitting a bug report, please verify the issue against different versio
 2. **Provide clear details**:
    - Version tested (`kvelmo version`)
    - Steps to reproduce
-   - Expected vs actual behavior
+   - Expected vs. actual behavior
    - Environment details (OS, Go version)
    - Relevant logs or error messages
 

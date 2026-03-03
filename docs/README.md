@@ -25,11 +25,11 @@ Every step creates a checkpoint. Use undo/redo if something doesn't look right.
 
 ## Choose Your Interface
 
-| Interface | Best For |
-|-----------|----------|
-| [Desktop App](/desktop/getting-started.md) | Visual users, no terminal needed |
-| [Web UI](/web-ui/getting-started.md) | Visual users, one command to start |
-| [CLI](/cli/index.md) | Developers, automation, scripting |
+| Interface                                  | Best For                           |
+|--------------------------------------------|------------------------------------|
+| [Desktop App](/desktop/getting-started.md) | Visual users, no terminal needed   |
+| [Web UI](/web-ui/getting-started.md)       | Visual users, one command to start |
+| [CLI](/cli/index.md)                       | Developers, automation, scripting  |
 
 All three share the same workflow — your work is portable between them.
 
