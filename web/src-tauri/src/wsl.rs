@@ -104,10 +104,7 @@ async fn deploy_binary(app: &AppHandle) -> Result<(), String> {
     let binary_path = resource_path.join(binary_name);
 
     if !binary_path.exists() {
-        return Err(format!(
-            "WSL binary not found at {}",
-            binary_path.display()
-        ));
+        return Err(format!("WSL binary not found at {}", binary_path.display()));
     }
 
     // Convert Windows path to WSL path
@@ -201,6 +198,42 @@ mod tests {
         );
         assert_eq!(
             windows_to_wsl_path("C:/Users/foo/bar"),
+            "/mnt/c/Users/foo/bar"
+        );
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_lowercase_drive() {
+        assert_eq!(windows_to_wsl_path(r"c:\users\test"), "/mnt/c/users/test");
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_root_only() {
+        assert_eq!(windows_to_wsl_path(r"C:\"), "/mnt/c/");
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_spaces() {
+        assert_eq!(
+            windows_to_wsl_path(r"C:\Program Files\My App"),
+            "/mnt/c/Program Files/My App"
+        );
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_no_drive_passthrough() {
+        assert_eq!(windows_to_wsl_path("relative/path"), "relative/path");
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_empty() {
+        assert_eq!(windows_to_wsl_path(""), "");
+    }
+
+    #[test]
+    fn test_windows_to_wsl_path_mixed_slashes() {
+        assert_eq!(
+            windows_to_wsl_path(r"C:\Users/foo\bar"),
             "/mnt/c/Users/foo/bar"
         );
     }

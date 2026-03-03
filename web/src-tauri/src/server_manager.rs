@@ -9,7 +9,9 @@
 use regex::Regex;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, Url};
+use tauri::AppHandle;
+#[cfg(not(dev))]
+use tauri::{Emitter, Manager, Url};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 use tokio::sync::Mutex;
@@ -21,6 +23,7 @@ static SERVER_PROCESS: std::sync::OnceLock<Arc<Mutex<Option<ServerProcess>>>> =
 
 /// Holds the running server process
 struct ServerProcess {
+    #[allow(dead_code)] // Used in production builds via navigate_to_server
     port: u16,
     // The child process is managed by Tauri's shell plugin
     // We just need to track that we started it
@@ -33,9 +36,9 @@ pub async fn start_server(app: &AppHandle) -> Result<(), String> {
     let mut guard = server.lock().await;
 
     // If already running, just navigate (production only)
-    if let Some(ref proc) = *guard {
+    if let Some(ref _proc) = *guard {
         #[cfg(not(dev))]
-        navigate_to_server(app, proc.port)?;
+        navigate_to_server(app, _proc.port)?;
         return Ok(());
     }
 
@@ -51,7 +54,10 @@ pub async fn start_server(app: &AppHandle) -> Result<(), String> {
     navigate_to_server(app, port)?;
 
     #[cfg(dev)]
-    tracing::info!("Dev mode: Server running at http://localhost:{}, Vite will proxy", port);
+    tracing::info!(
+        "Dev mode: Server running at http://localhost:{}, Vite will proxy",
+        port
+    );
 
     Ok(())
 }
@@ -92,13 +98,11 @@ async fn spawn_server_sidecar(app: &AppHandle) -> Result<u16, String> {
         })?
         .args(["serve", "--port", port_arg]);
 
-    let (mut rx, _child) = sidecar
-        .spawn()
-        .map_err(|e| {
-            let msg = format!("Failed to spawn sidecar: {}", e);
-            println!("[kvelmo-desktop] {}", msg);
-            msg
-        })?;
+    let (mut rx, _child) = sidecar.spawn().map_err(|e| {
+        let msg = format!("Failed to spawn sidecar: {}", e);
+        println!("[kvelmo-desktop] {}", msg);
+        msg
+    })?;
 
     println!("[kvelmo-desktop] Sidecar spawned, waiting for port...");
 
@@ -135,12 +139,18 @@ async fn spawn_server_wsl(app: &AppHandle) -> Result<u16, String> {
     wait_for_port(&mut rx).await
 }
 
-/// Wait for the server to output its port
-async fn wait_for_port(
-    rx: &mut tokio::sync::mpsc::Receiver<CommandEvent>,
-) -> Result<u16, String> {
-    let port_regex = Regex::new(r"localhost:(\d+)").unwrap();
+/// Extract port from server output line
+/// e.g., "Listening on localhost:8080" -> Some(8080)
+pub(crate) fn extract_port(line: &str) -> Option<u16> {
+    let regex = Regex::new(r"localhost:(\d+)").unwrap();
+    regex
+        .captures(line)
+        .and_then(|c| c.get(1))
+        .and_then(|m| m.as_str().parse().ok())
+}
 
+/// Wait for the server to output its port
+async fn wait_for_port(rx: &mut tokio::sync::mpsc::Receiver<CommandEvent>) -> Result<u16, String> {
     let port_future = async {
         while let Some(event) = rx.recv().await {
             match event {
@@ -148,13 +158,9 @@ async fn wait_for_port(
                     let line = String::from_utf8_lossy(&line_bytes);
                     println!("[kvelmo-desktop] stdout: {}", line);
 
-                    if let Some(captures) = port_regex.captures(&line) {
-                        if let Some(port_match) = captures.get(1) {
-                            if let Ok(port) = port_match.as_str().parse::<u16>() {
-                                println!("[kvelmo-desktop] Detected port: {}", port);
-                                return Ok(port);
-                            }
-                        }
+                    if let Some(port) = extract_port(&line) {
+                        println!("[kvelmo-desktop] Detected port: {}", port);
+                        return Ok(port);
                     }
                 }
                 CommandEvent::Stderr(line_bytes) => {
@@ -183,6 +189,7 @@ async fn wait_for_port(
 }
 
 /// Navigate the main window to the server URL
+#[cfg(not(dev))]
 fn navigate_to_server(app: &AppHandle, port: u16) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -214,5 +221,38 @@ pub async fn stop_server() {
             *guard = None;
             tracing::info!("Server stopped");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_port_basic() {
+        assert_eq!(extract_port("localhost:6337"), Some(6337));
+    }
+
+    #[test]
+    fn test_extract_port_in_sentence() {
+        assert_eq!(extract_port("Listening on localhost:8080"), Some(8080));
+        assert_eq!(
+            extract_port("Server started at localhost:52341/api"),
+            Some(52341)
+        );
+    }
+
+    #[test]
+    fn test_extract_port_no_match() {
+        assert_eq!(extract_port("Loading config..."), None);
+        assert_eq!(extract_port("127.0.0.1:8080"), None); // Different format
+        assert_eq!(extract_port("localhost"), None);
+        assert_eq!(extract_port("localhost:abc"), None);
+    }
+
+    #[test]
+    fn test_extract_port_first_match() {
+        // Should extract first port found
+        assert_eq!(extract_port("localhost:3000 localhost:4000"), Some(3000));
     }
 }
