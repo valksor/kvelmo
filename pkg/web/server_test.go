@@ -10,6 +10,281 @@ import (
 	"testing"
 )
 
+// Test checkOrigin with wildcard allowing all origins.
+func TestCheckOrigin_AllowAll(t *testing.T) {
+	srv, err := NewServer("", 0, WithAllowedOrigins([]string{"*"}))
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	tests := []struct {
+		name   string
+		origin string
+		want   bool
+	}{
+		{"external origin", "https://example.com", true},
+		{"localhost", "http://localhost:3000", true},
+		{"any domain", "https://evil.com", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+			req.Header.Set("Origin", tt.origin)
+
+			if got := srv.checkOrigin(req); got != tt.want {
+				t.Errorf("checkOrigin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Test checkOrigin with exact origin matching.
+func TestCheckOrigin_ExactMatch(t *testing.T) {
+	allowed := []string{"https://app.example.com", "https://admin.example.com"}
+	srv, err := NewServer("", 0, WithAllowedOrigins(allowed))
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	tests := []struct {
+		name   string
+		origin string
+		want   bool
+	}{
+		{"allowed origin 1", "https://app.example.com", true},
+		{"allowed origin 2", "https://admin.example.com", true},
+		{"not in list", "https://other.example.com", false},
+		{"localhost still allowed", "http://localhost:3000", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+			req.Header.Set("Origin", tt.origin)
+
+			if got := srv.checkOrigin(req); got != tt.want {
+				t.Errorf("checkOrigin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Test checkOrigin allows localhost variants by default.
+func TestCheckOrigin_LocalhostVariants(t *testing.T) {
+	srv, err := NewServer("", 0) // No explicit allowed origins
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	tests := []struct {
+		name   string
+		origin string
+		want   bool
+	}{
+		{"localhost http", "http://localhost:3000", true},
+		{"localhost https", "https://localhost:3000", true},
+		{"127.0.0.1 http", "http://127.0.0.1:8080", true},
+		{"127.0.0.1 https", "https://127.0.0.1:8080", true},
+		{"::1 http", "http://[::1]:8080", true},
+		{"no origin header", "", true}, // Same-origin request
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+			if tt.origin != "" {
+				req.Header.Set("Origin", tt.origin)
+			}
+
+			if got := srv.checkOrigin(req); got != tt.want {
+				t.Errorf("checkOrigin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Test checkOrigin rejects non-localhost by default.
+func TestCheckOrigin_RejectNonLocalhost(t *testing.T) {
+	srv, err := NewServer("", 0) // No explicit allowed origins
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	tests := []struct {
+		name   string
+		origin string
+		want   bool
+	}{
+		{"external domain", "https://example.com", false},
+		{"subdomain of localhost", "http://foo.localhost:3000", false},
+		{"localhost typo", "http://localhst:3000", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+			req.Header.Set("Origin", tt.origin)
+
+			if got := srv.checkOrigin(req); got != tt.want {
+				t.Errorf("checkOrigin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Test checkOrigin with invalid URL in origin header.
+func TestCheckOrigin_InvalidURL(t *testing.T) {
+	srv, err := NewServer("", 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+	req.Header.Set("Origin", "not-a-valid-url://\\invalid")
+
+	if got := srv.checkOrigin(req); got != false {
+		t.Errorf("checkOrigin() with invalid URL = %v, want false", got)
+	}
+}
+
+// Test security headers middleware.
+func TestSecurityHeaders(t *testing.T) {
+	srv, err := NewServer("", 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	srv.httpServer.Handler.ServeHTTP(w, req)
+
+	expectedHeaders := map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options":        "DENY",
+		"X-XSS-Protection":       "1; mode=block",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+	}
+
+	for header, want := range expectedHeaders {
+		if got := w.Header().Get(header); got != want {
+			t.Errorf("Header %s = %q, want %q", header, got, want)
+		}
+	}
+}
+
+// Test WithAllowedOrigins option function.
+func TestWithAllowedOrigins(t *testing.T) {
+	origins := []string{"https://example.com", "https://test.com"}
+	srv, err := NewServer("", 0, WithAllowedOrigins(origins))
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	if len(srv.allowedOrigins) != 2 {
+		t.Errorf("allowedOrigins length = %d, want 2", len(srv.allowedOrigins))
+	}
+}
+
+// Test WithWorktreeCreator option function.
+func TestWithWorktreeCreator(t *testing.T) {
+	creator := &mockWorktreeCreator{}
+	srv, err := NewServer("", 0, WithWorktreeCreator(creator))
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	if srv.worktreeCreator == nil {
+		t.Error("worktreeCreator should not be nil")
+	}
+}
+
+type mockWorktreeCreator struct{}
+
+func (m *mockWorktreeCreator) GetOrCreateWorktreeSocket(_ string) (interface{}, error) {
+	return struct{}{}, nil // Return non-nil empty struct to satisfy interface
+}
+
+// Test static file serving with nested path.
+func TestHandleStatic_NestedPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create nested directory structure
+	assetsDir := filepath.Join(tmpDir, "assets", "js")
+	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(assetsDir, "app.js"), []byte("console.log('test')"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv, err := NewServer(tmpDir, 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	req := httptest.NewRequest(http.MethodGet, "/assets/js/app.js", nil)
+	w := httptest.NewRecorder()
+
+	srv.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("/assets/js/app.js status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// Test static file 404 for non-existent file.
+func TestHandleStatic_404(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create only index.html
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>test</html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv, err := NewServer(tmpDir, 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent.js", nil)
+	w := httptest.NewRecorder()
+
+	srv.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("/nonexistent.js status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+// Test worktree WebSocket handler with invalid path (not a prefix match).
+func TestHandleWorktreeWS_InvalidPath(t *testing.T) {
+	srv, err := NewServer("", 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	// Create request with path that doesn't match the prefix
+	req := httptest.NewRequest(http.MethodGet, "/ws/worktree", nil)
+	w := httptest.NewRecorder()
+
+	srv.handleWorktreeWS(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("handleWorktreeWS invalid path status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestNewServer(t *testing.T) {
 	srv, err := NewServer("", 0)
 	if err != nil {
