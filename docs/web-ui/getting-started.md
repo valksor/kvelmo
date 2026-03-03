@@ -64,16 +64,16 @@ When satisfied, click **Submit** to create a PR.
 
 The sidebar provides access to additional features:
 
-| Panel | Description |
-|-------|-------------|
-| **Files** | Browse project files |
-| **Changes** | View file diffs |
-| **Checkpoints** | Navigate undo/redo history |
-| **Workers** | Monitor worker pool |
-| **Memory** | Semantic memory management |
-| **Screenshots** | Screenshot gallery |
-| **Browser** | Browser automation controls |
-| **Settings** | Configuration |
+| Panel           | Description                 |
+|-----------------|-----------------------------|
+| **Files**       | Browse project files        |
+| **Changes**     | View file diffs             |
+| **Checkpoints** | Navigate undo/redo history  |
+| **Workers**     | Monitor worker pool         |
+| **Memory**      | Semantic memory management  |
+| **Screenshots** | Screenshot gallery          |
+| **Browser**     | Browser automation controls |
+| **Settings**    | Configuration               |
 
 ## Undo and Redo
 

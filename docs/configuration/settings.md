@@ -4,10 +4,10 @@ kvelmo uses a two-tier configuration system: **global** settings for user prefer
 
 ## Configuration Files
 
-| Scope | Location | Priority |
-|-------|----------|----------|
-| Global | `~/.valksor/kvelmo/kvelmo.yaml` | Lower |
-| Project | `.valksor/kvelmo.yaml` | Higher (overrides global) |
+| Scope   | Location                        | Priority                  |
+|---------|---------------------------------|---------------------------|
+| Global  | `~/.valksor/kvelmo/kvelmo.yaml` | Lower                     |
+| Project | `.valksor/kvelmo.yaml`          | Higher (overrides global) |
 
 Project settings override global settings when both are present.
 
@@ -15,30 +15,30 @@ Project settings override global settings when both are present.
 
 API tokens and credentials are stored separately in `.env` files:
 
-| Scope | Location |
-|-------|----------|
-| Global | `~/.valksor/kvelmo/.env` |
-| Project | `.valksor/.env` |
+| Scope   | Location                 |
+|---------|--------------------------|
+| Global  | `~/.valksor/kvelmo/.env` |
+| Project | `.valksor/.env`          |
 
 ## Environment Variables
 
 These environment variables can be set instead of (or in addition to) configuration files:
 
-| Variable | Description |
-|----------|-------------|
+| Variable       | Description                                          |
+|----------------|------------------------------------------------------|
 | `GITHUB_TOKEN` | GitHub personal access token (requires `repo` scope) |
-| `GITLAB_TOKEN` | GitLab personal access token (requires `api` scope) |
-| `WRIKE_TOKEN` | Wrike API token |
-| `LINEAR_TOKEN` | Linear API token (see format notes below) |
+| `GITLAB_TOKEN` | GitLab personal access token (requires `api` scope)  |
+| `WRIKE_TOKEN`  | Wrike API token                                      |
+| `LINEAR_TOKEN` | Linear API token (see format notes below)            |
 
 ### Linear Token Format
 
 Linear accepts two types of tokens with different configuration formats:
 
-| Token Type | Prefix | Configuration |
-|------------|--------|---------------|
-| Personal API Key | `lin_api_` | Use directly, no prefix needed |
-| OAuth Access Token | (varies) | Include `Bearer ` prefix |
+| Token Type         | Prefix     | Configuration                  |
+|--------------------|------------|--------------------------------|
+| Personal API Key   | `lin_api_` | Use directly, no prefix needed |
+| OAuth Access Token | (varies)   | Include `Bearer ` prefix       |
 
 **Examples:**
 
@@ -112,39 +112,39 @@ custom_agents:
 
 ### Agent Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `agent.default` | string | `claude` | Default AI agent when none specified |
-| `agent.allowed` | string[] | `["claude", "codex"]` | Agents permitted for this project |
+| Key             | Type     | Default               | Description                          |
+|-----------------|----------|-----------------------|--------------------------------------|
+| `agent.default` | string   | `claude`              | Default AI agent when none specified |
+| `agent.allowed` | string[] | `["claude", "codex"]` | Agents permitted for this project    |
 
 ### Provider Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `providers.default` | string | `github` | Default task provider |
-| `providers.github.owner` | string | (auto-detect) | Default repository owner |
-| `providers.github.allow_ticket_comment` | bool | `false` | Post status comments on issues/PRs |
-| `providers.gitlab.base_url` | string | `https://gitlab.com` | GitLab instance URL |
-| `providers.wrike.include_parent_context` | bool | `true` | Fetch parent task for AI context |
-| `providers.wrike.include_sibling_context` | bool | `true` | Fetch sibling tasks for AI context |
-| `providers.linear.team` | string | (none) | Default Linear team prefix |
-| `providers.linear.include_parent_context` | bool | `true` | Fetch parent issue for AI context |
-| `providers.linear.include_sibling_context` | bool | `true` | Fetch sibling issues for AI context |
-| `providers.linear.allow_ticket_comment` | bool | `false` | Post status comments on issues |
+| Key                                        | Type   | Default              | Description                         |
+|--------------------------------------------|--------|----------------------|-------------------------------------|
+| `providers.default`                        | string | `github`             | Default task provider               |
+| `providers.github.owner`                   | string | (auto-detect)        | Default repository owner            |
+| `providers.github.allow_ticket_comment`    | bool   | `false`              | Post status comments on issues/PRs  |
+| `providers.gitlab.base_url`                | string | `https://gitlab.com` | GitLab instance URL                 |
+| `providers.wrike.include_parent_context`   | bool   | `true`               | Fetch parent task for AI context    |
+| `providers.wrike.include_sibling_context`  | bool   | `true`               | Fetch sibling tasks for AI context  |
+| `providers.linear.team`                    | string | (none)               | Default Linear team prefix          |
+| `providers.linear.include_parent_context`  | bool   | `true`               | Fetch parent issue for AI context   |
+| `providers.linear.include_sibling_context` | bool   | `true`               | Fetch sibling issues for AI context |
+| `providers.linear.allow_ticket_comment`    | bool   | `false`              | Post status comments on issues      |
 
 **Performance tip:** Setting `include_parent_context: false` and `include_sibling_context: false` for Wrike can save ~200ms per task fetch by skipping hierarchy API calls.
 
 ### Git Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `git.base_branch` | string | (auto-detect) | Base branch for feature branches |
-| `git.branch_pattern` | string | `feature/{key}--{slug}` | Branch naming pattern |
-| `git.commit_prefix` | string | `[{key}]` | Commit message prefix |
-| `git.create_branch` | bool | `true` | Auto-create branch on task start |
-| `git.auto_commit` | bool | `true` | Auto-commit after implementation |
-| `git.sign_commits` | bool | `false` | GPG sign commits |
-| `git.allow_pr_comment` | bool | `false` | Post status comments on pull requests |
+| Key                    | Type   | Default                 | Description                           |
+|------------------------|--------|-------------------------|---------------------------------------|
+| `git.base_branch`      | string | (auto-detect)           | Base branch for feature branches      |
+| `git.branch_pattern`   | string | `feature/{key}--{slug}` | Branch naming pattern                 |
+| `git.commit_prefix`    | string | `[{key}]`               | Commit message prefix                 |
+| `git.create_branch`    | bool   | `true`                  | Auto-create branch on task start      |
+| `git.auto_commit`      | bool   | `true`                  | Auto-commit after implementation      |
+| `git.sign_commits`     | bool   | `false`                 | GPG sign commits                      |
+| `git.allow_pr_comment` | bool   | `false`                 | Post status comments on pull requests |
 
 **Pattern Variables:**
 - `{key}` - Task ID from provider (e.g., `owner/repo#123`)
@@ -153,30 +153,30 @@ custom_agents:
 
 ### Worker Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `workers.max` | int | `3` | Maximum concurrent workers (1-10) |
+| Key           | Type | Default | Description                       |
+|---------------|------|---------|-----------------------------------|
+| `workers.max` | int  | `3`     | Maximum concurrent workers (1-10) |
 
 ### Storage Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
+| Key                       | Type | Default | Description                               |
+|---------------------------|------|---------|-------------------------------------------|
 | `storage.save_in_project` | bool | `false` | Store data in `.valksor/` instead of home |
 
 ### Workflow Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `workflow.use_worktree_isolation` | bool | `true` | Create isolated git worktree per task |
+| Key                               | Type | Default | Description                           |
+|-----------------------------------|------|---------|---------------------------------------|
+| `workflow.use_worktree_isolation` | bool | `true`  | Create isolated git worktree per task |
 
 ### Watchdog Settings (Advanced)
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `watchdog.enabled` | bool | `true` | Enable memory leak watchdog |
-| `watchdog.interval_sec` | int | `30` | Heap sampling interval (10-300s) |
-| `watchdog.window_size` | int | `10` | Samples to confirm leak (5-60) |
-| `watchdog.threshold_mb` | int | `200` | Heap growth threshold (min 50MB) |
+| Key                     | Type | Default | Description                      |
+|-------------------------|------|---------|----------------------------------|
+| `watchdog.enabled`      | bool | `true`  | Enable memory leak watchdog      |
+| `watchdog.interval_sec` | int  | `30`    | Heap sampling interval (10-300s) |
+| `watchdog.window_size`  | int  | `10`    | Samples to confirm leak (5-60)   |
+| `watchdog.threshold_mb` | int  | `200`   | Heap growth threshold (min 50MB) |
 
 ### Custom Agents
 
@@ -195,12 +195,12 @@ custom_agents:
 
 > **Security:** Do not store API keys as literal values in settings files. Settings are stored in plaintext at `~/.valksor/kvelmo/kvelmo.yaml` or `.valksor/kvelmo.yaml`. If you need to override an API key for a custom agent, set it in your shell environment instead.
 
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `extends` | string | Yes | Base agent to wrap (`claude` or `codex`) |
-| `description` | string | No | Human-readable description |
-| `args` | string[] | No | Additional CLI arguments |
-| `env` | map | No | Environment variables (inherits from shell) |
+| Key           | Type     | Required | Description                                 |
+|---------------|----------|----------|---------------------------------------------|
+| `extends`     | string   | Yes      | Base agent to wrap (`claude` or `codex`)    |
+| `description` | string   | No       | Human-readable description                  |
+| `args`        | string[] | No       | Additional CLI arguments                    |
+| `env`         | map      | No       | Environment variables (inherits from shell) |
 
 ## CLI Commands
 

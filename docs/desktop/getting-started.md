@@ -75,12 +75,12 @@ Click **Submit** to create a PR and mark the task complete in your issue tracker
 
 ## Navigation
 
-| Area | What It Shows |
-|------|---------------|
-| **Sidebar** | Task list, project selector |
-| **Main Panel** | Current task details and controls |
-| **Output Panel** | Real-time agent output and logs |
-| **Status Bar** | Current state, undo/redo controls |
+| Area             | What It Shows                     |
+|------------------|-----------------------------------|
+| **Sidebar**      | Task list, project selector       |
+| **Main Panel**   | Current task details and controls |
+| **Output Panel** | Real-time agent output and logs   |
+| **Status Bar**   | Current state, undo/redo controls |
 
 ---
 
@@ -98,12 +98,12 @@ All interfaces share the same workflow state.
 
 ## Keyboard Shortcuts
 
-| Action | macOS | Windows/Linux |
-|--------|-------|---------------|
-| New Task | Cmd+N | Ctrl+N |
-| Undo | Cmd+Z | Ctrl+Z |
-| Redo | Cmd+Shift+Z | Ctrl+Shift+Z |
-| Settings | Cmd+, | Ctrl+, |
+| Action   | macOS       | Windows/Linux |
+|----------|-------------|---------------|
+| New Task | Cmd+N       | Ctrl+N        |
+| Undo     | Cmd+Z       | Ctrl+Z        |
+| Redo     | Cmd+Shift+Z | Ctrl+Shift+Z  |
+| Settings | Cmd+,       | Ctrl+,        |
 
 ---
 
