@@ -11,8 +11,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/agent"
+	"github.com/valksor/kvelmo/pkg/agent/claude"
+	"github.com/valksor/kvelmo/pkg/agent/codex"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/socket"
+	"github.com/valksor/kvelmo/pkg/worker"
 )
 
 var (
@@ -123,12 +127,29 @@ func startForeground(cwd, globalPath, wtPath string) error {
 		fmt.Println("Global socket already running")
 	}
 
+	// Create worker pool for standalone mode (same as serve)
+	registry := agent.NewRegistry()
+	if err := claude.Register(registry); err != nil {
+		return fmt.Errorf("register claude agent: %w", err)
+	}
+	if err := codex.Register(registry); err != nil {
+		return fmt.Errorf("register codex agent: %w", err)
+	}
+
+	poolCfg := worker.DefaultPoolConfig()
+	poolCfg.Agents = registry
+	pool := worker.NewPool(poolCfg)
+	if err := pool.Start(); err != nil {
+		return fmt.Errorf("start worker pool: %w", err)
+	}
+	defer func() { _ = pool.Stop() }()
+
 	fmt.Printf("Starting worktree socket for %s\n", cwd)
 	wt, err := socket.NewWorktreeSocket(socket.WorktreeConfig{
 		WorktreePath: cwd,
 		SocketPath:   wtPath,
 		GlobalPath:   globalPath,
-		Pool:         nil, // No worker pool in standalone mode
+		Pool:         pool,
 	})
 	if err != nil {
 		return fmt.Errorf("create worktree socket: %w", err)
@@ -138,6 +159,29 @@ func startForeground(cwd, globalPath, wtPath string) error {
 	go func() {
 		errCh <- wt.Start(ctx)
 	}()
+
+	// Wait for socket to be ready before loading task
+	if !waitForSocket(wtPath, 5*time.Second) {
+		return errors.New("worktree socket failed to start")
+	}
+
+	// Add agent worker in background (connecting to Claude/Codex CLI can be slow)
+	go func() {
+		if _, err := pool.AddAgentWorker(ctx, "", true); err != nil {
+			fmt.Printf("Warning: Failed to add agent worker: %v\n", err)
+			fmt.Println("Jobs will run in simulation mode.")
+			_ = pool.AddDefaultWorker("")
+		}
+	}()
+
+	// If --from was specified, load the task via RPC
+	if startFrom != "" {
+		if err := loadTaskViaRPC(wtPath, startFrom); err != nil {
+			fmt.Printf("Warning: failed to load task: %v\n", err)
+		} else {
+			fmt.Printf("Task loaded from %s\n", startFrom)
+		}
+	}
 
 	fmt.Println("Ready. Press Ctrl+C to stop.")
 
@@ -168,4 +212,40 @@ func isGitRepository(path string) bool {
 	cmd := exec.Command("git", "-C", path, "rev-parse", "--git-dir") //nolint:noctx // Quick one-shot check
 
 	return cmd.Run() == nil
+}
+
+// waitForSocket waits for a socket to become available.
+func waitForSocket(socketPath string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if socket.SocketExists(socketPath) {
+			return true
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	return false
+}
+
+// loadTaskViaRPC connects to the worktree socket and loads a task.
+func loadTaskViaRPC(socketPath, source string) error {
+	client, err := socket.NewClient(socketPath, socket.WithTimeout(30*time.Second))
+	if err != nil {
+		return fmt.Errorf("connect to socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	params := map[string]any{
+		"source": source,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err = client.Call(ctx, "start", params)
+	if err != nil {
+		return fmt.Errorf("call start: %w", err)
+	}
+
+	return nil
 }

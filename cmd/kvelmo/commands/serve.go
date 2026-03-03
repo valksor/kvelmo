@@ -150,6 +150,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}()
 		time.Sleep(100 * time.Millisecond)
+
+		// Pre-warm memory adapter so Cybertron model download completes before
+		// the first memory.search call rather than causing a cold-start delay.
+		socket.PrewarmMemory(ctx)
 	}
 
 	// Create web server with worktree creator (if we own the global socket)

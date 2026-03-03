@@ -35,7 +35,7 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 
 	socketPath := socket.WorktreeSocketPath(cwd)
 
-	client, err := socket.NewClient(socketPath, socket.WithTimeout(60*time.Second))
+	client, err := socket.NewClient(socketPath, socket.WithTimeout(120*time.Second))
 	if err != nil {
 		return fmt.Errorf("connect to socket: %w", err)
 	}
@@ -57,7 +57,8 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 		"delete_branch": deleteBranch,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	// Use 2 minute timeout for submit since it involves git push + PR creation
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	result, err := client.Call(ctx, "submit", params)
