@@ -19,7 +19,7 @@ Install the Claude CLI:
 kvelmo config set default_agent claude
 ```
 
-Or in `~/.valksor/kvelmo/config.json`:
+Or in `~/.valksor/kvelmo/kvelmo.yaml`:
 ```json
 {
   "default_agent": "claude"

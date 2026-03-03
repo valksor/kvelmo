@@ -37,7 +37,7 @@ kvelmo selects agents in this priority order:
 
 ### Global Configuration
 
-Set the default agent in `~/.valksor/kvelmo/config.json`:
+Set the default agent in `~/.valksor/kvelmo/kvelmo.yaml`:
 
 ```json
 {
