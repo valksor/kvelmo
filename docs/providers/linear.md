@@ -62,12 +62,12 @@ This context enriches AI prompts with organizational awareness.
 
 Updates issue status after submission. Maps kvelmo statuses to Linear workflow states:
 
-| kvelmo Status | Linear State Type |
-|---------------|-------------------|
+| kvelmo Status             | Linear State Type  |
+|---------------------------|--------------------|
 | `open`, `todo`, `backlog` | backlog, unstarted |
-| `in_progress`, `doing` | started |
-| `done`, `completed` | completed |
-| `canceled` | canceled |
+| `in_progress`, `doing`    | started            |
+| `done`, `completed`       | completed          |
+| `canceled`                | canceled           |
 
 ### Comments
 
@@ -94,10 +94,10 @@ Linear's priority levels (1-4) map to kvelmo priorities:
 
 | Linear Priority | kvelmo Priority |
 |-----------------|-----------------|
-| 1 (Urgent) | critical |
-| 2 (High) | high |
-| 3 (Medium) | normal |
-| 4 (Low) | low |
+| 1 (Urgent)      | critical        |
+| 2 (High)        | high            |
+| 3 (Medium)      | normal          |
+| 4 (Low)         | low             |
 
 ## Sub-issues as Subtasks
 

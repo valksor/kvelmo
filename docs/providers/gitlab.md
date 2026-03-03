@@ -49,13 +49,13 @@ Examples:
 
 ## Extracted Data
 
-| Field | Source |
-|-------|--------|
-| Title | Issue/MR title |
+| Field       | Source               |
+|-------------|----------------------|
+| Title       | Issue/MR title       |
 | Description | Issue/MR description |
-| External ID | Issue/MR IID |
-| URL | GitLab URL |
-| Labels | Issue/MR labels |
+| External ID | Issue/MR IID         |
+| URL         | GitLab URL           |
+| Labels      | Issue/MR labels      |
 
 ## Submitting Back
 

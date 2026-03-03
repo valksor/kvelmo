@@ -4,10 +4,10 @@ Agents are AI models that execute kvelmo's workflow phases. kvelmo orchestrates 
 
 ## Supported Agents
 
-| Agent | Description |
-|-------|-------------|
-| [Claude](/agents/claude.md) | Anthropic's Claude via CLI |
-| [Codex](/agents/codex.md) | OpenAI's Codex via CLI |
+| Agent                       | Description                   |
+|-----------------------------|-------------------------------|
+| [Claude](/agents/claude.md) | Anthropic's Claude via CLI    |
+| [Codex](/agents/codex.md)   | OpenAI's Codex via CLI        |
 | [Custom](/agents/custom.md) | Your own agent implementation |
 
 ## How Agents Work
@@ -68,13 +68,13 @@ Use different agents for different phases:
 
 During execution, agents emit events:
 
-| Event | Description |
-|-------|-------------|
-| `token` | Output token streamed |
-| `tool_call` | Agent called a tool |
+| Event         | Description            |
+|---------------|------------------------|
+| `token`       | Output token streamed  |
+| `tool_call`   | Agent called a tool    |
 | `tool_result` | Tool returned a result |
-| `permission` | Permission requested |
-| `completion` | Agent finished |
+| `permission`  | Permission requested   |
+| `completion`  | Agent finished         |
 
 These events are streamed to the Web UI and CLI.
 
