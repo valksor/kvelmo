@@ -78,7 +78,7 @@
         }
 
         .cover {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            background: linear-gradient(135deg, #0f2a1e 0%, #1a3a28 100%) !important;
         }
         .cover h1 {
             color: #fff !important;
@@ -87,12 +87,17 @@
             color: rgba(255, 255, 255, 0.9) !important;
         }
         .cover .btn {
-            border: 2px solid #fff;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .cover .btn:first-child {
+            background: #10b981;
+            border-color: #10b981;
             color: #fff;
         }
         .cover .btn:hover {
-            background: #fff;
-            color: var(--theme-color-dark);
+            opacity: 0.85;
         }
     </style>
 </head>
