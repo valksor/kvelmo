@@ -10,11 +10,11 @@ kvelmo memory <subcommand>
 
 ## Subcommands
 
-| Command | Description |
-|---------|-------------|
-| `index` | Index the codebase |
-| `search <query>` | Search memory |
-| `clear` | Clear all memory |
+| Command          | Description        |
+|------------------|--------------------|
+| `index`          | Index the codebase |
+| `search <query>` | Search memory      |
+| `clear`          | Clear all memory   |
 
 ## Examples
 

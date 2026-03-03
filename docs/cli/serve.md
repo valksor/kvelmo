@@ -10,9 +10,9 @@ kvelmo serve
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `--open` | Open browser automatically |
+| Flag     | Description                 |
+|----------|-----------------------------|
+| `--open` | Open browser automatically  |
 | `--port` | Web UI port (default: 6337) |
 
 ## Examples

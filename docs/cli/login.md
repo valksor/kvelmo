@@ -22,16 +22,16 @@ Tokens are stored in `.env` files, not in configuration files, keeping secrets s
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag        | Description                                             |
+|-------------|---------------------------------------------------------|
 | `--project` | Save token to project `.valksor/.env` instead of global |
 
 ## Token Storage
 
-| Scope | Location |
-|-------|----------|
-| Global (default) | `~/.valksor/kvelmo/.env` |
-| Project (`--project`) | `.valksor/.env` |
+| Scope                 | Location                 |
+|-----------------------|--------------------------|
+| Global (default)      | `~/.valksor/kvelmo/.env` |
+| Project (`--project`) | `.valksor/.env`          |
 
 Project-level tokens override global tokens for that project.
 
@@ -96,12 +96,12 @@ Override? [y/N]:
 
 ## Required Scopes
 
-| Provider | Scopes |
-|----------|--------|
-| GitHub | `repo`, `read:user` (or Fine-grained with repository access) |
-| GitLab | `api`, `read_user`, `read_repository` |
-| Linear | Workspace access |
-| Wrike | Default (read/write access) |
+| Provider | Scopes                                                       |
+|----------|--------------------------------------------------------------|
+| GitHub   | `repo`, `read:user` (or Fine-grained with repository access) |
+| GitLab   | `api`, `read_user`, `read_repository`                        |
+| Linear   | Workspace access                                             |
+| Wrike    | Default (read/write access)                                  |
 
 ## Web UI
 
