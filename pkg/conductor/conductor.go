@@ -346,6 +346,20 @@ func (c *Conductor) promptUser(ctx context.Context, question string) (bool, erro
 	}
 }
 
+// PendingPromptIDs returns the IDs of all currently pending user prompts.
+// Used by status to surface actionable items to CLI users.
+func (c *Conductor) PendingPromptIDs() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	ids := make([]string, 0, len(c.pendingPrompts))
+	for id := range c.pendingPrompts {
+		ids = append(ids, id)
+	}
+
+	return ids
+}
+
 // RespondToPrompt delivers an answer to a pending promptUser call.
 // Called by the quality.respond socket handler.
 func (c *Conductor) RespondToPrompt(promptID string, answer bool) error {

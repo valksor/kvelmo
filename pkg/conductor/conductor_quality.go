@@ -200,8 +200,11 @@ func (c *Conductor) qualityGateCodeRabbit(ctx context.Context, workDir string) e
 		return nil
 	}
 
-	mode := c.getEffectiveSettings().Workflow.CodeRabbit.Mode
+	effectiveSettings := c.getEffectiveSettings()
+	mode := effectiveSettings.Workflow.CodeRabbit.Mode
+	slog.Info("quality gate: coderabbit check", "mode", mode, "path", crPath)
 	if mode == "" {
+		slog.Info("quality gate: mode is empty, defaulting to ask")
 		mode = settings.CodeRabbitModeAsk
 	}
 

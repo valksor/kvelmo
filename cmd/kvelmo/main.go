@@ -74,6 +74,12 @@ func init() {
 	rootCmd.AddCommand(commands.LinearCmd)
 	rootCmd.AddCommand(commands.WrikeCmd)
 
+	// Remote operations (approve/merge PR)
+	rootCmd.AddCommand(commands.RemoteCmd)
+
+	// Quality gate controls
+	rootCmd.AddCommand(commands.QualityCmd)
+
 	// Start memory leak watchdog before every command.
 	// Short-lived commands exit before the window fills; long-running ones
 	// (serve, plan, implement, …) are monitored throughout their lifetime.
