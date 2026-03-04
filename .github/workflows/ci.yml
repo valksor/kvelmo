@@ -246,7 +246,7 @@ jobs:
             -   name: Generate coverage
                 if: github.event_name != 'pull_request' && runner.os == 'Linux'
                 working-directory: web/src-tauri
-                run: cargo llvm-cov --lib --lcov --output-path lcov.info
+                run: cargo llvm-cov --lib --lcov --remap-path-prefix --output-path lcov.info
 
             -   name: Check coverage data exists
                 id: check-tauri-coverage
