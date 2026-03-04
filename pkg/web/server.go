@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/valksor/kvelmo/pkg/socket"
+	"github.com/valksor/kvelmo/pkg/web/static"
 )
 
 // WorktreeCreator creates worktree sockets on-demand.
@@ -33,6 +35,7 @@ type Server struct {
 	listener        net.Listener
 	upgrader        websocket.Upgrader
 	staticDir       string
+	embeddedFS      fs.FS // Fallback when staticDir is empty
 	port            int
 	allowedOrigins  []string // If empty, only localhost is allowed
 	worktreeCreator WorktreeCreator
@@ -77,9 +80,10 @@ func NewServer(staticDir string, port int, opts ...ServerOption) (*Server, error
 	actualPort := tcpAddr.Port
 
 	s := &Server{
-		staticDir: staticDir,
-		listener:  ln,
-		port:      actualPort,
+		staticDir:  staticDir,
+		embeddedFS: static.Dist(),
+		listener:   ln,
+		port:       actualPort,
 	}
 
 	// Apply options
@@ -99,7 +103,8 @@ func NewServer(staticDir string, port int, opts ...ServerOption) (*Server, error
 	mux.HandleFunc("/ws/worktree/", s.handleWorktreeWS)
 
 	// Static file serving (SPA)
-	if staticDir != "" {
+	// Serve from disk (staticDir) or embedded assets (fallback for production)
+	if staticDir != "" || s.embeddedFS != nil {
 		mux.HandleFunc("/", s.handleStatic)
 	}
 
@@ -174,15 +179,48 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	if path == "/" {
-		path = "/index.html"
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	if path == "" {
+		path = "index.html"
 	}
 
-	fullPath := filepath.Join(s.staticDir, path)
+	// Try disk first (development mode)
+	if s.staticDir != "" {
+		fullPath := filepath.Join(s.staticDir, path)
+		if _, err := os.Stat(fullPath); err == nil {
+			http.ServeFile(w, r, fullPath)
 
-	// Check if file exists
-	http.ServeFile(w, r, fullPath)
+			return
+		}
+		// SPA fallback: serve index.html for routes that don't match files
+		indexPath := filepath.Join(s.staticDir, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, r, indexPath)
+
+			return
+		}
+	}
+
+	// Fall back to embedded assets (production mode)
+	if s.embeddedFS != nil {
+		// Try to open the requested file
+		f, err := s.embeddedFS.Open(path)
+		if err == nil {
+			defer func() { _ = f.Close() }()
+			stat, _ := f.Stat()
+			if !stat.IsDir() {
+				http.ServeFileFS(w, r, s.embeddedFS, path)
+
+				return
+			}
+		}
+		// SPA fallback: serve index.html for routes that don't match files
+		http.ServeFileFS(w, r, s.embeddedFS, "index.html")
+
+		return
+	}
+
+	http.NotFound(w, r)
 }
 
 // handleGlobalWS proxies WebSocket connections to the global Unix socket.

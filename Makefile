@@ -122,6 +122,9 @@ types:
 ## Build web UI (generates types first)
 web-build: types
 	cd web && bun install && bun run build
+	@echo "Copying web assets for embedding..."
+	@rm -rf pkg/web/static/dist
+	@cp -r web/dist pkg/web/static/dist
 
 ## Run web dev server (with hot reload, proxies to backend)
 web-dev:
