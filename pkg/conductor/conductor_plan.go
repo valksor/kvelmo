@@ -38,6 +38,13 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 		return "", fmt.Errorf("cannot plan: %w", err)
 	}
 
+	// Load existing specs so re-planning iterates rather than restarts from scratch
+	var existingSpecs string
+	if c.store != nil {
+		specStore := storage.NewSpecStore(c.store)
+		existingSpecs, _ = specStore.GatherSpecificationsContent(c.workUnit.ID)
+	}
+
 	// Auto-detect complexity and choose appropriate prompt
 	complexity := DetectTaskComplexity(
 		c.workUnit.Title,
@@ -47,7 +54,7 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 		nil,
 		false,
 	)
-	prompt := c.buildPlanPromptForComplexity(complexity)
+	prompt := c.buildPlanPromptForComplexity(complexity, existingSpecs)
 
 	opts := c.buildJobOptions()
 	job, err := c.pool.SubmitWithOptions(worker.JobTypePlan, c.getWorkDir(), prompt, opts)
@@ -190,7 +197,8 @@ func (c *Conductor) SaveSpecification(content string) (string, error) {
 }
 
 // buildPlanPromptForComplexity selects the appropriate planning prompt based on detected complexity.
-func (c *Conductor) buildPlanPromptForComplexity(complexity TaskComplexity) string {
+// If existingSpecs is non-empty, the prompt instructs the agent to iterate rather than start from scratch.
+func (c *Conductor) buildPlanPromptForComplexity(complexity TaskComplexity, existingSpecs string) string {
 	wu := c.workUnit
 	hierarchySection := buildHierarchySection(wu.Hierarchy)
 
@@ -219,25 +227,42 @@ Do this FIRST before any other output.
 
 	specReminder := fmt.Sprintf("\nRemember: Use the Write tool to save the spec to `%s`\n", specPath)
 
+	existingSpecsSection := ""
+	if existingSpecs != "" {
+		existingSpecsSection = fmt.Sprintf(`
+## Previous Specifications
+
+IMPORTANT: The following specifications already exist from previous planning iterations.
+DO NOT start from scratch. Build upon these, refine them, or address any gaps:
+
+%s
+
+Your new specification should either refine the existing one or address gaps/feedback.
+
+`, existingSpecs)
+	}
+
 	switch complexity { //nolint:exhaustive // ComplexitySimple is the only special case
 	case ComplexitySimple:
 		return fmt.Sprintf(
 			"%s"+
 				"Create a concise implementation plan for this straightforward task.\n\n"+
 				"Title: %s\nDescription: %s\n%s\n"+
+				"%s"+
 				"Provide:\n"+
 				"1. Brief overview of the approach\n"+
 				"2. Files to create/modify\n"+
 				"3. Key changes needed\n\n"+
 				"%s"+
 				"%s",
-			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, browserToolsSection(), specReminder)
+			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, existingSpecsSection, browserToolsSection(), specReminder)
 
 	default: // ComplexityMedium, ComplexityComplex
 		return fmt.Sprintf(
 			"%s"+
 				"You are an expert software engineer. Create a detailed implementation specification for the following task.\n\n"+
 				"Title: %s\nDescription: %s\n%s\n"+
+				"%s"+
 				"Think step by step through the problem before writing the specification.\n\n"+
 				"## Constraints\n"+
 				"- Follow existing code patterns and conventions\n"+
@@ -252,7 +277,7 @@ Do this FIRST before any other output.
 				"5. **Risks & Mitigations**: Potential issues and how to address them\n\n"+
 				"%s"+
 				"%s",
-			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, browserToolsSection(), specReminder)
+			fileWriteInstruction, wu.Title, wu.Description, hierarchySection, existingSpecsSection, browserToolsSection(), specReminder)
 	}
 }
 

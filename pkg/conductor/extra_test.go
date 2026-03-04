@@ -503,7 +503,7 @@ func TestBuildPlanPromptForComplexity_Simple(t *testing.T) {
 	c, _ := New()
 	wu := &WorkUnit{Title: "Fix typo", Description: "Change 'teh' to 'the'"}
 	c.ForceWorkUnit(wu)
-	prompt := c.buildPlanPromptForComplexity(ComplexitySimple)
+	prompt := c.buildPlanPromptForComplexity(ComplexitySimple, "")
 	if !strings.Contains(prompt, "straightforward task") {
 		t.Errorf("simple prompt missing 'straightforward task', got: %q", prompt[:100])
 	}
@@ -516,7 +516,7 @@ func TestBuildPlanPromptForComplexity_Complex(t *testing.T) {
 	c, _ := New()
 	wu := &WorkUnit{Title: "Refactor auth", Description: "Redesign the entire auth system"}
 	c.ForceWorkUnit(wu)
-	prompt := c.buildPlanPromptForComplexity(ComplexityComplex)
+	prompt := c.buildPlanPromptForComplexity(ComplexityComplex, "")
 	if !strings.Contains(prompt, "expert software engineer") {
 		t.Errorf("complex prompt missing 'expert software engineer', got: %q", prompt[:100])
 	}
@@ -535,7 +535,7 @@ func TestBuildPlanPromptForComplexity_WithHierarchy(t *testing.T) {
 		},
 	}
 	c.ForceWorkUnit(wu)
-	prompt := c.buildPlanPromptForComplexity(ComplexityComplex)
+	prompt := c.buildPlanPromptForComplexity(ComplexityComplex, "")
 	if !strings.Contains(prompt, "Epic Parent") {
 		t.Error("prompt with hierarchy missing parent title")
 	}
