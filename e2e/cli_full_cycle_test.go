@@ -90,10 +90,19 @@ func TestCLIFullCycle(t *testing.T) {
 	// Wait for socket to be ready
 	waitForSocket(t, workDir)
 
+	// Test infrastructure commands early
+	t.Log("Testing infrastructure commands...")
+	runKvelmo(t, kvelmoPath, workDir, "config", "show")
+	runKvelmo(t, kvelmoPath, workDir, "diagnose")
+
 	// 6. Wait for task to be loaded (start command loads it asynchronously while holding lock)
 	// Use waitForState with timeout since the conductor holds a lock during GitHub fetch
 	waitForState(t, kvelmoPath, workDir, "loaded", 60*time.Second)
 	t.Log("Task loaded successfully")
+
+	// Test status (human-readable) and list commands
+	runKvelmo(t, kvelmoPath, workDir, "status")
+	runKvelmo(t, kvelmoPath, workDir, "list")
 
 	// Get branch name for cleanup
 	statusOutput := runKvelmoCapture(t, kvelmoPath, workDir, "status", "--json")
@@ -120,6 +129,13 @@ func TestCLIFullCycle(t *testing.T) {
 	waitForState(t, kvelmoPath, workDir, "implemented", 8*time.Minute)
 	t.Log("Implementation completed")
 
+	// Test git commands after implementation
+	t.Log("Testing git and file commands...")
+	runKvelmo(t, kvelmoPath, workDir, "git", "status")
+	runKvelmo(t, kvelmoPath, workDir, "git", "log")
+	runKvelmo(t, kvelmoPath, workDir, "files", "list", ".")
+	runKvelmo(t, kvelmoPath, workDir, "jobs", "list")
+
 	// 9. Run simplify pass (optional but test it)
 	t.Log("Step 4: Running simplify pass...")
 	runKvelmo(t, kvelmoPath, workDir, "simplify")
@@ -132,19 +148,25 @@ func TestCLIFullCycle(t *testing.T) {
 	waitForState(t, kvelmoPath, workDir, "implemented", 5*time.Minute)
 	t.Log("Optimize completed")
 
-	// 11. Test undo/redo functionality (skip if no checkpoints available)
-	t.Log("Step 6: Testing undo/redo...")
+	// 11. Test undo/redo functionality (skip if less than 2 checkpoints - need previous state to undo to)
+	t.Log("Step 6: Testing undo/redo and checkpoint navigation...")
 	checkpointsOutput := runKvelmoCapture(t, kvelmoPath, workDir, "checkpoints")
-	if strings.Contains(checkpointsOutput, "No checkpoints") {
-		t.Log("Skipping undo/redo - no checkpoints available (may need git commits)")
+	// Count checkpoint lines (they start with "  " or "* " followed by a number)
+	checkpointCount := strings.Count(checkpointsOutput, ". ")
+	if strings.Contains(checkpointsOutput, "No checkpoints") || checkpointCount < 2 {
+		t.Logf("Skipping undo/redo - need at least 2 checkpoints, got %d", checkpointCount)
 	} else {
 		runKvelmo(t, kvelmoPath, workDir, "undo")
 		runKvelmo(t, kvelmoPath, workDir, "redo")
 		t.Log("Undo/redo completed")
 	}
 
-	// 12. Review and submit
-	t.Log("Step 7: Reviewing and submitting...")
+	// 12. Run quality check explicitly before review
+	t.Log("Step 7: Running quality check...")
+	runKvelmo(t, kvelmoPath, workDir, "quality")
+
+	// 13. Review and submit
+	t.Log("Step 8: Reviewing and submitting...")
 	runKvelmo(t, kvelmoPath, workDir, "review", "--approve")
 	runKvelmo(t, kvelmoPath, workDir, "submit")
 
@@ -163,19 +185,19 @@ func TestCLIFullCycle(t *testing.T) {
 		t.Logf("Created PR #%d: %s", createdPRNum, prs[0].GetHTMLURL())
 	}
 
-	// 13. Approve and merge via remote commands
+	// 14. Approve and merge via remote commands
 	// Note: Self-approval is not allowed on GitHub, so we skip approval and merge directly.
 	// In a real workflow, approval would come from a different user/token.
-	t.Log("Step 8: Merging PR (skipping approval - GitHub doesn't allow self-approval)...")
+	t.Log("Step 9: Merging PR (skipping approval - GitHub doesn't allow self-approval)...")
 	runKvelmo(t, kvelmoPath, workDir, "remote", "merge", "--method", "squash")
 	t.Log("PR merged")
 
-	// 14. Refresh and finish
-	t.Log("Step 9: Refreshing and finishing...")
+	// 15. Refresh and finish
+	t.Log("Step 10: Refreshing and finishing...")
 	runKvelmo(t, kvelmoPath, workDir, "refresh")
 	runKvelmo(t, kvelmoPath, workDir, "finish")
 
-	// 15. Verify final state
+	// 16. Verify final state
 	finalState := getKvelmoState(t, kvelmoPath, workDir)
 	if finalState != "none" {
 		t.Fatalf("Expected final state 'none', got '%s'", finalState)

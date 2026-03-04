@@ -81,7 +81,7 @@ test-e2e-workflow:
 
 ## Run full CLI E2E cycle test (requires GITHUB_TOKEN and E2E_GITHUB_REPO)
 test-e2e-cli:
-	go test -tags=e2e -v -timeout=30m ./test/e2e/... -run TestCLIFullCycle
+	go test -tags=e2e -v -timeout=30m ./e2e/... -run TestCLIFullCycle
 
 ## Format code
 fmt:
