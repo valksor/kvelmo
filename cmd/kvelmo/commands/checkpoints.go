@@ -48,9 +48,17 @@ func runCheckpoints(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("checkpoints call: %w", err)
 	}
 
+	// CheckpointInfo matches the socket response structure
+	type CheckpointInfo struct {
+		SHA       string `json:"sha"`
+		Message   string `json:"message"`
+		Author    string `json:"author"`
+		Timestamp string `json:"timestamp"`
+	}
+
 	var result struct {
-		Checkpoints []string `json:"checkpoints"`
-		RedoStack   []string `json:"redo_stack"`
+		Checkpoints []CheckpointInfo `json:"checkpoints"`
+		RedoStack   []CheckpointInfo `json:"redo_stack"`
 	}
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		return fmt.Errorf("parse result: %w", err)
@@ -63,12 +71,20 @@ func runCheckpoints(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("Checkpoints (oldest to newest):")
-	for i, sha := range result.Checkpoints {
+	for i, cp := range result.Checkpoints {
 		marker := "  "
 		if i == len(result.Checkpoints)-1 {
 			marker = "* " // Current position
 		}
-		fmt.Printf("%s%d. %s\n", marker, i+1, sha[:8])
+		shortSHA := cp.SHA
+		if len(shortSHA) > 8 {
+			shortSHA = shortSHA[:8]
+		}
+		if cp.Message != "" {
+			fmt.Printf("%s%d. %s - %s\n", marker, i+1, shortSHA, cp.Message)
+		} else {
+			fmt.Printf("%s%d. %s\n", marker, i+1, shortSHA)
+		}
 	}
 
 	if len(result.RedoStack) > 0 {
