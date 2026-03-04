@@ -248,8 +248,24 @@ jobs:
                 working-directory: web/src-tauri
                 run: cargo llvm-cov --lib --lcov --output-path lcov.info
 
-            -   name: Upload Tauri coverage to Coveralls
+            -   name: Check coverage data exists
+                id: check-tauri-coverage
                 if: github.event_name != 'pull_request' && runner.os == 'Linux'
+                working-directory: web/src-tauri
+                run: |
+                    if grep -q "^DA:" lcov.info 2>/dev/null; then
+                      echo "has_coverage=true" >> $GITHUB_OUTPUT
+                      echo "Coverage data found"
+                    else
+                      echo "has_coverage=false" >> $GITHUB_OUTPUT
+                      echo "No coverage data in lcov.info, skipping upload"
+                    fi
+
+            -   name: Upload Tauri coverage to Coveralls
+                if: >-
+                    github.event_name != 'pull_request' &&
+                    runner.os == 'Linux' &&
+                    steps.check-tauri-coverage.outputs.has_coverage == 'true'
                 uses: coverallsapp/github-action@v2
                 with:
                     github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -267,7 +283,7 @@ jobs:
             always() &&
             needs.test.result == 'success' &&
             needs.web.result == 'success' &&
-            needs.tauri.result == 'success'
+            (needs.tauri.result == 'success' || needs.tauri.result == 'skipped')
         steps:
             -   name: Finish Coveralls parallel build
                 uses: coverallsapp/github-action@v2
