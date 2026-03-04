@@ -266,6 +266,9 @@ func (g *GlobalSocket) registerHandlers() {
 	g.server.Handle("memory.search", g.handleMemorySearch)
 	g.server.Handle("memory.stats", g.handleMemoryStats)
 	g.server.Handle("memory.clear", g.handleMemoryClear)
+
+	// Worktree management (for secondary instances)
+	g.server.Handle("worktrees.create", g.handleWorktreesCreate)
 }
 
 // --- Ping ---
@@ -1768,6 +1771,40 @@ func (g *GlobalSocket) Stop() error {
 	}
 
 	return g.server.Stop()
+}
+
+// --- Worktree Management (for secondary instances) ---
+
+// WorktreeCreateParams is the request for worktrees.create.
+type WorktreeCreateParams struct {
+	Path string `json:"path"`
+}
+
+// WorktreeCreateResult is the response for worktrees.create.
+type WorktreeCreateResult struct {
+	SocketPath string `json:"socket_path"`
+}
+
+// handleWorktreesCreate creates a worktree socket on-demand.
+// This allows secondary instances to request socket creation from the primary.
+func (g *GlobalSocket) handleWorktreesCreate(_ context.Context, req *Request) (*Response, error) {
+	var params WorktreeCreateParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, err.Error()), nil
+	}
+
+	if params.Path == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "path is required"), nil
+	}
+
+	//nolint:contextcheck // GetOrCreateWorktreeSocket doesn't accept context; refactoring would change WorktreeCreator interface
+	if _, err := g.GetOrCreateWorktreeSocket(params.Path); err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, WorktreeCreateResult{
+		SocketPath: WorktreeSocketPath(params.Path),
+	})
 }
 
 // GetOrCreateWorktreeSocket returns an existing worktree socket or creates one on-demand.
