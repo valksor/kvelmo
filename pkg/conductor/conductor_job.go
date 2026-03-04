@@ -63,7 +63,24 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 							slog.Warn("checkpoint: commit failed", "error", commitErr, "workDir", workDir)
 						}
 					} else {
-						slog.Debug("checkpoint: no changes to commit", "event", completionEvent)
+						// No uncommitted changes - but Claude may have committed during the job.
+						// Capture the current HEAD if it's not already in checkpoints.
+						if headSHA, headErr := repo.CurrentCommit(ctx); headErr == nil && headSHA != "" {
+							isNew := true
+							for _, cp := range c.workUnit.Checkpoints {
+								if cp == headSHA {
+									isNew = false
+
+									break
+								}
+							}
+							if isNew {
+								c.workUnit.Checkpoints = append(c.workUnit.Checkpoints, headSHA)
+								slog.Info("checkpoint captured (agent commit)", "sha", headSHA, "event", completionEvent)
+							} else {
+								slog.Debug("checkpoint: no new commits", "event", completionEvent)
+							}
+						}
 					}
 				}
 
