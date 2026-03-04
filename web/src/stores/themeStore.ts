@@ -4,6 +4,11 @@ import { storeName } from '../meta'
 
 type Theme = 'light' | 'dark'
 
+const THEME_MAP = {
+  light: 'corporate',
+  dark: 'business',
+} as const
+
 interface ThemeState {
   theme: Theme
   setTheme: (theme: Theme) => void
@@ -11,7 +16,7 @@ interface ThemeState {
 }
 
 const applyTheme = (theme: Theme) => {
-  document.documentElement.setAttribute('data-theme', theme)
+  document.documentElement.setAttribute('data-theme', THEME_MAP[theme])
 }
 
 export const useThemeStore = create<ThemeState>()(

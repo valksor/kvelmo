@@ -91,7 +91,7 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
 
   // Reactive theme state via MutationObserver
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    return document.documentElement.getAttribute('data-theme')?.includes('dark') ?? false
+    return document.documentElement.getAttribute('data-theme') === 'business'
   })
 
   // Watch for theme changes
@@ -100,7 +100,7 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
       for (const mutation of mutations) {
         if (mutation.attributeName === 'data-theme') {
           const theme = document.documentElement.getAttribute('data-theme')
-          setIsDarkTheme(theme?.includes('dark') ?? false)
+          setIsDarkTheme(theme === 'business')
         }
       }
     })

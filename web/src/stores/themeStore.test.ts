@@ -35,12 +35,12 @@ describe('themeStore', () => {
 
     it('applies theme to document element', () => {
       useThemeStore.getState().setTheme('dark')
-      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'dark')
+      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'business')
     })
 
     it('applies light theme to document element', () => {
       useThemeStore.getState().setTheme('light')
-      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'light')
+      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'corporate')
     })
   })
 
@@ -60,7 +60,7 @@ describe('themeStore', () => {
     it('applies toggled theme to document', () => {
       useThemeStore.setState({ theme: 'light' })
       useThemeStore.getState().toggle()
-      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'dark')
+      expect(mockSetAttribute).toHaveBeenCalledWith('data-theme', 'business')
     })
 
     it('can toggle multiple times', () => {
