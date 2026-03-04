@@ -156,10 +156,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 		socket.PrewarmMemory(ctx)
 	}
 
-	// Create web server with worktree creator (if we own the global socket)
+	// Create web server with worktree creator
 	var webOpts []web.ServerOption
 	if globalSocket != nil {
+		// Primary instance: use direct access to global socket
 		webOpts = append(webOpts, web.WithWorktreeCreator(globalSocket))
+	} else {
+		// Secondary instance: use RPC client to communicate with primary
+		fmt.Println("  Running as secondary instance, using global socket client for worktree creation")
+		client := web.NewWorktreeCreatorClient(socket.GlobalSocketPath())
+		webOpts = append(webOpts, web.WithWorktreeCreator(client))
 	}
 	webServer, err := web.NewServer(staticDir, port, webOpts...)
 	if err != nil {
