@@ -24,10 +24,19 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+var licenseCmd = &cobra.Command{
+	Use:   "license",
+	Short: "Print license information",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print(meta.License)
+	},
+}
+
 func init() {
 	rootCmd.Long = meta.Name + ": Socket-first task lifecycle orchestration for AI-assisted development.\n\nTask States:\n  None         No active task\n  Loaded       Task fetched, branch created\n  Planning     Agent generating specification\n  Planned      Specification complete\n  Implementing Agent writing code\n  Implemented  Code complete, ready for review\n  Optimizing   Agent improving code quality (optional)\n  Reviewing    Human review in progress\n  Submitted    PR created"
 
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(licenseCmd)
 	rootCmd.AddCommand(commands.ServeCmd)
 	rootCmd.AddCommand(commands.StartCmd)
 	rootCmd.AddCommand(commands.StatusCmd)
