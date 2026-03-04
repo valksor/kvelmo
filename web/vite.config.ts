@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 const backendUrl = process.env.KVELMO_BACKEND_URL || 'http://localhost:6337'
 
 export default defineConfig({
+  base: './',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,

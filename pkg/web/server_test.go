@@ -242,8 +242,9 @@ func TestHandleStatic_NestedPath(t *testing.T) {
 	}
 }
 
-// Test static file 404 for non-existent file.
-func TestHandleStatic_404(t *testing.T) {
+// Test static file SPA fallback for non-existent file.
+// With SPA routing, non-existent files should fall back to index.html.
+func TestHandleStatic_SPAFallback(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Create only index.html
 	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>test</html>"), 0o644); err != nil {
@@ -256,13 +257,17 @@ func TestHandleStatic_404(t *testing.T) {
 	}
 	defer func() { _ = srv.Shutdown(context.Background()) }()
 
-	req := httptest.NewRequest(http.MethodGet, "/nonexistent.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent-route", nil)
 	w := httptest.NewRecorder()
 
 	srv.httpServer.Handler.ServeHTTP(w, req)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("/nonexistent.js status = %d, want %d", w.Code, http.StatusNotFound)
+	// SPA fallback: non-existent routes serve index.html with 200
+	if w.Code != http.StatusOK {
+		t.Errorf("/nonexistent-route status = %d, want %d (SPA fallback)", w.Code, http.StatusOK)
+	}
+	if !strings.Contains(w.Body.String(), "<html>test</html>") {
+		t.Error("SPA fallback should serve index.html content")
 	}
 }
 
@@ -296,8 +301,8 @@ func TestNewServer(t *testing.T) {
 	_ = srv.Shutdown(context.Background())
 }
 
-func TestServerStaticFallback(t *testing.T) {
-	// With no static dir, root should not be handled
+func TestServerEmbeddedStaticFallback(t *testing.T) {
+	// With no static dir but embedded assets, root should be served from embedded FS
 	srv, err := NewServer("", 0)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
@@ -309,9 +314,9 @@ func TestServerStaticFallback(t *testing.T) {
 
 	srv.httpServer.Handler.ServeHTTP(w, req)
 
-	// Without static dir, should get 404
-	if w.Code != http.StatusNotFound {
-		t.Errorf("/ without static dir status = %d, want %d", w.Code, http.StatusNotFound)
+	// With embedded assets, should get 200 (serves embedded index.html)
+	if w.Code != http.StatusOK {
+		t.Errorf("/ with embedded assets status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
 

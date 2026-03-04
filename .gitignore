@@ -36,3 +36,4 @@ web/coverage/
 web/node_modules/
 web/src/types/socket.ts
 ~/.valksor/
+pkg/web/static/dist/
