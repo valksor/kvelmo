@@ -305,31 +305,37 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
         )}
       </div>
 
-      {/* Undo/Redo */}
-      <div className="flex gap-2 pt-4 border-t border-base-300 mt-4">
-        <button
-          onClick={() => undo()}
-          disabled={!canUndo || loading}
-          className="btn btn-ghost flex-1"
-          aria-label={`Undo (${checkpoints.length} checkpoint${checkpoints.length !== 1 ? 's' : ''})`}
-        >
-          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-          </svg>
-          Undo
-        </button>
-        <button
-          onClick={() => redo()}
-          disabled={!canRedo || loading}
-          className="btn btn-ghost flex-1"
-          aria-label={`Redo (${redoStack.length} in redo stack)`}
-        >
-          Redo
-          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-          </svg>
-        </button>
-      </div>
+      {/* Undo/Redo - only show when there are checkpoints or redo items */}
+      {(canUndo || canRedo) && (
+        <div className="flex gap-2 pt-4 border-t border-base-300 mt-4">
+          {canUndo && (
+            <button
+              onClick={() => undo()}
+              disabled={loading}
+              className="btn btn-ghost flex-1"
+              aria-label={`Undo (${checkpoints.length} checkpoint${checkpoints.length !== 1 ? 's' : ''})`}
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Undo
+            </button>
+          )}
+          {canRedo && (
+            <button
+              onClick={() => redo()}
+              disabled={loading}
+              className="btn btn-ghost flex-1"
+              aria-label={`Redo (${redoStack.length} in redo stack)`}
+            >
+              Redo
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Abort */}
       <button
