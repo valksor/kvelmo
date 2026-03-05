@@ -270,9 +270,18 @@ func (a *Agent) WithPermissionHandler(handler agent.PermissionHandler) *Agent {
 	return NewWithConfig(newCfg)
 }
 
-// Register adds the Codex agent to a registry.
+// Register adds the Codex agent to a registry with default config.
 func Register(r *agent.Registry) error {
 	return r.Register(New())
+}
+
+// RegisterWithPermissionHandler adds the Codex agent with a custom permission handler.
+func RegisterWithPermissionHandler(r *agent.Registry, handler agent.PermissionHandler) error {
+	cfg := agent.DefaultConfig()
+	cfg.Command = []string{"codex"}
+	cfg.PermissionHandler = handler
+
+	return r.Register(NewWithConfig(Config{Config: cfg}))
 }
 
 // Ensure Agent implements agent.Agent.

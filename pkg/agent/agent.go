@@ -153,7 +153,7 @@ func EvaluatePermission(req PermissionRequest) PermissionResult {
 	}
 }
 
-// safeTools are read-only tools that can be auto-approved.
+// safeTools are tools that can be auto-approved.
 // Keys are lowercase; use isSafeTool for case-insensitive lookup.
 // Includes aliases for PascalCase tool names (e.g., "ReadFile" → "readfile").
 var safeTools = map[string]bool{
@@ -179,6 +179,31 @@ func DefaultPermissionHandler(req PermissionRequest) bool {
 	result := EvaluatePermission(req)
 
 	return result.Approved
+}
+
+// KvelmoPermissionHandler is a more permissive handler for kvelmo's internal jobs.
+// It allows Write/Edit/Bash tools that kvelmo needs for planning and implementation.
+// Dangerous operations are still denied.
+func KvelmoPermissionHandler(req PermissionRequest) bool {
+	// Check for dangerous operations first
+	danger := permission.DetectDanger(req.Tool, req.Input)
+	if danger.Level == permission.Dangerous {
+		return false
+	}
+
+	// Allow kvelmo-specific tools in addition to safe tools
+	toolLower := strings.ToLower(req.Tool)
+	if isSafeTool(toolLower) {
+		return true
+	}
+
+	// Allow Write, Edit, Bash for kvelmo operations
+	switch toolLower {
+	case "write", "edit", "bash":
+		return true
+	}
+
+	return false
 }
 
 // ConnectionMode indicates how the agent is connected.
