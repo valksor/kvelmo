@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -56,12 +58,18 @@ type WebSocketConnection struct {
 	outgoing chan outgoingMessage
 	events   chan agent.Event
 
+	// Pending permission requests awaiting response
+	pendingRequests   map[string]pendingRequest
+	pendingRequestsMu sync.Mutex
+
 	// State
-	ready      chan struct{}
-	readyOnce  sync.Once
-	connected  atomic.Bool
-	closed     atomic.Bool
-	closedOnce sync.Once
+	ready        chan struct{} // Signaled when WebSocket connects
+	sessionReady chan struct{} // Signaled when session ID is received
+	readyOnce    sync.Once
+	sessionOnce  sync.Once
+	connected    atomic.Bool
+	closed       atomic.Bool
+	closedOnce   sync.Once
 }
 
 // Incoming message types from Claude CLI.
@@ -82,20 +90,22 @@ type incomingMessage struct {
 
 	// assistant fields
 	Message *struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
+		Role    string          `json:"role"`
+		Content json.RawMessage `json:"content"` // Can be string or array
 	} `json:"message,omitempty"`
 
-	// control_request fields
-	ControlRequest *struct {
-		ID     string          `json:"id"`
-		Tool   string          `json:"tool"`
-		Input  json.RawMessage `json:"input"`
-		Action string          `json:"action,omitempty"`
-	} `json:"control_request,omitempty"`
+	// control_request fields - top-level request_id and nested request object
+	RequestID string `json:"request_id,omitempty"`
+	Request   *struct {
+		Subtype   string          `json:"subtype,omitempty"`
+		ToolName  string          `json:"tool_name,omitempty"`
+		Input     json.RawMessage `json:"input,omitempty"`
+		ToolUseID string          `json:"tool_use_id,omitempty"`
+	} `json:"request,omitempty"`
 
 	// result fields
-	Success bool   `json:"success,omitempty"`
+	Subtype string `json:"subtype,omitempty"` // "success" or error type
+	IsError bool   `json:"is_error,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
 
@@ -110,19 +120,45 @@ type outgoingMessage struct {
 	} `json:"message,omitempty"`
 	SessionID string `json:"session_id,omitempty"`
 
-	// control_response fields
-	ControlRequestID string `json:"control_request_id,omitempty"`
-	Approved         bool   `json:"approved,omitempty"`
+	// control_response fields - nested response object
+	Response *controlResponsePayload `json:"response,omitempty"`
+}
+
+// controlResponsePayload is the outer response object for control_response messages.
+// Structure: {"type":"control_response","response":{...}}.
+type controlResponsePayload struct {
+	Subtype   string                `json:"subtype"`
+	RequestID string                `json:"request_id"`
+	Response  *controlResponseInner `json:"response,omitempty"`
+	Error     string                `json:"error,omitempty"`
+}
+
+// controlResponseInner is the inner response payload for success responses.
+// Structure: {"response":{"response":{...}}}.
+type controlResponseInner struct {
+	Behavior     string         `json:"behavior"`
+	UpdatedInput map[string]any `json:"updatedInput,omitempty"`
+	Message      string         `json:"message,omitempty"`
+	Interrupt    bool           `json:"interrupt,omitempty"`
+	ToolUseID    string         `json:"toolUseID,omitempty"`
+}
+
+// pendingRequest stores a control_request awaiting response.
+type pendingRequest struct {
+	Input     map[string]any
+	ToolUseID string
 }
 
 // NewWebSocketConnection creates a new WebSocket connection for Claude.
 func NewWebSocketConnection(cfg Config) *WebSocketConnection {
 	return &WebSocketConnection{
-		config:   cfg,
-		port:     cfg.WebSocketPort,
-		outgoing: make(chan outgoingMessage, 100),
-		events:   make(chan agent.Event, 100),
-		ready:    make(chan struct{}),
+		config:          cfg,
+		port:            cfg.WebSocketPort,
+		outgoing:        make(chan outgoingMessage, 100),
+		events:          make(chan agent.Event, 100),
+		pendingRequests: make(map[string]pendingRequest),
+		ready:           make(chan struct{}),
+		sessionReady:    make(chan struct{}),
 	}
 }
 
@@ -166,16 +202,30 @@ func (w *WebSocketConnection) Connect(ctx context.Context) error {
 		return err
 	}
 
-	// Wait for connection or timeout
+	// Wait for WebSocket connection
 	select {
 	case <-w.ready:
+		// WebSocket connected, now wait for session initialization
+	case <-time.After(30 * time.Second):
+		_ = w.Close()
+
+		return errors.New("timeout waiting for Claude CLI connection")
+	case <-ctx.Done():
+		_ = w.Close()
+
+		return ctx.Err()
+	}
+
+	// Wait for session initialization (system message with session_id)
+	select {
+	case <-w.sessionReady:
 		w.connected.Store(true)
 
 		return nil
 	case <-time.After(30 * time.Second):
 		_ = w.Close()
 
-		return errors.New("timeout waiting for Claude CLI connection")
+		return errors.New("timeout waiting for Claude CLI session initialization")
 	case <-ctx.Done():
 		_ = w.Close()
 
@@ -195,9 +245,24 @@ func (w *WebSocketConnection) launchClaude(ctx context.Context) error {
 		w.cmd.Dir = w.config.WorkDir
 	}
 
-	// Set environment
+	// Build environment: start with parent env, exclude CLAUDECODE to allow nested sessions
+	env := make([]string, 0, len(os.Environ())+len(w.config.Environment))
+	for _, e := range os.Environ() {
+		// Skip CLAUDECODE to allow running Claude CLI from within Claude Code
+		if !strings.HasPrefix(e, "CLAUDECODE=") {
+			env = append(env, e)
+		}
+	}
+	// Add custom config environment variables
 	for k, v := range w.config.Environment {
-		w.cmd.Env = append(w.cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	w.cmd.Env = env
+
+	// Capture stdout for debugging
+	stdout, err := w.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdout pipe: %w", err)
 	}
 
 	// Capture stderr for debugging
@@ -210,11 +275,24 @@ func (w *WebSocketConnection) launchClaude(ctx context.Context) error {
 		return fmt.Errorf("start claude: %w", err)
 	}
 
+	slog.Info("claude CLI started", "pid", w.cmd.Process.Pid)
+
+	// Log stdout in background
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			slog.Info("claude CLI stdout", "line", line)
+		}
+		slog.Info("claude CLI stdout closed")
+	}()
+
 	// Log stderr in background
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
+			slog.Error("claude CLI stderr", "line", line)
 			if strings.TrimSpace(line) != "" {
 				w.events <- agent.Event{
 					Type:      agent.EventError,
@@ -223,11 +301,13 @@ func (w *WebSocketConnection) launchClaude(ctx context.Context) error {
 				}
 			}
 		}
+		slog.Info("claude CLI stderr closed")
 	}()
 
 	// Wait for process completion in background
 	go func() {
 		err := w.cmd.Wait()
+		slog.Info("claude CLI exited", "error", err)
 		w.cmdMu.Lock()
 		w.cmdErr = err
 		w.cmdMu.Unlock()
@@ -245,6 +325,7 @@ func (w *WebSocketConnection) buildArgs() []string {
 		"--output-format", "stream-json",
 		"--input-format", "stream-json",
 	}
+	slog.Info("claude websocket buildArgs", "args", args)
 
 	// Add configured arguments
 	args = append(args, w.config.Args...)
@@ -259,14 +340,19 @@ func (w *WebSocketConnection) buildArgs() []string {
 
 // handleConnection handles incoming WebSocket connections from Claude CLI.
 func (w *WebSocketConnection) handleConnection(rw http.ResponseWriter, r *http.Request) {
+	slog.Info("claude websocket: incoming connection", "remote", r.RemoteAddr)
 	conn, err := upgrader.Upgrade(rw, r, nil)
 	if err != nil {
+		slog.Error("claude websocket: upgrade failed", "error", err)
+
 		return
 	}
 
 	w.connMu.Lock()
 	w.conn = conn
 	w.connMu.Unlock()
+
+	slog.Info("claude websocket: connection established")
 
 	// Signal ready
 	w.readyOnce.Do(func() {
@@ -277,10 +363,13 @@ func (w *WebSocketConnection) handleConnection(rw http.ResponseWriter, r *http.R
 	for {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
+			slog.Error("claude websocket: read error", "error", err)
 			w.connected.Store(false)
 
 			return
 		}
+
+		slog.Info("claude websocket: raw message", "data", string(data))
 
 		// Handle NDJSON - may have multiple JSON objects per message
 		lines := strings.Split(string(data), "\n")
@@ -292,9 +381,12 @@ func (w *WebSocketConnection) handleConnection(rw http.ResponseWriter, r *http.R
 
 			var msg incomingMessage
 			if err := json.Unmarshal([]byte(line), &msg); err != nil {
+				slog.Warn("claude websocket: invalid json", "line", line, "error", err)
+
 				continue
 			}
 
+			slog.Info("claude websocket: parsed message", "type", msg.Type, "session_id", msg.SessionID)
 			w.handleIncomingMessage(msg)
 		}
 	}
@@ -303,13 +395,21 @@ func (w *WebSocketConnection) handleConnection(rw http.ResponseWriter, r *http.R
 // handleIncomingMessage processes messages from Claude CLI.
 func (w *WebSocketConnection) handleIncomingMessage(msg incomingMessage) {
 	switch msg.Type {
-	case "system/init":
-		w.sessionID = msg.SessionID
-		w.connected.Store(true)
-		w.events <- agent.Event{
-			Type:      agent.EventInit,
-			Content:   "Session initialized: " + w.sessionID,
-			Timestamp: time.Now(),
+	case "system/init", "system":
+		// Handle both old "system/init" and new "system" message formats
+		if msg.SessionID != "" && w.sessionID == "" {
+			slog.Info("claude websocket: session initialized", "session_id", msg.SessionID, "type", msg.Type)
+			w.sessionID = msg.SessionID
+			w.connected.Store(true)
+			// Signal that session is ready
+			w.sessionOnce.Do(func() {
+				close(w.sessionReady)
+			})
+			w.events <- agent.Event{
+				Type:      agent.EventInit,
+				Content:   "Session initialized: " + w.sessionID,
+				Timestamp: time.Now(),
+			}
 		}
 
 	case "stream_event":
@@ -325,24 +425,36 @@ func (w *WebSocketConnection) handleIncomingMessage(msg incomingMessage) {
 
 	case "assistant":
 		if msg.Message != nil {
-			w.events <- agent.Event{
-				Type:      agent.EventAssistant,
-				Content:   msg.Message.Content,
-				Timestamp: time.Now(),
+			content := extractTextContent(msg.Message.Content)
+			if content != "" {
+				w.events <- agent.Event{
+					Type:      agent.EventAssistant,
+					Content:   content,
+					Timestamp: time.Now(),
+				}
 			}
 		}
 
 	case "control_request":
-		if msg.ControlRequest != nil {
+		if msg.Request != nil && msg.RequestID != "" {
 			var input map[string]any
-			_ = json.Unmarshal(msg.ControlRequest.Input, &input)
+			_ = json.Unmarshal(msg.Request.Input, &input)
+
+			// Store pending request for later response
+			w.pendingRequestsMu.Lock()
+			w.pendingRequests[msg.RequestID] = pendingRequest{
+				Input:     input,
+				ToolUseID: msg.Request.ToolUseID,
+			}
+			w.pendingRequestsMu.Unlock()
 
 			req := agent.PermissionRequest{
-				ID:     msg.ControlRequest.ID,
-				Tool:   msg.ControlRequest.Tool,
+				ID:     msg.RequestID,
+				Tool:   msg.Request.ToolName,
 				Input:  input,
-				Action: msg.ControlRequest.Action,
+				Action: msg.Request.Subtype,
 			}
+			slog.Info("claude websocket: control_request received", "id", req.ID, "tool", req.Tool)
 
 			// Auto-handle with permission handler
 			if w.config.PermissionHandler != nil {
@@ -359,7 +471,8 @@ func (w *WebSocketConnection) handleIncomingMessage(msg incomingMessage) {
 		}
 
 	case "result":
-		if msg.Success {
+		// Result uses subtype:"success" or is_error:true, not a boolean success field
+		if msg.Subtype == "success" || !msg.IsError {
 			w.events <- agent.Event{
 				Type:      agent.EventComplete,
 				Timestamp: time.Now(),
@@ -374,7 +487,42 @@ func (w *WebSocketConnection) handleIncomingMessage(msg incomingMessage) {
 
 	case "keep_alive":
 		// Heartbeat - no action needed
+
+	default:
+		slog.Debug("claude websocket: unhandled message type", "type", msg.Type)
 	}
+}
+
+// extractTextContent extracts text content from Claude's message content field.
+// Content can be either a simple string or an array of content blocks.
+func extractTextContent(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+
+	// Try string first
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		return str
+	}
+
+	// Try array of content blocks
+	var blocks []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal(raw, &blocks); err == nil {
+		var texts []string
+		for _, block := range blocks {
+			if block.Type == "text" && block.Text != "" {
+				texts = append(texts, block.Text)
+			}
+		}
+
+		return strings.Join(texts, "\n")
+	}
+
+	return ""
 }
 
 // sendLoop sends outgoing messages to Claude CLI.
@@ -386,6 +534,7 @@ func (w *WebSocketConnection) sendLoop(ctx context.Context) {
 			if w.conn != nil {
 				data, err := json.Marshal(msg)
 				if err == nil {
+					slog.Info("claude websocket: sending message", "type", msg.Type, "len", len(data), "data", string(data))
 					data = append(data, '\n')
 					_ = w.conn.WriteMessage(websocket.TextMessage, data)
 				}
@@ -445,10 +594,38 @@ func (w *WebSocketConnection) SendPrompt(ctx context.Context, prompt string) (<-
 
 // HandlePermission sends a permission response.
 func (w *WebSocketConnection) HandlePermission(requestID string, approved bool) error {
+	// Get the stored request info
+	w.pendingRequestsMu.Lock()
+	pending, ok := w.pendingRequests[requestID]
+	if ok {
+		delete(w.pendingRequests, requestID)
+	}
+	w.pendingRequestsMu.Unlock()
+
+	var inner *controlResponseInner
+	if approved {
+		inner = &controlResponseInner{
+			Behavior:     "allow",
+			UpdatedInput: pending.Input, // Pass through original input
+			ToolUseID:    pending.ToolUseID,
+		}
+	} else {
+		inner = &controlResponseInner{
+			Behavior:  "deny",
+			Message:   "Permission denied by kvelmo",
+			Interrupt: false,
+			ToolUseID: pending.ToolUseID,
+		}
+	}
+
+	slog.Info("claude websocket: sending control_response", "request_id", requestID, "behavior", inner.Behavior)
 	w.outgoing <- outgoingMessage{
-		Type:             "control_response",
-		ControlRequestID: requestID,
-		Approved:         approved,
+		Type: "control_response",
+		Response: &controlResponsePayload{
+			Subtype:   "success",
+			RequestID: requestID,
+			Response:  inner,
+		},
 	}
 
 	return nil
