@@ -392,7 +392,7 @@ func startKvelmoBackground(t *testing.T, kvelmoPath, workDir, token, repo string
 	t.Helper()
 
 	// Start kvelmo with the --from flag to load the task
-	cmd := exec.Command(kvelmoPath, "start", "--from", fmt.Sprintf("github:%s#%d", repo, issueNum))
+	cmd := exec.Command(kvelmoPath, "start", "--foreground", "--from", fmt.Sprintf("github:%s#%d", repo, issueNum))
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(), "GITHUB_TOKEN="+token)
 
