@@ -271,6 +271,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         } else if (msg.type === 'state_changed') {
           set({ state: msg.state || 'none' })
           get().appendOutput(`State: ${msg.state}`)
+          get().refreshStatus()
+        } else if (msg.type === 'task_abandoned' || msg.type === 'task_deleted' || msg.type === 'task_reset') {
+          set({ state: msg.state || 'none' })
+          get().appendOutput(msg.message || `Task ${msg.type.replace('task_', '')}`)
+          get().refreshStatus()
         } else if (msg.type === 'job_output' || msg.type === 'stream') {
           if (msg.content || msg.message) {
             get().appendOutput(msg.content || msg.message || '')
@@ -498,6 +503,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const result = await client.call<{ status: string; state: TaskState }>('reset', {})
       set({ state: result.state, loading: false })
       get().appendOutput('Task reset')
+      await get().refreshStatus()
     } catch (err) {
       set({ loading: false, error: err instanceof Error ? err.message : 'Reset failed' })
     }

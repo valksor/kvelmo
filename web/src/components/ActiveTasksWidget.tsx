@@ -40,8 +40,8 @@ export function ActiveTasksWidget({ onSelectProject }: ActiveTasksWidgetProps) {
   if (active.length === 0) return null
 
   const handleClick = (task: TaskSummary) => {
-    // Try to select the matching project
-    const project = projects.find(p => p.path === task.path || p.id === task.id)
+    // Select project by path (strict matching to avoid cross-project task display)
+    const project = projects.find(p => p.path === task.path)
     if (project) {
       selectProject(project)
     } else if (onSelectProject) {
