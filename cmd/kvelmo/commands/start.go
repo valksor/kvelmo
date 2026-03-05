@@ -20,33 +20,42 @@ import (
 )
 
 var (
-	startDaemon  bool
-	startVerbose bool
-	startFrom    string
+	startForeground bool
+	startVerbose    bool
+	startFrom       string
 )
 
 var StartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start " + meta.Name + " sockets for the current directory",
-	Long: `Start the global socket (if not running) and a worktree socket for the current directory.
+	Short: "Start a task in " + meta.Name,
+	Long: `Start kvelmo sockets (in background) and optionally load a task.
 
-By default, this command runs in the foreground and can be stopped with Ctrl+C.
-Use --daemon to run in the background.
+By default, sockets start in the background and the command returns immediately.
+Use --foreground to run in the foreground (for debugging or E2E tests).
 
 Use --from to load a task from a source:
-  --from file:task.md           Load from local file
-  --from github:owner/repo#123  Load GitHub issue/PR
-  --from https://github.com/... Load from URL`,
+  kvelmo start --from file:task.md           Load from local file
+  kvelmo start --from github:owner/repo#123  Load GitHub issue/PR
+  kvelmo start --from https://github.com/... Load from URL
+
+Examples:
+  kvelmo start                              # Just start sockets
+  kvelmo start --from github:org/repo#42    # Start and load task
+  kvelmo plan                               # Then run planning`,
 	RunE: runStart,
 }
 
 func init() {
-	StartCmd.Flags().BoolVarP(&startDaemon, "daemon", "d", false, "Run in background")
+	StartCmd.Flags().BoolVar(&startForeground, "foreground", false, "Run in foreground (for debugging)")
 	StartCmd.Flags().BoolVarP(&startVerbose, "verbose", "v", false, "Show socket paths")
 	StartCmd.Flags().StringVar(&startFrom, "from", "", "Task source (file:path, github:owner/repo#123, or URL)")
+
+	// Keep --daemon as hidden alias for backwards compat (now it's the default)
+	StartCmd.Flags().Bool("daemon", true, "Run in background (deprecated: now default)")
+	_ = StartCmd.Flags().MarkHidden("daemon")
 }
 
-func runStart(cmd *cobra.Command, args []string) error {
+func runStart(_ *cobra.Command, _ []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -78,20 +87,77 @@ func runStart(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Worktree socket: %s\n", wtPath)
 	}
 
+	// If --foreground, run in foreground (for E2E tests and debugging)
+	if startForeground {
+		return runInForeground(cwd, globalPath, wtPath)
+	}
+
+	// Default: start in background
+	return runInBackground(cwd, wtPath)
+}
+
+// runInBackground ensures sockets are running (spawning if needed) and loads task.
+func runInBackground(cwd, wtPath string) error {
+	// Check if worktree socket is already running
 	if socket.SocketExists(wtPath) {
-		fmt.Printf("Worktree socket already running for %s\n", cwd)
+		// Socket exists - just load the task if specified
+		if startFrom != "" {
+			if err := loadTaskViaRPC(wtPath, startFrom); err != nil {
+				return fmt.Errorf("load task: %w", err)
+			}
+			fmt.Printf("Task loaded from %s\n", startFrom)
+		} else {
+			fmt.Println("Socket already running")
+		}
 
 		return nil
 	}
 
-	if startDaemon {
-		return errors.New("daemon mode not yet implemented")
+	// Need to start sockets - spawn a background process
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get executable: %w", err)
 	}
 
-	return startForeground(cwd, globalPath, wtPath)
+	// Build args for background process
+	bgArgs := []string{"start", "--foreground"}
+	if startFrom != "" {
+		bgArgs = append(bgArgs, "--from", startFrom)
+	}
+
+	bgCmd := exec.Command(exe, bgArgs...) //nolint:noctx // Detached background process, no context needed
+	bgCmd.Dir = cwd
+	bgCmd.Stdout = nil // Detach stdout
+	bgCmd.Stderr = nil // Detach stderr
+	bgCmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true, // Create new session (detach from terminal)
+	}
+
+	if err := bgCmd.Start(); err != nil {
+		return fmt.Errorf("start background process: %w", err)
+	}
+
+	fmt.Printf("Starting kvelmo in background (PID %d)...\n", bgCmd.Process.Pid)
+
+	// Wait for socket to be ready
+	if !waitForSocket(wtPath, 10*time.Second) {
+		return errors.New("socket failed to start (check logs)")
+	}
+
+	// If --from was specified, task is already being loaded by background process
+	if startFrom != "" {
+		// Wait a bit for task to load
+		time.Sleep(500 * time.Millisecond)
+		fmt.Printf("Task loading from %s\n", startFrom)
+	}
+
+	fmt.Println("Ready")
+
+	return nil
 }
 
-func startForeground(cwd, globalPath, wtPath string) error {
+// runInForeground runs sockets in foreground (for E2E tests and debugging).
+func runInForeground(cwd, globalPath, wtPath string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -128,11 +194,12 @@ func startForeground(cwd, globalPath, wtPath string) error {
 	}
 
 	// Create worker pool for standalone mode (same as serve)
+	// Use KvelmoPermissionHandler to allow Write/Edit/Bash for planning/implementation
 	registry := agent.NewRegistry()
-	if err := claude.Register(registry); err != nil {
+	if err := claude.RegisterWithPermissionHandler(registry, agent.KvelmoPermissionHandler); err != nil {
 		return fmt.Errorf("register claude agent: %w", err)
 	}
-	if err := codex.Register(registry); err != nil {
+	if err := codex.RegisterWithPermissionHandler(registry, agent.KvelmoPermissionHandler); err != nil {
 		return fmt.Errorf("register codex agent: %w", err)
 	}
 

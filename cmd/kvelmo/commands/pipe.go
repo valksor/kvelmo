@@ -79,11 +79,12 @@ func runPipe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build registry with built-in agents.
+	// Use KvelmoPermissionHandler to allow Write/Edit/Bash for planning/implementation
 	reg := agent.NewRegistry()
-	if err := claude.Register(reg); err != nil {
+	if err := claude.RegisterWithPermissionHandler(reg, agent.KvelmoPermissionHandler); err != nil {
 		return fmt.Errorf("register claude agent: %w", err)
 	}
-	if err := codex.Register(reg); err != nil {
+	if err := codex.RegisterWithPermissionHandler(reg, agent.KvelmoPermissionHandler); err != nil {
 		return fmt.Errorf("register codex agent: %w", err)
 	}
 

@@ -108,8 +108,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 
 		// Create worker pool with Claude agent registered
+		// Use KvelmoPermissionHandler to allow Write/Edit/Bash for planning/implementation
 		registry := agent.NewRegistry()
-		if err := claude.Register(registry); err != nil {
+		if err := claude.RegisterWithPermissionHandler(registry, agent.KvelmoPermissionHandler); err != nil {
 			return fmt.Errorf("register claude agent: %w", err)
 		}
 
