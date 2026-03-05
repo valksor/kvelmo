@@ -17,8 +17,33 @@ env:
     GO_VERSION: '1.26.0'
 
 jobs:
-    release:
+    docs:
         runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Deploy docs (nightly)
+                if: github.event.release.prerelease
+                uses: cloudflare/wrangler-action@v3
+                with:
+                    apiToken: ${{ secrets.CF_API_TOKEN }}
+                    wranglerVersion: '4'
+                    command: deploy --env nightly
+
+            -   name: Deploy docs (latest)
+                if: ${{ !github.event.release.prerelease }}
+                uses: cloudflare/wrangler-action@v3
+                with:
+                    apiToken: ${{ secrets.CF_API_TOKEN }}
+                    wranglerVersion: '4'
+                    command: deploy --env latest
+
+    build:
+        runs-on: ubuntu-latest
+        if: >-
+            !contains(github.event.release.name, '[docs only]') &&
+            !contains(github.event.release.body, '[docs only]')
         env:
             RELEASE_TAG: ${{ github.event.release.tag_name }}
         steps:
@@ -98,22 +123,6 @@ jobs:
                     GORELEASER_CURRENT_TAG: ${{ !github.event.release.prerelease && github.event.release.tag_name || '' }}
                     MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
 
-            -   name: Deploy docs to Cloudflare Workers (nightly)
-                if: github.event.release.prerelease
-                uses: cloudflare/wrangler-action@v3
-                with:
-                    apiToken: ${{ secrets.CF_API_TOKEN }}
-                    wranglerVersion: '4'
-                    command: deploy --env nightly
-
-            -   name: Deploy docs to Cloudflare Workers (latest)
-                if: ${{ !github.event.release.prerelease }}
-                uses: cloudflare/wrangler-action@v3
-                with:
-                    apiToken: ${{ secrets.CF_API_TOKEN }}
-                    wranglerVersion: '4'
-                    command: deploy --env latest
-
             -   name: Restore release title
                 env:
                     GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -167,8 +176,10 @@ jobs:
     # Build Tauri desktop app on native runners
     # macOS/Linux: kvelmo binary as sidecar; Windows: Linux binary as resource (for WSL)
     desktop:
-        needs: [release]
+        needs: [build]
         if: >-
+            !contains(github.event.release.name, '[docs only]') &&
+            !contains(github.event.release.body, '[docs only]') &&
             !contains(github.event.release.name, '[skip desktop]') &&
             !contains(github.event.release.body, '[skip desktop]')
         strategy:
