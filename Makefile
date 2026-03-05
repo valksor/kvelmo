@@ -169,7 +169,7 @@ tauri-install:
 
 ## Run desktop app in development mode
 desktop-dev: build-go desktop-sidecar
-	./scripts/desktop-dev.sh
+	./.github/desktop-dev.sh
 
 ## Build desktop app for production
 desktop-build: desktop-sidecar
