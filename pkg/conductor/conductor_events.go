@@ -1,7 +1,9 @@
 package conductor
 
 import (
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -42,6 +44,25 @@ func (c *Conductor) onStateChanged(from, to State, event Event, wu *WorkUnit) {
 		Type:    "state_changed",
 		State:   to,
 		Message: fmt.Sprintf("State changed: %s -> %s (event: %s)", from, to, event),
+	})
+}
+
+// emitEnrichedError emits a user-friendly error event with fix instructions.
+// The enriched error data is included in the event's Data field as JSON.
+func (c *Conductor) emitEnrichedError(err error, phase string) {
+	ue := EnrichError(err, phase)
+
+	data, marshalErr := json.Marshal(ue)
+	if marshalErr != nil {
+		slog.Warn("failed to marshal enriched error", "error", marshalErr)
+		data = nil
+	}
+
+	c.emit(ConductorEvent{
+		Type:    "error",
+		Error:   ue.Message,
+		Message: ue.Fix,
+		Data:    data,
 	})
 }
 

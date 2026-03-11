@@ -9,7 +9,6 @@ import (
 
 	"github.com/valksor/kvelmo/pkg/memory"
 	"github.com/valksor/kvelmo/pkg/provider"
-	"github.com/valksor/kvelmo/pkg/worker"
 )
 
 // Submit submits the task to the provider (creates PR, updates issue, etc).
@@ -22,9 +21,11 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 	c.mu.Lock()
 	slog.Info("submit: lock acquired")
 	if c.workUnit == nil {
+		err := errors.New("no task loaded")
 		c.mu.Unlock()
+		c.emitEnrichedError(err, "submit")
 
-		return errors.New("no task loaded")
+		return err
 	}
 
 	// Check quality gate - use cached result from Review() if available,
@@ -87,7 +88,10 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 	if git != nil && branch != "" {
 		slog.Info("submit: pushing branch", "branch", branch)
 		if err := git.Push(ctx, "origin", branch); err != nil {
-			return fmt.Errorf("push branch %s: %w", branch, err)
+			wrapped := fmt.Errorf("push branch %s: %w", branch, err)
+			c.emitEnrichedError(wrapped, "submit")
+
+			return wrapped
 		}
 		slog.Info("submit: push completed")
 
@@ -123,13 +127,10 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 					} else {
 						// PR creation failed - state remains in StateReviewing (not terminal)
 						slog.Error("failed to create PR", "error", err, "branch", branch)
-						c.emit(ConductorEvent{
-							Type:    "pr_creation_failed",
-							Error:   err.Error(),
-							Message: "Failed to create pull request",
-						})
+						wrapped := fmt.Errorf("create PR: %w", err)
+						c.emitEnrichedError(wrapped, "submit")
 
-						return fmt.Errorf("create PR: %w", err)
+						return wrapped
 					}
 				}
 			}
@@ -213,14 +214,11 @@ func (c *Conductor) Abandon(ctx context.Context, keepBranch bool) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Stop tracking jobs for this worktree (jobs may continue running in pool)
-	//nolint:godox // Known limitation - tracked for future enhancement
-	// TODO: Add pool.CancelJob() for true cancellation
+	// Cancel any running or queued jobs for this worktree
 	if c.pool != nil && c.workUnit != nil {
 		for _, jobID := range c.workUnit.Jobs {
-			job := c.pool.GetJob(jobID)
-			if job != nil && (job.Status == worker.JobStatusQueued || job.Status == worker.JobStatusInProgress) {
-				c.logVerbosef("Orphaning job (still running in pool): %s", jobID)
+			if err := c.pool.CancelJob(jobID); err != nil {
+				c.logVerbosef("Could not cancel job %s: %v", jobID, err)
 			}
 		}
 	}

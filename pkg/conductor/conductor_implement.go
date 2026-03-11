@@ -18,12 +18,18 @@ func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 	defer c.mu.Unlock()
 
 	if c.workUnit == nil {
-		return "", errors.New("no task loaded")
+		err := errors.New("no task loaded")
+		c.emitEnrichedError(err, "implement")
+
+		return "", err
 	}
 
 	// Check pool BEFORE transitioning state to avoid leaving machine in bad state
 	if c.pool == nil {
-		return "", errors.New("no worker pool available")
+		err := errors.New("no worker pool available")
+		c.emitEnrichedError(err, "implement")
+
+		return "", err
 	}
 
 	// Handle force: allow re-running from implemented state
@@ -33,7 +39,10 @@ func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 
 	// Dispatch implement event to transition state
 	if err := c.machine.Dispatch(ctx, EventImplement); err != nil {
-		return "", fmt.Errorf("cannot implement: %w", err)
+		wrapped := fmt.Errorf("cannot implement: %w", err)
+		c.emitEnrichedError(wrapped, "implement")
+
+		return "", wrapped
 	}
 
 	prompt := c.buildImplementPrompt()
@@ -43,7 +52,10 @@ func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 		// Rollback state
 		_ = c.machine.Dispatch(ctx, EventError)
 
-		return "", fmt.Errorf("submit implement job: %w", err)
+		wrapped := fmt.Errorf("submit implement job: %w", err)
+		c.emitEnrichedError(wrapped, "implement")
+
+		return "", wrapped
 	}
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
@@ -72,17 +84,26 @@ func (c *Conductor) Optimize(ctx context.Context) (string, error) {
 	defer c.mu.Unlock()
 
 	if c.workUnit == nil {
-		return "", errors.New("no task loaded")
+		err := errors.New("no task loaded")
+		c.emitEnrichedError(err, "optimize")
+
+		return "", err
 	}
 
 	// Check pool BEFORE transitioning state to avoid leaving machine in bad state
 	if c.pool == nil {
-		return "", errors.New("no worker pool available")
+		err := errors.New("no worker pool available")
+		c.emitEnrichedError(err, "optimize")
+
+		return "", err
 	}
 
 	// Dispatch optimize event to transition state
 	if err := c.machine.Dispatch(ctx, EventOptimize); err != nil {
-		return "", fmt.Errorf("cannot optimize: %w", err)
+		wrapped := fmt.Errorf("cannot optimize: %w", err)
+		c.emitEnrichedError(wrapped, "optimize")
+
+		return "", wrapped
 	}
 
 	prompt := c.buildOptimizePrompt()
@@ -92,7 +113,10 @@ func (c *Conductor) Optimize(ctx context.Context) (string, error) {
 		// Rollback state
 		_ = c.machine.Dispatch(ctx, EventError)
 
-		return "", fmt.Errorf("submit optimize job: %w", err)
+		wrapped := fmt.Errorf("submit optimize job: %w", err)
+		c.emitEnrichedError(wrapped, "optimize")
+
+		return "", wrapped
 	}
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
@@ -121,17 +145,26 @@ func (c *Conductor) Simplify(ctx context.Context) (string, error) {
 	defer c.mu.Unlock()
 
 	if c.workUnit == nil {
-		return "", errors.New("no task loaded")
+		err := errors.New("no task loaded")
+		c.emitEnrichedError(err, "simplify")
+
+		return "", err
 	}
 
 	// Check pool BEFORE transitioning state to avoid leaving machine in bad state
 	if c.pool == nil {
-		return "", errors.New("no worker pool available")
+		err := errors.New("no worker pool available")
+		c.emitEnrichedError(err, "simplify")
+
+		return "", err
 	}
 
 	// Dispatch simplify event to transition state
 	if err := c.machine.Dispatch(ctx, EventSimplify); err != nil {
-		return "", fmt.Errorf("cannot simplify: %w", err)
+		wrapped := fmt.Errorf("cannot simplify: %w", err)
+		c.emitEnrichedError(wrapped, "simplify")
+
+		return "", wrapped
 	}
 
 	prompt := c.buildSimplifyPrompt()
@@ -141,7 +174,10 @@ func (c *Conductor) Simplify(ctx context.Context) (string, error) {
 		// Rollback state
 		_ = c.machine.Dispatch(ctx, EventError)
 
-		return "", fmt.Errorf("submit simplify job: %w", err)
+		wrapped := fmt.Errorf("submit simplify job: %w", err)
+		c.emitEnrichedError(wrapped, "simplify")
+
+		return "", wrapped
 	}
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)

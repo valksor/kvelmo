@@ -17,22 +17,28 @@ func (c *Conductor) Review(ctx context.Context, fix bool) error {
 	c.mu.Lock()
 
 	if c.workUnit == nil {
+		err := errors.New("no task loaded")
 		c.mu.Unlock()
+		c.emitEnrichedError(err, "review")
 
-		return errors.New("no task loaded")
+		return err
 	}
 
 	// Check pool BEFORE transitioning state when fix mode is requested
 	if fix && c.pool == nil {
+		err := errors.New("no worker pool available")
 		c.mu.Unlock()
+		c.emitEnrichedError(err, "review")
 
-		return errors.New("no worker pool available for fix mode")
+		return err
 	}
 
 	if err := c.machine.Dispatch(ctx, EventReview); err != nil {
+		wrapped := fmt.Errorf("cannot review: %w", err)
 		c.mu.Unlock()
+		c.emitEnrichedError(wrapped, "review")
 
-		return fmt.Errorf("cannot review: %w", err)
+		return wrapped
 	}
 
 	c.persistState()

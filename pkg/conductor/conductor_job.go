@@ -132,6 +132,11 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 				Message: "Job failed",
 			})
 
+			// Also emit enriched error for user-facing context
+			if event.Content != "" {
+				c.emitEnrichedError(fmt.Errorf("%s", event.Content), string(completionEvent))
+			}
+
 			return
 		}
 	}
