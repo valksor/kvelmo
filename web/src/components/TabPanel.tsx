@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { useLayoutStore } from '../stores/layoutStore'
 import { useProjectStore } from '../stores/projectStore'
 import { OutputWidget } from './OutputWidget'
-import { ChatWidget } from './ChatWidget'
 import { ScreenshotsPanel } from './ScreenshotsPanel'
 import { JobsPanel } from './JobsPanel'
 import { FileBrowserWidget } from './FileBrowserWidget'
-import { BrowserPanel } from './BrowserPanel'
 import { TaskPanel } from './TaskPanel'
-import { ReviewPanel } from './ReviewPanel'
 import { FileChangesPanel } from './FileChangesPanel'
+
+// Lazy-loaded heavy tab panels
+const ChatWidget = lazy(() => import('./ChatWidget').then(m => ({ default: m.ChatWidget })))
+const BrowserPanel = lazy(() => import('./BrowserPanel').then(m => ({ default: m.BrowserPanel })))
+const ReviewPanel = lazy(() => import('./ReviewPanel').then(m => ({ default: m.ReviewPanel })))
+
+const LazyFallback = <div className="flex items-center justify-center h-32"><span className="loading loading-spinner loading-sm" /></div>
 
 interface TabPanelProps {
   className?: string
@@ -323,7 +327,9 @@ function AgentContent({ data }: { data?: Record<string, unknown> }) {
 function ChatContent() {
   return (
     <div className="h-full">
-      <ChatWidget embedded />
+      <Suspense fallback={LazyFallback}>
+        <ChatWidget embedded />
+      </Suspense>
     </div>
   )
 }
@@ -355,7 +361,9 @@ function FilesContent() {
 function BrowserContent() {
   return (
     <div className="h-full">
-      <BrowserPanel />
+      <Suspense fallback={LazyFallback}>
+        <BrowserPanel />
+      </Suspense>
     </div>
   )
 }
@@ -371,7 +379,9 @@ function TaskContent({ data }: { data?: Record<string, unknown> }) {
 function ReviewContent({ data }: { data?: Record<string, unknown> }) {
   return (
     <div className="h-full">
-      <ReviewPanel data={data} />
+      <Suspense fallback={LazyFallback}>
+        <ReviewPanel data={data} />
+      </Suspense>
     </div>
   )
 }

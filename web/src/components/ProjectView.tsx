@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { lazy, Suspense, useState, useMemo } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
@@ -11,15 +11,27 @@ import { CheckpointsWidget } from './CheckpointsWidget'
 import { ReviewHistoryWidget } from './ReviewHistoryWidget'
 import { FileChangesWidget } from './FileChangesWidget'
 import { AgentPanel } from './AgentPanel'
+import { TaskQueue } from './TaskQueue'
+import { TaskHistory } from './TaskHistory'
 import { ThemeToggle } from './ThemeToggle'
 import { StatusBadge } from './StatusIndicator'
-import { Settings } from './Settings'
-import { LogsPanel } from './LogsPanel'
+
+// Lazy-loaded modal components (only rendered when opened)
+const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })))
+const LogsPanel = lazy(() => import('./LogsPanel').then(m => ({ default: m.LogsPanel })))
 
 function ReviewIcon() {
   return (
     <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  )
+}
+
+function HistoryIcon() {
+  return (
+    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   )
 }
@@ -39,8 +51,8 @@ const STATE_LABELS: Record<string, string> = {
 }
 
 export function ProjectView() {
-  const { selectedProject, selectProject } = useGlobalStore()
-  const { task, state, fileChanges, reviews, output } = useProjectStore()
+  const { selectedProject, selectProject, agentStatus } = useGlobalStore()
+  const { task, state, fileChanges, reviews, output, taskQueue } = useProjectStore()
   const { widgetStates } = useLayoutStore()
   const [showSettings, setShowSettings] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
@@ -163,6 +175,8 @@ export function ProjectView() {
       >
         <FileChangesWidget embedded />
       </Widget>
+
+      {taskQueue.length > 0 && <TaskQueue />}
     </>
   )
 
@@ -203,25 +217,48 @@ export function ProjectView() {
       >
         <ReviewHistoryWidget embedded />
       </Widget>
+
+      <Widget
+        id="history"
+        title="Task History"
+        icon={<HistoryIcon />}
+        defaultCollapsed={true}
+      >
+        <TaskHistory />
+      </Widget>
     </>
   )
 
   return (
     <div className="h-screen flex flex-col bg-base-100">
+      {agentStatus?.simulation_mode && (
+        <div role="alert" className="alert alert-warning rounded-none py-2 px-4 text-sm">
+          <svg aria-hidden="true" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>Simulation mode — no AI agent connected. Tasks will not be implemented.</span>
+        </div>
+      )}
       <PanelLayout
         header={header}
         leftContent={leftContent}
         rightContent={rightContent}
       />
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        defaultScope="project"
-      />
-      <LogsPanel
-        isOpen={showLogs}
-        onClose={() => setShowLogs(false)}
-      />
+      <Suspense fallback={null}>
+        {showSettings && (
+          <Settings
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            defaultScope="project"
+          />
+        )}
+        {showLogs && (
+          <LogsPanel
+            isOpen={showLogs}
+            onClose={() => setShowLogs(false)}
+          />
+        )}
+      </Suspense>
     </div>
   )
 }

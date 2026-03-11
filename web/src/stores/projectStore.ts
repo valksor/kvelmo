@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { SocketClient } from '../lib/socket'
 import { useScreenshotStore, Screenshot } from './screenshotStore'
+import { sendNotification } from '../lib/notify'
 
 type TaskState =
   | 'none'
@@ -96,6 +97,14 @@ interface SubmitOptions {
   delete_branch?: boolean
 }
 
+export interface QueuedTask {
+  id: string
+  source: string
+  title: string
+  added_at: string
+  position: number
+}
+
 interface FinishOptions {
   delete_remote?: boolean
   force?: boolean
@@ -153,6 +162,9 @@ interface ProjectState {
   loading: boolean
   error: string | null
 
+  // Task queue
+  taskQueue: QueuedTask[]
+
   // Quality gate prompt (set when conductor needs a yes/no answer)
   qualityPrompt: { id: string; question: string } | null
 
@@ -177,6 +189,12 @@ interface ProjectState {
   refresh: () => Promise<RefreshResult | null>
   approveRemote: (comment?: string) => Promise<void>
   mergeRemote: (method?: string) => Promise<void>
+
+  // Queue actions
+  queueTask: (source: string, title?: string) => Promise<QueuedTask | null>
+  dequeueTask: (id: string) => Promise<void>
+  loadQueue: () => Promise<void>
+  reorderQueue: (id: string, position: number) => Promise<void>
 
   // Quality gate
   respondToPrompt: (promptId: string, answer: boolean) => Promise<void>
@@ -225,6 +243,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   reviewDetails: {},
   loading: false,
   error: null,
+  taskQueue: [],
   qualityPrompt: null,
 
   connect: async (worktreeId: string) => {
@@ -286,9 +305,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         } else if (msg.type === 'job_completed') {
           get().appendOutput('Job completed')
           get().refreshStatus()
+          sendNotification('Task Completed', get().task?.title || 'Job finished successfully')
         } else if (msg.type === 'job_failed') {
           get().appendOutput(`Job failed: ${msg.error || msg.content}`)
           set({ error: msg.error || 'Job failed' })
+          sendNotification('Task Failed', msg.error || 'A job has failed')
         } else if (msg.type === 'screenshot_captured') {
           const screenshot = (msg as { data?: Screenshot }).data
           if (screenshot) {
@@ -304,6 +325,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           if (data?.prompt_id) {
             set({ qualityPrompt: { id: data.prompt_id, question: data.question ?? 'Quality gate question' } })
           }
+        } else if (msg.type === 'task_queued' || msg.type === 'task_dequeued' || msg.type === 'queue_advancing') {
+          get().loadQueue()
+          if (msg.type === 'queue_advancing') {
+            get().appendOutput(msg.message || 'Loading next queued task...')
+          }
+        } else if (msg.type === 'task_finished') {
+          get().appendOutput(msg.message || 'Task finished')
+          get().refreshStatus()
+          get().loadQueue()
         }
       })
 
@@ -318,6 +348,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
       // Initial status fetch
       await get().refreshStatus()
+
+      // Load task queue
+      await get().loadQueue()
 
       // Load screenshots
       await useScreenshotStore.getState().load()
@@ -350,6 +383,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       gitStatus: null,
       reviews: [],
       reviewDetails: {},
+      taskQueue: [],
       qualityPrompt: null
     })
   },
@@ -657,6 +691,56 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({ qualityPrompt: null })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Quality response failed' })
+    }
+  },
+
+  queueTask: async (source: string, title?: string): Promise<QueuedTask | null> => {
+    const client = get().client
+    if (!client) return null
+
+    try {
+      const result = await client.call<QueuedTask>('queue.add', { source, title: title ?? '' })
+      await get().loadQueue()
+      return result
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Queue add failed' })
+      return null
+    }
+  },
+
+  dequeueTask: async (id: string) => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      await client.call('queue.remove', { id })
+      await get().loadQueue()
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Queue remove failed' })
+    }
+  },
+
+  loadQueue: async () => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{ queue: QueuedTask[]; count: number }>('queue.list', {})
+      set({ taskQueue: result.queue || [] })
+    } catch {
+      // Queue may not be available
+    }
+  },
+
+  reorderQueue: async (id: string, position: number) => {
+    const client = get().client
+    if (!client) return
+
+    try {
+      const result = await client.call<{ queue: QueuedTask[]; count: number }>('queue.reorder', { id, position })
+      set({ taskQueue: result.queue || [] })
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Queue reorder failed' })
     }
   },
 

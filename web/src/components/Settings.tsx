@@ -3,6 +3,7 @@ import { useGlobalStore } from '../stores/globalStore'
 import { DynamicForm } from './settings/DynamicForm'
 import { setPath, isMaskedToken } from '../lib/schemaUtils'
 import { AccessibleModal } from './ui/AccessibleModal'
+import { ProviderTestButtons } from './settings/ProviderTestButtons'
 import type { Schema, SettingsResponse, Scope } from '../types/settings'
 
 interface SettingsProps {
@@ -195,13 +196,16 @@ export function Settings({ isOpen, onClose, defaultScope }: SettingsProps) {
             <span className="sr-only">Loading settings...</span>
           </div>
         ) : schema ? (
-          <DynamicForm
-            schema={schema}
-            values={getCurrentValues()}
-            onChange={handleChange}
-            disabled={saving}
-            defaultOpen="first"
-          />
+          <>
+            <DynamicForm
+              schema={schema}
+              values={getCurrentValues()}
+              onChange={handleChange}
+              disabled={saving}
+              defaultOpen="first"
+            />
+            {scope === 'global' && <ProviderTestButtons />}
+          </>
         ) : (
           <div className="text-center py-8 text-base-content/50">
             No settings schema available
