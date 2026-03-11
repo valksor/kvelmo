@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState, useMemo } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
 import { useDocsURL } from '../hooks/useDocsURL'
 import { FolderPicker } from './FolderPicker'
 import { ThemeToggle } from './ThemeToggle'
-import { Settings } from './Settings'
 import { ActiveTasksWidget } from './ActiveTasksWidget'
-import { MemoryPanel } from './MemoryPanel'
 import { Onboarding } from './Onboarding'
 import { name } from '../meta'
+
+// Lazy-loaded modal components
+const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })))
+const MemoryPanel = lazy(() => import('./MemoryPanel').then(m => ({ default: m.MemoryPanel })))
 
 export function GlobalView() {
   const {
@@ -18,12 +20,25 @@ export function GlobalView() {
     connecting,
     reconnectAttempt,
     selectedProject,
+    agentStatus,
+    activeTasks,
     connect,
     loadProjects,
     addProject,
     removeProject,
     selectProject
   } = useGlobalStore()
+
+  // Build a lookup of task info by project path for enriching project cards
+  const taskByPath = useMemo(() => {
+    const map = new Map<string, typeof activeTasks[0]>()
+    for (const t of activeTasks) {
+      if (t.state !== 'none' && t.state !== 'submitted') {
+        map.set(t.path, t)
+      }
+    }
+    return map
+  }, [activeTasks])
 
   const [showFolderPicker, setShowFolderPicker] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -148,6 +163,28 @@ export function GlobalView() {
         </div>
       </header>
 
+      {/* Agent Status Warning */}
+      {connected && agentStatus && !agentStatus.agent_available && (
+        <div role="alert" className="alert alert-warning max-w-2xl mx-auto mb-4">
+          <svg aria-hidden="true" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="font-medium">
+              {agentStatus.simulation_mode
+                ? 'Running in simulation mode — no AI agent connected'
+                : 'No AI agent available'}
+            </p>
+            <p className="text-sm opacity-80">
+              {agentStatus.checks
+                .filter(c => c.status === 'failed' && c.fix)
+                .map(c => c.fix)
+                .join(' · ') || 'Install Claude CLI or check authentication.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Active Tasks Summary */}
       <ActiveTasksWidget />
 
@@ -209,7 +246,9 @@ export function GlobalView() {
             </div>
           ) : (
             <ul aria-label="Projects" className="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-auto">
-              {projects.map(p => (
+              {projects.map(p => {
+                const task = taskByPath.get(p.path)
+                return (
                 <li key={p.id} className="group relative">
                   <button
                     type="button"
@@ -229,14 +268,30 @@ export function GlobalView() {
                         <span className={`badge badge-sm sm:badge-md ${
                           p.state === 'none' ? 'badge-ghost' :
                           p.state === 'implemented' ? 'badge-success' :
-                          p.state === 'planning' || p.state === 'implementing' ? 'badge-warning' :
+                          p.state === 'failed' ? 'badge-error' :
+                          p.state === 'planning' || p.state === 'implementing' || p.state === 'reviewing' ? 'badge-warning' :
                           'badge-primary'
                         }`}>
                           {p.state}
                         </span>
                       </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-base-content/60 truncate font-mono">{p.path}</p>
+                    {task?.task_title ? (
+                      <p className="text-xs sm:text-sm text-base-content/70 truncate">{task.task_title}</p>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-base-content/40 truncate italic">No active task</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-base-content/40 truncate font-mono">{p.path}</p>
+                      {task?.source && (
+                        <span className="text-xs text-primary/60 font-mono truncate flex-shrink-0">{task.source}</span>
+                      )}
+                      {task?.queue_count != null && task.queue_count > 0 && (
+                        <span className="badge badge-xs badge-outline flex-shrink-0">
+                          +{task.queue_count} queued
+                        </span>
+                      )}
+                    </div>
                   </button>
                   <button
                     type="button"
@@ -249,7 +304,7 @@ export function GlobalView() {
                     </svg>
                   </button>
                 </li>
-              ))}
+              )})}
             </ul>
           )}
         </div>
@@ -262,17 +317,21 @@ export function GlobalView() {
         onSelect={handleFolderSelect}
       />
 
-      {/* Settings Modal */}
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
-
-      {/* Memory Panel */}
-      <MemoryPanel
-        isOpen={showMemory}
-        onClose={() => setShowMemory(false)}
-      />
+      {/* Lazy-loaded modals */}
+      <Suspense fallback={null}>
+        {showSettings && (
+          <Settings
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+        {showMemory && (
+          <MemoryPanel
+            isOpen={showMemory}
+            onClose={() => setShowMemory(false)}
+          />
+        )}
+      </Suspense>
 
       {/* First-run onboarding (only shows once) */}
       {projects.length === 0 && connected && (

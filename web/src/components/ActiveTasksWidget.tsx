@@ -28,11 +28,11 @@ interface ActiveTasksWidgetProps {
 export function ActiveTasksWidget({ onSelectProject }: ActiveTasksWidgetProps) {
   const { activeTasks, loadActiveTasks, connected, projects, selectProject } = useGlobalStore()
 
+  // Active tasks are updated via WebSocket push events (task_state_changed).
+  // Initial load on connect; subsequent updates are event-driven via globalStore subscription.
   useEffect(() => {
     if (!connected) return
     loadActiveTasks()
-    const interval = setInterval(loadActiveTasks, 10000)
-    return () => clearInterval(interval)
   }, [connected, loadActiveTasks])
 
   const active = activeTasks.filter(t => stateIsActive(t.state))
@@ -83,9 +83,14 @@ export function ActiveTasksWidget({ onSelectProject }: ActiveTasksWidgetProps) {
                     )}
                   </div>
                 </div>
-                <span className={`badge badge-sm flex-shrink-0 ${STATE_BADGE[task.state] || 'badge-ghost'}`}>
-                  {task.state}
-                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {task.queue_count != null && task.queue_count > 0 && (
+                    <span className="badge badge-xs badge-outline">+{task.queue_count}</span>
+                  )}
+                  <span className={`badge badge-sm ${STATE_BADGE[task.state] || 'badge-ghost'}`}>
+                    {task.state}
+                  </span>
+                </div>
               </div>
             </button>
           ))}

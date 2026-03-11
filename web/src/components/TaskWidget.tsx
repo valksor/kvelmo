@@ -1,36 +1,74 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useProjectStore } from '../stores/projectStore'
 import { FilePicker } from './FilePicker'
+
+type DetectedProvider = { name: string; icon: string; example: string } | null
+
+function detectProvider(url: string): DetectedProvider {
+  const u = url.trim().toLowerCase()
+  if (u.includes('github.com') || u.includes('github:')) {
+    return { name: 'GitHub', icon: 'GH', example: 'github.com/owner/repo/issues/123' }
+  }
+  if (u.includes('gitlab.com') || u.includes('gitlab:')) {
+    return { name: 'GitLab', icon: 'GL', example: 'gitlab.com/group/project/-/issues/456' }
+  }
+  if (u.includes('linear.app') || u.includes('linear:')) {
+    return { name: 'Linear', icon: 'LN', example: 'linear.app/team/issue/ABC-123' }
+  }
+  if (u.includes('wrike.com') || u.includes('wrike:')) {
+    return { name: 'Wrike', icon: 'WR', example: 'wrike.com/open.htm?id=12345' }
+  }
+
+  return null
+}
 
 interface TaskWidgetProps {
   embedded?: boolean
 }
 
 export function TaskWidget({ embedded = false }: TaskWidgetProps) {
-  const { task, state, start, loading, error, connected, connecting, undo, reset } = useProjectStore()
+  const { task, state, start, queueTask, loading, error, connected, connecting, undo, reset } = useProjectStore()
   const [inputMode, setInputMode] = useState<'quick' | 'file' | 'url'>('quick')
   const [taskDescription, setTaskDescription] = useState('')
   const [urlInput, setUrlInput] = useState('')
   const [selectedFile, setSelectedFile] = useState('')
   const [showFilePicker, setShowFilePicker] = useState(false)
+  const detectedProvider = useMemo(() => detectProvider(urlInput), [urlInput])
+
+  // When a task is active, queue instead of start
+  const hasActiveTask = task && state !== 'none'
 
   const handleQuickLoad = () => {
     if (taskDescription.trim()) {
-      start(`empty:${taskDescription.trim()}`)
+      const source = `empty:${taskDescription.trim()}`
+      if (hasActiveTask) {
+        queueTask(source, taskDescription.trim())
+      } else {
+        start(source)
+      }
       setTaskDescription('')
     }
   }
 
   const handleUrlLoad = () => {
     if (urlInput.trim()) {
-      start(urlInput.trim())
+      if (hasActiveTask) {
+        queueTask(urlInput.trim())
+      } else {
+        start(urlInput.trim())
+      }
       setUrlInput('')
     }
   }
 
   const handleFileLoad = () => {
     if (selectedFile) {
-      start(`file:${selectedFile}`)
+      const source = `file:${selectedFile}`
+      if (hasActiveTask) {
+        queueTask(source, selectedFile.split('/').pop() || selectedFile)
+      } else {
+        start(source)
+      }
       setSelectedFile('')
     }
   }
@@ -98,7 +136,7 @@ export function TaskWidget({ embedded = false }: TaskWidgetProps) {
               disabled={loading || !taskDescription.trim() || !connected}
               className="btn btn-primary btn-sm"
             >
-              {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+              {loading ? <span className="loading loading-spinner loading-xs" /> : hasActiveTask ? 'Queue Task' : 'Load Task'}
             </button>
           </div>
         </div>
@@ -131,7 +169,7 @@ export function TaskWidget({ embedded = false }: TaskWidgetProps) {
                 disabled={loading || !connected}
                 className="btn btn-primary btn-sm"
               >
-                {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+                {loading ? <span className="loading loading-spinner loading-xs" /> : hasActiveTask ? 'Queue Task' : 'Load Task'}
               </button>
             </div>
           )}
@@ -141,23 +179,34 @@ export function TaskWidget({ embedded = false }: TaskWidgetProps) {
       {/* From URL tab */}
       {inputMode === 'url' && (
         <div className="space-y-2">
-          <input
-            type="text"
-            value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
-            onKeyDown={handleUrlKeyDown}
-            placeholder="github.com/owner/repo/issues/123"
-            className="input input-bordered w-full font-mono text-sm input-sm"
-            disabled={loading}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              onKeyDown={handleUrlKeyDown}
+              placeholder="github.com/owner/repo/issues/123"
+              className={`input input-bordered w-full font-mono text-sm input-sm ${detectedProvider ? 'pr-14' : ''}`}
+              disabled={loading}
+            />
+            {detectedProvider && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 badge badge-sm badge-primary">
+                {detectedProvider.icon}
+              </span>
+            )}
+          </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-base-content/50">GitHub, GitLab, or Linear URLs</span>
+            <span className="text-xs text-base-content/50">
+              {detectedProvider
+                ? `${detectedProvider.name} detected`
+                : 'GitHub, GitLab, Linear, or Wrike URLs'}
+            </span>
             <button
               onClick={handleUrlLoad}
               disabled={loading || !urlInput.trim() || !connected}
               className="btn btn-primary btn-sm"
             >
-              {loading ? <span className="loading loading-spinner loading-xs" /> : 'Load Task'}
+              {loading ? <span className="loading loading-spinner loading-xs" /> : hasActiveTask ? 'Queue Task' : 'Load Task'}
             </button>
           </div>
         </div>

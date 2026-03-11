@@ -17,6 +17,20 @@ export type WorkerStats = WorkersStats
 export type MemoryStats = MemoryStatsResponse
 export type TaskSummary = TaskListSummary
 
+// Agent status from agent.status RPC
+export interface AgentCheckResult {
+  name: string
+  status: 'passed' | 'failed' | 'warning'
+  detail?: string
+  fix?: string
+}
+
+export interface AgentStatus {
+  checks: AgentCheckResult[]
+  agent_available: boolean
+  simulation_mode: boolean
+}
+
 // Types not yet in Go (UI-only or need backend work)
 export interface Job {
   id: string
@@ -57,6 +71,9 @@ interface GlobalState {
   loading: boolean
   error: string | null
 
+  // Agent status
+  agentStatus: AgentStatus | null
+
   // Active tasks across all projects
   activeTasks: TaskSummary[]
 
@@ -81,6 +98,9 @@ interface GlobalState {
 
   // Chat
   stopChat: (worktreeId: string, jobId?: string) => Promise<void>
+
+  // Agent
+  loadAgentStatus: () => Promise<void>
 
   // Tasks
   loadActiveTasks: () => Promise<void>
@@ -110,6 +130,7 @@ export const useGlobalStore = create<GlobalState>()(
       workerStats: null,
       memoryStats: null,
       jobs: [],
+      agentStatus: null,
       selectedProjectId: null,
       selectedProject: null,
       loading: false,
@@ -170,10 +191,20 @@ export const useGlobalStore = create<GlobalState>()(
           await client.connect()
           set({ client, connected: true, connecting: false, reconnectAttempt: 0, error: null })
 
+          // Subscribe to server-pushed notifications (e.g., task_state_changed)
+          client.subscribe((msg: unknown) => {
+            const notification = msg as { method?: string; params?: Record<string, string> }
+            if (notification.method === 'task_state_changed') {
+              // Refresh active tasks when any project's state changes
+              get().loadActiveTasks()
+            }
+          })
+
           // Load initial data
           await get().loadProjects()
           await get().loadWorkers()
           await get().loadActiveTasks()
+          await get().loadAgentStatus()
         } catch (err) {
           set({
             connected: false,
@@ -363,6 +394,18 @@ export const useGlobalStore = create<GlobalState>()(
           await client.call('chat.stop', params)
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to stop chat' })
+        }
+      },
+
+      loadAgentStatus: async () => {
+        const client = get().client
+        if (!client) return
+
+        try {
+          const result = await client.call<AgentStatus>('agent.status')
+          set({ agentStatus: result })
+        } catch (err) {
+          console.warn('Failed to load agent status:', err)
         }
       },
 
