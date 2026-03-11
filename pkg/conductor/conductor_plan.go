@@ -20,12 +20,18 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 	defer c.mu.Unlock()
 
 	if c.workUnit == nil {
-		return "", errors.New("no task loaded")
+		err := errors.New("no task loaded")
+		c.emitEnrichedError(err, "plan")
+
+		return "", err
 	}
 
 	// Check pool BEFORE transitioning state to avoid leaving machine in bad state
 	if c.pool == nil {
-		return "", errors.New("no worker pool available")
+		err := errors.New("no worker pool available")
+		c.emitEnrichedError(err, "plan")
+
+		return "", err
 	}
 
 	// Handle force: allow re-running from planned state
@@ -35,7 +41,10 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 
 	// Dispatch plan event to transition state
 	if err := c.machine.Dispatch(ctx, EventPlan); err != nil {
-		return "", fmt.Errorf("cannot plan: %w", err)
+		wrapped := fmt.Errorf("cannot plan: %w", err)
+		c.emitEnrichedError(wrapped, "plan")
+
+		return "", wrapped
 	}
 
 	// Load existing specs so re-planning iterates rather than restarts from scratch
@@ -62,7 +71,10 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 		// Rollback state
 		_ = c.machine.Dispatch(ctx, EventError)
 
-		return "", fmt.Errorf("submit plan job: %w", err)
+		wrapped := fmt.Errorf("submit plan job: %w", err)
+		c.emitEnrichedError(wrapped, "plan")
+
+		return "", wrapped
 	}
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)

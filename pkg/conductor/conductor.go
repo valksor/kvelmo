@@ -50,6 +50,9 @@ type Conductor struct {
 	// Current task state
 	workUnit *WorkUnit
 
+	// Task queue (pending tasks to auto-start after current finishes)
+	taskQueue []*QueuedTask
+
 	// Event streaming
 	events      chan ConductorEvent
 	eventsMu    sync.Mutex // Protects events channel send during close

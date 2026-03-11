@@ -77,10 +77,18 @@ type Transition struct {
 	From   State
 	Event  Event
 	To     State
-	Guards []GuardFunc
+	Guards []Guard
+}
+
+// Guard pairs a predicate with a human-readable failure message.
+type Guard struct {
+	Check   func(ctx context.Context, wu *WorkUnit) bool
+	Message string // Shown when this guard fails
 }
 
 // GuardFunc is a predicate that must return true for a transition to occur.
+//
+// Deprecated: Use Guard struct instead for better error messages.
 type GuardFunc func(ctx context.Context, wu *WorkUnit) bool
 
 // TaskSummary is a compact representation of a task used for hierarchy context.
@@ -249,12 +257,16 @@ type TransitionKey struct {
 var TransitionTable = map[TransitionKey][]Transition{
 	// === Start: Load task from provider ===
 	{StateNone, EventStart}: {
-		{From: StateNone, Event: EventStart, To: StateLoaded, Guards: []GuardFunc{guardHasSource}},
+		{From: StateNone, Event: EventStart, To: StateLoaded, Guards: []Guard{
+			{Check: guardHasSource, Message: "no task source specified. Run: kvelmo start --from <provider:reference>"},
+		}},
 	},
 
 	// === Planning Phase ===
 	{StateLoaded, EventPlan}: {
-		{From: StateLoaded, Event: EventPlan, To: StatePlanning, Guards: []GuardFunc{guardHasDescription}},
+		{From: StateLoaded, Event: EventPlan, To: StatePlanning, Guards: []Guard{
+			{Check: guardHasDescription, Message: "task has no description. Check the task source content"},
+		}},
 	},
 	{StatePlanning, EventPlanDone}: {
 		{From: StatePlanning, Event: EventPlanDone, To: StatePlanned},
@@ -271,7 +283,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 
 	// === Implementation Phase ===
 	{StatePlanned, EventImplement}: {
-		{From: StatePlanned, Event: EventImplement, To: StateImplementing, Guards: []GuardFunc{guardHasSpecifications}},
+		{From: StatePlanned, Event: EventImplement, To: StateImplementing, Guards: []Guard{
+			{Check: guardHasSpecifications, Message: "no specification found. Run: kvelmo plan first"},
+		}},
 	},
 	{StateImplementing, EventImplementDone}: {
 		{From: StateImplementing, Event: EventImplementDone, To: StateImplemented},
@@ -286,7 +300,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 		{From: StateImplementing, Event: EventPause, To: StatePaused},
 	},
 	{StateImplementing, EventUndo}: {
-		{From: StateImplementing, Event: EventUndo, To: StateImplementing, Guards: []GuardFunc{guardCanUndo}},
+		{From: StateImplementing, Event: EventUndo, To: StateImplementing, Guards: []Guard{
+			{Check: guardCanUndo, Message: "no checkpoints to undo"},
+		}},
 	},
 
 	// === Simplification Phase (optional) ===
@@ -334,7 +350,9 @@ var TransitionTable = map[TransitionKey][]Transition{
 		{From: StateImplemented, Event: EventReview, To: StateReviewing},
 	},
 	{StateReviewing, EventSubmit}: {
-		{From: StateReviewing, Event: EventSubmit, To: StateSubmitted, Guards: []GuardFunc{guardCanSubmit}},
+		{From: StateReviewing, Event: EventSubmit, To: StateSubmitted, Guards: []Guard{
+			{Check: guardCanSubmit, Message: "cannot submit: no provider configured"},
+		}},
 	},
 	{StateReviewing, EventReject}: {
 		{From: StateReviewing, Event: EventReject, To: StatePlanning},
@@ -366,22 +384,34 @@ var TransitionTable = map[TransitionKey][]Transition{
 
 	// === Undo/Redo from stable states ===
 	{StateLoaded, EventUndo}: {
-		{From: StateLoaded, Event: EventUndo, To: StateLoaded, Guards: []GuardFunc{guardCanUndo}},
+		{From: StateLoaded, Event: EventUndo, To: StateLoaded, Guards: []Guard{
+			{Check: guardCanUndo, Message: "no checkpoints to undo"},
+		}},
 	},
 	{StatePlanned, EventUndo}: {
-		{From: StatePlanned, Event: EventUndo, To: StatePlanned, Guards: []GuardFunc{guardCanUndo}},
+		{From: StatePlanned, Event: EventUndo, To: StatePlanned, Guards: []Guard{
+			{Check: guardCanUndo, Message: "no checkpoints to undo"},
+		}},
 	},
 	{StateImplemented, EventUndo}: {
-		{From: StateImplemented, Event: EventUndo, To: StateImplemented, Guards: []GuardFunc{guardCanUndo}},
+		{From: StateImplemented, Event: EventUndo, To: StateImplemented, Guards: []Guard{
+			{Check: guardCanUndo, Message: "no checkpoints to undo"},
+		}},
 	},
 	{StateLoaded, EventRedo}: {
-		{From: StateLoaded, Event: EventRedo, To: StateLoaded, Guards: []GuardFunc{guardCanRedo}},
+		{From: StateLoaded, Event: EventRedo, To: StateLoaded, Guards: []Guard{
+			{Check: guardCanRedo, Message: "no checkpoints to redo"},
+		}},
 	},
 	{StatePlanned, EventRedo}: {
-		{From: StatePlanned, Event: EventRedo, To: StatePlanned, Guards: []GuardFunc{guardCanRedo}},
+		{From: StatePlanned, Event: EventRedo, To: StatePlanned, Guards: []Guard{
+			{Check: guardCanRedo, Message: "no checkpoints to redo"},
+		}},
 	},
 	{StateImplemented, EventRedo}: {
-		{From: StateImplemented, Event: EventRedo, To: StateImplemented, Guards: []GuardFunc{guardCanRedo}},
+		{From: StateImplemented, Event: EventRedo, To: StateImplemented, Guards: []Guard{
+			{Check: guardCanRedo, Message: "no checkpoints to redo"},
+		}},
 	},
 
 	// === Finish: Clean up after PR merge ===
@@ -437,9 +467,9 @@ func guardCanSubmit(ctx context.Context, wu *WorkUnit) bool {
 }
 
 // EvaluateGuards checks if all guards pass for a transition.
-func EvaluateGuards(ctx context.Context, wu *WorkUnit, guards []GuardFunc) bool {
+func EvaluateGuards(ctx context.Context, wu *WorkUnit, guards []Guard) bool {
 	for _, guard := range guards {
-		if !guard(ctx, wu) {
+		if !guard.Check(ctx, wu) {
 			return false
 		}
 	}
@@ -457,27 +487,18 @@ func formatTransitionError(from State, event Event, wu *WorkUnit) error {
 }
 
 // formatGuardError creates a user-friendly error when guards fail.
-//
-// TODO: guardFailureReason tests guards in a fixed order, not the actual failing guard.
-// This could return a misleading message if multiple guards fail. A proper fix would
-// require guards to carry metadata (identifier + reason), but that's a larger refactor.
-//
-//nolint:godox // Known limitation tracked here
+// Each Guard carries its own failure message, so the error is always precise.
 func formatGuardError(_ State, event Event, wu *WorkUnit, transitions []Transition) error {
 	actionDesc := eventDescription(event)
 
-	// Find which guard failed and explain what's missing
 	for _, t := range transitions {
 		for _, guard := range t.Guards {
-			if !guard(context.Background(), wu) {
-				reason := guardFailureReason(wu)
-
-				return fmt.Errorf("cannot %s: %s", actionDesc, reason)
+			if !guard.Check(context.Background(), wu) {
+				return fmt.Errorf("cannot %s: %s", actionDesc, guard.Message)
 			}
 		}
 	}
 
-	// Fallback (shouldn't reach here)
 	return fmt.Errorf("cannot %s: prerequisites not met", actionDesc)
 }
 
@@ -605,33 +626,6 @@ func suggestNextAction(from State, _ *WorkUnit) string {
 	default:
 		return ""
 	}
-}
-
-// guardFailureReason explains why a specific guard failed.
-func guardFailureReason(wu *WorkUnit) string {
-	ctx := context.Background()
-
-	// Test each guard to identify which one failed
-	if !guardHasSource(ctx, wu) {
-		return "no task source specified. Run: kvelmo start --from <provider:reference>"
-	}
-	if !guardHasDescription(ctx, wu) {
-		return "task has no description. Check the task source content"
-	}
-	if !guardHasSpecifications(ctx, wu) {
-		return "no specification found. Run: kvelmo plan first"
-	}
-	if !guardCanUndo(ctx, wu) {
-		return "no checkpoints to undo"
-	}
-	if !guardCanRedo(ctx, wu) {
-		return "no checkpoints to redo"
-	}
-	if !guardCanSubmit(ctx, wu) {
-		return "cannot submit: no provider configured"
-	}
-
-	return "prerequisites not met"
 }
 
 // Machine manages workflow state transitions.
