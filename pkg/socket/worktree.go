@@ -193,6 +193,15 @@ func (w *WorktreeSocket) registerHandlers() {
 	w.server.Handle("delete", w.handleDelete)
 	w.server.Handle("update", w.handleUpdate)
 
+	// Task queue
+	w.server.Handle("queue.add", w.handleQueueAdd)
+	w.server.Handle("queue.remove", w.handleQueueRemove)
+	w.server.Handle("queue.list", w.handleQueueList)
+	w.server.Handle("queue.reorder", w.handleQueueReorder)
+
+	// Task history
+	w.server.Handle("task.history", w.handleTaskHistory)
+
 	// Review history
 	w.server.Handle("review.list", w.handleReviewList)
 	w.server.Handle("review.view", w.handleReviewView)

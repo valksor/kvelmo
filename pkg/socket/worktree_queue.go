@@ -1,0 +1,127 @@
+package socket
+
+import (
+	"context"
+	"encoding/json"
+)
+
+// --- Queue Handlers ---
+
+type queueAddParams struct {
+	Source string `json:"source"`
+	Title  string `json:"title"`
+}
+
+func (w *WorktreeSocket) handleQueueAdd(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	var params queueAddParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	if params.Source == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "source is required"), nil
+	}
+
+	task, err := w.conductor.QueueTask(params.Source, params.Title)
+	if err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, task)
+}
+
+type queueRemoveParams struct {
+	ID string `json:"id"`
+}
+
+func (w *WorktreeSocket) handleQueueRemove(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	var params queueRemoveParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	if params.ID == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "id is required"), nil
+	}
+
+	if err := w.conductor.DequeueTask(params.ID); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{"success": true})
+}
+
+func (w *WorktreeSocket) handleQueueList(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	queue := w.conductor.ListQueue()
+
+	return NewResultResponse(req.ID, map[string]any{
+		"queue": queue,
+		"count": len(queue),
+	})
+}
+
+type queueReorderParams struct {
+	ID       string `json:"id"`
+	Position int    `json:"position"`
+}
+
+func (w *WorktreeSocket) handleQueueReorder(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	var params queueReorderParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+	}
+
+	if params.ID == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "id is required"), nil
+	}
+
+	if params.Position < 1 {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "position must be >= 1"), nil
+	}
+
+	if err := w.conductor.ReorderQueue(params.ID, params.Position); err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	// Return updated queue
+	queue := w.conductor.ListQueue()
+
+	return NewResultResponse(req.ID, map[string]any{
+		"queue": queue,
+		"count": len(queue),
+	})
+}
+
+// --- Task History Handler ---
+
+func (w *WorktreeSocket) handleTaskHistory(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	tasks, err := w.conductor.TaskHistory()
+	if err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"tasks": tasks,
+		"count": len(tasks),
+	})
+}

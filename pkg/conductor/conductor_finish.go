@@ -104,6 +104,9 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) (*FinishResu
 		c.machine.Reset()
 	}
 
+	// Archive the completed task before clearing
+	c.archiveTask("finished")
+
 	// Emit finish event after state transition (so event reflects new state)
 	c.emit(ConductorEvent{
 		Type:    "task_finished",
@@ -120,6 +123,27 @@ func (c *Conductor) Finish(ctx context.Context, opts FinishOptions) (*FinishResu
 	c.workUnit = nil
 	c.machine.SetWorkUnit(nil)
 	c.persistState()
+
+	// Auto-advance: if there's a queued task, start it in the background
+	if next := c.popNextTask(); next != nil {
+		c.emit(ConductorEvent{
+			Type:    "queue_advancing",
+			State:   c.machine.State(),
+			Message: "Loading next queued task: " + next.Source,
+		})
+		// Start the next task asynchronously using lifecycle context.
+		// We can't call Start() here because we already hold c.mu.
+		go func(source string) {
+			if err := c.Start(c.lifecycleCtx, source); err != nil {
+				slog.Warn("auto-advance failed", "source", source, "error", err)
+				c.emit(ConductorEvent{
+					Type:    "queue_advance_failed",
+					State:   c.machine.State(),
+					Message: "Failed to load next task: " + err.Error(),
+				})
+			}
+		}(next.Source)
+	}
 
 	return result, nil
 }

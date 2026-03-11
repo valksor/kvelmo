@@ -925,7 +925,7 @@ func TestEvaluateGuards_NoGuards(t *testing.T) {
 
 func TestEvaluateGuards_PassingGuard(t *testing.T) {
 	wu := &WorkUnit{Source: &Source{Reference: "ref"}}
-	guards := []GuardFunc{guardHasSource}
+	guards := []Guard{{Check: guardHasSource, Message: "no source"}}
 	result := EvaluateGuards(context.Background(), wu, guards)
 	if !result {
 		t.Error("EvaluateGuards with passing guard should return true")
@@ -934,7 +934,7 @@ func TestEvaluateGuards_PassingGuard(t *testing.T) {
 
 func TestEvaluateGuards_FailingGuard(t *testing.T) {
 	wu := &WorkUnit{Source: &Source{Reference: ""}} // empty reference
-	guards := []GuardFunc{guardHasSource}
+	guards := []Guard{{Check: guardHasSource, Message: "no source"}}
 	result := EvaluateGuards(context.Background(), wu, guards)
 	if result {
 		t.Error("EvaluateGuards with failing guard should return false")
