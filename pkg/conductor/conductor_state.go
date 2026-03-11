@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/valksor/kvelmo/pkg/memory"
 	"github.com/valksor/kvelmo/pkg/storage"
@@ -27,6 +28,42 @@ func (c *Conductor) SetStore(store *storage.Store) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.store = store
+}
+
+// archiveTask records the current work unit in the archive before clearing.
+// Non-fatal: logs on error. Caller must hold c.mu.
+func (c *Conductor) archiveTask(finalState string) {
+	if c.store == nil || c.workUnit == nil {
+		return
+	}
+
+	source := ""
+	if c.workUnit.Source != nil {
+		source = c.workUnit.Source.Reference
+	}
+
+	archived := storage.ArchivedTask{
+		ID:          c.workUnit.ID,
+		Title:       c.workUnit.Title,
+		Branch:      c.workUnit.Branch,
+		Source:      source,
+		FinalState:  finalState,
+		StartedAt:   c.workUnit.CreatedAt,
+		CompletedAt: time.Now(),
+	}
+
+	if err := c.store.ArchiveTask(archived); err != nil {
+		slog.Warn("archive task failed", "task_id", c.workUnit.ID, "error", err)
+	}
+}
+
+// TaskHistory returns archived tasks for this project.
+func (c *Conductor) TaskHistory() ([]storage.ArchivedTask, error) {
+	if c.store == nil {
+		return nil, nil
+	}
+
+	return c.store.ListArchivedTasks()
 }
 
 // persistState writes the current WorkUnit and state to task.yaml.

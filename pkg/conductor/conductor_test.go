@@ -2,6 +2,7 @@ package conductor
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 )
@@ -274,6 +275,42 @@ func TestTransitionTable(t *testing.T) {
 		if rules[0].To != tc.to {
 			t.Errorf("transition %s + %s = %s, want %s", tc.from, tc.event, rules[0].To, tc.to)
 		}
+	}
+}
+
+func TestGuardFailureMessage(t *testing.T) {
+	m := NewMachine()
+	ctx := context.Background()
+
+	// Work unit with source but no description
+	wu := &WorkUnit{
+		ID:     "test-guard",
+		Source: &Source{Provider: "test", Reference: "ref", Content: "content"},
+	}
+	m.SetWorkUnit(wu)
+	_ = m.Dispatch(ctx, EventStart)
+
+	// Try to plan without description - should get description-specific error
+	err := m.Dispatch(ctx, EventPlan)
+	if err == nil {
+		t.Fatal("expected error for missing description")
+	}
+	if !strings.Contains(err.Error(), "no description") {
+		t.Errorf("error = %q, want message about missing description", err.Error())
+	}
+
+	// Set description but no specs, advance to planned
+	wu.Description = "test desc"
+	_ = m.Dispatch(ctx, EventPlan)
+	_ = m.Dispatch(ctx, EventPlanDone)
+
+	// Try to implement without specifications
+	err = m.Dispatch(ctx, EventImplement)
+	if err == nil {
+		t.Fatal("expected error for missing specifications")
+	}
+	if !strings.Contains(err.Error(), "no specification") {
+		t.Errorf("error = %q, want message about missing specification", err.Error())
 	}
 }
 
