@@ -1,13 +1,11 @@
 package commands
 
 import (
-	"context"
 	"fmt"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/agent"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/settings"
 	"github.com/valksor/kvelmo/pkg/socket"
@@ -36,32 +34,39 @@ func runDiagnose(cmd *cobra.Command, args []string) error {
 
 	var issues []string
 
-	// Check git
-	if gitVersion, err := getCommandVersion("git", "--version"); err == nil {
-		fmt.Printf("  Git:           ✓ installed (%s)\n", gitVersion)
-	} else {
-		fmt.Printf("  Git:           ✗ not found\n")
-		issues = append(issues, "Install git: https://git-scm.com/downloads")
-	}
+	// Run preflight checks for git and agent CLIs
+	preflight := agent.RunPreflight()
+	for _, c := range preflight.Checks {
+		symbol := "✓"
+		label := "installed"
 
-	// Check Claude CLI
-	claudeAvailable := false
-	if claudeVersion, err := getCommandVersion("claude", "--version"); err == nil {
-		fmt.Printf("  Claude CLI:    ✓ installed (%s)\n", claudeVersion)
-		claudeAvailable = true
-	} else {
-		fmt.Printf("  Claude CLI:    ✗ not found\n")
-		issues = append(issues, "Install Claude CLI: https://docs.anthropic.com/en/docs/claude-code/getting-started")
-	}
-
-	// Check Codex CLI
-	if codexVersion, err := getCommandVersion("codex", "--version"); err == nil {
-		fmt.Printf("  Codex CLI:     ✓ installed (%s)\n", codexVersion)
-	} else {
-		fmt.Printf("  Codex CLI:     ✗ not found\n")
-		// Only flag as issue if Claude is also missing (need at least one agent)
-		if !claudeAvailable {
-			issues = append(issues, "Install at least one AI agent (Claude or Codex)")
+		switch c.Status {
+		case agent.CheckPassed:
+			// default values are fine
+		case agent.CheckFailed:
+			symbol = "✗"
+			label = "not found"
+		case agent.CheckWarning:
+			symbol = "⚠"
+			label = "not found"
+		}
+		detail := ""
+		if c.Status == agent.CheckPassed && c.Detail != "" {
+			detail = " (" + c.Detail + ")"
+		}
+		// Map check names to display labels
+		displayName := c.Name
+		switch c.Name {
+		case "claude":
+			displayName = "Claude CLI"
+		case "codex":
+			displayName = "Codex CLI"
+		case "git":
+			displayName = "Git"
+		}
+		fmt.Printf("  %-14s %s %s%s\n", displayName+":", symbol, label, detail)
+		if c.Fix != "" {
+			issues = append(issues, c.Fix)
 		}
 	}
 
@@ -124,72 +129,4 @@ func runDiagnose(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// getCommandVersion runs a command and extracts a version string from output.
-func getCommandVersion(name string, args ...string) (string, error) {
-	path, err := exec.LookPath(name)
-	if err != nil {
-		return "", err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, path, args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	// Extract version from output (first line, cleaned up)
-	version := strings.TrimSpace(string(output))
-	if idx := strings.Index(version, "\n"); idx > 0 {
-		version = version[:idx]
-	}
-
-	// Try to extract just the version number
-	version = extractVersion(version)
-
-	return version, nil
-}
-
-// extractVersion attempts to extract a version number from a string.
-func extractVersion(s string) string {
-	// Common patterns: "git version 2.43.0", "claude 1.2.3", etc.
-	s = strings.TrimSpace(s)
-
-	// Remove common prefixes
-	prefixes := []string{"git version ", "claude ", "codex "}
-	for _, p := range prefixes {
-		if strings.HasPrefix(strings.ToLower(s), strings.ToLower(p)) {
-			s = strings.TrimSpace(s[len(p):])
-
-			break
-		}
-	}
-
-	// Take first word if it looks like a version
-	if idx := strings.Index(s, " "); idx > 0 {
-		candidate := s[:idx]
-		if looksLikeVersion(candidate) {
-			return candidate
-		}
-	}
-
-	// Return as-is if short enough
-	if len(s) <= 20 {
-		return s
-	}
-
-	return s[:20] + "..."
-}
-
-// looksLikeVersion checks if a string looks like a version number.
-func looksLikeVersion(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	// Version usually starts with a digit
-	return s[0] >= '0' && s[0] <= '9'
 }

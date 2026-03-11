@@ -58,17 +58,9 @@ Examples:
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
-	// Pre-flight check: verify at least one AI agent CLI is available
-	if !hasAgentCLI() {
-		fmt.Println()
-		fmt.Println("  Warning: No AI agent CLI found in PATH (claude or codex)")
-		fmt.Println()
-		fmt.Println("  kvelmo uses AI agents to plan and implement tasks.")
-		fmt.Println("  Install Claude CLI: https://docs.anthropic.com/en/docs/claude-code/getting-started")
-		fmt.Println("  Or install Codex CLI: https://help.openai.com/en/articles/11096431-openai-codex-cli-getting-started")
-		fmt.Println()
-		// Continue anyway - user might configure an agent later
-	}
+	// Pre-flight check: verify system setup
+	preflight := agent.RunPreflight()
+	agent.PrintPreflight(preflight)
 
 	// Resolve port (6337 preferred, fallback to random)
 	port := resolvePort(cmd, servePort)
@@ -296,19 +288,4 @@ func fileExists(path string) bool {
 	_, err := os.Stat(path)
 
 	return err == nil
-}
-
-// hasAgentCLI checks if at least one AI agent CLI is available in PATH.
-func hasAgentCLI() bool {
-	// Check for Claude CLI
-	if _, err := exec.LookPath("claude"); err == nil {
-		return true
-	}
-
-	// Check for Codex CLI
-	if _, err := exec.LookPath("codex"); err == nil {
-		return true
-	}
-
-	return false
 }
