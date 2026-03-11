@@ -63,6 +63,22 @@ sboms:
         documents:
             - "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}.sbom.spdx.json"
 
+brews:
+    -   repository:
+            owner: valksor
+            name: homebrew-tap
+            token: "{{ .Env.GH_TOKEN }}"
+        directory: Formula
+        homepage: "https://kvelmo.dev"
+        description: "AI-assisted development task orchestration"
+        license: "MIT"
+        install: |
+            bin.install "kvelmo"
+        test: |
+            system "#{bin}/kvelmo", "--version"
+        # Only publish stable releases to homebrew
+        skip_upload: auto
+
 changelog:
     sort: ""
 

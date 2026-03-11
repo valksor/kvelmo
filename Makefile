@@ -1,7 +1,7 @@
 .PHONY: build test clean install run web-build web-dev fmt vet all help \
         desktop-dev desktop-build desktop-sidecar desktop-sidecar-all desktop-clean tauri-install \
         tidy deps version run-args check-alias web-test web-test-coverage \
-        test-e2e test-e2e-provider test-e2e-workflow test-e2e-cli
+        test-e2e test-e2e-provider test-e2e-gitlab test-e2e-workflow test-e2e-cli
 
 # Build variables
 BINARY_NAME := kvelmo
@@ -74,6 +74,10 @@ test-e2e:
 ## Run E2E provider tests only
 test-e2e-provider:
 	go test -tags=e2e -v ./pkg/provider/... -run TestE2E
+
+## Run E2E GitLab provider tests only
+test-e2e-gitlab:
+	go test -tags=e2e -v -timeout=5m ./pkg/provider/... -run TestE2E_GitLab
 
 ## Run E2E workflow tests only
 test-e2e-workflow:
