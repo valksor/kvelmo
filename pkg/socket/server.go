@@ -340,6 +340,16 @@ func WriteEvent(conn net.Conn, event any) error {
 	return err
 }
 
+// Broadcast sends data to all connected clients.
+// Errors on individual connections are silently ignored.
+func (s *Server) Broadcast(data []byte) {
+	s.connsMu.Lock()
+	defer s.connsMu.Unlock()
+	for conn := range s.conns {
+		_, _ = conn.Write(data)
+	}
+}
+
 func (s *Server) Path() string {
 	return s.path
 }
