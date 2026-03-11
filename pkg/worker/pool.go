@@ -28,10 +28,11 @@ type Pool struct {
 	agents *agent.Registry
 
 	// Job queue and tracking
-	jobs      map[string]*Job
-	queue     chan *Job
-	streams   map[string]chan Event
-	streamsMu sync.RWMutex
+	jobs       map[string]*Job
+	queue      chan *Job
+	streams    map[string]chan Event
+	streamsMu  sync.RWMutex
+	jobCancels map[string]context.CancelFunc
 
 	// Lifecycle
 	ctx    context.Context //nolint:containedctx // Pool owns its lifecycle context
@@ -72,6 +73,7 @@ func NewPool(cfg PoolConfig) *Pool {
 		jobs:       make(map[string]*Job),
 		queue:      make(chan *Job, 100),
 		streams:    make(map[string]chan Event),
+		jobCancels: make(map[string]context.CancelFunc),
 		maxWorkers: cfg.MaxWorkers,
 		basePort:   cfg.BasePort,
 		ctx:        ctx,
@@ -133,12 +135,14 @@ func (p *Pool) assignJob(job *Job) {
 		if w.Status == StatusAvailable {
 			if w.Agent != nil && w.Agent.Connected() {
 				// Agent-based worker
+				jobCtx, jobCancel := context.WithCancel(p.ctx)
 				w.Status = StatusWorking
 				w.CurrentJob = job.ID
 				job.Status = JobStatusInProgress
 				job.WorkerID = w.ID
 				now := time.Now()
 				job.StartedAt = &now
+				p.jobCancels[job.ID] = jobCancel
 				p.mu.Unlock()
 
 				p.emitEvent(job.ID, Event{
@@ -148,17 +152,19 @@ func (p *Pool) assignJob(job *Job) {
 				})
 
 				p.wg.Add(1)
-				go p.executeWithAgent(job, w)
+				go p.executeWithAgent(jobCtx, job, w)
 
 				return
 			} else if w.Agent == nil {
 				// Simulated worker (no agent)
+				jobCtx, jobCancel := context.WithCancel(p.ctx)
 				w.Status = StatusWorking
 				w.CurrentJob = job.ID
 				job.Status = JobStatusInProgress
 				job.WorkerID = w.ID
 				now := time.Now()
 				job.StartedAt = &now
+				p.jobCancels[job.ID] = jobCancel
 				p.mu.Unlock()
 
 				p.emitEvent(job.ID, Event{
@@ -168,7 +174,7 @@ func (p *Pool) assignJob(job *Job) {
 				})
 
 				p.wg.Add(1)
-				go p.executeSimulatedJob(job, w)
+				go p.executeSimulatedJob(jobCtx, job, w)
 
 				return
 			}
@@ -198,7 +204,7 @@ func (p *Pool) assignJob(job *Job) {
 }
 
 // executeWithAgent executes a job using an agent.
-func (p *Pool) executeWithAgent(job *Job, w *Worker) {
+func (p *Pool) executeWithAgent(ctx context.Context, job *Job, w *Worker) {
 	defer p.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
@@ -226,7 +232,7 @@ func (p *Pool) executeWithAgent(job *Job, w *Worker) {
 	if job.WorkDir != "" {
 		// Create a new agent configured for this job's working directory
 		jobAgent = w.Agent.WithWorkDir(job.WorkDir)
-		if err := jobAgent.Connect(p.ctx); err != nil {
+		if err := jobAgent.Connect(ctx); err != nil {
 			slog.Error("failed to connect job-specific agent", "error", err, "work_dir", job.WorkDir)
 			// Clean up agent resources allocated by WithWorkDir
 			_ = jobAgent.Close()
@@ -253,7 +259,7 @@ func (p *Pool) executeWithAgent(job *Job, w *Worker) {
 	}
 
 	// Send prompt to agent
-	eventCh, err := ag.SendPrompt(p.ctx, job.Prompt)
+	eventCh, err := ag.SendPrompt(ctx, job.Prompt)
 	if err != nil {
 		p.emitEvent(job.ID, Event{
 			Type:    "job_failed",
@@ -364,7 +370,7 @@ func (p *Pool) executeWithAgent(job *Job, w *Worker) {
 }
 
 // executeSimulatedJob simulates job execution for testing.
-func (p *Pool) executeSimulatedJob(job *Job, worker *Worker) {
+func (p *Pool) executeSimulatedJob(ctx context.Context, job *Job, worker *Worker) {
 	defer p.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
@@ -391,7 +397,11 @@ func (p *Pool) executeSimulatedJob(job *Job, worker *Worker) {
 	}
 
 	for _, msg := range messages {
-		time.Sleep(200 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(200 * time.Millisecond):
+		}
 		p.emitEvent(job.ID, Event{
 			Type:    "stream",
 			JobID:   job.ID,
@@ -442,6 +452,11 @@ func (p *Pool) closeStream(jobID string) {
 		delete(p.streams, jobID)
 	}
 	p.streamsMu.Unlock()
+
+	// Clean up per-job cancel func
+	p.mu.Lock()
+	delete(p.jobCancels, jobID)
+	p.mu.Unlock()
 }
 
 // Submit adds a job to the queue.
@@ -501,6 +516,47 @@ func (p *Pool) GetJob(jobID string) *Job {
 	defer p.mu.RUnlock()
 
 	return p.jobs[jobID]
+}
+
+// CancelJob cancels a running or queued job by ID.
+// If the job is already completed or failed, this is a no-op.
+// Returns an error if the job is not found.
+func (p *Pool) CancelJob(jobID string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	job, ok := p.jobs[jobID]
+	if !ok {
+		return fmt.Errorf("cancel job: job %s not found", jobID)
+	}
+
+	// Already terminal — no-op
+	if job.Status == JobStatusDone || job.Status == JobStatusFailed {
+		return nil
+	}
+
+	// Cancel the job context if one exists
+	if cancel, exists := p.jobCancels[jobID]; exists {
+		cancel()
+	}
+
+	// Mark as failed
+	job.Status = JobStatusFailed
+	now := time.Now()
+	job.CompletedAt = &now
+	job.Error = "cancelled"
+
+	// Release the worker
+	if job.WorkerID != "" {
+		if w, wok := p.workers[job.WorkerID]; wok {
+			w.Status = StatusAvailable
+			w.CurrentJob = ""
+		}
+	}
+
+	metrics.Global().RecordJobFailed()
+
+	return nil
 }
 
 // AddWorker adds a simulated worker to the pool (for testing).

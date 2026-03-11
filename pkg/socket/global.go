@@ -7,13 +7,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/valksor/kvelmo/pkg/agent"
 	"github.com/valksor/kvelmo/pkg/browser"
+	"github.com/valksor/kvelmo/pkg/conductor"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/metrics"
 	"github.com/valksor/kvelmo/pkg/settings"
@@ -267,6 +270,12 @@ func (g *GlobalSocket) registerHandlers() {
 	g.server.Handle("memory.stats", g.handleMemoryStats)
 	g.server.Handle("memory.clear", g.handleMemoryClear)
 
+	// Agent status
+	g.server.Handle("agent.status", g.handleAgentStatus)
+
+	// Provider token testing
+	g.server.Handle("providers.test", g.handleProvidersTest)
+
 	// Worktree management (for secondary instances)
 	g.server.Handle("worktrees.create", g.handleWorktreesCreate)
 }
@@ -284,6 +293,168 @@ func (g *GlobalSocket) handleDocsURL(ctx context.Context, req *Request) (*Respon
 		"url":     meta.DocsURL(),
 		"version": meta.Version,
 	})
+}
+
+// --- Agent Status ---
+
+func (g *GlobalSocket) handleAgentStatus(_ context.Context, req *Request) (*Response, error) {
+	result := agent.RunPreflight() //nolint:contextcheck // RunPreflight manages its own timeouts internally
+
+	// Also check if pool has real agent workers
+	if g.pool != nil {
+		workers := g.pool.ListWorkers()
+		hasRealAgent := false
+		for _, w := range workers {
+			if w.Agent != nil && w.Agent.Connected() {
+				hasRealAgent = true
+
+				break
+			}
+		}
+		result.SimulationMode = !hasRealAgent
+		result.AgentAvailable = hasRealAgent
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
+// --- Provider Token Testing ---
+
+func (g *GlobalSocket) handleProvidersTest(ctx context.Context, req *Request) (*Response, error) {
+	var params struct {
+		Provider string `json:"provider"`
+		Token    string `json:"token"`
+	}
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return nil, fmt.Errorf("parse params: %w", err)
+	}
+
+	if params.Provider == "" {
+		return NewResultResponse(req.ID, map[string]any{
+			"ok":    false,
+			"error": "Provider is required",
+		})
+	}
+
+	// Resolve token: use configured token if not explicitly provided
+	token := params.Token
+	if token == "" || token == "__use_configured__" {
+		token = resolveProviderToken(params.Provider)
+	}
+	if token == "" {
+		return NewResultResponse(req.ID, map[string]any{
+			"ok":     false,
+			"detail": "No token configured",
+		})
+	}
+
+	ok, detail := testProviderToken(ctx, params.Provider, token)
+
+	return NewResultResponse(req.ID, map[string]any{
+		"ok":     ok,
+		"detail": detail,
+	})
+}
+
+// resolveProviderToken reads the configured token for a provider from env vars and settings .env files.
+func resolveProviderToken(providerName string) string {
+	envVars := map[string]string{
+		"github": "GITHUB_TOKEN",
+		"gitlab": "GITLAB_TOKEN",
+		"linear": "LINEAR_TOKEN",
+		"wrike":  "WRIKE_TOKEN",
+	}
+
+	envVar, ok := envVars[providerName]
+	if !ok {
+		return ""
+	}
+
+	// Check system environment variable
+	if val := os.Getenv(envVar); val != "" {
+		return val
+	}
+
+	// Check global .env file
+	if envMap, err := settings.LoadEnvMap(""); err == nil {
+		if val, ok := envMap[envVar]; ok && val != "" {
+			return val
+		}
+	}
+
+	return ""
+}
+
+// testProviderToken makes a lightweight API call to verify a token is valid.
+func testProviderToken(ctx context.Context, providerName, token string) (bool, string) {
+	switch providerName {
+	case "github":
+		return testHTTPToken(ctx, "https://api.github.com/user", token, "token")
+	case "gitlab":
+		return testHTTPToken(ctx, "https://gitlab.com/api/v4/user", token, "PRIVATE-TOKEN")
+	case "linear":
+		return testLinearToken(ctx, token)
+	case "wrike":
+		return testHTTPToken(ctx, "https://www.wrike.com/api/v4/contacts?me=true", token, "bearer")
+	default:
+		return false, "Unknown provider: " + providerName
+	}
+}
+
+// testHTTPToken makes a GET request with the token and checks for 200 OK.
+func testHTTPToken(ctx context.Context, url, token, authType string) (bool, string) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false, err.Error()
+	}
+
+	switch authType {
+	case "token":
+		req.Header.Set("Authorization", "token "+token)
+	case "bearer":
+		req.Header.Set("Authorization", "Bearer "+token)
+	case "PRIVATE-TOKEN":
+		req.Header["PRIVATE-TOKEN"] = []string{token}
+	}
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, "Connection failed: " + err.Error()
+	}
+	defer resp.Body.Close() //nolint:errcheck // response body close
+
+	if resp.StatusCode == http.StatusOK {
+		return true, "Authenticated successfully"
+	}
+
+	return false, fmt.Sprintf("Authentication failed (HTTP %d)", resp.StatusCode)
+}
+
+// testLinearToken uses the GraphQL API to test a Linear token.
+func testLinearToken(ctx context.Context, token string) (bool, string) {
+	body := strings.NewReader(`{"query":"{ viewer { id } }"}`)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.linear.app/graphql", body)
+	if err != nil {
+		return false, err.Error()
+	}
+
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, "Connection failed: " + err.Error()
+	}
+	defer resp.Body.Close() //nolint:errcheck // response body close
+
+	if resp.StatusCode == http.StatusOK {
+		return true, "Authenticated successfully"
+	}
+
+	return false, fmt.Sprintf("Authentication failed (HTTP %d)", resp.StatusCode)
 }
 
 // --- Project Handlers ---
@@ -1857,6 +2028,16 @@ func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{
 	// Add to map before starting goroutine to avoid race condition
 	g.wtSockets[id] = wt
 
+	// Listen for state changes and broadcast to all global socket clients
+	if wt.conductor != nil {
+		wt.conductor.OnEvent(func(event conductor.ConductorEvent) {
+			if event.Type != "state_changed" {
+				return
+			}
+			g.broadcastTaskStateChanged(projectPath, string(event.State))
+		})
+	}
+
 	// Start the socket in background
 	// Note: Callers should handle connection retries if socket isn't ready yet
 	go func() {
@@ -1874,6 +2055,23 @@ func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{
 	g.wtSocketsMu.Unlock()
 
 	return wt, nil
+}
+
+// broadcastTaskStateChanged sends a task_state_changed notification to all global socket clients.
+func (g *GlobalSocket) broadcastTaskStateChanged(projectPath string, state string) {
+	notification := map[string]any{
+		"jsonrpc": JSONRPCVersion,
+		"method":  "task_state_changed",
+		"params": map[string]string{
+			"path":  projectPath,
+			"state": state,
+		},
+	}
+	data, err := json.Marshal(notification)
+	if err != nil {
+		return
+	}
+	g.server.Broadcast(append(data, '\n'))
 }
 
 func (g *GlobalSocket) Server() *Server {
@@ -1913,12 +2111,13 @@ func (g *GlobalSocket) ListWorktrees() []*WorktreeInfo {
 
 // TaskListSummary represents a task for the tasks.list response.
 type TaskListSummary struct {
-	ID        string `json:"id"`
-	Path      string `json:"path"`
-	State     string `json:"state"`
-	TaskID    string `json:"task_id,omitempty"`
-	TaskTitle string `json:"task_title,omitempty"`
-	Source    string `json:"source,omitempty"`
+	ID         string `json:"id"`
+	Path       string `json:"path"`
+	State      string `json:"state"`
+	TaskID     string `json:"task_id,omitempty"`
+	TaskTitle  string `json:"task_title,omitempty"`
+	Source     string `json:"source,omitempty"`
+	QueueCount int    `json:"queue_count,omitempty"`
 }
 
 // TasksListResult is the response for tasks.list.
@@ -1956,6 +2155,16 @@ func (g *GlobalSocket) handleTasksList(ctx context.Context, req *Request) (*Resp
 							summary.Source = status.Task.Source
 						}
 						summary.State = string(status.State)
+					}
+				}
+				// Fetch queue count
+				qResp, qErr := client.Call(ctx, "queue.list", nil)
+				if qErr == nil && qResp != nil && qResp.Result != nil {
+					var qResult struct {
+						Count int `json:"count"`
+					}
+					if jsonErr := json.Unmarshal(qResp.Result, &qResult); jsonErr == nil {
+						summary.QueueCount = qResult.Count
 					}
 				}
 				_ = client.Close()
