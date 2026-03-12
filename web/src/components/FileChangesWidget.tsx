@@ -1,5 +1,6 @@
 import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
+import { EmptyState } from './EmptyState'
 
 interface FileChange {
   path: string
@@ -35,12 +36,7 @@ export function FileChangesWidget({ embedded = false }: FileChangesWidgetProps) 
   const content = (
     <div>
           {!fileChanges || fileChanges.length === 0 ? (
-            <div className="text-center py-6">
-              <svg aria-hidden="true" className="w-8 h-8 mx-auto mb-2 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-base-content/60 text-sm">No changes yet</p>
-            </div>
+            <EmptyState title="No changes yet" description="File changes will appear here during implementation" icon="📄" />
           ) : (
             <div className="space-y-1 max-h-[250px] overflow-auto">
               {(fileChanges as FileChange[]).map((file, index) => {

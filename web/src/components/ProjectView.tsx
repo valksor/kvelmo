@@ -15,6 +15,7 @@ import { TaskQueue } from './TaskQueue'
 import { TaskHistory } from './TaskHistory'
 import { ThemeToggle } from './ThemeToggle'
 import { StatusBadge } from './StatusIndicator'
+import { WorkflowHint } from './WorkflowHint'
 
 // Lazy-loaded modal components (only rendered when opened)
 const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })))
@@ -239,6 +240,7 @@ export function ProjectView() {
           <span>Simulation mode — no AI agent connected. Tasks will not be implemented.</span>
         </div>
       )}
+      <WorkflowHint state={state} />
       <PanelLayout
         header={header}
         leftContent={leftContent}
