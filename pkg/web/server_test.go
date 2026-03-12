@@ -386,6 +386,69 @@ func TestServerWorktreeWS_MissingID(t *testing.T) {
 	}
 }
 
+func TestServerGlobalWS_NonUpgrade(t *testing.T) {
+	srv, err := NewServer("", 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	// A plain GET to /ws/global without WebSocket upgrade headers should fail
+	req := httptest.NewRequest(http.MethodGet, "/ws/global", nil)
+	w := httptest.NewRecorder()
+
+	srv.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code == http.StatusSwitchingProtocols {
+		t.Error("/ws/global without upgrade headers should not return 101")
+	}
+}
+
+func TestServerWorktreeWS_EmptyID(t *testing.T) {
+	srv, err := NewServer("", 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	// Call handler directly with trailing slash but no ID
+	req := httptest.NewRequest(http.MethodGet, "/ws/worktree/", nil)
+	w := httptest.NewRecorder()
+
+	srv.handleWorktreeWS(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("handleWorktreeWS empty ID status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestServerStatic_ContentType(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create a CSS file
+	if err := os.WriteFile(filepath.Join(tmpDir, "style.css"), []byte("body { color: red; }"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv, err := NewServer(tmpDir, 0)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	defer func() { _ = srv.Shutdown(context.Background()) }()
+
+	req := httptest.NewRequest(http.MethodGet, "/style.css", nil)
+	w := httptest.NewRecorder()
+
+	srv.httpServer.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("/style.css status = %d, want %d", w.Code, http.StatusOK)
+	}
+	ct := w.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/css") {
+		t.Errorf("Content-Type = %q, want text/css", ct)
+	}
+}
+
 func TestServerStatic(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Create a simple index.html in the temp dir
