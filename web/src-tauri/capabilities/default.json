@@ -18,6 +18,9 @@
     "shell:allow-open",
     "dialog:default",
     "process:default",
-    "notification:default"
+    "notification:default",
+    "updater:default",
+    "global-shortcut:allow-register",
+    "deep-link:default"
   ]
 }

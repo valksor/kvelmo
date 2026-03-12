@@ -28,10 +28,12 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tailwindcss/vite": "^4.2.1",
     "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-updater": "^2",
     "focus-trap-react": "^12.0.0",
     "react": "^19.2.4",
     "react-diff-viewer-continued": "^4.2.0",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.7.2",
     "zustand": "^5.0.11"
   },
