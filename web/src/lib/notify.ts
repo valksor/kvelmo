@@ -1,15 +1,25 @@
 /**
- * Send a native notification via Tauri (no-op in browser).
- * Uses dynamic import so the Tauri plugin is only loaded in the desktop app.
+ * Send a notification via Tauri or the browser Notification API.
  */
 export async function sendNotification(title: string, body: string) {
   try {
-    // Only available in Tauri context
-    if (!('__TAURI__' in window)) return
+    if ('__TAURI__' in window) {
+      const { sendNotification: tauriNotify } = await import('@tauri-apps/plugin-notification')
+      await tauriNotify({ title, body })
+      return
+    }
 
-    const { sendNotification: tauriNotify } = await import('@tauri-apps/plugin-notification')
-    await tauriNotify({ title, body })
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body })
+    }
   } catch {
-    // Silently ignore — not in Tauri or plugin not available
+    // Silently ignore
+  }
+}
+
+export async function requestNotificationPermission() {
+  if ('__TAURI__' in window) return
+  if ('Notification' in window && Notification.permission === 'default') {
+    await Notification.requestPermission()
   }
 }
