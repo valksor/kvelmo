@@ -40,6 +40,7 @@ func init() {
 	rootCmd.AddCommand(commands.ServeCmd)
 	rootCmd.AddCommand(commands.StartCmd)
 	rootCmd.AddCommand(commands.StatusCmd)
+	rootCmd.AddCommand(commands.WatchCmd)
 	rootCmd.AddCommand(commands.StopCmd)
 	rootCmd.AddCommand(commands.ProjectsCmd)
 	rootCmd.AddCommand(commands.WorkersCmd)
@@ -60,9 +61,11 @@ func init() {
 	rootCmd.AddCommand(commands.ResetCmd)
 	rootCmd.AddCommand(commands.ChatCmd)
 	rootCmd.AddCommand(commands.CheckpointsCmd)
+	rootCmd.AddCommand(commands.DiffCmd)
 	rootCmd.AddCommand(commands.GitCmd)
 	rootCmd.AddCommand(commands.ScreenshotsCmd)
 	rootCmd.AddCommand(commands.MemoryCmd)
+	rootCmd.AddCommand(commands.ShowCmd)
 
 	// Core feature commands
 	rootCmd.AddCommand(commands.AbandonCmd)
@@ -76,6 +79,9 @@ func init() {
 	rootCmd.AddCommand(commands.RecordingsCmd)
 	rootCmd.AddCommand(commands.DiagnoseCmd)
 	rootCmd.AddCommand(commands.CleanupCmd)
+	rootCmd.AddCommand(commands.LogsCmd)
+	rootCmd.AddCommand(commands.ExplainCmd)
+	rootCmd.AddCommand(commands.StatsCmd)
 
 	// Provider commands (login, etc.)
 	rootCmd.AddCommand(commands.GitHubCmd)

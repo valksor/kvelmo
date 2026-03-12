@@ -93,6 +93,18 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Source: %s\n", result.Task.Source)
 	}
 
+	if result.ActiveJobID != "" {
+		fmt.Printf("Job:   %s\n", result.ActiveJobID)
+	}
+
+	if result.QueueDepth > 0 {
+		fmt.Printf("Queue: %d tasks\n", result.QueueDepth)
+	}
+
+	if result.LastError != "" {
+		fmt.Printf("Error: %s\n", result.LastError)
+	}
+
 	if result.PendingPromptID != "" {
 		fmt.Printf("\n! Quality gate waiting for your input.\n")
 		fmt.Printf("  Run: kvelmo quality respond --prompt-id %s [--yes|--no]\n", result.PendingPromptID)
