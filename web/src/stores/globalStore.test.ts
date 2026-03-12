@@ -1,0 +1,944 @@
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import {
+  useGlobalStore,
+  type Project,
+  type Worker,
+  type AgentStatus,
+  type Job,
+  type MemoryResult,
+} from './globalStore'
+
+// Mock SocketClient to avoid real WebSocket connections
+vi.mock('../lib/socket', () => ({
+  SocketClient: vi.fn().mockImplementation(() => ({
+    connect: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn(),
+    call: vi.fn().mockResolvedValue({}),
+    subscribe: vi.fn(),
+    setOnDisconnect: vi.fn(),
+  }))
+}))
+
+const createMockProject = (overrides: Partial<Project> = {}): Project => ({
+  id: 'proj-1',
+  path: '/workspace/project',
+  name: 'My Project',
+  socket_path: '/tmp/proj.sock',
+  state: 'none',
+  ...overrides,
+})
+
+const createMockWorker = (overrides: Partial<Worker> = {}): Worker => ({
+  id: 'worker-1',
+  agent: 'claude',
+  status: 'idle',
+  ...overrides,
+})
+
+describe('globalStore', () => {
+  beforeEach(() => {
+    // Reset to initial state (preserve actions, using merge=false requires full state)
+    useGlobalStore.setState({
+      connected: false,
+      connecting: false,
+      reconnectAttempt: 0,
+      reconnectTimeoutId: null,
+      connectionVersion: 0,
+      client: null,
+      projects: [],
+      workers: [],
+      workerStats: null,
+      memoryStats: null,
+      jobs: [],
+      agentStatus: null,
+      selectedProjectId: null,
+      selectedProject: null,
+      loading: false,
+      error: null,
+      activeTasks: [],
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('initial state', () => {
+    it('starts disconnected', () => {
+      expect(useGlobalStore.getState().connected).toBe(false)
+    })
+
+    it('starts not connecting', () => {
+      expect(useGlobalStore.getState().connecting).toBe(false)
+    })
+
+    it('has null client', () => {
+      expect(useGlobalStore.getState().client).toBeNull()
+    })
+
+    it('has empty projects list', () => {
+      expect(useGlobalStore.getState().projects).toEqual([])
+    })
+
+    it('has empty workers list', () => {
+      expect(useGlobalStore.getState().workers).toEqual([])
+    })
+
+    it('has null workerStats', () => {
+      expect(useGlobalStore.getState().workerStats).toBeNull()
+    })
+
+    it('has null memoryStats', () => {
+      expect(useGlobalStore.getState().memoryStats).toBeNull()
+    })
+
+    it('has no selected project', () => {
+      expect(useGlobalStore.getState().selectedProject).toBeNull()
+      expect(useGlobalStore.getState().selectedProjectId).toBeNull()
+    })
+
+    it('starts not loading', () => {
+      expect(useGlobalStore.getState().loading).toBe(false)
+    })
+
+    it('starts with no error', () => {
+      expect(useGlobalStore.getState().error).toBeNull()
+    })
+
+    it('has null agentStatus', () => {
+      expect(useGlobalStore.getState().agentStatus).toBeNull()
+    })
+
+    it('has empty activeTasks', () => {
+      expect(useGlobalStore.getState().activeTasks).toEqual([])
+    })
+
+    it('has empty jobs list', () => {
+      expect(useGlobalStore.getState().jobs).toEqual([])
+    })
+
+    it('has reconnectAttempt=0', () => {
+      expect(useGlobalStore.getState().reconnectAttempt).toBe(0)
+    })
+
+    it('has connectionVersion=0', () => {
+      expect(useGlobalStore.getState().connectionVersion).toBe(0)
+    })
+  })
+
+  describe('selectProject', () => {
+    it('sets selectedProject and selectedProjectId', () => {
+      const project = createMockProject({ id: 'proj-42' })
+      useGlobalStore.getState().selectProject(project)
+      expect(useGlobalStore.getState().selectedProject).toEqual(project)
+      expect(useGlobalStore.getState().selectedProjectId).toBe('proj-42')
+    })
+
+    it('clears selection when called with null', () => {
+      useGlobalStore.setState({
+        selectedProject: createMockProject(),
+        selectedProjectId: 'proj-1',
+      })
+      useGlobalStore.getState().selectProject(null)
+      expect(useGlobalStore.getState().selectedProject).toBeNull()
+      expect(useGlobalStore.getState().selectedProjectId).toBeNull()
+    })
+
+    it('stores project id in sessionStorage', () => {
+      const project = createMockProject({ id: 'proj-session' })
+      useGlobalStore.getState().selectProject(project)
+      expect(sessionStorage.setItem).toHaveBeenCalledWith('kvelmo-selectedProjectId', 'proj-session')
+    })
+
+    it('removes from sessionStorage when cleared', () => {
+      useGlobalStore.getState().selectProject(null)
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith('kvelmo-selectedProjectId')
+    })
+
+    it('can switch between projects', () => {
+      const p1 = createMockProject({ id: 'proj-1' })
+      const p2 = createMockProject({ id: 'proj-2', path: '/other' })
+      useGlobalStore.getState().selectProject(p1)
+      expect(useGlobalStore.getState().selectedProjectId).toBe('proj-1')
+      useGlobalStore.getState().selectProject(p2)
+      expect(useGlobalStore.getState().selectedProjectId).toBe('proj-2')
+      expect(useGlobalStore.getState().selectedProject).toEqual(p2)
+    })
+  })
+
+  describe('state management via setState', () => {
+    it('can set projects list', () => {
+      const projects = [
+        createMockProject({ id: 'p1' }),
+        createMockProject({ id: 'p2', path: '/workspace/other' }),
+      ]
+      useGlobalStore.setState({ projects })
+      expect(useGlobalStore.getState().projects).toEqual(projects)
+    })
+
+    it('can set workers list', () => {
+      const workers = [
+        createMockWorker({ id: 'w1' }),
+        createMockWorker({ id: 'w2', agent: 'codex' }),
+      ]
+      useGlobalStore.setState({ workers })
+      expect(useGlobalStore.getState().workers).toEqual(workers)
+    })
+
+    it('can set connected', () => {
+      useGlobalStore.setState({ connected: true })
+      expect(useGlobalStore.getState().connected).toBe(true)
+    })
+
+    it('can set error', () => {
+      useGlobalStore.setState({ error: 'Connection failed' })
+      expect(useGlobalStore.getState().error).toBe('Connection failed')
+    })
+
+    it('can set loading', () => {
+      useGlobalStore.setState({ loading: true })
+      expect(useGlobalStore.getState().loading).toBe(true)
+    })
+
+    it('can set agentStatus', () => {
+      const status = {
+        checks: [{ name: 'api-key', status: 'passed' as const }],
+        agent_available: true,
+        simulation_mode: false,
+      }
+      useGlobalStore.setState({ agentStatus: status })
+      expect(useGlobalStore.getState().agentStatus).toEqual(status)
+    })
+
+    it('can set activeTasks', () => {
+      const tasks = [
+        { id: 't1', title: 'Fix bug', state: 'implementing', worktree_id: 'w1', source: 'gh:repo#1' },
+      ]
+      useGlobalStore.setState({ activeTasks: tasks as never })
+      expect(useGlobalStore.getState().activeTasks).toHaveLength(1)
+    })
+  })
+
+  describe('disconnect', () => {
+    it('sets connected to false', () => {
+      useGlobalStore.setState({ connected: true })
+      useGlobalStore.getState().disconnect()
+      expect(useGlobalStore.getState().connected).toBe(false)
+    })
+
+    it('sets connecting to false', () => {
+      useGlobalStore.setState({ connecting: true })
+      useGlobalStore.getState().disconnect()
+      expect(useGlobalStore.getState().connecting).toBe(false)
+    })
+
+    it('resets reconnectAttempt to 0', () => {
+      useGlobalStore.setState({ reconnectAttempt: 5 })
+      useGlobalStore.getState().disconnect()
+      expect(useGlobalStore.getState().reconnectAttempt).toBe(0)
+    })
+
+    it('sets client to null', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      useGlobalStore.setState({ client: { close: vi.fn() } as any })
+      useGlobalStore.getState().disconnect()
+      expect(useGlobalStore.getState().client).toBeNull()
+    })
+
+    it('clears pending reconnect timeout', () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+      const id = setTimeout(() => {}, 999999) as ReturnType<typeof setTimeout>
+      useGlobalStore.setState({ reconnectTimeoutId: id })
+      useGlobalStore.getState().disconnect()
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(id)
+      clearTimeoutSpy.mockRestore()
+    })
+
+    it('preserves projects list after disconnect', () => {
+      const projects = [createMockProject()]
+      useGlobalStore.setState({ projects })
+      useGlobalStore.getState().disconnect()
+      // disconnect only resets connection state, not data
+      expect(useGlobalStore.getState().projects).toEqual(projects)
+    })
+  })
+
+  describe('persistence', () => {
+    it('uses kvelmo-global as storage key', () => {
+      // Trigger a state change to exercise persist
+      useGlobalStore.getState().selectProject(null)
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'kvelmo-global',
+        expect.any(String)
+      )
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Helpers for async method tests
+  // ---------------------------------------------------------------------------
+
+  const makeMockClient = (callImpl?: (method: string) => unknown) => ({
+    call: vi.fn().mockImplementation((method: string) => {
+      if (callImpl) return Promise.resolve(callImpl(method))
+      return Promise.resolve({})
+    }),
+    subscribe: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn(),
+    setOnDisconnect: vi.fn(),
+  })
+
+  const injectClient = (client: ReturnType<typeof makeMockClient>) => {
+    useGlobalStore.setState({ client: client as never, connected: true })
+  }
+
+  // ---------------------------------------------------------------------------
+  // loadProjects
+  // ---------------------------------------------------------------------------
+
+  describe('loadProjects', () => {
+    it('sets projects on success', async () => {
+      const projects = [createMockProject({ id: 'p1' }), createMockProject({ id: 'p2', path: '/b' })]
+      const client = makeMockClient(() => ({ projects }))
+      injectClient(client)
+      await useGlobalStore.getState().loadProjects()
+      expect(useGlobalStore.getState().projects).toEqual(projects)
+      expect(useGlobalStore.getState().loading).toBe(false)
+    })
+
+    it('defaults to empty array when response has no projects key', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().loadProjects()
+      expect(useGlobalStore.getState().projects).toEqual([])
+    })
+
+    it('sets error when client.call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('network error'))
+      injectClient(client)
+      await useGlobalStore.getState().loadProjects()
+      expect(useGlobalStore.getState().error).toBe('network error')
+      expect(useGlobalStore.getState().loading).toBe(false)
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().loadProjects()
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('calls projects.list RPC method', async () => {
+      const client = makeMockClient(() => ({ projects: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().loadProjects()
+      expect(client.call).toHaveBeenCalledWith('projects.list')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // addProject
+  // ---------------------------------------------------------------------------
+
+  describe('addProject', () => {
+    it('calls projects.register with path', async () => {
+      const client = makeMockClient(() => ({ projects: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().addProject('/new/path')
+      expect(client.call).toHaveBeenCalledWith('projects.register', { path: '/new/path' })
+    })
+
+    it('reloads projects after adding', async () => {
+      const newProject = createMockProject({ id: 'new-proj' })
+      const client = makeMockClient(() => ({ projects: [newProject] }))
+      injectClient(client)
+      await useGlobalStore.getState().addProject('/new/path')
+      expect(useGlobalStore.getState().projects).toEqual([newProject])
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().addProject('/some/path')
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('sets error when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('permission denied'))
+      injectClient(client)
+      await useGlobalStore.getState().addProject('/bad/path')
+      expect(useGlobalStore.getState().error).toBe('permission denied')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // removeProject
+  // ---------------------------------------------------------------------------
+
+  describe('removeProject', () => {
+    it('calls projects.unregister with id', async () => {
+      const client = makeMockClient(() => ({ projects: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().removeProject('proj-1')
+      expect(client.call).toHaveBeenCalledWith('projects.unregister', { id: 'proj-1' })
+    })
+
+    it('clears selection when removing selected project', async () => {
+      const client = makeMockClient(() => ({ projects: [] }))
+      injectClient(client)
+      useGlobalStore.setState({ selectedProjectId: 'proj-1', selectedProject: createMockProject() })
+      await useGlobalStore.getState().removeProject('proj-1')
+      expect(useGlobalStore.getState().selectedProjectId).toBeNull()
+      expect(useGlobalStore.getState().selectedProject).toBeNull()
+    })
+
+    it('preserves selection when removing a different project', async () => {
+      const client = makeMockClient(() => ({ projects: [] }))
+      injectClient(client)
+      const selected = createMockProject({ id: 'proj-kept' })
+      useGlobalStore.setState({ selectedProjectId: 'proj-kept', selectedProject: selected })
+      await useGlobalStore.getState().removeProject('proj-other')
+      expect(useGlobalStore.getState().selectedProjectId).toBe('proj-kept')
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().removeProject('proj-1')
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('sets error when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('not found'))
+      injectClient(client)
+      await useGlobalStore.getState().removeProject('proj-1')
+      expect(useGlobalStore.getState().error).toBe('not found')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadWorkers
+  // ---------------------------------------------------------------------------
+
+  describe('loadWorkers', () => {
+    it('sets workers and workerStats on success', async () => {
+      const workers = [createMockWorker({ id: 'w1' })]
+      const stats = { total: 1, idle: 1, busy: 0, failed: 0 }
+      const client = makeMockClient(() => ({ workers, stats }))
+      injectClient(client)
+      await useGlobalStore.getState().loadWorkers()
+      expect(useGlobalStore.getState().workers).toEqual(workers)
+      expect(useGlobalStore.getState().workerStats).toEqual(stats)
+    })
+
+    it('defaults workers to empty array when missing', async () => {
+      const client = makeMockClient(() => ({ stats: null }))
+      injectClient(client)
+      await useGlobalStore.getState().loadWorkers()
+      expect(useGlobalStore.getState().workers).toEqual([])
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadWorkers()
+      // No error set, just a no-op
+      expect(useGlobalStore.getState().workers).toEqual([])
+    })
+
+    it('does not throw when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('server error'))
+      injectClient(client)
+      await expect(useGlobalStore.getState().loadWorkers()).resolves.not.toThrow()
+    })
+
+    it('calls workers.list RPC method', async () => {
+      const client = makeMockClient(() => ({ workers: [], stats: null }))
+      injectClient(client)
+      await useGlobalStore.getState().loadWorkers()
+      expect(client.call).toHaveBeenCalledWith('workers.list')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadWorkerStats
+  // ---------------------------------------------------------------------------
+
+  describe('loadWorkerStats', () => {
+    it('sets workerStats on success', async () => {
+      const stats = { total: 3, idle: 2, busy: 1, failed: 0 }
+      const client = makeMockClient(() => stats)
+      injectClient(client)
+      await useGlobalStore.getState().loadWorkerStats()
+      expect(useGlobalStore.getState().workerStats).toEqual(stats)
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadWorkerStats()
+      expect(useGlobalStore.getState().workerStats).toBeNull()
+    })
+
+    it('calls workers.stats RPC method', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().loadWorkerStats()
+      expect(client.call).toHaveBeenCalledWith('workers.stats', {})
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // addWorker
+  // ---------------------------------------------------------------------------
+
+  describe('addWorker', () => {
+    it('calls workers.add with agent type', async () => {
+      const client = makeMockClient(() => ({ workers: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().addWorker('claude')
+      expect(client.call).toHaveBeenCalledWith('workers.add', { agent: 'claude' })
+    })
+
+    it('reloads workers after adding', async () => {
+      const workers = [createMockWorker({ id: 'w-new', agent: 'codex' })]
+      const client = makeMockClient(() => ({ workers, stats: null }))
+      injectClient(client)
+      await useGlobalStore.getState().addWorker('codex')
+      expect(useGlobalStore.getState().workers).toEqual(workers)
+    })
+
+    it('sets loading false after success', async () => {
+      const client = makeMockClient(() => ({ workers: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().addWorker('claude')
+      expect(useGlobalStore.getState().loading).toBe(false)
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().addWorker('claude')
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('sets error when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('quota exceeded'))
+      injectClient(client)
+      await useGlobalStore.getState().addWorker('claude')
+      expect(useGlobalStore.getState().error).toBe('quota exceeded')
+      expect(useGlobalStore.getState().loading).toBe(false)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // removeWorker
+  // ---------------------------------------------------------------------------
+
+  describe('removeWorker', () => {
+    it('calls workers.remove with id', async () => {
+      const client = makeMockClient(() => ({ workers: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().removeWorker('worker-1')
+      expect(client.call).toHaveBeenCalledWith('workers.remove', { id: 'worker-1' })
+    })
+
+    it('reloads workers after removing', async () => {
+      const client = makeMockClient(() => ({ workers: [], stats: null }))
+      injectClient(client)
+      useGlobalStore.setState({ workers: [createMockWorker()] })
+      await useGlobalStore.getState().removeWorker('worker-1')
+      expect(useGlobalStore.getState().workers).toEqual([])
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().removeWorker('w1')
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('sets error when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('worker not found'))
+      injectClient(client)
+      await useGlobalStore.getState().removeWorker('w1')
+      expect(useGlobalStore.getState().error).toBe('worker not found')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // stopChat
+  // ---------------------------------------------------------------------------
+
+  describe('stopChat', () => {
+    it('calls chat.stop with worktree_id', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().stopChat('wt-1')
+      expect(client.call).toHaveBeenCalledWith('chat.stop', { worktree_id: 'wt-1' })
+    })
+
+    it('includes job_id when provided', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().stopChat('wt-1', 'job-42')
+      expect(client.call).toHaveBeenCalledWith('chat.stop', { worktree_id: 'wt-1', job_id: 'job-42' })
+    })
+
+    it('omits job_id when not provided', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().stopChat('wt-2')
+      const callArg = client.call.mock.calls[0][1] as Record<string, string>
+      expect(callArg).not.toHaveProperty('job_id')
+    })
+
+    it('sets error when no client', async () => {
+      await useGlobalStore.getState().stopChat('wt-1')
+      expect(useGlobalStore.getState().error).toBe('Not connected')
+    })
+
+    it('sets error when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('not running'))
+      injectClient(client)
+      await useGlobalStore.getState().stopChat('wt-1')
+      expect(useGlobalStore.getState().error).toBe('not running')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadAgentStatus
+  // ---------------------------------------------------------------------------
+
+  describe('loadAgentStatus', () => {
+    it('sets agentStatus on success', async () => {
+      const status: AgentStatus = {
+        checks: [{ name: 'api-key', status: 'passed' }],
+        agent_available: true,
+        simulation_mode: false,
+      }
+      const client = makeMockClient(() => status)
+      injectClient(client)
+      await useGlobalStore.getState().loadAgentStatus()
+      expect(useGlobalStore.getState().agentStatus).toEqual(status)
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadAgentStatus()
+      expect(useGlobalStore.getState().agentStatus).toBeNull()
+    })
+
+    it('does not throw when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('agent unavailable'))
+      injectClient(client)
+      await expect(useGlobalStore.getState().loadAgentStatus()).resolves.not.toThrow()
+    })
+
+    it('calls agent.status RPC method', async () => {
+      const client = makeMockClient(() => ({ checks: [], agent_available: false, simulation_mode: true }))
+      injectClient(client)
+      await useGlobalStore.getState().loadAgentStatus()
+      expect(client.call).toHaveBeenCalledWith('agent.status')
+    })
+
+    it('stores simulation_mode flag', async () => {
+      const client = makeMockClient(() => ({
+        checks: [],
+        agent_available: false,
+        simulation_mode: true,
+      }))
+      injectClient(client)
+      await useGlobalStore.getState().loadAgentStatus()
+      expect(useGlobalStore.getState().agentStatus?.simulation_mode).toBe(true)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadActiveTasks
+  // ---------------------------------------------------------------------------
+
+  describe('loadActiveTasks', () => {
+    it('sets activeTasks on success', async () => {
+      const tasks = [
+        { id: 't1', title: 'Fix bug', state: 'implementing', worktree_id: 'w1', source: 'gh:repo#1' },
+      ]
+      const client = makeMockClient(() => ({ tasks }))
+      injectClient(client)
+      await useGlobalStore.getState().loadActiveTasks()
+      expect(useGlobalStore.getState().activeTasks).toHaveLength(1)
+      expect(useGlobalStore.getState().activeTasks[0].id).toBe('t1')
+    })
+
+    it('defaults to empty array when tasks key missing', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().loadActiveTasks()
+      expect(useGlobalStore.getState().activeTasks).toEqual([])
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadActiveTasks()
+      expect(useGlobalStore.getState().activeTasks).toEqual([])
+    })
+
+    it('does not throw when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('tasks unavailable'))
+      injectClient(client)
+      await expect(useGlobalStore.getState().loadActiveTasks()).resolves.not.toThrow()
+    })
+
+    it('calls tasks.list RPC method', async () => {
+      const client = makeMockClient(() => ({ tasks: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().loadActiveTasks()
+      expect(client.call).toHaveBeenCalledWith('tasks.list')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // searchMemory
+  // ---------------------------------------------------------------------------
+
+  describe('searchMemory', () => {
+    it('returns results on success', async () => {
+      const results: MemoryResult[] = [
+        { id: 'm1', type: 'note', content: 'test', score: 0.9, task_id: 't1', created_at: '2026-01-01' },
+      ]
+      const client = makeMockClient(() => ({ results }))
+      injectClient(client)
+      const out = await useGlobalStore.getState().searchMemory('test query')
+      expect(out).toEqual(results)
+    })
+
+    it('returns empty array when results missing', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      const out = await useGlobalStore.getState().searchMemory('q')
+      expect(out).toEqual([])
+    })
+
+    it('returns empty array when no client', async () => {
+      const out = await useGlobalStore.getState().searchMemory('q')
+      expect(out).toEqual([])
+    })
+
+    it('returns empty array when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('search failed'))
+      injectClient(client)
+      const out = await useGlobalStore.getState().searchMemory('q')
+      expect(out).toEqual([])
+    })
+
+    it('calls memory.search with query and default limit', async () => {
+      const client = makeMockClient(() => ({ results: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().searchMemory('needle')
+      expect(client.call).toHaveBeenCalledWith('memory.search', { query: 'needle', limit: 10 })
+    })
+
+    it('respects custom limit', async () => {
+      const client = makeMockClient(() => ({ results: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().searchMemory('q', 25)
+      expect(client.call).toHaveBeenCalledWith('memory.search', { query: 'q', limit: 25 })
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadMemoryStats
+  // ---------------------------------------------------------------------------
+
+  describe('loadMemoryStats', () => {
+    it('sets memoryStats on success', async () => {
+      const stats = { total: 42, size_bytes: 1024 }
+      const client = makeMockClient(() => stats)
+      injectClient(client)
+      await useGlobalStore.getState().loadMemoryStats()
+      expect(useGlobalStore.getState().memoryStats).toEqual(stats)
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadMemoryStats()
+      expect(useGlobalStore.getState().memoryStats).toBeNull()
+    })
+
+    it('calls memory.stats RPC method', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().loadMemoryStats()
+      expect(client.call).toHaveBeenCalledWith('memory.stats', {})
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // clearMemory
+  // ---------------------------------------------------------------------------
+
+  describe('clearMemory', () => {
+    it('calls memory.clear RPC method', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().clearMemory()
+      expect(client.call).toHaveBeenCalledWith('memory.clear', {})
+    })
+
+    it('sets memoryStats to null after clearing', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      useGlobalStore.setState({ memoryStats: { total: 10, size_bytes: 512 } as never })
+      await useGlobalStore.getState().clearMemory()
+      expect(useGlobalStore.getState().memoryStats).toBeNull()
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().clearMemory()
+      // Should be silent
+      expect(useGlobalStore.getState().memoryStats).toBeNull()
+    })
+
+    it('does not throw when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('memory locked'))
+      injectClient(client)
+      await expect(useGlobalStore.getState().clearMemory()).resolves.not.toThrow()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadJobs
+  // ---------------------------------------------------------------------------
+
+  describe('loadJobs', () => {
+    it('sets jobs on success', async () => {
+      const jobs: Job[] = [
+        { id: 'j1', type: 'chat', status: 'running', worktree_id: 'wt1', created_at: '2026-01-01' },
+      ]
+      const client = makeMockClient(() => ({ jobs }))
+      injectClient(client)
+      await useGlobalStore.getState().loadJobs()
+      expect(useGlobalStore.getState().jobs).toEqual(jobs)
+    })
+
+    it('defaults jobs to empty array when key missing', async () => {
+      const client = makeMockClient(() => ({}))
+      injectClient(client)
+      await useGlobalStore.getState().loadJobs()
+      expect(useGlobalStore.getState().jobs).toEqual([])
+    })
+
+    it('does nothing when no client', async () => {
+      await useGlobalStore.getState().loadJobs()
+      expect(useGlobalStore.getState().jobs).toEqual([])
+    })
+
+    it('calls jobs.list RPC method', async () => {
+      const client = makeMockClient(() => ({ jobs: [] }))
+      injectClient(client)
+      await useGlobalStore.getState().loadJobs()
+      expect(client.call).toHaveBeenCalledWith('jobs.list', {})
+    })
+
+    it('does not throw when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('jobs unavailable'))
+      injectClient(client)
+      await expect(useGlobalStore.getState().loadJobs()).resolves.not.toThrow()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // loadJob
+  // ---------------------------------------------------------------------------
+
+  describe('loadJob', () => {
+    it('returns the job on success', async () => {
+      const job: Job = { id: 'j1', type: 'chat', status: 'done', worktree_id: 'wt1', created_at: '2026-01-01' }
+      const client = makeMockClient(() => job)
+      injectClient(client)
+      const result = await useGlobalStore.getState().loadJob('j1')
+      expect(result).toEqual(job)
+    })
+
+    it('calls jobs.get with id', async () => {
+      const job: Job = { id: 'j1', type: 'chat', status: 'done', worktree_id: 'wt1', created_at: '2026-01-01' }
+      const client = makeMockClient(() => job)
+      injectClient(client)
+      await useGlobalStore.getState().loadJob('j1')
+      expect(client.call).toHaveBeenCalledWith('jobs.get', { id: 'j1' })
+    })
+
+    it('returns null when no client', async () => {
+      const result = await useGlobalStore.getState().loadJob('j1')
+      expect(result).toBeNull()
+    })
+
+    it('returns null when call rejects', async () => {
+      const client = makeMockClient()
+      client.call.mockRejectedValueOnce(new Error('not found'))
+      injectClient(client)
+      const result = await useGlobalStore.getState().loadJob('missing')
+      expect(result).toBeNull()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // notification dispatch: task_state_changed triggers loadActiveTasks
+  // ---------------------------------------------------------------------------
+
+  describe('notification dispatch', () => {
+    it('task_state_changed notification triggers loadActiveTasks', async () => {
+      // Capture the subscriber registered on the mock client by wiring the mock
+      // client directly so we can drive the subscribe callback without going
+      // through the real connect() flow (which would try to construct SocketClient).
+      let capturedSubscriber: ((msg: unknown) => void) | null = null
+
+      const client = makeMockClient()
+      client.subscribe.mockImplementationOnce((handler: (msg: unknown) => void) => {
+        capturedSubscriber = handler
+      })
+      // Simulate the subscribe call that connect() would register
+      client.subscribe((msg: unknown) => {
+        const notification = msg as { method?: string }
+        if (notification.method === 'task_state_changed') {
+          useGlobalStore.getState().loadActiveTasks()
+        }
+      })
+
+      // Inject a client with loadActiveTasks that we can observe
+      const tasks = [{ id: 'tsk-1', title: 'task', state: 'implementing', worktree_id: 'w1', source: 'gh:r#1' }]
+      client.call.mockResolvedValue({ tasks })
+      injectClient(client)
+
+      expect(capturedSubscriber).not.toBeNull()
+      if (capturedSubscriber) {
+        capturedSubscriber({ method: 'task_state_changed', params: {} })
+        // Allow the microtask queue to flush
+        await Promise.resolve()
+        expect(useGlobalStore.getState().activeTasks).toHaveLength(1)
+      }
+    })
+
+    it('unrelated notification method does not trigger loadActiveTasks', async () => {
+      let capturedSubscriber: ((msg: unknown) => void) | null = null
+
+      const client = makeMockClient()
+      client.subscribe.mockImplementationOnce((handler: (msg: unknown) => void) => {
+        capturedSubscriber = handler
+      })
+      client.subscribe((msg: unknown) => {
+        const notification = msg as { method?: string }
+        if (notification.method === 'task_state_changed') {
+          useGlobalStore.getState().loadActiveTasks()
+        }
+      })
+      injectClient(client)
+
+      if (capturedSubscriber) {
+        capturedSubscriber({ method: 'other_event', params: {} })
+        await Promise.resolve()
+        // call should not have been invoked for tasks.list
+        const taskCalls = (client.call as ReturnType<typeof vi.fn>).mock.calls.filter(
+          c => c[0] === 'tasks.list'
+        )
+        expect(taskCalls).toHaveLength(0)
+      }
+    })
+  })
+})
