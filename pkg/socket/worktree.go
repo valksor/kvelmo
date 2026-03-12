@@ -155,6 +155,7 @@ func (w *WorktreeSocket) registerBasicHandlers() {
 	// Git handlers (work if repo is set)
 	w.server.Handle("git.status", w.handleGitStatus)
 	w.server.Handle("git.diff", w.handleGitDiff)
+	w.server.Handle("git.diff_against", w.handleGitDiffAgainst)
 	w.server.Handle("git.log", w.handleGitLog)
 
 	// File browsing
@@ -218,10 +219,15 @@ func (w *WorktreeSocket) registerHandlers() {
 	// Git operations
 	w.server.Handle("git.status", w.handleGitStatus)
 	w.server.Handle("git.diff", w.handleGitDiff)
+	w.server.Handle("git.diff_against", w.handleGitDiffAgainst)
 	w.server.Handle("git.log", w.handleGitLog)
 
 	// Streaming
 	w.server.HandleWithConn("stream.subscribe", w.handleStreamSubscribe)
+
+	// Show spec/plan content
+	w.server.Handle("show.spec", w.handleShowSpec)
+	w.server.Handle("show.plan", w.handleShowSpec) // plan output is stored as specifications
 
 	// File browsing
 	w.server.Handle("browse", w.handleBrowse)
@@ -331,9 +337,62 @@ func (w *WorktreeSocket) handleStatus(ctx context.Context, req *Request) (*Respo
 		if ids := w.conductor.PendingPromptIDs(); len(ids) > 0 {
 			result.PendingPromptID = ids[0]
 		}
+
+		if wu := w.conductor.WorkUnit(); wu != nil {
+			switch state {
+			case conductor.StatePlanning, conductor.StateImplementing, conductor.StateSimplifying,
+				conductor.StateOptimizing, conductor.StateReviewing:
+				if len(wu.Jobs) > 0 {
+					result.ActiveJobID = wu.Jobs[len(wu.Jobs)-1]
+				}
+			case conductor.StateNone, conductor.StateLoaded, conductor.StatePlanned,
+				conductor.StateImplemented, conductor.StateSubmitted, conductor.StateFailed,
+				conductor.StateWaiting, conductor.StatePaused:
+				// Not in a working state — no active job
+			}
+		}
+
+		result.QueueDepth = w.conductor.QueueLength()
 	}
 
 	return NewResultResponse(req.ID, result)
+}
+
+// --- Show Spec/Plan Handlers ---
+
+// SpecEntry holds a single specification file's path and content.
+type SpecEntry struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+// ShowSpecResult is returned by the show.spec and show.plan RPC methods.
+type ShowSpecResult struct {
+	Specifications []SpecEntry `json:"specifications"`
+}
+
+func (w *WorktreeSocket) handleShowSpec(_ context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, -32600, "no conductor configured"), nil
+	}
+
+	wu := w.conductor.WorkUnit()
+	if wu == nil {
+		return NewResultResponse(req.ID, ShowSpecResult{Specifications: []SpecEntry{}})
+	}
+
+	specs := make([]SpecEntry, 0, len(wu.Specifications))
+	for _, path := range wu.Specifications {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			slog.Warn("show.spec: failed to read specification", "path", path, "error", err)
+
+			continue
+		}
+		specs = append(specs, SpecEntry{Path: path, Content: string(content)})
+	}
+
+	return NewResultResponse(req.ID, ShowSpecResult{Specifications: specs})
 }
 
 // --- Task Lifecycle Handlers ---
@@ -1055,6 +1114,35 @@ func (w *WorktreeSocket) handleGitDiff(ctx context.Context, req *Request) (*Resp
 	})
 }
 
+type GitDiffAgainstParams struct {
+	Ref  string `json:"ref"`
+	Stat bool   `json:"stat"`
+}
+
+func (w *WorktreeSocket) handleGitDiffAgainst(ctx context.Context, req *Request) (*Response, error) {
+	if w.repo == nil {
+		return NewErrorResponse(req.ID, -32600, "no git repository"), nil
+	}
+
+	var params GitDiffAgainstParams
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+	}
+
+	if params.Ref == "" {
+		return NewErrorResponse(req.ID, -32602, "ref parameter is required"), nil
+	}
+
+	diff, err := w.repo.DiffAgainst(ctx, params.Ref, params.Stat)
+	if err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"diff": diff,
+	})
+}
+
 type GitLogParams struct {
 	Count int `json:"count"`
 }
@@ -1520,6 +1608,9 @@ type StatusResult struct {
 	Path            string    `json:"path"`
 	Task            *TaskInfo `json:"task,omitempty"`
 	PendingPromptID string    `json:"pending_prompt_id,omitempty"`
+	ActiveJobID     string    `json:"active_job_id,omitempty"`
+	QueueDepth      int       `json:"queue_depth,omitempty"`
+	LastError       string    `json:"last_error,omitempty"`
 }
 
 type TaskInfo struct {
