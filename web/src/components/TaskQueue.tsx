@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useProjectStore, QueuedTask } from '../stores/projectStore'
+import { EmptyState } from './EmptyState'
 
 export function TaskQueue() {
   const { taskQueue, queueTask, dequeueTask, reorderQueue, connected, loading } = useProjectStore()
@@ -98,7 +99,7 @@ export function TaskQueue() {
 
         {/* Queue list */}
         {taskQueue.length === 0 && !showAdd && (
-          <p className="text-xs text-base-content/50">No queued tasks</p>
+          <EmptyState title="No tasks in queue" icon="📋" />
         )}
 
         {taskQueue.length > 0 && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useGlobalStore, type Job } from '../stores/globalStore'
+import { EmptyState } from './EmptyState'
 
 export function JobsPanel() {
   const { jobs, loadJobs, loadJob, connected } = useGlobalStore()
@@ -103,12 +104,7 @@ export function JobsPanel() {
       {/* Job list */}
       <div className="flex-1 overflow-auto p-3">
         {jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-base-content/50 py-12">
-            <svg className="w-12 h-12 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            <p className="text-sm">No jobs found</p>
-          </div>
+          <EmptyState title="No jobs found" description="Jobs will appear here when tasks are planned or implemented" icon="📝" />
         ) : (
           <div className="space-y-1.5">
             {jobs.map((job) => {

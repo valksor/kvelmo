@@ -1,4 +1,5 @@
 import { useProjectStore } from '../stores/projectStore'
+import { EmptyState } from './EmptyState'
 
 interface CheckpointsWidgetProps {
   embedded?: boolean
@@ -12,12 +13,7 @@ export function CheckpointsWidget({ embedded = false }: CheckpointsWidgetProps) 
   const content = (
     <div>
       {!hasCheckpoints ? (
-            <div className="text-center py-6">
-              <svg aria-hidden="true" className="w-8 h-8 mx-auto mb-2 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-base-content/60 text-sm">No checkpoints yet</p>
-            </div>
+            <EmptyState title="No checkpoints yet" description="Checkpoints are created during planning and implementation" icon="🕐" />
           ) : (
             <>
               {/* Checkpoint Timeline */}

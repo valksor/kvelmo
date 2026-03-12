@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChatStore, type ChatMessage } from '../stores/chatStore'
 import { useGlobalStore } from '../stores/globalStore'
 import { useScreenshotStore, getScreenshotById, formatScreenshotRef } from '../stores/screenshotStore'
-import { ScreenshotBadge } from './ScreenshotBadge'
+import { ChatMessageContent } from './ChatMessage'
 
 interface FileEntry {
   name: string
@@ -468,7 +468,7 @@ function MessageBubble({ message, onAction }: MessageBubbleProps) {
             ? 'bg-primary text-primary-content'
             : 'bg-base-200 text-base-content'
         }`}>
-          <MessageContent content={message.content} isUser={isUser} />
+          <ChatMessageContent content={message.content} isUser={isUser} />
 
           {message.status === 'streaming' && (
             <span className="inline-block w-1.5 h-4 ml-0.5 bg-current animate-pulse" />
@@ -501,107 +501,6 @@ function MessageBubble({ message, onAction }: MessageBubbleProps) {
       </div>
     </div>
   )
-}
-
-// Simple markdown-like content renderer
-function MessageContent({ content, isUser }: { content: string; isUser: boolean }) {
-  // Split content by code blocks
-  const parts = content.split(/(```[\s\S]*?```)/g)
-
-  return (
-    <div className="text-sm whitespace-pre-wrap break-words">
-      {parts.map((part, i) => {
-        if (part.startsWith('```')) {
-          // Code block
-          const match = part.match(/```(\w*)\n?([\s\S]*?)```/)
-          if (match) {
-            const [, lang, code] = match
-            return (
-              <div key={i} className="my-2 -mx-1">
-                {lang && (
-                  <div className="text-[10px] uppercase tracking-wide opacity-60 mb-1">
-                    {lang}
-                  </div>
-                )}
-                <pre className={`p-2 rounded text-xs overflow-x-auto ${
-                  isUser ? 'bg-primary-content/10' : 'bg-neutral text-neutral-content'
-                }`}>
-                  <code>{code.trim()}</code>
-                </pre>
-              </div>
-            )
-          }
-        }
-        // Regular text - handle inline code, bold, file refs, and screenshot references
-        return (
-          <span key={i}>
-            {renderTextWithMentions(part, isUser)}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
-
-// Render text with file/screenshot references and inline code
-function renderTextWithMentions(text: string, isUser: boolean): React.ReactNode[] {
-  // Match @file-paths and @screenshot-ids
-  const mentionRegex = /@(screenshot-[a-zA-Z0-9]+|[\w./-]+\.\w+|[\w/-]+)/g
-  const parts: React.ReactNode[] = []
-  let lastIndex = 0
-  let match
-
-  while ((match = mentionRegex.exec(text)) !== null) {
-    // Add text before match (with inline code parsing)
-    if (match.index > lastIndex) {
-      const textBefore = text.slice(lastIndex, match.index)
-      parts.push(...parseInlineCode(textBefore, isUser, `text-${lastIndex}`))
-    }
-
-    const mention = match[1]
-    if (mention.startsWith('screenshot-')) {
-      // Screenshot reference
-      parts.push(<ScreenshotBadge key={`ss-${match.index}`} screenshotId={mention.replace('screenshot-', '')} />)
-    } else {
-      // File reference
-      parts.push(
-        <span
-          key={`file-${match.index}`}
-          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-mono ${
-            isUser ? 'bg-primary-content/20' : 'bg-primary/20 text-primary'
-          }`}
-          title={mention}
-        >
-          {mention.split('/').pop()}
-        </span>
-      )
-    }
-    lastIndex = mentionRegex.lastIndex
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    const remaining = text.slice(lastIndex)
-    parts.push(...parseInlineCode(remaining, isUser, `text-${lastIndex}`))
-  }
-
-  return parts
-}
-
-// Parse inline code segments
-function parseInlineCode(text: string, isUser: boolean, keyPrefix: string): React.ReactNode[] {
-  return text.split(/(`[^`]+`)/).map((segment, j) => {
-    if (segment.startsWith('`') && segment.endsWith('`')) {
-      return (
-        <code key={`${keyPrefix}-${j}`} className={`px-1 rounded text-xs ${
-          isUser ? 'bg-primary-content/10' : 'bg-base-300'
-        }`}>
-          {segment.slice(1, -1)}
-        </code>
-      )
-    }
-    return <span key={`${keyPrefix}-${j}`}>{segment}</span>
-  })
 }
 
 // Export icon for use in Widget
