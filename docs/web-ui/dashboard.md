@@ -75,16 +75,6 @@ The dashboard shows the current state with visual indicators:
 | `submitted`    | Green check    | Task complete              |
 | `failed`       | Red            | Error occurred             |
 
-## Keyboard Shortcuts
-
-| Shortcut | Action    |
-|----------|-----------|
-| `Ctrl+P` | Plan      |
-| `Ctrl+I` | Implement |
-| `Ctrl+R` | Review    |
-| `Ctrl+Z` | Undo      |
-| `Ctrl+Y` | Redo      |
-
 ## Refreshing
 
 The dashboard updates automatically via WebSocket. No manual refresh needed.
