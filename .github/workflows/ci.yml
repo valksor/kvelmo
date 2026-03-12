@@ -11,10 +11,41 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    changes:
+        if: github.actor == 'dependabot[bot]'
+        runs-on: ubuntu-latest
+        outputs:
+            go: ${{ steps.filter.outputs.go }}
+            web: ${{ steps.filter.outputs.web }}
+            tauri: ${{ steps.filter.outputs.tauri }}
+        steps:
+            -   uses: actions/checkout@v6
+            -   uses: dorny/paths-filter@v3
+                id: filter
+                with:
+                    filters: |
+                        go:
+                            - 'go.mod'
+                            - 'go.sum'
+                            - '**/*.go'
+                        web:
+                            - 'web/package.json'
+                            - 'web/bun.lock'
+                            - 'web/src/**'
+                            - 'web/tsconfig*.json'
+                            - 'web/vite.config.*'
+                        tauri:
+                            - 'web/src-tauri/Cargo.toml'
+                            - 'web/src-tauri/Cargo.lock'
+                            - 'web/src-tauri/src/**'
+
     test:
+        needs: [changes]
         if: >-
+            always() &&
             !contains(github.event.head_commit.message, '[skip test]') &&
-            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly') &&
+            (github.actor != 'dependabot[bot]' || needs.changes.outputs.go == 'true')
         strategy:
             matrix:
                 include:
@@ -115,9 +146,12 @@ jobs:
                 run: ./build/kvelmo version
 
     web:
+        needs: [changes]
         if: >-
+            always() &&
             !contains(github.event.head_commit.message, '[skip test]') &&
-            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly') &&
+            (github.actor != 'dependabot[bot]' || needs.changes.outputs.web == 'true')
         runs-on: ubuntu-latest
 
         env:
@@ -183,9 +217,12 @@ jobs:
                     base-path: web
 
     tauri:
+        needs: [changes]
         if: >-
+            always() &&
             !contains(github.event.head_commit.message, '[skip test]') &&
-            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly')
+            (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'nightly') &&
+            (github.actor != 'dependabot[bot]' || needs.changes.outputs.tauri == 'true')
         strategy:
             matrix:
                 include:
@@ -281,9 +318,10 @@ jobs:
         if: >-
             github.event_name != 'pull_request' &&
             always() &&
-            needs.test.result == 'success' &&
-            needs.web.result == 'success' &&
-            (needs.tauri.result == 'success' || needs.tauri.result == 'skipped')
+            (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+            (needs.web.result == 'success' || needs.web.result == 'skipped') &&
+            (needs.tauri.result == 'success' || needs.tauri.result == 'skipped') &&
+            !(needs.test.result == 'skipped' && needs.web.result == 'skipped' && needs.tauri.result == 'skipped')
         steps:
             -   name: Finish Coveralls parallel build
                 uses: coverallsapp/github-action@v2
