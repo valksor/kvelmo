@@ -75,6 +75,9 @@ func formatGitError(args []string, stderr string, err error) error {
 
 	case strings.Contains(stderr, "Authentication failed"):
 		return errors.New("authentication failed\nCheck your credentials or token")
+
+	case strings.Contains(stderr, "No space left on device") || strings.Contains(stderr, "ENOSPC"):
+		return errors.New("disk full — free up space and retry")
 	}
 
 	// Default: include stderr if present
@@ -305,6 +308,17 @@ func (r *Repository) Diff(ctx context.Context, cached bool) (string, error) {
 	args := []string{"diff"}
 	if cached {
 		args = append(args, "--cached")
+	}
+
+	return r.run(ctx, args...)
+}
+
+// DiffAgainst shows the diff between a given commit and the current working tree (including
+// uncommitted changes). When stat is true only the --stat summary is returned.
+func (r *Repository) DiffAgainst(ctx context.Context, ref string, stat bool) (string, error) {
+	args := []string{"diff", ref}
+	if stat {
+		args = append(args, "--stat")
 	}
 
 	return r.run(ctx, args...)

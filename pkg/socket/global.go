@@ -2012,6 +2012,15 @@ func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{
 	default:
 	}
 
+	// Acquire project-level file lock to prevent concurrent access from other processes
+	lockPath := WorktreeLockPath(projectPath)
+	releaseLock, lockErr := AcquireGlobalLock(lockPath)
+	if lockErr != nil {
+		g.wtSocketsMu.Unlock()
+
+		return nil, fmt.Errorf("project is already in use by another process: %w", lockErr)
+	}
+
 	// Create new worktree socket with pool access
 	wt, err := NewWorktreeSocket(WorktreeConfig{
 		WorktreePath: projectPath,
@@ -2020,6 +2029,7 @@ func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{
 		Pool:         g.pool,
 	})
 	if err != nil {
+		releaseLock()
 		g.wtSocketsMu.Unlock()
 
 		return nil, fmt.Errorf("create worktree socket: %w", err)
@@ -2041,6 +2051,8 @@ func (g *GlobalSocket) GetOrCreateWorktreeSocket(projectPath string) (interface{
 	// Start the socket in background
 	// Note: Callers should handle connection retries if socket isn't ready yet
 	go func() {
+		defer releaseLock() // Release project lock when socket stops
+
 		if err := wt.Start(g.ctx); err != nil && !errors.Is(err, context.Canceled) {
 			// Log error but don't panic - socket can be recreated
 			slog.Error("worktree socket error", "id", id, "error", err)

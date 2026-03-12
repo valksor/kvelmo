@@ -25,6 +25,23 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 		return
 	}
 
+	// Create pre-job safety checkpoint so user can undo if the job fails or crashes
+	c.mu.Lock()
+	if c.workUnit != nil {
+		workDir := c.getWorkDir()
+		if repo, err := git.Open(workDir); err == nil {
+			if err := repo.StageAll(ctx); err == nil {
+				if hasChanges, _ := repo.HasUncommittedChanges(ctx); hasChanges {
+					if sha, commitErr := repo.Commit(ctx, fmt.Sprintf("kvelmo: pre-%s checkpoint", completionEvent)); commitErr == nil {
+						c.workUnit.Checkpoints = append(c.workUnit.Checkpoints, sha)
+						slog.Info("pre-job checkpoint created", "sha", sha, "event", completionEvent)
+					}
+				}
+			}
+		}
+	}
+	c.mu.Unlock()
+
 	for event := range stream {
 		// Forward streaming events
 		c.emit(ConductorEvent{
@@ -122,7 +139,22 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 
 		if event.Type == "job_failed" {
 			c.mu.Lock()
+			// Capture any partial work the agent completed before crashing
+			if c.workUnit != nil {
+				workDir := c.getWorkDir()
+				if repo, err := git.Open(workDir); err == nil {
+					if stageErr := repo.StageAll(ctx); stageErr == nil {
+						if hasChanges, _ := repo.HasUncommittedChanges(ctx); hasChanges {
+							if sha, commitErr := repo.Commit(ctx, fmt.Sprintf("kvelmo: partial work before %s failure", completionEvent)); commitErr == nil {
+								c.workUnit.Checkpoints = append(c.workUnit.Checkpoints, sha)
+								slog.Info("partial work checkpoint saved", "sha", sha, "event", completionEvent)
+							}
+						}
+					}
+				}
+			}
 			_ = c.machine.Dispatch(ctx, EventError)
+			c.persistState()
 			c.mu.Unlock()
 
 			c.emit(ConductorEvent{
