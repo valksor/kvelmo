@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/valksor/kvelmo/pkg/paths"
@@ -53,6 +54,14 @@ func SocketExists(path string) bool {
 // Delegates to paths.Paths().EnsureDir().
 func EnsureDir() error {
 	return paths.EnsureDir()
+}
+
+// WorktreeLockPath returns the lock file path for a worktree socket.
+// Placed alongside the socket file: {hash}.sock → {hash}.lock.
+func WorktreeLockPath(worktreeDir string) string {
+	sockPath := WorktreeSocketPath(worktreeDir)
+
+	return strings.TrimSuffix(sockPath, ".sock") + ".lock"
 }
 
 // AcquireGlobalLock acquires an exclusive lock on the given lock file.
