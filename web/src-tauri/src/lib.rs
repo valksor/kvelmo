@@ -15,9 +15,9 @@ pub mod wsl;
 pub mod window_state;
 
 use tauri::{
-    Emitter, Manager,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
+    Emitter, Manager,
 };
 
 /// Application version (should match Cargo.toml and Go binary)
