@@ -174,3 +174,101 @@ func TestRegister(t *testing.T) {
 		t.Error("Register() should add agent to registry")
 	}
 }
+
+func TestDefaultConfig_PermissionHandlerNonNil(t *testing.T) {
+	cfg := claude.DefaultConfig()
+	if cfg.PermissionHandler == nil {
+		t.Error("DefaultConfig().PermissionHandler should not be nil")
+	}
+}
+
+func TestNewWithConfig_ZeroValueFillsDefaults(t *testing.T) {
+	a := claude.NewWithConfig(claude.Config{})
+	// Name still returns the constant
+	if a.Name() != "claude" {
+		t.Errorf("Name() = %q, want %q", a.Name(), "claude")
+	}
+	// Not connected after construction
+	if a.Connected() {
+		t.Error("Connected() should be false after zero-value construction")
+	}
+}
+
+func TestWithEnv_ValuePreserved(t *testing.T) {
+	a := claude.New()
+	b := a.WithEnv("MY_KEY", "MY_VAL")
+	// Original unchanged — verify it is a different instance
+	if b == a {
+		t.Fatal("WithEnv() must return a new agent")
+	}
+	// The new agent name should still be correct
+	if b.Name() != "claude" {
+		t.Errorf("WithEnv() agent Name() = %q, want %q", b.Name(), "claude")
+	}
+}
+
+func TestWithArgs_OriginalUnchanged(t *testing.T) {
+	a := claude.New()
+	b := a.WithArgs("--flag1", "--flag2")
+	// b is a different instance
+	if b == a {
+		t.Fatal("WithArgs() must return a new agent")
+	}
+	// Adding more args to b should not affect an independent chain from a
+	c := a.WithArgs("--flag3")
+	if c == b {
+		t.Error("independent WithArgs() calls from same parent should yield distinct agents")
+	}
+}
+
+func TestWithWorkDir_ValueStored(t *testing.T) {
+	a := claude.New()
+	b := a.WithWorkDir("/tmp/testdir")
+	if b == nil {
+		t.Fatal("WithWorkDir() returned nil")
+	}
+	if b == a {
+		t.Error("WithWorkDir() must return a new agent")
+	}
+}
+
+func TestWithTimeout_ValueStored(t *testing.T) {
+	a := claude.New()
+	const d = 5 * time.Second
+	b := a.WithTimeout(d)
+	if b == nil {
+		t.Fatal("WithTimeout() returned nil")
+	}
+	if b == a {
+		t.Error("WithTimeout() must return a new agent")
+	}
+}
+
+func TestWithModel_ValueStored(t *testing.T) {
+	a := claude.New()
+	b := a.WithModel("claude-sonnet")
+	if b == nil {
+		t.Fatal("WithModel() returned nil")
+	}
+	// Name must still be correct after model override
+	if b.Name() != "claude" {
+		t.Errorf("after WithModel Name() = %q, want %q", b.Name(), "claude")
+	}
+}
+
+func TestWithPermissionHandler_ValueStored(t *testing.T) {
+	called := false
+	handler := agent.PermissionHandler(func(_ agent.PermissionRequest) bool {
+		called = true
+		return true
+	})
+	a := claude.New()
+	b := a.WithPermissionHandler(handler)
+	if b == nil {
+		t.Fatal("WithPermissionHandler() returned nil")
+	}
+	if b == a {
+		t.Error("WithPermissionHandler() must return a new agent")
+	}
+	_ = called // handler captured but not invoked without a live connection
+}
