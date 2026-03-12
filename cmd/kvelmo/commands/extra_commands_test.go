@@ -3,6 +3,7 @@ package commands
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/valksor/kvelmo/pkg/meta"
 )
 
@@ -311,6 +312,219 @@ func TestRunWorkersStats_NoSocket(t *testing.T) {
 	if err := runWorkersStats(workersStatsCmd, nil); err == nil {
 		t.Error("runWorkersStats() expected error (no socket), got nil")
 	}
+}
+
+func TestStatsCommand(t *testing.T) {
+	if StatsCmd.Use != "stats" {
+		t.Errorf("Use = %s, want stats", StatsCmd.Use)
+	}
+	if f := StatsCmd.Flags().Lookup("json"); f == nil {
+		t.Error("--json flag should exist")
+	}
+	if f := StatsCmd.Flags().Lookup("all"); f == nil {
+		t.Error("--all flag should exist")
+	}
+}
+
+func TestWatchCommand(t *testing.T) {
+	if WatchCmd.Use != "watch" {
+		t.Errorf("Use = %s, want watch", WatchCmd.Use)
+	}
+	if f := WatchCmd.Flags().Lookup("json"); f == nil {
+		t.Error("--json flag should exist")
+	}
+}
+
+func TestDiffCommand(t *testing.T) {
+	if DiffCmd.Use != "diff" {
+		t.Errorf("Use = %s, want diff", DiffCmd.Use)
+	}
+	if f := DiffCmd.Flags().Lookup("stat"); f == nil {
+		t.Error("--stat flag should exist")
+	}
+}
+
+func TestShowCommand(t *testing.T) {
+	if ShowCmd.Use != "show" {
+		t.Errorf("Use = %s, want show", ShowCmd.Use)
+	}
+	if f := ShowCmd.PersistentFlags().Lookup("json"); f == nil {
+		t.Error("--json persistent flag should exist")
+	}
+}
+
+func TestExplainCommand(t *testing.T) {
+	if ExplainCmd.Use != "explain" {
+		t.Errorf("Use = %s, want explain", ExplainCmd.Use)
+	}
+	if f := ExplainCmd.Flags().Lookup("prompt"); f == nil {
+		t.Error("--prompt flag should exist")
+	}
+}
+
+func TestLogsCommand(t *testing.T) {
+	if LogsCmd.Use != "logs" {
+		t.Errorf("Use = %s, want logs", LogsCmd.Use)
+	}
+	if f := LogsCmd.Flags().Lookup("limit"); f == nil {
+		t.Error("--limit flag should exist")
+	}
+	if f := LogsCmd.Flags().Lookup("full"); f == nil {
+		t.Error("--full flag should exist")
+	}
+	if f := LogsCmd.Flags().Lookup("json"); f == nil {
+		t.Error("--json flag should exist")
+	}
+}
+
+func TestCleanupCommand(t *testing.T) {
+	if CleanupCmd.Use != "cleanup" {
+		t.Errorf("Use = %s, want cleanup", CleanupCmd.Use)
+	}
+	if f := CleanupCmd.Flags().Lookup("force"); f == nil {
+		t.Error("--force flag should exist")
+	}
+	if f := CleanupCmd.Flags().Lookup("dry-run"); f == nil {
+		t.Error("--dry-run flag should exist")
+	}
+}
+
+func TestDiagnoseCommand(t *testing.T) {
+	if DiagnoseCmd.Use != "diagnose" {
+		t.Errorf("Use = %s, want diagnose", DiagnoseCmd.Use)
+	}
+}
+
+func TestRemoteCommand(t *testing.T) {
+	if RemoteCmd.Use != "remote" {
+		t.Errorf("Use = %s, want remote", RemoteCmd.Use)
+	}
+	// Verify subcommands
+	subs := RemoteCmd.Commands()
+	subNames := make(map[string]bool)
+	for _, sub := range subs {
+		subNames[sub.Use] = true
+	}
+	if !subNames["approve"] {
+		t.Error("missing subcommand 'approve'")
+	}
+	if !subNames["merge"] {
+		t.Error("missing subcommand 'merge'")
+	}
+}
+
+func TestRemoteApproveFlags(t *testing.T) {
+	if f := RemoteApproveCmd.Flags().Lookup("comment"); f == nil {
+		t.Error("--comment flag should exist on approve")
+	}
+}
+
+func TestRemoteMergeFlags(t *testing.T) {
+	if f := RemoteMergeCmd.Flags().Lookup("method"); f == nil {
+		t.Error("--method flag should exist on merge")
+	}
+}
+
+func TestFinishCommandFlags(t *testing.T) {
+	if FinishCmd.Use != "finish" {
+		t.Errorf("Use = %s, want finish", FinishCmd.Use)
+	}
+	if f := FinishCmd.Flags().Lookup("delete-remote"); f == nil {
+		t.Error("--delete-remote flag should exist")
+	}
+	if f := FinishCmd.Flags().Lookup("force"); f == nil {
+		t.Error("--force flag should exist")
+	}
+}
+
+func TestRefreshCommand(t *testing.T) {
+	if RefreshCmd.Use != "refresh" {
+		t.Errorf("Use = %s, want refresh", RefreshCmd.Use)
+	}
+}
+
+func TestQualityCommand(t *testing.T) {
+	if QualityCmd.Use != "quality" {
+		t.Errorf("Use = %s, want quality", QualityCmd.Use)
+	}
+}
+
+func TestGitHubProviderCommand(t *testing.T) {
+	if GitHubCmd.Use != "github" {
+		t.Errorf("Use = %s, want github", GitHubCmd.Use)
+	}
+	// Verify login subcommand exists
+	loginCmd := findProviderLogin(GitHubCmd)
+	if loginCmd == nil {
+		t.Error("missing login subcommand for github")
+	}
+}
+
+func TestGitLabProviderCommand(t *testing.T) {
+	if GitLabCmd.Use != "gitlab" {
+		t.Errorf("Use = %s, want gitlab", GitLabCmd.Use)
+	}
+	loginCmd := findProviderLogin(GitLabCmd)
+	if loginCmd == nil {
+		t.Error("missing login subcommand for gitlab")
+	}
+}
+
+func TestLinearProviderCommand(t *testing.T) {
+	if LinearCmd.Use != "linear" {
+		t.Errorf("Use = %s, want linear", LinearCmd.Use)
+	}
+	loginCmd := findProviderLogin(LinearCmd)
+	if loginCmd == nil {
+		t.Error("missing login subcommand for linear")
+	}
+}
+
+func TestWrikeProviderCommand(t *testing.T) {
+	if WrikeCmd.Use != "wrike" {
+		t.Errorf("Use = %s, want wrike", WrikeCmd.Use)
+	}
+	loginCmd := findProviderLogin(WrikeCmd)
+	if loginCmd == nil {
+		t.Error("missing login subcommand for wrike")
+	}
+}
+
+func TestReviewCommandFlags(t *testing.T) {
+	if ReviewCmd.Use != "review" {
+		t.Errorf("Use = %s, want review", ReviewCmd.Use)
+	}
+	for _, flag := range []string{"approve", "reject", "message", "fix"} {
+		if f := ReviewCmd.Flags().Lookup(flag); f == nil {
+			t.Errorf("--%s flag should exist on review", flag)
+		}
+	}
+}
+
+func TestCheckpointsGotoSubcommand(t *testing.T) {
+	// CheckpointsCmd should have a "goto" subcommand
+	var found bool
+	for _, sub := range CheckpointsCmd.Commands() {
+		if sub.Use == "goto <sha>" {
+			found = true
+
+			break
+		}
+	}
+	if !found {
+		t.Error("missing 'goto' subcommand on checkpoints")
+	}
+}
+
+// findProviderLogin finds the login subcommand of a provider command.
+func findProviderLogin(cmd *cobra.Command) *cobra.Command {
+	for _, sub := range cmd.Commands() {
+		if sub.Use == "login" {
+			return sub
+		}
+	}
+
+	return nil
 }
 
 // === Pure function tests ===

@@ -169,3 +169,94 @@ func TestRegister(t *testing.T) {
 		t.Error("Register() should add agent to registry")
 	}
 }
+
+func TestDefaultConfig_PermissionHandlerNonNil(t *testing.T) {
+	cfg := codex.DefaultConfig()
+	if cfg.PermissionHandler == nil {
+		t.Error("DefaultConfig().PermissionHandler should not be nil")
+	}
+}
+
+func TestNewWithConfig_ZeroValueFillsDefaults(t *testing.T) {
+	a := codex.NewWithConfig(codex.Config{})
+	if a.Name() != "codex" {
+		t.Errorf("Name() = %q, want %q", a.Name(), "codex")
+	}
+	if a.Connected() {
+		t.Error("Connected() should be false after zero-value construction")
+	}
+}
+
+func TestWithEnv_ValuePreserved(t *testing.T) {
+	a := codex.New()
+	b := a.WithEnv("MY_KEY", "MY_VAL")
+	if b == a {
+		t.Fatal("WithEnv() must return a new agent")
+	}
+	if b.Name() != "codex" {
+		t.Errorf("WithEnv() agent Name() = %q, want %q", b.Name(), "codex")
+	}
+}
+
+func TestWithArgs_OriginalUnchanged(t *testing.T) {
+	a := codex.New()
+	b := a.WithArgs("--flag1", "--flag2")
+	if b == a {
+		t.Fatal("WithArgs() must return a new agent")
+	}
+	c := a.WithArgs("--flag3")
+	if c == b {
+		t.Error("independent WithArgs() calls from same parent should yield distinct agents")
+	}
+}
+
+func TestWithWorkDir_ValueStored(t *testing.T) {
+	a := codex.New()
+	b := a.WithWorkDir("/tmp/testdir")
+	if b == nil {
+		t.Fatal("WithWorkDir() returned nil")
+	}
+	if b == a {
+		t.Error("WithWorkDir() must return a new agent")
+	}
+}
+
+func TestWithTimeout_ValueStored(t *testing.T) {
+	a := codex.New()
+	const d = 5 * time.Second
+	b := a.WithTimeout(d)
+	if b == nil {
+		t.Fatal("WithTimeout() returned nil")
+	}
+	if b == a {
+		t.Error("WithTimeout() must return a new agent")
+	}
+}
+
+func TestWithModel_ValueStored(t *testing.T) {
+	a := codex.New()
+	b := a.WithModel("o3-mini")
+	if b == nil {
+		t.Fatal("WithModel() returned nil")
+	}
+	if b.Name() != "codex" {
+		t.Errorf("after WithModel Name() = %q, want %q", b.Name(), "codex")
+	}
+}
+
+func TestWithPermissionHandler_ValueStored(t *testing.T) {
+	called := false
+	handler := agent.PermissionHandler(func(_ agent.PermissionRequest) bool {
+		called = true
+		return true
+	})
+	a := codex.New()
+	b := a.WithPermissionHandler(handler)
+	if b == nil {
+		t.Fatal("WithPermissionHandler() returned nil")
+	}
+	if b == a {
+		t.Error("WithPermissionHandler() must return a new agent")
+	}
+	_ = called
+}
