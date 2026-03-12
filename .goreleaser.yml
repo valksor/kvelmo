@@ -71,7 +71,7 @@ brews:
         directory: Formula
         homepage: "https://kvelmo.dev"
         description: "AI-assisted development task orchestration"
-        license: "MIT"
+        license: "BSD-3-Clause"
         install: |
             bin.install "kvelmo"
         test: |

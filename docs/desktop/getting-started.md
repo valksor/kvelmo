@@ -96,17 +96,6 @@ All interfaces share the same workflow state.
 
 ---
 
-## Keyboard Shortcuts
-
-| Action   | macOS       | Windows/Linux |
-|----------|-------------|---------------|
-| New Task | Cmd+N       | Ctrl+N        |
-| Undo     | Cmd+Z       | Ctrl+Z        |
-| Redo     | Cmd+Shift+Z | Ctrl+Shift+Z  |
-| Settings | Cmd+,       | Ctrl+,        |
-
----
-
 ## What's Next?
 
 - [Workflow Concepts](/concepts/workflow.md) — Understand the full process
