@@ -14,19 +14,18 @@ interface ArchivedTask {
 export function TaskHistory() {
   const { connected } = useProjectStore()
   const client = useProjectStore(s => s.client)
-  const [tasks, setTasks] = useState<ArchivedTask[]>([])
-  const [loading, setLoading] = useState(false)
+  const [tasks, setTasks] = useState<ArchivedTask[] | null>(null)
 
   useEffect(() => {
     if (!connected || !client) return
-    setLoading(true)
+    let cancelled = false
     client.call<{ tasks: ArchivedTask[] | null }>('task.history', {})
-      .then(result => setTasks(result.tasks || []))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .then(result => { if (!cancelled) setTasks(result.tasks || []) })
+      .catch(() => { if (!cancelled) setTasks([]) })
+    return () => { cancelled = true }
   }, [connected, client])
 
-  if (loading) {
+  if (tasks === null) {
     return <p className="text-xs text-base-content/50">Loading history...</p>
   }
 

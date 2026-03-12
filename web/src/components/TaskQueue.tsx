@@ -71,7 +71,7 @@ export function TaskQueue() {
               onKeyDown={handleKeyDown}
               placeholder="github.com/owner/repo/issues/123"
               className="input input-bordered input-sm w-full font-mono text-xs"
-              autoFocus
+              ref={(el) => el?.focus()}
             />
             <input
               type="text"
