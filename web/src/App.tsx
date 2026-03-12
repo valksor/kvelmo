@@ -7,6 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { GlobalView } from './components/GlobalView'
 import { ProjectView } from './components/ProjectView'
 import { StateAnnouncer } from './components/StateAnnouncer'
+import { checkForUpdates } from './lib/updater'
 
 // Demo mode for testing UI without backend
 const DEMO_MODE = new URLSearchParams(window.location.search).has('demo')
@@ -24,6 +25,7 @@ export default function App() {
   useEffect(() => {
     if (!DEMO_MODE) {
       connect()
+      checkForUpdates()
     }
   }, [connect])
 

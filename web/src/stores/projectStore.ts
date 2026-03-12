@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { SocketClient } from '../lib/socket'
 import { useScreenshotStore, Screenshot } from './screenshotStore'
-import { sendNotification } from '../lib/notify'
+import { sendNotification, requestNotificationPermission } from '../lib/notify'
 
 type TaskState =
   | 'none'
@@ -137,6 +137,9 @@ interface ProjectState {
   // Connection
   connected: boolean
   connecting: boolean
+  reconnectAttempt: number
+  reconnectTimeoutId: ReturnType<typeof setTimeout> | null
+  connectionVersion: number
   worktreeId: string | null
   client: SocketClient | null
 
@@ -228,6 +231,9 @@ interface ProjectState {
 export const useProjectStore = create<ProjectState>((set, get) => ({
   connected: false,
   connecting: false,
+  reconnectAttempt: 0,
+  reconnectTimeoutId: null,
+  connectionVersion: 0,
   worktreeId: null,
   client: null,
 
@@ -253,7 +259,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return
     }
 
-    set({ connecting: true, worktreeId, error: null })
+    const thisVersion = get().connectionVersion + 1
+    set({ connecting: true, worktreeId, error: null, connectionVersion: thisVersion })
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = `${protocol}//${window.location.host}/ws/worktree/${encodeURIComponent(worktreeId)}`
@@ -261,6 +268,33 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     try {
       const client = new SocketClient(url)
+
+      // Auto-reconnect on disconnect (exponential backoff, matching globalStore pattern)
+      client.setOnDisconnect(() => {
+        if (get().connectionVersion !== thisVersion) return
+
+        const attempt = get().reconnectAttempt + 1
+        const base = Math.min(1000 * Math.pow(2, attempt - 1), 30000)
+        const delay = Math.round(base * (0.8 + Math.random() * 0.4))
+        const delaySec = Math.round(delay / 1000)
+
+        const timeoutId = setTimeout(() => {
+          set({ reconnectTimeoutId: null })
+          const wId = get().worktreeId
+          if (wId) {
+            get().connect(wId)
+          }
+        }, delay)
+
+        set({
+          connected: false,
+          connecting: false,
+          reconnectAttempt: attempt,
+          reconnectTimeoutId: timeoutId,
+          client: null,
+          error: `Connection lost. Reconnecting in ${delaySec}s... (attempt ${attempt})`
+        })
+      })
 
       // Handle streaming events
       client.subscribe((data: unknown) => {
@@ -291,6 +325,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           set({ state: msg.state || 'none' })
           get().appendOutput(`State: ${msg.state}`)
           get().refreshStatus()
+          if (msg.state === 'planned') {
+            sendNotification('Planning Complete', 'Specification is ready for review')
+          } else if (msg.state === 'implemented') {
+            sendNotification('Implementation Complete', 'Code is ready for review')
+          }
         } else if (msg.type === 'task_abandoned' || msg.type === 'task_deleted' || msg.type === 'task_reset') {
           set({ state: msg.state || 'none' })
           get().appendOutput(msg.message || `Task ${msg.type.replace('task_', '')}`)
@@ -340,7 +379,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       console.log('[kvelmo] Worktree WebSocket connecting...')
       await client.connect()
       console.log('[kvelmo] Worktree WebSocket connected!')
-      set({ client, connected: true, connecting: false })
+      set({ client, connected: true, connecting: false, reconnectAttempt: 0, error: null })
+
+      requestNotificationPermission()
 
       // Activate server-side event streaming. Pass last known seq so missed
       // events are replayed if this is a reconnect.
@@ -369,9 +410,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (client) {
       client.close()
     }
+    const timeoutId = get().reconnectTimeoutId
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
     set({
       connected: false,
       connecting: false,
+      reconnectAttempt: 0,
+      reconnectTimeoutId: null,
       worktreeId: null,
       client: null,
       task: null,

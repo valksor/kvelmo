@@ -1,15 +1,20 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useProjectStore } from '../stores/projectStore'
 
 interface ActionsWidgetProps {
   embedded?: boolean
 }
 
+type RetryableAction = {
+  label: string
+  fn: () => Promise<void>
+}
+
 export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
   const {
     state, plan, implement, simplify, optimize, review, submit, undo, redo, abort, abandon, update,
     finish, refresh, approveRemote, mergeRemote, deleteTask,
-    loading, checkpoints, redoStack
+    loading, checkpoints, redoStack, error
   } = useProjectStore()
 
   const [showAbandonModal, setShowAbandonModal] = useState(false)
@@ -21,6 +26,15 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [updateNotice, setUpdateNotice] = useState<string | null>(null)
   const [refreshResult, setRefreshResult] = useState<{ action: string; message: string } | null>(null)
+  const [lastAction, setLastAction] = useState<RetryableAction | null>(null)
+
+  const tracked = useCallback((label: string, fn: () => Promise<void>) => {
+    return async () => {
+      setLastAction({ label, fn })
+      useProjectStore.setState({ error: null })
+      await fn()
+    }
+  }, [])
 
   const canSubmit = state === 'reviewing'
   const canUndo = checkpoints.length > 0
@@ -86,7 +100,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
         {/* Update from Source */}
         {canUpdate && (
           <button
-            onClick={handleUpdate}
+            onClick={tracked('Update', handleUpdate)}
             disabled={loading}
             className="btn btn-outline btn-info w-full btn-sm"
           >
@@ -110,7 +124,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
         {/* Plan button with force re-run option */}
         <div className="flex gap-1">
           <button
-            onClick={() => plan(false)}
+            onClick={tracked('Plan', () => plan(false))}
             disabled={state !== 'loaded' || loading}
             className="btn btn-primary flex-1"
           >
@@ -121,7 +135,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
           </button>
           {canForcePlan && (
             <button
-              onClick={() => plan(true)}
+              onClick={tracked('Plan', () => plan(true))}
               disabled={loading}
               className="btn btn-primary btn-outline btn-square"
               aria-label="Force re-run planning"
@@ -136,7 +150,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
         {/* Implement button with force re-run option */}
         <div className="flex gap-1">
           <button
-            onClick={() => implement(false)}
+            onClick={tracked('Implement', () => implement(false))}
             disabled={state !== 'planned' || loading}
             className="btn btn-success flex-1"
           >
@@ -147,7 +161,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
           </button>
           {canForceImplement && (
             <button
-              onClick={() => implement(true)}
+              onClick={tracked('Implement', () => implement(true))}
               disabled={loading}
               className="btn btn-success btn-outline btn-square"
               aria-label="Force re-run implementation"
@@ -161,7 +175,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
         {/* Simplify — optional code clarity pass */}
         <button
-          onClick={() => simplify()}
+          onClick={tracked('Simplify', () => simplify())}
           disabled={!canSimplify || loading}
           className="btn btn-info w-full"
         >
@@ -173,7 +187,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
         {/* Optimize — optional performance/quality pass */}
         <button
-          onClick={() => optimize()}
+          onClick={tracked('Optimize', () => optimize())}
           disabled={!canOptimize || loading}
           className="btn btn-secondary w-full"
         >
@@ -188,7 +202,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
           <>
             <div className="flex gap-1">
               <button
-                onClick={() => review({ approve: true })}
+                onClick={tracked('Review', () => review({ approve: true }))}
                 disabled={loading}
                 className="btn btn-warning flex-1"
               >
@@ -199,7 +213,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
                 Review
               </button>
               <button
-                onClick={() => review({ fix: true })}
+                onClick={tracked('Review', () => review({ fix: true }))}
                 disabled={loading}
                 className="btn btn-warning btn-outline btn-square"
                 aria-label="Fix and Continue — review and automatically apply fixes"
@@ -215,7 +229,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
           </>
         ) : (
           <button
-            onClick={() => review({ approve: true })}
+            onClick={tracked('Review', () => review({ approve: true }))}
             disabled={!canReview || loading}
             className="btn btn-warning w-full"
           >
@@ -246,7 +260,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
             {/* Refresh PR Status */}
             <button
-              onClick={handleRefresh}
+              onClick={tracked('Check PR Status', handleRefresh)}
               disabled={loading}
               className="btn btn-info btn-outline w-full"
             >
@@ -268,7 +282,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
             {/* Approve PR */}
             <button
-              onClick={() => approveRemote()}
+              onClick={tracked('Approve PR', () => approveRemote())}
               disabled={loading}
               className="btn btn-primary btn-outline w-full"
             >
@@ -280,7 +294,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
             {/* Merge PR */}
             <button
-              onClick={() => mergeRemote('rebase')}
+              onClick={tracked('Merge PR', () => mergeRemote('rebase'))}
               disabled={loading}
               className="btn btn-secondary w-full"
             >
@@ -339,7 +353,7 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
 
       {/* Abort */}
       <button
-        onClick={abort}
+        onClick={tracked('Abort', abort)}
         disabled={!canAbort || loading}
         className="btn btn-error btn-outline w-full mt-2"
       >
@@ -373,6 +387,26 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
             Delete Task
           </button>
         </>
+      )}
+
+      {/* Error display with retry */}
+      {error && lastAction && (
+        <div className="alert alert-error py-2 text-sm mt-2">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">{lastAction.label} failed</p>
+            <p className="text-xs opacity-80 break-words">{error}</p>
+          </div>
+          <button
+            onClick={() => lastAction.fn()}
+            disabled={loading}
+            className="btn btn-xs btn-outline btn-error flex-shrink-0"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {/* Loading Indicator */}
