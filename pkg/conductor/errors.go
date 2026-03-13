@@ -104,6 +104,65 @@ var errorPatterns = []errorPattern{
 		Fix:      "Review the issues listed in the output and fix them.\nOr re-run review to try again: kvelmo review",
 		Code:     "quality_gate",
 	},
+	// Rate limiting
+	{
+		Contains: "rate_limit",
+		Message:  "API rate limit reached",
+		Fix:      "Wait a few minutes and retry, or switch to a different model",
+		Code:     "rate_limit",
+	},
+	{
+		Contains: "429",
+		Message:  "API rate limit reached",
+		Fix:      "Wait a few minutes and retry",
+		Code:     "rate_limit",
+	},
+	// Context window
+	{
+		Contains: "context_length",
+		Message:  "Context window exceeded",
+		Fix:      "Try simplifying the task or breaking it into smaller steps",
+		Code:     "context_overflow",
+	},
+	{
+		Contains: "maximum context",
+		Message:  "Context window exceeded",
+		Fix:      "Reduce task scope or use kvelmo simplify first",
+		Code:     "context_overflow",
+	},
+	// Process signals
+	{
+		Contains: "signal: killed",
+		Message:  "Agent process was killed (likely OOM)",
+		Fix:      "Check system memory. Consider using a smaller model or simpler task",
+		Code:     "agent_killed",
+	},
+	{
+		Contains: "signal: terminated",
+		Message:  "Agent process was terminated",
+		Fix:      "Check if another process killed the agent. Retry with: kvelmo <phase>",
+		Code:     "agent_terminated",
+	},
+	// Timeout
+	{
+		Contains: "context deadline exceeded",
+		Message:  "Operation timed out",
+		Fix:      "Increase timeout in settings or break the task into smaller steps",
+		Code:     "timeout",
+	},
+	// Authentication
+	{
+		Contains: "authentication",
+		Message:  "Authentication failed",
+		Fix:      "Check your API key or re-authenticate: claude auth login",
+		Code:     "auth_failed",
+	},
+	{
+		Contains: "unauthorized",
+		Message:  "Authentication failed",
+		Fix:      "Your API key may have expired. Re-authenticate: claude auth login",
+		Code:     "auth_failed",
+	},
 	// State machine
 	{
 		Contains: "no task loaded",

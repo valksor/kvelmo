@@ -205,6 +205,54 @@ func (c *Conductor) GotoCheckpoint(ctx context.Context, sha string) error {
 	return nil
 }
 
+// Stop gracefully stops the current operation and returns to the previous stable state.
+// Unlike Abort (which transitions to Failed), Stop allows the user to continue
+// from a recoverable state:
+//   - Planning → Loaded (can re-plan)
+//   - Implementing → Planned (can re-implement)
+//   - Simplifying → Implemented (can re-simplify)
+//   - Optimizing → Implemented (can re-optimize)
+func (c *Conductor) Stop(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check if we can dispatch stop from current state
+	canStop, _ := c.machine.CanDispatch(ctx, EventStop)
+	if !canStop {
+		return errors.New("cannot stop: not in a stoppable state")
+	}
+
+	// Interrupt the agent first (sends protocol-level interrupt)
+	if c.pool != nil && c.activeJobID != "" {
+		_ = c.pool.InterruptJob(c.activeJobID)
+	}
+
+	// Cancel the job (stops worker, marks job as failed)
+	if c.pool != nil && c.activeJobID != "" {
+		_ = c.pool.CancelJob(c.activeJobID)
+	}
+
+	// Clear active job
+	jobID := c.activeJobID
+	c.activeJobID = ""
+
+	// Transition to previous stable state
+	if err := c.machine.Dispatch(ctx, EventStop); err != nil {
+		return fmt.Errorf("cannot stop: %w", err)
+	}
+
+	c.persistState()
+
+	c.emit(ConductorEvent{
+		Type:    "task_stopped",
+		State:   c.machine.State(),
+		JobID:   jobID,
+		Message: "Operation stopped, returned to " + string(c.machine.State()),
+	})
+
+	return nil
+}
+
 // Abort aborts the current task.
 func (c *Conductor) Abort(ctx context.Context) error {
 	c.mu.Lock()
@@ -284,7 +332,7 @@ func (c *Conductor) CreateCheckpoint(ctx context.Context, message string) (strin
 // truncateSHA safely truncates a SHA hash to the specified length.
 // Returns the full string if it's shorter than n characters.
 //
-//nolint:unparam // n is kept as a parameter for flexibility in future callers
+
 func truncateSHA(sha string, n int) string {
 	if len(sha) < n {
 		return sha

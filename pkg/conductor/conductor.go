@@ -48,7 +48,8 @@ type Conductor struct {
 	closed    atomic.Bool
 
 	// Current task state
-	workUnit *WorkUnit
+	workUnit    *WorkUnit
+	activeJobID string // ID of currently running job (for cancellation)
 
 	// Task queue (pending tasks to auto-start after current finishes)
 	taskQueue []*QueuedTask
