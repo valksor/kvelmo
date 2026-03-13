@@ -293,6 +293,7 @@ func stringContains(s, sub string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -526,6 +527,7 @@ func TestTaskHistory_WithArchivedTasks(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "task-history-1" {
 			found = true
+
 			break
 		}
 	}

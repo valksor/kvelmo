@@ -52,6 +52,7 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 
 		if event.Type == "job_completed" {
 			c.mu.Lock()
+			c.activeJobID = "" // Clear active job on completion
 			var (
 				wuSnapshot *WorkUnit
 				indexer    *memory.Indexer
@@ -139,6 +140,7 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 
 		if event.Type == "job_failed" {
 			c.mu.Lock()
+			c.activeJobID = "" // Clear active job on failure
 			// Capture any partial work the agent completed before crashing
 			if c.workUnit != nil {
 				workDir := c.getWorkDir()

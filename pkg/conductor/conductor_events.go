@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/valksor/kvelmo/pkg/metrics"
 )
 
 // Internal methods
@@ -80,7 +82,8 @@ func (c *Conductor) emit(e ConductorEvent) {
 	select {
 	case c.events <- e:
 	default:
-		// Channel full, drop event
+		metrics.Global().RecordEventDropped()
+		slog.Warn("conductor event dropped", "type", e.Type)
 	}
 	c.eventsMu.Unlock()
 

@@ -79,6 +79,7 @@ func (c *Conductor) Plan(ctx context.Context, force bool) (string, error) {
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
 	c.workUnit.UpdatedAt = time.Now()
+	c.activeJobID = job.ID
 	c.saveJobSession(job.ID, "planning", "")
 	c.persistState()
 
