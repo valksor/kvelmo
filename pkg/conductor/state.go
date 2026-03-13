@@ -70,6 +70,7 @@ const (
 	EventAnswer Event = "answer" // User answered question
 	EventPause  Event = "pause"  // Pause execution
 	EventResume Event = "resume" // Resume after pause
+	EventStop   Event = "stop"   // Stop current operation, go back to previous stable state
 )
 
 // Transition defines a valid state transition.
@@ -362,16 +363,20 @@ var TransitionTable = map[TransitionKey][]Transition{
 	},
 
 	// === Waiting (user input needed) ===
+	// Note: DispatchWithResume overrides the target state to the previous state.
+	// This fallback to StateLoaded is a safety net if Dispatch is called directly.
 	{StateWaiting, EventAnswer}: {
-		{From: StateWaiting, Event: EventAnswer, To: StatePlanning},
+		{From: StateWaiting, Event: EventAnswer, To: StateLoaded},
 	},
 	{StateWaiting, EventAbort}: {
 		{From: StateWaiting, Event: EventAbort, To: StateFailed},
 	},
 
 	// === Paused ===
+	// Note: DispatchWithResume overrides the target state to the previous state.
+	// This fallback to StateLoaded is a safety net if Dispatch is called directly.
 	{StatePaused, EventResume}: {
-		{From: StatePaused, Event: EventResume, To: StatePlanning},
+		{From: StatePaused, Event: EventResume, To: StateLoaded},
 	},
 	{StatePaused, EventAbort}: {
 		{From: StatePaused, Event: EventAbort, To: StateFailed},
@@ -437,6 +442,20 @@ var TransitionTable = map[TransitionKey][]Transition{
 	},
 	{StateReviewing, EventAbort}: {
 		{From: StateReviewing, Event: EventAbort, To: StateFailed},
+	},
+
+	// === Stop (graceful interrupt, returns to previous stable state) ===
+	{StatePlanning, EventStop}: {
+		{From: StatePlanning, Event: EventStop, To: StateLoaded},
+	},
+	{StateImplementing, EventStop}: {
+		{From: StateImplementing, Event: EventStop, To: StatePlanned},
+	},
+	{StateSimplifying, EventStop}: {
+		{From: StateSimplifying, Event: EventStop, To: StateImplemented},
+	},
+	{StateOptimizing, EventStop}: {
+		{From: StateOptimizing, Event: EventStop, To: StateImplemented},
 	},
 }
 
@@ -589,6 +608,8 @@ func eventDescription(e Event) string {
 		return "pause"
 	case EventResume:
 		return "resume"
+	case EventStop:
+		return "stop"
 	}
 
 	return string(e)
