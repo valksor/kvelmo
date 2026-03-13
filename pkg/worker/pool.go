@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/valksor/kvelmo/pkg/agent"
+	"github.com/valksor/kvelmo/pkg/agent/recorder"
 	"github.com/valksor/kvelmo/pkg/metrics"
 )
 
@@ -41,13 +42,19 @@ type Pool struct {
 
 	// Configuration
 	basePort int // Starting port for WebSocket workers
+
+	// Recording
+	recordingEnabled bool
+	recordingDir     string
 }
 
 // PoolConfig configures the worker pool.
 type PoolConfig struct {
-	MaxWorkers int
-	BasePort   int
-	Agents     *agent.Registry
+	MaxWorkers       int
+	BasePort         int
+	Agents           *agent.Registry
+	RecordingEnabled bool
+	RecordingDir     string
 }
 
 // DefaultPoolConfig returns sensible defaults.
@@ -68,16 +75,18 @@ func NewPool(cfg PoolConfig) *Pool {
 	}
 
 	return &Pool{
-		workers:    make(map[string]*Worker),
-		agents:     agents,
-		jobs:       make(map[string]*Job),
-		queue:      make(chan *Job, 100),
-		streams:    make(map[string]chan Event),
-		jobCancels: make(map[string]context.CancelFunc),
-		maxWorkers: cfg.MaxWorkers,
-		basePort:   cfg.BasePort,
-		ctx:        ctx,
-		cancel:     cancel,
+		workers:          make(map[string]*Worker),
+		agents:           agents,
+		jobs:             make(map[string]*Job),
+		queue:            make(chan *Job, 100),
+		streams:          make(map[string]chan Event),
+		jobCancels:       make(map[string]context.CancelFunc),
+		maxWorkers:       cfg.MaxWorkers,
+		basePort:         cfg.BasePort,
+		recordingEnabled: cfg.RecordingEnabled,
+		recordingDir:     cfg.RecordingDir,
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 }
 
@@ -258,6 +267,24 @@ func (p *Pool) executeWithAgent(ctx context.Context, job *Job, w *Worker) {
 		defer func() { _ = jobAgent.Close() }()
 	}
 
+	// Set up recording if enabled
+	var rec *recorder.Recorder
+	if p.recordingEnabled {
+		recCfg := recorder.Config{
+			Dir:     p.recordingDir,
+			JobID:   job.ID,
+			Agent:   ag.Name(),
+			WorkDir: job.WorkDir,
+		}
+		if r, recErr := recorder.New(recCfg); recErr == nil {
+			rec = r
+			defer func() { _ = rec.Close() }()
+			_ = rec.RecordInbound(job.Prompt)
+		} else {
+			slog.Warn("failed to create recorder", "error", recErr, "job_id", job.ID)
+		}
+	}
+
 	// Send prompt to agent
 	eventCh, err := ag.SendPrompt(ctx, job.Prompt)
 	if err != nil {
@@ -286,6 +313,11 @@ func (p *Pool) executeWithAgent(ctx context.Context, job *Job, w *Worker) {
 	// Forward agent events to job stream
 	var result strings.Builder
 	for agentEvent := range eventCh {
+		// Record the event if recording is active
+		if rec != nil {
+			_ = rec.RecordOutbound(string(agentEvent.Type), agentEvent)
+		}
+
 		// Convert agent.Event to worker.Event
 		workerEvent := Event{
 			Type:      string(agentEvent.Type),
@@ -440,6 +472,7 @@ func (p *Pool) emitEvent(jobID string, event Event) {
 		select {
 		case ch <- event:
 		default:
+			metrics.Global().RecordEventDropped()
 			slog.Warn("worker event channel full, dropping event", "job_id", jobID, "type", event.Type)
 		}
 	}
@@ -557,6 +590,37 @@ func (p *Pool) CancelJob(jobID string) error {
 	metrics.Global().RecordJobFailed()
 
 	return nil
+}
+
+// InterruptJob sends an interrupt signal to the agent running a job.
+// Unlike CancelJob, this does not mark the job as failed - it just signals
+// the agent to abort its current turn. The job context remains valid.
+// Returns nil if the job is not found or not currently running.
+func (p *Pool) InterruptJob(jobID string) error {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	job, ok := p.jobs[jobID]
+	if !ok {
+		return nil // Job not found - nothing to interrupt
+	}
+
+	if job.Status != JobStatusInProgress {
+		return nil // Not running - nothing to interrupt
+	}
+
+	// Find the worker running this job
+	if job.WorkerID == "" {
+		return nil
+	}
+
+	w, ok := p.workers[job.WorkerID]
+	if !ok || w.Agent == nil {
+		return nil
+	}
+
+	// Send interrupt to the agent
+	return w.Agent.Interrupt()
 }
 
 // AddWorker adds a simulated worker to the pool (for testing).

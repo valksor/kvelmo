@@ -20,6 +20,13 @@ type Metrics struct {
 	RPCRequests atomic.Int64
 	RPCErrors   atomic.Int64
 
+	// Agent counters
+	AgentConnects       atomic.Int64
+	AgentDisconnects    atomic.Int64
+	EventsDropped       atomic.Int64
+	PermissionsApproved atomic.Int64
+	PermissionsDenied   atomic.Int64
+
 	// Latency tracking (simple moving average)
 	mu              sync.RWMutex
 	rpcLatencies    []time.Duration
@@ -48,6 +55,31 @@ func (m *Metrics) RecordJobFailed() {
 	m.JobsFailed.Add(1)
 }
 
+// RecordAgentConnect increments the agent connects counter.
+func (m *Metrics) RecordAgentConnect() {
+	m.AgentConnects.Add(1)
+}
+
+// RecordAgentDisconnect increments the agent disconnects counter.
+func (m *Metrics) RecordAgentDisconnect() {
+	m.AgentDisconnects.Add(1)
+}
+
+// RecordEventDropped increments the dropped events counter.
+func (m *Metrics) RecordEventDropped() {
+	m.EventsDropped.Add(1)
+}
+
+// RecordPermissionApproved increments the approved permissions counter.
+func (m *Metrics) RecordPermissionApproved() {
+	m.PermissionsApproved.Add(1)
+}
+
+// RecordPermissionDenied increments the denied permissions counter.
+func (m *Metrics) RecordPermissionDenied() {
+	m.PermissionsDenied.Add(1)
+}
+
 // RecordRPCRequest records an RPC request with its latency.
 func (m *Metrics) RecordRPCRequest(latency time.Duration, err error) {
 	m.RPCRequests.Add(1)
@@ -73,6 +105,13 @@ type Snapshot struct {
 	RPCErrors      int64   `json:"rpc_errors"`
 	AvgLatencyMs   float64 `json:"avg_latency_ms"`
 	P99LatencyMs   float64 `json:"p99_latency_ms"`
+
+	// Agent metrics
+	AgentConnects       int64 `json:"agent_connects"`
+	AgentDisconnects    int64 `json:"agent_disconnects"`
+	EventsDropped       int64 `json:"events_dropped"`
+	PermissionsApproved int64 `json:"permissions_approved"`
+	PermissionsDenied   int64 `json:"permissions_denied"`
 }
 
 // Snapshot returns current metrics values.
@@ -85,6 +124,11 @@ func (m *Metrics) Snapshot() Snapshot {
 		RPCErrors:     m.RPCErrors.Load(),
 	}
 	s.JobsInProgress = max(0, s.JobsSubmitted-s.JobsCompleted-s.JobsFailed)
+	s.AgentConnects = m.AgentConnects.Load()
+	s.AgentDisconnects = m.AgentDisconnects.Load()
+	s.EventsDropped = m.EventsDropped.Load()
+	s.PermissionsApproved = m.PermissionsApproved.Load()
+	s.PermissionsDenied = m.PermissionsDenied.Load()
 
 	m.mu.RLock()
 	if len(m.rpcLatencies) > 0 {
