@@ -42,6 +42,7 @@ func init() {
 	rootCmd.AddCommand(commands.StatusCmd)
 	rootCmd.AddCommand(commands.WatchCmd)
 	rootCmd.AddCommand(commands.StopCmd)
+	rootCmd.AddCommand(commands.ShutdownCmd)
 	rootCmd.AddCommand(commands.ProjectsCmd)
 	rootCmd.AddCommand(commands.WorkersCmd)
 	rootCmd.AddCommand(commands.PlanCmd)

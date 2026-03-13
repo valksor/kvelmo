@@ -186,6 +186,7 @@ func (w *WorktreeSocket) registerHandlers() {
 	w.server.Handle("remote.approve", w.handleRemoteApprove)
 	w.server.Handle("remote.merge", w.handleRemoteMerge)
 	w.server.Handle("abort", w.handleAbort)
+	w.server.Handle("stop", w.handleStop)
 	w.server.Handle("reset", w.handleReset)
 	w.server.Handle("shutdown", w.handleShutdown)
 
@@ -744,6 +745,21 @@ func (w *WorktreeSocket) handleAbort(ctx context.Context, req *Request) (*Respon
 
 	return NewResultResponse(req.ID, map[string]any{
 		"status": "aborted",
+		"state":  w.conductor.State(),
+	})
+}
+
+func (w *WorktreeSocket) handleStop(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, -32600, "no conductor configured"), nil
+	}
+
+	if err := w.conductor.Stop(ctx); err != nil {
+		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"status": "stopped",
 		"state":  w.conductor.State(),
 	})
 }

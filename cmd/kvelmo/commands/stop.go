@@ -2,31 +2,30 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/socket"
-)
-
-var (
-	stopTimeout time.Duration
-	stopForce   bool
 )
 
 var StopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop the worktree socket",
-	Long: `Stop the worktree socket for the current directory.
+	Short: "Stop the current operation",
+	Long: `Stop the current operation (planning, implementing, etc.) and return to the previous stable state.
 
-By default, sends a graceful shutdown request and waits for the socket to exit. Use --force to skip the graceful wait and unregister immediately.`,
+Unlike 'abort' which transitions to Failed state, 'stop' returns to a recoverable state:
+  - Planning → Loaded (can re-plan)
+  - Implementing → Planned (can re-implement)
+  - Simplifying → Implemented (can re-simplify)
+  - Optimizing → Implemented (can re-optimize)
+
+This allows you to interrupt a long-running operation and continue from a known good state.`,
 	RunE: runStop,
-}
-
-func init() {
-	StopCmd.Flags().DurationVarP(&stopTimeout, "timeout", "t", 2*time.Second, "Graceful shutdown timeout")
-	StopCmd.Flags().BoolVarP(&stopForce, "force", "f", false, "Skip graceful shutdown and unregister immediately")
 }
 
 func runStop(cmd *cobra.Command, args []string) error {
@@ -36,47 +35,34 @@ func runStop(cmd *cobra.Command, args []string) error {
 	}
 
 	wtPath := socket.WorktreeSocketPath(cwd)
+
 	if !socket.SocketExists(wtPath) {
-		fmt.Println("No worktree socket running")
-
-		return nil
+		return errors.New("no worktree socket running\nRun '" + meta.Name + " start' first")
 	}
 
-	if !stopForce {
-		client, err := socket.NewClient(wtPath, socket.WithTimeout(stopTimeout))
-		if err == nil {
-			ctx, cancel := context.WithTimeout(context.Background(), stopTimeout)
-			_, _ = client.Call(ctx, "shutdown", nil)
-			cancel()
-			_ = client.Close()
+	client, err := socket.NewClient(wtPath, socket.WithTimeout(5*time.Second))
+	if err != nil {
+		return fmt.Errorf("connect to worktree socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
 
-			deadline := time.Now().Add(stopTimeout)
-			for time.Now().Before(deadline) {
-				if !socket.SocketExists(wtPath) {
-					fmt.Printf("Stopped worktree: %s\n", cwd)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-					return nil
-				}
-				time.Sleep(100 * time.Millisecond)
-			}
-			fmt.Println("Graceful shutdown timed out, forcing...")
-		}
+	resp, err := client.Call(ctx, "stop", nil)
+	if err != nil {
+		return fmt.Errorf("stop call: %w", err)
 	}
 
-	fmt.Printf("Stopped worktree: %s\n", cwd)
-
-	globalPath := socket.GlobalSocketPath()
-	if socket.SocketExists(globalPath) {
-		client, err := socket.NewClient(globalPath, socket.WithTimeout(time.Second))
-		if err == nil {
-			defer func() { _ = client.Close() }()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			id := socket.WorktreeIDFromPath(cwd)
-			_, _ = client.Call(ctx, "projects.unregister", socket.UnregisterParams{ID: id})
-		}
+	var result struct {
+		Status string `json:"status"`
+		State  string `json:"state"`
 	}
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("parse result: %w", err)
+	}
+
+	fmt.Printf("Operation stopped (state: %s)\n", result.State)
 
 	return nil
 }
