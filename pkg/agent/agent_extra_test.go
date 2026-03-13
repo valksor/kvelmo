@@ -83,15 +83,15 @@ func TestKvelmoPermissionHandler_UnknownToolDenied(t *testing.T) {
 func TestKvelmoPermissionHandler_DangerousOperationDenied(t *testing.T) {
 	// Even if the tool is Bash (normally allowed), dangerous commands are blocked
 	tests := []struct {
-		name    string
-		tool    string
-		input   map[string]any
+		name       string
+		tool       string
+		input      map[string]any
 		wantDanger permission.DangerLevel
 	}{
 		{
-			name:    "rm -rf /",
-			tool:    "Bash",
-			input:   map[string]any{"command": "rm -rf /"},
+			name:       "rm -rf /",
+			tool:       "Bash",
+			input:      map[string]any{"command": "rm -rf /"},
 			wantDanger: permission.Dangerous,
 		},
 	}

@@ -23,6 +23,7 @@ func readEvent(t *testing.T, ch chan agent.Event) (agent.Event, bool) {
 func newTestAgent() *Agent {
 	a := NewWithConfig(DefaultConfig("test", []string{"echo"}))
 	a.events = make(chan agent.Event, 10)
+
 	return a
 }
 
