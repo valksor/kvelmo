@@ -174,3 +174,110 @@ func TestConnect_WithCat(t *testing.T) {
 		t.Errorf("Close() returned error: %v", err)
 	}
 }
+
+func TestConnect_DoesNotMutateConfigCommand(t *testing.T) {
+	// Regression test: Connect must not mutate the Config.Command slice via append.
+	command := make([]string, 2, 10) // Extra capacity to trigger append mutation
+	command[0] = "cat"
+	command[1] = "--help"
+	original := make([]string, len(command))
+	copy(original, command)
+
+	a := custom.NewWithConfig(custom.Config{
+		Name:    "test",
+		Command: command,
+		Args:    []string{"--extra"},
+		Timeout: 2 * time.Second,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// Connect may fail (cat --help --extra exits), but that's fine — we're testing slice mutation
+	_ = a.Connect(ctx)
+	_ = a.Close()
+
+	// Verify the original command slice was not mutated
+	for i, v := range original {
+		if command[i] != v {
+			t.Errorf("Config.Command[%d] mutated: got %q, want %q", i, command[i], v)
+		}
+	}
+}
+
+func TestTimeout_EnforcedOnConnect(t *testing.T) {
+	// Agent with very short timeout connecting to a long-running process
+	a := custom.NewWithConfig(custom.Config{
+		Name:         "test",
+		Command:      []string{"sleep", "60"},
+		Timeout:      200 * time.Millisecond,
+		InputFormat:  "text",
+		OutputFormat: "text",
+	})
+
+	// Use Background context — timeout should come from Config.Timeout
+	ctx := context.Background()
+	if err := a.Connect(ctx); err != nil {
+		t.Fatalf("Connect() returned error: %v", err)
+	}
+
+	// Wait for the timeout to kill the process
+	deadline := time.After(2 * time.Second)
+	for {
+		select {
+		case <-deadline:
+			_ = a.Close()
+			t.Fatal("process was not killed by timeout within 2s")
+		default:
+			if !a.Connected() {
+				// Process was killed by timeout
+				_ = a.Close()
+
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+
+func TestSendPrompt_ConcurrentAccess(t *testing.T) {
+	// Regression test: SendPrompt must not race with readOutput on the events channel.
+	// This test verifies no panic under -race.
+	a := custom.NewWithConfig(custom.Config{
+		Name:         "test",
+		Command:      []string{"cat"},
+		Timeout:      5 * time.Second,
+		InputFormat:  "text",
+		OutputFormat: "text",
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := a.Connect(ctx); err != nil {
+		t.Fatalf("Connect() returned error: %v", err)
+	}
+	defer func() { _ = a.Close() }()
+
+	// Send multiple prompts concurrently — the race detector will catch data races
+	ch, err := a.SendPrompt(ctx, "hello")
+	if err != nil {
+		t.Fatalf("first SendPrompt() returned error: %v", err)
+	}
+
+	// Read events to avoid blocking
+	go func() {
+		for range ch {
+		}
+	}()
+
+	// Second prompt replaces the channel — must not race
+	ch2, err := a.SendPrompt(ctx, "world")
+	if err != nil {
+		t.Fatalf("second SendPrompt() returned error: %v", err)
+	}
+	go func() {
+		for range ch2 {
+		}
+	}()
+}

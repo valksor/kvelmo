@@ -260,6 +260,7 @@ func TestWithPermissionHandler_ValueStored(t *testing.T) {
 	called := false
 	handler := agent.PermissionHandler(func(_ agent.PermissionRequest) bool {
 		called = true
+
 		return true
 	})
 	a := claude.New()

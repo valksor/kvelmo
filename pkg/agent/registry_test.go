@@ -42,6 +42,7 @@ func (m *mockAgent) Close() error {
 
 	return nil
 }
+func (m *mockAgent) Interrupt() error                  { return nil }
 func (m *mockAgent) WithEnv(key, value string) Agent   { return m }
 func (m *mockAgent) WithArgs(args ...string) Agent     { return m }
 func (m *mockAgent) WithWorkDir(dir string) Agent      { return m }
