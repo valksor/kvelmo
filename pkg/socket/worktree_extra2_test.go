@@ -16,7 +16,7 @@ func TestWorktreeHandleQualityRespond_NilConductor(t *testing.T) {
 	ctx := context.Background()
 	w := &WorktreeSocket{server: NewServer(""), streams: make(map[string]chan []byte)}
 
-	params, _ := json.Marshal(qualityRespondParams{PromptID: "p1", Answer: true})
+	params, _ := json.Marshal(qualityRespondParams{PromptID: "p1", Answer: true}) //nolint:errchkjson // test data
 	resp, err := w.handleQualityRespond(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQualityRespond() error = %v", err)
@@ -30,7 +30,7 @@ func TestWorktreeHandleQualityRespond_MissingPromptID(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(qualityRespondParams{PromptID: "", Answer: true})
+	params, _ := json.Marshal(qualityRespondParams{PromptID: "", Answer: true}) //nolint:errchkjson // test data
 	resp, err := w.handleQualityRespond(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQualityRespond() error = %v", err)
@@ -58,7 +58,7 @@ func TestWorktreeHandleQualityRespond_NonexistentPrompt(t *testing.T) {
 	w := newTestWorktreeSocket(t)
 	setWorkUnitInState(t, w, conductor.StateLoaded)
 
-	params, _ := json.Marshal(qualityRespondParams{PromptID: "nonexistent-prompt-id", Answer: true})
+	params, _ := json.Marshal(qualityRespondParams{PromptID: "nonexistent-prompt-id", Answer: true}) //nolint:errchkjson // test data
 	resp, err := w.handleQualityRespond(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQualityRespond() error = %v", err)
@@ -77,7 +77,7 @@ func TestWorktreeHandleGitDiffAgainst_NilRepo(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t) // no repo configured
 
-	params, _ := json.Marshal(map[string]string{"ref": "main"})
+	params, _ := json.Marshal(map[string]string{"ref": "main"}) //nolint:errchkjson // test data
 	resp, err := w.handleGitDiffAgainst(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleGitDiffAgainst() error = %v", err)
@@ -91,7 +91,7 @@ func TestWorktreeHandleGitDiffAgainst_MissingRef(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(map[string]string{"ref": ""})
+	params, _ := json.Marshal(map[string]string{"ref": ""}) //nolint:errchkjson // test data
 	resp, err := w.handleGitDiffAgainst(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleGitDiffAgainst() error = %v", err)
@@ -125,7 +125,7 @@ func TestWorktreeHandleUndo_MultipleSteps(t *testing.T) {
 	w := newTestWorktreeSocket(t)
 
 	// No checkpoints → undo should fail with an error response
-	params, _ := json.Marshal(UndoParams{Steps: 3})
+	params, _ := json.Marshal(UndoParams{Steps: 3}) //nolint:errchkjson // test data
 	resp, err := w.handleUndo(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleUndo() error = %v", err)
@@ -140,7 +140,7 @@ func TestWorktreeHandleUndo_ZeroStepsDefaultsToOne(t *testing.T) {
 	w := newTestWorktreeSocket(t)
 
 	// Steps=0 should default to 1 and then fail (no checkpoints)
-	params, _ := json.Marshal(UndoParams{Steps: 0})
+	params, _ := json.Marshal(UndoParams{Steps: 0}) //nolint:errchkjson // test data
 	resp, err := w.handleUndo(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleUndo() error = %v", err)
@@ -155,7 +155,7 @@ func TestWorktreeHandleRedo_MultipleSteps(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(RedoParams{Steps: 2})
+	params, _ := json.Marshal(RedoParams{Steps: 2}) //nolint:errchkjson // test data
 	resp, err := w.handleRedo(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleRedo() error = %v", err)
@@ -169,7 +169,7 @@ func TestWorktreeHandleRedo_ZeroStepsDefaultsToOne(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(RedoParams{Steps: 0})
+	params, _ := json.Marshal(RedoParams{Steps: 0}) //nolint:errchkjson // test data
 	resp, err := w.handleRedo(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleRedo() error = %v", err)
@@ -188,7 +188,7 @@ func TestWorktreeHandleScreenshotsDelete_MissingScreenshotID(t *testing.T) {
 	w := newTestWorktreeSocketWithScreenshots(t)
 	setWorkUnitInState(t, w, conductor.StateLoaded)
 
-	params, _ := json.Marshal(map[string]string{"screenshot_id": ""})
+	params, _ := json.Marshal(map[string]string{"screenshot_id": ""}) //nolint:errchkjson // test data
 	resp, err := w.handleScreenshotsDelete(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleScreenshotsDelete() error = %v", err)
@@ -203,7 +203,7 @@ func TestWorktreeHandleScreenshotsDelete_NonexistentScreenshot(t *testing.T) {
 	w := newTestWorktreeSocketWithScreenshots(t)
 	setWorkUnitInState(t, w, conductor.StateLoaded)
 
-	params, _ := json.Marshal(map[string]string{"screenshot_id": "nonexistent-id"})
+	params, _ := json.Marshal(map[string]string{"screenshot_id": "nonexistent-id"}) //nolint:errchkjson // test data
 	resp, err := w.handleScreenshotsDelete(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleScreenshotsDelete() error = %v", err)

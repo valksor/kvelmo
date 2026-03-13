@@ -137,7 +137,7 @@ func TestFormatGitError_NonEmptyStderrNoMatch(t *testing.T) {
 func TestFormatGitError_EmptyStderr(t *testing.T) {
 	inner := errors.New("exit status 1")
 	err := formatGitError([]string{"status"}, "", inner)
-	if err != inner {
+	if !errors.Is(err, inner) {
 		t.Errorf("formatGitError() with empty stderr = %v, want bare inner error %v", err, inner)
 	}
 }

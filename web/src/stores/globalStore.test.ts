@@ -22,7 +22,6 @@ vi.mock('../lib/socket', () => ({
 const createMockProject = (overrides: Partial<Project> = {}): Project => ({
   id: 'proj-1',
   path: '/workspace/project',
-  name: 'My Project',
   socket_path: '/tmp/proj.sock',
   state: 'none',
   ...overrides,
@@ -30,8 +29,9 @@ const createMockProject = (overrides: Partial<Project> = {}): Project => ({
 
 const createMockWorker = (overrides: Partial<Worker> = {}): Worker => ({
   id: 'worker-1',
-  agent: 'claude',
+  agent_name: 'claude',
   status: 'idle',
+  is_default: false,
   ...overrides,
 })
 
@@ -179,7 +179,7 @@ describe('globalStore', () => {
     it('can set workers list', () => {
       const workers = [
         createMockWorker({ id: 'w1' }),
-        createMockWorker({ id: 'w2', agent: 'codex' }),
+        createMockWorker({ id: 'w2', agent_name: 'codex' }),
       ]
       useGlobalStore.setState({ workers })
       expect(useGlobalStore.getState().workers).toEqual(workers)
@@ -291,6 +291,13 @@ describe('globalStore', () => {
 
   const injectClient = (client: ReturnType<typeof makeMockClient>) => {
     useGlobalStore.setState({ client: client as never, connected: true })
+  }
+
+  // Creates a mutable handler ref that works with TypeScript's control flow analysis
+  type EventHandler = (msg: unknown) => void
+  const createSubscriberRef = () => {
+    const ref: { current: EventHandler | null } = { current: null }
+    return ref
   }
 
   // ---------------------------------------------------------------------------
@@ -496,7 +503,7 @@ describe('globalStore', () => {
     })
 
     it('reloads workers after adding', async () => {
-      const workers = [createMockWorker({ id: 'w-new', agent: 'codex' })]
+      const workers = [createMockWorker({ id: 'w-new', agent_name: 'codex' })]
       const client = makeMockClient(() => ({ workers, stats: null }))
       injectClient(client)
       await useGlobalStore.getState().addWorker('codex')
@@ -887,11 +894,11 @@ describe('globalStore', () => {
       // Capture the subscriber registered on the mock client by wiring the mock
       // client directly so we can drive the subscribe callback without going
       // through the real connect() flow (which would try to construct SocketClient).
-      let capturedSubscriber: ((msg: unknown) => void) | null = null
+      const subscriberRef = createSubscriberRef()
 
       const client = makeMockClient()
       client.subscribe.mockImplementationOnce((handler: (msg: unknown) => void) => {
-        capturedSubscriber = handler
+        subscriberRef.current = handler
       })
       // Simulate the subscribe call that connect() would register
       client.subscribe((msg: unknown) => {
@@ -906,9 +913,9 @@ describe('globalStore', () => {
       client.call.mockResolvedValue({ tasks })
       injectClient(client)
 
-      expect(capturedSubscriber).not.toBeNull()
-      if (capturedSubscriber) {
-        capturedSubscriber({ method: 'task_state_changed', params: {} })
+      expect(subscriberRef.current).not.toBeNull()
+      if (subscriberRef.current) {
+        subscriberRef.current({ method: 'task_state_changed', params: {} })
         // Allow the microtask queue to flush
         await Promise.resolve()
         expect(useGlobalStore.getState().activeTasks).toHaveLength(1)
@@ -916,11 +923,11 @@ describe('globalStore', () => {
     })
 
     it('unrelated notification method does not trigger loadActiveTasks', async () => {
-      let capturedSubscriber: ((msg: unknown) => void) | null = null
+      const subscriberRef = createSubscriberRef()
 
       const client = makeMockClient()
       client.subscribe.mockImplementationOnce((handler: (msg: unknown) => void) => {
-        capturedSubscriber = handler
+        subscriberRef.current = handler
       })
       client.subscribe((msg: unknown) => {
         const notification = msg as { method?: string }
@@ -930,8 +937,8 @@ describe('globalStore', () => {
       })
       injectClient(client)
 
-      if (capturedSubscriber) {
-        capturedSubscriber({ method: 'other_event', params: {} })
+      if (subscriberRef.current) {
+        subscriberRef.current({ method: 'other_event', params: {} })
         await Promise.resolve()
         // call should not have been invoked for tasks.list
         const taskCalls = (client.call as ReturnType<typeof vi.fn>).mock.calls.filter(

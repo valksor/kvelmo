@@ -172,11 +172,12 @@ func TestWrikeProvider_FetchTask_ServerResponse(t *testing.T) {
 		// Verify auth header
 		if auth := r.Header.Get("Authorization"); auth != "Bearer test-token" {
 			w.WriteHeader(http.StatusUnauthorized)
+
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{
 				{
 					"id":             "IEAABC123",
@@ -222,7 +223,7 @@ func TestWrikeProvider_FetchTask_ServerResponse(t *testing.T) {
 func TestWrikeProvider_FetchTask_NotFound(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{},
 		})
 	}))
@@ -247,7 +248,7 @@ func TestWrikeProvider_UpdateStatus_ServerResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut {
 			var req map[string]string
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			capturedStatus = req["status"]
 			w.WriteHeader(http.StatusOK)
 		} else {
@@ -298,7 +299,7 @@ func TestWrikeProvider_AddComment_ServerResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			var req map[string]string
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			capturedText = req["text"]
 			w.WriteHeader(http.StatusOK)
 		} else {

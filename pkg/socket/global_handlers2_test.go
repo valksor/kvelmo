@@ -87,7 +87,7 @@ func TestGlobalHandleRegisterProject_ValidParams(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(RegisterParams{Path: "/tmp/test-project", SocketPath: "/tmp/test.sock"})
+	params, _ := json.Marshal(RegisterParams{Path: "/tmp/test-project", SocketPath: "/tmp/test.sock"}) //nolint:errchkjson // test data
 	resp, err := g.handleRegisterProject(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleRegisterProject() error = %v", err)
@@ -109,7 +109,7 @@ func TestGlobalHandleRegisterProject_DuplicatePath(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(RegisterParams{Path: "/tmp/same-project", SocketPath: "/tmp/same.sock"})
+	params, _ := json.Marshal(RegisterParams{Path: "/tmp/same-project", SocketPath: "/tmp/same.sock"}) //nolint:errchkjson // test data
 
 	// First registration
 	resp1, err := g.handleRegisterProject(ctx, &Request{ID: "1", Params: params})
@@ -161,7 +161,7 @@ func TestGlobalHandleUnregisterProject_NonexistentID(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(UnregisterParams{ID: "nonexistent-id"})
+	params, _ := json.Marshal(UnregisterParams{ID: "nonexistent-id"}) //nolint:errchkjson // test data
 	resp, err := g.handleUnregisterProject(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleUnregisterProject() error = %v", err)
@@ -222,7 +222,7 @@ func TestGlobalHandleProvidersTest_UnknownProvider(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(map[string]string{"provider": "nonexistent"})
+	params, _ := json.Marshal(map[string]string{"provider": "nonexistent"}) //nolint:errchkjson // test data
 	resp, err := g.handleProvidersTest(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleProvidersTest() error = %v", err)
@@ -241,7 +241,7 @@ func TestGlobalHandleSettingsGet_WithProjectPath(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(SettingsGetParams{ProjectPath: t.TempDir()})
+	params, _ := json.Marshal(SettingsGetParams{ProjectPath: t.TempDir()}) //nolint:errchkjson // test data
 	resp, err := g.handleSettingsGet(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleSettingsGet() error = %v", err)
@@ -282,7 +282,7 @@ func TestGlobalHandleSettingsSet_ProjectScopeNeedsPath(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t) // no registered worktrees
 
-	params, _ := json.Marshal(map[string]any{
+	params, _ := json.Marshal(map[string]any{ //nolint:errchkjson // test data
 		"scope":  "project",
 		"values": map[string]any{"workers.max": 3},
 		// no project_path and no registered worktrees → error

@@ -1066,7 +1066,7 @@ func TestBuildCommand_InvalidConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, _, err := buildCommand(nil, []string{"snapshot"})
+	_, _, _, err := buildCommand(nil, []string{"snapshot"}) //nolint:dogsled // only testing error path
 	if err == nil {
 		t.Error("expected error for invalid config")
 	}
@@ -1173,7 +1173,7 @@ func TestBuildCommand_MergeStateError(t *testing.T) {
 	opts := &ExecOptions{
 		WorktreePath: "/some/worktree",
 	}
-	_, _, _, err := buildCommand(opts, []string{"snapshot"})
+	_, _, _, err := buildCommand(opts, []string{"snapshot"}) //nolint:dogsled // only testing error path
 	if err == nil {
 		t.Error("expected error when merge state fails")
 	}
@@ -1459,7 +1459,7 @@ func TestBuildCommand_WritePlaywrightConfigError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, _, err := buildCommand(nil, []string{"snapshot"})
+	_, _, _, err := buildCommand(nil, []string{"snapshot"}) //nolint:dogsled // only testing error path
 	if err == nil {
 		t.Error("expected error when WritePlaywrightConfig fails")
 	}

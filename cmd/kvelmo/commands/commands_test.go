@@ -57,6 +57,19 @@ func TestStopCommand(t *testing.T) {
 		t.Errorf("Use = %s, want stop", cmd.Use)
 	}
 
+	// Stop command doesn't have flags - it just stops the current operation
+	if cmd.Short == "" {
+		t.Error("Short description should exist")
+	}
+}
+
+func TestShutdownCommand(t *testing.T) {
+	cmd := ShutdownCmd
+
+	if cmd.Use != "shutdown" {
+		t.Errorf("Use = %s, want shutdown", cmd.Use)
+	}
+
 	// Check --timeout flag exists
 	f := cmd.Flags().Lookup("timeout")
 	if f == nil {

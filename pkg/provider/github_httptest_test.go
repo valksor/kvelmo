@@ -35,7 +35,7 @@ func TestGitHubProvider_FetchTask_Issue(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/42" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   42,
 				"title":    "Fix the login page bug",
 				"body":     "The login page has a CSS issue",
@@ -90,7 +90,7 @@ func TestGitHubProvider_FetchTask_PR(t *testing.T) {
 		switch r.URL.Path {
 		case "/repos/owner/repo/issues/10":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":       10,
 				"title":        "Add new feature",
 				"body":         "This PR adds a new feature",
@@ -101,7 +101,7 @@ func TestGitHubProvider_FetchTask_PR(t *testing.T) {
 			})
 		case "/repos/owner/repo/pulls/10":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   10,
 				"title":    "Add new feature",
 				"body":     "This PR adds a new feature",
@@ -137,7 +137,7 @@ func TestGitHubProvider_FetchTask_PR(t *testing.T) {
 func TestGitHubProvider_FetchTask_NotFound(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
 	})
 	defer srv.Close()
 
@@ -167,7 +167,7 @@ func TestGitHubProvider_FetchTask_WithAssignees(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/5" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   5,
 				"title":    "Task with assignees",
 				"body":     "Description",
@@ -201,7 +201,7 @@ func TestGitHubProvider_FetchTask_WithMilestone(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/7" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   7,
 				"title":    "Milestone task",
 				"body":     "",
@@ -237,7 +237,7 @@ func TestGitHubProvider_FetchTask_WithDependencies(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/20" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   20,
 				"title":    "Feature with deps",
 				"body":     "Depends on #10 and owner/repo#15",
@@ -273,12 +273,12 @@ func TestGitHubProvider_UpdateStatus(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/42" && r.Method == http.MethodPatch {
 			var req map[string]any
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			if s, ok := req["state"].(string); ok {
 				capturedState = s
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number": 42,
 				"state":  capturedState,
 			})
@@ -312,6 +312,7 @@ func TestGitHubProvider_UpdateStatus(t *testing.T) {
 				if err == nil {
 					t.Error("expected error for unsupported status")
 				}
+
 				return
 			}
 			if err != nil {
@@ -342,12 +343,12 @@ func TestGitHubProvider_AddComment(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues/42/comments" && r.Method == http.MethodPost {
 			var req map[string]any
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			if b, ok := req["body"].(string); ok {
 				capturedBody = b
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":   1,
 				"body": capturedBody,
 			})
@@ -384,7 +385,7 @@ func TestGitHubProvider_GetPRStatus_PR(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/pulls/15" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   15,
 				"state":    "open",
 				"merged":   false,
@@ -417,10 +418,10 @@ func TestGitHubProvider_GetPRStatus_Issue(t *testing.T) {
 		switch r.URL.Path {
 		case "/repos/owner/repo/pulls/8":
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
+			_ = json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
 		case "/repos/owner/repo/issues/8":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   8,
 				"state":    "closed",
 				"html_url": "https://github.com/owner/repo/issues/8",
@@ -447,7 +448,7 @@ func TestGitHubProvider_GetPRStatus_Issue(t *testing.T) {
 func TestGitHubProvider_GetPRStatus_NotFound(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"message": "Not Found"})
 	})
 	defer srv.Close()
 
@@ -475,7 +476,7 @@ func TestGitHubProvider_FetchSiblings_WithMilestone(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/issues" && r.URL.Query().Get("milestone") == "5" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]map[string]any{
+			_ = json.NewEncoder(w).Encode([]map[string]any{
 				{
 					"number":   1,
 					"title":    "Sibling 1",
@@ -563,14 +564,14 @@ func TestGitHubProvider_CreatePR(t *testing.T) {
 		switch {
 		case r.URL.Path == "/repos/owner/repo" && r.Method == http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"default_branch": "main",
 			})
 		case r.URL.Path == "/repos/owner/repo/pulls" && r.Method == http.MethodPost:
 			var req map[string]any
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"number":   99,
 				"state":    "open",
 				"draft":    false,
@@ -625,12 +626,12 @@ func TestGitHubProvider_MergePR(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/pulls/42/merge" && r.Method == http.MethodPut {
 			var req map[string]any
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			if m, ok := req["merge_method"].(string); ok {
 				capturedMethod = m
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"sha":     "abc123",
 				"merged":  true,
 				"message": "Pull Request successfully merged",
@@ -680,7 +681,7 @@ func TestGitHubProvider_ApprovePR(t *testing.T) {
 	srv := newTestGitHubServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/pulls/42/reviews" && r.Method == http.MethodPost {
 			var req map[string]any
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			if e, ok := req["event"].(string); ok {
 				capturedEvent = e
 			}
@@ -688,7 +689,7 @@ func TestGitHubProvider_ApprovePR(t *testing.T) {
 				capturedBody = b
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":    1,
 				"state": "APPROVED",
 			})

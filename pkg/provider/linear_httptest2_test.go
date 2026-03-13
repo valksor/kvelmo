@@ -10,15 +10,16 @@ import (
 
 // linearTestServer starts an httptest server and swaps the package-level
 // httpClient transport so all Linear GraphQL requests are redirected there.
-// Returns the server and a cleanup func that must be deferred.
-func linearTestServer(handler http.HandlerFunc) (*httptest.Server, func()) {
+// Returns a cleanup func that must be deferred.
+func linearTestServer(handler http.HandlerFunc) func() {
 	srv := httptest.NewServer(handler)
 	origTransport := httpClient.Transport
 	httpClient.Transport = &rewriteTransport{
 		base:      http.DefaultTransport,
 		targetURL: srv.URL,
 	}
-	return srv, func() {
+
+	return func() {
 		httpClient.Transport = origTransport
 		srv.Close()
 	}
@@ -64,7 +65,7 @@ func TestLinearProvider_FetchTask_HTTPTest(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "ENG")
@@ -105,7 +106,7 @@ func TestLinearProvider_FetchTask_NotFound(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -122,7 +123,7 @@ func TestLinearProvider_FetchTask_GraphQLError(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -151,7 +152,7 @@ func TestLinearProvider_UpdateStatus_HTTPTest(t *testing.T) {
 		switch callCount {
 		case 1:
 			// fetchIssueByIdentifier
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issues": map[string]any{
 						"nodes": []map[string]any{
@@ -168,7 +169,7 @@ func TestLinearProvider_UpdateStatus_HTTPTest(t *testing.T) {
 			})
 		case 2:
 			// findWorkflowState — returns matching state
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"team": map[string]any{
 						"states": map[string]any{
@@ -181,7 +182,7 @@ func TestLinearProvider_UpdateStatus_HTTPTest(t *testing.T) {
 			})
 		case 3:
 			// issueUpdate mutation
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issueUpdate": map[string]any{
 						"success": true,
@@ -193,7 +194,7 @@ func TestLinearProvider_UpdateStatus_HTTPTest(t *testing.T) {
 		}
 	})
 
-	_, cleanup := linearTestServer(handler)
+	cleanup := linearTestServer(handler)
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "ENG")
@@ -231,7 +232,7 @@ func TestLinearProvider_FetchParent_HTTPTest(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -296,7 +297,7 @@ func TestLinearProvider_FetchSiblings_HTTPTest(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -342,7 +343,7 @@ func TestLinearProvider_FetchSiblings_SelfExcluded(t *testing.T) {
 		},
 	}
 
-	_, cleanup := linearTestServer(linearGraphQLHandler(resp))
+	cleanup := linearTestServer(linearGraphQLHandler(resp))
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -391,7 +392,7 @@ func TestLinearProvider_AddComment_HTTPTest(t *testing.T) {
 		switch callCount {
 		case 1:
 			// fetchIssueByIdentifier
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issues": map[string]any{
 						"nodes": []map[string]any{
@@ -402,7 +403,7 @@ func TestLinearProvider_AddComment_HTTPTest(t *testing.T) {
 			})
 		case 2:
 			// commentCreate mutation
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"commentCreate": map[string]any{
 						"success": true,
@@ -414,7 +415,7 @@ func TestLinearProvider_AddComment_HTTPTest(t *testing.T) {
 		}
 	})
 
-	_, cleanup := linearTestServer(handler)
+	cleanup := linearTestServer(handler)
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -445,7 +446,7 @@ func TestLinearProvider_FetchComments_HTTPTest(t *testing.T) {
 		switch callCount {
 		case 1:
 			// fetchIssueByIdentifier
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issues": map[string]any{
 						"nodes": []map[string]any{
@@ -456,7 +457,7 @@ func TestLinearProvider_FetchComments_HTTPTest(t *testing.T) {
 			})
 		case 2:
 			// IssueComments query
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issue": map[string]any{
 						"comments": map[string]any{
@@ -483,7 +484,7 @@ func TestLinearProvider_FetchComments_HTTPTest(t *testing.T) {
 		}
 	})
 
-	_, cleanup := linearTestServer(handler)
+	cleanup := linearTestServer(handler)
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")
@@ -522,7 +523,7 @@ func TestLinearProvider_FetchComments_NilUser(t *testing.T) {
 
 		switch callCount {
 		case 1:
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issues": map[string]any{
 						"nodes": []map[string]any{
@@ -533,7 +534,7 @@ func TestLinearProvider_FetchComments_NilUser(t *testing.T) {
 			})
 		case 2:
 			// Comment with null user
-			_ = json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 				"data": map[string]any{
 					"issue": map[string]any{
 						"comments": map[string]any{
@@ -552,7 +553,7 @@ func TestLinearProvider_FetchComments_NilUser(t *testing.T) {
 		}
 	})
 
-	_, cleanup := linearTestServer(handler)
+	cleanup := linearTestServer(handler)
 	defer cleanup()
 
 	lp := NewLinearProvider("test-token", "")

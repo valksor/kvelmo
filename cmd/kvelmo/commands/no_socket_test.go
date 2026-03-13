@@ -84,11 +84,20 @@ func TestWorktreeCommandsNoSocket_Extra(t *testing.T) {
 	noSocketWorktreeTest(t, "refresh", runRefresh, RefreshCmd)
 }
 
-// TestStopCommand_NoSocket verifies stop prints "No worktree socket running" and returns nil.
+// TestStopCommand_NoSocket verifies stop returns an error when no socket is running.
 func TestStopCommand_NoSocket(t *testing.T) {
 	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
-	// runStop with no socket returns nil (not an error)
-	if err := runStop(StopCmd, nil); err != nil {
-		t.Errorf("runStop() no socket error = %v, want nil", err)
+	// runStop with no socket returns an error (cannot stop operation without connection)
+	if err := runStop(StopCmd, nil); err == nil {
+		t.Error("runStop() no socket expected error, got nil")
+	}
+}
+
+// TestShutdownCommand_NoSocket verifies shutdown prints "No worktree socket running" and returns nil.
+func TestShutdownCommand_NoSocket(t *testing.T) {
+	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
+	// runShutdown with no socket returns nil (not an error)
+	if err := runShutdown(ShutdownCmd, nil); err != nil {
+		t.Errorf("runShutdown() no socket error = %v, want nil", err)
 	}
 }

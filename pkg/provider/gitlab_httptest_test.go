@@ -20,6 +20,7 @@ func newGitLabTestProvider(t *testing.T, handler http.HandlerFunc) (*GitLabProvi
 		srv.Close()
 		t.Fatalf("NewGitLabProviderWithHost() error = %v", err)
 	}
+
 	return p, srv
 }
 
@@ -42,7 +43,7 @@ func TestGitLabProvider_FetchTask_Issue_HTTPTest(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(issue)
+		_ = json.NewEncoder(w).Encode(issue) //nolint:errchkjson // test helper
 	})
 
 	p, srv := newGitLabTestProvider(t, handler)
@@ -93,7 +94,7 @@ func TestGitLabProvider_FetchTask_MR_HTTPTest(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(mr)
+		_ = json.NewEncoder(w).Encode(mr) //nolint:errchkjson // test helper
 	})
 
 	p, srv := newGitLabTestProvider(t, handler)
@@ -143,7 +144,7 @@ func TestGitLabProvider_UpdateStatus_Issue_HTTPTest(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		// Return a minimal updated issue
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 			"id":    1,
 			"iid":   5,
 			"title": "Issue",
@@ -172,7 +173,7 @@ func TestGitLabProvider_UpdateStatus_Reopen_HTTPTest(t *testing.T) {
 			_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 			"id":    1,
 			"iid":   5,
 			"title": "Issue",
@@ -205,7 +206,7 @@ func TestGitLabProvider_AddComment_Issue_HTTPTest(t *testing.T) {
 			_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 			"id":   99,
 			"body": "Great progress!",
 		})
@@ -232,7 +233,7 @@ func TestGitLabProvider_AddComment_MR_HTTPTest(t *testing.T) {
 			_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test helper
 			"id":   100,
 			"body": "LGTM",
 		})

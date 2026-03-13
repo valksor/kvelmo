@@ -118,9 +118,18 @@ func TestInjectSeqAndBuffer_SequenceMonotonicallyIncreases(t *testing.T) {
 		results[i] = parsed
 	}
 
-	seq0 := results[0]["seq"].(float64)
-	seq1 := results[1]["seq"].(float64)
-	seq2 := results[2]["seq"].(float64)
+	seq0, ok := results[0]["seq"].(float64)
+	if !ok {
+		t.Fatal("results[0][\"seq\"] is not float64")
+	}
+	seq1, ok := results[1]["seq"].(float64)
+	if !ok {
+		t.Fatal("results[1][\"seq\"] is not float64")
+	}
+	seq2, ok := results[2]["seq"].(float64)
+	if !ok {
+		t.Fatal("results[2][\"seq\"] is not float64")
+	}
 
 	if seq1 <= seq0 {
 		t.Errorf("seq not monotonically increasing: %v, %v", seq0, seq1)

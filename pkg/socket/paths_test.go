@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"net"
 	"os"
 	"path/filepath"
@@ -241,7 +242,8 @@ func TestSocketExists_ActualSocket(t *testing.T) {
 	dir := t.TempDir()
 	sockPath := filepath.Join(dir, "test.sock")
 
-	ln, err := net.Listen("unix", sockPath)
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(context.Background(), "unix", sockPath)
 	if err != nil {
 		t.Fatalf("net.Listen error = %v", err)
 	}

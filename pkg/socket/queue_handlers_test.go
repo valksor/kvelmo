@@ -57,7 +57,7 @@ func TestWorktreeHandleQueueAdd_NilConductor(t *testing.T) {
 	ctx := context.Background()
 	w := &WorktreeSocket{server: NewServer(""), streams: make(map[string]chan []byte)}
 
-	params, _ := json.Marshal(queueAddParams{Source: "empty:do something"})
+	params, _ := json.Marshal(queueAddParams{Source: "empty:do something"}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueAdd(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueAdd() error = %v", err)
@@ -71,7 +71,7 @@ func TestWorktreeHandleQueueAdd_EmptySource(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueAddParams{Source: ""})
+	params, _ := json.Marshal(queueAddParams{Source: ""}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueAdd(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueAdd() error = %v", err)
@@ -98,7 +98,7 @@ func TestWorktreeHandleQueueAdd_ValidSource(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueAddParams{Source: "empty:fix the button", Title: "Fix button"})
+	params, _ := json.Marshal(queueAddParams{Source: "empty:fix the button", Title: "Fix button"}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueAdd(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueAdd() error = %v", err)
@@ -117,7 +117,7 @@ func TestWorktreeHandleQueueRemove_NilConductor(t *testing.T) {
 	ctx := context.Background()
 	w := &WorktreeSocket{server: NewServer(""), streams: make(map[string]chan []byte)}
 
-	params, _ := json.Marshal(queueRemoveParams{ID: "task-1"})
+	params, _ := json.Marshal(queueRemoveParams{ID: "task-1"}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueRemove(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueRemove() error = %v", err)
@@ -131,7 +131,7 @@ func TestWorktreeHandleQueueRemove_EmptyID(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueRemoveParams{ID: ""})
+	params, _ := json.Marshal(queueRemoveParams{ID: ""}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueRemove(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueRemove() error = %v", err)
@@ -158,7 +158,7 @@ func TestWorktreeHandleQueueRemove_NonexistentID(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueRemoveParams{ID: "nonexistent-task-id"})
+	params, _ := json.Marshal(queueRemoveParams{ID: "nonexistent-task-id"}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueRemove(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueRemove() error = %v", err)
@@ -177,7 +177,7 @@ func TestWorktreeHandleQueueReorder_NilConductor(t *testing.T) {
 	ctx := context.Background()
 	w := &WorktreeSocket{server: NewServer(""), streams: make(map[string]chan []byte)}
 
-	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: 1})
+	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: 1}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueReorder(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueReorder() error = %v", err)
@@ -191,7 +191,7 @@ func TestWorktreeHandleQueueReorder_EmptyID(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueReorderParams{ID: "", Position: 1})
+	params, _ := json.Marshal(queueReorderParams{ID: "", Position: 1}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueReorder(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueReorder() error = %v", err)
@@ -205,7 +205,7 @@ func TestWorktreeHandleQueueReorder_ZeroPosition(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: 0})
+	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: 0}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueReorder(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueReorder() error = %v", err)
@@ -219,7 +219,7 @@ func TestWorktreeHandleQueueReorder_NegativePosition(t *testing.T) {
 	ctx := context.Background()
 	w := newTestWorktreeSocket(t)
 
-	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: -5})
+	params, _ := json.Marshal(queueReorderParams{ID: "task-1", Position: -5}) //nolint:errchkjson // test data
 	resp, err := w.handleQueueReorder(ctx, &Request{ID: "1", Params: params})
 	if err != nil {
 		t.Fatalf("handleQueueReorder() error = %v", err)

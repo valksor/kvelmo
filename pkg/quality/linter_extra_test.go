@@ -8,9 +8,9 @@ import (
 
 // stubLinter is a Linter implementation for testing Runner.Run error handling.
 type stubLinter struct {
-	name    string
-	err     error
-	report  *Report
+	name   string
+	err    error
+	report *Report
 }
 
 func (s *stubLinter) Name() string { return s.name }

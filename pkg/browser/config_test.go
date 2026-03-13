@@ -246,11 +246,11 @@ func TestWritePlaywrightConfig_JSONStructure(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 
 	tests := []struct {
-		name            string
-		headless        bool
-		browser         string
-		timeout         int
-		wantTimeoutMS   float64
+		name          string
+		headless      bool
+		browser       string
+		timeout       int
+		wantTimeoutMS float64
 	}{
 		{
 			name:          "default headless chromium",

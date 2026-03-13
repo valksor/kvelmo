@@ -25,6 +25,14 @@ vi.mock('./projectStore', () => ({
 }))
 
 // Helpers
+type EventHandler = (data: unknown) => void
+
+// Creates a mutable handler ref that works with TypeScript's control flow analysis
+const createHandlerRef = () => {
+  const ref: { current: EventHandler | null } = { current: null }
+  return ref
+}
+
 const makeClient = (overrides: Record<string, ReturnType<typeof vi.fn>> = {}) => ({
   call: vi.fn().mockResolvedValue({}),
   subscribe: vi.fn(),
@@ -687,58 +695,58 @@ describe('chatStore', () => {
 
   describe('streaming event handling via subscribe', () => {
     it('handles stream event by appending content', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-stream', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('ping')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'stream', job_id: 'job-stream', content: 'Hello' })
-        capturedHandler({ type: 'stream', job_id: 'job-stream', content: ' world' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'stream', job_id: 'job-stream', content: 'Hello' })
+        handlerRef.current({ type: 'stream', job_id: 'job-stream', content: ' world' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.content).toBe('Hello world')
       }
     })
 
     it('ignores events for other job ids', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-mine', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('ping')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'stream', job_id: 'job-other', content: 'should be ignored' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'stream', job_id: 'job-other', content: 'should be ignored' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.content).toBe('')
       }
     })
 
     it('handles job_completed event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-done', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('go')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'job_completed', job_id: 'job-done', result: 'Final answer' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'job_completed', job_id: 'job-done', result: 'Final answer' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.status).toBe('complete')
         expect(assistantMsg?.content).toBe('Final answer')
@@ -748,19 +756,19 @@ describe('chatStore', () => {
     })
 
     it('job_completed adds approve/reject actions', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-done', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('go')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'job_completed', job_id: 'job-done', result: 'Done' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'job_completed', job_id: 'job-done', result: 'Done' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.actions).toHaveLength(2)
         expect(assistantMsg?.actions?.map(a => a.id)).toContain('approve')
@@ -769,19 +777,19 @@ describe('chatStore', () => {
     })
 
     it('handles job_failed event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-fail', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('fail me')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'job_failed', job_id: 'job-fail', error: 'out of memory' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'job_failed', job_id: 'job-fail', error: 'out of memory' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.status).toBe('error')
         expect(useChatStore.getState().error).toBe('out of memory')
@@ -790,19 +798,19 @@ describe('chatStore', () => {
     })
 
     it('handles subagent started event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('search')
 
-      if (capturedHandler) {
-        capturedHandler({
+      if (handlerRef.current) {
+        handlerRef.current({
           type: 'subagent',
           job_id: 'job-sub',
           subagent: { id: 'sa-1', type: 'search', description: 'find files', status: 'started' }
@@ -816,19 +824,19 @@ describe('chatStore', () => {
     })
 
     it('handles subagent completed event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('search')
 
-      if (capturedHandler) {
-        capturedHandler({
+      if (handlerRef.current) {
+        handlerRef.current({
           type: 'subagent',
           job_id: 'job-sub',
           subagent: { id: 'sa-1', type: 'search', description: 'find files', status: 'completed', duration: 3000 }
@@ -840,19 +848,19 @@ describe('chatStore', () => {
     })
 
     it('handles subagent failed event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('search')
 
-      if (capturedHandler) {
-        capturedHandler({
+      if (handlerRef.current) {
+        handlerRef.current({
           type: 'subagent',
           job_id: 'job-sub',
           subagent: { id: 'sa-2', type: 'bash', description: 'run tests', status: 'failed', exit_reason: 'timeout' }
@@ -865,19 +873,19 @@ describe('chatStore', () => {
     })
 
     it('handles permission event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-perm', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('run')
 
-      if (capturedHandler) {
-        capturedHandler({
+      if (handlerRef.current) {
+        handlerRef.current({
           type: 'permission',
           job_id: 'job-perm',
           permission_request: { id: 'req-1', tool: 'bash', danger_level: 'caution', danger_reason: 'executes shell' }
@@ -892,19 +900,19 @@ describe('chatStore', () => {
     })
 
     it('handles safe permission event without danger warning', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-safe', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('read')
 
-      if (capturedHandler) {
-        capturedHandler({
+      if (handlerRef.current) {
+        handlerRef.current({
           type: 'permission',
           job_id: 'job-safe',
           permission_request: { id: 'req-2', tool: 'read_file' }
@@ -916,19 +924,19 @@ describe('chatStore', () => {
     })
 
     it('handles job_started event', async () => {
-      let capturedHandler: ((data: unknown) => void) | null = null
+      const handlerRef = createHandlerRef()
       const client = makeClient()
       client.call.mockResolvedValueOnce({ job_id: 'job-start', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
-        capturedHandler = handler
+        handlerRef.current = handler
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
 
       await useChatStore.getState().sendMessage('begin')
 
-      if (capturedHandler) {
-        capturedHandler({ type: 'job_started', job_id: 'job-start', content: 'Processing your request' })
+      if (handlerRef.current) {
+        handlerRef.current({ type: 'job_started', job_id: 'job-start', content: 'Processing your request' })
         const assistantMsg = useChatStore.getState().messages.find(m => m.role === 'assistant')
         expect(assistantMsg?.content).toBe('Processing your request')
         expect(assistantMsg?.status).toBe('streaming')
