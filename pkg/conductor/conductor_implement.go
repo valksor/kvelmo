@@ -60,6 +60,7 @@ func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
 	c.workUnit.UpdatedAt = time.Now()
+	c.activeJobID = job.ID
 	c.saveJobSession(job.ID, "implementing", "")
 	c.persistState()
 
@@ -121,6 +122,7 @@ func (c *Conductor) Optimize(ctx context.Context) (string, error) {
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
 	c.workUnit.UpdatedAt = time.Now()
+	c.activeJobID = job.ID
 	c.saveJobSession(job.ID, "optimizing", "")
 	c.persistState()
 
@@ -182,6 +184,7 @@ func (c *Conductor) Simplify(ctx context.Context) (string, error) {
 
 	c.workUnit.Jobs = append(c.workUnit.Jobs, job.ID)
 	c.workUnit.UpdatedAt = time.Now()
+	c.activeJobID = job.ID
 	c.saveJobSession(job.ID, "simplifying", "")
 	c.persistState()
 

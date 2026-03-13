@@ -75,6 +75,7 @@ func TestSlugify(t *testing.T) {
 			// Just verify no trailing hyphen — exact value depends on truncation point
 			want: func() string {
 				result := slugify("this is a very long title that ends right on hyphen boundary ok")
+
 				return result
 			}(),
 		},
@@ -211,13 +212,13 @@ func TestGenerateBranchName(t *testing.T) {
 
 func TestShouldPostTicketComment(t *testing.T) {
 	tests := []struct {
-		name     string
-		wu       *WorkUnit
-		github   bool
-		gitlab   bool
-		wrike    bool
-		linear   bool
-		want     bool
+		name   string
+		wu     *WorkUnit
+		github bool
+		gitlab bool
+		wrike  bool
+		linear bool
+		want   bool
 	}{
 		{
 			name: "nil WorkUnit",
