@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/valksor/kvelmo/pkg/agent"
 )
@@ -107,6 +108,11 @@ type incomingMessage struct {
 	Subtype string `json:"subtype,omitempty"` // "success" or error type
 	IsError bool   `json:"is_error,omitempty"`
 	Error   string `json:"error,omitempty"`
+
+	// tool_progress fields
+	ToolUseID          string  `json:"tool_use_id,omitempty"`
+	ToolName           string  `json:"tool_name,omitempty"`
+	ElapsedTimeSeconds float64 `json:"elapsed_time_seconds,omitempty"`
 }
 
 // Outgoing message types to Claude CLI.
@@ -122,6 +128,15 @@ type outgoingMessage struct {
 
 	// control_response fields - nested response object
 	Response *controlResponsePayload `json:"response,omitempty"`
+
+	// control_request fields (for interrupt, set_model, etc.)
+	RequestID string                 `json:"request_id,omitempty"`
+	Request   *controlRequestPayload `json:"request,omitempty"`
+}
+
+// controlRequestPayload is the request payload for control_request messages.
+type controlRequestPayload struct {
+	Subtype string `json:"subtype"`
 }
 
 // controlResponsePayload is the outer response object for control_response messages.
@@ -488,6 +503,18 @@ func (w *WebSocketConnection) handleIncomingMessage(msg incomingMessage) {
 	case "keep_alive":
 		// Heartbeat - no action needed
 
+	case "tool_progress":
+		// Tool execution heartbeat - shows elapsed time for long-running tools
+		w.events <- agent.Event{
+			Type:      agent.EventToolProgress,
+			Timestamp: time.Now(),
+			Data: map[string]any{
+				"tool_use_id":     msg.ToolUseID,
+				"tool_name":       msg.ToolName,
+				"elapsed_seconds": msg.ElapsedTimeSeconds,
+			},
+		}
+
 	default:
 		slog.Debug("claude websocket: unhandled message type", "type", msg.Type)
 	}
@@ -626,6 +653,33 @@ func (w *WebSocketConnection) HandlePermission(requestID string, approved bool) 
 			RequestID: requestID,
 			Response:  inner,
 		},
+	}
+
+	return nil
+}
+
+// Interrupt sends an interrupt control request to abort the current agent turn.
+func (w *WebSocketConnection) Interrupt() error {
+	if !w.connected.Load() {
+		return nil // Not connected, nothing to interrupt
+	}
+
+	requestID := uuid.NewString()
+	slog.Info("claude websocket: sending interrupt", "request_id", requestID)
+
+	w.outgoing <- outgoingMessage{
+		Type:      "control_request",
+		RequestID: requestID,
+		Request: &controlRequestPayload{
+			Subtype: "interrupt",
+		},
+	}
+
+	// Emit interrupted event
+	w.events <- agent.Event{
+		Type:      agent.EventInterrupted,
+		Content:   "Agent turn interrupted",
+		Timestamp: time.Now(),
 	}
 
 	return nil

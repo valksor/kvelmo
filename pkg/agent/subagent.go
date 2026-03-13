@@ -3,6 +3,8 @@ package agent
 import (
 	"sync"
 	"time"
+
+	"github.com/valksor/kvelmo/pkg/metrics"
 )
 
 // SubagentTracker tracks active subagents and generates lifecycle events.
@@ -130,7 +132,8 @@ func trySendEventTo(ch chan Event, event Event) bool {
 	case ch <- event:
 		return true
 	default:
-		// Channel full, event dropped
+		metrics.Global().RecordEventDropped()
+
 		return false
 	}
 }
