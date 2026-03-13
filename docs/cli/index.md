@@ -51,12 +51,17 @@ Commands for moving through your work history:
 
 Commands for viewing status and information:
 
-| Command                            | Description                 |
-|------------------------------------|-----------------------------|
-| [status](/cli/status.md)           | Show current task state     |
-| [list](/cli/list.md)               | List all tasks in workspace |
-| [checkpoints](/cli/checkpoints.md) | List git checkpoints        |
-| [jobs](/cli/jobs.md)               | List worker jobs            |
+| Command                            | Description                    |
+|------------------------------------|--------------------------------|
+| [status](/cli/status.md)           | Show current task state        |
+| [watch](/cli/watch.md)             | Stream live task output        |
+| [logs](/cli/logs.md)               | Show agent activity log        |
+| [diff](/cli/diff.md)               | Show what the agent changed    |
+| [show](/cli/show.md)               | Display task artifacts (specs) |
+| [stats](/cli/stats.md)             | Show task analytics            |
+| [list](/cli/list.md)               | List all tasks in workspace    |
+| [checkpoints](/cli/checkpoints.md) | List git checkpoints           |
+| [jobs](/cli/jobs.md)               | List worker jobs               |
 
 ### Management Commands
 
@@ -73,6 +78,7 @@ Commands for managing the kvelmo system:
 | [stop](/cli/stop.md)         | Stop running job                 |
 | [diagnose](/cli/diagnose.md) | Check system requirements        |
 | [cleanup](/cli/cleanup.md)   | Remove stale socket files        |
+| [shutdown](/cli/shutdown.md) | Shutdown worktree socket server  |
 
 ### Authentication Commands
 
@@ -89,16 +95,21 @@ Commands for authenticating with providers:
 
 Additional utility commands:
 
-| Command                            | Description                 |
-|------------------------------------|-----------------------------|
-| [chat](/cli/chat.md)               | Interactive chat with agent |
-| [memory](/cli/memory.md)           | Memory management           |
-| [files](/cli/files.md)             | File browser                |
-| [screenshots](/cli/screenshots.md) | Screenshot management       |
-| [browse](/cli/browse.md)           | Open URLs in browser        |
-| [browser](/cli/browser.md)         | Browser automation          |
-| [git](/cli/git.md)                 | Git operations              |
-| [completion](/cli/completion.md)   | Shell completion setup      |
+| Command                            | Description                      |
+|------------------------------------|----------------------------------|
+| [chat](/cli/chat.md)               | Interactive chat with agent      |
+| [explain](/cli/explain.md)         | Ask agent to explain last action |
+| [pipe](/cli/pipe.md)               | Run one-shot prompt (no server)  |
+| [memory](/cli/memory.md)           | Memory management                |
+| [files](/cli/files.md)             | File browser                     |
+| [screenshots](/cli/screenshots.md) | Screenshot management            |
+| [recordings](/cli/recordings.md)   | Agent interaction recordings     |
+| [browse](/cli/browse.md)           | Open URLs in browser             |
+| [browser](/cli/browser.md)         | Browser automation               |
+| [git](/cli/git.md)                 | Git operations                   |
+| [remote](/cli/remote.md)           | Remote provider ops (approve, merge) |
+| [quality](/cli/quality.md)         | Quality gate controls            |
+| [completion](/cli/completion.md)   | Shell completion setup           |
 
 ## Quick Example
 
