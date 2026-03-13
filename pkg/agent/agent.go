@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/valksor/kvelmo/pkg/agent/permission"
+	"github.com/valksor/kvelmo/pkg/metrics"
 )
 
 // Agent is the interface for AI agents (Claude, Codex, custom).
@@ -33,6 +34,10 @@ type Agent interface {
 	// HandlePermission responds to a permission request
 	HandlePermission(requestID string, approved bool) error
 
+	// Interrupt aborts the current agent turn
+	// Returns nil if successful or not connected
+	Interrupt() error
+
 	// Close closes the connection
 	Close() error
 
@@ -53,16 +58,19 @@ type Agent interface {
 type EventType string
 
 const (
-	EventStream     EventType = "stream"      // Token-by-token output
-	EventAssistant  EventType = "assistant"   // Full assistant message
-	EventToolUse    EventType = "tool_use"    // Tool call initiated
-	EventToolResult EventType = "tool_result" // Tool call completed
-	EventPermission EventType = "permission"  // Permission request
-	EventComplete   EventType = "complete"    // Job completed successfully
-	EventError      EventType = "error"       // Error occurred
-	EventInit       EventType = "init"        // Session initialized
-	EventKeepAlive  EventType = "keep_alive"  // Heartbeat
-	EventSubagent   EventType = "subagent"    // Subagent lifecycle event
+	EventStream       EventType = "stream"        // Token-by-token output
+	EventAssistant    EventType = "assistant"     // Full assistant message
+	EventToolUse      EventType = "tool_use"      // Tool call initiated
+	EventToolResult   EventType = "tool_result"   // Tool call completed
+	EventPermission   EventType = "permission"    // Permission request
+	EventComplete     EventType = "complete"      // Job completed successfully
+	EventError        EventType = "error"         // Error occurred
+	EventInit         EventType = "init"          // Session initialized
+	EventKeepAlive    EventType = "keep_alive"    // Heartbeat
+	EventSubagent     EventType = "subagent"      // Subagent lifecycle event
+	EventProgress     EventType = "progress"      // Partial completion update
+	EventToolProgress EventType = "tool_progress" // Tool execution heartbeat (elapsed time)
+	EventInterrupted  EventType = "interrupted"   // Agent turn was interrupted
 )
 
 // Event represents a streaming event from an agent.
@@ -80,6 +88,16 @@ type Event struct {
 
 	// For EventSubagent
 	Subagent *SubagentEvent `json:"subagent,omitempty"`
+
+	// For EventProgress
+	Progress *ProgressInfo `json:"progress,omitempty"`
+}
+
+// ProgressInfo reports partial completion of an agent operation.
+type ProgressInfo struct {
+	Percentage float64 `json:"percentage,omitempty"` // 0-100
+	Message    string  `json:"message,omitempty"`
+	Phase      string  `json:"phase,omitempty"` // Current sub-phase
 }
 
 // SubagentStatus indicates the lifecycle state of a subagent.
@@ -136,6 +154,8 @@ func EvaluatePermission(req PermissionRequest) PermissionResult {
 
 	// Dangerous operations are always denied
 	if danger.Level == permission.Dangerous {
+		metrics.Global().RecordPermissionDenied()
+
 		return PermissionResult{
 			Approved:     false,
 			DangerLevel:  danger.Level,
@@ -145,6 +165,54 @@ func EvaluatePermission(req PermissionRequest) PermissionResult {
 
 	// Check if tool is in safe list (case-insensitive)
 	approved := isSafeTool(req.Tool)
+
+	if approved {
+		metrics.Global().RecordPermissionApproved()
+	} else {
+		metrics.Global().RecordPermissionDenied()
+	}
+
+	return PermissionResult{
+		Approved:     approved,
+		DangerLevel:  danger.Level,
+		DangerReason: danger.Reason,
+	}
+}
+
+// EvaluatePermissionWithConfig evaluates a permission request using additional safe tools from config.
+func EvaluatePermissionWithConfig(req PermissionRequest, cfg *Config) PermissionResult {
+	// Check for dangerous operations first
+	danger := permission.DetectDanger(req.Tool, req.Input)
+	if danger.Level == permission.Dangerous {
+		metrics.Global().RecordPermissionDenied()
+
+		return PermissionResult{
+			Approved:     false,
+			DangerLevel:  danger.Level,
+			DangerReason: danger.Reason,
+		}
+	}
+
+	// Check global safe tools
+	approved := isSafeTool(req.Tool)
+
+	// Check config-level safe tools
+	if !approved && cfg != nil {
+		toolLower := strings.ToLower(req.Tool)
+		for _, safe := range cfg.SafeTools {
+			if strings.ToLower(safe) == toolLower {
+				approved = true
+
+				break
+			}
+		}
+	}
+
+	if approved {
+		metrics.Global().RecordPermissionApproved()
+	} else {
+		metrics.Global().RecordPermissionDenied()
+	}
 
 	return PermissionResult{
 		Approved:     approved,
@@ -232,6 +300,7 @@ type Config struct {
 
 	// Permission handling
 	PermissionHandler PermissionHandler // Custom permission handler
+	SafeTools         []string          // Additional tools to auto-approve (case-insensitive)
 }
 
 // DefaultConfig returns sensible defaults.

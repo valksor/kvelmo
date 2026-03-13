@@ -191,6 +191,18 @@ func (a *Agent) HandlePermission(requestID string, approved bool) error {
 	return nil
 }
 
+// Interrupt aborts the current agent turn.
+func (a *Agent) Interrupt() error {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.mode == agent.ModeWebSocket && a.ws != nil {
+		return a.ws.Interrupt()
+	}
+	// CLI mode doesn't support interrupt (would need to kill process)
+	return nil
+}
+
 // Close closes the connection.
 func (a *Agent) Close() error {
 	a.mu.Lock()

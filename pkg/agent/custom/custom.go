@@ -31,7 +31,9 @@ type Agent struct {
 	connected atomic.Bool
 	closed    atomic.Bool
 
-	events chan agent.Event
+	eventsMu      sync.Mutex
+	events        chan agent.Event
+	timeoutCancel context.CancelFunc
 }
 
 // Config holds custom agent configuration.
@@ -141,7 +143,17 @@ func (a *Agent) Connect(ctx context.Context) error {
 		return nil
 	}
 
-	args := append(a.config.Command[1:], a.config.Args...)
+	// Enforce configured timeout
+	if a.config.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, a.config.Timeout)
+		a.timeoutCancel = cancel
+	}
+
+	// Copy command args to avoid mutating the original Config.Command slice
+	cmdArgs := make([]string, 0, len(a.config.Command)-1+len(a.config.Args))
+	cmdArgs = append(cmdArgs, a.config.Command[1:]...)
+	args := append(cmdArgs, a.config.Args...)
 	a.cmd = exec.CommandContext(ctx, a.config.Command[0], args...)
 
 	if a.config.WorkDir != "" {
@@ -200,6 +212,22 @@ func (a *Agent) Connected() bool {
 	return a.connected.Load()
 }
 
+// getEvents returns the current events channel under lock.
+func (a *Agent) getEvents() chan agent.Event {
+	a.eventsMu.Lock()
+	ch := a.events
+	a.eventsMu.Unlock()
+
+	return ch
+}
+
+// sendEvent sends an event to the current events channel.
+func (a *Agent) sendEvent(event agent.Event) {
+	if ch := a.getEvents(); ch != nil {
+		ch <- event
+	}
+}
+
 // readOutput reads from stdout based on OutputFormat.
 func (a *Agent) readOutput() {
 	scanner := bufio.NewScanner(a.stdout)
@@ -216,20 +244,23 @@ func (a *Agent) readOutput() {
 		case "ndjson", "json":
 			a.parseJSONLine(line)
 		case "text":
-			a.events <- agent.Event{
+			a.sendEvent(agent.Event{
 				Type:      agent.EventStream,
 				Content:   line,
 				Timestamp: time.Now(),
-			}
+			})
 		}
 	}
 
 	if !a.closed.Load() {
-		a.events <- agent.Event{
-			Type:      agent.EventComplete,
-			Timestamp: time.Now(),
+		ch := a.getEvents()
+		if ch != nil {
+			ch <- agent.Event{
+				Type:      agent.EventComplete,
+				Timestamp: time.Now(),
+			}
+			close(ch)
 		}
-		close(a.events)
 	}
 }
 
@@ -248,11 +279,11 @@ func (a *Agent) parseJSONLine(line string) {
 
 	if err := json.Unmarshal([]byte(line), &msg); err != nil {
 		// Not JSON, treat as text
-		a.events <- agent.Event{
+		a.sendEvent(agent.Event{
 			Type:      agent.EventStream,
 			Content:   line,
 			Timestamp: time.Now(),
-		}
+		})
 
 		return
 	}
@@ -266,43 +297,43 @@ func (a *Agent) parseJSONLine(line string) {
 		if content == "" {
 			content = msg.Delta
 		}
-		a.events <- agent.Event{
+		a.sendEvent(agent.Event{
 			Type:      agent.EventStream,
 			Content:   content,
 			Timestamp: time.Now(),
-		}
+		})
 
 	case "tool_use":
 		var input map[string]any
 		if msg.Input != nil {
 			_ = json.Unmarshal(msg.Input, &input)
 		}
-		a.events <- agent.Event{
+		a.sendEvent(agent.Event{
 			Type:      agent.EventToolUse,
 			Content:   msg.Tool,
 			Data:      input,
 			Timestamp: time.Now(),
-		}
+		})
 
 	case "error":
-		a.events <- agent.Event{
+		a.sendEvent(agent.Event{
 			Type:      agent.EventError,
 			Error:     msg.Error,
 			Timestamp: time.Now(),
-		}
+		})
 
 	case "complete", "done", "result":
 		if msg.Success || msg.Type == "complete" || msg.Type == "done" {
-			a.events <- agent.Event{
+			a.sendEvent(agent.Event{
 				Type:      agent.EventComplete,
 				Timestamp: time.Now(),
-			}
+			})
 		} else {
-			a.events <- agent.Event{
+			a.sendEvent(agent.Event{
 				Type:      agent.EventError,
 				Error:     msg.Error,
 				Timestamp: time.Now(),
-			}
+			})
 		}
 
 	default:
@@ -312,11 +343,11 @@ func (a *Agent) parseJSONLine(line string) {
 			content = msg.Text
 		}
 		if content != "" {
-			a.events <- agent.Event{
+			a.sendEvent(agent.Event{
 				Type:      agent.EventStream,
 				Content:   content,
 				Timestamp: time.Now(),
-			}
+			})
 		}
 	}
 }
@@ -327,11 +358,11 @@ func (a *Agent) readErrors() {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" {
-			a.events <- agent.Event{
+			a.sendEvent(agent.Event{
 				Type:      agent.EventError,
 				Content:   line,
 				Timestamp: time.Now(),
-			}
+			})
 		}
 	}
 }
@@ -342,8 +373,11 @@ func (a *Agent) SendPrompt(ctx context.Context, prompt string) (<-chan agent.Eve
 		return nil, errors.New("not connected")
 	}
 
-	// Create new event channel for this prompt
+	// Create new event channel for this prompt (under lock to synchronize with readOutput)
+	a.eventsMu.Lock()
 	a.events = make(chan agent.Event, 100)
+	eventsCh := a.events
+	a.eventsMu.Unlock()
 
 	// Write prompt based on input format
 	a.cmdMu.Lock()
@@ -368,7 +402,7 @@ func (a *Agent) SendPrompt(ctx context.Context, prompt string) (<-chan agent.Eve
 		defer close(filtered)
 		for {
 			select {
-			case event, ok := <-a.events:
+			case event, ok := <-eventsCh:
 				if !ok {
 					return
 				}
@@ -390,6 +424,11 @@ func (a *Agent) HandlePermission(requestID string, approved bool) error {
 	return nil
 }
 
+// Interrupt is a no-op for custom agents (process-based, no interrupt protocol).
+func (a *Agent) Interrupt() error {
+	return nil
+}
+
 // Close stops the process.
 func (a *Agent) Close() error {
 	if a.closed.Swap(true) {
@@ -397,6 +436,11 @@ func (a *Agent) Close() error {
 	}
 
 	a.connected.Store(false)
+
+	// Cancel timeout context if set
+	if a.timeoutCancel != nil {
+		a.timeoutCancel()
+	}
 
 	a.cmdMu.Lock()
 	defer a.cmdMu.Unlock()

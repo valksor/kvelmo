@@ -542,6 +542,46 @@ func (w *WebSocketConnection) HandlePermission(requestID string, approved bool) 
 	return w.transport.Respond(rpcID, map[string]any{"decision": decision})
 }
 
+// Interrupt aborts the current agent turn via turn/interrupt JSON-RPC call.
+func (w *WebSocketConnection) Interrupt() error {
+	if !w.connected.Load() {
+		return nil // Not connected, nothing to interrupt
+	}
+
+	if !w.turnActive.Load() {
+		return nil // No active turn to interrupt
+	}
+
+	if w.threadID == "" {
+		return nil // No thread started
+	}
+
+	slog.Info("codex websocket: sending turn/interrupt", "threadId", w.threadID)
+
+	// Call turn/interrupt - this is fire-and-forget
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := w.transport.Call(ctx, "turn/interrupt", map[string]any{
+		"threadId": w.threadID,
+	})
+	if err != nil {
+		slog.Warn("codex websocket: turn/interrupt failed", "error", err)
+		// Don't return error - interrupt is best effort
+	}
+
+	w.turnActive.Store(false)
+
+	// Emit interrupted event
+	w.emitEvent(agent.Event{
+		Type:      agent.EventInterrupted,
+		Content:   "Agent turn interrupted",
+		Timestamp: time.Now(),
+	})
+
+	return nil
+}
+
 func (w *WebSocketConnection) killProcess() {
 	w.cmdMu.Lock()
 	defer w.cmdMu.Unlock()
