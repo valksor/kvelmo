@@ -66,7 +66,8 @@ describe('startBrowserLeakWatchdog', () => {
         sampleIndex++
         return { bytes: mb * 1024 * 1024 }
       })
-      ;(performance as PerformanceWithMemory).measureUserAgentSpecificMemory = mockMeasure
+      ;(performance as PerformanceWithMemory).measureUserAgentSpecificMemory =
+        mockMeasure as unknown as () => Promise<{ bytes: number }>
     }
 
     afterEach(() => {
@@ -220,7 +221,8 @@ describe('startBrowserLeakWatchdog', () => {
 
     it('handles API errors gracefully without crashing', async () => {
       mockMeasure = vi.fn().mockRejectedValue(new Error('cross-origin isolation not active'))
-      ;(performance as PerformanceWithMemory).measureUserAgentSpecificMemory = mockMeasure
+      ;(performance as PerformanceWithMemory).measureUserAgentSpecificMemory =
+        mockMeasure as unknown as () => Promise<{ bytes: number }>
 
       const onLeak = vi.fn()
       const stop = startBrowserLeakWatchdog(onLeak, 1000, 4, 50)

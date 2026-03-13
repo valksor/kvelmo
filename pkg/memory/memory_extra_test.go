@@ -203,12 +203,3 @@ func TestAugmentPrompt_LongContentTruncated(t *testing.T) {
 		}
 	}
 }
-
-// min is a helper for Go versions before 1.21 builtin min.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
-}

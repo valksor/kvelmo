@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestCheckLocalOrigin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, _ := http.NewRequest(http.MethodGet, "/", nil)
+			r, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			if tt.origin != "" {
 				r.Header.Set("Origin", tt.origin)
 			}
@@ -275,33 +276,73 @@ drained:
 // testableAgent implements agent.Agent with controllable behavior.
 type testableAgent struct {
 	name        string
-	connected   bool
-	closed      bool
+	connectedV  atomic.Bool
+	closedV     atomic.Bool
 	connectErr  error
 	sendErr     error
 	events      []agent.Event
 	workDirCopy *testableAgent // returned by WithWorkDir
 }
 
-func (a *testableAgent) Name() string     { return a.name }
-func (a *testableAgent) Available() error  { return nil }
-func (a *testableAgent) Connected() bool   { return a.connected }
+// newTestableAgent creates a testableAgent with the given options pre-connected.
+func newTestableAgent(name string, opts ...func(*testableAgent)) *testableAgent {
+	a := &testableAgent{name: name}
+	a.connectedV.Store(true)
+	for _, opt := range opts {
+		opt(a)
+	}
+
+	return a
+}
+
+// withEvents sets the events sequence for a testableAgent.
+func withEvents(events []agent.Event) func(*testableAgent) {
+	return func(a *testableAgent) { a.events = events }
+}
+
+// withSendErr sets the sendErr for a testableAgent.
+func withSendErr(err error) func(*testableAgent) {
+	return func(a *testableAgent) { a.sendErr = err }
+}
+
+// withConnectErr sets the connectErr and disconnects a testableAgent.
+func withConnectErr(err error) func(*testableAgent) {
+	return func(a *testableAgent) {
+		a.connectErr = err
+		a.connectedV.Store(false)
+	}
+}
+
+// withWorkDirCopy sets the workDirCopy agent.
+func withWorkDirCopy(wdCopy *testableAgent) func(*testableAgent) {
+	return func(a *testableAgent) { a.workDirCopy = wdCopy }
+}
+
+// withDisconnected marks the agent as not connected.
+func withDisconnected() func(*testableAgent) {
+	return func(a *testableAgent) { a.connectedV.Store(false) }
+}
+
+func (a *testableAgent) Name() string                            { return a.name }
+func (a *testableAgent) Available() error                        { return nil }
+func (a *testableAgent) Connected() bool                         { return a.connectedV.Load() }
 func (a *testableAgent) HandlePermission(_ string, _ bool) error { return nil }
 func (a *testableAgent) WithEnv(_, _ string) agent.Agent         { return a }
 func (a *testableAgent) WithArgs(_ ...string) agent.Agent        { return a }
 func (a *testableAgent) WithTimeout(_ time.Duration) agent.Agent { return a }
+func (a *testableAgent) Interrupt() error                        { return nil }
 
 func (a *testableAgent) Connect(_ context.Context) error {
 	if a.connectErr != nil {
 		return a.connectErr
 	}
-	a.connected = true
+	a.connectedV.Store(true)
 
 	return nil
 }
 
 func (a *testableAgent) Close() error {
-	a.closed = true
+	a.closedV.Store(true)
 
 	return nil
 }
@@ -330,15 +371,11 @@ func (a *testableAgent) SendPrompt(_ context.Context, _ string) (<-chan agent.Ev
 func TestExecuteWithAgent_Success(t *testing.T) {
 	pool := newTestPool(t)
 
-	ag := &testableAgent{
-		name:      "test-agent",
-		connected: true,
-		events: []agent.Event{
-			{Type: agent.EventStream, Content: "hello "},
-			{Type: agent.EventStream, Content: "world"},
-			{Type: agent.EventComplete, Content: "done"},
-		},
-	}
+	ag := newTestableAgent("test-agent", withEvents([]agent.Event{
+		{Type: agent.EventStream, Content: "hello "},
+		{Type: agent.EventStream, Content: "world"},
+		{Type: agent.EventComplete, Content: "done"},
+	}))
 
 	pool.mu.Lock()
 	pool.workers["ag-w"] = &Worker{
@@ -395,11 +432,7 @@ complete:
 func TestExecuteWithAgent_SendPromptError(t *testing.T) {
 	pool := newTestPool(t)
 
-	ag := &testableAgent{
-		name:      "err-agent",
-		connected: true,
-		sendErr:   errors.New("prompt send failed"),
-	}
+	ag := newTestableAgent("err-agent", withSendErr(errors.New("prompt send failed")))
 
 	pool.mu.Lock()
 	pool.workers["ag-err"] = &Worker{
@@ -441,14 +474,10 @@ done:
 func TestExecuteWithAgent_ErrorEvent(t *testing.T) {
 	pool := newTestPool(t)
 
-	ag := &testableAgent{
-		name:      "err-event-agent",
-		connected: true,
-		events: []agent.Event{
-			{Type: agent.EventStream, Content: "starting..."},
-			{Type: agent.EventError, Error: "something broke"},
-		},
-	}
+	ag := newTestableAgent("err-event-agent", withEvents([]agent.Event{
+		{Type: agent.EventStream, Content: "starting..."},
+		{Type: agent.EventError, Error: "something broke"},
+	}))
 
 	pool.mu.Lock()
 	pool.workers["ag-ev-err"] = &Worker{
@@ -490,13 +519,9 @@ done:
 func TestExecuteWithAgent_ErrorEventFallbackContent(t *testing.T) {
 	pool := newTestPool(t)
 
-	ag := &testableAgent{
-		name:      "fallback-agent",
-		connected: true,
-		events: []agent.Event{
-			{Type: agent.EventError, Content: "fallback error msg"},
-		},
-	}
+	ag := newTestableAgent("fallback-agent", withEvents([]agent.Event{
+		{Type: agent.EventError, Content: "fallback error msg"},
+	}))
 
 	pool.mu.Lock()
 	pool.workers["ag-fb"] = &Worker{
@@ -535,19 +560,11 @@ done:
 func TestExecuteWithAgent_WithWorkDir(t *testing.T) {
 	pool := newTestPool(t)
 
-	workDirAgent := &testableAgent{
-		name:      "workdir-agent",
-		connected: false, // Connect will be called
-		events: []agent.Event{
-			{Type: agent.EventComplete, Content: "done in workdir"},
-		},
-	}
+	workDirAgent := newTestableAgent("workdir-agent", withDisconnected(), withEvents([]agent.Event{
+		{Type: agent.EventComplete, Content: "done in workdir"},
+	}))
 
-	ag := &testableAgent{
-		name:        "main-agent",
-		connected:   true,
-		workDirCopy: workDirAgent,
-	}
+	ag := newTestableAgent("main-agent", withWorkDirCopy(workDirAgent))
 
 	pool.mu.Lock()
 	pool.workers["ag-wd"] = &Worker{
@@ -583,10 +600,10 @@ done:
 		t.Errorf("Status = %q, want %q", got.Status, JobStatusDone)
 	}
 	// workDirAgent should have been connected and then closed
-	if !workDirAgent.connected {
+	if !workDirAgent.connectedV.Load() {
 		t.Error("workDir agent should have been connected")
 	}
-	if !workDirAgent.closed {
+	if !workDirAgent.closedV.Load() {
 		t.Error("workDir agent should have been closed")
 	}
 }
@@ -594,16 +611,9 @@ done:
 func TestExecuteWithAgent_WorkDirConnectFails(t *testing.T) {
 	pool := newTestPool(t)
 
-	workDirAgent := &testableAgent{
-		name:       "fail-workdir",
-		connectErr: errors.New("connection refused"),
-	}
+	workDirAgent := newTestableAgent("fail-workdir", withConnectErr(errors.New("connection refused")))
 
-	ag := &testableAgent{
-		name:        "main-agent",
-		connected:   true,
-		workDirCopy: workDirAgent,
-	}
+	ag := newTestableAgent("main-agent", withWorkDirCopy(workDirAgent))
 
 	pool.mu.Lock()
 	pool.workers["ag-wf"] = &Worker{
@@ -642,7 +652,7 @@ done:
 		t.Errorf("Error = %q, want to contain 'connection refused'", got.Error)
 	}
 	// workDirAgent should have been closed on failure
-	if !workDirAgent.closed {
+	if !workDirAgent.closedV.Load() {
 		t.Error("workDir agent should have been closed after connect failure")
 	}
 }
@@ -651,14 +661,10 @@ func TestExecuteWithAgent_ChannelClosedWithoutCompletion(t *testing.T) {
 	pool := newTestPool(t)
 
 	// Agent sends stream events but no EventComplete or EventError
-	ag := &testableAgent{
-		name:      "no-complete",
-		connected: true,
-		events: []agent.Event{
-			{Type: agent.EventStream, Content: "partial output"},
-			{Type: agent.EventAssistant, Content: " with assistant"},
-		},
-	}
+	ag := newTestableAgent("no-complete", withEvents([]agent.Event{
+		{Type: agent.EventStream, Content: "partial output"},
+		{Type: agent.EventAssistant, Content: " with assistant"},
+	}))
 
 	pool.mu.Lock()
 	pool.workers["ag-nc"] = &Worker{

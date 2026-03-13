@@ -596,7 +596,7 @@ func TestGlobalHandleSettingsSet_ValidSetting(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(map[string]any{
+	params, _ := json.Marshal(map[string]any{ //nolint:errchkjson // test data
 		"scope": settings.ScopeGlobal,
 		"values": map[string]any{
 			"workers.max": 5,
@@ -621,7 +621,7 @@ func TestGlobalHandleSettingsSet_InvalidScope(t *testing.T) {
 	ctx := context.Background()
 	g := newTestGlobalSocket(t)
 
-	params, _ := json.Marshal(map[string]any{
+	params, _ := json.Marshal(map[string]any{ //nolint:errchkjson // test data
 		"scope":  "invalid",
 		"values": map[string]any{"key": "val"},
 	})

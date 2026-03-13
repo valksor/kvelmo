@@ -121,7 +121,14 @@ type WorkerSettings struct {
 
 // StorageSettings configures where specs, plans, reviews, and chat are stored.
 type StorageSettings struct {
-	SaveInProject *bool `yaml:"save_in_project,omitempty" json:"save_in_project,omitempty" schema:"label=Save in Project;desc=Store specs/plans/chat in .valksor/ instead of home (~/.valksor/kvelmo/);default=false"`
+	SaveInProject *bool             `yaml:"save_in_project,omitempty" json:"save_in_project,omitempty" schema:"label=Save in Project;desc=Store specs/plans/chat in .valksor/ instead of home (~/.valksor/kvelmo/);default=false"`
+	Recording     RecordingSettings `yaml:"recording,omitempty" json:"recording,omitempty"`
+}
+
+// RecordingSettings configures agent interaction recording.
+type RecordingSettings struct {
+	Enabled bool   `yaml:"enabled,omitempty" json:"enabled,omitempty" schema:"label=Enable Recording;desc=Record agent interactions to JSONL files for debugging and replay;default=false"`
+	Dir     string `yaml:"dir,omitempty" json:"dir,omitempty" schema:"label=Recording Directory;desc=Directory for recording files (default: ~/.valksor/kvelmo/recordings)"`
 }
 
 // CodeRabbitMode controls when the CodeRabbit CLI runs in the quality gate.

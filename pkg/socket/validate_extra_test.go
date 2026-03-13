@@ -109,6 +109,7 @@ func TestResolveNonExistentPath_RootNeverReached(t *testing.T) {
 	if err != nil {
 		// If "/" doesn't count for some reason (unlikely on Linux), skip
 		t.Logf("resolveNonExistentPath() error = %v (acceptable on some platforms)", err)
+
 		return
 	}
 

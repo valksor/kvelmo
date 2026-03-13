@@ -187,6 +187,7 @@ func (m *mockAgent) Close() error {
 
 	return nil
 }
+func (m *mockAgent) Interrupt() error                        { return nil }
 func (m *mockAgent) WithEnv(_, _ string) agent.Agent         { return m }
 func (m *mockAgent) WithArgs(_ ...string) agent.Agent        { return m }
 func (m *mockAgent) WithWorkDir(_ string) agent.Agent        { return m }

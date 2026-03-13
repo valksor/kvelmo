@@ -63,8 +63,8 @@ const initialState = {
   worktreeId: null,
   client: null,
   task: null,
-  state: 'none',
-  output: [],
+  state: 'none' as const,
+  output: [] as string[],
   lastSeq: 0,
   checkpoints: [],
   redoStack: [],
@@ -93,7 +93,7 @@ function makeMockClient() {
 // and then refreshGitStatus (git.status) and loadReviews (review.list).
 // This helper returns a mock that handles all of those so tests that trigger
 // refreshStatus don't need to wire every response manually.
-function makeClientWithAutoRefresh(overrides: Record<string, unknown> = {}) {
+function makeClientWithAutoRefresh(overrides: Record<string, Record<string, unknown>> = {}) {
   const client = makeMockClient()
   client.call.mockImplementation((method: string) => {
     if (method === 'status') return Promise.resolve({ state: 'none', path: '/proj', ...overrides.status })
