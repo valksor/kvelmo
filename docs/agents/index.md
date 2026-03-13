@@ -39,29 +39,26 @@ kvelmo selects agents in this priority order:
 
 Set the default agent in `~/.valksor/kvelmo/kvelmo.yaml`:
 
-```json
-{
-  "default_agent": "claude"
-}
+```yaml
+agent:
+  default: claude
 ```
 
 Or via CLI:
 ```bash
-kvelmo config set default_agent claude
+kvelmo config set agent.default claude
 ```
 
 ### Per-Phase Agents
 
 Use different agents for different phases:
 
-```json
-{
-  "agent_steps": {
-    "planning": "claude",
-    "implementing": "codex",
-    "reviewing": "claude"
-  }
-}
+```yaml
+agent:
+  steps:
+    planning: claude
+    implementing: codex
+    reviewing: claude
 ```
 
 ## Agent Events
