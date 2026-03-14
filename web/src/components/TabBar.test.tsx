@@ -51,9 +51,9 @@ describe('TabBar', () => {
     const { getAllByRole } = render(<TabBar />)
     const tabs = getAllByRole('tab')
     // Each tab should contain an svg — verify no svg has a non-hidden role
-    tabs.forEach(tab => {
+    tabs.forEach((tab: HTMLElement) => {
       const svgs = tab.querySelectorAll('svg')
-      svgs.forEach(svg => {
+      svgs.forEach((svg: SVGSVGElement) => {
         expect(svg).toHaveAttribute('aria-hidden', 'true')
       })
     })
