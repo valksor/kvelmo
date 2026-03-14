@@ -405,3 +405,93 @@ func TestLoadEffective_EmptyProject(t *testing.T) {
 		t.Error("LoadEffective() merged = nil, want non-nil")
 	}
 }
+
+func TestApplyEnvOverrides(t *testing.T) {
+	tests := []struct {
+		envVar string
+		value  string
+		check  func(t *testing.T, s *Settings)
+	}{
+		{
+			envVar: "KVELMO_AGENT_DEFAULT",
+			value:  "codex",
+			check: func(t *testing.T, s *Settings) {
+				if s.Agent.Default != "codex" {
+					t.Errorf("Agent.Default = %q, want codex", s.Agent.Default)
+				}
+			},
+		},
+		{
+			envVar: "KVELMO_WORKERS_MAX",
+			value:  "7",
+			check: func(t *testing.T, s *Settings) {
+				if s.Workers.Max != 7 {
+					t.Errorf("Workers.Max = %d, want 7", s.Workers.Max)
+				}
+			},
+		},
+		{
+			envVar: "KVELMO_GIT_AUTO_COMMIT",
+			value:  "false",
+			check: func(t *testing.T, s *Settings) {
+				if BoolValue(s.Git.AutoCommit, true) {
+					t.Error("Git.AutoCommit should be false")
+				}
+			},
+		},
+		{
+			envVar: "KVELMO_GIT_BASE_BRANCH",
+			value:  "develop",
+			check: func(t *testing.T, s *Settings) {
+				if s.Git.BaseBranch != "develop" {
+					t.Errorf("Git.BaseBranch = %q, want develop", s.Git.BaseBranch)
+				}
+			},
+		},
+		{
+			envVar: "KVELMO_PROVIDERS_DEFAULT",
+			value:  "gitlab",
+			check: func(t *testing.T, s *Settings) {
+				if s.Providers.Default != "gitlab" {
+					t.Errorf("Providers.Default = %q, want gitlab", s.Providers.Default)
+				}
+			},
+		},
+		{
+			envVar: "KVELMO_WORKFLOW_CODERABBIT_MODE",
+			value:  "never",
+			check: func(t *testing.T, s *Settings) {
+				if s.Workflow.CodeRabbit.Mode != CodeRabbitModeNever {
+					t.Errorf("Workflow.CodeRabbit.Mode = %q, want never", s.Workflow.CodeRabbit.Mode)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.envVar, func(t *testing.T) {
+			t.Setenv(tt.envVar, tt.value)
+			s := DefaultSettings()
+			applyEnvOverrides(s)
+			tt.check(t, s)
+		})
+	}
+}
+
+func TestApplyEnvOverrides_InvalidValues(t *testing.T) {
+	// Invalid boolean should not change the setting
+	t.Setenv("KVELMO_GIT_AUTO_COMMIT", "notabool")
+	s := DefaultSettings()
+	applyEnvOverrides(s)
+	if !BoolValue(s.Git.AutoCommit, true) {
+		t.Error("Git.AutoCommit should remain true for invalid bool value")
+	}
+
+	// Invalid integer should not change the setting
+	t.Setenv("KVELMO_WORKERS_MAX", "notanumber")
+	s = DefaultSettings()
+	applyEnvOverrides(s)
+	if s.Workers.Max != 3 {
+		t.Errorf("Workers.Max = %d, want 3 for invalid int value", s.Workers.Max)
+	}
+}

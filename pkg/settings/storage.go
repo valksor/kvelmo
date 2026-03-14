@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/paths"
@@ -141,6 +142,9 @@ func LoadEffective(projectRoot string) (*Settings, *Settings, *Settings, error) 
 
 	// Inject environment variables from .env files into sensitive fields
 	InjectEnvVars(effective, envMap)
+
+	// Apply KVELMO_* env var overrides (highest priority)
+	applyEnvOverrides(effective)
 
 	return effective, global, project, nil
 }
@@ -739,4 +743,77 @@ func IsSensitivePath(path string) bool {
 // GetEnvVarForPath returns the environment variable name for a sensitive path.
 func GetEnvVarForPath(path string) string {
 	return SensitivePaths[path]
+}
+
+// envOverrides maps KVELMO_* environment variable suffixes to their settings paths.
+// The env var name is "KVELMO_" + the key (e.g. KVELMO_AGENT_DEFAULT → agent.default).
+var envOverrides = []struct {
+	envSuffix string // suffix after KVELMO_ prefix
+	path      string // dot-notation settings path
+}{
+	// Agent
+	{"AGENT_DEFAULT", "agent.default"},
+
+	// Providers
+	{"PROVIDERS_DEFAULT", "providers.default"},
+	{"PROVIDERS_GITHUB_OWNER", "providers.github.owner"},
+	{"PROVIDERS_GITLAB_BASE_URL", "providers.gitlab.base_url"},
+	{"PROVIDERS_LINEAR_TEAM", "providers.linear.team"},
+
+	// Git
+	{"GIT_BASE_BRANCH", "git.base_branch"},
+	{"GIT_BRANCH_PATTERN", "git.branch_pattern"},
+	{"GIT_COMMIT_PREFIX", "git.commit_prefix"},
+	{"GIT_CREATE_BRANCH", "git.create_branch"},
+	{"GIT_AUTO_COMMIT", "git.auto_commit"},
+	{"GIT_SIGN_COMMITS", "git.sign_commits"},
+	{"GIT_ALLOW_PR_COMMENT", "git.allow_pr_comment"},
+
+	// Workers
+	{"WORKERS_MAX", "workers.max"},
+
+	// Storage
+	{"STORAGE_SAVE_IN_PROJECT", "storage.save_in_project"},
+
+	// Workflow
+	{"WORKFLOW_USE_WORKTREE_ISOLATION", "workflow.use_worktree_isolation"},
+	{"WORKFLOW_CODERABBIT_MODE", "workflow.coderabbit.mode"},
+}
+
+// applyEnvOverrides checks for KVELMO_* environment variables and applies them
+// as overrides to the settings. This gives env vars the highest priority.
+func applyEnvOverrides(s *Settings) {
+	for _, ov := range envOverrides {
+		val, ok := os.LookupEnv("KVELMO_" + ov.envSuffix)
+		if !ok {
+			continue
+		}
+
+		// Convert value to the appropriate type and apply
+		switch ov.path {
+		// String fields
+		case "agent.default", "providers.default", "providers.github.owner",
+			"providers.gitlab.base_url", "providers.linear.team",
+			"git.base_branch", "git.branch_pattern", "git.commit_prefix":
+			_ = SetValue(s, ov.path, val)
+
+		// Boolean fields
+		case "git.create_branch", "git.auto_commit", "git.sign_commits",
+			"git.allow_pr_comment", "storage.save_in_project",
+			"workflow.use_worktree_isolation":
+			if b, err := strconv.ParseBool(val); err == nil {
+				_ = SetValue(s, ov.path, b)
+			}
+
+		// Integer fields
+		case "workers.max":
+			if n, err := strconv.Atoi(val); err == nil {
+				_ = SetValue(s, ov.path, n)
+			}
+
+		// Enum fields
+		case "workflow.coderabbit.mode":
+			_ = SetValue(s, ov.path, val)
+		}
+	}
 }

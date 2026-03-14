@@ -3,10 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
+
 	"github.com/valksor/kvelmo/cmd/kvelmo/commands"
+	"github.com/valksor/kvelmo/pkg/cli"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/watchdog"
 )
@@ -31,6 +36,31 @@ var licenseCmd = &cobra.Command{
 	Short: "Print license information",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Print(meta.License)
+	},
+}
+
+var genManPagesCmd = &cobra.Command{
+	Use:    "gen-man-pages [directory]",
+	Short:  "Generate man pages",
+	Hidden: true,
+	Args:   cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir := "man"
+		if len(args) > 0 {
+			dir = args[0]
+		}
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create man dir: %w", err)
+		}
+		header := &doc.GenManHeader{
+			Title:   "KVELMO",
+			Section: "1",
+		}
+		if err := doc.GenManTree(cmd.Root(), header, dir); err != nil {
+			return fmt.Errorf("generate man pages: %w", err)
+		}
+		fmt.Printf("Man pages generated in %s/\n", dir)
+		return nil
 	},
 }
 
@@ -98,17 +128,56 @@ func init() {
 	// Quality gate controls
 	rootCmd.AddCommand(commands.QualityCmd)
 
+	// Prompt (PS1 integration)
+	rootCmd.AddCommand(commands.PromptCmd)
+
+	// Hidden utilities
+	rootCmd.AddCommand(genManPagesCmd)
+
+	cli.RegisterPersistentFlags(rootCmd)
+
+	// Enable Cobra's built-in prefix matching for unambiguous command prefixes
+	cobra.EnablePrefixMatching = true
+
 	// Start memory leak watchdog before every command.
 	// Short-lived commands exit before the window fills; long-running ones
 	// (serve, plan, implement, …) are monitored throughout their lifetime.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		watchdog.Start(context.Background(), watchdog.DefaultConfig())
+		cli.InitColor()
+		if cli.Debug {
+			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		}
 	}
 }
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
+		// Try disambiguation on "unknown command" errors
+		if isUnknownCommandError(err) {
+			args := os.Args[1:]
+			if len(args) > 0 {
+				if match, suggestions := cli.DisambiguateCommand(rootCmd, args[0]); match != nil {
+					rootCmd.SetArgs(append([]string{match.Name()}, args[1:]...))
+					if err2 := rootCmd.Execute(); err2 != nil {
+						fmt.Fprintln(os.Stderr, err2)
+						os.Exit(cli.ExitCodeFromError(err2))
+					}
+
+					return
+				} else if len(suggestions) > 0 {
+					fmt.Fprint(os.Stderr, cli.FormatAmbiguousError(args[0], suggestions))
+					os.Exit(cli.ExitUsage)
+				}
+			}
+		}
+
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(cli.ExitCodeFromError(err))
 	}
+}
+
+// isUnknownCommandError checks whether the error is a cobra "unknown command" error.
+func isUnknownCommandError(err error) bool {
+	return strings.Contains(err.Error(), "unknown command")
 }

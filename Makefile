@@ -1,7 +1,8 @@
 .PHONY: build test clean install run web-build web-dev fmt vet all help \
         desktop-dev desktop-build desktop-sidecar desktop-sidecar-all desktop-clean tauri-install \
         tidy deps version run-args check-alias web-test web-test-coverage \
-        test-e2e test-e2e-provider test-e2e-gitlab test-e2e-workflow test-e2e-cli
+        test-e2e test-e2e-provider test-e2e-gitlab test-e2e-workflow test-e2e-cli \
+        man-pages
 
 # Build variables
 BINARY_NAME := kvelmo
@@ -149,6 +150,16 @@ web-e2e:
 ## Run web e2e tests with UI (interactive debugging)
 web-e2e-ui:
 	cd web && bun run test:e2e:ui
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Documentation
+# ──────────────────────────────────────────────────────────────────────────────
+
+## Generate man pages
+man-pages:
+	@mkdir -p man
+	@go run ./cmd/kvelmo gen-man-pages man
+	@echo "Man pages generated in man/"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Release

@@ -34,6 +34,44 @@ var jobsGetCmd = &cobra.Command{
 func init() {
 	JobsCmd.AddCommand(jobsListCmd)
 	JobsCmd.AddCommand(jobsGetCmd)
+
+	jobsGetCmd.ValidArgsFunction = completeJobIDs
+}
+
+func completeJobIDs(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if len(args) != 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	client, err := socket.NewClient(socket.GlobalSocketPath(), socket.WithTimeout(2*time.Second))
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	defer func() { _ = client.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	resp, err := client.Call(ctx, "jobs.list", nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var result struct {
+		Jobs []struct {
+			ID string `json:"id"`
+		} `json:"jobs"`
+	}
+	if json.Unmarshal(resp.Result, &result) != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	ids := make([]string, 0, len(result.Jobs))
+	for _, j := range result.Jobs {
+		ids = append(ids, j.ID)
+	}
+
+	return ids, cobra.ShellCompDirectiveNoFileComp
 }
 
 type JobInfo struct {
