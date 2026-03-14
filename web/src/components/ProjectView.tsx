@@ -206,7 +206,7 @@ export function ProjectView() {
 
       {/* Review History widget — defaultCollapsed, not in layout store */}
       <Widget
-        id="agents"
+        id="review-history"
         title="Review History"
         icon={<ReviewIcon />}
         defaultCollapsed={true}

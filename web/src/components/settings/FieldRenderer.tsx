@@ -13,30 +13,42 @@ interface FieldRendererProps {
 export function FieldRenderer({ field, value, error, onChange, disabled }: FieldRendererProps) {
   const inputClass = `input input-bordered w-full ${error ? 'input-error' : ''}`
   const selectClass = `select select-bordered w-full ${error ? 'select-error' : ''}`
+  const fieldId = `field-${field.path.replace(/\./g, '-')}`
+  const descId = `${fieldId}-desc`
+  const errorId = `${fieldId}-error`
+
+  // Build aria-describedby from available elements
+  const describedBy = [
+    field.description ? descId : null,
+    error ? errorId : null,
+  ].filter(Boolean).join(' ') || undefined
 
   switch (field.type) {
     case 'string':
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <input
+            id={fieldId}
             type="text"
             value={(value as string) ?? ''}
             onChange={e => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={`${inputClass} font-mono text-sm`}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -45,7 +57,7 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
     case 'password':
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
             <span className="label-text-alt flex gap-2 items-center">
               {field.helpUrl && (
@@ -64,21 +76,24 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
             </span>
           </label>
           <input
+            id={fieldId}
             type="password"
             value={(value as string) ?? ''}
             onChange={e => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={`${inputClass} font-mono text-sm`}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -87,25 +102,28 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
     case 'textarea':
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <textarea
+            id={fieldId}
             value={(value as string) ?? ''}
             onChange={e => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={`textarea textarea-bordered w-full font-mono text-sm ${error ? 'textarea-error' : ''}`}
             rows={4}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -114,10 +132,11 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
     case 'number':
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <input
+            id={fieldId}
             type="number"
             value={(value as number) ?? ''}
             onChange={e => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -125,16 +144,18 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
             disabled={disabled}
             min={field.validation?.min}
             max={field.validation?.max}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={inputClass}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -143,24 +164,27 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
     case 'boolean':
       return (
         <div className="form-control">
-          <label className="label cursor-pointer justify-start gap-3">
+          <label className="label cursor-pointer justify-start gap-3" htmlFor={fieldId}>
             <input
+              id={fieldId}
               type="checkbox"
               checked={(value as boolean) ?? false}
               onChange={e => onChange(e.target.checked)}
               disabled={disabled}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy}
               className="checkbox checkbox-primary"
             />
             <span className="label-text">{field.label}</span>
           </label>
           {field.description && (
             <label className="label pt-0">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -212,13 +236,16 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
       // Single select: render as dropdown
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <select
+            id={fieldId}
             value={(value as string) ?? ''}
             onChange={e => onChange(e.target.value)}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={selectClass}
           >
             <option value="">Select...</option>
@@ -230,12 +257,12 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
           </select>
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -245,10 +272,11 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
       // Render as comma-separated input for simplicity
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <input
+            id={fieldId}
             type="text"
             value={Array.isArray(value) ? (value as string[]).join(', ') : ''}
             onChange={e => {
@@ -257,16 +285,18 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
             }}
             placeholder={field.placeholder || 'Enter comma-separated values'}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={`${inputClass} font-mono text-sm`}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
             </label>
           )}
           {error && (
             <label className="label">
-              <span className="label-text-alt text-error">{error}</span>
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>
@@ -297,20 +327,28 @@ export function FieldRenderer({ field, value, error, onChange, disabled }: Field
     default:
       return (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={fieldId}>
             <span className="label-text">{field.label}</span>
           </label>
           <input
+            id={fieldId}
             type="text"
             value={String(value ?? '')}
             onChange={e => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={inputClass}
           />
           {field.description && (
             <label className="label">
-              <span className="label-text-alt text-base-content/50">{field.description}</span>
+              <span id={descId} className="label-text-alt text-base-content/50">{field.description}</span>
+            </label>
+          )}
+          {error && (
+            <label className="label">
+              <span id={errorId} className="label-text-alt text-error" role="alert">{error}</span>
             </label>
           )}
         </div>

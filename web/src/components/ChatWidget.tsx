@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { useChatStore, type ChatMessage } from '../stores/chatStore'
 import { useGlobalStore } from '../stores/globalStore'
 import { useScreenshotStore, getScreenshotById, formatScreenshotRef } from '../stores/screenshotStore'
@@ -373,13 +373,13 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
   )
 }
 
-// Message bubble component
+// Message bubble component - memoized to prevent re-renders on new messages
 interface MessageBubbleProps {
   message: ChatMessage
   onAction: (actionId: string) => void
 }
 
-function MessageBubble({ message, onAction }: MessageBubbleProps) {
+const MessageBubble = memo(function MessageBubble({ message, onAction }: MessageBubbleProps) {
   const isUser = message.role === 'user'
   const isSystem = message.role === 'system'
   const isSubagent = message.role === 'subagent'
@@ -501,7 +501,7 @@ function MessageBubble({ message, onAction }: MessageBubbleProps) {
       </div>
     </div>
   )
-}
+})
 
 // Export icon for use in Widget
 export function ChatIcon() {

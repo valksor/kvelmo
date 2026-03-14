@@ -30,9 +30,13 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
   const [error, setError] = useState<string | null>(null)
 
   const browse = useCallback(async (path?: string) => {
-    console.log('[FilePicker] browse called, client:', !!client, 'path:', path)
+    if (import.meta.env.DEV) {
+      console.log('[FilePicker] browse called, client:', !!client, 'path:', path)
+    }
     if (!client) {
-      console.log('[FilePicker] No client, showing not connected')
+      if (import.meta.env.DEV) {
+        console.log('[FilePicker] No client, showing not connected')
+      }
       setError('Not connected')
       return
     }
@@ -40,12 +44,10 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
     setLoading(true)
     setError(null)
     try {
-      console.log('[FilePicker] Calling browse RPC...')
       const data = await client.call<BrowseResponse>('browse', {
         path: path || '',
         files: true
       })
-      console.log('[FilePicker] browse response:', data)
 
       if (data.error) {
         setError(data.error)
@@ -56,7 +58,9 @@ export function FilePicker({ isOpen, onClose, onSelect, startPath }: FilePickerP
       setParentPath(data.parent)
       setEntries(data.entries || [])
     } catch (err) {
-      console.error('[FilePicker] browse error:', err)
+      if (import.meta.env.DEV) {
+        console.error('[FilePicker] browse error:', err)
+      }
       setError('Failed to browse directory')
     } finally {
       setLoading(false)
