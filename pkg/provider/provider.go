@@ -135,6 +135,23 @@ type LabelProvider interface {
 	RemoveLabels(ctx context.Context, id string, labels []string) error
 }
 
+// BranchProtection describes the protection rules on a branch.
+type BranchProtection struct {
+	RequiredChecks      []string `json:"required_checks"`
+	RequireReviews      bool     `json:"require_reviews"`
+	MinReviewers        int      `json:"min_reviewers"`
+	DismissStaleReviews bool     `json:"dismiss_stale_reviews"`
+	EnforceAdmins       bool     `json:"enforce_admins"`
+}
+
+// BranchProtectionProvider extends Provider for sources that support branch protection rules.
+type BranchProtectionProvider interface {
+	Provider
+	// GetBranchProtection returns protection rules for the given branch.
+	// Returns nil, nil if the branch has no protection rules.
+	GetBranchProtection(ctx context.Context, owner, repo, branch string) (*BranchProtection, error)
+}
+
 // ListOptions configures task listing.
 type ListOptions struct {
 	Team   string // Team key (e.g., "ENG" for Linear)

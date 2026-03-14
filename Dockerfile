@@ -17,19 +17,19 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o kvelmo ./cmd/kvelmo
 
 # Build stage for web UI
-FROM node:24-alpine AS web-builder
+FROM oven/bun:1-alpine AS web-builder
 
 WORKDIR /app/web
 
 # Copy package files
-COPY web/package*.json ./
-RUN npm ci
+COPY web/package.json web/bun.lock* ./
+RUN bun install --frozen-lockfile
 
 # Copy web source
 COPY web/ ./
 
 # Build
-RUN npm run build
+RUN bun run build
 
 # Final stage
 FROM alpine:3.23
@@ -52,7 +52,7 @@ USER kvelmo
 # Create config directory
 RUN mkdir -p /home/kvelmo/.valksor/kvelmo
 
-EXPOSE 3000
+EXPOSE 6337
 
 ENTRYPOINT ["kvelmo"]
-CMD ["--help"]
+CMD ["serve"]

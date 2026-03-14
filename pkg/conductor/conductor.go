@@ -85,13 +85,14 @@ type Conductor struct {
 
 // ConductorEvent represents an event emitted by the conductor.
 type ConductorEvent struct {
-	Type      string          `json:"type"`
-	State     State           `json:"state,omitempty"`
-	JobID     string          `json:"job_id,omitempty"`
-	Message   string          `json:"message,omitempty"`
-	Data      json.RawMessage `json:"data,omitempty"`
-	Error     string          `json:"error,omitempty"`
-	Timestamp time.Time       `json:"timestamp"`
+	Type          string          `json:"type"`
+	State         State           `json:"state,omitempty"`
+	JobID         string          `json:"job_id,omitempty"`
+	CorrelationID string          `json:"correlation_id,omitempty"`
+	Message       string          `json:"message,omitempty"`
+	Data          json.RawMessage `json:"data,omitempty"`
+	Error         string          `json:"error,omitempty"`
+	Timestamp     time.Time       `json:"timestamp"`
 }
 
 // EventListener is called when events occur.

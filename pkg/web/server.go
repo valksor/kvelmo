@@ -31,14 +31,17 @@ type WorktreeCreator interface {
 
 // Server serves the web UI and proxies WebSocket connections to Unix sockets.
 type Server struct {
-	httpServer      *http.Server
-	listener        net.Listener
-	upgrader        websocket.Upgrader
-	staticDir       string
-	embeddedFS      fs.FS // Fallback when staticDir is empty
-	port            int
-	allowedOrigins  []string // If empty, only localhost is allowed
-	worktreeCreator WorktreeCreator
+	httpServer       *http.Server
+	listener         net.Listener
+	upgrader         websocket.Upgrader
+	staticDir        string
+	embeddedFS       fs.FS // Fallback when staticDir is empty
+	port             int
+	allowedOrigins   []string // If empty, only localhost is allowed
+	worktreeCreator  WorktreeCreator
+	globalSocketPath string
+	tlsCertFile      string
+	tlsKeyFile       string
 }
 
 // ServerOption configures the web server.
@@ -58,6 +61,21 @@ func WithAllowedOrigins(origins []string) ServerOption {
 func WithWorktreeCreator(creator WorktreeCreator) ServerOption {
 	return func(s *Server) {
 		s.worktreeCreator = creator
+	}
+}
+
+// WithTLS configures TLS for the web server.
+func WithTLS(certFile, keyFile string) ServerOption {
+	return func(s *Server) {
+		s.tlsCertFile = certFile
+		s.tlsKeyFile = keyFile
+	}
+}
+
+// WithGlobalSocketPath sets the global socket path for readiness checks.
+func WithGlobalSocketPath(path string) ServerOption {
+	return func(s *Server) {
+		s.globalSocketPath = path
 	}
 }
 
@@ -101,6 +119,11 @@ func NewServer(staticDir string, port int, opts ...ServerOption) (*Server, error
 	// WebSocket proxy endpoints
 	mux.HandleFunc("/ws/global", s.handleGlobalWS)
 	mux.HandleFunc("/ws/worktree/", s.handleWorktreeWS)
+
+	// Health and metrics endpoints
+	mux.HandleFunc("/healthz", s.handleHealthz)
+	mux.HandleFunc("/readyz", s.handleReadyz)
+	mux.HandleFunc("/metrics", s.handleMetrics)
 
 	// Static file serving (SPA)
 	// Serve from disk (staticDir) or embedded assets (fallback for production)
@@ -160,6 +183,10 @@ func securityHeaders(next http.Handler) http.Handler {
 
 // Start starts the HTTP server using the pre-bound listener.
 func (s *Server) Start() error {
+	if s.tlsCertFile != "" && s.tlsKeyFile != "" {
+		return s.httpServer.ServeTLS(s.listener, s.tlsCertFile, s.tlsKeyFile)
+	}
+
 	return s.httpServer.Serve(s.listener)
 }
 
@@ -170,7 +197,12 @@ func (s *Server) Port() int {
 
 // URL returns the full URL to access the server.
 func (s *Server) URL() string {
-	return fmt.Sprintf("http://localhost:%d", s.port)
+	scheme := "http"
+	if s.tlsCertFile != "" {
+		scheme = "https"
+	}
+
+	return fmt.Sprintf("%s://localhost:%d", scheme, s.port)
 }
 
 // Shutdown gracefully shuts down the server.

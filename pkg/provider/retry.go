@@ -9,9 +9,10 @@ import (
 
 // RetryConfig controls HTTP retry behavior.
 type RetryConfig struct {
-	MaxRetries int           // Maximum retry attempts (0 = no retries)
-	BaseDelay  time.Duration // Initial delay between retries (doubled each attempt)
-	MaxDelay   time.Duration // Maximum delay cap
+	MaxRetries     int             // Maximum retry attempts (0 = no retries)
+	BaseDelay      time.Duration   // Initial delay between retries (doubled each attempt)
+	MaxDelay       time.Duration   // Maximum delay cap
+	CircuitBreaker *CircuitBreaker // Optional circuit breaker
 }
 
 // DefaultRetryConfig provides sensible defaults for API calls.
@@ -30,8 +31,24 @@ var NoRetryConfig = RetryConfig{
 // Retries on 5xx errors, 429 (rate limit), and network errors.
 // Does not retry on 4xx client errors (except 429).
 func DoWithRetry(client *http.Client, req *http.Request, cfg RetryConfig) (*http.Response, error) {
+	// Check circuit breaker before attempting
+	if cfg.CircuitBreaker != nil {
+		if err := cfg.CircuitBreaker.Allow(); err != nil {
+			return nil, err
+		}
+	}
+
 	if cfg.MaxRetries == 0 {
-		return client.Do(req)
+		resp, err := client.Do(req)
+		if cfg.CircuitBreaker != nil {
+			if err != nil || resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
+				cfg.CircuitBreaker.RecordFailure()
+			} else {
+				cfg.CircuitBreaker.RecordSuccess()
+			}
+		}
+
+		return resp, err
 	}
 
 	delay := cfg.BaseDelay
@@ -61,6 +78,10 @@ func DoWithRetry(client *http.Client, req *http.Request, cfg RetryConfig) (*http
 			// Close any previous response body before returning success
 			if lastResp != nil && lastResp.Body != nil {
 				_ = lastResp.Body.Close()
+			}
+
+			if cfg.CircuitBreaker != nil {
+				cfg.CircuitBreaker.RecordSuccess()
 			}
 
 			return resp, nil
@@ -116,6 +137,11 @@ func DoWithRetry(client *http.Client, req *http.Request, cfg RetryConfig) (*http
 				delay = cfg.MaxDelay
 			}
 		}
+	}
+
+	// All retries exhausted - record failure
+	if cfg.CircuitBreaker != nil {
+		cfg.CircuitBreaker.RecordFailure()
 	}
 
 	// Return last response/error after exhausting retries

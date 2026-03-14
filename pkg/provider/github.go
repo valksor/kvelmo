@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v67/github"
@@ -419,4 +420,36 @@ func (p *GitHubProvider) MergePR(ctx context.Context, taskID string, method stri
 	}
 
 	return nil
+}
+
+// GetBranchProtection returns GitHub branch protection rules.
+func (p *GitHubProvider) GetBranchProtection(ctx context.Context, owner, repo, branch string) (*BranchProtection, error) {
+	protection, resp, err := p.client.Repositories.GetBranchProtection(ctx, owner, repo, branch)
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return new(BranchProtection), nil // No protection rules
+		}
+
+		return nil, fmt.Errorf("get branch protection: %w", err)
+	}
+
+	bp := &BranchProtection{}
+
+	if protection.RequiredStatusChecks != nil && protection.RequiredStatusChecks.Checks != nil {
+		for _, check := range *protection.RequiredStatusChecks.Checks {
+			bp.RequiredChecks = append(bp.RequiredChecks, check.Context)
+		}
+	}
+
+	if protection.RequiredPullRequestReviews != nil {
+		bp.RequireReviews = true
+		bp.MinReviewers = protection.RequiredPullRequestReviews.RequiredApprovingReviewCount
+		bp.DismissStaleReviews = protection.RequiredPullRequestReviews.DismissStaleReviews
+	}
+
+	if protection.EnforceAdmins != nil {
+		bp.EnforceAdmins = protection.EnforceAdmins.Enabled
+	}
+
+	return bp, nil
 }

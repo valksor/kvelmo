@@ -107,11 +107,17 @@ func (c *Conductor) ReorderQueue(id string, newPosition int) error {
 		return fmt.Errorf("queued task %s not found", id)
 	}
 
-	// Remove and reinsert
+	// Remove and reinsert using a new slice to avoid append aliasing
 	task := c.taskQueue[fromIdx]
-	c.taskQueue = append(c.taskQueue[:fromIdx], c.taskQueue[fromIdx+1:]...)
+	remaining := make([]*QueuedTask, 0, len(c.taskQueue))
+	remaining = append(remaining, c.taskQueue[:fromIdx]...)
+	remaining = append(remaining, c.taskQueue[fromIdx+1:]...)
 	toIdx := newPosition - 1
-	c.taskQueue = append(c.taskQueue[:toIdx], append([]*QueuedTask{task}, c.taskQueue[toIdx:]...)...)
+	reordered := make([]*QueuedTask, 0, len(c.taskQueue))
+	reordered = append(reordered, remaining[:toIdx]...)
+	reordered = append(reordered, task)
+	reordered = append(reordered, remaining[toIdx:]...)
+	c.taskQueue = reordered
 
 	return nil
 }

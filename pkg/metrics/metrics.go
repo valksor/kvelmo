@@ -160,6 +160,21 @@ func (m *Metrics) Snapshot() Snapshot {
 	return s
 }
 
+// RestoreFrom sets counter values from a previously saved snapshot.
+// Used to restore metrics after a process restart.
+func (m *Metrics) RestoreFrom(snap Snapshot) {
+	m.JobsSubmitted.Store(snap.JobsSubmitted)
+	m.JobsCompleted.Store(snap.JobsCompleted)
+	m.JobsFailed.Store(snap.JobsFailed)
+	m.RPCRequests.Store(snap.RPCRequests)
+	m.RPCErrors.Store(snap.RPCErrors)
+	m.AgentConnects.Store(snap.AgentConnects)
+	m.AgentDisconnects.Store(snap.AgentDisconnects)
+	m.EventsDropped.Store(snap.EventsDropped)
+	m.PermissionsApproved.Store(snap.PermissionsApproved)
+	m.PermissionsDenied.Store(snap.PermissionsDenied)
+}
+
 // Global metrics instance.
 var global = New()
 

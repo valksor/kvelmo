@@ -16,6 +16,7 @@ import (
 	"github.com/valksor/kvelmo/pkg/agent"
 	"github.com/valksor/kvelmo/pkg/agent/claude"
 	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/metrics"
 	"github.com/valksor/kvelmo/pkg/socket"
 	"github.com/valksor/kvelmo/pkg/web"
 	"github.com/valksor/kvelmo/pkg/worker"
@@ -30,6 +31,8 @@ var (
 	serveStatic  string
 	serveVerbose bool
 	serveOpen    bool
+	serveTLSCert string
+	serveTLSKey  string
 )
 
 var ServeCmd = &cobra.Command{
@@ -55,6 +58,8 @@ Examples:
 	ServeCmd.Flags().StringVar(&serveStatic, "static", "", "Static files directory")
 	ServeCmd.Flags().BoolVarP(&serveVerbose, "verbose", "v", false, "Verbose output")
 	ServeCmd.Flags().BoolVar(&serveOpen, "open", false, "Open browser automatically")
+	ServeCmd.Flags().StringVar(&serveTLSCert, "tls-cert", "", "TLS certificate file path")
+	ServeCmd.Flags().StringVar(&serveTLSKey, "tls-key", "", "TLS key file path")
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
@@ -64,6 +69,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Pre-flight check: verify system setup
 	preflight := agent.RunPreflight()
 	agent.PrintPreflight(preflight)
+	runStartupChecks()
 
 	if debugTiming {
 		fmt.Printf("[timing] preflight: %v\n", time.Since(phaseStart))
@@ -173,6 +179,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 		go func() {
 			socket.PrewarmMemory(ctx)
 		}()
+
+		// Start metrics persistence
+		metricsPersister := metrics.NewPersister(metrics.Global(), "", 0)
+		metricsPersister.Load()
+		go metricsPersister.Start(ctx)
 	}
 
 	// Create web server with worktree creator
@@ -185,6 +196,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		fmt.Println("  Running as secondary instance, using global socket client for worktree creation")
 		client := web.NewWorktreeCreatorClient(socket.GlobalSocketPath())
 		webOpts = append(webOpts, web.WithWorktreeCreator(client))
+	}
+	webOpts = append(webOpts, web.WithGlobalSocketPath(socket.GlobalSocketPath()))
+	if serveTLSCert != "" && serveTLSKey != "" {
+		webOpts = append(webOpts, web.WithTLS(serveTLSCert, serveTLSKey))
 	}
 	webServer, err := web.NewServer(staticDir, port, webOpts...)
 	if err != nil {

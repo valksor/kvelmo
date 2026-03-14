@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/valksor/kvelmo/pkg/memory"
 	"github.com/valksor/kvelmo/pkg/provider"
@@ -103,6 +104,30 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 					baseBranch, err := c.getBaseBranch(ctx)
 					if err != nil {
 						return fmt.Errorf("determine base branch for PR: %w", err)
+					}
+
+					// Check branch protection rules if available (best-effort)
+					if bpp, ok := p.(provider.BranchProtectionProvider); ok {
+						bpOwner, bpRepo := parseOwnerRepo(externalID)
+						if bpOwner != "" && bpRepo != "" {
+							protection, bpErr := bpp.GetBranchProtection(ctx, bpOwner, bpRepo, baseBranch)
+							if bpErr != nil {
+								slog.Warn("could not check branch protection", "error", bpErr)
+							} else if protection != nil {
+								if protection.RequireReviews && protection.MinReviewers > 0 {
+									c.emit(ConductorEvent{
+										Type:    "warning",
+										Message: fmt.Sprintf("Branch %q requires %d reviewer(s) before merge", baseBranch, protection.MinReviewers),
+									})
+								}
+								if len(protection.RequiredChecks) > 0 {
+									c.emit(ConductorEvent{
+										Type:    "warning",
+										Message: fmt.Sprintf("Branch %q has %d required status check(s)", baseBranch, len(protection.RequiredChecks)),
+									})
+								}
+							}
+						}
 					}
 
 					prOpts := provider.PROptions{
@@ -299,6 +324,23 @@ func (c *Conductor) Delete(ctx context.Context, deleteBranch bool) error {
 	})
 
 	return nil
+}
+
+// parseOwnerRepo extracts owner and repo from an external ID like "owner/repo#123".
+// Returns empty strings if the format is not recognized.
+func parseOwnerRepo(externalID string) (string, string) {
+	// Format: owner/repo#number
+	hashIdx := strings.Index(externalID, "#")
+	if hashIdx < 0 {
+		return "", ""
+	}
+	repoPath := externalID[:hashIdx]
+	parts := strings.SplitN(repoPath, "/", 2)
+	if len(parts) != 2 {
+		return "", ""
+	}
+
+	return parts[0], parts[1]
 }
 
 // buildPRDescription constructs the PR body from task metadata.

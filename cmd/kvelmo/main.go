@@ -132,6 +132,10 @@ func init() {
 	// Prompt (PS1 integration)
 	rootCmd.AddCommand(commands.PromptCmd)
 
+	// Backup and restore
+	rootCmd.AddCommand(commands.BackupCmd)
+	rootCmd.AddCommand(commands.RestoreCmd)
+
 	// Hidden utilities
 	rootCmd.AddCommand(genManPagesCmd)
 
@@ -146,9 +150,22 @@ func init() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		watchdog.Start(context.Background(), watchdog.DefaultConfig())
 		cli.InitColor()
+
+		// Configure structured logging
+		level := slog.LevelWarn
 		if cli.Debug {
-			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+			level = slog.LevelDebug
+		} else if cli.Verbose {
+			level = slog.LevelInfo
 		}
+		opts := &slog.HandlerOptions{Level: level}
+		var handler slog.Handler
+		if cli.LogFormat == "json" {
+			handler = slog.NewJSONHandler(os.Stderr, opts)
+		} else {
+			handler = slog.NewTextHandler(os.Stderr, opts)
+		}
+		slog.SetDefault(slog.New(handler))
 	}
 }
 
