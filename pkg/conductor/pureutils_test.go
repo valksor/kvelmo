@@ -133,18 +133,18 @@ func TestQualityCtx(t *testing.T) {
 
 // ─── runQualityGate ───────────────────────────────────────────────────────────
 
-// noCodeRabbitSettings returns settings with CodeRabbit disabled, for use in
+// noExternalReviewSettings returns settings with external review disabled, for use in
 // quality gate tests that should not block on a user prompt.
-func noCodeRabbitSettings() *settings.Settings {
+func noExternalReviewSettings() *settings.Settings {
 	s := settings.DefaultSettings()
-	s.Workflow.CodeRabbit.Mode = settings.CodeRabbitModeNever
+	s.Workflow.ExternalReview.Mode = settings.ExternalReviewNever
 
 	return s
 }
 
 func TestRunQualityGate_NoProjectFiles(t *testing.T) {
 	// Empty temp dir — no go.mod, package.json, setup.py, or pyproject.toml
-	c, _ := New(WithWorkDir(t.TempDir()), WithSettings(noCodeRabbitSettings()))
+	c, _ := New(WithWorkDir(t.TempDir()), WithSettings(noExternalReviewSettings()))
 	if err := c.runQualityGate(context.Background()); err != nil {
 		t.Errorf("runQualityGate() on unknown project type = %v, want nil (should skip)", err)
 	}
@@ -165,7 +165,7 @@ func TestRunQualityGate_NodeProjectNoScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c, _ := New(WithWorkDir(dir), WithSettings(noCodeRabbitSettings()))
+	c, _ := New(WithWorkDir(dir), WithSettings(noExternalReviewSettings()))
 	// qualityGateNode finds no lint/typecheck scripts → returns nil without running npm
 	if err := c.runQualityGate(context.Background()); err != nil {
 		t.Errorf("runQualityGate() with no lint/typecheck scripts = %v, want nil", err)

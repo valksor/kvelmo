@@ -18,8 +18,8 @@ import (
 )
 
 // runQualityGate checks code quality before submission.
-// Detects project type and runs language-specific checks, then always
-// runs the CodeRabbit check if installed.
+// Detects project type and runs language-specific checks, then runs
+// the external review tool if installed and configured.
 func (c *Conductor) runQualityGate(ctx context.Context) error {
 	workDir := c.getWorkDir()
 
@@ -46,8 +46,8 @@ func (c *Conductor) runQualityGate(ctx context.Context) error {
 		slog.Warn("quality gate: unrecognised project type, skipping language checks", "dir", workDir)
 	}
 
-	// CodeRabbit runs for all project types if installed and configured.
-	return c.qualityGateCodeRabbit(ctx, workDir)
+	// External review tool runs for all project types if installed and configured.
+	return c.qualityGateExternalReview(ctx, workDir)
 }
 
 // runQualityGateAsync runs the quality gate in a background goroutine
@@ -187,68 +187,73 @@ func (c *Conductor) qualityGatePython(workDir string) error {
 	return nil
 }
 
-// qualityGateCodeRabbit runs CodeRabbit CLI review if installed and configured.
+// qualityGateExternalReview runs an external CLI review tool if installed and configured.
 // Skips silently if the CLI is not found. Mode comes from workflow settings:
 //   - never  → skip silently
 //   - always → run without prompting
 //   - ask    → block on a user prompt (default)
-func (c *Conductor) qualityGateCodeRabbit(ctx context.Context, workDir string) error {
-	crPath, err := exec.LookPath("coderabbit")
+func (c *Conductor) qualityGateExternalReview(ctx context.Context, workDir string) error {
+	effectiveSettings := c.getEffectiveSettings()
+	command := effectiveSettings.Workflow.ExternalReview.Command
+	if command == "" {
+		command = "coderabbit"
+	}
+
+	toolPath, err := exec.LookPath(command)
 	if err != nil {
-		slog.Debug("quality gate: coderabbit not found, skipping")
+		slog.Debug("quality gate: external review tool not found, skipping", "command", command)
 
 		return nil
 	}
 
-	effectiveSettings := c.getEffectiveSettings()
-	mode := effectiveSettings.Workflow.CodeRabbit.Mode
-	slog.Info("quality gate: coderabbit check", "mode", mode, "path", crPath)
+	mode := effectiveSettings.Workflow.ExternalReview.Mode
+	slog.Info("quality gate: external review check", "mode", mode, "command", command, "path", toolPath)
 	if mode == "" {
 		slog.Info("quality gate: mode is empty, defaulting to ask")
-		mode = settings.CodeRabbitModeAsk
+		mode = settings.ExternalReviewAsk
 	}
 
 	switch mode {
-	case settings.CodeRabbitModeNever:
-		slog.Debug("quality gate: coderabbit mode=never, skipping")
+	case settings.ExternalReviewNever:
+		slog.Debug("quality gate: external review mode=never, skipping")
 
 		return nil
 
-	case settings.CodeRabbitModeAlways:
+	case settings.ExternalReviewAlways:
 		// fall through to run
 
-	case settings.CodeRabbitModeAsk:
-		run, promptErr := c.promptUser(ctx, "Run CodeRabbit review? (this may take several minutes)")
+	case settings.ExternalReviewAsk:
+		run, promptErr := c.promptUser(ctx, fmt.Sprintf("Run %s review? (this may take several minutes)", command))
 		if promptErr != nil {
-			slog.Warn("quality gate: coderabbit prompt cancelled, skipping", "err", promptErr)
+			slog.Warn("quality gate: external review prompt cancelled, skipping", "err", promptErr)
 
 			return nil
 		}
 
 		if !run {
-			slog.Debug("quality gate: user declined coderabbit review")
+			slog.Debug("quality gate: user declined external review")
 
 			return nil
 		}
 
 	default:
-		slog.Warn("quality gate: unknown coderabbit mode, skipping", "mode", mode)
+		slog.Warn("quality gate: unknown external review mode, skipping", "mode", mode)
 
 		return nil
 	}
 
-	crCtx, cancel := coderabbitCtx()
+	reviewCtx, cancel := externalReviewCtx()
 	defer cancel()
 
-	//nolint:contextcheck // coderabbitCtx() creates a dedicated 5-minute timeout; independent of parent context so reviews get their full time budget
-	cmd := exec.CommandContext(crCtx, crPath, "review")
+	//nolint:contextcheck // externalReviewCtx() creates a dedicated 5-minute timeout; independent of parent context so reviews get their full time budget
+	cmd := exec.CommandContext(reviewCtx, toolPath, "review")
 	cmd.Dir = workDir
 	output, runErr := cmd.CombinedOutput()
 	if runErr != nil {
-		return fmt.Errorf("coderabbit review failed:\n%s", string(output))
+		return fmt.Errorf("%s review failed:\n%s", command, string(output))
 	}
 
-	slog.Debug("quality gate: coderabbit review passed")
+	slog.Debug("quality gate: external review passed", "command", command)
 
 	return nil
 }
@@ -258,9 +263,9 @@ func qualityCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 60*time.Second)
 }
 
-// coderabbitCtx returns a context with a 5-minute timeout for CodeRabbit CLI.
-// CodeRabbit is significantly slower than local linters.
-func coderabbitCtx() (context.Context, context.CancelFunc) {
+// externalReviewCtx returns a context with a 5-minute timeout for external review tools.
+// External review tools are significantly slower than local linters.
+func externalReviewCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 5*time.Minute)
 }
 

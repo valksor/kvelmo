@@ -92,15 +92,15 @@ func TestReadPackageJSONScripts_MultipleScripts(t *testing.T) {
 	}
 }
 
-func TestCoderabbitCtx(t *testing.T) {
-	ctx, cancel := coderabbitCtx()
+func TestExternalReviewCtx(t *testing.T) {
+	ctx, cancel := externalReviewCtx()
 	defer cancel()
 	if ctx == nil {
-		t.Error("coderabbitCtx() returned nil context")
+		t.Error("externalReviewCtx() returned nil context")
 	}
 	select {
 	case <-ctx.Done():
-		t.Error("coderabbitCtx() context should not be cancelled immediately")
+		t.Error("externalReviewCtx() context should not be cancelled immediately")
 	default:
 	}
 }
