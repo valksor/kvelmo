@@ -49,6 +49,24 @@ func runCheckpoints(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("checkpoints call: %w", err)
 	}
 
+	if checkpointsJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
+	}
+
 	// CheckpointInfo matches the socket response structure
 	type CheckpointInfo struct {
 		SHA       string `json:"sha"`
@@ -102,7 +120,10 @@ var checkpointsGotoCmd = &cobra.Command{
 	RunE:  runCheckpointsGoto,
 }
 
+var checkpointsJSON bool
+
 func init() {
+	CheckpointsCmd.Flags().BoolVar(&checkpointsJSON, "json", false, "Output raw JSON response")
 	CheckpointsCmd.AddCommand(checkpointsGotoCmd)
 }
 

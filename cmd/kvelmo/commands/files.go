@@ -19,9 +19,11 @@ var FilesCmd = &cobra.Command{
 }
 
 var (
-	filesSearchMax int
-	filesListExt   []string
-	filesListDepth int
+	filesSearchMax  int
+	filesSearchJSON bool
+	filesListExt    []string
+	filesListDepth  int
+	filesListJSON   bool
 )
 
 var filesSearchCmd = &cobra.Command{
@@ -40,8 +42,10 @@ var filesListCmd = &cobra.Command{
 
 func init() {
 	filesSearchCmd.Flags().IntVar(&filesSearchMax, "max", 10, "Maximum number of results")
+	filesSearchCmd.Flags().BoolVar(&filesSearchJSON, "json", false, "Output raw JSON response")
 	filesListCmd.Flags().StringSliceVar(&filesListExt, "ext", nil, "Filter by file extensions (e.g. --ext go,ts)")
 	filesListCmd.Flags().IntVar(&filesListDepth, "depth", 0, "Maximum directory depth (0 = unlimited)")
+	filesListCmd.Flags().BoolVar(&filesListJSON, "json", false, "Output raw JSON response")
 	FilesCmd.AddCommand(filesSearchCmd)
 	FilesCmd.AddCommand(filesListCmd)
 }
@@ -64,6 +68,24 @@ func runFilesSearch(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "files.search", params)
 	if err != nil {
 		return fmt.Errorf("files.search call: %w", err)
+	}
+
+	if filesSearchJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result struct {
@@ -115,6 +137,24 @@ func runFilesList(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "files.list", params)
 	if err != nil {
 		return fmt.Errorf("files.list call: %w", err)
+	}
+
+	if filesListJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result struct {

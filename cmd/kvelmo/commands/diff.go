@@ -21,8 +21,11 @@ Falls back to regular git diff if no checkpoints exist.`,
 	RunE: runDiff,
 }
 
+var diffJSON bool
+
 func init() {
 	DiffCmd.Flags().Bool("stat", false, "Show only file summary")
+	DiffCmd.Flags().BoolVar(&diffJSON, "json", false, "Output raw JSON response")
 }
 
 func runDiff(cmd *cobra.Command, args []string) error {
@@ -82,6 +85,22 @@ func runDiff(cmd *cobra.Command, args []string) error {
 	return showRegularDiff(ctx, client, stat)
 }
 
+func printJSONResult(raw json.RawMessage) {
+	var pretty any
+	if jsonErr := json.Unmarshal(raw, &pretty); jsonErr != nil {
+		fmt.Println(string(raw))
+
+		return
+	}
+	out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+	if jsonErr != nil {
+		fmt.Println(string(raw))
+
+		return
+	}
+	fmt.Println(string(out))
+}
+
 func showDiffAgainst(ctx context.Context, client *socket.Client, ref string, stat bool) error {
 	resp, err := client.Call(ctx, "git.diff_against", map[string]any{
 		"ref":  ref,
@@ -89,6 +108,12 @@ func showDiffAgainst(ctx context.Context, client *socket.Client, ref string, sta
 	})
 	if err != nil {
 		return fmt.Errorf("git.diff_against call: %w", err)
+	}
+
+	if diffJSON {
+		printJSONResult(resp.Result)
+
+		return nil
 	}
 
 	var result struct {
@@ -118,6 +143,12 @@ func showRegularDiff(ctx context.Context, client *socket.Client, stat bool) erro
 			return fmt.Errorf("git.diff_against call: %w", err)
 		}
 
+		if diffJSON {
+			printJSONResult(resp.Result)
+
+			return nil
+		}
+
 		var result struct {
 			Diff string `json:"diff"`
 		}
@@ -137,6 +168,12 @@ func showRegularDiff(ctx context.Context, client *socket.Client, stat bool) erro
 	resp, err := client.Call(ctx, "git.diff", map[string]any{"cached": false})
 	if err != nil {
 		return fmt.Errorf("git.diff call: %w", err)
+	}
+
+	if diffJSON {
+		printJSONResult(resp.Result)
+
+		return nil
 	}
 
 	var result struct {

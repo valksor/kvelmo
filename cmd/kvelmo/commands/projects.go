@@ -15,6 +15,7 @@ import (
 var (
 	projectsTimeout time.Duration
 	projectsVerbose bool
+	projectsJSON    bool
 )
 
 var ProjectsCmd = &cobra.Command{
@@ -35,6 +36,7 @@ var projectsAddCmd = &cobra.Command{
 func init() {
 	ProjectsCmd.Flags().DurationVarP(&projectsTimeout, "timeout", "t", 5*time.Second, "Connection timeout")
 	ProjectsCmd.Flags().BoolVarP(&projectsVerbose, "verbose", "v", false, "Show socket paths")
+	ProjectsCmd.Flags().BoolVar(&projectsJSON, "json", false, "Output raw JSON response")
 	ProjectsCmd.AddCommand(projectsAddCmd)
 }
 
@@ -61,6 +63,24 @@ func runProjects(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "projects.list", nil)
 	if err != nil {
 		return fmt.Errorf("list projects: %w", err)
+	}
+
+	if projectsJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result socket.ProjectListResult

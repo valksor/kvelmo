@@ -12,11 +12,17 @@ import (
 	"github.com/valksor/kvelmo/pkg/socket"
 )
 
+var workersJSON bool
+
 var WorkersCmd = &cobra.Command{
 	Use:   "workers",
 	Short: "List worker pool status",
 	Long:  "Query the global socket for worker pool status.",
 	RunE:  runWorkers,
+}
+
+func init() {
+	WorkersCmd.Flags().BoolVar(&workersJSON, "json", false, "Output raw JSON response")
 }
 
 func runWorkers(cmd *cobra.Command, args []string) error {
@@ -38,6 +44,24 @@ func runWorkers(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "workers.list", nil)
 	if err != nil {
 		return fmt.Errorf("list workers: %w", err)
+	}
+
+	if workersJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result WorkersListResult

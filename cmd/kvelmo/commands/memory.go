@@ -41,6 +41,11 @@ var memoryClearCmd = &cobra.Command{
 	RunE:  runMemoryClear,
 }
 
+var (
+	memorySearchJSON bool
+	memoryStatsJSON  bool
+)
+
 func init() {
 	MemoryCmd.AddCommand(memorySearchCmd)
 	MemoryCmd.AddCommand(memoryStatsCmd)
@@ -49,6 +54,8 @@ func init() {
 	memorySearchCmd.Flags().IntP("limit", "n", 10, "Maximum number of results")
 	memorySearchCmd.Flags().Float32P("min-score", "s", 0.0, "Minimum similarity score (0-1)")
 	memorySearchCmd.Flags().StringSliceP("types", "t", nil, "Filter by document type (specification,code_change,session,decision,solution)")
+	memorySearchCmd.Flags().BoolVar(&memorySearchJSON, "json", false, "Output raw JSON response")
+	memoryStatsCmd.Flags().BoolVar(&memoryStatsJSON, "json", false, "Output raw JSON response")
 }
 
 func runMemorySearch(cmd *cobra.Command, args []string) error {
@@ -84,6 +91,24 @@ func runMemorySearch(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "memory.search", params)
 	if err != nil {
 		return fmt.Errorf("memory.search: %w", err)
+	}
+
+	if memorySearchJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result struct {
@@ -141,6 +166,24 @@ func runMemoryStats(cmd *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "memory.stats", nil)
 	if err != nil {
 		return fmt.Errorf("memory.stats: %w", err)
+	}
+
+	if memoryStatsJSON {
+		var pretty any
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+
+			return nil
+		}
+		fmt.Println(string(out))
+
+		return nil
 	}
 
 	var result struct {

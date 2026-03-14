@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/valksor/kvelmo/pkg/settings"
 	"github.com/valksor/kvelmo/pkg/socket"
 )
+
+var diagnoseJSON bool
 
 var DiagnoseCmd = &cobra.Command{
 	Use:     "diagnose",
@@ -27,16 +30,108 @@ Run this command to troubleshoot setup issues.`,
 	RunE: runDiagnose,
 }
 
+func init() {
+	DiagnoseCmd.Flags().BoolVar(&diagnoseJSON, "json", false, "Output raw JSON response")
+}
+
+type diagnoseCheck struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Detail string `json:"detail,omitempty"`
+	Fix    string `json:"fix,omitempty"`
+}
+
+type diagnoseProvider struct {
+	Name       string `json:"name"`
+	Configured bool   `json:"configured"`
+}
+
+type diagnoseResult struct {
+	Checks       []diagnoseCheck    `json:"checks"`
+	GlobalSocket string             `json:"global_socket"`
+	Providers    []diagnoseProvider `json:"providers"`
+	Issues       []string           `json:"issues,omitempty"`
+}
+
 func runDiagnose(cmd *cobra.Command, args []string) error {
+	var issues []string
+
+	// Run preflight checks for git and agent CLIs
+	preflight := agent.RunPreflight()
+
+	var jsonChecks []diagnoseCheck
+
+	for _, c := range preflight.Checks {
+		jc := diagnoseCheck{
+			Name:   c.Name,
+			Status: string(c.Status),
+			Detail: c.Detail,
+			Fix:    c.Fix,
+		}
+		jsonChecks = append(jsonChecks, jc)
+		if c.Fix != "" {
+			issues = append(issues, c.Fix)
+		}
+	}
+
+	// Check global socket
+	globalPath := socket.GlobalSocketPath()
+	socketStatus := "not_running"
+	if socket.SocketExists(globalPath) {
+		client, err := socket.NewClient(globalPath, socket.WithTimeout(500*time.Millisecond))
+		if err == nil {
+			_ = client.Close()
+			socketStatus = "running"
+		} else {
+			socketStatus = "stale"
+			issues = append(issues, "Remove stale socket: rm "+globalPath)
+		}
+	} else {
+		issues = append(issues, fmt.Sprintf("Start server: %s serve", meta.Name))
+	}
+
+	// Check provider tokens
+	providerChecks := []struct {
+		name   string
+		envVar string
+	}{
+		{"GitHub", "GITHUB_TOKEN"},
+		{"GitLab", "GITLAB_TOKEN"},
+		{"Linear", "LINEAR_TOKEN"},
+		{"Wrike", "WRIKE_TOKEN"},
+	}
+
+	var jsonProviders []diagnoseProvider
+	for _, p := range providerChecks {
+		configured := detectExistingToken(p.envVar, settings.ScopeGlobal, "") != nil
+		jsonProviders = append(jsonProviders, diagnoseProvider{
+			Name:       p.name,
+			Configured: configured,
+		})
+	}
+
+	if diagnoseJSON {
+		result := diagnoseResult{
+			Checks:       jsonChecks,
+			GlobalSocket: socketStatus,
+			Providers:    jsonProviders,
+			Issues:       issues,
+		}
+		out, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal JSON: %w", err)
+		}
+		fmt.Println(string(out))
+
+		return nil
+	}
+
+	// Formatted output
 	fmt.Println()
 	fmt.Printf("  %s Diagnostics\n", meta.Name)
 	fmt.Println("  ─────────────────────────────────────")
 	fmt.Println()
 
-	var issues []string
-
-	// Run preflight checks for git and agent CLIs
-	preflight := agent.RunPreflight()
 	for _, c := range preflight.Checks {
 		symbol := "✓"
 		label := "installed"
@@ -55,7 +150,6 @@ func runDiagnose(cmd *cobra.Command, args []string) error {
 		if c.Status == agent.CheckPassed && c.Detail != "" {
 			detail = " (" + c.Detail + ")"
 		}
-		// Map check names to display labels
 		displayName := c.Name
 		switch c.Name {
 		case "claude":
@@ -66,45 +160,22 @@ func runDiagnose(cmd *cobra.Command, args []string) error {
 			displayName = "Git"
 		}
 		fmt.Printf("  %-14s %s %s%s\n", displayName+":", symbol, label, detail)
-		if c.Fix != "" {
-			issues = append(issues, c.Fix)
-		}
 	}
 
-	// Check global socket
-	globalPath := socket.GlobalSocketPath()
-	if socket.SocketExists(globalPath) {
-		// Try to connect to verify it's responsive
-		client, err := socket.NewClient(globalPath, socket.WithTimeout(500*time.Millisecond))
-		if err == nil {
-			_ = client.Close()
-			fmt.Printf("  Global socket: ✓ running\n")
-		} else {
-			fmt.Printf("  Global socket: ⚠ stale (not responding)\n")
-			issues = append(issues, "Remove stale socket: rm "+globalPath)
-		}
-	} else {
+	switch socketStatus {
+	case "running":
+		fmt.Printf("  Global socket: ✓ running\n")
+	case "stale":
+		fmt.Printf("  Global socket: ⚠ stale (not responding)\n")
+	default:
 		fmt.Printf("  Global socket: ✗ not running\n")
-		issues = append(issues, fmt.Sprintf("Start server: %s serve", meta.Name))
 	}
 
 	fmt.Println()
 	fmt.Println("  Providers:")
 
-	// Check provider tokens
-	providerChecks := []struct {
-		name   string
-		envVar string
-	}{
-		{"GitHub", "GITHUB_TOKEN"},
-		{"GitLab", "GITLAB_TOKEN"},
-		{"Linear", "LINEAR_TOKEN"},
-		{"Wrike", "WRIKE_TOKEN"},
-	}
-
 	for _, p := range providerChecks {
 		if token := detectExistingToken(p.envVar, settings.ScopeGlobal, ""); token != nil {
-			// Mask token - only show last 4 chars for verification
 			masked := "****"
 			if len(token.Value) > 4 {
 				masked = "****" + token.Value[len(token.Value)-4:]
@@ -117,7 +188,6 @@ func runDiagnose(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 
-	// Print issues and next steps
 	if len(issues) > 0 {
 		fmt.Println("  Next steps:")
 		for _, issue := range issues {
