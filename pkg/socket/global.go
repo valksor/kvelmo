@@ -276,6 +276,9 @@ func (g *GlobalSocket) registerHandlers() {
 	// Provider token testing
 	g.server.Handle("providers.test", g.handleProvidersTest)
 
+	// Configuration validation
+	g.server.Handle("config.validate", g.handleConfigValidate)
+
 	// Worktree management (for secondary instances)
 	g.server.Handle("worktrees.create", g.handleWorktreesCreate)
 }
@@ -354,6 +357,139 @@ func (g *GlobalSocket) handleProvidersTest(ctx context.Context, req *Request) (*
 		"ok":     ok,
 		"detail": detail,
 	})
+}
+
+// --- Config Validation ---
+
+func (g *GlobalSocket) handleConfigValidate(_ context.Context, req *Request) (*Response, error) {
+	type check struct {
+		Name   string `json:"name"`
+		Status string `json:"status"`
+		Detail string `json:"detail,omitempty"`
+		Fix    string `json:"fix,omitempty"`
+	}
+
+	type result struct {
+		Valid  bool    `json:"valid"`
+		Checks []check `json:"checks"`
+	}
+
+	res := result{Valid: true}
+
+	// Check settings can be loaded.
+	effective := settings.DefaultSettings()
+	global, settingsErr := settings.LoadGlobal()
+	if settingsErr != nil {
+		res.Valid = false
+		res.Checks = append(res.Checks, check{
+			Name:   "Settings",
+			Status: "error",
+			Detail: settingsErr.Error(),
+			Fix:    "Run 'kvelmo config init' or fix YAML syntax in config file",
+		})
+	} else {
+		if global != nil {
+			settings.Merge(effective, global)
+		}
+		res.Checks = append(res.Checks, check{
+			Name:   "Settings",
+			Status: "ok",
+			Detail: "valid",
+		})
+	}
+
+	// Run preflight checks (git, agent CLIs).
+	preflight := agent.RunPreflight() //nolint:contextcheck // RunPreflight manages its own timeouts internally
+	for _, c := range preflight.Checks {
+		status := "ok"
+		switch c.Status {
+		case agent.CheckPassed:
+			// ok
+		case agent.CheckFailed:
+			status = "error"
+			res.Valid = false
+		case agent.CheckWarning:
+			status = "warning"
+		}
+		res.Checks = append(res.Checks, check{
+			Name:   c.Name,
+			Status: status,
+			Detail: c.Detail,
+			Fix:    c.Fix,
+		})
+	}
+
+	// Check provider tokens (informational, not required for validity).
+	providerChecks := []struct {
+		name   string
+		envVar string
+	}{
+		{"GitHub", "GITHUB_TOKEN"},
+		{"GitLab", "GITLAB_TOKEN"},
+		{"Linear", "LINEAR_TOKEN"},
+		{"Wrike", "WRIKE_TOKEN"},
+	}
+
+	for _, p := range providerChecks {
+		if token := os.Getenv(p.envVar); token != "" {
+			res.Checks = append(res.Checks, check{
+				Name:   p.name,
+				Status: "ok",
+				Detail: "token configured",
+			})
+		} else if envMap, err := settings.LoadEnvMap(""); err == nil {
+			if val, ok := envMap[p.envVar]; ok && val != "" {
+				res.Checks = append(res.Checks, check{
+					Name:   p.name,
+					Status: "ok",
+					Detail: "token configured",
+				})
+			} else {
+				res.Checks = append(res.Checks, check{
+					Name:   p.name,
+					Status: "warning",
+					Detail: "not configured",
+					Fix:    fmt.Sprintf("Set %s or run 'kvelmo provider login %s'", p.envVar, strings.ToLower(p.name)),
+				})
+			}
+		} else {
+			res.Checks = append(res.Checks, check{
+				Name:   p.name,
+				Status: "warning",
+				Detail: "not configured",
+				Fix:    fmt.Sprintf("Set %s or run 'kvelmo provider login %s'", p.envVar, strings.ToLower(p.name)),
+			})
+		}
+	}
+
+	// Check agent default is valid if settings loaded.
+	if effective.Agent.Default != "" {
+		allowed := []string{"claude", "codex"}
+		valid := false
+		for _, a := range allowed {
+			if effective.Agent.Default == a {
+				valid = true
+
+				break
+			}
+		}
+		if !valid {
+			if _, ok := effective.CustomAgents[effective.Agent.Default]; ok {
+				valid = true
+			}
+		}
+		if !valid {
+			res.Valid = false
+			res.Checks = append(res.Checks, check{
+				Name:   "agent.default",
+				Status: "error",
+				Detail: fmt.Sprintf("unknown agent %q", effective.Agent.Default),
+				Fix:    "Set agent.default to 'claude' or 'codex'",
+			})
+		}
+	}
+
+	return NewResultResponse(req.ID, res)
 }
 
 // resolveProviderToken reads the configured token for a provider from env vars and settings .env files.

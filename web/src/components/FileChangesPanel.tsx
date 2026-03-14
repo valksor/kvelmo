@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
@@ -13,12 +14,28 @@ interface FileChangesPanelProps {
 
 export function FileChangesPanel({ data }: FileChangesPanelProps) {
   const fileChanges = useProjectStore((state) => state.fileChanges)
+  const getGitDiffAgainst = useProjectStore((state) => state.getGitDiffAgainst)
   const openTab = useLayoutStore((state) => state.openTab)
+
+  const [diffStat, setDiffStat] = useState<string | null>(null)
+  const [diffLoading, setDiffLoading] = useState(false)
 
   // Use data from props if available (with runtime check), otherwise from store
   const displayChanges = Array.isArray(data?.fileChanges)
     ? (data.fileChanges as FileChange[])
     : fileChanges
+
+  const handleDiffAgainstBase = async () => {
+    setDiffLoading(true)
+    try {
+      const stat = await getGitDiffAgainst('HEAD~1', true)
+      setDiffStat(stat || 'No differences')
+    } catch {
+      setDiffStat('Could not compare')
+    } finally {
+      setDiffLoading(false)
+    }
+  }
 
   if (displayChanges.length === 0) {
     return (
@@ -72,7 +89,39 @@ export function FileChangesPanel({ data }: FileChangesPanelProps) {
               <span className="badge badge-info badge-sm">{grouped.renamed.length} renamed</span>
             )}
           </div>
+          <div className="ml-auto">
+            <button
+              onClick={handleDiffAgainstBase}
+              disabled={diffLoading}
+              className="btn btn-ghost btn-xs"
+              aria-label="Compare against base commit"
+            >
+              {diffLoading ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              )}
+              Diff stat
+            </button>
+          </div>
         </div>
+
+        {/* Diff stat output */}
+        {diffStat && (
+          <div className="bg-base-200 rounded-lg p-3 border border-base-300">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-base-content/50 uppercase">Diff stat</span>
+              <button onClick={() => setDiffStat(null)} className="btn btn-ghost btn-xs btn-square" aria-label="Close diff stat">
+                <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <pre className="text-xs font-mono text-base-content/80 whitespace-pre-wrap">{diffStat}</pre>
+          </div>
+        )}
 
         {/* File List by Status */}
         {grouped.added.length > 0 && (
