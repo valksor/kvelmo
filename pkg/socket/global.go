@@ -200,6 +200,7 @@ func (g *GlobalSocket) registerHandlers() {
 
 	// System info
 	g.server.Handle("system.docsURL", g.handleDocsURL)
+	g.server.Handle("system.diagnose", g.handleDiagnose)
 
 	// Project management
 	g.server.Handle("projects.list", g.handleListProjects)
@@ -278,6 +279,17 @@ func (g *GlobalSocket) registerHandlers() {
 
 	// Configuration validation
 	g.server.Handle("config.validate", g.handleConfigValidate)
+
+	// Security scanning
+	g.server.Handle("security.scan", g.handleSecurityScan)
+
+	// Recordings
+	g.server.Handle("recordings.list", g.handleRecordingsList)
+	g.server.Handle("recordings.view", g.handleRecordingsView)
+
+	// Backup
+	g.server.Handle("backup.create", g.handleBackupCreate)
+	g.server.Handle("backup.list", g.handleBackupList)
 
 	// Worktree management (for secondary instances)
 	g.server.Handle("worktrees.create", g.handleWorktreesCreate)
