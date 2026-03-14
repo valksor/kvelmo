@@ -20,7 +20,7 @@ use tauri::{
     Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_opener::OpenerExt;
 
 /// Application version (should match Cargo.toml and Go binary)
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -33,10 +33,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_updater::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, shortcut, event| {
+                .with_handler(|app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
@@ -48,6 +48,7 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
 
@@ -113,7 +114,7 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open_web" => {
-                let _ = app.shell().open("http://localhost:6337", None::<String>);
+                let _ = app.opener().open_url("http://localhost:6337", None::<&str>);
             }
             "show" => {
                 if let Some(window) = app.get_webview_window("main") {
