@@ -15,6 +15,7 @@ import (
 	"github.com/valksor/kvelmo/pkg/worker"
 )
 
+//nolint:contextcheck // Intentionally accepts lifecycle context, not request context
 func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent Event) {
 	if c.pool == nil {
 		return
@@ -125,10 +126,13 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 			if baseBranchErr != nil {
 				slog.Debug("skipping memory indexing - cannot detect base branch", "error", baseBranchErr)
 			} else if indexer != nil && wuSnapshot != nil {
+				// Create detached context outside the goroutine so background indexing
+				// continues even after the parent request context is cancelled.
+				asyncCtx, asyncCancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 				//nolint:contextcheck // Intentionally uses detached context for background indexing
 				go func(wu *WorkUnit, idx *memory.Indexer, event Event, base string) {
-					asyncCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-					defer cancel()
+					defer asyncCancel()
 					if err := idx.IndexTask(asyncCtx, wu.ID, wu.Title, wu.Description, wu.Branch, base); err != nil {
 						slog.Warn("memory indexing failed", "task_id", wu.ID, "event", event, "error", err)
 					}

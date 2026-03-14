@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,8 +19,9 @@ import (
 // waitForJob connects to the worktree socket, subscribes to the event stream,
 // and blocks until the specified job completes or fails.
 // Returns nil on success, error on failure.
-func waitForJob(socketPath, jobID string) error {
-	conn, err := net.Dial("unix", socketPath)
+func waitForJob(socketPath, _ string) error {
+	var d net.Dialer
+	conn, err := d.DialContext(context.Background(), "unix", socketPath)
 	if err != nil {
 		return fmt.Errorf("connect for streaming: %w", err)
 	}
@@ -87,11 +89,11 @@ func waitForJob(socketPath, jobID string) error {
 		case "job_completed":
 			return nil
 		case "job_failed":
-			cli.Red.Fprintf(os.Stderr, "\n[Failed] %s\n", event.Error)
+			_, _ = cli.Red.Fprintf(os.Stderr, "\n[Failed] %s\n", event.Error)
 
 			return fmt.Errorf("job failed: %s", event.Error)
 		case "error":
-			cli.Red.Fprintf(os.Stderr, "\n[Error] %s\n", event.Error)
+			_, _ = cli.Red.Fprintf(os.Stderr, "\n[Error] %s\n", event.Error)
 			if event.Message != "" {
 				fmt.Fprintf(os.Stderr, "  %s\n", event.Message)
 			}

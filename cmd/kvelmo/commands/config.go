@@ -6,12 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/valksor/kvelmo/pkg/meta"
+	"github.com/valksor/kvelmo/pkg/paths"
+	"github.com/valksor/kvelmo/pkg/settings"
 	"github.com/valksor/kvelmo/pkg/socket"
 )
 
@@ -25,33 +29,79 @@ var configShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Show current effective configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, ctx, cancel, err := globalSocketClient()
-		if err != nil {
-			return err
-		}
-		defer func() { _ = client.Close() }()
-		defer cancel()
+		// Try socket first; fall back to reading files directly.
+		if data, err := configShowViaSocket(); err == nil {
+			fmt.Println(string(data))
 
-		resp, err := client.Call(ctx, "settings.get", nil)
-		if err != nil {
-			return fmt.Errorf("settings.get: %w", err)
+			return nil
 		}
 
-		var result struct {
-			Effective json.RawMessage `json:"effective"`
-		}
-		if err := json.Unmarshal(resp.Result, &result); err != nil {
-			return fmt.Errorf("parse response: %w", err)
-		}
-
-		pretty, err := json.MarshalIndent(result.Effective, "", "  ")
-		if err != nil {
-			return fmt.Errorf("format: %w", err)
-		}
-		fmt.Println(string(pretty))
-
-		return nil
+		return configShowOffline()
 	},
+}
+
+// configShowViaSocket fetches effective config from the running server.
+func configShowViaSocket() ([]byte, error) {
+	client, ctx, cancel, err := globalSocketClient()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = client.Close() }()
+	defer cancel()
+
+	resp, err := client.Call(ctx, "settings.get", nil)
+	if err != nil {
+		return nil, fmt.Errorf("settings.get: %w", err)
+	}
+
+	var result struct {
+		Effective json.RawMessage `json:"effective"`
+	}
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return nil, fmt.Errorf("parse response: %w", err)
+	}
+
+	return json.MarshalIndent(result.Effective, "", "  ")
+}
+
+// configShowOffline reads config files directly and prints the effective config.
+func configShowOffline() error {
+	effective, err := loadEffectiveOffline()
+	if err != nil {
+		return err
+	}
+
+	pretty, err := json.MarshalIndent(effective, "", "  ")
+	if err != nil {
+		return fmt.Errorf("format: %w", err)
+	}
+	fmt.Println(string(pretty))
+
+	return nil
+}
+
+// loadEffectiveOffline loads effective settings by reading YAML files directly.
+func loadEffectiveOffline() (*settings.Settings, error) {
+	effective := settings.DefaultSettings()
+
+	global, err := settings.LoadGlobal()
+	if err != nil {
+		return nil, fmt.Errorf("load global config: %w", err)
+	}
+	if global != nil {
+		settings.Merge(effective, global)
+	}
+
+	// Try to load project config from current directory.
+	cwd, err := os.Getwd()
+	if err == nil {
+		project, projErr := settings.LoadProject(cwd)
+		if projErr == nil && project != nil {
+			settings.Merge(effective, project)
+		}
+	}
+
+	return effective, nil
 }
 
 var configPathCmd = &cobra.Command{
@@ -75,45 +125,85 @@ var configGetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := args[0]
 
-		client, ctx, cancel, err := globalSocketClient()
-		if err != nil {
-			return err
-		}
-		defer func() { _ = client.Close() }()
-		defer cancel()
+		// Try socket first; fall back to reading files directly.
+		if value, err := configGetViaSocket(path); err == nil {
+			printConfigValue(value)
 
-		resp, err := client.Call(ctx, "settings.get", nil)
-		if err != nil {
-			return fmt.Errorf("settings.get: %w", err)
+			return nil
 		}
 
-		var result struct {
-			Effective map[string]any `json:"effective"`
-		}
-		if err := json.Unmarshal(resp.Result, &result); err != nil {
-			return fmt.Errorf("parse response: %w", err)
-		}
-
-		value, err := nestedGet(result.Effective, path)
-		if err != nil {
-			return err
-		}
-
-		switch v := value.(type) {
-		case string:
-			fmt.Println(v)
-		case bool:
-			fmt.Println(v)
-		default:
-			data, err := json.Marshal(value)
-			if err != nil {
-				return fmt.Errorf("marshal value: %w", err)
-			}
-			fmt.Println(string(data))
-		}
-
-		return nil
+		return configGetOffline(path)
 	},
+}
+
+// configGetViaSocket fetches a config value from the running server.
+func configGetViaSocket(path string) (any, error) {
+	client, ctx, cancel, err := globalSocketClient()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = client.Close() }()
+	defer cancel()
+
+	resp, err := client.Call(ctx, "settings.get", nil)
+	if err != nil {
+		return nil, fmt.Errorf("settings.get: %w", err)
+	}
+
+	var result struct {
+		Effective map[string]any `json:"effective"`
+	}
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return nil, fmt.Errorf("parse response: %w", err)
+	}
+
+	return nestedGet(result.Effective, path)
+}
+
+// configGetOffline reads config files directly and extracts the requested value.
+func configGetOffline(path string) error {
+	effective, err := loadEffectiveOffline()
+	if err != nil {
+		return err
+	}
+
+	// Convert to map[string]any for dot-notation lookup.
+	data, err := json.Marshal(effective)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return fmt.Errorf("parse config: %w", err)
+	}
+
+	value, err := nestedGet(m, path)
+	if err != nil {
+		return err
+	}
+
+	printConfigValue(value)
+
+	return nil
+}
+
+// printConfigValue prints a config value in a human-friendly format.
+func printConfigValue(value any) {
+	switch v := value.(type) {
+	case string:
+		fmt.Println(v)
+	case bool:
+		fmt.Println(v)
+	default:
+		data, err := json.Marshal(value)
+		if err != nil {
+			fmt.Println(value)
+
+			return
+		}
+		fmt.Println(string(data))
+	}
 }
 
 var configSetCmd = &cobra.Command{
@@ -177,6 +267,65 @@ var configInitCmd = &cobra.Command{
 	},
 }
 
+var (
+	configEditGlobal  bool
+	configEditProject bool
+)
+
+var configEditCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Open config file in editor",
+	RunE:  runConfigEdit,
+}
+
+func runConfigEdit(cmd *cobra.Command, args []string) error {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = os.Getenv("VISUAL")
+	}
+	if editor == "" {
+		return errors.New("$EDITOR not set")
+	}
+
+	var configPath string
+	if configEditProject {
+		// Project config: .valksor/kvelmo.yaml in current directory.
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get working directory: %w", err)
+		}
+		configPath = settings.ProjectPath(cwd)
+	} else {
+		// Default to global: ~/.valksor/kvelmo/kvelmo.yaml.
+		configPath = paths.ConfigPath()
+	}
+
+	// Create file if it doesn't exist.
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create config directory: %w", err)
+	}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if err := os.WriteFile(configPath, []byte("# "+meta.Name+" configuration\n"), 0o644); err != nil {
+			return fmt.Errorf("create config file: %w", err)
+		}
+	}
+
+	// Resolve editor to an absolute path to satisfy security linters.
+	editorPath, err := exec.LookPath(editor)
+	if err != nil {
+		return fmt.Errorf("editor %q not found in PATH: %w", editor, err)
+	}
+
+	// Open editor.
+	editorCmd := exec.CommandContext(cmd.Context(), editorPath, configPath)
+	editorCmd.Stdin = os.Stdin
+	editorCmd.Stdout = os.Stdout
+	editorCmd.Stderr = os.Stderr
+
+	return editorCmd.Run()
+}
+
 // globalSocketClient connects to the global socket and returns a client, context, and cancel func.
 func globalSocketClient() (*socket.Client, context.Context, context.CancelFunc, error) {
 	gPath := socket.GlobalSocketPath()
@@ -211,9 +360,13 @@ func nestedGet(m map[string]any, path string) (any, error) {
 }
 
 func init() {
+	configEditCmd.Flags().BoolVar(&configEditGlobal, "global", false, "Edit global config")
+	configEditCmd.Flags().BoolVar(&configEditProject, "project", false, "Edit project config")
+
 	ConfigCmd.AddCommand(configShowCmd)
 	ConfigCmd.AddCommand(configPathCmd)
 	ConfigCmd.AddCommand(configInitCmd)
 	ConfigCmd.AddCommand(configSetCmd)
 	ConfigCmd.AddCommand(configGetCmd)
+	ConfigCmd.AddCommand(configEditCmd)
 }

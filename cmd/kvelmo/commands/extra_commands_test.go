@@ -183,15 +183,17 @@ func TestRunChatClear_NoSocket(t *testing.T) {
 
 func TestConfigShowCmd_NoSocket(t *testing.T) {
 	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
-	if err := configShowCmd.RunE(configShowCmd, nil); err == nil {
-		t.Error("configShowCmd expected error (no socket), got nil")
+	// config show works offline via direct file read fallback.
+	if err := configShowCmd.RunE(configShowCmd, nil); err != nil {
+		t.Errorf("configShowCmd offline fallback failed: %v", err)
 	}
 }
 
 func TestConfigGetCmd_NoSocket(t *testing.T) {
 	t.Setenv(meta.EnvPrefix+"_HOME", t.TempDir())
-	if err := configGetCmd.RunE(configGetCmd, []string{"workers.max"}); err == nil {
-		t.Error("configGetCmd expected error (no socket), got nil")
+	// config get works offline via direct file read fallback.
+	if err := configGetCmd.RunE(configGetCmd, []string{"workers.max"}); err != nil {
+		t.Errorf("configGetCmd offline fallback failed: %v", err)
 	}
 }
 
