@@ -27,7 +27,10 @@ Use --prompt to override the default explanation prompt.`,
 
 func init() {
 	ExplainCmd.Flags().StringP("prompt", "p", "", "Custom prompt to override the default explanation request")
+	ExplainCmd.Flags().BoolVarP(&explainWait, "wait", "w", false, "Wait for job to complete, streaming output")
 }
+
+var explainWait bool
 
 func runExplain(cmd *cobra.Command, args []string) error {
 	prompt, _ := cmd.Flags().GetString("prompt")
@@ -78,6 +81,11 @@ func runExplain(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Explain request sent (job: %s)\n", result.JobID)
+
+	if explainWait {
+		return waitForJob(wtPath, result.JobID)
+	}
+
 	fmt.Println("Use '" + meta.Name + " status' to check progress")
 
 	return nil

@@ -14,7 +14,10 @@ import (
 	"github.com/valksor/kvelmo/pkg/socket"
 )
 
-var implementForce bool
+var (
+	implementForce bool
+	implementWait  bool
+)
 
 var ImplementCmd = &cobra.Command{
 	Use:     "implement",
@@ -26,6 +29,7 @@ var ImplementCmd = &cobra.Command{
 
 func init() {
 	ImplementCmd.Flags().BoolVar(&implementForce, "force", false, "Re-run implementation even if already implemented")
+	ImplementCmd.Flags().BoolVarP(&implementWait, "wait", "w", false, "Wait for job to complete, streaming output")
 }
 
 func runImplement(cmd *cobra.Command, args []string) error {
@@ -74,6 +78,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	spinner.Success("Implementation job submitted: " + result.JobID)
+
+	if implementWait {
+		return waitForJob(wtPath, result.JobID)
+	}
+
 	fmt.Println("Use '" + meta.Name + " status' to check progress")
 
 	return nil

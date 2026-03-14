@@ -14,6 +14,8 @@ import (
 	"github.com/valksor/kvelmo/pkg/socket"
 )
 
+var optimizeWait bool
+
 var OptimizeCmd = &cobra.Command{
 	Use:     "optimize",
 	Aliases: []string{"opt"},
@@ -31,6 +33,10 @@ It submits an optimization job to the worker pool that will:
 
 You can run optimize multiple times before proceeding to review.`,
 	RunE: runOptimize,
+}
+
+func init() {
+	OptimizeCmd.Flags().BoolVarP(&optimizeWait, "wait", "w", false, "Wait for job to complete, streaming output")
 }
 
 func runOptimize(cmd *cobra.Command, args []string) error {
@@ -74,6 +80,11 @@ func runOptimize(cmd *cobra.Command, args []string) error {
 	}
 
 	spinner.Success("Optimization job submitted: " + result.JobID)
+
+	if optimizeWait {
+		return waitForJob(wtPath, result.JobID)
+	}
+
 	fmt.Println("Use '" + meta.Name + " status' to check progress")
 
 	return nil

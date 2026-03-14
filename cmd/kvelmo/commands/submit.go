@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -25,7 +26,10 @@ func init() {
 	SubmitCmd.Flags().StringSlice("reviewers", nil, "Assign reviewers")
 	SubmitCmd.Flags().StringSlice("labels", nil, "Add labels")
 	SubmitCmd.Flags().Bool("delete-branch", false, "Delete local branch after successful submission")
+	SubmitCmd.Flags().BoolVarP(&submitWait, "wait", "w", false, "Wait for job to complete, streaming output")
 }
+
+var submitWait bool
 
 func runSubmit(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
@@ -61,12 +65,28 @@ func runSubmit(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	result, err := client.Call(ctx, "submit", params)
+	resp, err := client.Call(ctx, "submit", params)
 	if err != nil {
 		return fmt.Errorf("submit: %w", err)
 	}
 
-	fmt.Printf("Submitted: %v\n", result)
+	var result SubmitResult
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		// Fall back to printing raw response if result doesn't have job_id.
+		fmt.Printf("Submitted: %s\n", string(resp.Result))
+
+		return nil
+	}
+
+	fmt.Printf("Submit job submitted: %s\n", result.JobID)
+
+	if submitWait {
+		return waitForJob(socketPath, result.JobID)
+	}
 
 	return nil
+}
+
+type SubmitResult struct {
+	JobID string `json:"job_id"`
 }

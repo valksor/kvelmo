@@ -34,6 +34,12 @@ You can run simplify multiple times before proceeding to review.`,
 	RunE: runSimplify,
 }
 
+var simplifyWait bool
+
+func init() {
+	SimplifyCmd.Flags().BoolVarP(&simplifyWait, "wait", "w", false, "Wait for job to complete, streaming output")
+}
+
 func runSimplify(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -66,6 +72,11 @@ func runSimplify(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Simplification job submitted: %s\n", result.JobID)
+
+	if simplifyWait {
+		return waitForJob(wtPath, result.JobID)
+	}
+
 	fmt.Println("Use '" + meta.Name + " status' to check progress")
 
 	return nil
