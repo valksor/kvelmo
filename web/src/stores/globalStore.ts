@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { SocketClient } from '../lib/socket'
+import { debounce } from '../lib/debounce'
+import { reconnectDelay } from '../lib/reconnect'
 import { storeName } from '../meta'
 import type {
   WorktreeInfo,
@@ -60,6 +62,7 @@ interface GlobalState {
   reconnectTimeoutId: ReturnType<typeof setTimeout> | null
   connectionVersion: number // Incremented on each connect attempt to prevent stale disconnect handlers
   client: SocketClient | null
+  unsubscribeSocket: (() => void) | null // Cleanup function for socket subscription
 
   // Data
   projects: Project[]
@@ -124,6 +127,7 @@ export const useGlobalStore = create<GlobalState>()(
       reconnectTimeoutId: null,
       connectionVersion: 0,
       client: null,
+      unsubscribeSocket: null,
 
       projects: [],
       workers: [],
@@ -150,14 +154,18 @@ export const useGlobalStore = create<GlobalState>()(
         const getBackendHost = () => {
           const params = new URLSearchParams(window.location.search)
           const port = params.get('port')
-          if (port) return `localhost:${port}`
+          // Validate port is numeric to prevent URL injection
+          if (port && /^\d+$/.test(port)) return `localhost:${port}`
           // Dev mode: Vite runs on different port, connect directly to Go server
           if (import.meta.env.DEV) return 'localhost:6337'
           return window.location.host
         }
 
-        const url = `ws://${getBackendHost()}/ws/global`
-        console.log('[kvelmo] Connecting to:', url, 'DEV:', import.meta.env.DEV)
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const url = `${protocol}//${getBackendHost()}/ws/global`
+        if (import.meta.env.DEV) {
+          console.log('[kvelmo] Connecting to:', url)
+        }
         const client = new SocketClient(url)
 
         // Handle disconnection with auto-reconnect (exponential backoff)
@@ -167,9 +175,7 @@ export const useGlobalStore = create<GlobalState>()(
           if (get().connectionVersion !== thisVersion) return
 
           const attempt = get().reconnectAttempt + 1
-          // Exponential backoff: 1s → 2s → 4s → ... capped at 30s, ±20% jitter
-          const base = Math.min(1000 * Math.pow(2, attempt - 1), 30000)
-          const delay = Math.round(base * (0.8 + Math.random() * 0.4))
+          const delay = reconnectDelay(attempt)
           const delaySec = Math.round(delay / 1000)
 
           const timeoutId = setTimeout(() => {
@@ -189,14 +195,31 @@ export const useGlobalStore = create<GlobalState>()(
 
         try {
           await client.connect()
-          set({ client, connected: true, connecting: false, reconnectAttempt: 0, error: null })
+
+          // Clean up previous subscription if any (defensive - shouldn't happen with new client)
+          get().unsubscribeSocket?.()
+
+          // Create debounced task loader to prevent RPC flood on rapid state changes
+          const debouncedLoadTasks = debounce(() => get().loadActiveTasks(), 500)
 
           // Subscribe to server-pushed notifications (e.g., task_state_changed)
-          client.subscribe((msg: unknown) => {
+          const unsubscribe = client.subscribe((msg: unknown) => {
             const notification = msg as { method?: string; params?: Record<string, string> }
             if (notification.method === 'task_state_changed') {
-              // Refresh active tasks when any project's state changes
-              get().loadActiveTasks()
+              // Debounced refresh to prevent cascade on rapid updates
+              debouncedLoadTasks()
+            }
+          })
+
+          set({
+            client,
+            connected: true,
+            connecting: false,
+            reconnectAttempt: 0,
+            error: null,
+            unsubscribeSocket: () => {
+              debouncedLoadTasks.cancel()
+              unsubscribe()
             }
           })
 
@@ -215,6 +238,9 @@ export const useGlobalStore = create<GlobalState>()(
       },
 
       disconnect: () => {
+        // Clean up subscription and debounced handlers
+        get().unsubscribeSocket?.()
+
         const client = get().client
         if (client) {
           client.close()
@@ -229,7 +255,8 @@ export const useGlobalStore = create<GlobalState>()(
           connecting: false,
           reconnectAttempt: 0,
           reconnectTimeoutId: null,
-          client: null
+          client: null,
+          unsubscribeSocket: null
         })
       },
 

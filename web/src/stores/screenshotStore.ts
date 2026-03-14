@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { useProjectStore } from './projectStore'
+import type { SocketClient } from '../lib/socket'
 
 export interface Screenshot {
   id: string
@@ -29,17 +29,17 @@ interface ScreenshotState {
   // Full screenshot data (loaded on demand)
   screenshotData: Record<string, string>
 
-  // Actions
-  load: () => Promise<void>
+  // Actions - accept client parameter to avoid circular dependency with projectStore
+  load: (client?: SocketClient | null) => Promise<void>
   add: (screenshot: Screenshot) => void
   remove: (id: string) => void
   select: (id: string | null) => void
   attach: (id: string) => void
   detach: (id: string) => void
   clearAttached: () => void
-  deleteScreenshot: (id: string) => Promise<void>
+  deleteScreenshot: (id: string, client?: SocketClient | null) => Promise<void>
 
-  getScreenshot: (id: string) => Promise<string | null>
+  getScreenshot: (id: string, client?: SocketClient | null) => Promise<string | null>
 
   // Event handlers for WebSocket
   handleScreenshotCaptured: (screenshot: Screenshot) => void
@@ -54,8 +54,7 @@ export const useScreenshotStore = create<ScreenshotState>((set, get) => ({
   attachedIds: [],
   screenshotData: {},
 
-  load: async () => {
-    const client = useProjectStore.getState().client
+  load: async (client) => {
     if (!client) return
 
     set({ loading: true, error: null })
@@ -106,8 +105,7 @@ export const useScreenshotStore = create<ScreenshotState>((set, get) => ({
     set({ attachedIds: [] })
   },
 
-  deleteScreenshot: async (id: string) => {
-    const client = useProjectStore.getState().client
+  deleteScreenshot: async (id: string, client) => {
     if (!client) return
 
     try {
@@ -118,12 +116,11 @@ export const useScreenshotStore = create<ScreenshotState>((set, get) => ({
     }
   },
 
-  getScreenshot: async (id: string): Promise<string | null> => {
+  getScreenshot: async (id: string, client): Promise<string | null> => {
     // Return cached data if already loaded
     const cached = get().screenshotData[id]
     if (cached) return cached
 
-    const client = useProjectStore.getState().client
     if (!client) return null
 
     try {
@@ -134,7 +131,9 @@ export const useScreenshotStore = create<ScreenshotState>((set, get) => ({
       }))
       return dataUrl
     } catch (err) {
-      console.warn('Could not fetch screenshot data:', err)
+      if (import.meta.env.DEV) {
+        console.warn('Could not fetch screenshot data:', err)
+      }
       return null
     }
   },
