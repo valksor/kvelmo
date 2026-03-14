@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/valksor/kvelmo/pkg/cli"
 )
 
 const DefaultTimeout = 5 * time.Second
@@ -145,7 +147,7 @@ func (c *Client) Call(ctx context.Context, method string, params interface{}) (*
 		if err := c.scanner.Err(); err != nil {
 			var netErr net.Error
 			if errors.As(err, &netErr) {
-				return nil, errors.New("timeout waiting for response")
+				return nil, &cli.TimeoutError{Err: errors.New("timeout waiting for response")}
 			}
 
 			return nil, fmt.Errorf("read response: %w", err)
@@ -191,23 +193,33 @@ func encodeParams(v interface{}) ([]byte, error) {
 func formatConnectionError(path string, err error) error {
 	// Check for specific error types
 	if errors.Is(err, syscall.ECONNREFUSED) {
-		return fmt.Errorf("socket not responding at %s\nThe server may have crashed. Try restarting with 'kvelmo serve'", path)
+		return &cli.ConnectionError{
+			Err: fmt.Errorf("socket not responding at %s\nThe server may have crashed. Try restarting with 'kvelmo serve'", path),
+		}
 	}
 
 	if errors.Is(err, syscall.ENOENT) || os.IsNotExist(err) {
-		return fmt.Errorf("socket not found at %s\nRun 'kvelmo serve' to start the server", path)
+		return &cli.ConnectionError{
+			Err: fmt.Errorf("socket not found at %s\nRun 'kvelmo serve' to start the server", path),
+		}
 	}
 
 	if errors.Is(err, syscall.EACCES) || os.IsPermission(err) {
-		return fmt.Errorf("permission denied for socket at %s\nCheck file permissions or run with appropriate privileges", path)
+		return &cli.ConnectionError{
+			Err: fmt.Errorf("permission denied for socket at %s\nCheck file permissions or run with appropriate privileges", path),
+		}
 	}
 
 	// Check for timeout
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
-		return fmt.Errorf("connection timed out for socket at %s\nThe server may be overloaded or not responding", path)
+		return &cli.TimeoutError{
+			Err: fmt.Errorf("connection timed out for socket at %s\nThe server may be overloaded or not responding", path),
+		}
 	}
 
 	// Default: wrap with path context
-	return fmt.Errorf("connect to %s: %w", path, err)
+	return &cli.ConnectionError{
+		Err: fmt.Errorf("connect to %s: %w", path, err),
+	}
 }
