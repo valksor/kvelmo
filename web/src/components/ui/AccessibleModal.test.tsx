@@ -1,5 +1,4 @@
-import { render } from '@testing-library/react'
-import { fireEvent } from '@testing-library/dom'
+import { render, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AccessibleModal } from './AccessibleModal'
 
