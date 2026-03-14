@@ -43,7 +43,18 @@ export function GlobalView() {
   const [showFolderPicker, setShowFolderPicker] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showMemory, setShowMemory] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const docsData = useDocsURL()
+
+  // Filter projects by search query (name or path)
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects
+    const q = searchQuery.toLowerCase()
+    return projects.filter(p => {
+      const name = p.path.split('/').pop()?.toLowerCase() ?? ''
+      return name.includes(q) || p.path.toLowerCase().includes(q)
+    })
+  }, [projects, searchQuery])
 
   const handleFolderSelect = async (path: string) => {
     await addProject(path)
@@ -210,6 +221,20 @@ export function GlobalView() {
             </button>
           </div>
 
+          {/* Search filter */}
+          {projects.length > 3 && (
+            <div className="mb-3">
+              <input
+                type="search"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input input-sm input-bordered w-full"
+                aria-label="Search projects"
+              />
+            </div>
+          )}
+
           {projects.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <div aria-hidden="true" className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-base-300 flex items-center justify-center mx-auto mb-4">
@@ -246,7 +271,12 @@ export function GlobalView() {
             </div>
           ) : (
             <ul aria-label="Projects" className="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-auto">
-              {projects.map(p => {
+              {filteredProjects.length === 0 && searchQuery && (
+                <li className="text-center py-4 text-base-content/50 text-sm">
+                  No projects matching "{searchQuery}"
+                </li>
+              )}
+              {filteredProjects.map(p => {
                 const task = taskByPath.get(p.path)
                 return (
                 <li key={p.id} className="group relative">

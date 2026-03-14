@@ -1,6 +1,11 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
-import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { useLayoutStore } from '../stores/layoutStore'
+
+// Import enum for type safety; the heavy component is lazy-loaded
+import { DiffMethod } from 'react-diff-viewer-continued'
+
+// Lazy-load heavy diff viewer component (only needed when viewing diffs)
+const ReactDiffViewer = lazy(() => import('react-diff-viewer-continued').then(m => ({ default: m.default })))
 import { useProjectStore } from '../stores/projectStore'
 import { OutputWidget } from './OutputWidget'
 import { ScreenshotsPanel } from './ScreenshotsPanel'
@@ -92,6 +97,7 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
   const [diff, setDiff] = useState<{ oldValue: string; newValue: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [splitView, setSplitView] = useState(true)
 
   // Reactive theme state via MutationObserver
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
@@ -170,17 +176,38 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="sticky top-0 z-10 bg-base-100 border-b border-base-300 px-4 py-2">
-        <span className="text-sm font-medium">{filePath}</span>
-        <span className="text-xs text-base-content/50 ml-2">
-          ({data?.status as string || 'modified'})
-        </span>
+      <div className="sticky top-0 z-10 bg-base-100 border-b border-base-300 px-4 py-2 flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">{filePath}</span>
+          <span className="text-xs text-base-content/50 ml-2">
+            ({data?.status as string || 'modified'})
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSplitView(true)}
+            className={`btn btn-xs ${splitView ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={splitView}
+            aria-label="Split view"
+          >
+            Split
+          </button>
+          <button
+            onClick={() => setSplitView(false)}
+            className={`btn btn-xs ${!splitView ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={!splitView}
+            aria-label="Unified view"
+          >
+            Unified
+          </button>
+        </div>
       </div>
       {diff ? (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><span className="loading loading-spinner loading-sm" /></div>}>
         <ReactDiffViewer
           oldValue={diff.oldValue}
           newValue={diff.newValue}
-          splitView={true}
+          splitView={splitView}
           compareMethod={DiffMethod.WORDS}
           useDarkTheme={isDarkTheme}
           styles={{
@@ -214,6 +241,7 @@ function DiffContent({ data }: { data?: Record<string, unknown> }) {
             },
           }}
         />
+        </Suspense>
       ) : (
         <div className="flex items-center justify-center h-64 text-base-content/50">
           <p className="text-sm">No changes to display</p>

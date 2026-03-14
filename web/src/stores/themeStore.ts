@@ -19,10 +19,18 @@ const applyTheme = (theme: Theme) => {
   document.documentElement.setAttribute('data-theme', THEME_MAP[theme])
 }
 
+// Detect system preference for first-time visitors
+const getSystemTheme = (): Theme => {
+  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
+  }
+  return 'light'
+}
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: 'light',
+      theme: getSystemTheme(),
       setTheme: (theme: Theme) => {
         set({ theme })
         applyTheme(theme)
