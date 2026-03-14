@@ -311,17 +311,107 @@ function parseDiffForFile(fullDiff: string, filePath: string): { oldValue: strin
 }
 
 function SpecContent({ data }: { data?: Record<string, unknown> }) {
-  const title = data?.title as string | undefined
-  const content = data?.content as string | undefined
+  const loadSpec = useProjectStore(s => s.loadSpec)
+  const loadPlan = useProjectStore(s => s.loadPlan)
+  const connected = useProjectStore(s => s.connected)
+  const mode = (data?.mode as string) || 'spec'
+
+  const [specs, setSpecs] = useState<Array<{ path: string; content: string }>>([])
+  const [loading, setLoading] = useState(false)
+  const [expandedPath, setExpandedPath] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!connected) return
+
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    setSpecs([])
+
+    const loader = mode === 'plan' ? loadPlan : loadSpec
+    loader().then(result => {
+      if (!cancelled) {
+        setSpecs(result)
+        if (result.length === 1) {
+          setExpandedPath(result[0].path)
+        }
+      }
+    }).catch(err => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : 'Failed to load')
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [connected, mode, loadSpec, loadPlan])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="loading loading-spinner loading-md"></span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-error">
+        <p className="text-sm">{error}</p>
+      </div>
+    )
+  }
+
+  if (specs.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-base-content/50">
+        <div className="text-center">
+          <svg className="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-sm">No {mode === 'plan' ? 'plan' : 'specification'} available</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-full p-4 overflow-auto prose prose-sm max-w-none">
-      {title && <h2>{title}</h2>}
-      {content ? (
-        <div className="whitespace-pre-wrap">{content}</div>
-      ) : (
-        <div className="text-base-content/50">No spec content</div>
-      )}
+    <div className="h-full overflow-auto">
+      <div className="sticky top-0 z-10 bg-base-100 border-b border-base-300 px-4 py-2">
+        <span className="text-sm font-medium">
+          {mode === 'plan' ? 'Plan' : 'Specification'} ({specs.length} file{specs.length !== 1 ? 's' : ''})
+        </span>
+      </div>
+      <div className="p-4 space-y-3">
+        {specs.map(spec => {
+          const fileName = spec.path.split('/').pop() || spec.path
+          const isExpanded = expandedPath === spec.path || specs.length === 1
+
+          return (
+            <div key={spec.path} className="rounded-lg bg-base-200 border border-base-300 overflow-hidden">
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-base-300/50 transition-colors flex items-center justify-between"
+                onClick={() => setExpandedPath(isExpanded ? null : spec.path)}
+              >
+                <span className="text-sm font-mono">{fileName}</span>
+                <svg
+                  className={`w-4 h-4 text-base-content/40 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              {isExpanded && (
+                <div className="border-t border-base-300 px-4 py-3">
+                  <pre className="text-sm text-base-content/80 whitespace-pre-wrap leading-relaxed">{spec.content}</pre>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

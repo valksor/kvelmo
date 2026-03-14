@@ -302,12 +302,12 @@ function setupReactiveTabsSubscription() {
         break
 
       case 'planned':
-        // Open/update Spec tab when planning completes
+        // Open Spec tab when planning completes — loads content from show.spec RPC
         openTab({
           id: 'spec-view',
           type: 'spec',
           title: 'Specification',
-          data: { task },
+          data: { mode: 'spec' },
           closeable: true,
         })
         setActiveTab('spec-view')

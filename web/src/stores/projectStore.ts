@@ -107,6 +107,11 @@ export interface QueuedTask {
   position: number
 }
 
+export interface SpecEntry {
+  path: string
+  content: string
+}
+
 interface FinishOptions {
   delete_remote?: boolean
   force?: boolean
@@ -218,6 +223,13 @@ interface ProjectState {
   // Review history
   loadReviews: () => Promise<void>
   loadReview: (number: number) => Promise<ReviewDetail | null>
+
+  // Specifications & plans
+  loadSpec: () => Promise<SpecEntry[]>
+  loadPlan: () => Promise<SpecEntry[]>
+
+  // Git diff against branch
+  getGitDiffAgainst: (ref: string, stat?: boolean) => Promise<string>
 
   // File browser
   browseFiles: (path?: string, filesOnly?: boolean) => Promise<BrowseEntry[]>
@@ -380,6 +392,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           if (data?.prompt_id) {
             set({ qualityPrompt: { id: data.prompt_id, question: data.question ?? 'Quality gate question' } })
           }
+        } else if (msg.type === 'warning') {
+          get().appendOutput(`\u26a0 ${msg.message || 'Warning'}`)
+        } else if (msg.type === 'error') {
+          get().appendOutput(`Error: ${msg.error || msg.message || 'Unknown error'}`)
+          set({ error: msg.error || msg.message || 'An error occurred' })
         } else if (msg.type === 'task_queued' || msg.type === 'task_dequeued' || msg.type === 'queue_advancing') {
           debouncedLoadQueue()
           if (msg.type === 'queue_advancing') {
@@ -958,6 +975,45 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     } catch (err) {
       console.warn('Could not fetch review detail:', err)
       return null
+    }
+  },
+
+  loadSpec: async (): Promise<SpecEntry[]> => {
+    const client = get().client
+    if (!client) return []
+
+    try {
+      const result = await client.call<{ specifications: SpecEntry[] }>('show.spec', {})
+      return result.specifications || []
+    } catch (err) {
+      console.warn('Could not load specifications:', err)
+      return []
+    }
+  },
+
+  loadPlan: async (): Promise<SpecEntry[]> => {
+    const client = get().client
+    if (!client) return []
+
+    try {
+      const result = await client.call<{ specifications: SpecEntry[] }>('show.plan', {})
+      return result.specifications || []
+    } catch (err) {
+      console.warn('Could not load plan:', err)
+      return []
+    }
+  },
+
+  getGitDiffAgainst: async (ref: string, stat: boolean = false): Promise<string> => {
+    const client = get().client
+    if (!client) return ''
+
+    try {
+      const result = await client.call<{ diff: string }>('git.diff_against', { ref, stat })
+      return result.diff || ''
+    } catch (err) {
+      console.warn('Could not fetch diff against ref:', err)
+      return ''
     }
   },
 

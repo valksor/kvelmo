@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useProjectStore } from '../stores/projectStore'
+import { useLayoutStore } from '../stores/layoutStore'
 import { ConfirmModal } from './ui/ConfirmModal'
 
 interface ActionsWidgetProps {
@@ -197,6 +198,49 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
             </button>
           )}
         </div>
+
+        {/* View Spec / Plan — available after planning */}
+        {(state === 'planned' || state === 'implementing' || state === 'implemented' ||
+          state === 'simplifying' || state === 'optimizing' || state === 'reviewing' || state === 'submitted') && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                useLayoutStore.getState().openTab({
+                  id: 'spec-view',
+                  type: 'spec',
+                  title: 'Specification',
+                  data: { mode: 'spec' },
+                  closeable: true,
+                })
+                useLayoutStore.getState().setActiveTab('spec-view')
+              }}
+              className="btn btn-ghost btn-sm flex-1"
+            >
+              <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              View Spec
+            </button>
+            <button
+              onClick={() => {
+                useLayoutStore.getState().openTab({
+                  id: 'plan-view',
+                  type: 'spec',
+                  title: 'Plan',
+                  data: { mode: 'plan' },
+                  closeable: true,
+                })
+                useLayoutStore.getState().setActiveTab('plan-view')
+              }}
+              className="btn btn-ghost btn-sm flex-1"
+            >
+              <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              View Plan
+            </button>
+          </div>
+        )}
 
         {/* Simplify — optional code clarity pass */}
         <button
