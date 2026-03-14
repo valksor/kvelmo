@@ -54,6 +54,22 @@ export interface MemoryResult {
   created_at: string
 }
 
+export interface Metrics {
+  jobs_submitted: number
+  jobs_completed: number
+  jobs_failed: number
+  jobs_in_progress: number
+  rpc_requests: number
+  rpc_errors: number
+  avg_latency_ms: number
+  p99_latency_ms: number
+  agent_connects: number
+  agent_disconnects: number
+  events_dropped: number
+  permissions_approved: number
+  permissions_denied: number
+}
+
 interface GlobalState {
   // Connection
   connected: boolean
@@ -68,6 +84,7 @@ interface GlobalState {
   projects: Project[]
   workers: Worker[]
   workerStats: WorkerStats | null
+  metrics: Metrics | null
   memoryStats: MemoryStats | null
   selectedProjectId: string | null
   selectedProject: Project | null
@@ -96,6 +113,7 @@ interface GlobalState {
   // Workers
   loadWorkers: () => Promise<void>
   loadWorkerStats: () => Promise<void>
+  loadMetrics: () => Promise<void>
   addWorker: (agent: string) => Promise<void>
   removeWorker: (id: string) => Promise<void>
 
@@ -132,6 +150,7 @@ export const useGlobalStore = create<GlobalState>()(
       projects: [],
       workers: [],
       workerStats: null,
+      metrics: null,
       memoryStats: null,
       jobs: [],
       agentStatus: null,
@@ -228,6 +247,7 @@ export const useGlobalStore = create<GlobalState>()(
           await get().loadWorkers()
           await get().loadActiveTasks()
           await get().loadAgentStatus()
+          get().loadMetrics()
         } catch (err) {
           set({
             connected: false,
@@ -363,6 +383,17 @@ export const useGlobalStore = create<GlobalState>()(
           set({ workerStats: result })
         } catch (err) {
           console.warn('Failed to load worker stats:', err)
+        }
+      },
+
+      loadMetrics: async () => {
+        const client = get().client
+        if (!client) return
+        try {
+          const result = await client.call<Metrics>('metrics', {})
+          set({ metrics: result })
+        } catch {
+          // Metrics are optional, don't show errors
         }
       },
 

@@ -4,6 +4,7 @@ import { useDocsURL } from '../hooks/useDocsURL'
 import { FolderPicker } from './FolderPicker'
 import { ThemeToggle } from './ThemeToggle'
 import { ActiveTasksWidget } from './ActiveTasksWidget'
+import { MetricsWidget } from './MetricsWidget'
 import { Onboarding } from './Onboarding'
 import { name } from '../meta'
 
@@ -198,6 +199,13 @@ export function GlobalView() {
 
       {/* Active Tasks Summary */}
       <ActiveTasksWidget />
+
+      {/* System Metrics */}
+      {connected && (
+        <div className="max-w-2xl mx-auto mt-4">
+          <MetricsWidget />
+        </div>
+      )}
 
       {/* Projects Card */}
       <section className="card bg-base-200 max-w-2xl mx-auto mt-4">
