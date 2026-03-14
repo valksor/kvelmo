@@ -143,6 +143,15 @@ Go: Return errors, wrap with context (`fmt.Errorf("action: %w", err)`)
 - Frontend: Add `?demo` URL param for UI testing without backend
 - **Never accept test failures.** If a test fails, fix it. No exceptions. Never rationalize failures as "pre-existing" or "not my problem."
 
+### Quality Gate Rules
+
+When running `make quality`, `make test`, `make lint`, or `make ci`:
+- **Fix ALL errors and failures in the output, not just ones you introduced.** Pre-existing failures are your responsibility too.
+- Do not skip, ignore, or dismiss errors you didn't cause. The codebase must be clean after your work.
+- If `make quality` reports 10 lint errors and you caused 2, fix all 10.
+- If `make test` has 3 failing tests and you wrote 1, fix all 3.
+- Run the quality/test command again after fixing to confirm zero errors remain.
+
 ## CLI Commands
 
 Commands in `cmd/kvelmo/commands/`. Entry point: `serve` (global socket + web server, port 6337).
