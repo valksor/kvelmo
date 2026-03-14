@@ -992,9 +992,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   appendOutput: (line: string) => {
-    set(state => ({
-      output: [...state.output, `[${new Date().toLocaleTimeString()}] ${line}`]
-    }))
+    set(state => {
+      const newOutput = [...state.output, `[${new Date().toLocaleTimeString()}] ${line}`]
+      // Cap at 5000 lines to prevent unbounded memory growth
+      if (newOutput.length > 5000) {
+        return { output: newOutput.slice(-5000) }
+      }
+      return { output: newOutput }
+    })
   },
 
   clearOutput: () => {

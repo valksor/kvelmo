@@ -700,6 +700,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-stream', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -720,6 +721,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-mine', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -739,6 +741,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-done', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -761,6 +764,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-done', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -782,6 +786,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-fail', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -803,6 +808,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -829,6 +835,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -853,6 +860,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-sub', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -878,6 +886,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-perm', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -905,6 +914,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-safe', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })
@@ -929,6 +939,7 @@ describe('chatStore', () => {
       client.call.mockResolvedValueOnce({ job_id: 'job-start', status: 'started' })
       client.subscribe.mockImplementationOnce((handler: (data: unknown) => void) => {
         handlerRef.current = handler
+        return () => {}
       })
       setClient(client)
       useChatStore.setState({ isDisabled: false })

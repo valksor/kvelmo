@@ -16,7 +16,7 @@ export class SocketClient {
   private ws: WebSocket | null = null
   private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
   private nextId = 1
-  private onMessage?: (data: unknown) => void
+  private messageHandlers = new Set<(data: unknown) => void>()
   private onDisconnect?: () => void
   private buffer = '' // Buffer for fragmented messages
 
@@ -57,8 +57,10 @@ export class SocketClient {
               } else {
                 resolve(msg.result)
               }
-            } else if (this.onMessage) {
-              this.onMessage(msg)
+            } else if (this.messageHandlers.size > 0) {
+              for (const handler of this.messageHandlers) {
+                handler(msg)
+              }
             }
           } catch (e) {
             console.error('[SocketClient] Parse error:', e, 'line:', line.slice(0, 100))
@@ -116,12 +118,10 @@ export class SocketClient {
   }
 
   subscribe(handler: (data: unknown) => void): () => void {
-    this.onMessage = handler
+    this.messageHandlers.add(handler)
     // Return unsubscribe function
     return () => {
-      if (this.onMessage === handler) {
-        this.onMessage = undefined
-      }
+      this.messageHandlers.delete(handler)
     }
   }
 

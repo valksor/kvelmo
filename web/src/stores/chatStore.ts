@@ -205,7 +205,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Subscribe to streaming events from the server
       // Events are pushed via WebSocket instead of polling
-      client.subscribe((data: unknown) => {
+      const unsubscribe = client.subscribe((data: unknown) => {
         const event = data as ChatEvent
 
         // Only handle events for our job
@@ -235,6 +235,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ]
             })
             set({ isTyping: false, activeJobId: null })
+            unsubscribe()
             break
 
           case 'job_failed':
@@ -243,6 +244,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               status: 'error'
             })
             set({ isTyping: false, activeJobId: null, error: event.error || 'Job failed' })
+            unsubscribe()
             break
 
           case 'subagent':
