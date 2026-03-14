@@ -1,0 +1,10 @@
+# Bun configuration for kvelmo-web
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Skip optional peer dependencies for faster installs
+peer = false
+
+[install.cache]
+# Keep cache enabled for faster subsequent installs
+disable = false

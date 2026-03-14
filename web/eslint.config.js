@@ -12,6 +12,7 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'react-hooks/incompatible-library': 'off',
     },
     languageOptions: {
       parserOptions: {
