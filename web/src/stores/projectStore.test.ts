@@ -3,13 +3,6 @@ import { useProjectStore } from './projectStore'
 
 // Track the last subscribe callback registered by any SocketClient instance
 let _capturedSubscribeCallback: ((data: unknown) => void) | null = null
-let _capturedSocketClientInstance: {
-  connect: ReturnType<typeof vi.fn>
-  close: ReturnType<typeof vi.fn>
-  call: ReturnType<typeof vi.fn>
-  subscribe: ReturnType<typeof vi.fn>
-  setOnDisconnect: ReturnType<typeof vi.fn>
-} | null = null
 
 // Mock SocketClient to avoid real WebSocket.
 // Must use `function` (not arrow) so vitest allows `new MockSocketClient(...)`.
@@ -30,9 +23,10 @@ vi.mock('../lib/socket', () => {
     })
     this.subscribe = vi.fn().mockImplementation((cb: (data: unknown) => void) => {
       _capturedSubscribeCallback = cb
+      // Return unsubscribe function
+      return () => { _capturedSubscribeCallback = null }
     })
     this.setOnDisconnect = vi.fn()
-    _capturedSocketClientInstance = this
   })
   return { SocketClient: MockSocketClient }
 })
@@ -82,7 +76,7 @@ const initialState = {
 function makeMockClient() {
   return {
     call: vi.fn(),
-    subscribe: vi.fn(),
+    subscribe: vi.fn().mockReturnValue(() => {}), // Return unsubscribe function
     connect: vi.fn().mockResolvedValue(undefined),
     close: vi.fn(),
     setOnDisconnect: vi.fn(),
@@ -110,11 +104,11 @@ describe('projectStore', () => {
     // Reset to initial state (preserve actions)
     useProjectStore.setState(initialState)
     _capturedSubscribeCallback = null
-    _capturedSocketClientInstance = null
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers() // Ensure fake timers are cleaned up
   })
 
   // ─── initial state ──────────────────────────────────────────────────────────
@@ -2076,7 +2070,7 @@ describe('projectStore', () => {
       useProjectStore.setState(initialState)
       await useProjectStore.getState().connect('my-worktree')
 
-      const client = _capturedSocketClientInstance!
+      const client = useProjectStore.getState().client!
 
       return {
         client,
@@ -2208,22 +2202,27 @@ describe('projectStore', () => {
     })
 
     it('task_queued triggers loadQueue', async () => {
+      vi.useFakeTimers()
       const { fire, client } = await setupWithSubscribe()
       const callsBefore = (client.call as ReturnType<typeof vi.fn>).mock.calls.length
       fire({ type: 'task_queued', seq: 18 })
-      // Allow microtasks to flush
-      await Promise.resolve()
+      // loadQueue is debounced by 500ms
+      await vi.advanceTimersByTimeAsync(500)
       const callsAfter = (client.call as ReturnType<typeof vi.fn>).mock.calls.length
       expect(callsAfter).toBeGreaterThan(callsBefore)
+      vi.useRealTimers()
     })
 
     it('task_dequeued triggers loadQueue', async () => {
+      vi.useFakeTimers()
       const { fire, client } = await setupWithSubscribe()
       const callsBefore = (client.call as ReturnType<typeof vi.fn>).mock.calls.length
       fire({ type: 'task_dequeued', seq: 19 })
-      await Promise.resolve()
+      // loadQueue is debounced by 500ms
+      await vi.advanceTimersByTimeAsync(500)
       const callsAfter = (client.call as ReturnType<typeof vi.fn>).mock.calls.length
       expect(callsAfter).toBeGreaterThan(callsBefore)
+      vi.useRealTimers()
     })
 
     it('queue_advancing triggers loadQueue and appends message', async () => {

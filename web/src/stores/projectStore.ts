@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { SocketClient } from '../lib/socket'
+import { debounce } from '../lib/debounce'
+import { reconnectDelay } from '../lib/reconnect'
 import { useScreenshotStore, Screenshot } from './screenshotStore'
 import { sendNotification, requestNotificationPermission } from '../lib/notify'
 
@@ -142,6 +144,7 @@ interface ProjectState {
   connectionVersion: number
   worktreeId: string | null
   client: SocketClient | null
+  unsubscribeSocket: (() => void) | null // Cleanup function for socket subscription + debounced handlers
 
   // Task state
   task: Task | null
@@ -236,6 +239,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   connectionVersion: 0,
   worktreeId: null,
   client: null,
+  unsubscribeSocket: null,
 
   task: null,
   state: 'none',
@@ -253,18 +257,27 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   qualityPrompt: null,
 
   connect: async (worktreeId: string) => {
-    console.log('[kvelmo] projectStore.connect called with:', worktreeId)
+    if (import.meta.env.DEV) {
+      console.log('[kvelmo] projectStore.connect called with:', worktreeId)
+    }
     if (get().connected || get().connecting) {
-      console.log('[kvelmo] projectStore already connected/connecting, skipping')
+      if (import.meta.env.DEV) {
+        console.log('[kvelmo] projectStore already connected/connecting, skipping')
+      }
       return
     }
 
+    // Clean up previous subscription if any
+    get().unsubscribeSocket?.()
+
     const thisVersion = get().connectionVersion + 1
-    set({ connecting: true, worktreeId, error: null, connectionVersion: thisVersion })
+    set({ connecting: true, worktreeId, error: null, connectionVersion: thisVersion, unsubscribeSocket: null })
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = `${protocol}//${window.location.host}/ws/worktree/${encodeURIComponent(worktreeId)}`
-    console.log('[kvelmo] Connecting to worktree:', url)
+    if (import.meta.env.DEV) {
+      console.log('[kvelmo] Connecting to worktree:', url)
+    }
 
     try {
       const client = new SocketClient(url)
@@ -274,8 +287,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         if (get().connectionVersion !== thisVersion) return
 
         const attempt = get().reconnectAttempt + 1
-        const base = Math.min(1000 * Math.pow(2, attempt - 1), 30000)
-        const delay = Math.round(base * (0.8 + Math.random() * 0.4))
+        const delay = reconnectDelay(attempt)
         const delaySec = Math.round(delay / 1000)
 
         const timeoutId = setTimeout(() => {
@@ -296,8 +308,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         })
       })
 
+      // Create debounced refresh to prevent RPC flood on rapid event streams
+      const debouncedRefresh = debounce(() => get().refreshStatus(), 300)
+      const debouncedLoadQueue = debounce(() => get().loadQueue(), 500)
+
       // Handle streaming events
-      client.subscribe((data: unknown) => {
+      const unsubscribe = client.subscribe((data: unknown) => {
         const msg = data as {
           seq?: number
           type?: string
@@ -324,7 +340,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         } else if (msg.type === 'state_changed') {
           set({ state: msg.state || 'none' })
           get().appendOutput(`State: ${msg.state}`)
-          get().refreshStatus()
+          debouncedRefresh()
           if (msg.state === 'planned') {
             sendNotification('Planning Complete', 'Specification is ready for review')
           } else if (msg.state === 'implemented') {
@@ -333,17 +349,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         } else if (msg.type === 'task_abandoned' || msg.type === 'task_deleted' || msg.type === 'task_reset') {
           set({ state: msg.state || 'none' })
           get().appendOutput(msg.message || `Task ${msg.type.replace('task_', '')}`)
-          get().refreshStatus()
+          debouncedRefresh()
         } else if (msg.type === 'job_output' || msg.type === 'stream') {
           if (msg.content || msg.message) {
             get().appendOutput(msg.content || msg.message || '')
           }
         } else if (msg.type === 'checkpoint_created') {
           get().appendOutput(`Checkpoint created: ${msg.message}`)
-          get().refreshStatus()
+          debouncedRefresh()
         } else if (msg.type === 'job_completed') {
           get().appendOutput('Job completed')
-          get().refreshStatus()
+          debouncedRefresh()
           sendNotification('Task Completed', get().task?.title || 'Job finished successfully')
         } else if (msg.type === 'job_failed') {
           get().appendOutput(`Job failed: ${msg.error || msg.content}`)
@@ -365,21 +381,38 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             set({ qualityPrompt: { id: data.prompt_id, question: data.question ?? 'Quality gate question' } })
           }
         } else if (msg.type === 'task_queued' || msg.type === 'task_dequeued' || msg.type === 'queue_advancing') {
-          get().loadQueue()
+          debouncedLoadQueue()
           if (msg.type === 'queue_advancing') {
             get().appendOutput(msg.message || 'Loading next queued task...')
           }
         } else if (msg.type === 'task_finished') {
           get().appendOutput(msg.message || 'Task finished')
-          get().refreshStatus()
-          get().loadQueue()
+          debouncedRefresh()
+          debouncedLoadQueue()
         }
       })
 
-      console.log('[kvelmo] Worktree WebSocket connecting...')
+      if (import.meta.env.DEV) {
+        console.log('[kvelmo] Worktree WebSocket connecting...')
+      }
       await client.connect()
-      console.log('[kvelmo] Worktree WebSocket connected!')
-      set({ client, connected: true, connecting: false, reconnectAttempt: 0, error: null })
+      if (import.meta.env.DEV) {
+        console.log('[kvelmo] Worktree WebSocket connected!')
+      }
+
+      // Store cleanup function for subscription and debounced handlers
+      set({
+        client,
+        connected: true,
+        connecting: false,
+        reconnectAttempt: 0,
+        error: null,
+        unsubscribeSocket: () => {
+          debouncedRefresh.cancel()
+          debouncedLoadQueue.cancel()
+          unsubscribe()
+        }
+      })
 
       requestNotificationPermission()
 
@@ -393,8 +426,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       // Load task queue
       await get().loadQueue()
 
-      // Load screenshots
-      await useScreenshotStore.getState().load()
+      // Load screenshots (pass client to avoid circular import)
+      await useScreenshotStore.getState().load(client)
     } catch (err) {
       console.error('[kvelmo] Worktree connection error:', err)
       set({
@@ -406,6 +439,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   disconnect: () => {
+    // Clean up subscription and debounced handlers
+    get().unsubscribeSocket?.()
+
     const client = get().client
     if (client) {
       client.close()
@@ -421,6 +457,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       reconnectTimeoutId: null,
       worktreeId: null,
       client: null,
+      unsubscribeSocket: null,
       task: null,
       state: 'none',
       output: [],
@@ -969,6 +1006,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!client) return
 
     try {
+      // First fetch status (required to update task state)
       const result = await client.call<{
         state: TaskState
         path: string
@@ -996,33 +1034,38 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         })
       }
 
-      // Also fetch checkpoints
-      try {
-        const checkpointsResult = await client.call<{
+      // Fetch remaining data in parallel (independent of each other)
+      await Promise.all([
+        // Checkpoints
+        client.call<{
           checkpoints: Array<{ sha: string; message: string; author: string; timestamp: string }>
           redo_stack: Array<{ sha: string; message: string; author: string; timestamp: string }>
-        }>('checkpoints', {})
-        set({
-          checkpoints: (checkpointsResult.checkpoints || []).map(c => ({
-            sha: c.sha,
-            message: c.message,
-            timestamp: c.timestamp,
-          })),
-          redoStack: (checkpointsResult.redo_stack || []).map(c => ({
-            sha: c.sha,
-            message: c.message,
-            timestamp: c.timestamp,
-          })),
-        })
-      } catch {
-        // Checkpoints may not be available
-      }
+        }>('checkpoints', {}).then(checkpointsResult => {
+          set({
+            checkpoints: (checkpointsResult.checkpoints || []).map(c => ({
+              sha: c.sha,
+              message: c.message,
+              timestamp: c.timestamp,
+            })),
+            redoStack: (checkpointsResult.redo_stack || []).map(c => ({
+              sha: c.sha,
+              message: c.message,
+              timestamp: c.timestamp,
+            })),
+          })
+        }).catch((err) => {
+          // Checkpoints may not be available (e.g., no git repo, no task loaded)
+          if (import.meta.env.DEV) {
+            console.debug('[kvelmo] Checkpoints not available:', err)
+          }
+        }),
 
-      // Refresh git status
-      await get().refreshGitStatus()
+        // Git status
+        get().refreshGitStatus(),
 
-      // Refresh review history
-      await get().loadReviews()
+        // Review history
+        get().loadReviews(),
+      ])
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Status refresh failed' })
     }
