@@ -12,8 +12,9 @@ import (
 )
 
 var DiagnoseCmd = &cobra.Command{
-	Use:   "diagnose",
-	Short: "Check system setup and configuration",
+	Use:     "diagnose",
+	Aliases: []string{"diag"},
+	Short:   "Check system setup and configuration",
 	Long: `Diagnose checks that kvelmo is properly configured.
 
 It verifies:

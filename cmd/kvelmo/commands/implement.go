@@ -17,10 +17,11 @@ import (
 var implementForce bool
 
 var ImplementCmd = &cobra.Command{
-	Use:   "implement",
-	Short: "Start implementation phase for current task",
-	Long:  "Submit an implementation job to the worker pool for the current task.",
-	RunE:  runImplement,
+	Use:     "implement",
+	Aliases: []string{"impl"},
+	Short:   "Start implementation phase for current task",
+	Long:    "Submit an implementation job to the worker pool for the current task.",
+	RunE:    runImplement,
 }
 
 func init() {

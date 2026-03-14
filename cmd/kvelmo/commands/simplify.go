@@ -14,8 +14,9 @@ import (
 )
 
 var SimplifyCmd = &cobra.Command{
-	Use:   "simplify",
-	Short: "Run optional simplification pass on implemented code",
+	Use:     "simplify",
+	Aliases: []string{"simp"},
+	Short:   "Run optional simplification pass on implemented code",
 	Long: `Run an optional simplification pass on the implemented code.
 
 This command is only available after implementation is complete.

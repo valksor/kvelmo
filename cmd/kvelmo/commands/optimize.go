@@ -15,8 +15,9 @@ import (
 )
 
 var OptimizeCmd = &cobra.Command{
-	Use:   "optimize",
-	Short: "Run optional optimization pass on implemented code",
+	Use:     "optimize",
+	Aliases: []string{"opt"},
+	Short:   "Run optional optimization pass on implemented code",
 	Long: `Run an optional optimization pass on the implemented code.
 
 This command is only available after implementation is complete.

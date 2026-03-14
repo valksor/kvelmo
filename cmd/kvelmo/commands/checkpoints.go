@@ -14,8 +14,9 @@ import (
 )
 
 var CheckpointsCmd = &cobra.Command{
-	Use:   "checkpoints",
-	Short: "List checkpoint history",
+	Use:     "checkpoints",
+	Aliases: []string{"cp"},
+	Short:   "List checkpoint history",
 	Long: `List all checkpoints for the current task.
 Checkpoints are created after each agent operation (plan, implement, etc.)
 and can be navigated with 'undo' and 'redo' commands.`,

@@ -63,5 +63,9 @@ PowerShell:
   # To load completions for every new session, run:
   PS> %[1]s completion powershell > %[1]s.ps1
   # and source this file from your PowerShell profile.
+
+Tip: Add a shell alias for faster access:
+  alias kv=%[1]s
+Completions will work through the alias in most shells.
 `, meta.Name)
 }

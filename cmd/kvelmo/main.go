@@ -12,8 +12,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kvelmo",
-	Short: "Task lifecycle orchestrator",
+	Use:           "kvelmo",
+	Short:         "Task lifecycle orchestrator",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 var versionCmd = &cobra.Command{
