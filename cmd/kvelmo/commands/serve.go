@@ -58,9 +58,17 @@ Examples:
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
+	debugTiming := os.Getenv("KVELMO_DEBUG_TIMING") != ""
+	phaseStart := time.Now()
+
 	// Pre-flight check: verify system setup
 	preflight := agent.RunPreflight()
 	agent.PrintPreflight(preflight)
+
+	if debugTiming {
+		fmt.Printf("[timing] preflight: %v\n", time.Since(phaseStart))
+		phaseStart = time.Now()
+	}
 
 	// Resolve port (6337 preferred, fallback to random)
 	port := resolvePort(cmd, servePort)
@@ -75,6 +83,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Ensure socket directories exist
 	if err := socket.EnsureDir(); err != nil {
 		return fmt.Errorf("create socket directories: %w", err)
+	}
+
+	if debugTiming {
+		fmt.Printf("[timing] socket setup: %v\n", time.Since(phaseStart))
+		phaseStart = time.Now()
 	}
 
 	// Create context for coordinated shutdown
@@ -104,6 +117,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 		registry := agent.NewRegistry()
 		if err := claude.RegisterWithPermissionHandler(registry, agent.KvelmoPermissionHandler); err != nil {
 			return fmt.Errorf("register claude agent: %w", err)
+		}
+
+		if debugTiming {
+			fmt.Printf("[timing] worker pool setup: %v\n", time.Since(phaseStart))
+			phaseStart = time.Now()
 		}
 
 		poolCfg := worker.DefaultPoolConfig()
@@ -144,9 +162,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}()
 		time.Sleep(100 * time.Millisecond)
 
-		// Pre-warm memory adapter so Cybertron model download completes before
-		// the first memory.search call rather than causing a cold-start delay.
-		socket.PrewarmMemory(ctx)
+		if debugTiming {
+			fmt.Printf("[timing] global socket start: %v\n", time.Since(phaseStart))
+			phaseStart = time.Now()
+		}
+
+		// Pre-warm memory adapter in background so the server accepts connections
+		// immediately. Cybertron model download completes asynchronously before
+		// the first memory.search call rather than blocking startup.
+		go func() {
+			socket.PrewarmMemory(ctx)
+		}()
 	}
 
 	// Create web server with worktree creator
@@ -163,6 +189,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	webServer, err := web.NewServer(staticDir, port, webOpts...)
 	if err != nil {
 		return fmt.Errorf("create web server: %w", err)
+	}
+
+	if debugTiming {
+		fmt.Printf("[timing] web server setup: %v\n", time.Since(phaseStart))
 	}
 
 	// Signal handling

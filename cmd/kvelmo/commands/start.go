@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -144,10 +145,27 @@ func runInBackground(cwd, wtPath string) error {
 		return errors.New("socket failed to start (check logs)")
 	}
 
-	// If --from was specified, task is already being loaded by background process
+	// If --from was specified, wait for task to load via status check instead of fixed sleep
 	if startFrom != "" {
-		// Wait a bit for task to load
-		time.Sleep(500 * time.Millisecond)
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			client, err := socket.NewClient(wtPath, socket.WithTimeout(1*time.Second))
+			if err == nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				resp, err := client.Call(ctx, "status", nil)
+				cancel()
+				_ = client.Close()
+				if err == nil {
+					var status struct {
+						State string `json:"state"`
+					}
+					if json.Unmarshal(resp.Result, &status) == nil && status.State != "none" {
+						break
+					}
+				}
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
 		fmt.Printf("Task loading from %s\n", startFrom)
 	}
 
