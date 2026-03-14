@@ -25,7 +25,7 @@ func (c *Conductor) runQualityGate(ctx context.Context) error {
 
 	// Language-specific checks are mutually exclusive by project type.
 	// Each gate function creates its own context with timeout via qualityCtx().
-	//nolint:contextcheck // quality gate functions create their own time-limited context
+	//nolint:contextcheck // each language gate creates its own 60s timeout context via qualityCtx(); detached from parent so one slow gate doesn't starve the next
 	if _, err := os.Stat(filepath.Join(workDir, "go.mod")); err == nil {
 		if err := c.qualityGateGo(workDir); err != nil {
 			return err
@@ -240,7 +240,7 @@ func (c *Conductor) qualityGateCodeRabbit(ctx context.Context, workDir string) e
 	crCtx, cancel := coderabbitCtx()
 	defer cancel()
 
-	//nolint:contextcheck // coderabbitCtx() creates a time-limited context for the subprocess
+	//nolint:contextcheck // coderabbitCtx() creates a dedicated 5-minute timeout; independent of parent context so reviews get their full time budget
 	cmd := exec.CommandContext(crCtx, crPath, "review")
 	cmd.Dir = workDir
 	output, runErr := cmd.CombinedOutput()

@@ -26,23 +26,23 @@ func TestFullConductorIntegration(t *testing.T) {
 	sockPath := filepath.Join(tmpDir, "w.sock")
 
 	// Initialize git repo
-	cmd := exec.Command("git", "init", repoDir) //nolint:noctx // Test setup, no context needed
+	cmd := exec.CommandContext(context.Background(), "git", "init", repoDir)
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git init failed: %v", err)
 	}
 
 	// Configure git user
-	cmd = exec.Command("git", "-C", repoDir, "config", "user.email", "test@test.com") //nolint:noctx // Test setup
+	cmd = exec.CommandContext(context.Background(), "git", "-C", repoDir, "config", "user.email", "test@test.com")
 	_ = cmd.Run()
-	cmd = exec.Command("git", "-C", repoDir, "config", "user.name", "Test User") //nolint:noctx // Test setup
+	cmd = exec.CommandContext(context.Background(), "git", "-C", repoDir, "config", "user.name", "Test User")
 	_ = cmd.Run()
 
 	// Create initial commit
 	testFile := filepath.Join(repoDir, "test.txt")
 	_ = os.WriteFile(testFile, []byte("initial content"), 0o644)
-	cmd = exec.Command("git", "-C", repoDir, "add", ".") //nolint:noctx // Test setup
+	cmd = exec.CommandContext(context.Background(), "git", "-C", repoDir, "add", ".")
 	_ = cmd.Run()
-	cmd = exec.Command("git", "-C", repoDir, "commit", "-m", "initial commit") //nolint:noctx // Test setup
+	cmd = exec.CommandContext(context.Background(), "git", "-C", repoDir, "commit", "-m", "initial commit")
 	_ = cmd.Run()
 
 	// Create worktree socket with full config

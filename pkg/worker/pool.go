@@ -144,7 +144,7 @@ func (p *Pool) assignJob(job *Job) {
 		if w.Status == StatusAvailable {
 			if w.Agent != nil && w.Agent.Connected() {
 				// Agent-based worker
-				jobCtx, jobCancel := context.WithCancel(p.ctx)
+				jobCtx, jobCancel := context.WithCancel(p.ctx) //nolint:gosec // jobCancel stored in p.jobCancels and called on stop
 				w.Status = StatusWorking
 				w.CurrentJob = job.ID
 				job.Status = JobStatusInProgress
@@ -166,7 +166,7 @@ func (p *Pool) assignJob(job *Job) {
 				return
 			} else if w.Agent == nil {
 				// Simulated worker (no agent)
-				jobCtx, jobCancel := context.WithCancel(p.ctx)
+				jobCtx, jobCancel := context.WithCancel(p.ctx) //nolint:gosec // jobCancel stored in p.jobCancels and called on stop
 				w.Status = StatusWorking
 				w.CurrentJob = job.ID
 				job.Status = JobStatusInProgress

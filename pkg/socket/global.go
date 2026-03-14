@@ -423,7 +423,7 @@ func testHTTPToken(ctx context.Context, url, token, authType string) (bool, stri
 	if err != nil {
 		return false, "Connection failed: " + err.Error()
 	}
-	defer resp.Body.Close() //nolint:errcheck // response body close
+	defer resp.Body.Close() //nolint:errcheck // close error is irrelevant; the response status is already captured
 
 	if resp.StatusCode == http.StatusOK {
 		return true, "Authenticated successfully"
@@ -448,7 +448,7 @@ func testLinearToken(ctx context.Context, token string) (bool, string) {
 	if err != nil {
 		return false, "Connection failed: " + err.Error()
 	}
-	defer resp.Body.Close() //nolint:errcheck // response body close
+	defer resp.Body.Close() //nolint:errcheck // close error is irrelevant; the response status is already captured
 
 	if resp.StatusCode == http.StatusOK {
 		return true, "Authenticated successfully"

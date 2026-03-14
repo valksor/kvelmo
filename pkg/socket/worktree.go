@@ -562,7 +562,9 @@ func (w *WorktreeSocket) handleShutdown(ctx context.Context, req *Request) (*Res
 	// Send response before shutting down.
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		w.server.Stop() //nolint:errcheck // fired in a goroutine after response is sent; caller has no error recovery path
+		if err := w.server.Stop(); err != nil {
+			slog.Error("shutdown: failed to stop server", "error", err)
+		}
 	}()
 
 	return NewResultResponse(req.ID, map[string]string{"status": "shutting_down"})

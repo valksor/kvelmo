@@ -125,7 +125,7 @@ func runInBackground(cwd, wtPath string) error {
 		bgArgs = append(bgArgs, "--from", startFrom)
 	}
 
-	bgCmd := exec.Command(exe, bgArgs...) //nolint:noctx // Detached background process, no context needed
+	bgCmd := exec.Command(exe, bgArgs...) //nolint:noctx // exec.Command is intentional: detached process must outlive caller; CommandContext would kill it on cancel
 	bgCmd.Dir = cwd
 	bgCmd.Stdout = nil // Detach stdout
 	bgCmd.Stderr = nil // Detach stderr
@@ -276,7 +276,9 @@ func runInForeground(cwd, globalPath, wtPath string) error {
 
 // isGitRepository checks if the given path is inside a git repository.
 func isGitRepository(path string) bool {
-	cmd := exec.Command("git", "-C", path, "rev-parse", "--git-dir") //nolint:noctx // Quick one-shot check
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "rev-parse", "--git-dir")
 
 	return cmd.Run() == nil
 }
