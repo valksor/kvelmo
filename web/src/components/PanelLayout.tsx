@@ -11,12 +11,13 @@ interface PanelLayoutProps {
 }
 
 export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutProps) {
-  const { panelSizes, setPanelSize, bottomPanelVisible, toggleBottomPanel } = useLayoutStore()
+  const { panelSizes, setPanelSize, bottomPanelVisible, toggleBottomPanel, openTab, setActiveTab } = useLayoutStore()
   const [leftWidth, setLeftWidth] = useState(panelSizes.left)
   const [rightWidth, setRightWidth] = useState(panelSizes.right)
   const [isResizingLeft, setIsResizingLeft] = useState(false)
   const [isResizingRight, setIsResizingRight] = useState(false)
   const [mobilePanel, setMobilePanel] = useState<'main' | 'left' | 'right'>('main')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Handle mouse move for resizing
@@ -209,12 +210,43 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
 
       {/* Mobile navigation bar */}
       <div className="md:hidden flex-shrink-0 border-t border-base-300 bg-base-200">
+        {/* Mobile "More" menu overlay */}
+        {mobileMenuOpen && (
+          <div className="border-b border-base-300 bg-base-100 p-2 grid grid-cols-3 gap-1">
+            {[
+              { label: 'Output', panel: 'main' as const, tab: 'output' },
+              { label: 'Files', panel: 'main' as const, tab: 'files' },
+              { label: 'Screenshots', panel: 'main' as const, tab: 'screenshots' },
+              { label: 'Browser', panel: 'main' as const, tab: 'browser' },
+              { label: 'Jobs', panel: 'main' as const, tab: 'jobs' },
+              { label: 'Reviews', panel: 'main' as const, tab: 'review' },
+            ].map(item => (
+              <button
+                key={item.label}
+                onClick={() => {
+                  setMobilePanel(item.panel)
+                  openTab({
+                    id: `${item.tab}-mobile`,
+                    type: item.tab as import('../stores/layoutStore').TabType,
+                    title: item.label,
+                    closeable: true,
+                  })
+                  setActiveTab(`${item.tab}-mobile`)
+                  setMobileMenuOpen(false)
+                }}
+                className="btn btn-ghost btn-sm min-h-[44px] text-xs"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex" role="tablist">
           <button
-            onClick={() => setMobilePanel('left')}
+            onClick={() => { setMobilePanel('left'); setMobileMenuOpen(false) }}
             role="tab"
             aria-selected={mobilePanel === 'left'}
-            className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs transition-colors ${
+            className={`flex-1 flex flex-col items-center gap-1 py-2 min-h-[44px] text-xs transition-colors ${
               mobilePanel === 'left' ? 'text-primary bg-primary/10' : 'text-base-content/60'
             }`}
           >
@@ -224,11 +256,11 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
             Task
           </button>
           <button
-            onClick={() => setMobilePanel('main')}
+            onClick={() => { setMobilePanel('main'); setMobileMenuOpen(false) }}
             role="tab"
-            aria-selected={mobilePanel === 'main'}
-            className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs transition-colors ${
-              mobilePanel === 'main' ? 'text-primary bg-primary/10' : 'text-base-content/60'
+            aria-selected={mobilePanel === 'main' && !mobileMenuOpen}
+            className={`flex-1 flex flex-col items-center gap-1 py-2 min-h-[44px] text-xs transition-colors ${
+              mobilePanel === 'main' && !mobileMenuOpen ? 'text-primary bg-primary/10' : 'text-base-content/60'
             }`}
           >
             <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,10 +269,10 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
             Chat
           </button>
           <button
-            onClick={() => setMobilePanel('right')}
+            onClick={() => { setMobilePanel('right'); setMobileMenuOpen(false) }}
             role="tab"
             aria-selected={mobilePanel === 'right'}
-            className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs transition-colors ${
+            className={`flex-1 flex flex-col items-center gap-1 py-2 min-h-[44px] text-xs transition-colors ${
               mobilePanel === 'right' ? 'text-primary bg-primary/10' : 'text-base-content/60'
             }`}
           >
@@ -248,6 +280,20 @@ export function PanelLayout({ leftContent, rightContent, header }: PanelLayoutPr
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             Actions
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-haspopup="menu"
+            aria-expanded={mobileMenuOpen}
+            aria-label="More panels"
+            className={`flex-1 flex flex-col items-center gap-1 py-2 min-h-[44px] text-xs transition-colors ${
+              mobileMenuOpen ? 'text-primary bg-primary/10' : 'text-base-content/60'
+            }`}
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+            </svg>
+            More
           </button>
         </div>
       </div>
@@ -281,7 +327,7 @@ function BottomPanelContent() {
         </button>
       </div>
       <div className="flex-1 overflow-auto p-2">
-        <div className="bg-neutral rounded-lg p-3 h-full overflow-auto font-mono text-sm text-neutral-content">
+        <div role="log" aria-label="Task output" className="bg-neutral rounded-lg p-3 h-full overflow-auto font-mono text-sm text-neutral-content">
           {output.length === 0 ? (
             <div className="text-neutral-content/50 text-center py-4">
               No output yet
