@@ -2,7 +2,9 @@ import { lazy, Suspense, useState, useMemo } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
+import { useDebugStore } from '../stores/debugStore'
 import { useDocsURL } from '../hooks/useDocsURL'
+import { useKeyboardShortcuts, SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 import { Widget, TaskIcon, FilesIcon, ActionsIcon, CheckpointsIcon } from './Widget'
 import { PanelLayout } from './PanelLayout'
 import { TaskWidget } from './TaskWidget'
@@ -59,6 +61,8 @@ export function ProjectView() {
   const [showSettings, setShowSettings] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
   const docsData = useDocsURL()
+  const debugEnabled = useDebugStore(s => s.enabled)
+  const { showHelp: showShortcuts, setShowHelp: setShowShortcuts } = useKeyboardShortcuts()
 
   // Memoize status type to avoid recalculation on every render
   // Must be before early return to satisfy React hooks rules
@@ -263,6 +267,38 @@ export function ProjectView() {
           />
         )}
       </Suspense>
+
+      {/* Debug mode indicator */}
+      {debugEnabled && (
+        <div className="fixed bottom-2 right-2 z-50 badge badge-warning badge-sm gap-1 opacity-70">
+          <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          DEBUG
+        </div>
+      )}
+
+      {/* Keyboard shortcuts help dialog */}
+      {showShortcuts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowShortcuts(false)}>
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Keyboard Shortcuts</h3>
+            <div className="space-y-2">
+              {SHORTCUTS.map(s => (
+                <div key={s.key} className="flex items-center justify-between text-sm">
+                  <span className="text-base-content/70">{s.description}</span>
+                  <kbd className="kbd kbd-sm">{s.label}</kbd>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-right">
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowShortcuts(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

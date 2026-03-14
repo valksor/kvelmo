@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useGlobalStore } from '../stores/globalStore'
+import { useDebugStore } from '../stores/debugStore'
 import { DynamicForm } from './settings/DynamicForm'
 import { setPath, isMaskedToken } from '../lib/schemaUtils'
 import { AccessibleModal } from './ui/AccessibleModal'
@@ -212,6 +213,30 @@ export function Settings({ isOpen, onClose, defaultScope }: SettingsProps) {
           </div>
         )}
       </div>
+
+      {/* Footer: Config path + debug toggle */}
+      <div className="border-t border-base-300 pt-3 mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <span className="text-xs text-base-content/40 font-mono select-all">
+          Config: ~/.valksor/kvelmo/kvelmo.yaml
+        </span>
+        <DebugToggle />
+      </div>
     </AccessibleModal>
+  )
+}
+
+function DebugToggle() {
+  const { enabled, setEnabled } = useDebugStore()
+
+  return (
+    <label className="flex items-center gap-2 cursor-pointer">
+      <span className="text-xs text-base-content/50">Debug mode</span>
+      <input
+        type="checkbox"
+        className="toggle toggle-xs toggle-primary"
+        checked={enabled}
+        onChange={(e) => setEnabled(e.target.checked)}
+      />
+    </label>
   )
 }

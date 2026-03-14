@@ -3,6 +3,7 @@ import { useChatStore, type ChatMessage } from '../stores/chatStore'
 import { useGlobalStore } from '../stores/globalStore'
 import { useScreenshotStore, getScreenshotById, formatScreenshotRef } from '../stores/screenshotStore'
 import { ChatMessageContent } from './ChatMessage'
+import { downloadJSON } from '../lib/export'
 
 interface FileEntry {
   name: string
@@ -340,12 +341,28 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
         {/* Quick actions */}
         <div className="flex gap-2 mt-2">
           {messages.length > 0 && (
-            <button
-              onClick={clearMessages}
-              className="btn btn-ghost btn-xs text-base-content/60"
-            >
-              Clear chat
-            </button>
+            <>
+              <button
+                onClick={clearMessages}
+                className="btn btn-ghost btn-xs text-base-content/60"
+              >
+                Clear chat
+              </button>
+              <button
+                onClick={() => {
+                  const exportData = messages.map(m => ({
+                    role: m.role,
+                    content: m.content,
+                    timestamp: m.timestamp.toISOString(),
+                    status: m.status,
+                  }))
+                  downloadJSON(exportData, `chat-${new Date().toISOString().slice(0, 10)}.json`)
+                }}
+                className="btn btn-ghost btn-xs text-base-content/60"
+              >
+                Export chat
+              </button>
+            </>
           )}
         </div>
       </div>

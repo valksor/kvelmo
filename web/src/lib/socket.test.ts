@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { SocketClient } from './socket'
 
+// Mock the debug store so socket.ts can import it
+vi.mock('../stores/debugStore', () => ({
+  useDebugStore: {
+    getState: () => ({ enabled: false, addLog: vi.fn() }),
+  },
+}))
+
 // Store instances for test access
 let mockWsInstances: MockWebSocket[] = []
 

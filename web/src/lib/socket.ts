@@ -1,3 +1,6 @@
+import { RPCError } from './rpcError'
+import { useDebugStore } from '../stores/debugStore'
+
 export interface RPCRequest {
   jsonrpc: '2.0'
   id: string
@@ -14,7 +17,7 @@ export interface RPCResponse {
 
 export class SocketClient {
   private ws: WebSocket | null = null
-  private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
+  private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; method: string }>()
   private nextId = 1
   private messageHandlers = new Set<(data: unknown) => void>()
   private onDisconnect?: () => void
@@ -50,10 +53,14 @@ export class SocketClient {
           try {
             const msg = JSON.parse(line) as RPCResponse
             if (msg.id && this.pending.has(msg.id)) {
-              const { resolve, reject } = this.pending.get(msg.id)!
+              const { resolve, reject, method } = this.pending.get(msg.id)!
               this.pending.delete(msg.id)
+
+              // Debug logging for responses
+              this.debugLog('response', line, method)
+
               if (msg.error) {
-                reject(new Error(msg.error.message))
+                reject(new RPCError(msg.error.message, msg.error.code))
               } else {
                 resolve(msg.result)
               }
@@ -76,7 +83,7 @@ export class SocketClient {
         this.buffer = '' // Clear buffer on disconnect
         // Reject all pending calls
         for (const [id, { reject }] of this.pending) {
-          reject(new Error('Connection closed'))
+          reject(new RPCError('Connection closed', -1))
           this.pending.delete(id)
         }
         // Notify disconnection
@@ -90,7 +97,7 @@ export class SocketClient {
   call<T>(method: string, params?: unknown): Promise<T> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error('Not connected'))
+        reject(new RPCError('Not connected', -1))
         return
       }
 
@@ -105,15 +112,22 @@ export class SocketClient {
       const timeoutId = setTimeout(() => {
         if (this.pending.has(id)) {
           this.pending.delete(id)
-          reject(new Error(`Request timeout: ${method}`))
+          reject(new RPCError(`Request timeout: ${method}`, -32000))
         }
       }, 30_000)
 
       this.pending.set(id, {
         resolve: (v: unknown) => { clearTimeout(timeoutId); (resolve as (v: unknown) => void)(v) },
-        reject: (e: Error) => { clearTimeout(timeoutId); reject(e) }
+        reject: (e: Error) => { clearTimeout(timeoutId); reject(e) },
+        method
       })
-      this.ws.send(JSON.stringify(req) + '\n')
+
+      const payload = JSON.stringify(req) + '\n'
+
+      // Debug logging for requests
+      this.debugLog('request', payload, method)
+
+      this.ws.send(payload)
     })
   }
 
@@ -127,5 +141,16 @@ export class SocketClient {
 
   close() {
     this.ws?.close()
+  }
+
+  /** Log RPC traffic when debug mode is enabled */
+  private debugLog(direction: 'request' | 'response', data: string, method?: string) {
+    const debugStore = useDebugStore.getState()
+    if (!debugStore.enabled) return
+    debugStore.addLog({
+      direction,
+      method,
+      data: data.slice(0, 500),
+    })
   }
 }
