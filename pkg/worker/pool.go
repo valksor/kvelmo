@@ -44,17 +44,19 @@ type Pool struct {
 	basePort int // Starting port for WebSocket workers
 
 	// Recording
-	recordingEnabled bool
-	recordingDir     string
+	recordingEnabled   bool
+	recordingDir       string
+	recordingSanitizer *recorder.Sanitizer
 }
 
 // PoolConfig configures the worker pool.
 type PoolConfig struct {
-	MaxWorkers       int
-	BasePort         int
-	Agents           *agent.Registry
-	RecordingEnabled bool
-	RecordingDir     string
+	MaxWorkers         int
+	BasePort           int
+	Agents             *agent.Registry
+	RecordingEnabled   bool
+	RecordingDir       string
+	RecordingSanitizer *recorder.Sanitizer
 }
 
 // DefaultPoolConfig returns sensible defaults.
@@ -75,18 +77,19 @@ func NewPool(cfg PoolConfig) *Pool {
 	}
 
 	return &Pool{
-		workers:          make(map[string]*Worker),
-		agents:           agents,
-		jobs:             make(map[string]*Job),
-		queue:            make(chan *Job, 100),
-		streams:          make(map[string]chan Event),
-		jobCancels:       make(map[string]context.CancelFunc),
-		maxWorkers:       cfg.MaxWorkers,
-		basePort:         cfg.BasePort,
-		recordingEnabled: cfg.RecordingEnabled,
-		recordingDir:     cfg.RecordingDir,
-		ctx:              ctx,
-		cancel:           cancel,
+		workers:            make(map[string]*Worker),
+		agents:             agents,
+		jobs:               make(map[string]*Job),
+		queue:              make(chan *Job, 100),
+		streams:            make(map[string]chan Event),
+		jobCancels:         make(map[string]context.CancelFunc),
+		maxWorkers:         cfg.MaxWorkers,
+		basePort:           cfg.BasePort,
+		recordingEnabled:   cfg.RecordingEnabled,
+		recordingDir:       cfg.RecordingDir,
+		recordingSanitizer: cfg.RecordingSanitizer,
+		ctx:                ctx,
+		cancel:             cancel,
 	}
 }
 
@@ -271,10 +274,11 @@ func (p *Pool) executeWithAgent(ctx context.Context, job *Job, w *Worker) {
 	var rec *recorder.Recorder
 	if p.recordingEnabled {
 		recCfg := recorder.Config{
-			Dir:     p.recordingDir,
-			JobID:   job.ID,
-			Agent:   ag.Name(),
-			WorkDir: job.WorkDir,
+			Dir:       p.recordingDir,
+			JobID:     job.ID,
+			Agent:     ag.Name(),
+			WorkDir:   job.WorkDir,
+			Sanitizer: p.recordingSanitizer,
 		}
 		if r, recErr := recorder.New(recCfg); recErr == nil {
 			rec = r

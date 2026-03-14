@@ -369,4 +369,5 @@ func init() {
 	ConfigCmd.AddCommand(configSetCmd)
 	ConfigCmd.AddCommand(configGetCmd)
 	ConfigCmd.AddCommand(configEditCmd)
+	ConfigCmd.AddCommand(configValidateCmd)
 }

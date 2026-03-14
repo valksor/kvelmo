@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/valksor/kvelmo/pkg/metrics"
+	"github.com/valksor/kvelmo/pkg/trace"
 )
 
 const (
@@ -273,11 +274,13 @@ func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
 
 func (s *Server) dispatch(ctx context.Context, req *Request, conn net.Conn) *Response {
 	start := time.Now()
+	corrID := trace.NewID()
+	ctx = trace.WithID(ctx, corrID)
 
 	if req.Method == "shutdown" {
 		go s.initiateShutdown()
 		resp, _ := NewResultResponse(req.ID, map[string]bool{"ok": true})
-		slog.Debug("rpc request", "method", req.Method, "id", req.ID, "duration_ms", time.Since(start).Milliseconds())
+		slog.Debug("rpc request", "method", req.Method, "id", req.ID, "correlation_id", corrID, "duration_ms", time.Since(start).Milliseconds())
 
 		return resp
 	}
@@ -288,7 +291,7 @@ func (s *Server) dispatch(ctx context.Context, req *Request, conn net.Conn) *Res
 	s.mu.RUnlock()
 
 	if !hasHandler && !hasLegacy {
-		slog.Warn("rpc method not found", "method", req.Method, "id", req.ID)
+		slog.Warn("rpc method not found", "method", req.Method, "id", req.ID, "correlation_id", corrID)
 		// Record as failed RPC request for observability
 		metrics.Global().RecordRPCRequest(0, fmt.Errorf("method not found: %s", req.Method))
 
@@ -306,13 +309,13 @@ func (s *Server) dispatch(ctx context.Context, req *Request, conn net.Conn) *Res
 
 	duration := time.Since(start)
 	if err != nil {
-		slog.Error("rpc request failed", "method", req.Method, "id", req.ID, "error", err, "duration_ms", duration.Milliseconds())
+		slog.Error("rpc request failed", "method", req.Method, "id", req.ID, "correlation_id", corrID, "error", err, "duration_ms", duration.Milliseconds())
 		metrics.Global().RecordRPCRequest(duration, err)
 
 		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error())
 	}
 
-	slog.Debug("rpc request", "method", req.Method, "id", req.ID, "duration_ms", duration.Milliseconds())
+	slog.Debug("rpc request", "method", req.Method, "id", req.ID, "correlation_id", corrID, "duration_ms", duration.Milliseconds())
 	metrics.Global().RecordRPCRequest(duration, nil)
 
 	return resp

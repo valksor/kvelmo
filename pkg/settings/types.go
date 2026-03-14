@@ -22,6 +22,7 @@ type Settings struct {
 	Workflow     WorkflowSettings       `yaml:"workflow,omitempty" json:"workflow,omitempty"`
 	Watchdog     WatchdogSettings       `yaml:"watchdog,omitempty" json:"watchdog,omitempty"`
 	UI           UISettings             `yaml:"ui,omitempty" json:"ui,omitempty"`
+	Environment  string                 `yaml:"environment,omitempty" json:"environment,omitempty" schema:"label=Environment;desc=Deployment environment (dev, staging, prod);options=dev|staging|prod;default=dev"`
 	CustomAgents map[string]CustomAgent `yaml:"custom_agents,omitempty" json:"custom_agents,omitempty"`
 }
 

@@ -11,6 +11,8 @@ var (
 	Debug bool
 	// NoColor disables colored output.
 	NoColor bool
+	// LogFormat controls the log output format (text or json).
+	LogFormat string
 )
 
 // RegisterPersistentFlags adds global flags to the root command.
@@ -21,4 +23,5 @@ func RegisterPersistentFlags(root *cobra.Command) {
 	pf.BoolVar(&Verbose, "verbose", false, "Show additional details (socket paths, timing)")
 	pf.BoolVar(&Debug, "debug", false, "Show debug information (JSON-RPC traffic, slog debug)")
 	pf.BoolVar(&NoColor, "no-color", false, "Disable colored output")
+	pf.StringVar(&LogFormat, "log-format", "text", "Log output format (text, json)")
 }
