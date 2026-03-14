@@ -34,17 +34,19 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new()
-            .with_handler(|app, shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.unminimize();
-                        let _ = window.set_focus();
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
                     }
-                }
-            })
-            .build())
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -67,15 +69,16 @@ pub fn run() {
             });
 
             // Register global shortcut (CmdOrCtrl+Shift+K)
-            app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+K", |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.unminimize();
-                        let _ = window.set_focus();
+            app.global_shortcut()
+                .on_shortcut("CmdOrCtrl+Shift+K", |app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
                     }
-                }
-            })?;
+                })?;
 
             // Restore window state
             if let Some(window) = app.get_webview_window("main") {
