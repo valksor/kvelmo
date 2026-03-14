@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Screenshot, useScreenshotStore } from '../stores/screenshotStore'
+import { useProjectStore } from '../stores/projectStore'
 
 interface ScreenshotModalProps {
   screenshot: Screenshot
@@ -8,6 +9,7 @@ interface ScreenshotModalProps {
 
 export function ScreenshotModal({ screenshot, onClose }: ScreenshotModalProps) {
   const { attach, detach, attachedIds, deleteScreenshot } = useScreenshotStore()
+  const client = useProjectStore(s => s.client)
 
   const isAttached = attachedIds.includes(screenshot.id)
   const timestamp = new Date(screenshot.timestamp)
@@ -34,7 +36,7 @@ export function ScreenshotModal({ screenshot, onClose }: ScreenshotModalProps) {
 
   const handleDelete = () => {
     if (confirm('Delete this screenshot?')) {
-      deleteScreenshot(screenshot.id)
+      deleteScreenshot(screenshot.id, client)
       onClose()
     }
   }

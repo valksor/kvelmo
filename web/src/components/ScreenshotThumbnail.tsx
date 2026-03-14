@@ -1,4 +1,5 @@
 import { Screenshot, useScreenshotStore } from '../stores/screenshotStore'
+import { useProjectStore } from '../stores/projectStore'
 
 interface ScreenshotThumbnailProps {
   screenshot: Screenshot
@@ -13,6 +14,7 @@ export function ScreenshotThumbnail({
   onClick,
 }: ScreenshotThumbnailProps) {
   const { attach, attachedIds, detach, deleteScreenshot, getScreenshot, screenshotData } = useScreenshotStore()
+  const client = useProjectStore(s => s.client)
 
   const isAttached = attachedIds.includes(screenshot.id)
   const timestamp = new Date(screenshot.timestamp)
@@ -31,7 +33,7 @@ export function ScreenshotThumbnail({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (confirm('Delete this screenshot?')) {
-      deleteScreenshot(screenshot.id)
+      deleteScreenshot(screenshot.id, client)
     }
   }
 
@@ -42,7 +44,7 @@ export function ScreenshotThumbnail({
   const handleClick = async () => {
     // Load full screenshot data on first click
     if (!loadedData) {
-      await getScreenshot(screenshot.id)
+      await getScreenshot(screenshot.id, client)
     }
     onClick()
   }

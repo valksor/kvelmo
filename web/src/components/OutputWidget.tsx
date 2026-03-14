@@ -1,49 +1,104 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useProjectStore } from '../stores/projectStore'
 
 interface OutputWidgetProps {
   embedded?: boolean
 }
 
-export function OutputWidget({ embedded = false }: OutputWidgetProps) {
-  const { output, clearOutput } = useProjectStore()
-  const endRef = useRef<HTMLDivElement>(null)
+// Memoized line component to prevent unnecessary re-renders
+const OutputLine = memo(function OutputLine({ line }: { line: string }) {
+  const className = line.startsWith('ERROR') || line.startsWith('error')
+    ? 'text-error'
+    : line.startsWith('WARN') || line.startsWith('warn')
+    ? 'text-warning'
+    : line.startsWith('✓') || line.startsWith('success')
+    ? 'text-success'
+    : ''
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [output])
-
-  const content = (
-    <div className="bg-neutral rounded-lg p-4 h-full overflow-auto font-mono text-sm text-neutral-content">
-      {output.length === 0 ? (
-        <div className="text-neutral-content/50 flex items-center justify-center h-full min-h-[200px]">
-          <div className="text-center">
-            <svg className="w-8 h-8 mx-auto mb-2 text-neutral-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>No output yet</span>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {output.map((line, i) => (
-            <div
-              key={i}
-              className={`leading-relaxed ${
-                line.startsWith('ERROR') || line.startsWith('error') ? 'text-error' :
-                line.startsWith('WARN') || line.startsWith('warn') ? 'text-warning' :
-                line.startsWith('✓') || line.startsWith('success') ? 'text-success' :
-                ''
-              }`}
-            >
-              {line}
-            </div>
-          ))}
-          <div ref={endRef} />
-        </div>
-      )}
+  return (
+    <div className={`leading-relaxed px-1 ${className}`}>
+      {line}
     </div>
   )
+})
+
+function VirtualizedOutput({ output }: { output: string[] }) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  const lastOutputLength = useRef(output.length)
+
+  const virtualizer = useVirtualizer({
+    count: output.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 24, // Estimated line height in pixels
+    overscan: 10, // Render extra items above/below viewport
+  })
+
+  // Auto-scroll to bottom when new output is added
+  useEffect(() => {
+    if (output.length > lastOutputLength.current && parentRef.current) {
+      // Only auto-scroll if we were already near the bottom
+      const el = parentRef.current
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+      if (isNearBottom) {
+        virtualizer.scrollToIndex(output.length - 1, { align: 'end' })
+      }
+    }
+    lastOutputLength.current = output.length
+  }, [output.length, virtualizer])
+
+  const items = virtualizer.getVirtualItems()
+
+  return (
+    <div
+      ref={parentRef}
+      className="bg-neutral rounded-lg p-4 h-full overflow-auto font-mono text-sm text-neutral-content"
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {items.map((virtualItem) => (
+          <div
+            key={virtualItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            <OutputLine line={output[virtualItem.index]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function EmptyOutput() {
+  return (
+    <div className="bg-neutral rounded-lg p-4 h-full overflow-auto font-mono text-sm text-neutral-content">
+      <div className="text-neutral-content/50 flex items-center justify-center h-full min-h-[200px]">
+        <div className="text-center">
+          <svg className="w-8 h-8 mx-auto mb-2 text-neutral-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>No output yet</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function OutputWidget({ embedded = false }: OutputWidgetProps) {
+  const { output, clearOutput } = useProjectStore()
+
+  const content = output.length === 0 ? <EmptyOutput /> : <VirtualizedOutput output={output} />
 
   // Embedded mode: just the content without card wrapper
   if (embedded) {

@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useProjectStore } from '../stores/projectStore'
+import { ConfirmModal } from './ui/ConfirmModal'
 
 interface ActionsWidgetProps {
   embedded?: boolean
@@ -11,11 +13,34 @@ type RetryableAction = {
 }
 
 export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
+  // Use shallow comparison to prevent re-renders when unrelated store properties change
   const {
     state, plan, implement, simplify, optimize, review, submit, undo, redo, abort, abandon, update,
     finish, refresh, approveRemote, mergeRemote, deleteTask,
     loading, checkpoints, redoStack, error
-  } = useProjectStore()
+  } = useProjectStore(useShallow(s => ({
+    state: s.state,
+    plan: s.plan,
+    implement: s.implement,
+    simplify: s.simplify,
+    optimize: s.optimize,
+    review: s.review,
+    submit: s.submit,
+    undo: s.undo,
+    redo: s.redo,
+    abort: s.abort,
+    abandon: s.abandon,
+    update: s.update,
+    finish: s.finish,
+    refresh: s.refresh,
+    approveRemote: s.approveRemote,
+    mergeRemote: s.mergeRemote,
+    deleteTask: s.deleteTask,
+    loading: s.loading,
+    checkpoints: s.checkpoints,
+    redoStack: s.redoStack,
+    error: s.error,
+  })))
 
   const [showAbandonModal, setShowAbandonModal] = useState(false)
   const [abandonKeepBranch, setAbandonKeepBranch] = useState(false)
@@ -426,145 +451,88 @@ export function ActionsWidget({ embedded = false }: ActionsWidgetProps) {
       </div>
 
       {/* Abandon confirmation modal */}
-      {showAbandonModal && (
-        <div className="modal modal-open">
-          <div role="dialog" aria-modal="true" aria-labelledby="abandon-modal-title" className="modal-box bg-base-100 max-w-sm">
-            <h3 id="abandon-modal-title" className="font-bold text-lg text-error mb-2">Abandon Task?</h3>
-            <p className="text-sm text-base-content/80 mb-4">
-              This will discard the current task and reset the worktree. This action cannot be undone.
-            </p>
-            <label className="flex items-center gap-3 cursor-pointer mb-6">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={abandonKeepBranch}
-                onChange={e => setAbandonKeepBranch(e.target.checked)}
-              />
-              <span className="text-sm">Keep branch after abandoning</span>
-            </label>
-            <div className="modal-action">
-              <button
-                onClick={() => { setShowAbandonModal(false); setAbandonKeepBranch(false) }}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAbandon}
-                className="btn btn-error"
-              >
-                Abandon
-              </button>
-            </div>
-          </div>
-          <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowAbandonModal(false)} aria-label="Close dialog" tabIndex={-1} />
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showAbandonModal}
+        onClose={() => { setShowAbandonModal(false); setAbandonKeepBranch(false) }}
+        onConfirm={handleAbandon}
+        title="Abandon Task?"
+        description="This will discard the current task and reset the worktree. This action cannot be undone."
+        confirmLabel="Abandon"
+        confirmClass="btn btn-error"
+      >
+        <label className="flex items-center gap-3 cursor-pointer mb-2">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={abandonKeepBranch}
+            onChange={e => setAbandonKeepBranch(e.target.checked)}
+          />
+          <span className="text-sm">Keep branch after abandoning</span>
+        </label>
+      </ConfirmModal>
 
       {/* Submit confirmation modal */}
-      {showSubmitModal && (
-        <div className="modal modal-open">
-          <div role="dialog" aria-modal="true" aria-labelledby="submit-modal-title" className="modal-box bg-base-100 max-w-sm">
-            <h3 id="submit-modal-title" className="font-bold text-lg mb-2">Submit Pull Request</h3>
-            <p className="text-sm text-base-content/80 mb-4">
-              This will create a pull request for the current task.
-            </p>
-            <label className="flex items-center gap-3 cursor-pointer mb-6">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={submitDeleteBranch}
-                onChange={e => setSubmitDeleteBranch(e.target.checked)}
-              />
-              <span className="text-sm">Delete branch after submitting</span>
-            </label>
-            <div className="modal-action">
-              <button
-                onClick={() => { setShowSubmitModal(false); setSubmitDeleteBranch(false) }}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="btn btn-primary"
-              >
-                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Submit PR
-              </button>
-            </div>
-          </div>
-          <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowSubmitModal(false)} aria-label="Close dialog" tabIndex={-1} />
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showSubmitModal}
+        onClose={() => { setShowSubmitModal(false); setSubmitDeleteBranch(false) }}
+        onConfirm={handleSubmit}
+        title="Submit Pull Request"
+        description="This will create a pull request for the current task."
+        confirmLabel="Submit PR"
+        confirmClass="btn btn-primary"
+        confirmIcon={
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        }
+      >
+        <label className="flex items-center gap-3 cursor-pointer mb-2">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={submitDeleteBranch}
+            onChange={e => setSubmitDeleteBranch(e.target.checked)}
+          />
+          <span className="text-sm">Delete branch after submitting</span>
+        </label>
+      </ConfirmModal>
 
       {/* Finish confirmation modal */}
-      {showFinishModal && (
-        <div className="modal modal-open">
-          <div role="dialog" aria-modal="true" aria-labelledby="finish-modal-title" className="modal-box bg-base-100 max-w-sm">
-            <h3 id="finish-modal-title" className="font-bold text-lg text-success mb-2">Finish Task</h3>
-            <p className="text-sm text-base-content/80 mb-4">
-              This will switch to the base branch, pull latest changes, and delete the feature branch.
-            </p>
-            <label className="flex items-center gap-3 cursor-pointer mb-6">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={finishDeleteRemote}
-                onChange={e => setFinishDeleteRemote(e.target.checked)}
-              />
-              <span className="text-sm">Also delete remote branch</span>
-            </label>
-            <div className="modal-action">
-              <button
-                onClick={() => { setShowFinishModal(false); setFinishDeleteRemote(false) }}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleFinish}
-                className="btn btn-success"
-              >
-                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Finish
-              </button>
-            </div>
-          </div>
-          <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowFinishModal(false)} aria-label="Close dialog" tabIndex={-1} />
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showFinishModal}
+        onClose={() => { setShowFinishModal(false); setFinishDeleteRemote(false) }}
+        onConfirm={handleFinish}
+        title="Finish Task"
+        description="This will switch to the base branch, pull latest changes, and delete the feature branch."
+        confirmLabel="Finish"
+        confirmClass="btn btn-success"
+        confirmIcon={
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        }
+      >
+        <label className="flex items-center gap-3 cursor-pointer mb-2">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={finishDeleteRemote}
+            onChange={e => setFinishDeleteRemote(e.target.checked)}
+          />
+          <span className="text-sm">Also delete remote branch</span>
+        </label>
+      </ConfirmModal>
 
       {/* Delete confirmation modal */}
-      {showDeleteModal && (
-        <div className="modal modal-open">
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" className="modal-box bg-base-100 max-w-sm">
-            <h3 id="delete-modal-title" className="font-bold text-lg text-error mb-2">Delete Task?</h3>
-            <p className="text-sm text-base-content/80 mb-4">
-              This will permanently delete the task data. This action cannot be undone.
-            </p>
-            <div className="modal-action">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="btn btn-error"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-          <button type="button" className="modal-backdrop bg-black/60" onClick={() => setShowDeleteModal(false)} aria-label="Close dialog" tabIndex={-1} />
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Task?"
+        description="This will permanently delete the task data. This action cannot be undone."
+        confirmLabel="Delete"
+        confirmClass="btn btn-error"
+      />
     </>
   )
 
