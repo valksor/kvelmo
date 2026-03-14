@@ -61,6 +61,7 @@ type Recorder struct {
 	lineCount int
 	fileCount int
 	filePath  string
+	sanitizer *Sanitizer
 }
 
 // Config holds recorder configuration.
@@ -77,6 +78,8 @@ type Config struct {
 	Model string
 	// WorkDir is the working directory (optional).
 	WorkDir string
+	// Sanitizer masks secrets in recorded data before writing to disk.
+	Sanitizer *Sanitizer
 }
 
 // DefaultConfig returns default configuration.
@@ -136,6 +139,7 @@ func New(cfg Config) (*Recorder, error) {
 		model:     cfg.Model,
 		workDir:   cfg.WorkDir,
 		startedAt: time.Now(),
+		sanitizer: cfg.Sanitizer,
 	}
 
 	if err := r.openFile(); err != nil {
@@ -214,6 +218,10 @@ func (r *Recorder) Record(rec Record) error {
 		}
 	}
 
+	if r.sanitizer != nil {
+		rec.Event = json.RawMessage(r.sanitizer.Sanitize([]byte(rec.Event)))
+	}
+
 	data, err := json.Marshal(rec)
 	if err != nil {
 		return fmt.Errorf("marshal record: %w", err)
@@ -231,6 +239,7 @@ func (r *Recorder) Record(rec Record) error {
 }
 
 // RecordInbound records an inbound message (prompt to agent).
+// Sanitization is handled centrally by Record().
 func (r *Recorder) RecordInbound(prompt string) error {
 	//nolint:errchkjson // map[string]string cannot fail to marshal
 	event, _ := json.Marshal(map[string]string{"prompt": prompt})
@@ -245,6 +254,7 @@ func (r *Recorder) RecordInbound(prompt string) error {
 }
 
 // RecordOutbound records an outbound event (from agent).
+// Sanitization is handled centrally by Record().
 func (r *Recorder) RecordOutbound(eventType string, event any) error {
 	data, err := json.Marshal(event)
 	if err != nil {

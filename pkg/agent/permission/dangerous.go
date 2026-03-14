@@ -251,3 +251,27 @@ func matchCautionCommand(cmd string) (bool, string) {
 
 	return false, ""
 }
+
+// EnforceEnvironment applies environment-specific restrictions to danger levels.
+// In prod: Dangerous operations remain Dangerous with a production label, Caution operations are elevated to Dangerous.
+// In staging: Dangerous operations are labeled with a staging warning.
+// In dev: No additional restrictions.
+func EnforceEnvironment(env string, result Result) Result {
+	switch env {
+	case "prod":
+		switch result.Level {
+		case Safe:
+			// No restrictions for safe operations
+		case Dangerous:
+			return Result{Level: Dangerous, Reason: result.Reason + " (blocked in production)"}
+		case Caution:
+			return Result{Level: Dangerous, Reason: result.Reason + " (elevated in production)"}
+		}
+	case "staging":
+		if result.Level == Dangerous {
+			return Result{Level: Dangerous, Reason: result.Reason + " (dangerous in staging)"}
+		}
+	}
+
+	return result
+}
