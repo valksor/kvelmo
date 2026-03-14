@@ -226,7 +226,8 @@ func resolvePort(cmd *cobra.Command, explicit int) int {
 // portAvailable checks if a port is available for binding.
 func portAvailable(host string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", host, port)
-	ln, err := net.Listen("tcp", addr) //nolint:noctx // Quick port check, no context needed
+	var lc net.ListenConfig
+	ln, err := lc.Listen(context.Background(), "tcp", addr)
 	if err != nil {
 		return false
 	}
@@ -261,7 +262,7 @@ func findStaticDir(explicit string) string {
 
 // openBrowser opens the specified URL in the default browser.
 //
-//nolint:noctx // Fire-and-forget command, no context needed
+//nolint:noctx // exec.Command is intentional: the browser process must outlive the caller; CommandContext would kill it on cancel
 func openBrowser(url string) {
 	var cmd *exec.Cmd
 

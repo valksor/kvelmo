@@ -167,7 +167,7 @@ func findFreePort(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close() //nolint:errcheck // Best-effort close
+	defer listener.Close() //nolint:errcheck // port already read from addr; close failure is harmless
 
 	addr, ok := listener.Addr().(*net.TCPAddr)
 	if !ok {
