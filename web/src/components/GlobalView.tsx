@@ -5,12 +5,16 @@ import { FolderPicker } from './FolderPicker'
 import { ThemeToggle } from './ThemeToggle'
 import { ActiveTasksWidget } from './ActiveTasksWidget'
 import { MetricsWidget } from './MetricsWidget'
+import { StatsWidget } from './StatsWidget'
 import { Onboarding } from './Onboarding'
 import { name } from '../meta'
 
 // Lazy-loaded modal components
 const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })))
 const MemoryPanel = lazy(() => import('./MemoryPanel').then(m => ({ default: m.MemoryPanel })))
+const DiagnosePanel = lazy(() => import('./DiagnosePanel').then(m => ({ default: m.DiagnosePanel })))
+const RecordingsPanel = lazy(() => import('./RecordingsPanel').then(m => ({ default: m.RecordingsPanel })))
+const BackupPanel = lazy(() => import('./BackupPanel').then(m => ({ default: m.BackupPanel })))
 
 export function GlobalView() {
   const {
@@ -44,6 +48,9 @@ export function GlobalView() {
   const [showFolderPicker, setShowFolderPicker] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showMemory, setShowMemory] = useState(false)
+  const [showDiagnose, setShowDiagnose] = useState(false)
+  const [showRecordings, setShowRecordings] = useState(false)
+  const [showBackup, setShowBackup] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const docsData = useDocsURL()
 
@@ -117,6 +124,18 @@ export function GlobalView() {
             </span>
           )}
 
+          {/* Diagnose button */}
+          <button
+            onClick={() => setShowDiagnose(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="System Diagnostics"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </button>
+
           {/* Memory search button */}
           <button
             onClick={() => setShowMemory(true)}
@@ -126,6 +145,30 @@ export function GlobalView() {
           >
             <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </button>
+
+          {/* Recordings button */}
+          <button
+            onClick={() => setShowRecordings(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Recordings"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+            </svg>
+          </button>
+
+          {/* Backup button */}
+          <button
+            onClick={() => setShowBackup(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Backup"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
           </button>
 
@@ -200,10 +243,11 @@ export function GlobalView() {
       {/* Active Tasks Summary */}
       <ActiveTasksWidget />
 
-      {/* System Metrics */}
+      {/* System Metrics & Stats */}
       {connected && (
-        <div className="max-w-2xl mx-auto mt-4">
+        <div className="max-w-2xl mx-auto mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MetricsWidget />
+          <StatsWidget />
         </div>
       )}
 
@@ -367,6 +411,24 @@ export function GlobalView() {
           <MemoryPanel
             isOpen={showMemory}
             onClose={() => setShowMemory(false)}
+          />
+        )}
+        {showDiagnose && (
+          <DiagnosePanel
+            isOpen={showDiagnose}
+            onClose={() => setShowDiagnose(false)}
+          />
+        )}
+        {showRecordings && (
+          <RecordingsPanel
+            isOpen={showRecordings}
+            onClose={() => setShowRecordings(false)}
+          />
+        )}
+        {showBackup && (
+          <BackupPanel
+            isOpen={showBackup}
+            onClose={() => setShowBackup(false)}
           />
         )}
       </Suspense>
