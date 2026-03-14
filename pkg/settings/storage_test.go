@@ -147,7 +147,7 @@ func TestMerge_CustomAgents(t *testing.T) {
 }
 
 func TestMerge_FalseOverridesTrue(t *testing.T) {
-	// This test verifies the fix for CodeRabbit finding #5:
+	// This test verifies that
 	// project-level false should override global-level true for pointer bool fields.
 
 	dst := DefaultSettings()
@@ -463,12 +463,12 @@ func TestApplyEnvOverrides(t *testing.T) {
 			},
 		},
 		{
-			envVar: "KVELMO_WORKFLOW_CODERABBIT_MODE",
+			envVar: "KVELMO_WORKFLOW_EXTERNAL_REVIEW_MODE",
 			value:  "never",
 			check: func(t *testing.T, s *Settings) {
 				t.Helper()
-				if s.Workflow.CodeRabbit.Mode != CodeRabbitModeNever {
-					t.Errorf("Workflow.CodeRabbit.Mode = %q, want never", s.Workflow.CodeRabbit.Mode)
+				if s.Workflow.ExternalReview.Mode != ExternalReviewNever {
+					t.Errorf("Workflow.ExternalReview.Mode = %q, want never", s.Workflow.ExternalReview.Mode)
 				}
 			},
 		},

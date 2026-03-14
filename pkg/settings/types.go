@@ -11,6 +11,8 @@
 // Schema tags on struct fields drive automatic React form generation.
 package settings
 
+import "gopkg.in/yaml.v3"
+
 // Settings represents the complete configuration for kvelmo.
 // Project settings override global settings when both are present.
 type Settings struct {
@@ -132,25 +134,63 @@ type RecordingSettings struct {
 	Dir     string `yaml:"dir,omitempty" json:"dir,omitempty" schema:"label=Recording Directory;desc=Directory for recording files (default: ~/.valksor/kvelmo/recordings)"`
 }
 
-// CodeRabbitMode controls when the CodeRabbit CLI runs in the quality gate.
-type CodeRabbitMode string
+// ExternalReviewMode controls when the external review tool runs in the quality gate.
+type ExternalReviewMode string
 
 const (
-	CodeRabbitModeAsk    CodeRabbitMode = "ask"    // Prompt user before running (default)
-	CodeRabbitModeAlways CodeRabbitMode = "always" // Always run without prompting
-	CodeRabbitModeNever  CodeRabbitMode = "never"  // Skip CodeRabbit entirely
+	ExternalReviewAsk    ExternalReviewMode = "ask"    // Prompt user before running (default)
+	ExternalReviewAlways ExternalReviewMode = "always" // Always run without prompting
+	ExternalReviewNever  ExternalReviewMode = "never"  // Skip external review entirely
 )
 
-// CodeRabbitConfig configures CodeRabbit CLI integration in the quality gate.
-type CodeRabbitConfig struct {
-	Mode CodeRabbitMode `yaml:"mode,omitempty" json:"mode,omitempty" schema:"label=Mode;desc=When to run CodeRabbit CLI review;options=ask|always|never;default=ask"`
+// ExternalReviewConfig configures an external CLI review tool in the quality gate.
+type ExternalReviewConfig struct {
+	Mode    ExternalReviewMode `yaml:"mode,omitempty" json:"mode,omitempty" schema:"label=Mode;desc=When to run external review tool;options=ask|always|never;default=ask"`
+	Command string             `yaml:"command,omitempty" json:"command,omitempty" schema:"label=Command;desc=CLI command to run for review (must accept 'review' subcommand);default=coderabbit"`
 }
 
 // WorkflowSettings contains per-project workflow options.
 // These are intentionally project-scoped and not meaningful at global level.
 type WorkflowSettings struct {
-	UseWorktreeIsolation *bool            `yaml:"use_worktree_isolation,omitempty" json:"use_worktree_isolation,omitempty" schema:"label=Use Worktree Isolation;desc=Create an isolated git worktree for each task, enabling parallel work without conflicts;default=true"`
-	CodeRabbit           CodeRabbitConfig `yaml:"coderabbit,omitempty" json:"coderabbit,omitempty" schema:"label=CodeRabbit;desc=CodeRabbit CLI review integration"`
+	UseWorktreeIsolation *bool                `yaml:"use_worktree_isolation,omitempty" json:"use_worktree_isolation,omitempty" schema:"label=Use Worktree Isolation;desc=Create an isolated git worktree for each task, enabling parallel work without conflicts;default=true"`
+	ExternalReview       ExternalReviewConfig `yaml:"external_review,omitempty" json:"external_review,omitempty" schema:"label=External Review;desc=External CLI review tool integration"`
+}
+
+// UnmarshalYAML provides backward compatibility for the old "coderabbit" YAML key.
+func (w *WorkflowSettings) UnmarshalYAML(value *yaml.Node) error {
+	// Decode into a raw map to check for the legacy key.
+	var raw map[string]yaml.Node
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	// Handle legacy "coderabbit" key by mapping it to "external_review".
+	if legacy, ok := raw["coderabbit"]; ok {
+		if _, hasNew := raw["external_review"]; !hasNew {
+			raw["external_review"] = legacy
+		}
+		delete(raw, "coderabbit")
+	}
+
+	// Re-encode the cleaned map and decode into the struct.
+	type plain WorkflowSettings
+	var p plain
+
+	// Decode known fields manually.
+	if node, ok := raw["use_worktree_isolation"]; ok {
+		if err := node.Decode(&p.UseWorktreeIsolation); err != nil {
+			return err
+		}
+	}
+	if node, ok := raw["external_review"]; ok {
+		if err := node.Decode(&p.ExternalReview); err != nil {
+			return err
+		}
+	}
+
+	*w = WorkflowSettings(p)
+
+	return nil
 }
 
 // WatchdogSettings configures the memory leak watchdog.

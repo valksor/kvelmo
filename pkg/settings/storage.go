@@ -212,8 +212,11 @@ func Merge(dst, src *Settings) {
 	if src.Workflow.UseWorktreeIsolation != nil {
 		dst.Workflow.UseWorktreeIsolation = src.Workflow.UseWorktreeIsolation
 	}
-	if src.Workflow.CodeRabbit.Mode != "" {
-		dst.Workflow.CodeRabbit.Mode = src.Workflow.CodeRabbit.Mode
+	if src.Workflow.ExternalReview.Mode != "" {
+		dst.Workflow.ExternalReview.Mode = src.Workflow.ExternalReview.Mode
+	}
+	if src.Workflow.ExternalReview.Command != "" {
+		dst.Workflow.ExternalReview.Command = src.Workflow.ExternalReview.Command
 	}
 
 	// UI settings
@@ -558,20 +561,28 @@ func SetValue(s *Settings, path string, value any) error {
 
 		return errors.New("workflow.use_worktree_isolation must be a boolean")
 
-	case "workflow.coderabbit.mode":
+	case "workflow.external_review.mode":
 		if v, ok := value.(string); ok {
-			mode := CodeRabbitMode(v)
+			mode := ExternalReviewMode(v)
 			switch mode {
-			case CodeRabbitModeAsk, CodeRabbitModeAlways, CodeRabbitModeNever:
-				s.Workflow.CodeRabbit.Mode = mode
+			case ExternalReviewAsk, ExternalReviewAlways, ExternalReviewNever:
+				s.Workflow.ExternalReview.Mode = mode
 
 				return nil
 			default:
-				return errors.New("workflow.coderabbit.mode must be one of: ask, always, never")
+				return errors.New("workflow.external_review.mode must be one of: ask, always, never")
 			}
 		}
 
-		return errors.New("workflow.coderabbit.mode must be a string")
+		return errors.New("workflow.external_review.mode must be a string")
+	case "workflow.external_review.command":
+		if v, ok := value.(string); ok {
+			s.Workflow.ExternalReview.Command = v
+
+			return nil
+		}
+
+		return errors.New("workflow.external_review.command must be a string")
 
 	// UI
 	case "ui.onboarding_dismissed":
@@ -702,12 +713,18 @@ func GetValue(s *Settings, path string) (any, error) {
 	// Workflow
 	case "workflow.use_worktree_isolation":
 		return BoolValue(s.Workflow.UseWorktreeIsolation, true), nil
-	case "workflow.coderabbit.mode":
-		if s.Workflow.CodeRabbit.Mode == "" {
-			return string(CodeRabbitModeAsk), nil
+	case "workflow.external_review.mode":
+		if s.Workflow.ExternalReview.Mode == "" {
+			return string(ExternalReviewAsk), nil
 		}
 
-		return string(s.Workflow.CodeRabbit.Mode), nil
+		return string(s.Workflow.ExternalReview.Mode), nil
+	case "workflow.external_review.command":
+		if s.Workflow.ExternalReview.Command == "" {
+			return "coderabbit", nil
+		}
+
+		return s.Workflow.ExternalReview.Command, nil
 
 	// UI
 	case "ui.onboarding_dismissed":
@@ -777,7 +794,8 @@ var envOverrides = []struct {
 
 	// Workflow
 	{"WORKFLOW_USE_WORKTREE_ISOLATION", "workflow.use_worktree_isolation"},
-	{"WORKFLOW_CODERABBIT_MODE", "workflow.coderabbit.mode"},
+	{"WORKFLOW_EXTERNAL_REVIEW_MODE", "workflow.external_review.mode"},
+	{"WORKFLOW_EXTERNAL_REVIEW_COMMAND", "workflow.external_review.command"},
 }
 
 // applyEnvOverrides checks for KVELMO_* environment variables and applies them
@@ -811,8 +829,8 @@ func applyEnvOverrides(s *Settings) {
 				_ = SetValue(s, ov.path, n)
 			}
 
-		// Enum fields
-		case "workflow.coderabbit.mode":
+		// String fields (enum + freeform)
+		case "workflow.external_review.mode", "workflow.external_review.command":
 			_ = SetValue(s, ov.path, val)
 		}
 	}

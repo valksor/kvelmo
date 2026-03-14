@@ -69,8 +69,9 @@ func DefaultSettings() *Settings {
 		},
 		Workflow: WorkflowSettings{
 			UseWorktreeIsolation: boolPtr(true),
-			CodeRabbit: CodeRabbitConfig{
-				Mode: CodeRabbitModeAsk,
+			ExternalReview: ExternalReviewConfig{
+				Mode:    ExternalReviewAsk,
+				Command: "coderabbit",
 			},
 		},
 		CustomAgents: make(map[string]CustomAgent),
