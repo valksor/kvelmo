@@ -35,6 +35,13 @@ var screenshotsDeleteCmd = &cobra.Command{
 	RunE:  runScreenshotsDelete,
 }
 
+var screenshotsCaptureCmd = &cobra.Command{
+	Use:   "capture",
+	Short: "Capture a screenshot",
+	Long:  `Capture a screenshot from the browser or system.`,
+	RunE:  runScreenshotsCapture,
+}
+
 var screenshotsGetOutput string
 
 var screenshotsGetCmd = &cobra.Command{
@@ -47,9 +54,12 @@ var screenshotsGetCmd = &cobra.Command{
 
 func init() {
 	screenshotsGetCmd.Flags().StringVarP(&screenshotsGetOutput, "output", "o", "", "Save image to file path")
+	screenshotsCaptureCmd.Flags().String("source", "browser", "Screenshot source (browser or system)")
+	screenshotsCaptureCmd.Flags().String("step", "", "Label for this capture step")
 	ScreenshotsCmd.AddCommand(screenshotsListCmd)
 	ScreenshotsCmd.AddCommand(screenshotsDeleteCmd)
 	ScreenshotsCmd.AddCommand(screenshotsGetCmd)
+	ScreenshotsCmd.AddCommand(screenshotsCaptureCmd)
 }
 
 type Screenshot struct {
@@ -162,6 +172,56 @@ func runScreenshotsDelete(cmd *cobra.Command, args []string) error {
 	} else {
 		fmt.Printf("Failed to delete screenshot %s\n", id)
 	}
+
+	return nil
+}
+
+func runScreenshotsCapture(cmd *cobra.Command, _ []string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	wtPath := socket.WorktreeSocketPath(cwd)
+
+	if !socket.SocketExists(wtPath) {
+		return errors.New("no worktree socket running\nRun '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(wtPath, socket.WithTimeout(10*time.Second))
+	if err != nil {
+		return fmt.Errorf("connect to worktree socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	source, _ := cmd.Flags().GetString("source")
+	step, _ := cmd.Flags().GetString("step")
+
+	params := map[string]any{"source": source}
+	if step != "" {
+		params["step"] = step
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.Call(ctx, "screenshots.capture", params)
+	if err != nil {
+		return fmt.Errorf("screenshots.capture call: %w", err)
+	}
+
+	var result struct {
+		Screenshot Screenshot `json:"screenshot"`
+	}
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("parse result: %w", err)
+	}
+
+	s := result.Screenshot
+	fmt.Printf("Screenshot captured: %s\n", s.ID)
+	fmt.Printf("  File:     %s\n", s.Filename)
+	fmt.Printf("  Size:     %dx%d (%d bytes)\n", s.Width, s.Height, s.SizeBytes)
+	fmt.Printf("  Source:   %s\n", s.Source)
 
 	return nil
 }
