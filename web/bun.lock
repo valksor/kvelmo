@@ -42,7 +42,6 @@
         "eslint-plugin-react-hooks": "^7.0.1",
         "globals": "^17.4.0",
         "jsdom": "^28.1.0",
-        "postcss": "^8.5.8",
         "tailwindcss": "^4.2.1",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.57.0",
@@ -51,9 +50,6 @@
         "ws": "^8.19.0",
       },
     },
-  },
-  "overrides": {
-    "rollup": "npm:@rollup/wasm-node",
   },
   "packages": {
     "@acemir/cssom": ["@acemir/cssom@0.9.31", "", {}, "sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA=="],
