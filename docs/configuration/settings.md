@@ -91,6 +91,9 @@ storage:
 
 workflow:
   use_worktree_isolation: true  # Create isolated git worktree for each task
+  external_review:
+    mode: ask                   # When to run external review: ask | always | never
+    command: coderabbit         # CLI review tool command (default: coderabbit)
 
 watchdog:
   enabled: true            # Monitor for memory leaks
@@ -165,9 +168,11 @@ custom_agents:
 
 ### Workflow Settings
 
-| Key                               | Type | Default | Description                           |
-|-----------------------------------|------|---------|---------------------------------------|
-| `workflow.use_worktree_isolation` | bool | `true`  | Create isolated git worktree per task |
+| Key                                  | Type   | Default      | Description                            |
+|--------------------------------------|--------|--------------|----------------------------------------|
+| `workflow.use_worktree_isolation`    | bool   | `true`       | Create isolated git worktree per task  |
+| `workflow.external_review.mode`      | string | `ask`        | When to run external review: ask, always, never |
+| `workflow.external_review.command`   | string | `coderabbit` | CLI command for external review tool   |
 
 ### Watchdog Settings (Advanced)
 

@@ -373,11 +373,11 @@ func setupWorkDir(t *testing.T, token, owner, repo string) string {
 	}
 
 	// Write kvelmo.yaml with save_in_project=true to isolate state per test
-	// Also set coderabbit mode to "never" to avoid interactive prompts in quality gate
+	// Also set external review mode to "never" to avoid interactive prompts in quality gate
 	settingsContent := `storage:
   save_in_project: true
 workflow:
-  coderabbit:
+  external_review:
     mode: never
 `
 	if err := os.WriteFile(filepath.Join(valksorDir, "kvelmo.yaml"), []byte(settingsContent), 0o644); err != nil {

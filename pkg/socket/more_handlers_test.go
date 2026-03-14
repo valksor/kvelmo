@@ -388,7 +388,7 @@ func TestWorktreeHandleSubmit_WrongState(t *testing.T) {
 	w := newTestWorktreeSocket(t)
 	setWorkUnitInState(t, w, conductor.StateLoaded)
 
-	// Pre-set quality gate so Submit doesn't run coderabbit synchronously.
+	// Pre-set quality gate so Submit doesn't run external review synchronously.
 	passed := true
 	wu := w.conductor.WorkUnit()
 	wu.QualityGatePassed = &passed
