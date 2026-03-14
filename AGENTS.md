@@ -10,6 +10,21 @@ kvelmo is a socket-first task lifecycle orchestration system for AI-assisted dev
 
 **Note:** The `prototype/` directory contains a fully working prototype implementation of kvelmo. This code is **read-only reference material** - not in active development. Use it to understand patterns and approaches when needed.
 
+## What kvelmo Does (Not What It Is)
+
+kvelmo is a **development orchestrator** - it doesn't write code itself, it manages the lifecycle of AI agents writing code in OTHER projects.
+
+**The flow:**
+1. User loads a task (from GitHub issue, file, Linear, etc.)
+2. kvelmo spawns an AI agent (Claude, Codex, custom) in a worktree
+3. Agent plans → implements → simplifies → optimizes the code
+4. kvelmo manages checkpoints, reviews, and PR submission
+
+**When working on kvelmo itself:**
+- You're modifying the orchestrator, not a target project
+- Changes should affect how kvelmo manages workflows
+- Don't confuse kvelmo's internal state with user project state
+
 ## Build & Development Commands
 
 ```bash
@@ -44,39 +59,73 @@ make web-build          # Production build → web/dist/
 
 ## Architecture
 
-### Socket Layer (`pkg/socket/`)
-- **GlobalSocket** (`global.go`): Manages project registry and worker pool. Single instance at `~/.valksor/kvelmo/global.sock`
-- **WorktreeSocket** (`worktree.go`): Per-project state machine and git operations. Created at `<project>/.kvelmo/worktree.sock`
-- **Protocol**: JSON-RPC 2.0 over Unix domain sockets (`protocol.go`)
+### Socket Paths
+- Global: `~/.valksor/kvelmo/global.sock` (one per machine)
+- Worktree: `<project>/.kvelmo/worktree.sock` (one per project)
+- Protocol: JSON-RPC 2.0
 
-### State Machine (`pkg/conductor/`)
-Task lifecycle with 11 states defined in `state.go`:
-- Core flow: `none` → `loaded` → `planning` → `planned` → `implementing` → `implemented` → `reviewing` → `submitted`
-- Auxiliary states: `optimizing`, `waiting`, `paused`, `failed`
-- Transition guards ensure prerequisites (e.g., must have specifications before implementing)
-- Undo/redo support via git checkpoints
+### Task Lifecycle (`pkg/conductor/`)
 
-### Agent System (`pkg/agent/`)
-- **Interface**: `Agent` interface in `agent.go` with WebSocket (primary) and CLI (fallback) modes
-- **Implementations**: `claude/`, `codex/`, `custom/` subdirectories
-- **Events**: Streaming events (tokens, tool calls, permissions, completion)
-- **Permissions**: `DefaultPermissionHandler` auto-approves read-only tools
+**The workflow kvelmo orchestrates:**
 
-### Worker Pool (`pkg/worker/`)
-- Manages concurrent AI agent executions
-- Job queue with worker assignment
-- Real-time event streaming via WebSocket
+```
+[External Task Source]
+        ↓
+    LOAD (start)
+        ↓
+    PLAN (plan) → Agent writes specification
+        ↓
+    IMPLEMENT (implement) → Agent writes code
+        ↓
+    SIMPLIFY (simplify) → Optional cleanup pass
+        ↓
+    OPTIMIZE (optimize) → Quality improvements
+        ↓
+    REVIEW (review) → Human review checkpoint
+        ↓
+    SUBMIT (submit) → Create PR
+        ↓
+    FINISH (finish) → Cleanup after merge
+```
 
-### Providers (`pkg/provider/`)
-Task sources: `file.go` (local markdown), `github.go`, `gitlab.go`, `wrike.go`
-Pattern: `provider:reference` (e.g., `github:owner/repo#123`)
+States: `none`, `loaded`, `planning`, `planned`, `implementing`, `implemented`, `simplifying`, `optimizing`, `reviewing`, `submitted`, `waiting`, `paused`, `failed`
+
+Each transition creates a git checkpoint. `undo`/`redo` navigate between checkpoints.
+
+### Package Index (`pkg/`)
+
+| Package | Purpose |
+|---------|---------|
+| `socket/` | Unix domain socket servers (global + per-worktree) |
+| `conductor/` | Task state machine and lifecycle transitions |
+| `agent/` | AI agent interface (claude, codex, custom) |
+| `worker/` | Concurrent job execution pool |
+| `provider/` | Task sources (github, gitlab, linear, wrike, file) |
+| `storage/` | Persistence for tasks, plans, reviews, chat |
+| `git/` | Repository operations and checkpoint management |
+| `browser/` | Playwright automation for interactive testing |
+| `web/` | HTTP server + WebSocket proxy to sockets |
+| `memory/` | Vector store for semantic context search |
+| `settings/` | Configuration management |
+| `paths/` | Centralized path resolution |
+| `metrics/` | Observability (counters, latency) |
+| `security/` | Security scanning |
+| `screenshot/` | Screenshot capture and storage |
 
 ### Web Frontend (`web/`)
+
 - React 19 + TypeScript + Vite 7
-- State: Zustand stores in `src/stores/` (global, project, chat, screenshot, theme, layout)
 - UI: Tailwind CSS 4 + DaisyUI 5
 - Views: `GlobalView` (project picker) ↔ `ProjectView` (active project dashboard)
-- WebSocket connection to backend for real-time updates
+
+**Stores (Zustand):**
+- `globalStore` - Projects, workers, agent status across all worktrees
+- `projectStore` - Active worktree state, task lifecycle, file changes
+- `chatStore` - Message history, streaming, subagent status
+- `browserStore` - Playwright session state
+- `screenshotStore` - Screenshot selection and attachments
+- `themeStore` - Light/dark mode
+- `layoutStore` - Panels, widgets, tabs (13 tab types)
 
 ## Key Patterns
 
@@ -92,14 +141,47 @@ Go: Return errors, wrap with context (`fmt.Errorf("action: %w", err)`)
 - Table-driven tests using `testing.T`
 - Benchmark tests in `pkg/socket/bench_test.go`
 - Frontend: Add `?demo` URL param for UI testing without backend
+- **Never accept test failures.** If a test fails, fix it. No exceptions. Never rationalize failures as "pre-existing" or "not my problem."
 
-## CLI Command Structure
+### Quality Gate Rules
 
-Commands in `cmd/kvelmo/commands/`:
-- `serve.go`: Main entry point, starts global socket + web server (default port 6337)
-- Workflow: `start`, `plan`, `implement`, `optimize`, `review`, `submit`
-- Navigation: `undo`, `redo`, `status`
-- Management: `config`, `workers`, `projects`, `completion`
+When running `make quality`, `make test`, `make lint`, or `make ci`:
+- **Fix ALL errors and failures in the output, not just ones you introduced.** Pre-existing failures are your responsibility too.
+- Do not skip, ignore, or dismiss errors you didn't cause. The codebase must be clean after your work.
+- If `make quality` reports 10 lint errors and you caused 2, fix all 10.
+- If `make test` has 3 failing tests and you wrote 1, fix all 3.
+- Run the quality/test command again after fixing to confirm zero errors remain.
+
+## CLI Commands
+
+Commands in `cmd/kvelmo/commands/`. Entry point: `serve` (global socket + web server, port 6337).
+
+**Workflow progression:**
+- `start` - Load task and initialize worktree
+- `plan` - Have agent write specification
+- `implement` - Have agent write code
+- `simplify` - Optional code cleanup pass
+- `optimize` - Quality improvements
+- `review` - Enter human review mode
+- `submit` - Create pull request
+- `finish` - Cleanup after PR merge
+
+**Workflow control:**
+- `undo`/`redo` - Navigate checkpoints
+- `status` - Show current state
+- `watch` - Stream progress
+- `stop`/`abort`/`reset` - Interrupt operations
+
+**Context & debugging:**
+- `chat` - Interactive agent conversation
+- `checkpoints` - List/manage git checkpoints
+- `memory` - View/manage context store
+- `logs` - View operation logs
+
+**Management:**
+- `config` - Configuration
+- `workers` - Worker pool
+- `projects` - Project registry
 
 ## Code Style
 
