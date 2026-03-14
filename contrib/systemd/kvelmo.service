@@ -1,0 +1,26 @@
+[Unit]
+Description=kvelmo task lifecycle orchestrator
+Documentation=https://github.com/valksor/kvelmo
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kvelmo serve --log-format json
+Restart=on-failure
+RestartSec=5
+User=kvelmo
+Group=kvelmo
+Environment=KVELMO_ENVIRONMENT=prod
+WorkingDirectory=/home/kvelmo
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kvelmo
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/kvelmo/.valksor
+
+[Install]
+WantedBy=multi-user.target

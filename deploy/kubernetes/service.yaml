@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kvelmo
+  labels:
+    app: kvelmo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6337
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: kvelmo

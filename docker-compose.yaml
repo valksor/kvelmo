@@ -1,0 +1,20 @@
+services:
+  kvelmo:
+    build: .
+    command: ["serve", "--port", "6337", "--log-format", "json"]
+    ports:
+      - "6337:6337"
+    volumes:
+      - kvelmo-data:/home/kvelmo/.valksor/kvelmo
+    environment:
+      - KVELMO_ENVIRONMENT=dev
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:6337/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  kvelmo-data:
