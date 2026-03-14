@@ -10,9 +10,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'zustand'],
-          diff: ['react-diff-viewer-continued'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('/react/') || id.includes('zustand')) {
+              return 'vendor'
+            }
+            if (id.includes('react-diff-viewer-continued')) {
+              return 'diff'
+            }
+          }
         }
       }
     }
