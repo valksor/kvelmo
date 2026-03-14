@@ -1,16 +1,20 @@
 # CLI Power User Gap Analysis
 
-Imagine you are a **CLI power user**—a terminal-first developer who lives in tmux, has hundreds of shell aliases, and judges tools by their Unix philosophy adherence. You've been using AI assistants but find most interfaces clunky:
+Imagine — you are a CLI power user. You live in tmux, have hundreds of shell aliases, and judge tools by their Unix philosophy adherence. You've been using AI assistants but find most interfaces clunky. You have:
 
-- Web UIs that break your flow and require mouse clicks
-- Tools that don't compose with pipes and standard streams
-- No way to script complex workflows without writing plugins
-- Configuration scattered across multiple files and formats
-- Commands that are verbose when they should be terse
-- No tab completion or shell integration worth using
-- Tools that assume you want hand-holding instead of power
+- **Flow-breaking web UIs** — that require mouse clicks and context switches away from your terminal
+- **Non-composable tools** — that don't work with pipes, standard streams, or shell scripting
+- **No scriptable automation** — can't orchestrate complex workflows without writing plugins
+- **Scattered configuration** — across multiple files and formats with no single source of truth
+- **Verbose commands** — when they should be terse; too many flags for common operations
+- **No shell integration** — no tab completion, no Fish/Zsh support worth using
+- **Hand-holding UIs** — that assume you want guidance instead of power
 
-You want **kvelmo** to be a proper Unix citizen—composable, scriptable, keyboard-driven, and respectful of your terminal environment.
+Now you find kvelmo, a tool that promises socket-first IPC, a CLI with 50+ commands, JSON-RPC protocol, and a web UI that's optional — not mandatory.
+
+You are excited. You want to use it. **Can you?**
+
+Critically — can you use kvelmo to achieve these goals:
 
 ---
 
@@ -106,19 +110,28 @@ This command is part of a family of 8 persona-specific gap analyses:
 
 All personas share these 10 core systems. When recommending features, these must not be removed, narrowed, or domain-specific without cross-persona review:
 
-1. **Socket layer** (global + worktree sockets)
-2. **State machine** (11 states, guards, transitions)
-3. **Agent interface** (WebSocket + CLI modes)
-4. **Worker pool** (job queue, event streaming)
-5. **Providers** (GitHub, GitLab, Wrike, file)
-6. **Storage** (tasks, chats, plans, reviews)
-7. **Git integration** (checkpoints, undo/redo)
-8. **Web UI** (real-time updates, stores)
-9. **CLI commands** (50+ commands)
-10. **Memory system** (embeddings, semantic search)
+1. **Socket layer** (`pkg/socket/` — global + worktree sockets)
+2. **State machine** (`pkg/conductor/` — lifecycle states, guards, transitions)
+3. **Agent interface** (`pkg/agent/` — WebSocket + CLI modes)
+4. **Worker pool** (`pkg/worker/` — job queue, event streaming)
+5. **Providers** (`pkg/provider/` — GitHub, GitLab, Wrike, Linear, file)
+6. **Storage** (`pkg/storage/` — tasks, chats, plans, reviews)
+7. **Git integration** (`pkg/git/` — checkpoints, undo/redo)
+8. **Web UI** (`web/` — React 19, stores, real-time updates)
+9. **CLI commands** (`cmd/kvelmo/commands/`)
+10. **Memory system** (`pkg/memory/` — embeddings, semantic search)
 
 ### Critical Rules
 
 1. **Extend, don't replace**: New features add alongside existing ones. Never remove capabilities.
 2. **Domain-agnostic core**: Features benefiting one persona should work for all unless explicitly domain-specific.
 3. **Check the siblings**: Before recommending a feature, verify it doesn't break other personas' workflows.
+4. **Full-stack implementation** — every recommended feature MUST be wired end-to-end. For each new feature, specify:
+   - **Go package** (`pkg/<feature>/`) + handler wiring
+   - **Socket RPC method** registered in socket server
+   - **Web UI store** update in `web/src/stores/`
+   - **Web UI component** (widget, panel, or page)
+   - **Route + navigation** wiring in web frontend
+   - **CLI command** in `cmd/kvelmo/commands/` (if user-facing)
+   - A feature without both CLI and web UI is not complete (per CLAUDE.md parity rule). If a feature is backend-only by nature, explicitly note why.
+5. **Name by function, not domain** — packages, RPC methods, CLI commands, and frontend components must be named for what they DO, not which persona inspired them. Litmus test: "Would a user from a DIFFERENT persona find this name sensible?" Domain-specific terminology belongs in help text and documentation, NOT in code identifiers.
