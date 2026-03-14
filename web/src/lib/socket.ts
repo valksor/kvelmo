@@ -115,8 +115,14 @@ export class SocketClient {
     })
   }
 
-  subscribe(handler: (data: unknown) => void) {
+  subscribe(handler: (data: unknown) => void): () => void {
     this.onMessage = handler
+    // Return unsubscribe function
+    return () => {
+      if (this.onMessage === handler) {
+        this.onMessage = undefined
+      }
+    }
   }
 
   close() {
