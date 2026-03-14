@@ -125,7 +125,7 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 			if baseBranchErr != nil {
 				slog.Debug("skipping memory indexing - cannot detect base branch", "error", baseBranchErr)
 			} else if indexer != nil && wuSnapshot != nil {
-				//nolint:contextcheck,gosec // Intentionally uses detached context for background indexing
+				//nolint:contextcheck,gosec // Intentionally uses detached context for background indexing; G118 false positive - background goroutine requires independent context
 				go func(wu *WorkUnit, idx *memory.Indexer, event Event, base string) {
 					asyncCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 					defer cancel()
