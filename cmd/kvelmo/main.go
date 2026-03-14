@@ -129,6 +129,12 @@ func init() {
 	// Quality gate controls
 	rootCmd.AddCommand(commands.QualityCmd)
 
+	// Security scanning
+	rootCmd.AddCommand(commands.SecurityCmd)
+
+	// Task queue management
+	rootCmd.AddCommand(commands.QueueCmd)
+
 	// Prompt (PS1 integration)
 	rootCmd.AddCommand(commands.PromptCmd)
 
