@@ -416,6 +416,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_AGENT_DEFAULT",
 			value:  "codex",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if s.Agent.Default != "codex" {
 					t.Errorf("Agent.Default = %q, want codex", s.Agent.Default)
 				}
@@ -425,6 +426,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_WORKERS_MAX",
 			value:  "7",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if s.Workers.Max != 7 {
 					t.Errorf("Workers.Max = %d, want 7", s.Workers.Max)
 				}
@@ -434,6 +436,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_GIT_AUTO_COMMIT",
 			value:  "false",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if BoolValue(s.Git.AutoCommit, true) {
 					t.Error("Git.AutoCommit should be false")
 				}
@@ -443,6 +446,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_GIT_BASE_BRANCH",
 			value:  "develop",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if s.Git.BaseBranch != "develop" {
 					t.Errorf("Git.BaseBranch = %q, want develop", s.Git.BaseBranch)
 				}
@@ -452,6 +456,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_PROVIDERS_DEFAULT",
 			value:  "gitlab",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if s.Providers.Default != "gitlab" {
 					t.Errorf("Providers.Default = %q, want gitlab", s.Providers.Default)
 				}
@@ -461,6 +466,7 @@ func TestApplyEnvOverrides(t *testing.T) {
 			envVar: "KVELMO_WORKFLOW_CODERABBIT_MODE",
 			value:  "never",
 			check: func(t *testing.T, s *Settings) {
+				t.Helper()
 				if s.Workflow.CodeRabbit.Mode != CodeRabbitModeNever {
 					t.Errorf("Workflow.CodeRabbit.Mode = %q, want never", s.Workflow.CodeRabbit.Mode)
 				}

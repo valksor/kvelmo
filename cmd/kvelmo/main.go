@@ -60,6 +60,7 @@ var genManPagesCmd = &cobra.Command{
 			return fmt.Errorf("generate man pages: %w", err)
 		}
 		fmt.Printf("Man pages generated in %s/\n", dir)
+
 		return nil
 	},
 }
