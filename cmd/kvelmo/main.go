@@ -129,6 +129,10 @@ func init() {
 	// Quality gate controls
 	rootCmd.AddCommand(commands.QualityCmd)
 
+	// Approval & review gates
+	rootCmd.AddCommand(commands.ApproveCmd)
+	rootCmd.AddCommand(commands.ChecklistCmd)
+
 	// Security scanning
 	rootCmd.AddCommand(commands.SecurityCmd)
 
@@ -141,6 +145,39 @@ func init() {
 	// Backup and restore
 	rootCmd.AddCommand(commands.BackupCmd)
 	rootCmd.AddCommand(commands.RestoreCmd)
+
+	// Observability
+	rootCmd.AddCommand(commands.ActivityCmd)
+
+	// Notifications
+	rootCmd.AddCommand(commands.NotifyCmd)
+
+	// Workflow policy
+	rootCmd.AddCommand(commands.PolicyCmd)
+
+	// Task tagging
+	rootCmd.AddCommand(commands.TagCmd)
+
+	// Data export
+	rootCmd.AddCommand(commands.ExportCmd)
+
+	// Template catalog
+	rootCmd.AddCommand(commands.CatalogCmd)
+
+	// Audit log
+	rootCmd.AddCommand(commands.AuditCmd)
+
+	// Access token management
+	rootCmd.AddCommand(commands.AccessCmd)
+
+	// CI pipeline status
+	rootCmd.AddCommand(commands.CICmd)
+
+	// Interactive tutorial
+	rootCmd.AddCommand(commands.TutorialCmd)
+
+	// Batch operations across projects
+	rootCmd.AddCommand(commands.BatchCmd)
 
 	// Hidden utilities
 	rootCmd.AddCommand(genManPagesCmd)

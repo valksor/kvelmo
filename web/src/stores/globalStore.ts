@@ -125,6 +125,7 @@ interface GlobalState {
 
   // Tasks
   loadActiveTasks: () => Promise<void>
+  batchAction: (action: string, stateFilter?: string) => Promise<{ total: number; succeeded: number }>
 
   // Memory
   searchMemory: (query: string, limit?: number) => Promise<MemoryResult[]>
@@ -477,6 +478,24 @@ export const useGlobalStore = create<GlobalState>()(
         } catch (err) {
           console.warn('Failed to load active tasks:', err)
         }
+      },
+
+      batchAction: async (action: string, stateFilter?: string) => {
+        const client = get().client
+        if (!client) return { total: 0, succeeded: 0 }
+
+        const params: Record<string, unknown> = { action }
+        if (stateFilter) {
+          params.filter = { state: stateFilter }
+        }
+
+        const result = await client.call<{ total: number; results: Array<{ success: boolean }> }>('tasks.batch', params)
+        const succeeded = result.results?.filter(r => r.success).length ?? 0
+
+        // Refresh task list after batch action
+        await get().loadActiveTasks()
+
+        return { total: result.total, succeeded }
       },
 
       searchMemory: async (query: string, limit: number = 10): Promise<MemoryResult[]> => {

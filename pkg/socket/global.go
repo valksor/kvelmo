@@ -30,6 +30,9 @@ type WorktreeInfo struct {
 	SocketPath string    `json:"socket_path,omitempty"`
 	State      string    `json:"state"`
 	LastSeen   time.Time `json:"last_seen,omitempty"`
+	Healthy    *bool     `json:"healthy,omitempty"`
+	LastPing   time.Time `json:"last_ping,omitempty"`
+	failCount  int       // consecutive ping failures (not serialized)
 }
 
 // ProjectListResult is the response for projects.list.
@@ -201,6 +204,7 @@ func (g *GlobalSocket) registerHandlers() {
 	// System info
 	g.server.Handle("system.docsURL", g.handleDocsURL)
 	g.server.Handle("system.diagnose", g.handleDiagnose)
+	g.server.Handle("system.health", g.handleSystemHealth)
 
 	// Project management
 	g.server.Handle("projects.list", g.handleListProjects)
@@ -216,6 +220,10 @@ func (g *GlobalSocket) registerHandlers() {
 
 	// Metrics
 	g.server.Handle("metrics", g.handleMetrics)
+	g.server.Handle("metrics.history", g.handleMetricsHistory)
+
+	// Activity log
+	g.server.Handle("activity.query", g.handleActivityQuery)
 
 	// Job management
 	g.server.Handle("jobs.submit", g.handleSubmitJob)
@@ -279,6 +287,7 @@ func (g *GlobalSocket) registerHandlers() {
 
 	// Configuration validation
 	g.server.Handle("config.validate", g.handleConfigValidate)
+	g.server.Handle("config.check", g.handleConfigCheck)
 
 	// Security scanning
 	g.server.Handle("security.scan", g.handleSecurityScan)
@@ -290,6 +299,20 @@ func (g *GlobalSocket) registerHandlers() {
 	// Backup
 	g.server.Handle("backup.create", g.handleBackupCreate)
 	g.server.Handle("backup.list", g.handleBackupList)
+
+	// Notifications
+	g.server.Handle("notify.test", g.handleNotifyTest)
+
+	// Export
+	g.server.Handle("export", g.handleExport)
+
+	// Catalog
+	g.server.Handle("catalog.list", g.handleCatalogList)
+	g.server.Handle("catalog.get", g.handleCatalogGet)
+	g.server.Handle("catalog.import", g.handleCatalogImport)
+
+	// Batch operations across worktrees
+	g.server.Handle("tasks.batch", g.handleBatch)
 
 	// Worktree management (for secondary instances)
 	g.server.Handle("worktrees.create", g.handleWorktreesCreate)
@@ -2065,6 +2088,8 @@ func (g *GlobalSocket) handleBrowserPDF(ctx context.Context, req *Request) (*Res
 // --- Lifecycle ---
 
 func (g *GlobalSocket) Start(ctx context.Context) error {
+	go g.StartHealthChecks(ctx)
+
 	return g.server.Start(ctx)
 }
 
