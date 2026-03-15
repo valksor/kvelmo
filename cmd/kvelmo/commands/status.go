@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -16,10 +17,12 @@ var (
 	statusTimeout time.Duration
 	statusVerbose bool
 	statusJSON    bool
+	statusAll     bool
 )
 
 var StatusCmd = &cobra.Command{
-	Use:   "status",
+	Use:     "status",
+	Aliases: []string{"st"},
 	Short: "Show current task state",
 	Long:  "Connect to the worktree socket and display the current task state.",
 	RunE:  runStatus,
@@ -29,9 +32,14 @@ func init() {
 	StatusCmd.Flags().DurationVarP(&statusTimeout, "timeout", "t", 5*time.Second, "Connection timeout")
 	StatusCmd.Flags().BoolVarP(&statusVerbose, "verbose", "v", false, "Show socket paths")
 	StatusCmd.Flags().BoolVar(&statusJSON, "json", false, "Output raw JSON response")
+	StatusCmd.Flags().BoolVarP(&statusAll, "all", "a", false, "Show status of all active projects")
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
+	if statusAll {
+		return showAllStatus()
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -108,6 +116,88 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if result.PendingPromptID != "" {
 		fmt.Printf("\n! Quality gate waiting for your input.\n")
 		fmt.Printf("  Run: kvelmo quality respond --prompt-id %s [--yes|--no]\n", result.PendingPromptID)
+	}
+
+	return nil
+}
+
+func showAllStatus() error {
+	globalPath := socket.GlobalSocketPath()
+
+	if !socket.SocketExists(globalPath) {
+		return errors.New("global socket not running\nRun '" + meta.Name + " serve' or '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(globalPath, socket.WithTimeout(statusTimeout))
+	if err != nil {
+		return fmt.Errorf("connect to global socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), statusTimeout)
+	defer cancel()
+
+	resp, err := client.Call(ctx, "tasks.list", nil)
+	if err != nil {
+		return fmt.Errorf("tasks.list: %w", err)
+	}
+
+	// --json: output raw JSON
+	if statusJSON {
+		var pretty interface{}
+		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
+			fmt.Println(string(resp.Result))
+			return nil
+		}
+		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
+		if jsonErr != nil {
+			fmt.Println(string(resp.Result))
+			return nil
+		}
+		fmt.Println(string(out))
+		return nil
+	}
+
+	var result socket.TasksListResult
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("parse tasks list: %w", err)
+	}
+
+	// Filter to only active tasks (state != "none") unless --verbose
+	active := make([]socket.TaskListSummary, 0, len(result.Tasks))
+	for _, t := range result.Tasks {
+		if statusVerbose || (t.State != "" && t.State != "none") {
+			active = append(active, t)
+		}
+	}
+
+	if len(active) == 0 {
+		fmt.Println("No active tasks across projects")
+		return nil
+	}
+
+	fmt.Printf("%-40s  %-14s  %s\n", "PROJECT", "STATE", "TASK")
+	fmt.Printf("%-40s  %-14s  %s\n", "----------------------------------------", "--------------", "----")
+	for _, t := range active {
+		taskDisplay := t.TaskTitle
+		if taskDisplay == "" {
+			taskDisplay = t.TaskID
+		}
+		if taskDisplay == "" {
+			taskDisplay = "\u2014"
+		}
+
+		source := ""
+		if t.Source != "" {
+			source = " (" + t.Source + ")"
+		}
+
+		path := t.Path
+		if len(path) > 40 {
+			path = "..." + path[len(path)-37:]
+		}
+
+		fmt.Printf("%-40s  %-14s  %s%s\n", path, t.State, taskDisplay, source)
 	}
 
 	return nil
