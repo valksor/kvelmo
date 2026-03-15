@@ -355,6 +355,29 @@ func TestDiffFilesWithStatus(t *testing.T) {
 	}
 }
 
+func TestValidateCommitMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		message string
+		pattern string
+		wantErr bool
+	}{
+		{"empty pattern allows any", "anything goes", "", false},
+		{"matching pattern", "feat(auth): add login", `^(feat|fix)\(.*\):`, false},
+		{"non-matching pattern", "added login", `^(feat|fix)\(.*\):`, true},
+		{"multiline checks subject only", "feat(auth): add login\n\ndetails here", `^(feat|fix)\(.*\):`, false},
+		{"invalid regex", "anything", `[invalid`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateCommitMessage(tt.message, tt.pattern)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateCommitMessage() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestDiffFiles(t *testing.T) {
 	ctx := context.Background()
 	dir, cleanup := setupTestRepo(t)

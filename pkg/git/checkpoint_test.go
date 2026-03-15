@@ -57,7 +57,7 @@ func TestCheckpointManager_Create_NoChanges(t *testing.T) {
 	m := NewCheckpointManager(repo)
 
 	// No changes — Create should still succeed (uses current commit)
-	cp, err := m.Create(ctx, "loaded", "initial checkpoint")
+	cp, err := m.Create(ctx, "loaded", "initial checkpoint", "")
 	if err != nil {
 		t.Fatalf("Create() with no changes error = %v", err)
 	}
@@ -94,7 +94,7 @@ func TestCheckpointManager_Create_WithChanges(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	cp, err := m.Create(ctx, "implementing", "add new.txt")
+	cp, err := m.Create(ctx, "implementing", "add new.txt", "")
 	if err != nil {
 		t.Fatalf("Create() with changes error = %v", err)
 	}
@@ -118,14 +118,14 @@ func TestCheckpointManager_ListAndCurrent(t *testing.T) {
 	m := NewCheckpointManager(repo)
 
 	// Create two checkpoints
-	cp1, err := m.Create(ctx, "loaded", "checkpoint 1")
+	cp1, err := m.Create(ctx, "loaded", "checkpoint 1", "")
 	if err != nil {
 		t.Fatalf("Create(checkpoint 1) error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "file2.txt"), []byte("x"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	cp2, err := m.Create(ctx, "implementing", "checkpoint 2")
+	cp2, err := m.Create(ctx, "implementing", "checkpoint 2", "")
 	if err != nil {
 		t.Fatalf("Create(checkpoint 2) error = %v", err)
 	}
@@ -158,7 +158,7 @@ func TestCheckpointManager_Undo(t *testing.T) {
 	m := NewCheckpointManager(repo)
 
 	// Create first checkpoint
-	cp1, err := m.Create(ctx, "loaded", "first")
+	cp1, err := m.Create(ctx, "loaded", "first", "")
 	if err != nil {
 		t.Fatalf("Create(first): %v", err)
 	}
@@ -167,7 +167,7 @@ func TestCheckpointManager_Undo(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "second.txt"), []byte("y"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	_, err = m.Create(ctx, "implementing", "second")
+	_, err = m.Create(ctx, "implementing", "second", "")
 	if err != nil {
 		t.Fatalf("Create(second): %v", err)
 	}
@@ -203,7 +203,7 @@ func TestCheckpointManager_Undo_NothingToUndo(t *testing.T) {
 	m := NewCheckpointManager(repo)
 
 	// Create only one checkpoint — can't undo
-	_, _ = m.Create(ctx, "loaded", "first")
+	_, _ = m.Create(ctx, "loaded", "first", "")
 	_, err = m.Undo(ctx)
 	if err == nil {
 		t.Error("Undo() with single checkpoint should return error")
@@ -222,14 +222,14 @@ func TestCheckpointManager_Redo(t *testing.T) {
 	m := NewCheckpointManager(repo)
 
 	// Create two checkpoints
-	_, err = m.Create(ctx, "loaded", "first")
+	_, err = m.Create(ctx, "loaded", "first", "")
 	if err != nil {
 		t.Fatalf("Create(first) error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "redo.txt"), []byte("r"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	cp2, err := m.Create(ctx, "implementing", "second")
+	cp2, err := m.Create(ctx, "implementing", "second", "")
 	if err != nil {
 		t.Fatalf("Create(second) error = %v", err)
 	}
@@ -264,7 +264,7 @@ func TestCheckpointManager_Redo_NothingToRedo(t *testing.T) {
 	}
 	m := NewCheckpointManager(repo)
 
-	_, _ = m.Create(ctx, "loaded", "first")
+	_, _ = m.Create(ctx, "loaded", "first", "")
 
 	_, err = m.Redo(ctx)
 	if err == nil {
@@ -283,14 +283,14 @@ func TestCheckpointManager_GoTo(t *testing.T) {
 	}
 	m := NewCheckpointManager(repo)
 
-	cp1, err := m.Create(ctx, "loaded", "first")
+	cp1, err := m.Create(ctx, "loaded", "first", "")
 	if err != nil {
 		t.Fatalf("Create(first) error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "goto.txt"), []byte("g"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	_, _ = m.Create(ctx, "implementing", "second")
+	_, _ = m.Create(ctx, "implementing", "second", "")
 
 	// GoTo the first checkpoint
 	result, err := m.GoTo(ctx, cp1.ID)
@@ -333,11 +333,11 @@ func TestCheckpointManager_Create_TruncatesHistoryOnUndo(t *testing.T) {
 	}
 	m := NewCheckpointManager(repo)
 
-	_, _ = m.Create(ctx, "loaded", "first")
+	_, _ = m.Create(ctx, "loaded", "first", "")
 	if err := os.WriteFile(filepath.Join(dir, "b.txt"), []byte("b"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	_, _ = m.Create(ctx, "implementing", "second")
+	_, _ = m.Create(ctx, "implementing", "second", "")
 
 	// Undo to first
 	_, _ = m.Undo(ctx)
@@ -346,7 +346,7 @@ func TestCheckpointManager_Create_TruncatesHistoryOnUndo(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "c.txt"), []byte("c"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	newCp, err := m.Create(ctx, "implementing", "new second")
+	newCp, err := m.Create(ctx, "implementing", "new second", "")
 	if err != nil {
 		t.Fatalf("Create after Undo: %v", err)
 	}

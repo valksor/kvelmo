@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -151,11 +152,42 @@ func (r *Repository) StageAll(ctx context.Context) error {
 	return err
 }
 
+// ValidateCommitMessage checks if a commit message subject line matches the required pattern.
+// Returns nil if pattern is empty (no validation) or if the message matches.
+func ValidateCommitMessage(message, pattern string) error {
+	if pattern == "" {
+		return nil
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid commit pattern %q: %w", pattern, err)
+	}
+	subject := strings.SplitN(message, "\n", 2)[0]
+	if !re.MatchString(subject) {
+		return fmt.Errorf("commit message %q does not match required pattern %s", subject, pattern)
+	}
+
+	return nil
+}
+
 func (r *Repository) Commit(ctx context.Context, message string) (string, error) {
 	slog.Debug("git: committing", "message", message)
 	_, err := r.run(ctx, "commit", "-m", message)
 	if err != nil {
-		return "", err
+		// Check if this looks like a pre-commit hook failure where files were modified
+		// (formatters that fix files but reject the commit)
+		if r.isHookFormatterFailure(ctx) {
+			slog.Info("git: pre-commit hook modified files, re-staging and retrying")
+			if stageErr := r.StageAll(ctx); stageErr != nil {
+				return "", fmt.Errorf("re-stage after hook: %w", stageErr)
+			}
+			_, retryErr := r.run(ctx, "commit", "-m", message)
+			if retryErr != nil {
+				return "", fmt.Errorf("commit after hook retry: %w", retryErr)
+			}
+		} else {
+			return "", err
+		}
 	}
 
 	sha, err := r.CurrentCommit(ctx)
@@ -172,6 +204,19 @@ func (r *Repository) Commit(ctx context.Context, message string) (string, error)
 	slog.Debug("git: committed", "sha", sha)
 
 	return sha, nil
+}
+
+// isHookFormatterFailure checks if a commit failure was caused by a pre-commit hook
+// that modified files (common with formatters like prettier, black, gofmt).
+func (r *Repository) isHookFormatterFailure(ctx context.Context) bool {
+	// After a failed commit, check if there are now unstaged changes
+	// (which would indicate a formatter modified files)
+	has, err := r.HasUncommittedChanges(ctx)
+	if err != nil {
+		return false
+	}
+
+	return has
 }
 
 func (r *Repository) Reset(ctx context.Context, commit string, hard bool) error {

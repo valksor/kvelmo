@@ -208,6 +208,30 @@ func TestGenerateBranchName(t *testing.T) {
 	}
 }
 
+// ─── validateBranchName ───────────────────────────────────────────────────────
+
+func TestValidateBranchName(t *testing.T) {
+	tests := []struct {
+		name    string
+		branch  string
+		pattern string
+		wantErr bool
+	}{
+		{"empty pattern allows any", "anything", "", false},
+		{"matching pattern", "feature/PROJ-123-add-login", `^(feature|bugfix)/`, false},
+		{"non-matching pattern", "my-branch", `^(feature|bugfix)/`, true},
+		{"invalid regex", "anything", `[invalid`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateBranchName(tt.branch, tt.pattern)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateBranchName() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 // ─── shouldPostTicketComment ──────────────────────────────────────────────────
 
 func TestShouldPostTicketComment(t *testing.T) {

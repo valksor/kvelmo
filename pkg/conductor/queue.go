@@ -3,16 +3,21 @@ package conductor
 import (
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"time"
 )
 
+var queueCounter atomic.Int64
+
 // QueuedTask represents a task waiting in the queue.
 type QueuedTask struct {
-	ID       string    `json:"id"`
-	Source   string    `json:"source"` // Provider source reference (e.g., "github:owner/repo#123")
-	Title    string    `json:"title"`  // Display title (may be empty until loaded)
-	AddedAt  time.Time `json:"added_at"`
-	Position int       `json:"position"` // 1-based position in queue
+	ID             string    `json:"id"`
+	Source         string    `json:"source"`          // Provider source reference (e.g., "github:owner/repo#123")
+	Title          string    `json:"title"`           // Display title (may be empty until loaded)
+	Priority       int       `json:"priority"`        // 1=highest, 5=lowest, 0=default (treated as 3)
+	PreferredAgent string    `json:"preferred_agent"` // Agent to use (empty = default)
+	AddedAt        time.Time `json:"added_at"`
+	Position       int       `json:"position"` // 1-based position in queue
 }
 
 // QueueTask adds a task source to the queue.
@@ -22,7 +27,7 @@ func (c *Conductor) QueueTask(source string, title string) (*QueuedTask, error) 
 	defer c.mu.Unlock()
 
 	task := &QueuedTask{
-		ID:      fmt.Sprintf("q-%d", time.Now().UnixNano()),
+		ID:      fmt.Sprintf("q-%d-%d", time.Now().UnixNano(), queueCounter.Add(1)),
 		Source:  source,
 		Title:   title,
 		AddedAt: time.Now(),

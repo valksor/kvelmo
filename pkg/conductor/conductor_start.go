@@ -99,6 +99,11 @@ func (c *Conductor) Start(ctx context.Context, sourceRef string) error {
 	// Create branch if we have git and CreateBranch is enabled
 	if c.git != nil && settings.BoolValue(effectiveSettings.Git.CreateBranch, true) {
 		branchName := c.generateBranchName(c.workUnit)
+		if validationPattern := effectiveSettings.Git.BranchValidationPattern; validationPattern != "" {
+			if err := validateBranchName(branchName, validationPattern); err != nil {
+				return fmt.Errorf("branch name validation: %w", err)
+			}
+		}
 		// Check if branch already exists
 		if c.git.BranchExists(ctx, branchName) {
 			// Switch to existing branch

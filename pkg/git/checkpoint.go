@@ -30,7 +30,7 @@ func NewCheckpointManager(repo *Repository) *CheckpointManager {
 	}
 }
 
-func (m *CheckpointManager) Create(ctx context.Context, state, message string) (*Checkpoint, error) {
+func (m *CheckpointManager) Create(ctx context.Context, state, message, commitPrefix string) (*Checkpoint, error) {
 	// Stage and commit
 	if err := m.repo.StageAll(ctx); err != nil {
 		return nil, fmt.Errorf("stage: %w", err)
@@ -41,9 +41,14 @@ func (m *CheckpointManager) Create(ctx context.Context, state, message string) (
 		return nil, fmt.Errorf("check changes: %w", err)
 	}
 
+	prefix := commitPrefix
+	if prefix == "" {
+		prefix = "[kvelmo]"
+	}
+
 	var sha string
 	if has {
-		sha, err = m.repo.Commit(ctx, fmt.Sprintf("[kvelmo] %s: %s", state, message))
+		sha, err = m.repo.Commit(ctx, fmt.Sprintf("%s %s: %s", prefix, state, message))
 		if err != nil {
 			return nil, fmt.Errorf("commit: %w", err)
 		}
