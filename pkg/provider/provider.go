@@ -296,6 +296,16 @@ func Parse(source string) (provider string, id string, err error) {
 			}
 		}
 
+		if strings.Contains(host, "atlassian.net") {
+			// Jira: /browse/PROJ-123
+			parts := strings.Split(strings.Trim(path, "/"), "/")
+			for i, p := range parts {
+				if p == "browse" && i+1 < len(parts) {
+					return "jira", parts[i+1], nil
+				}
+			}
+		}
+
 		if strings.Contains(host, "linear.app") {
 			// Linear: /team/issue/ENG-123-title or /issue/ENG-123/title
 			parts := strings.Split(strings.Trim(path, "/"), "/")
@@ -332,6 +342,9 @@ func Parse(source string) (provider string, id string, err error) {
 	}
 	if strings.HasPrefix(source, "ln:") {
 		return "linear", strings.TrimPrefix(source, "ln:"), nil
+	}
+	if strings.HasPrefix(source, "jira:") {
+		return "jira", strings.TrimPrefix(source, "jira:"), nil
 	}
 
 	return "", "", fmt.Errorf("unknown source format: %s", source)

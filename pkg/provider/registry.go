@@ -27,6 +27,9 @@ func NewRegistry(s *settings.Settings) *Registry {
 		wrikeToken  string
 		linearToken string
 		linearTeam  string
+		jiraToken   string
+		jiraEmail   string
+		jiraBaseURL string
 	)
 	if s != nil {
 		githubToken = s.Providers.GitHub.Token
@@ -34,6 +37,9 @@ func NewRegistry(s *settings.Settings) *Registry {
 		wrikeToken = s.Providers.Wrike.Token
 		linearToken = s.Providers.Linear.Token
 		linearTeam = s.Providers.Linear.Team
+		jiraToken = s.Providers.Jira.Token
+		jiraEmail = s.Providers.Jira.Email
+		jiraBaseURL = s.Providers.Jira.BaseURL
 	}
 
 	// Register default providers with tokens from settings
@@ -46,6 +52,7 @@ func NewRegistry(s *settings.Settings) *Registry {
 	}
 	r.Register(NewWrikeProvider(wrikeToken))
 	r.Register(NewLinearProvider(linearToken, linearTeam))
+	r.Register(NewJiraProvider(jiraBaseURL, jiraEmail, jiraToken))
 	r.Register(NewEmptyProvider())
 
 	return r
