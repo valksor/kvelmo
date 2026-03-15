@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
 import { useChatStore, type ChatMessage } from '../stores/chatStore'
 import { useGlobalStore } from '../stores/globalStore'
 import { useScreenshotStore, getScreenshotById, formatScreenshotRef } from '../stores/screenshotStore'
 import { ChatMessageContent } from './ChatMessage'
 import { downloadJSON } from '../lib/export'
+import { parseCommand, getAvailableCommands, type ChatCommand, type ModalCommandDef } from '../lib/chatCommands'
 
 interface FileEntry {
   name: string
@@ -12,25 +13,39 @@ interface FileEntry {
   is_dir: boolean
 }
 
+type AutocompleteMode = 'file' | 'command' | null
+
 interface ChatWidgetProps {
   embedded?: boolean
+  onModalCommand?: (modal: 'submit' | 'finish' | 'abandon' | 'delete') => void
 }
 
-export function ChatWidget({ embedded = false }: ChatWidgetProps) {
-  const { messages, isTyping, sendMessage, clearMessages, handleAction } = useChatStore()
+export function ChatWidget({ embedded = false, onModalCommand }: ChatWidgetProps) {
+  const { messages, isTyping, sendMessage, clearMessages, handleAction, addMessage } = useChatStore()
   const { client, connected } = useGlobalStore()
   const { attachedIds, clearAttached, detach } = useScreenshotStore()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // File autocomplete state
-  const [showAutocomplete, setShowAutocomplete] = useState(false)
+  // Unified autocomplete state
+  const [autocompleteMode, setAutocompleteMode] = useState<AutocompleteMode>(null)
   const [autocompleteQuery, setAutocompleteQuery] = useState('')
-  const [autocompleteResults, setAutocompleteResults] = useState<FileEntry[]>([])
   const [autocompleteIndex, setAutocompleteIndex] = useState(0)
   const [autocompleteLoading, setAutocompleteLoading] = useState(false)
   const autocompleteRef = useRef<HTMLDivElement>(null)
+
+  // File autocomplete results
+  const [fileResults, setFileResults] = useState<FileEntry[]>([])
+
+  // Command autocomplete results (computed from query)
+  const commandResults = useMemo(() => {
+    if (autocompleteMode !== 'command') return []
+    return getAvailableCommands(autocompleteQuery)
+  }, [autocompleteMode, autocompleteQuery])
+
+  const autocompleteCount = autocompleteMode === 'file' ? fileResults.length
+    : autocompleteMode === 'command' ? commandResults.length : 0
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -48,7 +63,7 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
   // Search files for autocomplete
   const searchFiles = useCallback(async (query: string) => {
     if (!client || !connected || query.length < 1) {
-      setAutocompleteResults([])
+      setFileResults([])
       return
     }
 
@@ -58,11 +73,11 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
         query,
         max_results: 10
       })
-      setAutocompleteResults(result.entries || [])
+      setFileResults(result.entries || [])
       setAutocompleteIndex(0)
     } catch (err) {
       console.error('File search failed:', err)
-      setAutocompleteResults([])
+      setFileResults([])
     } finally {
       setAutocompleteLoading(false)
     }
@@ -70,7 +85,7 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
   // Debounced file search
   useEffect(() => {
-    if (!showAutocomplete || !autocompleteQuery) {
+    if (autocompleteMode !== 'file' || !autocompleteQuery) {
       return
     }
 
@@ -79,23 +94,32 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
     }, 150)
 
     return () => clearTimeout(timer)
-  }, [autocompleteQuery, showAutocomplete, searchFiles])
+  }, [autocompleteQuery, autocompleteMode, searchFiles])
 
-  // Handle input changes - detect @ mentions
+  // Handle input changes - detect @ mentions and / commands
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setInput(value)
 
-    // Check for @ trigger
     const cursorPos = e.target.selectionStart
     const textBeforeCursor = value.slice(0, cursorPos)
-    const atMatch = textBeforeCursor.match(/@(\S*)$/)
 
+    // Check for / command trigger (only at start of input)
+    if (value.startsWith('/')) {
+      const query = value.slice(1).toLowerCase()
+      setAutocompleteMode('command')
+      setAutocompleteQuery(query)
+      setAutocompleteIndex(0)
+      return
+    }
+
+    // Check for @ trigger
+    const atMatch = textBeforeCursor.match(/@(\S*)$/)
     if (atMatch) {
-      setShowAutocomplete(true)
+      setAutocompleteMode('file')
       setAutocompleteQuery(atMatch[1])
     } else {
-      setShowAutocomplete(false)
+      setAutocompleteMode(null)
       setAutocompleteQuery('')
     }
   }
@@ -106,7 +130,6 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
     const textBeforeCursor = input.slice(0, cursorPos)
     const textAfterCursor = input.slice(cursorPos)
 
-    // Find the @ position
     const atMatch = textBeforeCursor.match(/@(\S*)$/)
     if (atMatch) {
       const atPos = cursorPos - atMatch[0].length
@@ -114,33 +137,116 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
       setInput(newText)
     }
 
-    setShowAutocomplete(false)
+    setAutocompleteMode(null)
     setAutocompleteQuery('')
     inputRef.current?.focus()
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (input.trim() && !isTyping) {
-      // Append screenshot references to message if any are attached
-      let message = input
-      if (attachedIds.length > 0) {
-        const refs = attachedIds.map(id => formatScreenshotRef(id)).join(' ')
-        message = `${input}\n\n${refs}`
-      }
-      sendMessage(message)
-      setInput('')
-      clearAttached()
-      setShowAutocomplete(false)
+  // Insert command from autocomplete
+  const insertCommand = (cmd: ChatCommand | ModalCommandDef) => {
+    setInput(cmd.name + ' ')
+    setAutocompleteMode(null)
+    setAutocompleteQuery('')
+    inputRef.current?.focus()
+  }
+
+  // Execute a slash command
+  const executeCommand = async (inputText: string): Promise<boolean> => {
+    const parsed = parseCommand(inputText.trim())
+    if (!parsed) return false
+
+    if (parsed.type === 'unknown') {
+      addMessage({
+        role: 'system',
+        content: `Unknown command: ${inputText.trim().split(' ')[0]}. Type / to see available commands.`,
+        status: 'complete',
+      })
+      return true
     }
+
+    if (parsed.type === 'modal' && parsed.modalCommand) {
+      if (!parsed.modalCommand.isAvailable()) {
+        addMessage({
+          role: 'system',
+          content: `${parsed.modalCommand.name} is not available in the current state.`,
+          status: 'complete',
+        })
+        return true
+      }
+      onModalCommand?.(parsed.modalCommand.modal)
+      return true
+    }
+
+    if (parsed.type === 'action' && parsed.command) {
+      if (!parsed.command.isAvailable()) {
+        addMessage({
+          role: 'system',
+          content: `${parsed.command.name} is not available in the current state.`,
+          status: 'complete',
+        })
+        return true
+      }
+
+      addMessage({
+        role: 'system',
+        content: `Running ${parsed.command.name}...`,
+        status: 'complete',
+      })
+
+      try {
+        const result = await parsed.command.execute(parsed.args)
+        if (result) {
+          addMessage({
+            role: 'system',
+            content: result,
+            status: 'complete',
+          })
+        }
+      } catch (err) {
+        addMessage({
+          role: 'system',
+          content: `Error: ${err instanceof Error ? err.message : 'Command failed'}`,
+          status: 'error',
+        })
+      }
+      return true
+    }
+
+    return false
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isTyping) return
+
+    // Check for slash commands
+    if (input.trim().startsWith('/')) {
+      const handled = await executeCommand(input)
+      if (handled) {
+        setInput('')
+        setAutocompleteMode(null)
+        return
+      }
+    }
+
+    // Regular message
+    let message = input
+    if (attachedIds.length > 0) {
+      const refs = attachedIds.map(id => formatScreenshotRef(id)).join(' ')
+      message = `${input}\n\n${refs}`
+    }
+    sendMessage(message)
+    setInput('')
+    clearAttached()
+    setAutocompleteMode(null)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle autocomplete navigation
-    if (showAutocomplete && autocompleteResults.length > 0) {
+    if (autocompleteMode && autocompleteCount > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setAutocompleteIndex(i => Math.min(i + 1, autocompleteResults.length - 1))
+        setAutocompleteIndex(i => Math.min(i + 1, autocompleteCount - 1))
         return
       }
       if (e.key === 'ArrowUp') {
@@ -148,20 +254,24 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
         setAutocompleteIndex(i => Math.max(i - 1, 0))
         return
       }
-      if (e.key === 'Tab' || e.key === 'Enter') {
+      if (e.key === 'Tab' || (e.key === 'Enter' && autocompleteMode === 'command' && commandResults.length > 0)) {
         e.preventDefault()
-        insertFileReference(autocompleteResults[autocompleteIndex])
+        if (autocompleteMode === 'file' && fileResults[autocompleteIndex]) {
+          insertFileReference(fileResults[autocompleteIndex])
+        } else if (autocompleteMode === 'command' && commandResults[autocompleteIndex]) {
+          insertCommand(commandResults[autocompleteIndex])
+        }
         return
       }
       if (e.key === 'Escape') {
         e.preventDefault()
-        setShowAutocomplete(false)
+        setAutocompleteMode(null)
         return
       }
     }
 
     // Normal enter = submit
-    if (e.key === 'Enter' && !e.shiftKey && !showAutocomplete) {
+    if (e.key === 'Enter' && !e.shiftKey && !autocompleteMode) {
       e.preventDefault()
       handleSubmit(e)
     }
@@ -177,7 +287,7 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <p className="text-sm">Start a conversation</p>
-            <p className="text-xs mt-1 opacity-70">Type @ to mention files</p>
+            <p className="text-xs mt-1 opacity-70">Type @ to mention files, / for commands</p>
           </div>
         ) : (
           messages.map(message => (
@@ -252,16 +362,16 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message... (@ to mention files)"
+                placeholder="Type a message... (@ files, / commands)"
                 className="textarea textarea-bordered w-full resize-none min-h-[40px] max-h-[120px] pr-10 text-sm"
                 rows={1}
                 disabled={isTyping}
                 role="combobox"
                 aria-label="Message"
                 aria-haspopup="listbox"
-                aria-expanded={showAutocomplete}
+                aria-expanded={autocompleteMode !== null}
                 aria-controls="chat-autocomplete"
-                aria-activedescendant={showAutocomplete && autocompleteResults.length > 0 ? `autocomplete-item-${autocompleteIndex}` : undefined}
+                aria-activedescendant={autocompleteMode && autocompleteCount > 0 ? `autocomplete-item-${autocompleteIndex}` : undefined}
               />
               {input.length > 0 && (
                 <span className="absolute right-2 bottom-2 text-xs text-base-content/40">
@@ -270,51 +380,85 @@ export function ChatWidget({ embedded = false }: ChatWidgetProps) {
               )}
 
               {/* Autocomplete dropdown */}
-              {showAutocomplete && (
+              {autocompleteMode && (
                 <div
                   ref={autocompleteRef}
                   id="chat-autocomplete"
                   role="listbox"
-                  aria-label="File suggestions"
+                  aria-label={autocompleteMode === 'file' ? 'File suggestions' : 'Command suggestions'}
                   className="absolute bottom-full left-0 right-0 mb-1 bg-base-200 border border-base-300 rounded-lg shadow-lg max-h-48 overflow-auto z-50"
                 >
-                  {autocompleteLoading && (
-                    <div className="px-3 py-2 text-sm text-base-content/60 flex items-center gap-2">
-                      <span className="loading loading-spinner loading-xs"></span>
-                      Searching...
-                    </div>
+                  {/* File autocomplete */}
+                  {autocompleteMode === 'file' && (
+                    <>
+                      {autocompleteLoading && (
+                        <div className="px-3 py-2 text-sm text-base-content/60 flex items-center gap-2">
+                          <span className="loading loading-spinner loading-xs"></span>
+                          Searching...
+                        </div>
+                      )}
+                      {!autocompleteLoading && fileResults.length === 0 && autocompleteQuery && (
+                        <div className="px-3 py-2 text-sm text-base-content/60">
+                          No files found for &quot;{autocompleteQuery}&quot;
+                        </div>
+                      )}
+                      {!autocompleteLoading && fileResults.map((file, index) => (
+                        <button
+                          key={file.path}
+                          id={`autocomplete-item-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={index === autocompleteIndex}
+                          className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-base-300 transition-colors ${
+                            index === autocompleteIndex ? 'bg-primary/20' : ''
+                          }`}
+                          onClick={() => insertFileReference(file)}
+                          onMouseEnter={() => setAutocompleteIndex(index)}
+                        >
+                          <span className="text-base-content/60">
+                            {file.is_dir ? 'D' : 'F'}
+                          </span>
+                          <span className="flex-1 truncate">
+                            <span className="font-medium">{file.name}</span>
+                            <span className="text-base-content/50 ml-2 text-xs">{file.rel_path}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </>
                   )}
-                  {!autocompleteLoading && autocompleteResults.length === 0 && autocompleteQuery && (
-                    <div className="px-3 py-2 text-sm text-base-content/60">
-                      No files found for "{autocompleteQuery}"
-                    </div>
+
+                  {/* Command autocomplete */}
+                  {autocompleteMode === 'command' && (
+                    <>
+                      {commandResults.length === 0 && autocompleteQuery && (
+                        <div className="px-3 py-2 text-sm text-base-content/60">
+                          No matching commands
+                        </div>
+                      )}
+                      {commandResults.map((cmd, index) => (
+                        <button
+                          key={cmd.name}
+                          id={`autocomplete-item-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={index === autocompleteIndex}
+                          className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-base-300 transition-colors ${
+                            index === autocompleteIndex ? 'bg-primary/20' : ''
+                          }`}
+                          onClick={() => insertCommand(cmd)}
+                          onMouseEnter={() => setAutocompleteIndex(index)}
+                        >
+                          <span className="font-mono text-primary text-xs">{cmd.name}</span>
+                          <span className="text-base-content/50 text-xs">{cmd.description}</span>
+                        </button>
+                      ))}
+                    </>
                   )}
-                  {!autocompleteLoading && autocompleteResults.map((file, index) => (
-                    <button
-                      key={file.path}
-                      id={`autocomplete-item-${index}`}
-                      type="button"
-                      role="option"
-                      aria-selected={index === autocompleteIndex}
-                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-base-300 transition-colors ${
-                        index === autocompleteIndex ? 'bg-primary/20' : ''
-                      }`}
-                      onClick={() => insertFileReference(file)}
-                      onMouseEnter={() => setAutocompleteIndex(index)}
-                    >
-                      <span className="text-base-content/60">
-                        {file.is_dir ? 'D' : 'F'}
-                      </span>
-                      <span className="flex-1 truncate">
-                        <span className="font-medium">{file.name}</span>
-                        <span className="text-base-content/50 ml-2 text-xs">{file.rel_path}</span>
-                      </span>
-                    </button>
-                  ))}
-                  {!autocompleteLoading && autocompleteResults.length > 0 && (
+
+                  {autocompleteCount > 0 && (
                     <div className="px-3 py-1 text-[10px] text-base-content/40 border-t border-base-300 flex gap-2">
                       <span>Up/Down navigate</span>
-                      <span>Tab/Enter select</span>
+                      <span>Tab select</span>
                       <span>Esc close</span>
                     </div>
                   )}
@@ -406,8 +550,26 @@ const MessageBubble = memo(function MessageBubble({ message, onAction }: Message
   if (isSystem) {
     return (
       <div className="flex justify-center">
-        <div className="text-xs text-base-content/50 bg-base-200 px-3 py-1 rounded-full">
+        <div className="text-xs text-base-content/50 bg-base-200 px-3 py-1 rounded-full max-w-md text-center">
           {message.content}
+          {/* Actions on system messages (quality gates, workflow actions) */}
+          {message.actions && message.actions.length > 0 && (
+            <div className="flex gap-2 mt-2 justify-center">
+              {message.actions.map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => onAction(action.id)}
+                  className={`btn btn-xs ${
+                    action.type === 'approve' ? 'btn-success' :
+                    action.type === 'reject' ? 'btn-error' :
+                    'btn-ghost'
+                  }`}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -429,7 +591,7 @@ const MessageBubble = memo(function MessageBubble({ message, onAction }: Message
         <div className={`text-xs px-3 py-1.5 rounded-lg border ${bgColor} flex items-center gap-2`}>
           <span className={textColor}>{icon}</span>
           <span className="font-medium">{type}</span>
-          <span className="text-base-content/60">"{description}"</span>
+          <span className="text-base-content/60">&quot;{description}&quot;</span>
           {duration != null && duration > 0 && status !== 'started' && (
             <span className="text-base-content/40">({(duration / 1000).toFixed(1)}s)</span>
           )}

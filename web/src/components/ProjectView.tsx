@@ -5,11 +5,11 @@ import { useLayoutStore } from '../stores/layoutStore'
 import { useDebugStore } from '../stores/debugStore'
 import { useDocsURL } from '../hooks/useDocsURL'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
-import { Widget, TaskIcon, FilesIcon, ActionsIcon, CheckpointsIcon } from './Widget'
+import { Widget, TaskIcon, FilesIcon, CheckpointsIcon } from './Widget'
 import { PanelLayout } from './PanelLayout'
 import { TaskWidget } from './TaskWidget'
-import { ActionsWidget } from './ActionsWidget'
 import { CheckpointsWidget } from './CheckpointsWidget'
+import { ChecklistWidget } from './ChecklistWidget'
 import { ReviewHistoryWidget } from './ReviewHistoryWidget'
 import { FileChangesWidget } from './FileChangesWidget'
 import { AgentPanel } from './AgentPanel'
@@ -17,12 +17,13 @@ import { TaskQueue } from './TaskQueue'
 import { TaskHistory } from './TaskHistory'
 import { ThemeToggle } from './ThemeToggle'
 import { StatusBadge } from './StatusIndicator'
-import { WorkflowHint } from './WorkflowHint'
-import { WorkflowStepper } from './WorkflowStepper'
+import { WorkflowBar } from './WorkflowBar'
 
 // Lazy-loaded modal components (only rendered when opened)
 const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })))
 const LogsPanel = lazy(() => import('./LogsPanel').then(m => ({ default: m.LogsPanel })))
+const CIStatusPanel = lazy(() => import('./CIStatusPanel').then(m => ({ default: m.CIStatusPanel })))
+const PolicyPanel = lazy(() => import('./PolicyPanel').then(m => ({ default: m.PolicyPanel })))
 
 function ReviewIcon() {
   return (
@@ -36,6 +37,14 @@ function HistoryIcon() {
   return (
     <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+
+function ChecklistIcon() {
+  return (
+    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
     </svg>
   )
 }
@@ -60,6 +69,8 @@ export function ProjectView() {
   const { widgetStates } = useLayoutStore()
   const [showSettings, setShowSettings] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
+  const [showCIStatus, setShowCIStatus] = useState(false)
+  const [showPolicy, setShowPolicy] = useState(false)
   const docsData = useDocsURL()
   const debugEnabled = useDebugStore(s => s.enabled)
   useKeyboardShortcuts() // Register keyboard shortcuts (overlay rendered in App.tsx)
@@ -139,6 +150,24 @@ export function ProjectView() {
               )}
             </button>
             <button
+              onClick={() => setShowCIStatus(true)}
+              className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+              aria-label="CI Status"
+            >
+              <svg aria-hidden="true" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowPolicy(true)}
+              className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+              aria-label="Policy Checks"
+            >
+              <svg aria-hidden="true" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </button>
+            <button
               onClick={() => setShowSettings(true)}
               className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
               aria-label="Settings"
@@ -192,15 +221,6 @@ export function ProjectView() {
       <AgentPanel />
 
       <Widget
-        id="actions"
-        title="Actions"
-        icon={<ActionsIcon />}
-        defaultCollapsed={widgetStates.actions?.collapsed}
-      >
-        <ActionsWidget embedded />
-      </Widget>
-
-      <Widget
         id="checkpoints"
         title="Checkpoints"
         icon={<CheckpointsIcon />}
@@ -225,6 +245,15 @@ export function ProjectView() {
       </Widget>
 
       <Widget
+        id="checklist"
+        title="Review Checklist"
+        icon={<ChecklistIcon />}
+        defaultCollapsed={true}
+      >
+        <ChecklistWidget embedded />
+      </Widget>
+
+      <Widget
         id="history"
         title="Task History"
         icon={<HistoryIcon />}
@@ -245,8 +274,7 @@ export function ProjectView() {
           <span>Simulation mode — no AI agent connected. Tasks will not be implemented.</span>
         </div>
       )}
-      <WorkflowStepper state={state} />
-      <WorkflowHint state={state} />
+      <WorkflowBar />
       <PanelLayout
         header={header}
         leftContent={leftContent}
@@ -266,6 +294,18 @@ export function ProjectView() {
             onClose={() => setShowLogs(false)}
           />
         )}
+        {showCIStatus && (
+          <CIStatusPanel
+            isOpen={showCIStatus}
+            onClose={() => setShowCIStatus(false)}
+          />
+        )}
+        {showPolicy && (
+          <PolicyPanel
+            isOpen={showPolicy}
+            onClose={() => setShowPolicy(false)}
+          />
+        )}
       </Suspense>
 
       {/* Debug mode indicator */}
@@ -277,9 +317,6 @@ export function ProjectView() {
           DEBUG
         </div>
       )}
-
-      {/* Keyboard shortcuts help dialog */}
-      {/* Shortcuts overlay is now rendered in App.tsx */}
     </div>
   )
 }

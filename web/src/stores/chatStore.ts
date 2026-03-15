@@ -404,6 +404,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return
     }
 
+    // Workflow action buttons (from state-transition messages)
+    if (actionId.startsWith('workflow:')) {
+      const ps = useProjectStore.getState()
+      switch (actionId) {
+        case 'workflow:refresh':
+          await ps.refresh()
+          break
+        case 'workflow:approve':
+          await ps.approveRemote()
+          break
+        case 'workflow:merge':
+          await ps.mergeRemote('rebase')
+          break
+        case 'workflow:finish':
+          await ps.finish()
+          break
+        case 'workflow:undo':
+          await ps.undo()
+          break
+      }
+      return
+    }
+
     // Add system message confirming the action
     get().addMessage({
       role: 'system',
@@ -420,9 +443,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   }
 }))
 
-// Subscribe to project state changes to load chat history and surface quality prompts
+// Subscribe to project state changes to load chat history, surface quality prompts,
+// and inject workflow transition messages
 let prevWorktreeId: string | null = null
 let prevQualityPromptId: string | null = null
+let prevTaskState: string | null = null
 useProjectStore.subscribe((state) => {
   const worktreeId = state.worktreeId
   if (worktreeId !== prevWorktreeId) {
@@ -457,4 +482,54 @@ useProjectStore.subscribe((state) => {
   if (newId === null) {
     prevQualityPromptId = null
   }
+
+  // Inject workflow state-transition messages with action buttons
+  const taskState = state.state
+  if (taskState !== prevTaskState && prevTaskState !== null) {
+    const { addMessage } = useChatStore.getState()
+
+    if (taskState === 'submitted') {
+      const msgId = addMessage({
+        role: 'system',
+        content: 'PR submitted.',
+        status: 'complete',
+        actions: [
+          { id: 'workflow:refresh', label: 'Check Status', type: 'custom' },
+          { id: 'workflow:approve', label: 'Approve', type: 'approve' },
+          { id: 'workflow:merge', label: 'Merge', type: 'custom' },
+          { id: 'workflow:finish', label: 'Finish', type: 'custom' },
+        ]
+      })
+      // Store msgId for action handling (handled via handleAction)
+      void msgId
+    }
+
+    if (taskState === 'failed' && state.error) {
+      addMessage({
+        role: 'system',
+        content: `Action failed: ${state.error}`,
+        status: 'error',
+        actions: [
+          { id: 'workflow:undo', label: 'Undo', type: 'custom' },
+        ]
+      })
+    }
+
+    if (taskState === 'planned') {
+      addMessage({
+        role: 'system',
+        content: 'Plan complete. Type /implement or click Implement in the workflow bar.',
+        status: 'complete',
+      })
+    }
+
+    if (taskState === 'implemented') {
+      addMessage({
+        role: 'system',
+        content: 'Implementation complete. Type /review, /simplify, or /optimize.',
+        status: 'complete',
+      })
+    }
+  }
+  prevTaskState = taskState
 })
