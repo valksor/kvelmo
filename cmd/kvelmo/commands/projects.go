@@ -33,11 +33,21 @@ var projectsAddCmd = &cobra.Command{
 	RunE:  runProjectsAdd,
 }
 
+var projectsRemoveCmd = &cobra.Command{
+	Use:     "remove <id>",
+	Aliases: []string{"rm", "unregister"},
+	Short:   "Unregister a project from the global socket",
+	Long:    "Remove a project from the global project list by its ID or path.",
+	Args:    cobra.ExactArgs(1),
+	RunE:    runProjectsRemove,
+}
+
 func init() {
 	ProjectsCmd.Flags().DurationVarP(&projectsTimeout, "timeout", "t", 5*time.Second, "Connection timeout")
 	ProjectsCmd.Flags().BoolVarP(&projectsVerbose, "verbose", "v", false, "Show socket paths")
 	ProjectsCmd.Flags().BoolVar(&projectsJSON, "json", false, "Output raw JSON response")
 	ProjectsCmd.AddCommand(projectsAddCmd)
+	ProjectsCmd.AddCommand(projectsRemoveCmd)
 }
 
 func runProjects(cmd *cobra.Command, args []string) error {
@@ -106,6 +116,35 @@ func runProjects(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Println()
 	}
+
+	return nil
+}
+
+func runProjectsRemove(cmd *cobra.Command, args []string) error {
+	identifier := args[0]
+	globalPath := socket.GlobalSocketPath()
+
+	if !socket.SocketExists(globalPath) {
+		return errors.New("global socket not running\nRun '" + meta.Name + " start' first")
+	}
+
+	client, err := socket.NewClient(globalPath, socket.WithTimeout(projectsTimeout))
+	if err != nil {
+		return fmt.Errorf("connect to global socket: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), projectsTimeout)
+	defer cancel()
+
+	_, err = client.Call(ctx, "projects.unregister", socket.UnregisterParams{
+		ID: identifier,
+	})
+	if err != nil {
+		return fmt.Errorf("unregister project: %w", err)
+	}
+
+	fmt.Printf("Project unregistered: %s\n", identifier)
 
 	return nil
 }
