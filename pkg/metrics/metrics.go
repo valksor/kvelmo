@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+// methodCounter tracks per-method RPC stats using lock-free atomics.
+type methodCounter struct {
+	requests     atomic.Int64
+	errors       atomic.Int64
+	totalLatency atomic.Int64 // nanoseconds
+}
+
 // Metrics holds application-wide metrics.
 type Metrics struct {
 	// Job counters
@@ -26,6 +33,9 @@ type Metrics struct {
 	EventsDropped       atomic.Int64
 	PermissionsApproved atomic.Int64
 	PermissionsDenied   atomic.Int64
+
+	// Per-method RPC metrics (lock-free via sync.Map)
+	methodMetrics sync.Map // map[string]*methodCounter
 
 	// Latency tracking (simple moving average)
 	mu              sync.RWMutex
@@ -80,11 +90,26 @@ func (m *Metrics) RecordPermissionDenied() {
 	m.PermissionsDenied.Add(1)
 }
 
-// RecordRPCRequest records an RPC request with its latency.
-func (m *Metrics) RecordRPCRequest(latency time.Duration, err error) {
+// RecordRPCRequest records an RPC request with its latency and per-method breakdown.
+func (m *Metrics) RecordRPCRequest(method string, latency time.Duration, err error) {
 	m.RPCRequests.Add(1)
 	if err != nil {
 		m.RPCErrors.Add(1)
+	}
+
+	// Per-method tracking
+	if method != "" {
+		val, _ := m.methodMetrics.LoadOrStore(method, &methodCounter{})
+		mc, ok := val.(*methodCounter)
+		if !ok {
+			mc = &methodCounter{}
+			m.methodMetrics.Store(method, mc)
+		}
+		mc.requests.Add(1)
+		if err != nil {
+			mc.errors.Add(1)
+		}
+		mc.totalLatency.Add(int64(latency))
 	}
 
 	m.mu.Lock()
@@ -93,6 +118,13 @@ func (m *Metrics) RecordRPCRequest(latency time.Duration, err error) {
 		m.rpcLatencies = m.rpcLatencies[1:]
 	}
 	m.mu.Unlock()
+}
+
+// MethodSnapshot holds per-method RPC statistics.
+type MethodSnapshot struct {
+	Requests     int64   `json:"requests"`
+	Errors       int64   `json:"errors"`
+	AvgLatencyMs float64 `json:"avg_latency_ms"`
 }
 
 // Snapshot returns a point-in-time snapshot of all metrics.
@@ -112,6 +144,9 @@ type Snapshot struct {
 	EventsDropped       int64 `json:"events_dropped"`
 	PermissionsApproved int64 `json:"permissions_approved"`
 	PermissionsDenied   int64 `json:"permissions_denied"`
+
+	// Per-method RPC metrics
+	Methods map[string]MethodSnapshot `json:"methods,omitempty"`
 }
 
 // Snapshot returns current metrics values.
@@ -129,6 +164,34 @@ func (m *Metrics) Snapshot() Snapshot {
 	s.EventsDropped = m.EventsDropped.Load()
 	s.PermissionsApproved = m.PermissionsApproved.Load()
 	s.PermissionsDenied = m.PermissionsDenied.Load()
+
+	// Collect per-method metrics
+	methods := make(map[string]MethodSnapshot)
+	m.methodMetrics.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		mc, ok := value.(*methodCounter)
+		if !ok {
+			return true
+		}
+		reqs := mc.requests.Load()
+		ms := MethodSnapshot{
+			Requests: reqs,
+			Errors:   mc.errors.Load(),
+		}
+		if reqs > 0 {
+			totalNs := mc.totalLatency.Load()
+			ms.AvgLatencyMs = float64(time.Duration(totalNs).Milliseconds()) / float64(reqs)
+		}
+		methods[name] = ms
+
+		return true
+	})
+	if len(methods) > 0 {
+		s.Methods = methods
+	}
 
 	m.mu.RLock()
 	if len(m.rpcLatencies) > 0 {

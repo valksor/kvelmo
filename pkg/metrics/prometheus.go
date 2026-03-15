@@ -1,6 +1,10 @@
 package metrics
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+	"strings"
+)
 
 // RenderPrometheus renders a Snapshot in Prometheus text exposition format.
 func RenderPrometheus(snap Snapshot) string {
@@ -9,6 +13,11 @@ func RenderPrometheus(snap Snapshot) string {
 	// Helper to write a metric
 	write := func(name, help, mtype string, value any) {
 		b = fmt.Appendf(b, "# HELP %s %s\n# TYPE %s %s\n%s %v\n", name, help, name, mtype, name, value)
+	}
+
+	// Helper to write a labeled metric
+	writeLabeled := func(name, labels string, value any) {
+		b = fmt.Appendf(b, "%s{%s} %v\n", name, labels, value)
 	}
 
 	// Job metrics (counters)
@@ -33,5 +42,36 @@ func RenderPrometheus(snap Snapshot) string {
 	write("kvelmo_permissions_approved_total", "Total permissions approved.", "counter", snap.PermissionsApproved)
 	write("kvelmo_permissions_denied_total", "Total permissions denied.", "counter", snap.PermissionsDenied)
 
-	return string(b)
+	// Per-method RPC metrics
+	if len(snap.Methods) > 0 {
+		// Sort method names for stable output
+		methods := make([]string, 0, len(snap.Methods))
+		for name := range snap.Methods {
+			methods = append(methods, name)
+		}
+		slices.Sort(methods)
+
+		b = fmt.Appendf(b, "# HELP kvelmo_rpc_method_requests_total Total requests per RPC method.\n# TYPE kvelmo_rpc_method_requests_total counter\n")
+		for _, name := range methods {
+			ms := snap.Methods[name]
+			label := fmt.Sprintf("method=%q", name)
+			writeLabeled("kvelmo_rpc_method_requests_total", label, ms.Requests)
+		}
+
+		b = fmt.Appendf(b, "# HELP kvelmo_rpc_method_errors_total Total errors per RPC method.\n# TYPE kvelmo_rpc_method_errors_total counter\n")
+		for _, name := range methods {
+			ms := snap.Methods[name]
+			label := fmt.Sprintf("method=%q", name)
+			writeLabeled("kvelmo_rpc_method_errors_total", label, ms.Errors)
+		}
+
+		b = fmt.Appendf(b, "# HELP kvelmo_rpc_method_latency_avg_ms Average latency per RPC method.\n# TYPE kvelmo_rpc_method_latency_avg_ms gauge\n")
+		for _, name := range methods {
+			ms := snap.Methods[name]
+			label := fmt.Sprintf("method=%q", name)
+			writeLabeled("kvelmo_rpc_method_latency_avg_ms", label, ms.AvgLatencyMs)
+		}
+	}
+
+	return strings.TrimRight(string(b), "\n") + "\n"
 }

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime/debug"
 	"sync"
@@ -73,6 +74,23 @@ func (r *RateLimiter) remove(conn net.Conn) {
 	delete(r.counts, conn)
 }
 
+// ActivityLogger is called after each RPC dispatch to record activity.
+type ActivityLogger interface {
+	Record(entry ActivityEntry)
+}
+
+// ActivityEntry holds the data for a single activity log entry.
+type ActivityEntry struct {
+	Method        string
+	CorrelationID string
+	DurationMs    int64
+	Error         string
+	ParamsSize    int
+	UserID        string
+	TaskID        string
+	AgentModel    string
+}
+
 type Server struct {
 	path           string
 	listener       net.Listener
@@ -86,10 +104,12 @@ type Server struct {
 	isShutdown     atomic.Bool
 	shutdownOnce   sync.Once
 	rateLimiter    *RateLimiter
+	activityLogger ActivityLogger
+	username       string // Cached OS username for audit logging
 }
 
 func NewServer(path string) *Server {
-	return &Server{
+	s := &Server{
 		path:           path,
 		handlers:       make(map[string]Handler),
 		legacyHandlers: make(map[string]LegacyHandler),
@@ -97,6 +117,16 @@ func NewServer(path string) *Server {
 		shutdownCh:     make(chan struct{}),
 		rateLimiter:    newRateLimiter(1000, time.Minute), // 1000 requests/min per connection
 	}
+	if u, err := user.Current(); err == nil {
+		s.username = u.Username
+	}
+
+	return s
+}
+
+// SetActivityLogger sets the activity logger for RPC call recording.
+func (s *Server) SetActivityLogger(l ActivityLogger) {
+	s.activityLogger = l
 }
 
 // Handle registers a legacy handler (without connection access).
@@ -293,7 +323,7 @@ func (s *Server) dispatch(ctx context.Context, req *Request, conn net.Conn) *Res
 	if !hasHandler && !hasLegacy {
 		slog.Warn("rpc method not found", "method", req.Method, "id", req.ID, "correlation_id", corrID)
 		// Record as failed RPC request for observability
-		metrics.Global().RecordRPCRequest(0, fmt.Errorf("method not found: %s", req.Method))
+		metrics.Global().RecordRPCRequest(req.Method, 0, fmt.Errorf("method not found: %s", req.Method))
 
 		return NewErrorResponse(req.ID, ErrCodeMethodNotFound, "method not found: "+req.Method)
 	}
@@ -310,15 +340,32 @@ func (s *Server) dispatch(ctx context.Context, req *Request, conn net.Conn) *Res
 	duration := time.Since(start)
 	if err != nil {
 		slog.Error("rpc request failed", "method", req.Method, "id", req.ID, "correlation_id", corrID, "error", err, "duration_ms", duration.Milliseconds())
-		metrics.Global().RecordRPCRequest(duration, err)
+		metrics.Global().RecordRPCRequest(req.Method, duration, err)
+		s.recordActivity(req, corrID, duration, err.Error())
 
 		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error())
 	}
 
 	slog.Debug("rpc request", "method", req.Method, "id", req.ID, "correlation_id", corrID, "duration_ms", duration.Milliseconds())
-	metrics.Global().RecordRPCRequest(duration, nil)
+	metrics.Global().RecordRPCRequest(req.Method, duration, nil)
+	s.recordActivity(req, corrID, duration, "")
 
 	return resp
+}
+
+func (s *Server) recordActivity(req *Request, corrID string, duration time.Duration, errMsg string) {
+	if s.activityLogger == nil {
+		return
+	}
+	paramsSize := len(req.Params)
+	s.activityLogger.Record(ActivityEntry{
+		Method:        req.Method,
+		CorrelationID: corrID,
+		DurationMs:    duration.Milliseconds(),
+		Error:         errMsg,
+		ParamsSize:    paramsSize,
+		UserID:        s.username,
+	})
 }
 
 func (s *Server) writeResponse(conn net.Conn, resp *Response) error {
