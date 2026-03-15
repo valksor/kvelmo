@@ -8,26 +8,40 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// TaskHistoryEntry records a single state machine transition for audit persistence.
+type TaskHistoryEntry struct {
+	From      string    `yaml:"from"`
+	To        string    `yaml:"to"`
+	Event     string    `yaml:"event"`
+	Timestamp time.Time `yaml:"timestamp"`
+}
+
 // TaskState is the on-disk snapshot of a WorkUnit and its state machine state.
 // Written as pure YAML to <workdir>/<task-id>/task.yaml on every mutation.
 // This is the single source of truth for task state across socket restarts.
 type TaskState struct {
-	State          string            `yaml:"state"`
-	ID             string            `yaml:"id"`
-	ExternalID     string            `yaml:"external_id,omitempty"`
-	Title          string            `yaml:"title"`
-	Description    string            `yaml:"description,omitempty"`
-	Branch         string            `yaml:"branch,omitempty"`
-	WorktreePath   string            `yaml:"worktree_path,omitempty"`
-	Specifications []string          `yaml:"specifications,omitempty"`
-	Checkpoints    []string          `yaml:"checkpoints,omitempty"`
-	RedoStack      []string          `yaml:"redo_stack,omitempty"`
-	Jobs           []string          `yaml:"jobs,omitempty"`
-	Metadata       map[string]string `yaml:"metadata,omitempty"`
-	Source         *TaskSource       `yaml:"source,omitempty"`
-	Hierarchy      *TaskHierarchy    `yaml:"hierarchy,omitempty"`
-	CreatedAt      time.Time         `yaml:"created_at"`
-	UpdatedAt      time.Time         `yaml:"updated_at"`
+	State            string               `yaml:"state"`
+	ID               string               `yaml:"id"`
+	ExternalID       string               `yaml:"external_id,omitempty"`
+	Title            string               `yaml:"title"`
+	Description      string               `yaml:"description,omitempty"`
+	Branch           string               `yaml:"branch,omitempty"`
+	WorktreePath     string               `yaml:"worktree_path,omitempty"`
+	Specifications   []string             `yaml:"specifications,omitempty"`
+	Checkpoints      []string             `yaml:"checkpoints,omitempty"`
+	RedoStack        []string             `yaml:"redo_stack,omitempty"`
+	Jobs             []string             `yaml:"jobs,omitempty"`
+	Metadata         map[string]string    `yaml:"metadata,omitempty"`
+	Source           *TaskSource          `yaml:"source,omitempty"`
+	Hierarchy        *TaskHierarchy       `yaml:"hierarchy,omitempty"`
+	Approvals        map[string]time.Time `yaml:"approvals,omitempty"`
+	ChecklistChecked []string             `yaml:"checklist_checked,omitempty"`
+	Tags             []string             `yaml:"tags,omitempty"`
+	Priority         int                  `yaml:"priority,omitempty"`
+	DependsOn        []string             `yaml:"depends_on,omitempty"`
+	History          []TaskHistoryEntry   `yaml:"history,omitempty"`
+	CreatedAt        time.Time            `yaml:"created_at"`
+	UpdatedAt        time.Time            `yaml:"updated_at"`
 }
 
 // TaskSource mirrors conductor.Source without creating an import cycle.

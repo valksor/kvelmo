@@ -626,7 +626,7 @@ func TestWorkUnitToTaskState_Basic(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	ts := workUnitToTaskState(StatePlanned, wu)
+	ts := workUnitToTaskState(StatePlanned, wu, nil)
 	if ts.State != string(StatePlanned) {
 		t.Errorf("State = %q, want %q", ts.State, StatePlanned)
 	}
@@ -652,7 +652,7 @@ func TestWorkUnitToTaskState_WithHierarchy(t *testing.T) {
 			},
 		},
 	}
-	ts := workUnitToTaskState(StateLoaded, wu)
+	ts := workUnitToTaskState(StateLoaded, wu, nil)
 	if ts.Hierarchy == nil {
 		t.Fatal("Hierarchy should not be nil")
 	}
@@ -682,7 +682,7 @@ func TestTaskStateToWorkUnit_Basic(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	state, wu := taskStateToWorkUnit(ts)
+	state, wu, _ := taskStateToWorkUnit(ts)
 	if state != StatePlanned {
 		t.Errorf("state = %q, want planned", state)
 	}
@@ -704,7 +704,7 @@ func TestTaskStateToWorkUnit_NilMetadata(t *testing.T) {
 		Title:    "T",
 		Metadata: nil, // nil should be initialized to empty map
 	}
-	_, wu := taskStateToWorkUnit(ts)
+	_, wu, _ := taskStateToWorkUnit(ts)
 	if wu.Metadata == nil {
 		t.Error("wu.Metadata should be initialized (not nil) when ts.Metadata is nil")
 	}
@@ -725,7 +725,7 @@ func TestTaskStateToWorkUnit_WithHierarchy(t *testing.T) {
 			},
 		},
 	}
-	_, wu := taskStateToWorkUnit(ts)
+	_, wu, _ := taskStateToWorkUnit(ts)
 	if wu.Hierarchy == nil {
 		t.Fatal("wu.Hierarchy should not be nil")
 	}
@@ -737,6 +737,56 @@ func TestTaskStateToWorkUnit_WithHierarchy(t *testing.T) {
 	}
 	if len(wu.Hierarchy.Siblings) != 1 {
 		t.Errorf("wu.Hierarchy.Siblings length = %d, want 1", len(wu.Hierarchy.Siblings))
+	}
+}
+
+func TestWorkUnitToTaskState_IncludesHistory(t *testing.T) {
+	history := []HistoryEntry{
+		{From: StateNone, To: StateLoaded, Event: EventStart, Timestamp: time.Now()},
+		{From: StateLoaded, To: StatePlanning, Event: EventPlan, Timestamp: time.Now()},
+	}
+	wu := &WorkUnit{
+		ID:        "test-1",
+		Title:     "Test Task",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata:  map[string]string{},
+	}
+	ts := workUnitToTaskState(StateLoaded, wu, history)
+	if len(ts.History) != 2 {
+		t.Errorf("expected 2 history entries, got %d", len(ts.History))
+	}
+	if ts.History[0].Event != "start" {
+		t.Errorf("expected first event 'start', got %q", ts.History[0].Event)
+	}
+}
+
+func TestTaskStateToWorkUnit_RestoresHistory(t *testing.T) {
+	now := time.Now()
+	ts := &storage.TaskState{
+		State: "loaded",
+		ID:    "ts-hist",
+		Title: "History Test",
+		History: []storage.TaskHistoryEntry{
+			{From: "none", To: "loaded", Event: "start", Timestamp: now},
+			{From: "loaded", To: "planning", Event: "plan", Timestamp: now},
+		},
+	}
+	state, wu, history := taskStateToWorkUnit(ts)
+	if state != StateLoaded {
+		t.Errorf("state = %q, want loaded", state)
+	}
+	if wu.ID != "ts-hist" {
+		t.Errorf("wu.ID = %q, want ts-hist", wu.ID)
+	}
+	if len(history) != 2 {
+		t.Fatalf("expected 2 history entries, got %d", len(history))
+	}
+	if history[0].Event != EventStart {
+		t.Errorf("history[0].Event = %q, want start", history[0].Event)
+	}
+	if history[1].From != StateLoaded {
+		t.Errorf("history[1].From = %q, want loaded", history[1].From)
 	}
 }
 

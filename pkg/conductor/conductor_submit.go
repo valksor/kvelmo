@@ -6,8 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
+	"time"
 
+	"github.com/valksor/kvelmo/pkg/changelog"
+	"github.com/valksor/kvelmo/pkg/changeset"
 	"github.com/valksor/kvelmo/pkg/memory"
 	"github.com/valksor/kvelmo/pkg/provider"
 )
@@ -27,6 +33,28 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 		c.emitEnrichedError(err, "submit")
 
 		return err
+	}
+
+	// Check review checklist completion
+	settings := c.getEffectiveSettings()
+	checklist := settings.Workflow.Policy.ReviewChecklist
+	if len(checklist) > 0 {
+		for _, item := range checklist {
+			if !slices.Contains(c.workUnit.ChecklistChecked, item) {
+				c.mu.Unlock()
+
+				return fmt.Errorf("cannot submit: review checklist item %q not checked. Run: kvelmo review --check %q", item, item)
+			}
+		}
+	}
+
+	// Check approval requirement
+	if settings.Workflow.Policy.ApprovalRequired[string(EventSubmit)] {
+		if c.workUnit.Approvals == nil || c.workUnit.Approvals[string(EventSubmit)].IsZero() {
+			c.mu.Unlock()
+
+			return errors.New("cannot submit: explicit approval required. Run: kvelmo approve submit")
+		}
 	}
 
 	// Check quality gate - use cached result from Review() if available,
@@ -76,12 +104,35 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 		sourceProvider = c.workUnit.Source.Provider
 		sourceURL = c.workUnit.Source.URL
 	}
+	changelogPath := settings.Storage.ChangelogPath
 	git := c.git
 	providers := c.providers
 	memoryIndexer := c.memoryIndexer
 	lifecycleCtx := c.lifecycleCtx
 	shouldComment := c.shouldPostTicketComment()
 	c.mu.Unlock()
+
+	// Phase 2.5: Auto-generate changelog entry if configured (before push)
+	if changelogPath != "" && git != nil {
+		workDir := worktreePath
+		if workDir == "" {
+			workDir = git.Path()
+		}
+		fullPath := filepath.Join(workDir, changelogPath)
+		if err := changelog.AppendEntry(fullPath, changelog.Entry{
+			Date:   time.Now(),
+			Title:  title,
+			TaskID: externalID,
+		}); err != nil {
+			slog.Warn("changelog update failed", "error", err)
+		} else {
+			if err := git.StageAll(ctx); err == nil {
+				if _, err := git.Commit(ctx, "Update changelog for "+title); err != nil {
+					slog.Warn("changelog commit failed", "error", err)
+				}
+			}
+		}
+	}
 
 	// Phase 3: Network operations (no lock held)
 	slog.Info("submit: starting network operations", "branch", branch, "has_git", git != nil)
@@ -130,9 +181,17 @@ func (c *Conductor) Submit(ctx context.Context, deleteBranch bool) error {
 						}
 					}
 
+					// Check for PR template in the repo
+					var prBody string
+					repoPath := git.Path()
+					if tmpl := detectPRTemplate(repoPath); tmpl != "" {
+						prBody = fillPRTemplate(tmpl, workUnitDescription, checkpointCount, sourceURL)
+					} else {
+						prBody = buildPRDescriptionWithDecisions(workUnitDescription, specCount, checkpointCount, "", nil)
+					}
 					prOpts := provider.PROptions{
-						Title:   "[kvelmo] " + title,
-						Body:    buildPRDescription(workUnitDescription, specCount, checkpointCount),
+						Title:   c.interpolatePRTitle(title),
+						Body:    prBody,
 						Head:    branch,
 						Base:    baseBranch,
 						TaskID:  externalID,
@@ -343,6 +402,60 @@ func parseOwnerRepo(externalID string) (string, string) {
 	return parts[0], parts[1]
 }
 
+// detectPRTemplate searches for PR templates in well-known locations within the repo.
+// Returns empty string when no template is found.
+func detectPRTemplate(repoPath string) string {
+	candidates := []string{
+		".github/PULL_REQUEST_TEMPLATE.md",
+		".github/pull_request_template.md",
+		".github/PULL_REQUEST_TEMPLATE",
+		".gitlab/merge_request_templates/Default.md",
+		"PULL_REQUEST_TEMPLATE.md",
+		"pull_request_template.md",
+		"docs/pull_request_template.md",
+	}
+	for _, candidate := range candidates {
+		path := filepath.Join(repoPath, candidate)
+		data, err := os.ReadFile(path)
+		if err == nil {
+			return string(data)
+		}
+	}
+
+	return ""
+}
+
+// fillPRTemplate attempts to auto-fill sections in a PR template using task metadata.
+// Returns the filled template. Sections that can't be filled are left with placeholder markers.
+func fillPRTemplate(template, description string, checkpointCount int, sourceURL string) string {
+	lines := strings.Split(template, "\n")
+	var result []string
+
+	for i, line := range lines {
+		result = append(result, line)
+		trimmed := strings.TrimSpace(strings.ToLower(line))
+
+		// Auto-fill known sections
+		switch {
+		case strings.Contains(trimmed, "summary") || strings.Contains(trimmed, "what changed") || strings.Contains(trimmed, "description"):
+			// Insert summary after header if next line is empty or a placeholder
+			if i+1 < len(lines) && (strings.TrimSpace(lines[i+1]) == "" || strings.HasPrefix(strings.TrimSpace(lines[i+1]), "<!--")) {
+				result = append(result, "", description)
+			}
+		case strings.Contains(trimmed, "test") || strings.Contains(trimmed, "how to test"):
+			if i+1 < len(lines) && (strings.TrimSpace(lines[i+1]) == "" || strings.HasPrefix(strings.TrimSpace(lines[i+1]), "<!--")) {
+				result = append(result, "", "- [ ] Verify implementation matches specification", fmt.Sprintf("- [ ] %d checkpoint(s) reviewed", checkpointCount))
+			}
+		case strings.Contains(trimmed, "related") || strings.Contains(trimmed, "ticket") || strings.Contains(trimmed, "issue"):
+			if sourceURL != "" && i+1 < len(lines) && (strings.TrimSpace(lines[i+1]) == "" || strings.HasPrefix(strings.TrimSpace(lines[i+1]), "<!--")) {
+				result = append(result, "", sourceURL)
+			}
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
 // buildPRDescription constructs the PR body from task metadata.
 // Takes explicit parameters so it can be called outside the lock with copied values.
 func buildPRDescription(description string, specCount, checkpointCount int) string {
@@ -359,4 +472,18 @@ func buildPRDescription(description string, specCount, checkpointCount int) stri
 	desc += "\n---\n*Generated by [kvelmo](https://github.com/valksor/kvelmo)*"
 
 	return desc
+}
+
+// buildPRDescriptionWithDecisions extends the PR body with AI decision context.
+func buildPRDescriptionWithDecisions(description string, specCount, checkpointCount int, diffStat string, recordings []map[string]any) string {
+	base := buildPRDescription(description, specCount, checkpointCount)
+
+	decisions := changeset.ExtractDecisions(recordings)
+	if len(decisions) == 0 {
+		return base
+	}
+
+	aiSection := changeset.FormatMarkdown(decisions, diffStat)
+
+	return base + "\n" + aiSection
 }
