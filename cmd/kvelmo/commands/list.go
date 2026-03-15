@@ -18,7 +18,7 @@ import (
 var ListCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
-	Short: "List all registered projects and their current task state",
+	Short:   "List all registered projects and their current task state",
 	Long: `Queries the global socket for all registered worktrees with their state and task info.
 
 Use --history to search archived task history in the current project:
@@ -45,7 +45,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	return runListProjects(cmd)
 }
 
-func runListProjects(cmd *cobra.Command) error {
+func runListProjects(_ *cobra.Command) error {
 	globalPath := socket.GlobalSocketPath()
 
 	if !socket.SocketExists(globalPath) {

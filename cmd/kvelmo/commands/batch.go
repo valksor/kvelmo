@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,7 +42,7 @@ func runBatch(_ *cobra.Command, args []string) error {
 
 	globalPath := socket.GlobalSocketPath()
 	if !socket.SocketExists(globalPath) {
-		return fmt.Errorf("global socket not running (run 'kvelmo serve' first)")
+		return errors.New("global socket not running (run 'kvelmo serve' first)")
 	}
 
 	client, err := socket.NewClient(globalPath, socket.WithTimeout(5*time.Second))
@@ -66,6 +67,7 @@ func runBatch(_ *cobra.Command, args []string) error {
 	resp, err := client.Call(ctx, "tasks.batch", params)
 	if err != nil {
 		spinner.Fail("Batch operation failed")
+
 		return fmt.Errorf("batch call: %w", err)
 	}
 
@@ -81,11 +83,13 @@ func runBatch(_ *cobra.Command, args []string) error {
 	}
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		spinner.Fail("Invalid response")
+
 		return fmt.Errorf("parse result: %w", err)
 	}
 
 	if result.Total == 0 {
 		spinner.Success("No matching tasks found")
+
 		return nil
 	}
 

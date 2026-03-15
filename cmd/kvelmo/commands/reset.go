@@ -16,7 +16,7 @@ import (
 var ResetCmd = &cobra.Command{
 	Use:     "reset",
 	Aliases: []string{"rst"},
-	Short: "Reset the current task to initial state",
+	Short:   "Reset the current task to initial state",
 	Long: `Reset the current task, clearing all progress and returning to 'none' state.
 This will discard any uncommitted changes.`,
 	RunE: runReset,

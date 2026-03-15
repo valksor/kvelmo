@@ -290,6 +290,7 @@ func (c *Conductor) SetAutoAdvance(enabled bool) {
 func (c *Conductor) AutoAdvance() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
 	return c.autoAdvance
 }
 

@@ -22,7 +22,7 @@ var watchJSON bool
 var WatchCmd = &cobra.Command{
 	Use:     "watch",
 	Aliases: []string{"w"},
-	Short: "Stream live task output to the terminal",
+	Short:   "Stream live task output to the terminal",
 	Long: fmt.Sprintf(`Stream live events from a running task to the terminal.
 
 Connects to the worktree socket and subscribes to the event stream,

@@ -88,6 +88,7 @@ func waitForJob(socketPath, _ string) error {
 			fmt.Printf("\n[State] %s\n", event.Message)
 		case "job_completed":
 			fmt.Fprint(os.Stderr, "\a") // Terminal bell on completion
+
 			return nil
 		case "job_failed":
 			fmt.Fprint(os.Stderr, "\a") // Terminal bell on failure

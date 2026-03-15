@@ -13,7 +13,7 @@ import (
 var SubmitCmd = &cobra.Command{
 	Use:     "submit",
 	Aliases: []string{"sub"},
-	Short: "Submit the current task (push changes, create PR)",
+	Short:   "Submit the current task (push changes, create PR)",
 	Long: `Pushes the current branch and creates a pull request (or equivalent)
 on the provider. Requires the task to be in 'reviewed' state.`,
 	RunE: runSubmit,

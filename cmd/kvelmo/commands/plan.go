@@ -19,9 +19,9 @@ var planForce bool
 var PlanCmd = &cobra.Command{
 	Use:     "plan",
 	Aliases: []string{"pl"},
-	Short: "Start planning phase for current task",
-	Long:  "Submit a planning job to the worker pool for the current task.",
-	RunE:  runPlan,
+	Short:   "Start planning phase for current task",
+	Long:    "Submit a planning job to the worker pool for the current task.",
+	RunE:    runPlan,
 }
 
 func init() {

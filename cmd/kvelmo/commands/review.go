@@ -15,7 +15,7 @@ import (
 var ReviewCmd = &cobra.Command{
 	Use:     "review",
 	Aliases: []string{"rev"},
-	Short: "Review current implementation and approve for submission",
+	Short:   "Review current implementation and approve for submission",
 	Long: `Moves the current task to reviewing state. This is the human approval
 gate before submission. After reviewing, use 'submit' to push changes.
 

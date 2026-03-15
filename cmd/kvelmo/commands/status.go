@@ -23,9 +23,9 @@ var (
 var StatusCmd = &cobra.Command{
 	Use:     "status",
 	Aliases: []string{"st"},
-	Short: "Show current task state",
-	Long:  "Connect to the worktree socket and display the current task state.",
-	RunE:  runStatus,
+	Short:   "Show current task state",
+	Long:    "Connect to the worktree socket and display the current task state.",
+	RunE:    runStatus,
 }
 
 func init() {
@@ -147,14 +147,17 @@ func showAllStatus() error {
 		var pretty interface{}
 		if jsonErr := json.Unmarshal(resp.Result, &pretty); jsonErr != nil {
 			fmt.Println(string(resp.Result))
+
 			return nil
 		}
 		out, jsonErr := json.MarshalIndent(pretty, "", "  ")
 		if jsonErr != nil {
 			fmt.Println(string(resp.Result))
+
 			return nil
 		}
 		fmt.Println(string(out))
+
 		return nil
 	}
 
@@ -173,6 +176,7 @@ func showAllStatus() error {
 
 	if len(active) == 0 {
 		fmt.Println("No active tasks across projects")
+
 		return nil
 	}
 
