@@ -13,7 +13,8 @@ import (
 )
 
 var AbandonCmd = &cobra.Command{
-	Use:   "abandon",
+	Use:     "abandon",
+	Aliases: []string{"abn"},
 	Short: "Abandon the current task",
 	Long: `Stop any running jobs, delete the git branch (unless --keep-branch), and reset state.
 If worktree isolation was used, the worktree is also removed.`,

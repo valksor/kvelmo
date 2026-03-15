@@ -14,7 +14,8 @@ import (
 )
 
 var FinishCmd = &cobra.Command{
-	Use:   "finish",
+	Use:     "finish",
+	Aliases: []string{"fin"},
 	Short: "Clean up after PR merge",
 	Long: `Finish cleans up after a pull request has been merged.
 

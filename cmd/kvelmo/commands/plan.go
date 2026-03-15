@@ -14,13 +14,11 @@ import (
 	"github.com/valksor/kvelmo/pkg/socket"
 )
 
-var (
-	planForce bool
-	planWait  bool
-)
+var planForce bool
 
 var PlanCmd = &cobra.Command{
-	Use:   "plan",
+	Use:     "plan",
+	Aliases: []string{"pl"},
 	Short: "Start planning phase for current task",
 	Long:  "Submit a planning job to the worker pool for the current task.",
 	RunE:  runPlan,
@@ -28,7 +26,6 @@ var PlanCmd = &cobra.Command{
 
 func init() {
 	PlanCmd.Flags().BoolVar(&planForce, "force", false, "Re-run planning even if already planned")
-	PlanCmd.Flags().BoolVarP(&planWait, "wait", "w", false, "Wait for job to complete, streaming output")
 }
 
 func runPlan(cmd *cobra.Command, args []string) error {
@@ -77,11 +74,6 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	}
 
 	spinner.Success("Planning job submitted: " + result.JobID)
-
-	if planWait {
-		return waitForJob(wtPath, result.JobID)
-	}
-
 	fmt.Println("Use '" + meta.Name + " status' to check progress")
 
 	return nil

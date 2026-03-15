@@ -11,7 +11,6 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/valksor/kvelmo/pkg/cli"
 	"github.com/valksor/kvelmo/pkg/conductor"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/socket"
@@ -21,7 +20,8 @@ var watchJSON bool
 
 // WatchCmd streams live output from a running task to the terminal.
 var WatchCmd = &cobra.Command{
-	Use:   "watch",
+	Use:     "watch",
+	Aliases: []string{"w"},
 	Short: "Stream live task output to the terminal",
 	Long: fmt.Sprintf(`Stream live events from a running task to the terminal.
 
@@ -125,11 +125,11 @@ func runWatch(cmd *cobra.Command, args []string) error {
 		case "state_changed":
 			fmt.Printf("\n[State] %s\n", event.Message)
 		case "job_failed":
-			_, _ = cli.Red.Fprintf(os.Stderr, "\n[Failed] %s\n", event.Error)
+			fmt.Fprintf(os.Stderr, "\n\033[31m[Failed] %s\033[0m\n", event.Error)
 
 			return fmt.Errorf("job failed: %s", event.Error)
 		case "error":
-			_, _ = cli.Red.Fprintf(os.Stderr, "\n[Error] %s\n", event.Error)
+			fmt.Fprintf(os.Stderr, "\n\033[31m[Error] %s\033[0m\n", event.Error)
 			if event.Message != "" {
 				fmt.Fprintf(os.Stderr, "  %s\n", event.Message)
 			}

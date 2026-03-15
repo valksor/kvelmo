@@ -11,7 +11,8 @@ import (
 )
 
 var RedoCmd = &cobra.Command{
-	Use:   "redo",
+	Use:     "redo",
+	Aliases: []string{"r"},
 	Short: "Redo to the next checkpoint",
 	Long: `Restores the working directory to the next checkpoint in the redo stack.
 Only available after using 'undo'.`,

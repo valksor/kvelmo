@@ -11,7 +11,8 @@ import (
 )
 
 var UndoCmd = &cobra.Command{
-	Use:   "undo",
+	Use:     "undo",
+	Aliases: []string{"u"},
 	Short: "Undo to the previous checkpoint",
 	Long: `Reverts the working directory to the previous checkpoint.
 Checkpoints are created after each agent operation (plan, implement).
