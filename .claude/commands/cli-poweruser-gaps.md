@@ -93,7 +93,7 @@ Report all gaps found—whether 3 or 30. Each gap should include severity and a 
 
 ## Sibling Commands
 
-This command is part of a family of 8 persona-specific gap analyses:
+This command is part of a family of 10 persona-specific gap analyses:
 
 - `/solo-developer-gaps`
 - `/team-lead-gaps`
@@ -103,6 +103,8 @@ This command is part of a family of 8 persona-specific gap analyses:
 - `/frontend-dev-gaps`
 - `/agent-dev-gaps`
 - `/enterprise-gaps`
+- `/pragmatic-dev-gaps`
+- `/regulated-dev-gaps`
 
 ---
 
