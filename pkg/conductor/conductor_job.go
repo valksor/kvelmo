@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -60,8 +61,10 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 			)
 			if c.workUnit != nil {
 				// For planning jobs, detect newly written specification files
+				// and optionally copy to the repo
 				if completionEvent == EventPlanDone {
 					c.detectSpecificationFiles()
+					c.copySpecsToRepo()
 				}
 
 				// Create checkpoint after job completion
@@ -138,6 +141,9 @@ func (c *Conductor) watchJob(ctx context.Context, jobID string, completionEvent 
 					}
 				}(wuSnapshot, indexer, completionEvent, baseBranch)
 			}
+
+			// Auto-advance: trigger next phase if enabled
+			c.maybeAutoAdvance(ctx, completionEvent)
 
 			return
 		}
@@ -240,6 +246,93 @@ func (c *Conductor) generateBranchName(wu *WorkUnit) string {
 	return result
 }
 
+func validateBranchName(name, pattern string) error {
+	if pattern == "" {
+		return nil
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid branch validation pattern %q: %w", pattern, err)
+	}
+	if !re.MatchString(name) {
+		return fmt.Errorf("generated branch name %q does not match required pattern %s", name, pattern)
+	}
+
+	return nil
+}
+
+func (c *Conductor) interpolatedCommitPrefix() string {
+	settings := c.getEffectiveSettings()
+	prefix := settings.Git.CommitPrefix
+	if prefix == "" {
+		return "[kvelmo]"
+	}
+	if c.workUnit != nil && c.workUnit.ExternalID != "" {
+		prefix = strings.ReplaceAll(prefix, "{key}", c.workUnit.ExternalID)
+	} else {
+		prefix = strings.ReplaceAll(prefix, "{key}", "")
+		prefix = strings.ReplaceAll(prefix, "[]", "[kvelmo]")
+	}
+
+	return prefix
+}
+
+func (c *Conductor) interpolatePRTitle(title string) string {
+	settings := c.getEffectiveSettings()
+	pattern := settings.Git.PRTitlePattern
+	if pattern == "" {
+		return "[kvelmo] " + title
+	}
+
+	key := ""
+	taskType := "local"
+	if c.workUnit != nil {
+		if c.workUnit.ExternalID != "" {
+			key = c.workUnit.ExternalID
+		}
+		if c.workUnit.Source != nil {
+			taskType = c.workUnit.Source.Provider
+		}
+	}
+
+	slug := ""
+	if c.workUnit != nil {
+		slug = slugify(c.workUnit.Title)
+	}
+
+	result := pattern
+	if key == "" {
+		result = strings.ReplaceAll(result, "[{key}] ", "")
+		result = strings.ReplaceAll(result, "{key} ", "")
+	}
+	result = strings.ReplaceAll(result, "{key}", key)
+	result = strings.ReplaceAll(result, "{title}", title)
+	result = strings.ReplaceAll(result, "{type}", taskType)
+	result = strings.ReplaceAll(result, "{slug}", slug)
+
+	return result
+}
+
+func (c *Conductor) buildGitConventionInstructions() string {
+	settings := c.getEffectiveSettings()
+	var instructions []string
+
+	prefix := c.interpolatedCommitPrefix()
+	if prefix != "[kvelmo]" && prefix != "" {
+		instructions = append(instructions, "- Prefix all commit messages with: "+prefix)
+	}
+
+	if settings.Git.CommitPattern != "" {
+		instructions = append(instructions, "- All commit messages must match this pattern: "+settings.Git.CommitPattern)
+	}
+
+	if len(instructions) == 0 {
+		return ""
+	}
+
+	return "\n\n## Git Conventions\n\n" + strings.Join(instructions, "\n") + "\n"
+}
+
 // slugify converts a string to a URL-safe slug.
 func slugify(s string) string {
 	// Lowercase
@@ -289,6 +382,8 @@ func (c *Conductor) shouldPostTicketComment() bool {
 		return effectiveSettings.Providers.Wrike.AllowTicketComment
 	case "linear":
 		return effectiveSettings.Providers.Linear.AllowTicketComment
+	case "jira":
+		return effectiveSettings.Providers.Jira.AllowTicketComment
 	default:
 		return false
 	}
@@ -352,6 +447,58 @@ func (c *Conductor) detectSpecificationFiles() {
 		if !known[filepath.Clean(fullPath)] {
 			c.workUnit.Specifications = append(c.workUnit.Specifications, fullPath)
 			slog.Info("detected new specification file", "path", fullPath)
+		}
+	}
+}
+
+// copySpecsToRepo copies specification files to an in-repo path if configured.
+// Must be called with c.mu held.
+func (c *Conductor) copySpecsToRepo() {
+	if c.workUnit == nil {
+		return
+	}
+
+	settings := c.getEffectiveSettings()
+	outputPath := settings.Storage.SpecOutputPath
+	if outputPath == "" {
+		return
+	}
+
+	// Interpolate variables
+	key := ""
+	if c.workUnit.ExternalID != "" {
+		key = c.workUnit.ExternalID
+	}
+	slug := slugify(c.workUnit.Title)
+
+	workDir := c.getWorkDir()
+
+	for _, specPath := range c.workUnit.Specifications {
+		data, err := os.ReadFile(specPath)
+		if err != nil {
+			c.logVerbosef("Warning: could not read spec for repo copy: %v", err)
+
+			continue
+		}
+
+		// Interpolate output path per spec
+		resolved := outputPath
+		resolved = strings.ReplaceAll(resolved, "{key}", key)
+		resolved = strings.ReplaceAll(resolved, "{slug}", slug)
+
+		fullPath := filepath.Join(workDir, resolved)
+
+		// Ensure directory exists
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			c.logVerbosef("Warning: could not create spec output dir: %v", err)
+
+			continue
+		}
+
+		if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+			c.logVerbosef("Warning: could not write spec to repo: %v", err)
+		} else {
+			slog.Info("spec copied to repo", "path", fullPath)
 		}
 	}
 }

@@ -64,6 +64,10 @@ type Conductor struct {
 	// Key: UUID prompt ID. Protected by c.mu.
 	pendingPrompts map[string]chan bool
 
+	// autoAdvance triggers automatic progression through phases when jobs complete.
+	// When true, plan_done → implement, implement_done → review.
+	autoAdvance bool
+
 	// Configuration
 	opts Options
 
@@ -208,6 +212,9 @@ func New(opts ...Option) (*Conductor, error) {
 	// Subscribe to state machine changes
 	machine.AddListener(c.onStateChanged)
 
+	// Register status sync listener for bidirectional provider status updates
+	c.setupStatusSync()
+
 	return c, nil
 }
 
@@ -254,9 +261,36 @@ func (c *Conductor) GetWorkUnit() *WorkUnit {
 	return &wu
 }
 
+// MarkDirty persists the current work unit state to disk.
+// Use after modifying work unit fields like Tags or Priority directly.
+func (c *Conductor) MarkDirty() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.workUnit != nil {
+		c.workUnit.UpdatedAt = time.Now()
+	}
+	c.persistState()
+}
+
 // Machine returns the state machine.
 func (c *Conductor) Machine() *Machine {
 	return c.machine
+}
+
+// SetAutoAdvance enables or disables automatic phase progression.
+// When enabled, the conductor automatically advances through phases:
+// plan_done → implement, implement_done → review.
+func (c *Conductor) SetAutoAdvance(enabled bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.autoAdvance = enabled
+}
+
+// AutoAdvance returns whether automatic phase progression is enabled.
+func (c *Conductor) AutoAdvance() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.autoAdvance
 }
 
 // getWorkDir returns the effective working directory for operations.
@@ -285,6 +319,11 @@ func (c *Conductor) getBaseBranch(ctx context.Context) (string, error) {
 	}
 
 	return "", errors.New("cannot determine base branch: git not available and git.base_branch not configured")
+}
+
+// GetEffectiveSettings returns the effective (merged) settings.
+func (c *Conductor) GetEffectiveSettings() *settings.Settings {
+	return c.getEffectiveSettings()
 }
 
 // getEffectiveSettings returns cached settings, loading them on first access.
@@ -482,6 +521,9 @@ func NewConductor(cfg ConductorConfig) *Conductor {
 	}
 
 	machine.AddListener(c.onStateChanged)
+
+	// Register status sync listener for bidirectional provider status updates
+	c.setupStatusSync()
 
 	return c
 }

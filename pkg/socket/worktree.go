@@ -203,6 +203,7 @@ func (w *WorktreeSocket) registerHandlers() {
 
 	// Task history
 	w.server.Handle("task.history", w.handleTaskHistory)
+	w.server.Handle("task.search", w.handleTaskSearch)
 
 	// Review history
 	w.server.Handle("review.list", w.handleReviewList)
@@ -238,6 +239,21 @@ func (w *WorktreeSocket) registerHandlers() {
 	w.server.Handle("screenshots.get", w.handleScreenshotsGet)
 	w.server.Handle("screenshots.capture", w.handleScreenshotsCapture)
 	w.server.Handle("screenshots.delete", w.handleScreenshotsDelete)
+
+	// Task tagging
+	w.server.Handle("task.tag", w.handleTaskTag)
+
+	// Policy checking
+	w.server.Handle("policy.check", w.handlePolicyCheck)
+
+	// Approval & review gates
+	w.server.Handle("approve", w.handleApprove)
+	w.server.Handle("review.checklist.get", w.handleReviewChecklistGet)
+	w.server.Handle("review.checklist.check", w.handleReviewChecklistCheck)
+	w.server.Handle("review.checklist.uncheck", w.handleReviewChecklistUncheck)
+
+	// CI status
+	w.server.Handle("ci.status", w.handleCIStatus)
 }
 
 // injectSeqAndBuffer assigns a sequence number to a JSON event, stores it in the
@@ -401,6 +417,7 @@ func (w *WorktreeSocket) handleShowSpec(_ context.Context, req *Request) (*Respo
 type StartParams struct {
 	Source               string `json:"source"` // e.g., "github:owner/repo#123"
 	UseWorktreeIsolation bool   `json:"use_worktree_isolation,omitempty"`
+	AutoAdvance          bool   `json:"auto_advance,omitempty"` // Auto-progress through plan → implement → review
 }
 
 func (w *WorktreeSocket) handleStart(ctx context.Context, req *Request) (*Response, error) {
@@ -419,6 +436,11 @@ func (w *WorktreeSocket) handleStart(ctx context.Context, req *Request) (*Respon
 
 	if err := w.conductor.Start(ctx, params.Source); err != nil {
 		return NewErrorResponse(req.ID, -32603, err.Error()), nil
+	}
+
+	// Enable auto-advance if requested
+	if params.AutoAdvance {
+		w.conductor.SetAutoAdvance(true)
 	}
 
 	// Determine worktree isolation: explicit param overrides, else check effective settings.
@@ -446,6 +468,15 @@ func (w *WorktreeSocket) handleStart(ctx context.Context, req *Request) (*Respon
 				slog.Warn("handleStart: mkdir failed for worktree base", "path", isolationBasePath, "error", err)
 			}
 		}
+	}
+
+	// Auto-advance: trigger planning immediately after start
+	if params.AutoAdvance {
+		go func() {
+			if _, err := w.conductor.Plan(ctx, false); err != nil {
+				slog.Warn("auto-advance: plan after start failed", "error", err)
+			}
+		}()
 	}
 
 	return NewResultResponse(req.ID, map[string]any{

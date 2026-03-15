@@ -489,15 +489,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })
   },
 
-  start: async (source: string) => {
+  start: async (source: string, autoAdvance: boolean = false) => {
     const client = get().client
     if (!client) return
 
     set({ loading: true, error: null })
-    get().appendOutput(`Loading task from ${source}...`)
+    get().appendOutput(`Loading task from ${source}...${autoAdvance ? ' (auto-advance enabled)' : ''}`)
 
     try {
-      const result = await client.call<{ status: string; state: TaskState }>('start', { source })
+      const result = await client.call<{ status: string; state: TaskState }>('start', { source, auto_advance: autoAdvance })
       set({ state: result.state, loading: false })
       await get().refreshStatus()
     } catch (err) {

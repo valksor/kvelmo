@@ -24,6 +24,7 @@ var (
 	startForeground bool
 	startVerbose    bool
 	startFrom       string
+	startAuto       bool
 )
 
 var StartCmd = &cobra.Command{
@@ -50,6 +51,7 @@ func init() {
 	StartCmd.Flags().BoolVar(&startForeground, "foreground", false, "Run in foreground (for debugging)")
 	StartCmd.Flags().BoolVarP(&startVerbose, "verbose", "v", false, "Show socket paths")
 	StartCmd.Flags().StringVar(&startFrom, "from", "", "Task source (file:path, github:owner/repo#123, or URL)")
+	StartCmd.Flags().BoolVar(&startAuto, "auto", false, "Auto-advance through plan → implement → review")
 
 	// Keep --daemon as hidden alias for backwards compat (now it's the default)
 	StartCmd.Flags().Bool("daemon", true, "Run in background (deprecated: now default)")
@@ -323,7 +325,8 @@ func loadTaskViaRPC(socketPath, source string) error {
 	defer func() { _ = client.Close() }()
 
 	params := map[string]any{
-		"source": source,
+		"source":       source,
+		"auto_advance": startAuto,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
