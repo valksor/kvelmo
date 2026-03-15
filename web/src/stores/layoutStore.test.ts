@@ -11,7 +11,7 @@ describe('layoutStore', () => {
     it('has default panels configuration', () => {
       const { panels } = useLayoutStore.getState()
       expect(panels.left).toEqual(['task', 'files'])
-      expect(panels.right).toEqual(['actions', 'checkpoints'])
+      expect(panels.right).toEqual(['checkpoints'])
       expect(panels.bottom).toEqual(['output'])
       expect(panels.main).toEqual([])
     })
@@ -21,7 +21,6 @@ describe('layoutStore', () => {
       expect(widgetStates.task).toEqual({ collapsed: false, visible: true })
       expect(widgetStates.files).toEqual({ collapsed: false, visible: true })
       expect(widgetStates.output).toEqual({ collapsed: false, visible: true })
-      expect(widgetStates.actions).toEqual({ collapsed: false, visible: true })
       expect(widgetStates.checkpoints).toEqual({ collapsed: false, visible: true })
       expect(widgetStates.chat).toEqual({ collapsed: false, visible: true })
       expect(widgetStates.agents).toEqual({ collapsed: false, visible: true })
@@ -108,19 +107,19 @@ describe('layoutStore', () => {
       it('appends widget to end by default', () => {
         useLayoutStore.getState().moveWidget('task', 'right')
         const { panels } = useLayoutStore.getState()
-        expect(panels.right).toEqual(['actions', 'checkpoints', 'task'])
+        expect(panels.right).toEqual(['checkpoints', 'task'])
       })
 
       it('inserts widget at specified index', () => {
         useLayoutStore.getState().moveWidget('task', 'right', 1)
         const { panels } = useLayoutStore.getState()
-        expect(panels.right).toEqual(['actions', 'task', 'checkpoints'])
+        expect(panels.right).toEqual(['checkpoints', 'task'])
       })
 
       it('inserts at beginning when index is 0', () => {
         useLayoutStore.getState().moveWidget('task', 'right', 0)
         const { panels } = useLayoutStore.getState()
-        expect(panels.right).toEqual(['task', 'actions', 'checkpoints'])
+        expect(panels.right).toEqual(['task', 'checkpoints'])
       })
 
       it('handles moving to empty panel', () => {
@@ -137,7 +136,7 @@ describe('layoutStore', () => {
 
       it('does not affect other panels', () => {
         useLayoutStore.getState().reorderWidgets('left', ['files', 'task'])
-        expect(useLayoutStore.getState().panels.right).toEqual(['actions', 'checkpoints'])
+        expect(useLayoutStore.getState().panels.right).toEqual(['checkpoints'])
       })
     })
   })

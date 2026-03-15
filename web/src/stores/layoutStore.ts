@@ -23,7 +23,6 @@ export type WidgetId =
   | 'task'
   | 'files'
   | 'output'
-  | 'actions'
   | 'checkpoints'
   | 'chat'
   | 'agents'
@@ -91,7 +90,6 @@ const DEFAULT_WIDGET_STATES: Record<WidgetId, WidgetState> = {
   task: { collapsed: false, visible: true },
   files: { collapsed: false, visible: true },
   output: { collapsed: false, visible: true },
-  actions: { collapsed: false, visible: true },
   checkpoints: { collapsed: false, visible: true },
   chat: { collapsed: false, visible: true },
   agents: { collapsed: false, visible: true },
@@ -99,7 +97,7 @@ const DEFAULT_WIDGET_STATES: Record<WidgetId, WidgetState> = {
 
 const DEFAULT_PANELS: Record<PanelId, WidgetId[]> = {
   left: ['task', 'files'],
-  right: ['actions', 'checkpoints'],
+  right: ['checkpoints'],
   bottom: ['output'],
   main: [],
 }
@@ -259,7 +257,7 @@ export const useLayoutStore = create<LayoutState>()(
     }),
     {
       name: storeName('layout'),
-      version: 2, // Bumped for new tab types
+      version: 3, // Bumped: removed actions widget, chat-first UI
     }
   )
 )

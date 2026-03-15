@@ -512,7 +512,7 @@ describe('projectStore', () => {
 
       await useProjectStore.getState().start('github:repo#1')
 
-      expect(client.call).toHaveBeenCalledWith('start', { source: 'github:repo#1' })
+      expect(client.call).toHaveBeenCalledWith('start', { source: 'github:repo#1', auto_advance: false })
       expect(useProjectStore.getState().state).toBe('loaded')
       expect(useProjectStore.getState().loading).toBe(false)
     })
