@@ -35,6 +35,10 @@
     - [reset](/cli/reset.md)
     - [abort](/cli/abort.md)
     - [abandon](/cli/abandon.md)
+  - Governance
+    - [approve](/cli/approve.md)
+    - [checklist](/cli/checklist.md)
+    - [audit](/cli/audit.md)
   - Information
     - [status](/cli/status.md)
     - [list](/cli/list.md)

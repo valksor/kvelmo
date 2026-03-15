@@ -125,6 +125,10 @@ func NewServer(staticDir string, port int, opts ...ServerOption) (*Server, error
 	mux.HandleFunc("/readyz", s.handleReadyz)
 	mux.HandleFunc("/metrics", s.handleMetrics)
 
+	// JSON API endpoints for external aggregation (G1: reporting)
+	mux.HandleFunc("/api/state", s.handleAPIState)
+	mux.HandleFunc("/api/tasks", s.handleAPITasks)
+
 	// Static file serving (SPA)
 	// Serve from disk (staticDir) or embedded assets (fallback for production)
 	if staticDir != "" || s.embeddedFS != nil {

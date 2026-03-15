@@ -24,8 +24,11 @@ kvelmo review
 
 1. State transitions to `reviewing`
 2. Security scanning runs (if configured)
-3. You review the changes
-4. Decide to submit or undo
+3. Quality gate checks run
+4. You review the changes
+5. Complete the review checklist (if configured): `kvelmo checklist --check <item>`
+6. Approve the submit transition (if required): `kvelmo approve submit`
+7. Decide to submit or undo
 
 ## Reviewing Changes
 
@@ -55,5 +58,7 @@ Also in Web UI: [Review Phase](/web-ui/reviewing.md).
 ## Related
 
 - [implement](/cli/implement.md) — Implement before reviewing
+- [checklist](/cli/checklist.md) — Manage review checklist
+- [approve](/cli/approve.md) — Approve gated transitions
 - [submit](/cli/submit.md) — Submit after approval
 - [undo](/cli/undo.md) — Revert if needed

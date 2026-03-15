@@ -15,6 +15,8 @@ const MemoryPanel = lazy(() => import('./MemoryPanel').then(m => ({ default: m.M
 const DiagnosePanel = lazy(() => import('./DiagnosePanel').then(m => ({ default: m.DiagnosePanel })))
 const RecordingsPanel = lazy(() => import('./RecordingsPanel').then(m => ({ default: m.RecordingsPanel })))
 const BackupPanel = lazy(() => import('./BackupPanel').then(m => ({ default: m.BackupPanel })))
+const ActivityPanel = lazy(() => import('./ActivityPanel').then(m => ({ default: m.ActivityPanel })))
+const CatalogPanel = lazy(() => import('./CatalogPanel').then(m => ({ default: m.CatalogPanel })))
 
 export function GlobalView() {
   const {
@@ -51,6 +53,8 @@ export function GlobalView() {
   const [showDiagnose, setShowDiagnose] = useState(false)
   const [showRecordings, setShowRecordings] = useState(false)
   const [showBackup, setShowBackup] = useState(false)
+  const [showActivity, setShowActivity] = useState(false)
+  const [showCatalog, setShowCatalog] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const docsData = useDocsURL()
 
@@ -169,6 +173,30 @@ export function GlobalView() {
           >
             <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </button>
+
+          {/* Activity log button */}
+          <button
+            onClick={() => setShowActivity(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Activity Log"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </button>
+
+          {/* Catalog button */}
+          <button
+            onClick={() => setShowCatalog(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Template Catalog"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </button>
 
@@ -343,7 +371,15 @@ export function GlobalView() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-medium text-sm sm:text-base text-base-content group-hover:text-base-content transition-colors truncate">
+                      <span className="font-medium text-sm sm:text-base text-base-content group-hover:text-base-content transition-colors truncate flex items-center gap-1.5">
+                        {p.healthy != null && (
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                              p.healthy ? 'bg-success' : 'bg-error'
+                            }`}
+                            title={p.healthy ? 'Socket healthy' : 'Socket unreachable'}
+                          />
+                        )}
                         {p.path.split('/').pop()}
                       </span>
                       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -429,6 +465,18 @@ export function GlobalView() {
           <BackupPanel
             isOpen={showBackup}
             onClose={() => setShowBackup(false)}
+          />
+        )}
+        {showActivity && (
+          <ActivityPanel
+            isOpen={showActivity}
+            onClose={() => setShowActivity(false)}
+          />
+        )}
+        {showCatalog && (
+          <CatalogPanel
+            isOpen={showCatalog}
+            onClose={() => setShowCatalog(false)}
           />
         )}
       </Suspense>
