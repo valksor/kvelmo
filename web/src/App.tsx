@@ -3,6 +3,7 @@ import { useGlobalStore } from './stores/globalStore'
 import { useProjectStore } from './stores/projectStore'
 import { useThemeStore } from './stores/themeStore'
 import { useLeakWatchdog } from './hooks/useLeakWatchdog'
+import { useKeyboardShortcuts, SHORTCUTS } from './hooks/useKeyboardShortcuts'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GlobalView } from './components/GlobalView'
 import { ProjectView } from './components/ProjectView'
@@ -16,6 +17,8 @@ export default function App() {
   const { selectedProject, selectProject, connect, connected, connecting, projects } = useGlobalStore()
   const { connect: connectWorktree, disconnect: disconnectWorktree } = useProjectStore()
   const { theme, setTheme } = useThemeStore()
+
+  const { showHelp, setShowHelp } = useKeyboardShortcuts()
 
   useLeakWatchdog((growthMB) => {
     console.error(`LeakWatchdog: heap grew +${growthMB.toFixed(0)}MB without GC recovery — reloading`)
@@ -122,6 +125,48 @@ export default function App() {
         <StateAnnouncer />
         {selectedProject ? <ProjectView /> : <GlobalView />}
       </main>
+      {showHelp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowHelp(false)}
+          role="dialog"
+          aria-label="Keyboard shortcuts"
+        >
+          <div
+            className="bg-base-200 rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowHelp(false)}
+                aria-label="Close"
+              >
+                Esc
+              </button>
+            </div>
+            {Object.entries(
+              SHORTCUTS.reduce<Record<string, typeof SHORTCUTS>>((acc, s) => {
+                ;(acc[s.section] ??= []).push(s)
+                return acc
+              }, {})
+            ).map(([section, items]) => (
+              <div key={section} className="mb-3">
+                <h3 className="text-xs font-semibold uppercase text-base-content/50 mb-1">
+                  {section}
+                </h3>
+                {items.map((s) => (
+                  <div key={s.keys} className="flex justify-between py-1">
+                    <span className="text-sm text-base-content/80">{s.description}</span>
+                    <kbd className="kbd kbd-sm">{s.keys}</kbd>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </ErrorBoundary>
   )
 }

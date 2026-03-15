@@ -1,64 +1,137 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useProjectStore } from '../stores/projectStore'
+import { useGlobalStore } from '../stores/globalStore'
 import { useLayoutStore } from '../stores/layoutStore'
 
 export interface Shortcut {
-  key: string
-  label: string
+  keys: string
   description: string
+  section: string
 }
 
 export const SHORTCUTS: Shortcut[] = [
-  { key: 'Ctrl+Shift+1', label: 'Ctrl+Shift+1', description: 'Switch to first tab' },
-  { key: 'Ctrl+Shift+2', label: 'Ctrl+Shift+2', description: 'Switch to second tab' },
-  { key: 'Ctrl+Shift+3', label: 'Ctrl+Shift+3', description: 'Switch to third tab' },
-  { key: 'Ctrl+Shift+4', label: 'Ctrl+Shift+4', description: 'Switch to fourth tab' },
-  { key: 'Ctrl+Shift+5', label: 'Ctrl+Shift+5', description: 'Switch to fifth tab' },
-  { key: 'Ctrl+/', label: 'Ctrl+/', description: 'Show keyboard shortcuts' },
+  // Navigation
+  { keys: '?', description: 'Toggle shortcuts help', section: 'Navigation' },
+  { keys: 'Ctrl+/', description: 'Toggle shortcuts help', section: 'Navigation' },
+  { keys: 'g p', description: 'Go to projects (GlobalView)', section: 'Navigation' },
+
+  // Tab switching
+  { keys: '1-5', description: 'Switch to tab by index', section: 'Tabs' },
+
+  // Workflow actions
+  { keys: 'Ctrl+z', description: 'Undo', section: 'Workflow' },
+  { keys: 'Ctrl+Shift+z', description: 'Redo', section: 'Workflow' },
 ]
 
-/**
- * Global keyboard shortcut handler.
- * Returns a boolean state for whether the shortcuts help dialog is open,
- * and a toggle function.
- */
+function isInputFocused(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = el.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return true
+  if ((el as HTMLElement).isContentEditable) return true
+  return false
+}
+
 export function useKeyboardShortcuts() {
   const [showHelp, setShowHelp] = useState(false)
-
-  const toggleHelp = useCallback(() => {
-    setShowHelp(prev => !prev)
-  }, [])
+  const chordKeyRef = useRef<string | null>(null)
+  const chordTimeRef = useRef<number>(0)
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ignore shortcuts when typing in inputs
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-        // Only allow Ctrl+/ to pass through from inputs
-        if (!(e.ctrlKey && e.key === '/')) return
+    function handleKeyDown(e: KeyboardEvent) {
+      const ctrlOrMeta = e.ctrlKey || e.metaKey
+      const inInput = isInputFocused()
+
+      // Escape — close help overlay (works everywhere)
+      if (e.key === 'Escape') {
+        setShowHelp(false)
+        return
       }
 
-      // Ctrl+Shift+1..5 — switch to tab by index
-      if (e.ctrlKey && e.shiftKey && e.key >= '1' && e.key <= '5') {
+      // Ctrl+/ or Cmd+/ — toggle help (works even in inputs)
+      if (ctrlOrMeta && e.key === '/') {
         e.preventDefault()
-        const index = parseInt(e.key) - 1
-        const { tabs, setActiveTab } = useLayoutStore.getState()
-        if (index < tabs.length) {
-          setActiveTab(tabs[index].id)
+        setShowHelp((prev) => !prev)
+        return
+      }
+
+      // Ctrl+z / Cmd+z — undo (works even in inputs for workflow undo)
+      if (ctrlOrMeta && !e.shiftKey && e.key === 'z') {
+        // Only intercept if we have an active project (otherwise let browser handle)
+        const { selectedProject } = useGlobalStore.getState()
+        if (selectedProject) {
+          e.preventDefault()
+          const { undo } = useProjectStore.getState()
+          undo()
         }
         return
       }
 
-      // Ctrl+/ — toggle shortcuts help
-      if (e.ctrlKey && e.key === '/') {
+      // Ctrl+Shift+z / Cmd+Shift+z — redo (works even in inputs)
+      if (ctrlOrMeta && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        const { selectedProject } = useGlobalStore.getState()
+        if (selectedProject) {
+          e.preventDefault()
+          const { redo } = useProjectStore.getState()
+          redo()
+        }
+        return
+      }
+
+      // Everything below is skipped when in input fields
+      if (inInput) return
+
+      // ? — toggle help overlay
+      if (e.key === '?' && !ctrlOrMeta) {
         e.preventDefault()
-        setShowHelp(prev => !prev)
+        setShowHelp((prev) => !prev)
+        return
+      }
+
+      // Chord: g p — go to projects
+      const now = Date.now()
+      if (e.key === 'g' && !ctrlOrMeta && !e.shiftKey && !e.altKey) {
+        chordKeyRef.current = 'g'
+        chordTimeRef.current = now
+        return
+      }
+
+      if (
+        e.key === 'p' &&
+        !ctrlOrMeta &&
+        !e.shiftKey &&
+        !e.altKey &&
+        chordKeyRef.current === 'g' &&
+        now - chordTimeRef.current < 500
+      ) {
+        e.preventDefault()
+        chordKeyRef.current = null
+        const { selectProject } = useGlobalStore.getState()
+        selectProject(null)
+        return
+      }
+
+      // Reset chord if a non-matching key is pressed
+      if (chordKeyRef.current && e.key !== 'g') {
+        chordKeyRef.current = null
+      }
+
+      // 1-5 — switch to tab by index
+      const num = parseInt(e.key, 10)
+      if (num >= 1 && num <= 5 && !ctrlOrMeta && !e.shiftKey && !e.altKey) {
+        e.preventDefault()
+        const { tabs, setActiveTab } = useLayoutStore.getState()
+        const targetTab = tabs[num - 1]
+        if (targetTab) {
+          setActiveTab(targetTab.id)
+        }
         return
       }
     }
 
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  return { showHelp, setShowHelp, toggleHelp }
+  return { showHelp, setShowHelp }
 }

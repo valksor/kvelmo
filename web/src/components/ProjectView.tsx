@@ -4,7 +4,7 @@ import { useProjectStore } from '../stores/projectStore'
 import { useLayoutStore } from '../stores/layoutStore'
 import { useDebugStore } from '../stores/debugStore'
 import { useDocsURL } from '../hooks/useDocsURL'
-import { useKeyboardShortcuts, SHORTCUTS } from '../hooks/useKeyboardShortcuts'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { Widget, TaskIcon, FilesIcon, ActionsIcon, CheckpointsIcon } from './Widget'
 import { PanelLayout } from './PanelLayout'
 import { TaskWidget } from './TaskWidget'
@@ -62,7 +62,7 @@ export function ProjectView() {
   const [showLogs, setShowLogs] = useState(false)
   const docsData = useDocsURL()
   const debugEnabled = useDebugStore(s => s.enabled)
-  const { showHelp: showShortcuts, setShowHelp: setShowShortcuts } = useKeyboardShortcuts()
+  useKeyboardShortcuts() // Register keyboard shortcuts (overlay rendered in App.tsx)
 
   // Memoize status type to avoid recalculation on every render
   // Must be before early return to satisfy React hooks rules
@@ -279,26 +279,7 @@ export function ProjectView() {
       )}
 
       {/* Keyboard shortcuts help dialog */}
-      {showShortcuts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowShortcuts(false)}>
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Keyboard Shortcuts</h3>
-            <div className="space-y-2">
-              {SHORTCUTS.map(s => (
-                <div key={s.key} className="flex items-center justify-between text-sm">
-                  <span className="text-base-content/70">{s.description}</span>
-                  <kbd className="kbd kbd-sm">{s.label}</kbd>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 text-right">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowShortcuts(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Shortcuts overlay is now rendered in App.tsx */}
     </div>
   )
 }
