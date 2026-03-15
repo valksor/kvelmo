@@ -173,6 +173,7 @@ func Merge(dst, src *Settings) {
 	mergeGitLabConfig(&dst.Providers.GitLab, &src.Providers.GitLab)
 	mergeWrikeConfig(&dst.Providers.Wrike, &src.Providers.Wrike)
 	mergeLinearConfig(&dst.Providers.Linear, &src.Providers.Linear)
+	mergeJiraConfig(&dst.Providers.Jira, &src.Providers.Jira)
 
 	// Git settings
 	if src.Git.BaseBranch != "" {
@@ -183,6 +184,15 @@ func Merge(dst, src *Settings) {
 	}
 	if src.Git.CommitPrefix != "" {
 		dst.Git.CommitPrefix = src.Git.CommitPrefix
+	}
+	if src.Git.CommitPattern != "" {
+		dst.Git.CommitPattern = src.Git.CommitPattern
+	}
+	if src.Git.PRTitlePattern != "" {
+		dst.Git.PRTitlePattern = src.Git.PRTitlePattern
+	}
+	if src.Git.BranchValidationPattern != "" {
+		dst.Git.BranchValidationPattern = src.Git.BranchValidationPattern
 	}
 	// Pointer bools: non-nil means explicitly set (allows false to override true)
 	if src.Git.CreateBranch != nil {
@@ -207,6 +217,12 @@ func Merge(dst, src *Settings) {
 	if src.Storage.SaveInProject != nil {
 		dst.Storage.SaveInProject = src.Storage.SaveInProject
 	}
+	if src.Storage.SpecOutputPath != "" {
+		dst.Storage.SpecOutputPath = src.Storage.SpecOutputPath
+	}
+	if src.Storage.ChangelogPath != "" {
+		dst.Storage.ChangelogPath = src.Storage.ChangelogPath
+	}
 
 	// Workflow settings
 	if src.Workflow.UseWorktreeIsolation != nil {
@@ -217,6 +233,34 @@ func Merge(dst, src *Settings) {
 	}
 	if src.Workflow.ExternalReview.Command != "" {
 		dst.Workflow.ExternalReview.Command = src.Workflow.ExternalReview.Command
+	}
+
+	// Policy settings
+	if len(src.Workflow.Policy.RequiredPhases) > 0 {
+		dst.Workflow.Policy.RequiredPhases = src.Workflow.Policy.RequiredPhases
+	}
+	if len(src.Workflow.Policy.SensitivePaths) > 0 {
+		dst.Workflow.Policy.SensitivePaths = src.Workflow.Policy.SensitivePaths
+	}
+	if src.Workflow.Policy.MinSpecSections > 0 {
+		dst.Workflow.Policy.MinSpecSections = src.Workflow.Policy.MinSpecSections
+	}
+	if src.Workflow.Policy.RequireSecurityScan {
+		dst.Workflow.Policy.RequireSecurityScan = true
+	}
+	if len(src.Workflow.Policy.ApprovalRequired) > 0 {
+		if dst.Workflow.Policy.ApprovalRequired == nil {
+			dst.Workflow.Policy.ApprovalRequired = make(map[string]bool)
+		}
+		for k, v := range src.Workflow.Policy.ApprovalRequired {
+			dst.Workflow.Policy.ApprovalRequired[k] = v
+		}
+	}
+	if len(src.Workflow.Policy.ReviewChecklist) > 0 {
+		dst.Workflow.Policy.ReviewChecklist = src.Workflow.Policy.ReviewChecklist
+	}
+	if len(src.Workflow.Policy.DocRequirements) > 0 {
+		dst.Workflow.Policy.DocRequirements = src.Workflow.Policy.DocRequirements
 	}
 
 	// UI settings
@@ -244,6 +288,17 @@ func mergeGitHubConfig(dst, src *GitHubConfig) {
 	}
 	if src.AllowTicketComment {
 		dst.AllowTicketComment = true
+	}
+	if src.StatusSync {
+		dst.StatusSync = true
+	}
+	if len(src.StatusMapping) > 0 {
+		if dst.StatusMapping == nil {
+			dst.StatusMapping = make(map[string]string)
+		}
+		for k, v := range src.StatusMapping {
+			dst.StatusMapping[k] = v
+		}
 	}
 }
 
@@ -300,6 +355,67 @@ func mergeLinearConfig(dst, src *LinearConfig) {
 	if src.AllowTicketComment {
 		dst.AllowTicketComment = true
 	}
+	if src.StatusSync {
+		dst.StatusSync = true
+	}
+	if len(src.StatusMapping) > 0 {
+		if dst.StatusMapping == nil {
+			dst.StatusMapping = make(map[string]string)
+		}
+		for k, v := range src.StatusMapping {
+			dst.StatusMapping[k] = v
+		}
+	}
+}
+
+func mergeJiraConfig(dst, src *JiraConfig) {
+	if src.Token != "" {
+		dst.Token = src.Token
+	}
+	if src.Email != "" {
+		dst.Email = src.Email
+	}
+	if src.BaseURL != "" {
+		dst.BaseURL = src.BaseURL
+	}
+	if src.AllowTicketComment {
+		dst.AllowTicketComment = true
+	}
+	if src.StatusSync {
+		dst.StatusSync = true
+	}
+	if len(src.StatusMapping) > 0 {
+		if dst.StatusMapping == nil {
+			dst.StatusMapping = make(map[string]string)
+		}
+		for k, v := range src.StatusMapping {
+			dst.StatusMapping[k] = v
+		}
+	}
+}
+
+// setStatusMapping is a helper for SetValue that converts a map[string]any to map[string]string.
+func setStatusMapping(dst *map[string]string, value any, path string) error {
+	if v, ok := value.(map[string]string); ok {
+		*dst = v
+
+		return nil
+	}
+	if v, ok := value.(map[string]any); ok {
+		m := make(map[string]string, len(v))
+		for k, val := range v {
+			if s, ok := val.(string); ok {
+				m[k] = s
+			} else {
+				return fmt.Errorf("%s.%s must be a string", path, k)
+			}
+		}
+		*dst = m
+
+		return nil
+	}
+
+	return fmt.Errorf("%s must be a map of string->string", path)
 }
 
 // SetValue sets a value at a dot-notation path in the settings.
@@ -468,6 +584,72 @@ func SetValue(s *Settings, path string, value any) error {
 
 		return errors.New("providers.linear.allow_ticket_comment must be a boolean")
 
+	// Jira
+	case "providers.jira.token":
+		if v, ok := value.(string); ok {
+			s.Providers.Jira.Token = v
+
+			return nil
+		}
+
+		return errors.New("providers.jira.token must be a string")
+	case "providers.jira.email":
+		if v, ok := value.(string); ok {
+			s.Providers.Jira.Email = v
+
+			return nil
+		}
+
+		return errors.New("providers.jira.email must be a string")
+	case "providers.jira.base_url":
+		if v, ok := value.(string); ok {
+			s.Providers.Jira.BaseURL = v
+
+			return nil
+		}
+
+		return errors.New("providers.jira.base_url must be a string")
+	case "providers.jira.allow_ticket_comment":
+		if v, ok := value.(bool); ok {
+			s.Providers.Jira.AllowTicketComment = v
+
+			return nil
+		}
+
+		return errors.New("providers.jira.allow_ticket_comment must be a boolean")
+
+	// Status sync settings
+	case "providers.github.status_sync":
+		if v, ok := value.(bool); ok {
+			s.Providers.GitHub.StatusSync = v
+
+			return nil
+		}
+
+		return errors.New("providers.github.status_sync must be a boolean")
+	case "providers.github.status_mapping":
+		return setStatusMapping(&s.Providers.GitHub.StatusMapping, value, "providers.github.status_mapping")
+	case "providers.linear.status_sync":
+		if v, ok := value.(bool); ok {
+			s.Providers.Linear.StatusSync = v
+
+			return nil
+		}
+
+		return errors.New("providers.linear.status_sync must be a boolean")
+	case "providers.linear.status_mapping":
+		return setStatusMapping(&s.Providers.Linear.StatusMapping, value, "providers.linear.status_mapping")
+	case "providers.jira.status_sync":
+		if v, ok := value.(bool); ok {
+			s.Providers.Jira.StatusSync = v
+
+			return nil
+		}
+
+		return errors.New("providers.jira.status_sync must be a boolean")
+	case "providers.jira.status_mapping":
+		return setStatusMapping(&s.Providers.Jira.StatusMapping, value, "providers.jira.status_mapping")
+
 	// Git
 	case "git.base_branch":
 		if v, ok := value.(string); ok {
@@ -493,6 +675,30 @@ func SetValue(s *Settings, path string, value any) error {
 		}
 
 		return errors.New("git.commit_prefix must be a string")
+	case "git.commit_pattern":
+		if v, ok := value.(string); ok {
+			s.Git.CommitPattern = v
+
+			return nil
+		}
+
+		return errors.New("git.commit_pattern must be a string")
+	case "git.pr_title_pattern":
+		if v, ok := value.(string); ok {
+			s.Git.PRTitlePattern = v
+
+			return nil
+		}
+
+		return errors.New("git.pr_title_pattern must be a string")
+	case "git.branch_validation_pattern":
+		if v, ok := value.(string); ok {
+			s.Git.BranchValidationPattern = v
+
+			return nil
+		}
+
+		return errors.New("git.branch_validation_pattern must be a string")
 	case "git.create_branch":
 		if v, ok := value.(bool); ok {
 			s.Git.CreateBranch = &v
@@ -550,6 +756,22 @@ func SetValue(s *Settings, path string, value any) error {
 		}
 
 		return errors.New("storage.save_in_project must be a boolean")
+	case "storage.spec_output_path":
+		if v, ok := value.(string); ok {
+			s.Storage.SpecOutputPath = v
+
+			return nil
+		}
+
+		return errors.New("storage.spec_output_path must be a string")
+	case "storage.changelog_path":
+		if v, ok := value.(string); ok {
+			s.Storage.ChangelogPath = v
+
+			return nil
+		}
+
+		return errors.New("storage.changelog_path must be a string")
 
 	// Workflow
 	case "workflow.use_worktree_isolation":
@@ -583,6 +805,47 @@ func SetValue(s *Settings, path string, value any) error {
 		}
 
 		return errors.New("workflow.external_review.command must be a string")
+
+	// Policy - Approval Required
+	case "workflow.policy.approval_required":
+		if v, ok := value.(map[string]any); ok {
+			m := make(map[string]bool)
+			for k, val := range v {
+				if b, ok := val.(bool); ok {
+					m[k] = b
+				} else {
+					return fmt.Errorf("workflow.policy.approval_required.%s must be a boolean", k)
+				}
+			}
+			s.Workflow.Policy.ApprovalRequired = m
+
+			return nil
+		}
+
+		return errors.New("workflow.policy.approval_required must be a map of event->boolean")
+
+	// Policy - Review Checklist
+	case "workflow.policy.review_checklist":
+		if v, ok := value.([]string); ok {
+			s.Workflow.Policy.ReviewChecklist = v
+
+			return nil
+		}
+		if arr, ok := value.([]any); ok {
+			strs := make([]string, len(arr))
+			for i, item := range arr {
+				if str, ok := item.(string); ok {
+					strs[i] = str
+				} else {
+					return fmt.Errorf("workflow.policy.review_checklist[%d] must be a string", i)
+				}
+			}
+			s.Workflow.Policy.ReviewChecklist = strs
+
+			return nil
+		}
+
+		return errors.New("workflow.policy.review_checklist must be a string array")
 
 	// UI
 	case "ui.onboarding_dismissed":
@@ -686,6 +949,30 @@ func GetValue(s *Settings, path string) (any, error) {
 	case "providers.linear.allow_ticket_comment":
 		return s.Providers.Linear.AllowTicketComment, nil
 
+	// Jira
+	case "providers.jira.token":
+		return s.Providers.Jira.Token, nil
+	case "providers.jira.email":
+		return s.Providers.Jira.Email, nil
+	case "providers.jira.base_url":
+		return s.Providers.Jira.BaseURL, nil
+	case "providers.jira.allow_ticket_comment":
+		return s.Providers.Jira.AllowTicketComment, nil
+
+	// Status sync
+	case "providers.github.status_sync":
+		return s.Providers.GitHub.StatusSync, nil
+	case "providers.github.status_mapping":
+		return s.Providers.GitHub.StatusMapping, nil
+	case "providers.linear.status_sync":
+		return s.Providers.Linear.StatusSync, nil
+	case "providers.linear.status_mapping":
+		return s.Providers.Linear.StatusMapping, nil
+	case "providers.jira.status_sync":
+		return s.Providers.Jira.StatusSync, nil
+	case "providers.jira.status_mapping":
+		return s.Providers.Jira.StatusMapping, nil
+
 	// Git
 	case "git.base_branch":
 		return s.Git.BaseBranch, nil
@@ -693,6 +980,12 @@ func GetValue(s *Settings, path string) (any, error) {
 		return s.Git.BranchPattern, nil
 	case "git.commit_prefix":
 		return s.Git.CommitPrefix, nil
+	case "git.commit_pattern":
+		return s.Git.CommitPattern, nil
+	case "git.pr_title_pattern":
+		return s.Git.PRTitlePattern, nil
+	case "git.branch_validation_pattern":
+		return s.Git.BranchValidationPattern, nil
 	case "git.create_branch":
 		return BoolValue(s.Git.CreateBranch, true), nil
 	case "git.auto_commit":
@@ -709,6 +1002,10 @@ func GetValue(s *Settings, path string) (any, error) {
 	// Storage
 	case "storage.save_in_project":
 		return BoolValue(s.Storage.SaveInProject, false), nil
+	case "storage.spec_output_path":
+		return s.Storage.SpecOutputPath, nil
+	case "storage.changelog_path":
+		return s.Storage.ChangelogPath, nil
 
 	// Workflow
 	case "workflow.use_worktree_isolation":
@@ -725,6 +1022,12 @@ func GetValue(s *Settings, path string) (any, error) {
 		}
 
 		return s.Workflow.ExternalReview.Command, nil
+
+	// Policy
+	case "workflow.policy.approval_required":
+		return s.Workflow.Policy.ApprovalRequired, nil
+	case "workflow.policy.review_checklist":
+		return s.Workflow.Policy.ReviewChecklist, nil
 
 	// UI
 	case "ui.onboarding_dismissed":
@@ -748,6 +1051,7 @@ var SensitivePaths = map[string]string{
 	"providers.gitlab.token": "GITLAB_TOKEN",
 	"providers.wrike.token":  "WRIKE_TOKEN",
 	"providers.linear.token": "LINEAR_TOKEN",
+	"providers.jira.token":   "JIRA_TOKEN",
 }
 
 // IsSensitivePath returns true if the path should be stored in .env.
@@ -781,6 +1085,9 @@ var envOverrides = []struct {
 	{"GIT_BASE_BRANCH", "git.base_branch"},
 	{"GIT_BRANCH_PATTERN", "git.branch_pattern"},
 	{"GIT_COMMIT_PREFIX", "git.commit_prefix"},
+	{"GIT_COMMIT_PATTERN", "git.commit_pattern"},
+	{"GIT_PR_TITLE_PATTERN", "git.pr_title_pattern"},
+	{"GIT_BRANCH_VALIDATION_PATTERN", "git.branch_validation_pattern"},
 	{"GIT_CREATE_BRANCH", "git.create_branch"},
 	{"GIT_AUTO_COMMIT", "git.auto_commit"},
 	{"GIT_SIGN_COMMITS", "git.sign_commits"},
@@ -791,6 +1098,8 @@ var envOverrides = []struct {
 
 	// Storage
 	{"STORAGE_SAVE_IN_PROJECT", "storage.save_in_project"},
+	{"STORAGE_SPEC_OUTPUT_PATH", "storage.spec_output_path"},
+	{"STORAGE_CHANGELOG_PATH", "storage.changelog_path"},
 
 	// Workflow
 	{"WORKFLOW_USE_WORKTREE_ISOLATION", "workflow.use_worktree_isolation"},
@@ -812,7 +1121,9 @@ func applyEnvOverrides(s *Settings) {
 		// String fields
 		case "agent.default", "providers.default", "providers.github.owner",
 			"providers.gitlab.base_url", "providers.linear.team",
-			"git.base_branch", "git.branch_pattern", "git.commit_prefix":
+			"git.base_branch", "git.branch_pattern", "git.commit_prefix",
+			"git.commit_pattern", "git.pr_title_pattern", "git.branch_validation_pattern",
+			"storage.spec_output_path", "storage.changelog_path":
 			_ = SetValue(s, ov.path, val)
 
 		// Boolean fields

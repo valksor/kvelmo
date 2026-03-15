@@ -78,6 +78,9 @@ git:
   base_branch: main                       # Base branch for feature branches (auto-detected if omitted)
   branch_pattern: "feature/{key}--{slug}"  # Branch naming pattern
   commit_prefix: "[{key}]"                # Commit message prefix
+  commit_pattern: "^(feat|fix|chore)\\(.*\\):.*"  # Regex to validate commit messages
+  pr_title_pattern: "[{key}] {title}"     # Template for PR titles
+  branch_validation_pattern: "^(feature|bugfix)/"  # Regex to validate branch names
   create_branch: true                     # Auto-create branch on task start
   auto_commit: true                       # Auto-commit after implementation (default: true)
   sign_commits: false                     # GPG sign commits
@@ -88,12 +91,28 @@ workers:
 
 storage:
   save_in_project: false   # Store specs/plans in .valksor/ instead of ~/.valksor/kvelmo/
+  spec_output_path: "docs/specs/{key}.md"  # Write specs to repo (empty to disable)
+  changelog_path: CHANGELOG.md             # Auto-generate changelog entries (empty to disable)
 
 workflow:
   use_worktree_isolation: true  # Create isolated git worktree for each task
   external_review:
     mode: ask                   # When to run external review: ask | always | never
     command: coderabbit         # CLI review tool command (default: coderabbit)
+  policy:
+    required_phases:            # Phases that cannot be skipped
+      - review
+    sensitive_paths:            # Files requiring mandatory review
+      - "pkg/auth/*"
+    approval_required:          # Transitions requiring explicit human approval
+      submit: true
+    review_checklist:           # Items to check before review completes
+      - security
+      - performance
+      - tests
+    doc_requirements:           # Require doc updates when code changes
+      - trigger: "pkg/api/*"
+        requires: "docs/api/*"
 
 watchdog:
   enabled: true            # Monitor for memory leaks
@@ -127,6 +146,8 @@ custom_agents:
 | `providers.default`                        | string | `github`             | Default task provider               |
 | `providers.github.owner`                   | string | (auto-detect)        | Default repository owner            |
 | `providers.github.allow_ticket_comment`    | bool   | `false`              | Post status comments on issues/PRs  |
+| `providers.github.status_sync`             | bool   | `false`              | Sync task state to GitHub labels    |
+| `providers.github.status_mapping`          | map    | (none)               | Map kvelmo states to GitHub labels  |
 | `providers.gitlab.base_url`                | string | `https://gitlab.com` | GitLab instance URL                 |
 | `providers.wrike.include_parent_context`   | bool   | `true`               | Fetch parent task for AI context    |
 | `providers.wrike.include_sibling_context`  | bool   | `true`               | Fetch sibling tasks for AI context  |
@@ -134,6 +155,8 @@ custom_agents:
 | `providers.linear.include_parent_context`  | bool   | `true`               | Fetch parent issue for AI context   |
 | `providers.linear.include_sibling_context` | bool   | `true`               | Fetch sibling issues for AI context |
 | `providers.linear.allow_ticket_comment`    | bool   | `false`              | Post status comments on issues      |
+| `providers.linear.status_sync`             | bool   | `false`              | Sync task state to Linear statuses  |
+| `providers.linear.status_mapping`          | map    | (none)               | Map kvelmo states to Linear states  |
 
 **Performance tip:** Setting `include_parent_context: false` and `include_sibling_context: false` for Wrike can save ~200ms per task fetch by skipping hierarchy API calls.
 
@@ -144,6 +167,9 @@ custom_agents:
 | `git.base_branch`      | string | (auto-detect)           | Base branch for feature branches      |
 | `git.branch_pattern`   | string | `feature/{key}--{slug}` | Branch naming pattern                 |
 | `git.commit_prefix`    | string | `[{key}]`               | Commit message prefix                 |
+| `git.commit_pattern`   | string | (none)                  | Regex to validate commit messages     |
+| `git.pr_title_pattern` | string | `[{key}] {title}`       | Template for PR titles                |
+| `git.branch_validation_pattern` | string | (none)         | Regex to validate generated branch names |
 | `git.create_branch`    | bool   | `true`                  | Auto-create branch on task start      |
 | `git.auto_commit`      | bool   | `true`                  | Auto-commit after implementation      |
 | `git.sign_commits`     | bool   | `false`                 | GPG sign commits                      |
@@ -162,9 +188,11 @@ custom_agents:
 
 ### Storage Settings
 
-| Key                       | Type | Default | Description                               |
-|---------------------------|------|---------|-------------------------------------------|
-| `storage.save_in_project` | bool | `false` | Store data in `.valksor/` instead of home |
+| Key                          | Type   | Default | Description                               |
+|------------------------------|--------|---------|-------------------------------------------|
+| `storage.save_in_project`    | bool   | `false` | Store data in `.valksor/` instead of home |
+| `storage.spec_output_path`   | string | (none)  | Write specs to repo path. Variables: `{key}`, `{slug}` |
+| `storage.changelog_path`     | string | (none)  | Path to CHANGELOG.md for auto-generated entries |
 
 ### Workflow Settings
 
@@ -173,6 +201,13 @@ custom_agents:
 | `workflow.use_worktree_isolation`    | bool   | `true`       | Create isolated git worktree per task  |
 | `workflow.external_review.mode`      | string | `ask`        | When to run external review: ask, always, never |
 | `workflow.external_review.command`   | string | `coderabbit` | CLI command for external review tool   |
+| `workflow.policy.required_phases`   | string[] | (none)     | Phases that cannot be skipped          |
+| `workflow.policy.sensitive_paths`   | string[] | (none)     | Glob patterns requiring mandatory review |
+| `workflow.policy.min_spec_sections` | int    | `0`          | Min spec files before implementation   |
+| `workflow.policy.require_security_scan` | bool | `false`    | Block submission without security scan |
+| `workflow.policy.approval_required` | map    | (none)       | Transitions needing human approval     |
+| `workflow.policy.review_checklist`  | string[] | (none)     | Items to check before review completes |
+| `workflow.policy.doc_requirements`  | list   | (none)       | Trigger/requires pairs for doc enforcement |
 
 ### Watchdog Settings (Advanced)
 

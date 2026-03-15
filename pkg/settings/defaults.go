@@ -50,6 +50,7 @@ func DefaultSettings() *Settings {
 		Git: GitSettings{
 			BranchPattern:  "feature/{key}--{slug}",
 			CommitPrefix:   "[{key}]",
+			PRTitlePattern: "[{key}] {title}",
 			CreateBranch:   boolPtr(true),
 			AutoCommit:     boolPtr(true),
 			SignCommits:    boolPtr(false),

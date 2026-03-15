@@ -221,12 +221,17 @@ func TestSetGetValue_AllPaths(t *testing.T) {
 		{"providers.wrike.allow_ticket_comment", true},
 		{"git.branch_pattern", "feat/{key}"},
 		{"git.commit_prefix", "[fix]"},
+		{"git.commit_pattern", `^(feat|fix)\(.*\):.*`},
+		{"git.pr_title_pattern", "[{key}] {title}"},
+		{"git.branch_validation_pattern", `^(feature|bugfix)/.*`},
 		{"git.create_branch", true},
 		{"git.auto_commit", true},
 		{"git.sign_commits", true},
 		{"git.allow_pr_comment", false},
 		{"workers.max", 5},
 		{"storage.save_in_project", true},
+		{"storage.spec_output_path", "docs/specs/{key}.md"},
+		{"storage.changelog_path", "CHANGELOG.md"},
 		{"workflow.use_worktree_isolation", true},
 	}
 
