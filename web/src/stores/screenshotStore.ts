@@ -37,6 +37,7 @@ interface ScreenshotState {
   attach: (id: string) => void
   detach: (id: string) => void
   clearAttached: () => void
+  captureScreenshot: (client?: SocketClient | null, source?: string, step?: string) => Promise<void>
   deleteScreenshot: (id: string, client?: SocketClient | null) => Promise<void>
 
   getScreenshot: (id: string, client?: SocketClient | null) => Promise<string | null>
@@ -103,6 +104,21 @@ export const useScreenshotStore = create<ScreenshotState>((set, get) => ({
 
   clearAttached: () => {
     set({ attachedIds: [] })
+  },
+
+  captureScreenshot: async (client, source = 'user', step) => {
+    if (!client) return
+
+    set({ loading: true, error: null })
+
+    try {
+      await client.call('screenshots.capture', { source, step })
+      // The actual addition will happen via the WebSocket screenshot_captured event
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Failed to capture screenshot' })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   deleteScreenshot: async (id: string, client) => {

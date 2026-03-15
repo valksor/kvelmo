@@ -6,6 +6,7 @@ import { setPath, isMaskedToken } from '../lib/schemaUtils'
 import { AccessibleModal } from './ui/AccessibleModal'
 import { ProviderTestButtons } from './settings/ProviderTestButtons'
 import { ConfigValidation } from './settings/ConfigValidation'
+import { NotifyTestButton } from './settings/NotifyTestButton'
 import type { Schema, SettingsResponse, Scope } from '../types/settings'
 
 interface SettingsProps {
@@ -209,6 +210,7 @@ export function Settings({ isOpen, onClose, defaultScope }: SettingsProps) {
             {scope === 'global' && (
               <>
                 <ProviderTestButtons />
+                <NotifyTestButton />
                 <ConfigValidation />
               </>
             )}

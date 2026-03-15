@@ -13,6 +13,13 @@ interface BackupResult {
   files: number
 }
 
+interface RestoreResult {
+  target: string
+  files: number
+  dirs: number
+  skipped: number
+}
+
 interface BackupInfo {
   name: string
   path: string
@@ -26,8 +33,10 @@ export function BackupPanel({ isOpen, onClose }: BackupPanelProps) {
   const [backups, setBackups] = useState<BackupInfo[]>([])
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [restoring, setRestoring] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<BackupResult | null>(null)
+  const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null)
 
   const loadBackups = useCallback(async () => {
     if (!client) return
@@ -70,6 +79,25 @@ export function BackupPanel({ isOpen, onClose }: BackupPanelProps) {
       setCreating(false)
     }
   }, [client, loadBackups])
+
+  const handleRestore = useCallback(async (archivePath: string) => {
+    if (!client) return
+
+    setRestoring(archivePath)
+    setError(null)
+    setRestoreResult(null)
+
+    try {
+      const result = await client.call<RestoreResult>('backup.restore', {
+        archive_path: archivePath,
+      })
+      setRestoreResult(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to restore backup')
+    } finally {
+      setRestoring(null)
+    }
+  }, [client])
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B'
@@ -131,6 +159,20 @@ export function BackupPanel({ isOpen, onClose }: BackupPanelProps) {
           </div>
         )}
 
+        {/* Restore result */}
+        {restoreResult && (
+          <div className="alert alert-success py-2 mb-4">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <div className="text-sm">
+              <p className="font-medium">Backup restored successfully</p>
+              <p className="text-xs opacity-80 font-mono mt-1">{restoreResult.target}</p>
+              <p className="text-xs opacity-80">{restoreResult.files} files, {restoreResult.dirs} directories{restoreResult.skipped > 0 ? `, ${restoreResult.skipped} skipped` : ''}</p>
+            </div>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="alert alert-error py-2 mb-4">
@@ -165,6 +207,21 @@ export function BackupPanel({ isOpen, onClose }: BackupPanelProps) {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-xs text-base-content/50">{formatBytes(b.size)}</span>
                       <span className="text-xs text-base-content/40">{formatDate(b.created_at)}</span>
+                      <button
+                        onClick={() => handleRestore(b.path)}
+                        disabled={restoring !== null || !connected}
+                        className="btn btn-xs btn-outline btn-warning"
+                        title={`Restore from ${b.name}`}
+                      >
+                        {restoring === b.path ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        )}
+                        Restore
+                      </button>
                     </div>
                   </div>
                   <p className="text-xs text-base-content/40 font-mono truncate mt-1">{b.path}</p>

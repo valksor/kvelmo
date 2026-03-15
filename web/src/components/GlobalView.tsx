@@ -16,7 +16,9 @@ const DiagnosePanel = lazy(() => import('./DiagnosePanel').then(m => ({ default:
 const RecordingsPanel = lazy(() => import('./RecordingsPanel').then(m => ({ default: m.RecordingsPanel })))
 const BackupPanel = lazy(() => import('./BackupPanel').then(m => ({ default: m.BackupPanel })))
 const ActivityPanel = lazy(() => import('./ActivityPanel').then(m => ({ default: m.ActivityPanel })))
+const SecurityPanel = lazy(() => import('./SecurityPanel').then(m => ({ default: m.SecurityPanel })))
 const CatalogPanel = lazy(() => import('./CatalogPanel').then(m => ({ default: m.CatalogPanel })))
+const AccessPanel = lazy(() => import('./AccessPanel').then(m => ({ default: m.AccessPanel })))
 
 export function GlobalView() {
   const {
@@ -54,7 +56,9 @@ export function GlobalView() {
   const [showRecordings, setShowRecordings] = useState(false)
   const [showBackup, setShowBackup] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
+  const [showSecurity, setShowSecurity] = useState(false)
   const [showCatalog, setShowCatalog] = useState(false)
+  const [showAccess, setShowAccess] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const docsData = useDocsURL()
 
@@ -188,6 +192,18 @@ export function GlobalView() {
             </svg>
           </button>
 
+          {/* Security scan button */}
+          <button
+            onClick={() => setShowSecurity(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Security Scan"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </button>
+
           {/* Catalog button */}
           <button
             onClick={() => setShowCatalog(true)}
@@ -197,6 +213,18 @@ export function GlobalView() {
           >
             <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </button>
+
+          {/* Access tokens button */}
+          <button
+            onClick={() => setShowAccess(true)}
+            disabled={!connected}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Access Tokens"
+          >
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </button>
 
@@ -473,10 +501,22 @@ export function GlobalView() {
             onClose={() => setShowActivity(false)}
           />
         )}
+        {showSecurity && (
+          <SecurityPanel
+            isOpen={showSecurity}
+            onClose={() => setShowSecurity(false)}
+          />
+        )}
         {showCatalog && (
           <CatalogPanel
             isOpen={showCatalog}
             onClose={() => setShowCatalog(false)}
+          />
+        )}
+        {showAccess && (
+          <AccessPanel
+            isOpen={showAccess}
+            onClose={() => setShowAccess(false)}
           />
         )}
       </Suspense>

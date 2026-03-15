@@ -14,8 +14,18 @@ interface ActivityEntry {
   duration_ms: number
   error: string
   params_size: number
+  user_id?: string
+  task_id?: string
+  agent_model?: string
 }
 
+interface AuditTask {
+  id: string
+  path: string
+  state: string
+}
+
+type ViewMode = 'activity' | 'audit'
 type TimeRange = '1h' | '6h' | '24h' | '7d'
 
 const TIME_RANGE_LABELS: Record<TimeRange, string> = {
@@ -33,6 +43,8 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [viewMode, setViewMode] = useState<ViewMode>('activity')
+  const [auditTasks, setAuditTasks] = useState<AuditTask[]>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('1h')
   const [errorsOnly, setErrorsOnly] = useState(false)
   const [methodFilter, setMethodFilter] = useState('')
@@ -44,29 +56,56 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
     setError(null)
 
     try {
-      const result = await client.call<{ entries: ActivityEntry[]; count: number; enabled: boolean }>(
-        'activity.query',
-        { since: timeRange, limit: 100 }
-      )
-      let filtered = result.entries || []
+      if (viewMode === 'audit') {
+        // Audit view uses the export RPC for compliance-focused data
+        const result = await client.call<{
+          tasks: AuditTask[]
+          activity: ActivityEntry[]
+        }>('export', {
+          format: 'json',
+          since: timeRange,
+          include: 'tasks,activity',
+        })
 
-      if (errorsOnly) {
-        filtered = filtered.filter(e => e.error !== '')
-      }
-      if (methodFilter.trim()) {
-        const search = methodFilter.trim().toLowerCase()
-        filtered = filtered.filter(e => e.method.toLowerCase().includes(search))
-      }
+        setAuditTasks(result.tasks || [])
+        let filtered = result.activity || []
 
-      setEntries(filtered)
-      setCount(result.count)
+        if (errorsOnly) {
+          filtered = filtered.filter(e => e.error !== '')
+        }
+        if (methodFilter.trim()) {
+          const search = methodFilter.trim().toLowerCase()
+          filtered = filtered.filter(e => e.method.toLowerCase().includes(search))
+        }
+
+        setEntries(filtered)
+        setCount(filtered.length)
+      } else {
+        const result = await client.call<{ entries: ActivityEntry[]; count: number; enabled: boolean }>(
+          'activity.query',
+          { since: timeRange, limit: 100 }
+        )
+        let filtered = result.entries || []
+
+        if (errorsOnly) {
+          filtered = filtered.filter(e => e.error !== '')
+        }
+        if (methodFilter.trim()) {
+          const search = methodFilter.trim().toLowerCase()
+          filtered = filtered.filter(e => e.method.toLowerCase().includes(search))
+        }
+
+        setEntries(filtered)
+        setCount(result.count)
+        setAuditTasks([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load activity')
       setEntries([])
     } finally {
       setLoading(false)
     }
-  }, [client, connected, timeRange, errorsOnly, methodFilter])
+  }, [client, connected, timeRange, errorsOnly, methodFilter, viewMode])
 
   // Auto-load when panel opens or filters change
   useEffect(() => {
@@ -94,8 +133,28 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
   }
 
   return (
-    <AccessibleModal isOpen={isOpen} onClose={onClose} title="Activity Log" size="4xl">
+    <AccessibleModal isOpen={isOpen} onClose={onClose} title={viewMode === 'audit' ? 'Compliance Audit' : 'Activity Log'} size="4xl">
       <div className="max-h-[70vh] flex flex-col">
+        {/* View mode toggle */}
+        <div role="tablist" className="tabs tabs-boxed mb-4 w-fit">
+          <button
+            role="tab"
+            aria-selected={viewMode === 'activity'}
+            className={`tab tab-sm ${viewMode === 'activity' ? 'tab-active' : ''}`}
+            onClick={() => setViewMode('activity')}
+          >
+            Activity
+          </button>
+          <button
+            role="tab"
+            aria-selected={viewMode === 'audit'}
+            className={`tab tab-sm ${viewMode === 'audit' ? 'tab-active' : ''}`}
+            onClick={() => setViewMode('audit')}
+          >
+            Audit
+          </button>
+        </div>
+
         {/* Filter controls */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <select
@@ -167,6 +226,21 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
             </div>
           ) : (
             <>
+              {/* Audit tasks summary */}
+              {viewMode === 'audit' && auditTasks.length > 0 && (
+                <div className="mb-4 p-3 rounded-lg bg-base-200 border border-base-300">
+                  <h4 className="text-sm font-medium mb-2">Active Tasks ({auditTasks.length})</h4>
+                  <div className="space-y-1">
+                    {auditTasks.map(t => (
+                      <div key={t.id} className="flex items-center justify-between text-xs">
+                        <span className="font-mono truncate flex-1">{t.id}</span>
+                        <span className="badge badge-xs badge-ghost ml-2">{t.state}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs text-base-content/50 mb-2">
                 Showing {entries.length} of {count} entries
               </p>
@@ -175,6 +249,7 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                   <thead>
                     <tr>
                       <th>Time</th>
+                      {viewMode === 'audit' && <th>User</th>}
                       <th>Method</th>
                       <th className="text-right">Duration</th>
                       <th>Status</th>
@@ -188,6 +263,11 @@ export function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                           <td className="font-mono text-xs whitespace-nowrap">
                             {formatTimestamp(entry.timestamp)}
                           </td>
+                          {viewMode === 'audit' && (
+                            <td className="text-xs whitespace-nowrap">
+                              {entry.user_id || '-'}
+                            </td>
+                          )}
                           <td className="font-mono text-xs">
                             {entry.method}
                           </td>

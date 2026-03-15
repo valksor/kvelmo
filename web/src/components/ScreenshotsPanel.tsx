@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useScreenshotStore, Screenshot } from '../stores/screenshotStore'
+import { useProjectStore } from '../stores/projectStore'
 import { ScreenshotThumbnail } from './ScreenshotThumbnail'
 import { ScreenshotModal } from './ScreenshotModal'
 
 type FilterSource = 'all' | 'agent' | 'user'
 
 export function ScreenshotsPanel() {
-  const { screenshots, loading, error, selectedId, select } = useScreenshotStore()
+  const { screenshots, loading, error, selectedId, select, captureScreenshot } = useScreenshotStore()
+  const client = useProjectStore(s => s.client)
   const [filter, setFilter] = useState<FilterSource>('all')
   const [modalScreenshot, setModalScreenshot] = useState<Screenshot | null>(null)
 
@@ -52,7 +54,24 @@ export function ScreenshotsPanel() {
           </svg>
           Screenshots ({filteredScreenshots.length})
         </h3>
-        <div className="join">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => captureScreenshot(client)}
+            disabled={loading}
+            className="btn btn-xs btn-primary"
+            aria-label="Capture screenshot"
+          >
+            {loading ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+            Capture
+          </button>
+          <div className="join">
           <button
             className={`join-item btn btn-xs ${filter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setFilter('all')}
@@ -71,6 +90,7 @@ export function ScreenshotsPanel() {
           >
             User
           </button>
+          </div>
         </div>
       </div>
 
