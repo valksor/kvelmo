@@ -13,10 +13,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/valksor/kvelmo/pkg/activitylog"
 	"github.com/valksor/kvelmo/pkg/agent"
 	"github.com/valksor/kvelmo/pkg/agent/claude"
+	"github.com/valksor/kvelmo/pkg/catalog"
 	"github.com/valksor/kvelmo/pkg/meta"
 	"github.com/valksor/kvelmo/pkg/metrics"
+	"github.com/valksor/kvelmo/pkg/notify"
+	"github.com/valksor/kvelmo/pkg/settings"
 	"github.com/valksor/kvelmo/pkg/socket"
 	"github.com/valksor/kvelmo/pkg/web"
 	"github.com/valksor/kvelmo/pkg/worker"
@@ -184,6 +188,46 @@ func runServe(cmd *cobra.Command, args []string) error {
 		metricsPersister := metrics.NewPersister(metrics.Global(), "", 0)
 		metricsPersister.Load()
 		go metricsPersister.Start(ctx)
+
+		// Load settings for optional features
+		cfg, _, _, _ := settings.LoadEffective("")
+
+		// Start notification engine if enabled
+		if cfg.Notify.Enabled && len(cfg.Notify.Webhooks) > 0 {
+			endpoints := make([]notify.WebhookEndpoint, len(cfg.Notify.Webhooks))
+			for i, wh := range cfg.Notify.Webhooks {
+				endpoints[i] = notify.WebhookEndpoint{
+					URL:    wh.URL,
+					Format: notify.Format(wh.Format),
+					Events: wh.Events,
+				}
+			}
+			n := notify.New(endpoints, cfg.Notify.OnFailure)
+			socket.SetNotifier(n)
+			go n.Start(ctx)
+		}
+
+		// Initialize catalog (always available)
+		socket.SetCatalog(catalog.New(""))
+
+		// Start activity log if enabled
+		if cfg.Storage.ActivityLog.Enabled {
+			actLog, logErr := activitylog.New("", cfg.Storage.ActivityLog.MaxFiles)
+			if logErr != nil {
+				fmt.Printf("Warning: Failed to start activity log: %v\n", logErr)
+			} else {
+				globalSocket.SetActivityLog(actLog)
+				go actLog.Start(ctx)
+			}
+		}
+
+		// Start time-series metrics if enabled
+		if cfg.Storage.MetricsHistory.Enabled {
+			interval := time.Duration(cfg.Storage.MetricsHistory.IntervalMin) * time.Minute
+			ts := metrics.NewTimeSeriesStore(metrics.Global(), "", interval, cfg.Storage.MetricsHistory.RetentionDays)
+			socket.SetTimeSeriesStore(ts)
+			go ts.Start(ctx)
+		}
 	}
 
 	// Create web server with worktree creator
