@@ -4,11 +4,22 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/valksor/kvelmo/pkg/meta"
 	"gopkg.in/yaml.v3"
 )
+
+// SearchOptions filters archived tasks.
+type SearchOptions struct {
+	Query string    `json:"query,omitempty"` // Substring match in title, branch, or source
+	Tag   string    `json:"tag,omitempty"`   // Filter by tag (reserved for future use)
+	Since time.Time `json:"since,omitempty"` // Only tasks completed after this time
+	Until time.Time `json:"until,omitempty"` // Only tasks completed before this time
+	State string    `json:"state,omitempty"` // Filter by final_state (e.g., "finished", "abandoned")
+	Limit int       `json:"limit,omitempty"` // Max results (0 = unlimited)
+}
 
 // ArchivedTask is a lightweight record of a completed task.
 type ArchivedTask struct {
@@ -65,4 +76,39 @@ func (s *Store) ListArchivedTasks() ([]ArchivedTask, error) {
 	})
 
 	return tasks, nil
+}
+
+// SearchArchivedTasks returns archived tasks matching the given filters.
+func (s *Store) SearchArchivedTasks(opts SearchOptions) ([]ArchivedTask, error) {
+	tasks, err := s.ListArchivedTasks()
+	if err != nil {
+		return nil, err
+	}
+
+	var filtered []ArchivedTask
+	for _, t := range tasks {
+		if opts.Query != "" {
+			q := strings.ToLower(opts.Query)
+			if !strings.Contains(strings.ToLower(t.Title), q) &&
+				!strings.Contains(strings.ToLower(t.Branch), q) &&
+				!strings.Contains(strings.ToLower(t.Source), q) {
+				continue
+			}
+		}
+		if !opts.Since.IsZero() && t.CompletedAt.Before(opts.Since) {
+			continue
+		}
+		if !opts.Until.IsZero() && t.CompletedAt.After(opts.Until) {
+			continue
+		}
+		if opts.State != "" && t.FinalState != opts.State {
+			continue
+		}
+		filtered = append(filtered, t)
+		if opts.Limit > 0 && len(filtered) >= opts.Limit {
+			break
+		}
+	}
+
+	return filtered, nil
 }

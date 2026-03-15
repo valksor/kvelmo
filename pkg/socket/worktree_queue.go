@@ -3,6 +3,9 @@ package socket
 import (
 	"context"
 	"encoding/json"
+	"time"
+
+	"github.com/valksor/kvelmo/pkg/storage"
 )
 
 // --- Queue Handlers ---
@@ -116,6 +119,63 @@ func (w *WorktreeSocket) handleTaskHistory(ctx context.Context, req *Request) (*
 	}
 
 	tasks, err := w.conductor.TaskHistory()
+	if err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, map[string]any{
+		"tasks": tasks,
+		"count": len(tasks),
+	})
+}
+
+// --- Task Search Handler ---
+
+type taskSearchParams struct {
+	Query string `json:"query,omitempty"`
+	Tag   string `json:"tag,omitempty"`
+	Since string `json:"since,omitempty"`
+	Until string `json:"until,omitempty"`
+	State string `json:"state,omitempty"`
+	Limit int    `json:"limit,omitempty"`
+}
+
+func (w *WorktreeSocket) handleTaskSearch(ctx context.Context, req *Request) (*Response, error) {
+	if w.conductor == nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, "no conductor"), nil
+	}
+
+	var params taskSearchParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+		}
+	}
+
+	opts := storage.SearchOptions{
+		Query: params.Query,
+		Tag:   params.Tag,
+		State: params.State,
+		Limit: params.Limit,
+	}
+
+	if params.Since != "" {
+		t, err := time.Parse(time.RFC3339, params.Since)
+		if err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid since: expected RFC3339"), nil
+		}
+		opts.Since = t
+	}
+
+	if params.Until != "" {
+		t, err := time.Parse(time.RFC3339, params.Until)
+		if err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid until: expected RFC3339"), nil
+		}
+		opts.Until = t
+	}
+
+	tasks, err := w.conductor.SearchTaskHistory(opts)
 	if err != nil {
 		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
 	}

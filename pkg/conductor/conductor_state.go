@@ -66,6 +66,15 @@ func (c *Conductor) TaskHistory() ([]storage.ArchivedTask, error) {
 	return c.store.ListArchivedTasks()
 }
 
+// SearchTaskHistory returns archived tasks matching the given filters.
+func (c *Conductor) SearchTaskHistory(opts storage.SearchOptions) ([]storage.ArchivedTask, error) {
+	if c.store == nil {
+		return nil, nil
+	}
+
+	return c.store.SearchArchivedTasks(opts)
+}
+
 // persistState writes the current WorkUnit and state to task.yaml.
 // Non-fatal: logs on error and never blocks the caller.
 // Safe to call without c.mu held - reads only stable/atomic fields.
@@ -73,7 +82,8 @@ func (c *Conductor) persistState() {
 	if c.store == nil || c.workUnit == nil {
 		return
 	}
-	ts := workUnitToTaskState(c.machine.State(), c.workUnit)
+	history := c.machine.History()
+	ts := workUnitToTaskState(c.machine.State(), c.workUnit, history)
 	if err := c.store.SaveTaskState(ts); err != nil {
 		slog.Warn("persist task state failed", "task_id", c.workUnit.ID, "error", err)
 	}
@@ -109,11 +119,12 @@ func (c *Conductor) LoadState(ctx context.Context) error {
 		return fmt.Errorf("load task state: %w", err)
 	}
 
-	state, wu := taskStateToWorkUnit(ts)
+	state, wu, history := taskStateToWorkUnit(ts)
 	c.mu.Lock()
 	c.workUnit = wu
 	c.machine.ForceState(state)
 	c.machine.SetWorkUnit(wu)
+	c.machine.RestoreHistory(history)
 	c.mu.Unlock()
 
 	slog.Info("task state restored", "task_id", taskID, "state", state)
@@ -122,22 +133,27 @@ func (c *Conductor) LoadState(ctx context.Context) error {
 }
 
 // workUnitToTaskState converts a WorkUnit + state to the on-disk TaskState struct.
-func workUnitToTaskState(state State, wu *WorkUnit) *storage.TaskState {
+func workUnitToTaskState(state State, wu *WorkUnit, history []HistoryEntry) *storage.TaskState {
 	ts := &storage.TaskState{
-		State:          string(state),
-		ID:             wu.ID,
-		ExternalID:     wu.ExternalID,
-		Title:          wu.Title,
-		Description:    wu.Description,
-		Branch:         wu.Branch,
-		WorktreePath:   wu.WorktreePath,
-		Specifications: wu.Specifications,
-		Checkpoints:    wu.Checkpoints,
-		RedoStack:      wu.RedoStack,
-		Jobs:           wu.Jobs,
-		Metadata:       wu.Metadata,
-		CreatedAt:      wu.CreatedAt,
-		UpdatedAt:      wu.UpdatedAt,
+		State:            string(state),
+		ID:               wu.ID,
+		ExternalID:       wu.ExternalID,
+		Title:            wu.Title,
+		Description:      wu.Description,
+		Branch:           wu.Branch,
+		WorktreePath:     wu.WorktreePath,
+		Specifications:   wu.Specifications,
+		Checkpoints:      wu.Checkpoints,
+		RedoStack:        wu.RedoStack,
+		Jobs:             wu.Jobs,
+		Metadata:         wu.Metadata,
+		Approvals:        wu.Approvals,
+		ChecklistChecked: wu.ChecklistChecked,
+		Tags:             wu.Tags,
+		Priority:         wu.Priority,
+		DependsOn:        wu.DependsOn,
+		CreatedAt:        wu.CreatedAt,
+		UpdatedAt:        wu.UpdatedAt,
 	}
 	if wu.Source != nil {
 		ts.Source = &storage.TaskSource{
@@ -169,26 +185,40 @@ func workUnitToTaskState(state State, wu *WorkUnit) *storage.TaskState {
 		}
 		ts.Hierarchy = h
 	}
+	for _, h := range history {
+		ts.History = append(ts.History, storage.TaskHistoryEntry{
+			From:      string(h.From),
+			To:        string(h.To),
+			Event:     string(h.Event),
+			Timestamp: h.Timestamp,
+		})
+	}
 
 	return ts
 }
 
-// taskStateToWorkUnit converts an on-disk TaskState back to a State + WorkUnit pair.
-func taskStateToWorkUnit(ts *storage.TaskState) (State, *WorkUnit) {
+// taskStateToWorkUnit converts an on-disk TaskState back to a State + WorkUnit pair
+// along with the persisted state machine history.
+func taskStateToWorkUnit(ts *storage.TaskState) (State, *WorkUnit, []HistoryEntry) {
 	wu := &WorkUnit{
-		ID:             ts.ID,
-		ExternalID:     ts.ExternalID,
-		Title:          ts.Title,
-		Description:    ts.Description,
-		Branch:         ts.Branch,
-		WorktreePath:   ts.WorktreePath,
-		Specifications: ts.Specifications,
-		Checkpoints:    ts.Checkpoints,
-		RedoStack:      ts.RedoStack,
-		Jobs:           ts.Jobs,
-		Metadata:       ts.Metadata,
-		CreatedAt:      ts.CreatedAt,
-		UpdatedAt:      ts.UpdatedAt,
+		ID:               ts.ID,
+		ExternalID:       ts.ExternalID,
+		Title:            ts.Title,
+		Description:      ts.Description,
+		Branch:           ts.Branch,
+		WorktreePath:     ts.WorktreePath,
+		Specifications:   ts.Specifications,
+		Checkpoints:      ts.Checkpoints,
+		RedoStack:        ts.RedoStack,
+		Jobs:             ts.Jobs,
+		Metadata:         ts.Metadata,
+		Approvals:        ts.Approvals,
+		ChecklistChecked: ts.ChecklistChecked,
+		Tags:             ts.Tags,
+		Priority:         ts.Priority,
+		DependsOn:        ts.DependsOn,
+		CreatedAt:        ts.CreatedAt,
+		UpdatedAt:        ts.UpdatedAt,
 	}
 	if wu.Metadata == nil {
 		wu.Metadata = make(map[string]string)
@@ -224,5 +254,15 @@ func taskStateToWorkUnit(ts *storage.TaskState) (State, *WorkUnit) {
 		wu.Hierarchy = h
 	}
 
-	return State(ts.State), wu
+	var history []HistoryEntry
+	for _, h := range ts.History {
+		history = append(history, HistoryEntry{
+			From:      State(h.From),
+			To:        State(h.To),
+			Event:     Event(h.Event),
+			Timestamp: h.Timestamp,
+		})
+	}
+
+	return State(ts.State), wu, history
 }
