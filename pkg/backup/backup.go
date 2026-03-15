@@ -204,6 +204,130 @@ func closeWriters(tw *tar.Writer, gz *gzip.Writer, f *os.File) {
 	_ = f.Close()
 }
 
+// RestoreResult contains information about a completed restore operation.
+type RestoreResult struct {
+	Target  string `json:"target"`
+	Files   int    `json:"files"`
+	Dirs    int    `json:"dirs"`
+	Skipped int    `json:"skipped"`
+}
+
+const maxRestoreFileSize = 1 << 30 // 1 GB safety limit
+
+// Restore extracts a backup archive to the given target directory.
+// If targetDir is empty, the archive is restored to the same directory structure.
+func Restore(archivePath, targetDir string) (*RestoreResult, error) {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("open archive: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	gzReader, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("read gzip: %w", err)
+	}
+	defer func() { _ = gzReader.Close() }()
+
+	tarReader := tar.NewReader(gzReader)
+
+	absTarget, err := filepath.Abs(targetDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolve target path: %w", err)
+	}
+
+	result := &RestoreResult{Target: absTarget}
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read tar entry: %w", err)
+		}
+
+		// Safety: reject path traversal
+		if strings.Contains(header.Name, "..") {
+			return nil, fmt.Errorf("unsafe path in archive: %s", header.Name)
+		}
+
+		cleanName := filepath.Clean(header.Name)
+
+		if IsTransientFile(cleanName) {
+			result.Skipped++
+
+			continue
+		}
+
+		// Skip symbolic links
+		if header.Typeflag == tar.TypeSymlink || header.Typeflag == tar.TypeLink {
+			result.Skipped++
+
+			continue
+		}
+
+		// Skip oversized files
+		if header.Size > maxRestoreFileSize {
+			result.Skipped++
+
+			continue
+		}
+
+		destPath := filepath.Join(absTarget, cleanName)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(destPath, 0o750); err != nil {
+				return nil, fmt.Errorf("create directory %s: %w", cleanName, err)
+			}
+			result.Dirs++
+
+		case tar.TypeReg:
+			if err := restoreFile(tarReader, destPath, header.Size, cleanName); err != nil {
+				return nil, err
+			}
+			result.Files++
+
+		default:
+			result.Skipped++
+		}
+	}
+
+	return result, nil
+}
+
+// restoreFile extracts a single regular file from the tar stream.
+func restoreFile(tarReader *tar.Reader, destPath string, size int64, cleanName string) error {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o750); err != nil {
+		return fmt.Errorf("create parent dir for %s: %w", cleanName, err)
+	}
+
+	perm := restoreFilePermission(cleanName)
+
+	outFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
+	if err != nil {
+		return fmt.Errorf("create file %s: %w", cleanName, err)
+	}
+	defer func() { _ = outFile.Close() }()
+
+	if _, err := io.Copy(outFile, io.LimitReader(tarReader, size)); err != nil {
+		return fmt.Errorf("extract %s: %w", cleanName, err)
+	}
+
+	return nil
+}
+
+// restoreFilePermission returns the appropriate permission for a restored file.
+func restoreFilePermission(name string) os.FileMode {
+	base := filepath.Base(name)
+	if base == ".env" || filepath.Ext(base) == ".env" {
+		return 0o600
+	}
+
+	return 0o644
+}
+
 // IsTransientFile returns true for files that should be excluded from backup/restore.
 func IsTransientFile(name string) bool {
 	ext := filepath.Ext(name)

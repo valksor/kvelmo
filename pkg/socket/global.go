@@ -299,6 +299,7 @@ func (g *GlobalSocket) registerHandlers() {
 	// Backup
 	g.server.Handle("backup.create", g.handleBackupCreate)
 	g.server.Handle("backup.list", g.handleBackupList)
+	g.server.Handle("backup.restore", g.handleBackupRestore)
 
 	// Notifications
 	g.server.Handle("notify.test", g.handleNotifyTest)
@@ -313,6 +314,11 @@ func (g *GlobalSocket) registerHandlers() {
 
 	// Batch operations across worktrees
 	g.server.Handle("tasks.batch", g.handleBatch)
+
+	// Access token management
+	g.server.Handle("access.token.list", g.handleAccessTokenList)
+	g.server.Handle("access.token.create", g.handleAccessTokenCreate)
+	g.server.Handle("access.token.revoke", g.handleAccessTokenRevoke)
 
 	// Worktree management (for secondary instances)
 	g.server.Handle("worktrees.create", g.handleWorktreesCreate)

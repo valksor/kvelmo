@@ -162,7 +162,7 @@ func (w *WorktreeSocket) handleTaskSearch(ctx context.Context, req *Request) (*R
 	if params.Since != "" {
 		t, err := time.Parse(time.RFC3339, params.Since)
 		if err != nil {
-			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid since: expected RFC3339"), nil
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid since: expected RFC3339"), nil //nolint:nilerr // JSON-RPC error response
 		}
 		opts.Since = t
 	}
@@ -170,7 +170,7 @@ func (w *WorktreeSocket) handleTaskSearch(ctx context.Context, req *Request) (*R
 	if params.Until != "" {
 		t, err := time.Parse(time.RFC3339, params.Until)
 		if err != nil {
-			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid until: expected RFC3339"), nil
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid until: expected RFC3339"), nil //nolint:nilerr // JSON-RPC error response
 		}
 		opts.Until = t
 	}

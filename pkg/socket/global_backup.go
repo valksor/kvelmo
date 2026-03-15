@@ -29,6 +29,31 @@ func (g *GlobalSocket) handleBackupCreate(_ context.Context, req *Request) (*Res
 	return NewResultResponse(req.ID, result)
 }
 
+type backupRestoreParams struct {
+	ArchivePath string `json:"archive_path"`
+}
+
+func (g *GlobalSocket) handleBackupRestore(_ context.Context, req *Request) (*Response, error) {
+	var params backupRestoreParams
+	if req.Params != nil {
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			return NewErrorResponse(req.ID, ErrCodeInvalidParams, "invalid params"), nil //nolint:nilerr // JSON-RPC error response
+		}
+	}
+
+	if params.ArchivePath == "" {
+		return NewErrorResponse(req.ID, ErrCodeInvalidParams, "archive_path is required"), nil
+	}
+
+	targetDir := paths.Paths().BaseDir()
+	result, err := backup.Restore(params.ArchivePath, targetDir)
+	if err != nil {
+		return NewErrorResponse(req.ID, ErrCodeInternal, err.Error()), nil
+	}
+
+	return NewResultResponse(req.ID, result)
+}
+
 func (g *GlobalSocket) handleBackupList(_ context.Context, req *Request) (*Response, error) {
 	baseDir := paths.Paths().BaseDir()
 	backups, err := backup.List(baseDir)

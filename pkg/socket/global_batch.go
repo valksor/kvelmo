@@ -66,6 +66,7 @@ func (g *GlobalSocket) handleBatch(ctx context.Context, req *Request) (*Response
 				Path:  wt.Path,
 				Error: "connect failed: " + err.Error(),
 			})
+
 			continue
 		}
 
@@ -78,6 +79,7 @@ func (g *GlobalSocket) handleBatch(ctx context.Context, req *Request) (*Response
 				Path:  wt.Path,
 				Error: "status check failed: " + err.Error(),
 			})
+
 			continue
 		}
 
@@ -86,18 +88,21 @@ func (g *GlobalSocket) handleBatch(ctx context.Context, req *Request) (*Response
 		}
 		if err := json.Unmarshal(resp.Result, &status); err != nil {
 			_ = client.Close()
+
 			continue
 		}
 
 		// Apply state filter
 		if stateFilter != "" && status.State != stateFilter {
 			_ = client.Close()
+
 			continue
 		}
 
 		// Skip idle worktrees
 		if status.State == "none" {
 			_ = client.Close()
+
 			continue
 		}
 

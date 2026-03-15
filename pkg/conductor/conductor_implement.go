@@ -223,7 +223,7 @@ func (c *Conductor) maybeAutoAdvance(ctx context.Context, completedEvent Event) 
 	}
 
 	var nextPhase string
-	switch completedEvent {
+	switch completedEvent { //nolint:exhaustive // only PlanDone and ImplementDone trigger auto-advance
 	case EventPlanDone:
 		nextPhase = "implement"
 	case EventImplementDone:
@@ -239,7 +239,7 @@ func (c *Conductor) maybeAutoAdvance(ctx context.Context, completedEvent Event) 
 		Message: "Auto-advancing to " + nextPhase,
 	})
 
-	switch completedEvent {
+	switch completedEvent { //nolint:exhaustive // mirrors the switch above
 	case EventPlanDone:
 		if _, err := c.Implement(ctx, false); err != nil {
 			slog.Warn("auto-advance: implement failed", "error", err)
