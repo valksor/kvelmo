@@ -134,10 +134,15 @@ type WorkUnit struct {
 	Hierarchy *HierarchyContext `json:"hierarchy,omitempty"`
 	// QualityGate caches the result of async quality gate (run during Review).
 	// nil = not yet run, true = passed, false = failed
-	QualityGatePassed *bool     `json:"quality_gate_passed,omitempty"`
-	QualityGateError  string    `json:"quality_gate_error,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	QualityGatePassed *bool                `json:"quality_gate_passed,omitempty"`
+	QualityGateError  string               `json:"quality_gate_error,omitempty"`
+	Approvals         map[string]time.Time `json:"approvals,omitempty"`         // Event -> approval timestamp
+	ChecklistChecked  []string             `json:"checklist_checked,omitempty"` // Checked review items
+	Tags              []string             `json:"tags,omitempty"`
+	Priority          int                  `json:"priority,omitempty"`
+	DependsOn         []string             `json:"depends_on,omitempty"`
+	CreatedAt         time.Time            `json:"created_at"`
+	UpdatedAt         time.Time            `json:"updated_at"`
 }
 
 // Source represents where the task came from.
@@ -286,6 +291,12 @@ var TransitionTable = map[TransitionKey][]Transition{
 	{StatePlanned, EventImplement}: {
 		{From: StatePlanned, Event: EventImplement, To: StateImplementing, Guards: []Guard{
 			{Check: guardHasSpecifications, Message: "no specification found. Run: kvelmo plan first"},
+		}},
+	},
+	// Skip planning: implement directly from loaded state using task description as spec.
+	{StateLoaded, EventImplement}: {
+		{From: StateLoaded, Event: EventImplement, To: StateImplementing, Guards: []Guard{
+			{Check: guardHasDescription, Message: "task has no description. Check the task source content"},
 		}},
 	},
 	{StateImplementing, EventImplementDone}: {
@@ -830,6 +841,14 @@ func (m *Machine) History() []HistoryEntry {
 	copy(history, m.history)
 
 	return history
+}
+
+// RestoreHistory replaces the machine's transition history with the provided entries.
+// Used when restoring persisted state from disk.
+func (m *Machine) RestoreHistory(entries []HistoryEntry) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.history = entries
 }
 
 // Reset resets the machine to None state.

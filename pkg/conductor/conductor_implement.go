@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 )
 
 // Implement begins the implementation phase.
-// Requires specifications to exist (created during planning).
+// When called from the planned state, requires specifications to exist.
+// When called from the loaded state (skip-plan), uses the task description as spec.
 // Accepts force parameter to allow re-running from already-implemented state.
 func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 	c.mu.Lock()
@@ -37,12 +39,19 @@ func (c *Conductor) Implement(ctx context.Context, force bool) (string, error) {
 		c.machine.ForceState(StatePlanned)
 	}
 
+	// Skip-plan: when implementing from loaded state, use description as implicit spec
+	skippingPlan := c.machine.State() == StateLoaded
+
 	// Dispatch implement event to transition state
 	if err := c.machine.Dispatch(ctx, EventImplement); err != nil {
 		wrapped := fmt.Errorf("cannot implement: %w", err)
 		c.emitEnrichedError(wrapped, "implement")
 
 		return "", wrapped
+	}
+
+	if skippingPlan {
+		c.logVerbosef("Skipping planning phase — using task description as specification")
 	}
 
 	prompt := c.buildImplementPrompt()
@@ -202,6 +211,56 @@ func (c *Conductor) Simplify(ctx context.Context) (string, error) {
 	return job.ID, nil
 }
 
+// maybeAutoAdvance triggers the next phase automatically if autoAdvance is enabled.
+// Called asynchronously after a job completes.
+func (c *Conductor) maybeAutoAdvance(ctx context.Context, completedEvent Event) {
+	c.mu.RLock()
+	enabled := c.autoAdvance
+	c.mu.RUnlock()
+
+	if !enabled {
+		return
+	}
+
+	var nextPhase string
+	switch completedEvent {
+	case EventPlanDone:
+		nextPhase = "implement"
+	case EventImplementDone:
+		nextPhase = "review"
+	default:
+		return
+	}
+
+	slog.Info("auto-advance: triggering next phase", "completed", completedEvent, "next", nextPhase)
+	c.emit(ConductorEvent{
+		Type:    "auto_advance",
+		State:   c.machine.State(),
+		Message: "Auto-advancing to " + nextPhase,
+	})
+
+	switch completedEvent {
+	case EventPlanDone:
+		if _, err := c.Implement(ctx, false); err != nil {
+			slog.Warn("auto-advance: implement failed", "error", err)
+			c.emit(ConductorEvent{
+				Type:    "auto_advance_failed",
+				State:   c.machine.State(),
+				Message: "Auto-advance to implement failed: " + err.Error(),
+			})
+		}
+	case EventImplementDone:
+		if err := c.Review(ctx, false); err != nil {
+			slog.Warn("auto-advance: review failed", "error", err)
+			c.emit(ConductorEvent{
+				Type:    "auto_advance_failed",
+				State:   c.machine.State(),
+				Message: "Auto-advance to review failed: " + err.Error(),
+			})
+		}
+	}
+}
+
 func (c *Conductor) buildImplementPrompt() string {
 	wu := c.workUnit
 
@@ -214,7 +273,13 @@ func (c *Conductor) buildImplementPrompt() string {
 
 	hierarchySection := buildHierarchySection(wu.Hierarchy)
 
-	return fmt.Sprintf(`Implement the following task based on the specification:
+	// When implementing without specs (skip-plan), emphasize the description as the sole guide
+	header := "Implement the following task based on the specification:"
+	if len(wu.Specifications) == 0 {
+		header = "Implement the following task directly from the description (planning was skipped):"
+	}
+
+	prompt := fmt.Sprintf(`%s
 
 Title: %s
 Description: %s
@@ -222,7 +287,11 @@ Description: %s
 %s
 Please implement the code following the plan. Create all necessary files and make required modifications.
 Commit your changes with meaningful commit messages.
-`, wu.Title, wu.Description, hierarchySection, specs, browserToolsSection())
+`, header, wu.Title, wu.Description, hierarchySection, specs, browserToolsSection())
+
+	prompt += c.buildGitConventionInstructions()
+
+	return prompt
 }
 
 // browserToolsSection returns guidance for using browser automation tools.
